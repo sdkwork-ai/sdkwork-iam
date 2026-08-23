@@ -32,6 +32,9 @@ Thumbs.db
 .idea/
 .vscode/
 
+# IAM registry materialized lock (generated artifact with materializedAt timestamp)
+iam/registry/iam-registry.lock.json
+
 .env.local
 .env.development.local
 .env.test.local
