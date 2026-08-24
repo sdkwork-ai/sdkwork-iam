@@ -97,3 +97,6 @@ Thumbs.db
 **/src/**/*.js
 **/src/**/*.d.ts
 
+# C# generated SDK build outputs
+**/generated/**/bin/Release/
+**/generated/**/obj/Release/
