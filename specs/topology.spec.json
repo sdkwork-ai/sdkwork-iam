@@ -57,7 +57,15 @@
             "iam-dev.dtupay.com",
             "iam-dev.sdkwork.cn",
             "iam-dev.birdcoder.cn",
-            "iam-dev.dtupay.cn"
+            "iam-dev.dtupay.cn",
+            "iam-dev.skubc.com",
+            "iam-dev.skubc.cn",
+            "iam-dev.zowalk.com",
+            "iam-dev.zowalk.cn",
+            "iam-dev.offer86.com",
+            "iam-dev.offer86.cn",
+            "iam-dev.86offer.com",
+            "iam-dev.86offer.cn"
           ]
         },
         "test": {
@@ -67,7 +75,15 @@
             "iam-test.dtupay.com",
             "iam-test.sdkwork.cn",
             "iam-test.birdcoder.cn",
-            "iam-test.dtupay.cn"
+            "iam-test.dtupay.cn",
+            "iam-test.skubc.com",
+            "iam-test.skubc.cn",
+            "iam-test.zowalk.com",
+            "iam-test.zowalk.cn",
+            "iam-test.offer86.com",
+            "iam-test.offer86.cn",
+            "iam-test.86offer.com",
+            "iam-test.86offer.cn"
           ]
         },
         "staging": {
@@ -77,7 +93,15 @@
             "iam-staging.dtupay.com",
             "iam-staging.sdkwork.cn",
             "iam-staging.birdcoder.cn",
-            "iam-staging.dtupay.cn"
+            "iam-staging.dtupay.cn",
+            "iam-staging.skubc.com",
+            "iam-staging.skubc.cn",
+            "iam-staging.zowalk.com",
+            "iam-staging.zowalk.cn",
+            "iam-staging.offer86.com",
+            "iam-staging.offer86.cn",
+            "iam-staging.86offer.com",
+            "iam-staging.86offer.cn"
           ]
         }
       },
@@ -87,7 +111,15 @@
         "iam.dtupay.com",
         "iam.sdkwork.cn",
         "iam.birdcoder.cn",
-        "iam.dtupay.cn"
+        "iam.dtupay.cn",
+        "iam.skubc.com",
+        "iam.skubc.cn",
+        "iam.zowalk.com",
+        "iam.zowalk.cn",
+        "iam.offer86.com",
+        "iam.offer86.cn",
+        "iam.86offer.com",
+        "iam.86offer.cn"
       ]
     },
     "platform.api-gateway": {
@@ -100,7 +132,15 @@
             "api-dev.dtupay.com",
             "api-dev.sdkwork.cn",
             "api-dev.birdcoder.cn",
-            "api-dev.dtupay.cn"
+            "api-dev.dtupay.cn",
+            "api-dev.skubc.com",
+            "api-dev.skubc.cn",
+            "api-dev.zowalk.com",
+            "api-dev.zowalk.cn",
+            "api-dev.offer86.com",
+            "api-dev.offer86.cn",
+            "api-dev.86offer.com",
+            "api-dev.86offer.cn"
           ]
         },
         "test": {
@@ -110,7 +150,15 @@
             "api-test.dtupay.com",
             "api-test.sdkwork.cn",
             "api-test.birdcoder.cn",
-            "api-test.dtupay.cn"
+            "api-test.dtupay.cn",
+            "api-test.skubc.com",
+            "api-test.skubc.cn",
+            "api-test.zowalk.com",
+            "api-test.zowalk.cn",
+            "api-test.offer86.com",
+            "api-test.offer86.cn",
+            "api-test.86offer.com",
+            "api-test.86offer.cn"
           ]
         },
         "staging": {
@@ -120,7 +168,15 @@
             "api-staging.dtupay.com",
             "api-staging.sdkwork.cn",
             "api-staging.birdcoder.cn",
-            "api-staging.dtupay.cn"
+            "api-staging.dtupay.cn",
+            "api-staging.skubc.com",
+            "api-staging.skubc.cn",
+            "api-staging.zowalk.com",
+            "api-staging.zowalk.cn",
+            "api-staging.offer86.com",
+            "api-staging.offer86.cn",
+            "api-staging.86offer.com",
+            "api-staging.86offer.cn"
           ]
         }
       },
@@ -130,7 +186,15 @@
         "api.dtupay.com",
         "api.sdkwork.cn",
         "api.birdcoder.cn",
-        "api.dtupay.cn"
+        "api.dtupay.cn",
+        "api.skubc.com",
+        "api.skubc.cn",
+        "api.zowalk.com",
+        "api.zowalk.cn",
+        "api.offer86.com",
+        "api.offer86.cn",
+        "api.86offer.com",
+        "api.86offer.cn"
       ]
     }
   },
