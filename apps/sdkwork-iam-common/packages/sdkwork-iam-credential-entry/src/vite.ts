@@ -30,6 +30,13 @@ function normalizeToken(value: string | undefined): string | undefined {
   return normalized || undefined;
 }
 
+/** Normalize lifecycle aliases (`dev`, `prod`) to canonical environment names. */
+function normalizeLifecycleEnvironment(value: string): 'development' | 'test' | 'staging' | 'production' {
+  if (value === 'dev') return 'development';
+  if (value === 'prod') return 'production';
+  return value as 'development' | 'test' | 'staging' | 'production';
+}
+
 function serializeInlineScriptValue(value: string): string {
   return JSON.stringify(value)
     .replaceAll('<', '\\u003c')
@@ -47,7 +54,7 @@ export function createSdkworkCredentialEntryBootstrapVitePlugin({
     || (environment === 'test' && allowTestInjection);
   const token = normalizeToken(accessToken)
     ?? normalizeToken(process.env.SDKWORK_ACCESS_TOKEN)
-    ?? (repoRoot ? readRepoBootstrapAccessToken(repoRoot, environment) : undefined);
+    ?? (repoRoot ? readRepoBootstrapAccessToken(repoRoot, normalizeLifecycleEnvironment(environment)) : undefined);
   if (!canInject || !token) {
     return undefined;
   }
