@@ -100,3 +100,5 @@ Thumbs.db
 # C# generated SDK build outputs
 **/generated/**/bin/Release/
 **/generated/**/obj/Release/
+# Runtime-generated environment configuration
+**/public/runtime-env.json
