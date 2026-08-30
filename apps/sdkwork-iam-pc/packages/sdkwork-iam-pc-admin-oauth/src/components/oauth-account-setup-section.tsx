@@ -31,6 +31,7 @@ import {
 } from "@sdkwork/ui-pc-react";
 import { CatalogPagination } from "@sdkwork/iam-pc-admin-core";
 import type { SdkWorkPageInfo } from "@sdkwork/iam-contracts";
+import { downloadRemoteImageAsFile } from "../runtime/oauth-image-download";
 
 import type {
   SdkworkIamOauthAccountConfig,
@@ -838,19 +839,7 @@ function OauthFollowQrCodeDialog({
       return;
     }
     const fileName = `${(account?.label || "official-account").trim()}-follow-qr.png`;
-    void fetch(qrCode.qrCode)
-      .then((response) => response.blob())
-      .then((blob) => {
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = fileName;
-        document.body.append(anchor);
-        anchor.click();
-        anchor.remove();
-        URL.revokeObjectURL(url);
-      })
-      .catch(() => undefined);
+    void downloadRemoteImageAsFile(qrCode.qrCode, fileName).catch(() => undefined);
   };
 
   return (

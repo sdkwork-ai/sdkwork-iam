@@ -254,7 +254,8 @@
         ],
         "healthSurfaces": [
           "application.public-ingress"
-        ]
+        ],
+        "browserDeliveries": []
       },
       "cloud.production": {
         "processes": [
@@ -280,7 +281,8 @@
         ],
         "healthSurfaces": [
           "application.public-ingress"
-        ]
+        ],
+        "browserDeliveries": []
       },
       "cloud.development": {
         "processes": [],
@@ -300,7 +302,8 @@
         ],
         "healthSurfaces": [
           "application.public-ingress"
-        ]
+        ],
+        "browserDeliveries": []
       },
       "standalone.staging": {
         "processes": [
@@ -313,7 +316,8 @@
         ],
         "healthSurfaces": [
           "application.public-ingress"
-        ]
+        ],
+        "browserDeliveries": []
       },
       "cloud.test": {
         "processes": [],
@@ -331,7 +335,8 @@
       },
       "standalone.demo": {
         "processes": [],
-        "healthSurfaces": []
+        "healthSurfaces": [],
+        "browserDeliveries": []
       },
       "cloud.demo": {
         "processes": [],
@@ -339,7 +344,10 @@
       }
     }
   },
-  "envKeys": {},
+  "envKeys": {
+    "apiGatewayBaseUrl": "SDKWORK_IAM_PLATFORM_API_GATEWAY_HTTP_URL",
+    "clientApiGatewayBaseUrl": "VITE_SDKWORK_IAM_PLATFORM_API_GATEWAY_HTTP_URL"
+  },
   "profileFiles": {
     "standalone.development": "etc/topology/standalone.development.env",
     "standalone.test": "etc/topology/standalone.test.env",
