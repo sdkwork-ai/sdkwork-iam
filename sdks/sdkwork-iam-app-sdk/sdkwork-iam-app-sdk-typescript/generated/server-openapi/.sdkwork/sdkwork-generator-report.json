@@ -10,37 +10,151 @@
   },
   "status": "ok",
   "mode": "apply",
-  "hasChanges": false,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "41cf9b5515f9b4dcbc3700b485b38009efb6787c7ac109907daba8ad5aa5954a",
+  "hasChanges": true,
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "102e2926b2ded3377fbeb77167473f8ae5fbc45238c6b071fe8c6b27f4799c3b",
   "changeImpact": {
     "schemaVersion": 1,
-    "areas": [],
-    "details": [],
-    "requiresVerification": false,
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped."
+    "areas": [
+      "api-surface",
+      "models"
+    ],
+    "details": [
+      {
+        "area": "api-surface",
+        "paths": [
+          "src/api/auth.d.ts",
+          "src/api/base.d.ts",
+          "src/api/iam.d.ts",
+          "src/api/index.d.ts",
+          "src/api/oauth.d.ts",
+          "src/api/paths.d.ts",
+          "src/api/system.d.ts"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "src/types/appbase-operation-command.d.ts",
+          "src/types/appbase-session-create-command.d.ts",
+          "src/types/common.d.ts",
+          "src/types/field-error.d.ts",
+          "src/types/index.d.ts",
+          "src/types/page-info.d.ts",
+          "src/types/problem-detail.d.ts",
+          "src/types/sdk-work-api-response.d.ts",
+          "src/types/sdk-work-command-data.d.ts",
+          "src/types/sdk-work-command-response.d.ts",
+          "src/types/sdk-work-list-response.d.ts",
+          "src/types/sdk-work-page-data.d.ts",
+          "src/types/sdk-work-platform-error-code.d.ts",
+          "src/types/sdk-work-resource-data.d.ts",
+          "src/types/sdk-work-resource-response.d.ts",
+          "src/types/wechat-mini-program-session-create-command.d.ts"
+        ]
+      }
+    ],
+    "requiresVerification": true,
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "low",
-    "nextAction": "skip",
+    "riskLevel": "high",
+    "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
-    "summary": "No actionable changes were detected. No apply or verification step is required.",
+    "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "no-actionable-changes"
+      "backed-up-generated-files",
+      "deleted-generated-files",
+      "manual-review-required",
+      "verification-required"
     ]
   },
   "executionHandoff": {
     "schemaVersion": 1,
-    "summary": "No further commands are required.",
-    "steps": []
+    "summary": "Run the required verification commands now.",
+    "steps": [
+      {
+        "id": "verify-check",
+        "title": "Unified package check",
+        "required": true,
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+        "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "typescript",
+          "--project-dir",
+          ".",
+          "--action",
+          "check"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action check"
+      },
+      {
+        "id": "verify-build",
+        "title": "Unified package build",
+        "required": true,
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+        "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "typescript",
+          "--project-dir",
+          ".",
+          "--action",
+          "build"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action build"
+      }
+    ]
   },
   "verificationPlan": {
-    "shouldRun": false,
-    "runPhase": "skip",
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped.",
-    "steps": []
+    "shouldRun": true,
+    "runPhase": "now",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "steps": [
+      {
+        "id": "check",
+        "title": "Unified package check",
+        "required": true,
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+        "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "typescript",
+          "--project-dir",
+          ".",
+          "--action",
+          "check"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action check"
+      },
+      {
+        "id": "build",
+        "title": "Unified package build",
+        "required": true,
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+        "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "typescript",
+          "--project-dir",
+          ".",
+          "--action",
+          "build"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action build"
+      }
+    ]
   },
   "sdk": {
     "name": "sdkwork-iam-app-sdk",
@@ -68,9 +182,9 @@
     "writtenFiles": 0,
     "skippedScaffoldFiles": 2,
     "skippedUnchangedGeneratedFiles": 39,
-    "deletedGeneratedFiles": 0,
+    "deletedGeneratedFiles": 23,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "41cf9b5515f9b4dcbc3700b485b38009efb6787c7ac109907daba8ad5aa5954a",
+    "changeFingerprint": "102e2926b2ded3377fbeb77167473f8ae5fbc45238c6b071fe8c6b27f4799c3b",
     "changes": {
       "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [],
@@ -115,39 +229,188 @@
         "src/types/wechat-mini-program-session-create-command.ts",
         "tsconfig.json"
       ],
-      "deletedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "src/api/auth.d.ts",
+        "src/api/base.d.ts",
+        "src/api/iam.d.ts",
+        "src/api/index.d.ts",
+        "src/api/oauth.d.ts",
+        "src/api/paths.d.ts",
+        "src/api/system.d.ts",
+        "src/types/appbase-operation-command.d.ts",
+        "src/types/appbase-session-create-command.d.ts",
+        "src/types/common.d.ts",
+        "src/types/field-error.d.ts",
+        "src/types/index.d.ts",
+        "src/types/page-info.d.ts",
+        "src/types/problem-detail.d.ts",
+        "src/types/sdk-work-api-response.d.ts",
+        "src/types/sdk-work-command-data.d.ts",
+        "src/types/sdk-work-command-response.d.ts",
+        "src/types/sdk-work-list-response.d.ts",
+        "src/types/sdk-work-page-data.d.ts",
+        "src/types/sdk-work-platform-error-code.d.ts",
+        "src/types/sdk-work-resource-data.d.ts",
+        "src/types/sdk-work-resource-response.d.ts",
+        "src/types/wechat-mini-program-session-create-command.d.ts"
+      ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/build-runtime.mjs",
         "custom/README.md"
       ],
-      "backedUpFiles": []
+      "backedUpFiles": [
+        "src/api/auth.d.ts",
+        "src/api/base.d.ts",
+        "src/api/iam.d.ts",
+        "src/api/index.d.ts",
+        "src/api/oauth.d.ts",
+        "src/api/paths.d.ts",
+        "src/api/system.d.ts",
+        "src/types/appbase-operation-command.d.ts",
+        "src/types/appbase-session-create-command.d.ts",
+        "src/types/common.d.ts",
+        "src/types/field-error.d.ts",
+        "src/types/index.d.ts",
+        "src/types/page-info.d.ts",
+        "src/types/problem-detail.d.ts",
+        "src/types/sdk-work-api-response.d.ts",
+        "src/types/sdk-work-command-data.d.ts",
+        "src/types/sdk-work-command-response.d.ts",
+        "src/types/sdk-work-list-response.d.ts",
+        "src/types/sdk-work-page-data.d.ts",
+        "src/types/sdk-work-platform-error-code.d.ts",
+        "src/types/sdk-work-resource-data.d.ts",
+        "src/types/sdk-work-resource-response.d.ts",
+        "src/types/wechat-mini-program-session-create-command.d.ts"
+      ]
     },
     "impact": {
       "schemaVersion": 1,
-      "areas": [],
-      "details": [],
-      "requiresVerification": false,
-      "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped."
+      "areas": [
+        "api-surface",
+        "models"
+      ],
+      "details": [
+        {
+          "area": "api-surface",
+          "paths": [
+            "src/api/auth.d.ts",
+            "src/api/base.d.ts",
+            "src/api/iam.d.ts",
+            "src/api/index.d.ts",
+            "src/api/oauth.d.ts",
+            "src/api/paths.d.ts",
+            "src/api/system.d.ts"
+          ]
+        },
+        {
+          "area": "models",
+          "paths": [
+            "src/types/appbase-operation-command.d.ts",
+            "src/types/appbase-session-create-command.d.ts",
+            "src/types/common.d.ts",
+            "src/types/field-error.d.ts",
+            "src/types/index.d.ts",
+            "src/types/page-info.d.ts",
+            "src/types/problem-detail.d.ts",
+            "src/types/sdk-work-api-response.d.ts",
+            "src/types/sdk-work-command-data.d.ts",
+            "src/types/sdk-work-command-response.d.ts",
+            "src/types/sdk-work-list-response.d.ts",
+            "src/types/sdk-work-page-data.d.ts",
+            "src/types/sdk-work-platform-error-code.d.ts",
+            "src/types/sdk-work-resource-data.d.ts",
+            "src/types/sdk-work-resource-response.d.ts",
+            "src/types/wechat-mini-program-session-create-command.d.ts"
+          ]
+        }
+      ],
+      "requiresVerification": true,
+      "summary": "Detected impact areas: api-surface, models. Verification is required."
     },
     "verificationPlan": {
-      "shouldRun": false,
-      "runPhase": "skip",
-      "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped.",
-      "steps": []
+      "shouldRun": true,
+      "runPhase": "now",
+      "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "steps": [
+        {
+          "id": "check",
+          "title": "Unified package check",
+          "required": true,
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+          "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
+          "command": "node",
+          "args": [
+            "./bin/publish-core.mjs",
+            "--language",
+            "typescript",
+            "--project-dir",
+            ".",
+            "--action",
+            "check"
+          ],
+          "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action check"
+        },
+        {
+          "id": "build",
+          "title": "Unified package build",
+          "required": true,
+          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+          "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
+          "command": "node",
+          "args": [
+            "./bin/publish-core.mjs",
+            "--language",
+            "typescript",
+            "--project-dir",
+            ".",
+            "--action",
+            "build"
+          ],
+          "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action build"
+        }
+      ]
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "low",
-      "nextAction": "skip",
+      "riskLevel": "high",
+      "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
-      "summary": "No actionable changes were detected. No apply or verification step is required.",
+      "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
-        "no-actionable-changes"
+        "backed-up-generated-files",
+        "deleted-generated-files",
+        "manual-review-required",
+        "verification-required"
       ]
     },
-    "backedUpFiles": [],
+    "backedUpFiles": [
+      "src/api/auth.d.ts",
+      "src/api/base.d.ts",
+      "src/api/iam.d.ts",
+      "src/api/index.d.ts",
+      "src/api/oauth.d.ts",
+      "src/api/paths.d.ts",
+      "src/api/system.d.ts",
+      "src/types/appbase-operation-command.d.ts",
+      "src/types/appbase-session-create-command.d.ts",
+      "src/types/common.d.ts",
+      "src/types/field-error.d.ts",
+      "src/types/index.d.ts",
+      "src/types/page-info.d.ts",
+      "src/types/problem-detail.d.ts",
+      "src/types/sdk-work-api-response.d.ts",
+      "src/types/sdk-work-command-data.d.ts",
+      "src/types/sdk-work-command-response.d.ts",
+      "src/types/sdk-work-list-response.d.ts",
+      "src/types/sdk-work-page-data.d.ts",
+      "src/types/sdk-work-platform-error-code.d.ts",
+      "src/types/sdk-work-resource-data.d.ts",
+      "src/types/sdk-work-resource-response.d.ts",
+      "src/types/wechat-mini-program-session-create-command.d.ts"
+    ],
     "preservedLegacyFiles": false
   }
 }
