@@ -6,7 +6,7 @@ use sdkwork_iam_web_adapter::{
     build_web_framework_builder, iam_web_request_context_resolver_from_database_pool_for_audiences,
     IamAuditEmitter, IamSecurityEventEmitter,
 };
-use sdkwork_web_bootstrap::{infra_public_path_prefixes, ComposedApiAssembly};
+use sdkwork_web_bootstrap::{infra_public_path_prefixes, ApiModuleRegistry, ComposedApiAssembly};
 use sdkwork_web_core::HttpRouteManifest;
 
 const APPLICATION_ID: &str = "sdkwork-iam";
@@ -58,8 +58,11 @@ pub async fn build_standalone_runtime() -> Result<StandaloneRuntime, String> {
             )));
     }
 
-    let hosted =
-        ComposedApiAssembly::try_compose("SDKWork IAM API", vec![assembly])?.into_hosted(framework);
+    let mut module_registry = ApiModuleRegistry::new();
+    module_registry.add_modules(vec![assembly]);
+    let hosted = module_registry
+        .try_compose("SDKWork IAM API")?
+        .into_hosted(framework);
 
     Ok(StandaloneRuntime {
         router: hosted.router,

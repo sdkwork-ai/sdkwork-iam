@@ -16,7 +16,7 @@ use sdkwork_iam_embedded_application_bootstrap::{
 };
 use sdkwork_iam_web_adapter::IamAppContextInjector;
 pub use sdkwork_web_bootstrap::ApiAssemblyContribution;
-use sdkwork_web_bootstrap::{ReadinessCheck, ReadinessFuture};
+use sdkwork_web_bootstrap::{ReadinessCheck, ReadinessFuture, WebModule};
 use sdkwork_web_core::HttpRouteManifest;
 
 pub type ApiAssembly = ApiAssemblyContribution;
@@ -254,6 +254,28 @@ fn default_iam_application_root() -> std::path::PathBuf {
                 .map(std::path::Path::to_path_buf)
         })
         .unwrap_or_else(|| std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."))
+}
+
+/// Canonical Web Module definition for this application
+/// (API_ASSEMBLY_SPEC §4.1.1): the complete HTTP surface — every route,
+/// manifest, and OpenAPI document of this owner — as one installable module.
+pub async fn web_module() -> Result<WebModule, String> {
+    Ok(WebModule::from_contribution(
+        assemble_owner_api_surfaces().await?,
+    ))
+}
+
+/// Same as [`web_module`] but composed on a process-shared database pool and
+/// exposing the full owner API surface set (platform gateways,
+/// API_ASSEMBLY_SPEC §4.1.1).
+///
+/// The platform cloud gateway mounts IAM through this factory: it is the only
+/// surface set that carries the foundation `/app/v3/api/iam` contract, and it
+/// reuses the gateway's process pool instead of opening a second one.
+pub async fn web_module_with_pool(pool: DatabasePool) -> Result<WebModule, String> {
+    Ok(WebModule::from_contribution(
+        assemble_owner_api_surfaces_with_pool(pool).await?,
+    ))
 }
 
 #[cfg(test)]

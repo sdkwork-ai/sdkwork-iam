@@ -44,14 +44,8 @@ pub fn apply_management_routes(router: Router<BackendIamState>) -> Router<Backen
             "/backend/v3/api/iam/users/{userId}",
             get(retrieve_user).patch(update_user).delete(delete_user),
         )
-        .route(
-            "/backend/v3/api/iam/users/{userId}/ban",
-            post(ban_user),
-        )
-        .route(
-            "/backend/v3/api/iam/users/{userId}/unban",
-            post(unban_user),
-        )
+        .route("/backend/v3/api/iam/users/{userId}/ban", post(ban_user))
+        .route("/backend/v3/api/iam/users/{userId}/unban", post(unban_user))
         .route(
             "/backend/v3/api/iam/roles",
             get(list_roles).post(create_role),
@@ -327,9 +321,7 @@ async fn set_user_banned_state(
     banned: bool,
 ) -> Response {
     let Ok(pg) = postgres_pool_or_error(state) else {
-        return postgres_pool_or_error(state)
-            .err()
-            .expect("error response");
+        return postgres_pool_or_error(state).err().expect("error response");
     };
     let Ok(tenant_id) = tenant_id_from_context(ctx) else {
         return tenant_id_from_context(ctx).err().expect("error response");
@@ -354,7 +346,11 @@ async fn set_user_banned_state(
         Err(error) => return internal_handler_error("iam_user_ban_failed", error),
     };
     let current_status = target.get::<String, _>(6);
-    let action = if banned { "iam_user.ban" } else { "iam_user.unban" };
+    let action = if banned {
+        "iam_user.ban"
+    } else {
+        "iam_user.unban"
+    };
     let next_status = if banned { "banned" } else { "active" };
     let now = Utc::now().to_rfc3339();
     let detail = json!({
@@ -374,41 +370,43 @@ async fn set_user_banned_state(
         "iam_user",
         user_id_for_tx.clone(),
         detail,
-        |tx| Box::pin(async move {
-            let now = now.clone();
-            let status = sqlx::query(
-                "UPDATE iam_user SET status = $3, updated_at = $4 \
+        |tx| {
+            Box::pin(async move {
+                let now = now.clone();
+                let status = sqlx::query(
+                    "UPDATE iam_user SET status = $3, updated_at = $4 \
                  WHERE tenant_id = $1 AND id = $2 AND COALESCE(is_deleted, 0) = 0",
-            )
-            .bind(&tenant_id_for_tx)
-            .bind(&user_id_for_tx)
-            .bind(&next_status)
-            .bind(&now)
-            .execute(&mut **tx)
-            .await?;
-            if banned {
-                sqlx::query(
-                    "UPDATE iam_session SET revoked_at = $3, updated_at = $3 \
+                )
+                .bind(&tenant_id_for_tx)
+                .bind(&user_id_for_tx)
+                .bind(&next_status)
+                .bind(&now)
+                .execute(&mut **tx)
+                .await?;
+                if banned {
+                    sqlx::query(
+                        "UPDATE iam_session SET revoked_at = $3, updated_at = $3 \
                      WHERE tenant_id = $1 AND principal_kind = 'user' \
                        AND COALESCE(principal_id, user_id) = $2 AND revoked_at IS NULL",
-                )
-                .bind(&tenant_id_for_tx)
-                .bind(&user_id_for_tx)
-                .bind(&now)
-                .execute(&mut **tx)
-                .await?;
-                sqlx::query(
-                    "UPDATE iam_api_key SET status = 'inactive', updated_at = $3 \
+                    )
+                    .bind(&tenant_id_for_tx)
+                    .bind(&user_id_for_tx)
+                    .bind(&now)
+                    .execute(&mut **tx)
+                    .await?;
+                    sqlx::query(
+                        "UPDATE iam_api_key SET status = 'inactive', updated_at = $3 \
                      WHERE tenant_id = $1 AND user_id = $2 AND status = 'active'",
-                )
-                .bind(&tenant_id_for_tx)
-                .bind(&user_id_for_tx)
-                .bind(&now)
-                .execute(&mut **tx)
-                .await?;
-            }
-            Ok(status.rows_affected())
-        }),
+                    )
+                    .bind(&tenant_id_for_tx)
+                    .bind(&user_id_for_tx)
+                    .bind(&now)
+                    .execute(&mut **tx)
+                    .await?;
+                }
+                Ok(status.rows_affected())
+            })
+        },
     )
     .await;
 

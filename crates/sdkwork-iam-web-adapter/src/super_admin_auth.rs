@@ -24,7 +24,8 @@ const BOOTSTRAP_PERMISSIONS: &[&str] = &[
 pub const SDKWORK_USERS_DIR_ENV: &str = "SDKWORK_USERS_DIR";
 pub const SDKWORK_SUPER_ADMIN_PROFILE_ENV: &str = "SDKWORK_SUPER_ADMIN_PROFILE";
 pub const SDKWORK_IAM_BOOTSTRAP_PROFILE_DIR_ENV: &str = "SDKWORK_IAM_BOOTSTRAP_PROFILE_DIR";
-pub const SDKWORK_IAM_BOOTSTRAP_OPERATOR_PROFILE_ENV: &str = "SDKWORK_IAM_BOOTSTRAP_OPERATOR_PROFILE";
+pub const SDKWORK_IAM_BOOTSTRAP_OPERATOR_PROFILE_ENV: &str =
+    "SDKWORK_IAM_BOOTSTRAP_OPERATOR_PROFILE";
 pub const SDKWORK_IAM_SUPER_ADMIN_PASSWORD_ENV: &str = "SDKWORK_IAM_SUPER_ADMIN_PASSWORD";
 pub const SDKWORK_IAM_BOOTSTRAP_PASSWORD_ENV: &str = "SDKWORK_IAM_BOOTSTRAP_PASSWORD";
 const IAM_BOOTSTRAP_PROFILE_DIR_NAME: &str = "iam-bootstrap";
@@ -114,7 +115,9 @@ async fn resolve_super_admin_credentials(
 
     if let Some(stored) = load_super_admin_credentials_from_home()? {
         if stored.password.is_empty() {
-            return Err("bootstrap auth password is empty in ~/.sdkwork/iam-bootstrap profile".to_string());
+            return Err(
+                "bootstrap auth password is empty in ~/.sdkwork/iam-bootstrap profile".to_string(),
+            );
         }
         let account = if crate::is_blank(Some(stored.account.as_str())) {
             load_bootstrap_owner_account(pg).await?
@@ -294,7 +297,9 @@ fn sdkwork_users_dir() -> Result<PathBuf, String> {
     let home = home_directory().ok_or_else(|| {
         "home directory is unavailable; set SDKWORK_USERS_DIR for legacy bootstrap auth profiles".to_string()
     })?;
-    Ok(home.join(".sdkwork").join(IAM_BOOTSTRAP_LEGACY_USERS_DIR_NAME))
+    Ok(home
+        .join(".sdkwork")
+        .join(IAM_BOOTSTRAP_LEGACY_USERS_DIR_NAME))
 }
 
 fn join_windows_user_home(drive: &str, home_path: &str) -> PathBuf {
