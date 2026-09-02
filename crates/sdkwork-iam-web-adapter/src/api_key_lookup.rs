@@ -93,6 +93,9 @@ fn parse_environment(value: &str) -> WebEnvironment {
     match value.trim().to_ascii_lowercase().as_str() {
         "dev" | "development" => WebEnvironment::Dev,
         "test" => WebEnvironment::Test,
+        // Demo is an isolated showcase tier, not production-like: it gets the
+        // relaxed showcase posture instead of production assembly validation.
+        "demo" => WebEnvironment::Test,
         "staging" | "production" | "prod" => WebEnvironment::Prod,
         _ => WebEnvironment::Prod,
     }
