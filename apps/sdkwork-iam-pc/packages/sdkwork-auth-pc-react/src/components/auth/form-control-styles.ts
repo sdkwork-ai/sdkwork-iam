@@ -1,13 +1,22 @@
 import type { CSSProperties } from "react";
 
 export const SDKWORK_AUTH_INPUT_CLASS_NAME =
-  "h-11 rounded-lg border-0 bg-[var(--sdkwork-auth-field-background-color,#f4f4f5)] shadow-none transition-colors text-[var(--sdkwork-auth-field-text-color)] placeholder:text-[var(--sdkwork-auth-field-placeholder-color)] focus-visible:ring-2 focus-visible:ring-primary-500/25 focus-visible:ring-offset-0 dark:bg-zinc-900/70 dark:text-zinc-100 dark:placeholder:text-zinc-400";
+  "h-11 rounded-lg border-0 bg-[var(--sdkwork-auth-field-background-color,#f4f4f5)] shadow-none outline-none transition-colors text-[var(--sdkwork-auth-field-text-color)] placeholder:text-[var(--sdkwork-auth-field-placeholder-color)] focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-zinc-900/70 dark:text-zinc-100 dark:placeholder:text-zinc-400";
 
 export const SDKWORK_AUTH_ICON_INPUT_CLASS_NAME =
-  `${SDKWORK_AUTH_INPUT_CLASS_NAME} pl-10`;
+  "h-11 w-full rounded-none border-0 bg-transparent px-0 py-0 shadow-none outline-none ring-0 ring-offset-0 text-[var(--sdkwork-auth-field-text-color)] placeholder:text-[var(--sdkwork-auth-field-placeholder-color)] focus-visible:ring-0 focus-visible:ring-offset-0";
+
+/**
+ * Icon-input frame class: mirrors the password frame — the frame itself owns
+ * the field surface, so the leading icon slot sits inside the same visual
+ * box as the input (parity with the password field). Borderless by design:
+ * the field is a pure fill surface with no outline and no focus ring.
+ */
+export const SDKWORK_AUTH_ICON_FIELD_FRAME_CLASS_NAME =
+  "grid w-full overflow-hidden rounded-lg border-0 shadow-none outline-none transition-colors";
 
 export const SDKWORK_AUTH_PASSWORD_FRAME_CLASS_NAME =
-  "grid w-full overflow-hidden rounded-lg border-0 bg-[var(--sdkwork-auth-field-background-color,#f4f4f5)] shadow-none transition-colors focus-within:ring-2 focus-within:ring-primary-500/25 focus-within:ring-offset-0 dark:bg-zinc-900/70";
+  "grid w-full overflow-hidden rounded-lg border-0 bg-[var(--sdkwork-auth-field-background-color,#f4f4f5)] shadow-none outline-none transition-colors dark:bg-zinc-900/70";
 
 export const SDKWORK_AUTH_PASSWORD_FRAME_STYLE = {
   alignItems: "center",
@@ -92,6 +101,77 @@ export const SDKWORK_AUTH_INPUT_STYLE = {
   boxShadow: "none",
   color: "var(--sdkwork-auth-field-text-color, #09090b)",
   height: "2.75rem",
+} satisfies CSSProperties;
+
+/**
+ * Icon-input frame: the same flex-slot mechanism the password field uses —
+ * a two-column grid (2.5rem icon slot + fluid input) instead of an
+ * absolutely-positioned icon. Flex centering involves no translate, so it
+ * cannot stack with the Tailwind `-translate-y-1/2` utility (CSS `translate`
+ * property) nor break when the host stylesheet drops the utilities.
+ */
+/**
+ * Icon-input frame: the same flex-slot mechanism the password field uses —
+ * a two-column grid (2.5rem icon slot + fluid input) instead of an
+ * absolutely-positioned icon. The frame paints the field background (like
+ * `SDKWORK_AUTH_PASSWORD_FRAME_STYLE`), so the leading icon renders inside
+ * the same visual box as the input instead of floating beside it. Flex
+ * centering involves no translate, so it cannot stack with the Tailwind
+ * `-translate-y-1/2` utility (CSS `translate` property) nor break when the
+ * host stylesheet drops the utilities.
+ */
+export const SDKWORK_AUTH_ICON_FIELD_FRAME_STYLE = {
+  alignItems: "center",
+  backgroundColor: "var(--sdkwork-auth-field-background-color, #f4f4f5)",
+  borderColor: "transparent",
+  borderRadius: "0.5rem",
+  borderStyle: "solid",
+  borderWidth: "0",
+  boxShadow: "none",
+  display: "grid",
+  gridTemplateColumns: "2.5rem minmax(0, 1fr)",
+  minHeight: "2.75rem",
+  overflow: "hidden",
+  width: "100%",
+} satisfies CSSProperties;
+
+/** Flex centering slot for the leading icon (mirrors the password icon slot). */
+export const SDKWORK_AUTH_ICON_SLOT_STYLE = {
+  alignItems: "center",
+  display: "flex",
+  height: "100%",
+  justifyContent: "center",
+} satisfies CSSProperties;
+
+/** The leading icon glyph itself: sized and muted without utility reliance. */
+export const SDKWORK_AUTH_ICON_GLYPH_STYLE = {
+  color: "var(--sdkwork-auth-icon-muted-color, #71717a)",
+  display: "block",
+  flexShrink: 0,
+  height: "1.25rem",
+  pointerEvents: "none",
+  width: "1.25rem",
+} satisfies CSSProperties;
+
+/**
+ * Icon-input: transparent surface inside the framed field — the frame owns
+ * the background, the icon owns its 2.5rem grid column, and the text inset
+ * is zero (the slot's centering provides the gap) — matching the password
+ * field's zero-padded input in its control column.
+ */
+export const SDKWORK_AUTH_ICON_INPUT_STYLE = {
+  backgroundColor: "transparent",
+  border: "0",
+  borderColor: "transparent",
+  borderRadius: "0",
+  borderStyle: "solid",
+  borderWidth: "0",
+  boxShadow: "none",
+  color: "var(--sdkwork-auth-field-text-color, #09090b)",
+  height: "2.75rem",
+  outline: "none",
+  padding: "0",
+  width: "100%",
 } satisfies CSSProperties;
 
 export const SDKWORK_AUTH_PASSWORD_INPUT_STYLE = {

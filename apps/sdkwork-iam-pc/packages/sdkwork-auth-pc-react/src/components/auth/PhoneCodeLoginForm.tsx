@@ -20,9 +20,13 @@ import {
 import { useSdkworkAuthIntl } from "../../auth-intl.tsx";
 import { SdkworkAuthFieldError } from "./FieldError.tsx";
 import {
+  SDKWORK_AUTH_ICON_FIELD_FRAME_CLASS_NAME,
+  SDKWORK_AUTH_ICON_FIELD_FRAME_STYLE,
+  SDKWORK_AUTH_ICON_GLYPH_STYLE,
   SDKWORK_AUTH_ICON_INPUT_CLASS_NAME,
+  SDKWORK_AUTH_ICON_INPUT_STYLE,
+  SDKWORK_AUTH_ICON_SLOT_STYLE,
   SDKWORK_AUTH_PRIMARY_BUTTON_CLASS_NAME,
-  SDKWORK_AUTH_INPUT_STYLE,
   SDKWORK_AUTH_PRIMARY_BUTTON_STYLE,
 } from "./form-control-styles.ts";
 import { SdkworkVerificationCodeField } from "./VerificationCodeField.tsx";
@@ -136,15 +140,21 @@ export function SdkworkPhoneCodeLoginForm({
         <Label className="text-[var(--sdkwork-auth-label-color)]" htmlFor="sdkwork-auth-phone-code-phone">
           {copy.common.phoneLabel}
         </Label>
-        <div className="relative">
-          <Smartphone className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--sdkwork-auth-icon-muted-color)]" />
+        <div className={SDKWORK_AUTH_ICON_FIELD_FRAME_CLASS_NAME} style={SDKWORK_AUTH_ICON_FIELD_FRAME_STYLE}>
+          <span aria-hidden="true" data-slot="sdkwork-auth-leading-icon-slot" style={SDKWORK_AUTH_ICON_SLOT_STYLE}>
+            <Smartphone
+              aria-hidden="true"
+              className="pointer-events-none h-5 w-5 text-[var(--sdkwork-auth-icon-muted-color)]"
+              style={SDKWORK_AUTH_ICON_GLYPH_STYLE}
+            />
+          </span>
           <Input
             aria-describedby={errors.phone ? "sdkwork-auth-phone-code-phone-error" : undefined}
             aria-invalid={errors.phone ? true : undefined}
             autoComplete="tel"
             className={SDKWORK_AUTH_ICON_INPUT_CLASS_NAME}
             id="sdkwork-auth-phone-code-phone"
-            style={SDKWORK_AUTH_INPUT_STYLE}
+            style={SDKWORK_AUTH_ICON_INPUT_STYLE}
             onChange={(event) => {
               setPhone(event.target.value);
               setErrors((current) => ({

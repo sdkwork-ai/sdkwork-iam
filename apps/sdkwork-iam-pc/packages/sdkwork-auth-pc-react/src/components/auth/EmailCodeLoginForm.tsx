@@ -20,9 +20,13 @@ import {
 import { useSdkworkAuthIntl } from "../../auth-intl.tsx";
 import { SdkworkAuthFieldError } from "./FieldError.tsx";
 import {
+  SDKWORK_AUTH_ICON_FIELD_FRAME_CLASS_NAME,
+  SDKWORK_AUTH_ICON_FIELD_FRAME_STYLE,
+  SDKWORK_AUTH_ICON_GLYPH_STYLE,
   SDKWORK_AUTH_ICON_INPUT_CLASS_NAME,
+  SDKWORK_AUTH_ICON_INPUT_STYLE,
+  SDKWORK_AUTH_ICON_SLOT_STYLE,
   SDKWORK_AUTH_PRIMARY_BUTTON_CLASS_NAME,
-  SDKWORK_AUTH_INPUT_STYLE,
   SDKWORK_AUTH_PRIMARY_BUTTON_STYLE,
 } from "./form-control-styles.ts";
 import { SdkworkVerificationCodeField } from "./VerificationCodeField.tsx";
@@ -136,15 +140,25 @@ export function SdkworkEmailCodeLoginForm({
         <Label className="text-[var(--sdkwork-auth-label-color)]" htmlFor="sdkwork-auth-email-code-email">
           {copy.common.emailLabel}
         </Label>
-        <div className="relative">
-          <Mail className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--sdkwork-auth-icon-muted-color)]" />
+        <div className={SDKWORK_AUTH_ICON_FIELD_FRAME_CLASS_NAME} style={SDKWORK_AUTH_ICON_FIELD_FRAME_STYLE}>
+          <span
+            aria-hidden="true"
+            data-slot="sdkwork-auth-leading-icon-slot"
+            style={SDKWORK_AUTH_ICON_SLOT_STYLE}
+          >
+            <Mail
+              aria-hidden="true"
+              className="pointer-events-none h-5 w-5 text-[var(--sdkwork-auth-icon-muted-color)]"
+              style={SDKWORK_AUTH_ICON_GLYPH_STYLE}
+            />
+          </span>
           <Input
             aria-describedby={errors.email ? "sdkwork-auth-email-code-email-error" : undefined}
             aria-invalid={errors.email ? true : undefined}
             autoComplete="email"
             className={SDKWORK_AUTH_ICON_INPUT_CLASS_NAME}
             id="sdkwork-auth-email-code-email"
-            style={SDKWORK_AUTH_INPUT_STYLE}
+            style={SDKWORK_AUTH_ICON_INPUT_STYLE}
             onChange={(event) => {
               setEmail(event.target.value);
               setErrors((current) => ({

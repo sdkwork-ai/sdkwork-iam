@@ -1766,11 +1766,14 @@ describe("sdkwork-auth-pc-react page", () => {
     expect(emailTab.className).toContain("border-transparent");
     expect(emailTab.className).toContain("sdkwork-auth-tab-button");
 
+    // Icon-frame refactor: the frame owns the rounded surface; the account
+    // input is a borderless, ring-free, square-cornered child of the frame
+    // (parity with the password input).
     const accountInput = screen.getByPlaceholderText(/username/i);
-    expect(accountInput.className).toContain("rounded-lg");
+    expect(accountInput.className).toContain("rounded-none");
     expect(accountInput.className).toContain("border-0");
     expect(accountInput.className).toContain("shadow-none");
-    expect(accountInput.className).toContain("focus-visible:ring-primary-500/25");
+    expect(accountInput.className).toContain("focus-visible:ring-0");
 
     const submitButton = screen.getByRole("button", {
       name: "Sign in",

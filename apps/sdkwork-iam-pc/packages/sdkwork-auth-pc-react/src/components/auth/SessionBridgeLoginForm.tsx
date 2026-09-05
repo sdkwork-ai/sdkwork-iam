@@ -22,9 +22,13 @@ import {
 import { useSdkworkAuthIntl } from "../../auth-intl.tsx";
 import { SdkworkAuthFieldError } from "./FieldError.tsx";
 import {
+  SDKWORK_AUTH_ICON_FIELD_FRAME_CLASS_NAME,
+  SDKWORK_AUTH_ICON_FIELD_FRAME_STYLE,
+  SDKWORK_AUTH_ICON_GLYPH_STYLE,
   SDKWORK_AUTH_ICON_INPUT_CLASS_NAME,
+  SDKWORK_AUTH_ICON_INPUT_STYLE,
+  SDKWORK_AUTH_ICON_SLOT_STYLE,
   SDKWORK_AUTH_PRIMARY_BUTTON_CLASS_NAME,
-  SDKWORK_AUTH_INPUT_STYLE,
   SDKWORK_AUTH_PRIMARY_BUTTON_STYLE,
 } from "./form-control-styles.ts";
 
@@ -113,15 +117,21 @@ export function SdkworkSessionBridgeLoginForm({
         <Label className="text-[var(--sdkwork-auth-label-color)]" htmlFor="sdkwork-auth-session-bridge-email">
           {copy.common.emailLabel}
         </Label>
-        <div className="relative">
-          <Mail className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--sdkwork-auth-icon-muted-color)]" />
+        <div className={SDKWORK_AUTH_ICON_FIELD_FRAME_CLASS_NAME} style={SDKWORK_AUTH_ICON_FIELD_FRAME_STYLE}>
+          <span aria-hidden="true" data-slot="sdkwork-auth-leading-icon-slot" style={SDKWORK_AUTH_ICON_SLOT_STYLE}>
+            <Mail
+              aria-hidden="true"
+              className="pointer-events-none h-5 w-5 text-[var(--sdkwork-auth-icon-muted-color)]"
+              style={SDKWORK_AUTH_ICON_GLYPH_STYLE}
+            />
+          </span>
           <Input
             aria-describedby={errors.email ? "sdkwork-auth-session-bridge-email-error" : undefined}
             aria-invalid={errors.email ? true : undefined}
             autoComplete="email"
             className={SDKWORK_AUTH_ICON_INPUT_CLASS_NAME}
             id="sdkwork-auth-session-bridge-email"
-            style={SDKWORK_AUTH_INPUT_STYLE}
+            style={SDKWORK_AUTH_ICON_INPUT_STYLE}
             onChange={(event) => {
               setEmail(event.target.value);
               setErrors((current) => ({
@@ -142,14 +152,20 @@ export function SdkworkSessionBridgeLoginForm({
 
       <div className="space-y-2">
         <Label className="text-[var(--sdkwork-auth-label-color)]">{copy.common.usernameLabel}</Label>
-        <div className="relative">
-          <UserCircle2 className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--sdkwork-auth-icon-muted-color)]" />
+        <div className={SDKWORK_AUTH_ICON_FIELD_FRAME_CLASS_NAME} style={SDKWORK_AUTH_ICON_FIELD_FRAME_STYLE}>
+          <span aria-hidden="true" data-slot="sdkwork-auth-leading-icon-slot" style={SDKWORK_AUTH_ICON_SLOT_STYLE}>
+            <UserCircle2
+              aria-hidden="true"
+              className="pointer-events-none h-5 w-5 text-[var(--sdkwork-auth-icon-muted-color)]"
+              style={SDKWORK_AUTH_ICON_GLYPH_STYLE}
+            />
+          </span>
           <Input
             autoComplete="nickname"
             className={SDKWORK_AUTH_ICON_INPUT_CLASS_NAME}
             onChange={(event) => setName(event.target.value)}
             placeholder={copy.common.usernamePlaceholder}
-            style={SDKWORK_AUTH_INPUT_STYLE}
+            style={SDKWORK_AUTH_ICON_INPUT_STYLE}
             type="text"
             value={name}
           />
