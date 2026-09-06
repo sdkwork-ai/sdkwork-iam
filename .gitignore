@@ -102,3 +102,4 @@ Thumbs.db
 **/generated/**/obj/Release/
 # Runtime-generated environment configuration
 **/public/runtime-env.json
+/bin/

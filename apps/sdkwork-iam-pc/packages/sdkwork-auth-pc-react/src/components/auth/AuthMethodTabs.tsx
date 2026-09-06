@@ -18,16 +18,16 @@ export function SdkworkAuthMethodTabs({
   onChange,
   value,
 }: SdkworkAuthMethodTabsProps) {
-  const gridClass =
-    items.length <= 1
-      ? "grid-cols-1"
-      : items.length === 2
-        ? "grid-cols-1 sm:grid-cols-2"
-        : "grid-cols-1 sm:grid-cols-3";
+  // The tab row layout is owned by SDKWORK_AUTH_SURFACE_THEME_STYLE through
+  // `.sdkwork-auth-tabs-grid[data-columns]`, not by Tailwind utilities: every
+  // embedding application stacks plugin stylesheets into the same cascade
+  // layer, and a later sheet's plain `.grid-cols-1` declaration beats an
+  // earlier sheet's `sm:grid-cols-*` rule regardless of viewport width.
+  const columns = items.length >= 3 ? 3 : Math.max(items.length, 1);
 
   return (
     <div className="sdkwork-auth-tabs border-b border-[var(--sdkwork-auth-divider-color,rgba(24,24,27,0.08))]">
-      <div className={`grid gap-0 ${gridClass}`}>
+      <div className="sdkwork-auth-tabs-grid" data-columns={columns}>
         {items.map((item) => {
           const isActive = item.value === value;
 

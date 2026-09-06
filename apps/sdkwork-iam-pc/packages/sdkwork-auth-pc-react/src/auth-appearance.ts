@@ -369,6 +369,29 @@ export const SDKWORK_AUTH_SURFACE_THEME_STYLE = `
   background-color: var(--sdkwork-auth-tabs-background-color);
 }
 
+/* The tab row layout lives here, not in Tailwind utilities: embedding hosts
+   stack every plugin's compiled utilities into one shared cascade layer, so a
+   later sheet's plain ".grid-cols-1" declaration would beat this sheet's
+   responsive "sm:grid-cols-*" rules at any viewport width. Unlayered rules
+   injected with the component always win, and data-columns keeps the column
+   count with the rendered tab count. */
+.sdkwork-auth-tabs .sdkwork-auth-tabs-grid {
+  display: grid;
+  gap: 0;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 40rem) {
+  .sdkwork-auth-tabs .sdkwork-auth-tabs-grid[data-columns='2'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sdkwork-auth-tabs .sdkwork-auth-tabs-grid[data-columns='3'],
+  .sdkwork-auth-tabs .sdkwork-auth-tabs-grid[data-columns='4'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .sdkwork-auth-tab-button {
   background-color: transparent;
   color: var(--sdkwork-auth-tab-inactive-text-color);
