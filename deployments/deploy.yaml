@@ -28,6 +28,10 @@ profiles:
         tls: dtupay.com
         mode: api
         web: adaptive
+      - domain: iam-test.noaper.com
+        tls: noaper.com
+        mode: api
+        web: adaptive
       - domain: iam-test.sdkwork.cn
         tls: sdkwork.cn
         mode: api
@@ -38,6 +42,10 @@ profiles:
         web: adaptive
       - domain: iam-test.dtupay.cn
         tls: dtupay.cn
+        mode: api
+        web: adaptive
+      - domain: iam-test.noaper.cn
+        tls: noaper.cn
         mode: api
         web: adaptive
       - domain: iam-test.skubc.com
@@ -107,6 +115,10 @@ profiles:
         tls: dtupay.com
         mode: api
         web: adaptive
+      - domain: iam-staging.noaper.com
+        tls: noaper.com
+        mode: api
+        web: adaptive
       - domain: iam-staging.sdkwork.cn
         tls: sdkwork.cn
         mode: api
@@ -117,6 +129,10 @@ profiles:
         web: adaptive
       - domain: iam-staging.dtupay.cn
         tls: dtupay.cn
+        mode: api
+        web: adaptive
+      - domain: iam-staging.noaper.cn
+        tls: noaper.cn
         mode: api
         web: adaptive
       - domain: iam-staging.skubc.com
@@ -186,6 +202,10 @@ profiles:
         tls: dtupay.com
         mode: api
         web: adaptive
+      - domain: iam.noaper.com
+        tls: noaper.com
+        mode: api
+        web: adaptive
       - domain: iam.sdkwork.cn
         tls: sdkwork.cn
         mode: api
@@ -196,6 +216,10 @@ profiles:
         web: adaptive
       - domain: iam.dtupay.cn
         tls: dtupay.cn
+        mode: api
+        web: adaptive
+      - domain: iam.noaper.cn
+        tls: noaper.cn
         mode: api
         web: adaptive
       - domain: iam.skubc.com
@@ -276,6 +300,11 @@ profiles:
         mode: api
         web: adaptive
         apiPathStyle: full-prefix
+      - domain: iam.noaper.com
+        tls: noaper.com
+        mode: api
+        web: adaptive
+        apiPathStyle: full-prefix
       - domain: iam.sdkwork.cn
         tls: sdkwork.cn
         mode: api
@@ -288,6 +317,11 @@ profiles:
         apiPathStyle: full-prefix
       - domain: iam.dtupay.cn
         tls: dtupay.cn
+        mode: api
+        web: adaptive
+        apiPathStyle: full-prefix
+      - domain: iam.noaper.cn
+        tls: noaper.cn
         mode: api
         web: adaptive
         apiPathStyle: full-prefix
