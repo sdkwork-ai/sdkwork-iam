@@ -10,6 +10,32 @@ import { USER_CENTER_DEPLOYMENT_VARIABLE_NAMES } from "./userCenterDeployment.ts
 import { normalizeUserCenterPath } from "./userCenterStandard.ts";
 import { normalizeUserCenterNamespace } from "./userCenterStorage.ts";
 import { coalesce, defaultIfBlank, isBlank, trim } from "@sdkwork/utils";
+import { readRuntimeEnv, resolveBaseUrl } from "@sdkwork/sdk-common";
+
+/** Single shared API base-url key resolved through `@sdkwork/sdk-common`. */
+const SDKWORK_API_BASE_URL_ENV_KEY = "SDKWORK_API_BASE_URL";
+
+/**
+ * Resolve the shared SDK API base url through `@sdkwork/sdk-common`.
+ *
+ * `SDKWORK_API_BASE_URL` replaces the per-app
+ * `VITE_SDKWORK_<APP>_*_API_BASE_URL` keys. The resolver reads the configured
+ * candidates and picks the API host matching the current page environment +
+ * brand, preferring the current protocol. The generated SDK clients append
+ * their own `/app/v3/api` prefix, so the returned value is a bare origin (path
+ * preservation stays off).
+ *
+ * Returns `undefined` when the shared key is not configured so callers fall
+ * back to their binding-derived base url instead of deriving a host from the
+ * current page location.
+ */
+function resolveSharedSdkApiBaseUrl(): string | undefined {
+  if (!readRuntimeEnv(SDKWORK_API_BASE_URL_ENV_KEY)) {
+    return undefined;
+  }
+
+  return resolveBaseUrl({ envKey: SDKWORK_API_BASE_URL_ENV_KEY }).url || undefined;
+}
 
 type UserCenterRuntimeConfigInputLike = {
   auth?: UserCenterAuthProfileInput;
@@ -230,8 +256,11 @@ export function resolveUserCenterRuntimeConfigInput<T extends UserCenterRuntimeC
   options: T,
   bindings: UserCenterRuntimeBindingOptions,
 ): T {
+  // The shared `SDKWORK_API_BASE_URL` key resolved through `@sdkwork/sdk-common`
+  // wins; the per-app user-center env bindings only survive as a fallback.
   const runtimeAppApiBaseUrl = normalizeRuntimeUrl(
-    readRuntimeValue(USER_CENTER_DEPLOYMENT_VARIABLE_NAMES.appApiBaseUrl, bindings),
+    resolveSharedSdkApiBaseUrl()
+    ?? readRuntimeValue(USER_CENTER_DEPLOYMENT_VARIABLE_NAMES.appApiBaseUrl, bindings),
   );
   const runtimeExternalBaseUrl = normalizeRuntimeUrl(
     readRuntimeValue(USER_CENTER_DEPLOYMENT_VARIABLE_NAMES.externalBaseUrl, bindings),

@@ -19,7 +19,7 @@ import {
   type IamTokenStore,
   type SdkworkIamService,
 } from "@sdkwork/iam-runtime";
-import { createTokenManager } from "@sdkwork/sdk-common";
+import { createTokenManager, readRuntimeEnv, resolveBaseUrl } from "@sdkwork/sdk-common";
 import {
   createSdkworkAppbasePcAuthSessionBridge,
   type CreateSdkworkAppbasePcAuthSessionBridgeOptions,
@@ -33,6 +33,31 @@ import {
   createSdkworkSessionAuthUnauthorizedIntegration,
   type CreateSdkworkSessionAuthUnauthorizedIntegrationOptions,
 } from "./createSdkworkSessionAuthUnauthorizedIntegration.ts";
+
+/** Single shared API base-url key resolved through `@sdkwork/sdk-common`. */
+const SDKWORK_API_BASE_URL_ENV_KEY = "SDKWORK_API_BASE_URL";
+
+/**
+ * Resolve the shared SDK API base url through `@sdkwork/sdk-common`.
+ *
+ * `SDKWORK_API_BASE_URL` replaces the per-app
+ * `VITE_SDKWORK_<APP>_*_API_BASE_URL` keys. The resolver reads the configured
+ * candidates and picks the API host matching the current page environment +
+ * brand, preferring the current protocol. The generated App SDK appends its own
+ * `/app/v3/api` prefix, so the returned value is a bare origin (path
+ * preservation stays off).
+ *
+ * Returns `undefined` when the shared key is not configured so callers fall
+ * back to their config-derived base url instead of deriving a host from the
+ * current page location.
+ */
+function resolveSharedSdkApiBaseUrl(): string | undefined {
+  if (!readRuntimeEnv(SDKWORK_API_BASE_URL_ENV_KEY)) {
+    return undefined;
+  }
+
+  return resolveBaseUrl({ envKey: SDKWORK_API_BASE_URL_ENV_KEY }).url || undefined;
+}
 
 export interface SdkworkAppbasePcAuthRuntimeAppConfig {
   appId: string;
@@ -128,7 +153,11 @@ export function createSdkworkAppbasePcAuthRuntime(
     : undefined;
   const tokenStore = options.tokenStore ?? sessionBridge?.tokenStore ?? createMemoryIamTokenStore();
   const platform = options.app.platform ?? "pc";
-  const appSdkBaseUrl = resolveAppSdkBaseUrl(options.baseUrls.appbaseAppApiBaseUrl);
+  // The shared `SDKWORK_API_BASE_URL` key resolved through `@sdkwork/sdk-common`
+  // wins; the caller-supplied `appbaseAppApiBaseUrl` only survives as a fallback.
+  const appbaseAppApiBaseUrl = resolveSharedSdkApiBaseUrl()
+    ?? options.baseUrls.appbaseAppApiBaseUrl;
+  const appSdkBaseUrl = resolveAppSdkBaseUrl(appbaseAppApiBaseUrl);
   let runtimeForSessionAuth: IamRuntime | undefined;
   const clearRuntimeSession = () => {
     void runtimeForSessionAuth?.clearSession();
@@ -161,7 +190,7 @@ export function createSdkworkAppbasePcAuthRuntime(
       sdkClients,
     },
     config: {
-      appApiBaseUrl: options.baseUrls.appbaseAppApiBaseUrl,
+      appApiBaseUrl: appbaseAppApiBaseUrl,
       appId: options.app.appId,
       deploymentMode: options.app.deploymentMode,
       environment: options.app.environment,

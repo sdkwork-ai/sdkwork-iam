@@ -49,7 +49,7 @@
     "@sdkwork/iam-credential-entry": "workspace:*",
     "@sdkwork/iam-runtime": "workspace:*",
     "@sdkwork/user-center-core-pc-react": "workspace:*",
-    "@sdkwork/sdk-common": "^1.0.2"
+    "@sdkwork/sdk-common": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "catalog:",
