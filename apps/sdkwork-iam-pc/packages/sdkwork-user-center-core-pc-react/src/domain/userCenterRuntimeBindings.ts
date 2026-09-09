@@ -10,7 +10,7 @@ import { USER_CENTER_DEPLOYMENT_VARIABLE_NAMES } from "./userCenterDeployment.ts
 import { normalizeUserCenterPath } from "./userCenterStandard.ts";
 import { normalizeUserCenterNamespace } from "./userCenterStorage.ts";
 import { coalesce, defaultIfBlank, isBlank, trim } from "@sdkwork/utils";
-import { readRuntimeEnv, resolveBaseUrl } from "@sdkwork/sdk-common";
+import {readRuntimeEnv, resolveBaseUrlWithAlignProtocol} from "@sdkwork/sdk-common";
 
 /** Single shared API base-url key resolved through `@sdkwork/sdk-common`. */
 const SDKWORK_API_BASE_URL_ENV_KEY = "SDKWORK_API_BASE_URL";
@@ -34,7 +34,7 @@ function resolveSharedSdkApiBaseUrl(): string | undefined {
     return undefined;
   }
 
-  return resolveBaseUrl({ envKey: SDKWORK_API_BASE_URL_ENV_KEY }).url || undefined;
+  return resolveBaseUrlWithAlignProtocol({ envKey: SDKWORK_API_BASE_URL_ENV_KEY }).url || undefined;
 }
 
 type UserCenterRuntimeConfigInputLike = {

@@ -19,7 +19,7 @@ import {
   type IamTokenStore,
   type SdkworkIamService,
 } from "@sdkwork/iam-runtime";
-import { createTokenManager, readRuntimeEnv, resolveBaseUrl } from "@sdkwork/sdk-common";
+import {createTokenManager, readRuntimeEnv, resolveBaseUrlWithAlignProtocol} from "@sdkwork/sdk-common";
 import {
   createSdkworkAppbasePcAuthSessionBridge,
   type CreateSdkworkAppbasePcAuthSessionBridgeOptions,
@@ -56,7 +56,7 @@ function resolveSharedSdkApiBaseUrl(): string | undefined {
     return undefined;
   }
 
-  return resolveBaseUrl({ envKey: SDKWORK_API_BASE_URL_ENV_KEY }).url || undefined;
+  return resolveBaseUrlWithAlignProtocol({ envKey: SDKWORK_API_BASE_URL_ENV_KEY }).url || undefined;
 }
 
 export interface SdkworkAppbasePcAuthRuntimeAppConfig {
