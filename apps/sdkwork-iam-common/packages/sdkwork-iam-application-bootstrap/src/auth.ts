@@ -145,6 +145,8 @@ export function resolveBootstrapEnvironmentFromEnv(
 ): import("./types.ts").IamApplicationBootstrapEnvironment {
   const primaryDomain = overrides.primaryDomain ?? env.SDKWORK_APP_DOMAIN;
   return {
+    // base-url-check: exempt (Node-side private bootstrap env, §6.1
+    // server/bootstrap credential flow; not a browser base-url resolution)
     backendApiBaseUrl: overrides.backendApiBaseUrl ?? env.SDKWORK_BACKEND_BASE_URL ?? "http://127.0.0.1:8080",
     ...(overrides.deploymentMode !== undefined ? { deploymentMode: overrides.deploymentMode } : {}),
     environment: overrides.environment ?? env.SDKWORK_ENV ?? "dev",

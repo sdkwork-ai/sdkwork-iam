@@ -188,6 +188,8 @@ export async function runRendererDevWithBootstrapCli(argv = process.argv.slice(2
     env.SDKWORK_ACCESS_TOKEN = ensured.token;
   }
 
+  // base-url-check: exempt (dev-server process env for §6.1 credential
+  // bootstrap; browser handoff is the token global, not a base url)
   const backendBaseUrl = env.SDKWORK_BACKEND_BASE_URL;
   const overlayToken = env.SDKWORK_ACCESS_TOKEN
     || readRepoBootstrapAccessToken(bootstrapContext.repoRoot, 'development');

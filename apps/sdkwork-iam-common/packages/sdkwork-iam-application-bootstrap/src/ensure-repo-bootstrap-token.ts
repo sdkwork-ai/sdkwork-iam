@@ -52,6 +52,7 @@ export async function ensureRepoBootstrapAccessToken(
   options: EnsureRepoBootstrapAccessTokenOptions,
 ): Promise<EnsureRepoBootstrapAccessTokenResult> {
   const env = { ...(options.env ?? process.env) };
+  // base-url-check: exempt (Node-side private bootstrap env, §6.1)
   const backendBaseUrl = env.SDKWORK_BACKEND_BASE_URL?.trim();
   const existing = env.SDKWORK_ACCESS_TOKEN?.trim()
     || await readRegisteredBootstrapAccessToken(options.repoRoot, options.environment);
@@ -87,6 +88,7 @@ export async function ensureRepoBootstrapAccessToken(
   if (!backendBaseUrl) {
     return {
       status: "unavailable",
+      // base-url-check: exempt (diagnostic message text, §6.1 Node-side bootstrap)
       reason: "SDKWORK_BACKEND_BASE_URL is required to provision a registered access token",
     };
   }

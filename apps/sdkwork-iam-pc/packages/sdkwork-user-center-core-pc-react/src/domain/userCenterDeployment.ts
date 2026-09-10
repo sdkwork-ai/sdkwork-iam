@@ -19,13 +19,17 @@ import type {
 } from "../types/userCenterTypes.ts";
 import { USER_CENTER_STANDARD_HANDSHAKE_MODE_HEADER_NAME } from "./userCenterStandard.ts";
 
+// base-url-check: exempt (frozen env-variable NAME table for deployment
+// artifact generation; no runtime base-url resolution here, §6.3)
 export const USER_CENTER_DEPLOYMENT_VARIABLE_NAMES = Object.freeze({
   accessTokenHeaderName: "USER_CENTER_ACCESS_TOKEN_HEADER_NAME",
+  // base-url-check: exempt (env-name table for deployment artifact generation)
   appApiBaseUrl: "SDKWORK_USER_CENTER_APP_API_BASE_URL",
   appId: "SDKWORK_USER_CENTER_APP_ID",
   authorizationHeaderName: "SDKWORK_USER_CENTER_AUTHORIZATION_HEADER_NAME",
   authorizationScheme: "SDKWORK_USER_CENTER_AUTHORIZATION_SCHEME",
   databaseUrl: "SDKWORK_DATABASE_URL",
+  // base-url-check: exempt (env-name table for deployment artifact generation)
   externalBaseUrl: "SDKWORK_USER_CENTER_EXTERNAL_BASE_URL",
   externalOrganizationHeaderName: "SDKWORK_USER_CENTER_EXTERNAL_ORGANIZATION_HEADER",
   externalTenantHeaderName: "SDKWORK_USER_CENTER_EXTERNAL_TENANT_HEADER",
