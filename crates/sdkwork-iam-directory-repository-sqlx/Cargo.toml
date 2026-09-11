@@ -1,14 +1,18 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-iam-directory-repository-sqlx"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "SDKWork IAM SQL table catalog and application-root database baseline binding."
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_iam_directory_repository_sqlx"
 path = "src/lib.rs"
 
 [dependencies]
-sdkwork_database_config = { workspace = true }
+sdkwork-database-config = { workspace = true }
 sdkwork_iam_context_service.workspace = true

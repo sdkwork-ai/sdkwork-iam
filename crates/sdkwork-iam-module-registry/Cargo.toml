@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-iam-module-registry"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "IAM module federation discovery, validation, and catalog materialization for SDKWork."
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_iam_module_registry"
 path = "src/lib.rs"

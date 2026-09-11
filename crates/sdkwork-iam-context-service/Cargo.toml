@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-iam-context-service"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "SDKWork canonical IAM domain, context, and dual-token contracts for local/private Rust deployments."
 
+
+[lints]
+workspace = true
 [dependencies]
 sdkwork_utils_rust.workspace = true
 

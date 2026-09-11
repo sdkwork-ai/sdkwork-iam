@@ -19,14 +19,29 @@ members = [
 ]
 
 [workspace.package]
+rust-version = "1.85"
 edition = "2021"
 version = "0.1.0"
 license = "AGPL-3.0-or-later"
 
+[workspace.lints.rust]
+# RUST_CODE_SPEC.md section 13 baseline.
+# Deny-tier lints (unsafe_code, panic, unwrap_used, expect_used, pedantic) are
+# promoted per crate together with their cleanup: enabling them fleet-wide
+# today floods or fails builds that have not paid that debt yet.
+unsafe_op_in_unsafe_fn = "warn"
+trivial_casts = "warn"
+trivial_numeric_casts = "warn"
+
+[workspace.lints.clippy]
+dbg_macro = "warn"
+todo = "warn"
+unimplemented = "warn"
+exit = "warn"
+
 [workspace.dependencies]
 sdkwork-api-iam-assembly = { path = "crates/sdkwork-api-iam-assembly" }
 sdkwork-database-config = { path = "../sdkwork-database/crates/sdkwork-database-config" }
-sdkwork_database_config = { package = "sdkwork-database-config", path = "../sdkwork-database/crates/sdkwork-database-config" }
 async-trait = "0.1"
 axum = { version = "0.8", features = ["ws"] }
 getrandom = "0.2"
@@ -44,7 +59,6 @@ sdkwork-web-contract = { path = "../sdkwork-web-framework/crates/sdkwork-web-con
 sdkwork-web-core = { path = "../sdkwork-web-framework/crates/sdkwork-web-core" }
 sdkwork-web-axum = { path = "../sdkwork-web-framework/crates/sdkwork-web-axum" }
 sdkwork-web-bootstrap = { path = "../sdkwork-web-framework/crates/sdkwork-web-bootstrap" }
-sdkwork_web_bootstrap = { package = "sdkwork-web-bootstrap", path = "../sdkwork-web-framework/crates/sdkwork-web-bootstrap" }
 sdkwork-id-core = { path = "../sdkwork-id/crates/sdkwork-id-core" }
 sdkwork-database-id = { path = "../sdkwork-database/crates/sdkwork-database-id", package = "sdkwork-database-id" }
 sdkwork_rpc_core = { package = "sdkwork-rpc-core-rust", path = "../sdkwork-appbase/crates/sdkwork-rpc-core-rust" }

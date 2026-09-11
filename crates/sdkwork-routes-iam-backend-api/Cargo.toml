@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-routes-iam-backend-api"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "SDKWork IAM backend-api route metadata and fail-closed router for Rust local/private deployments."
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_routes_iam_backend_api"
 path = "src/lib.rs"
@@ -30,7 +34,7 @@ uuid = { version = "1", features = ["v4"] }
 argon2 = "0.5"
 chrono = { workspace = true }
 http-body-util = "0.1"
-sdkwork_database_config = { workspace = true }
+sdkwork-database-config = { workspace = true }
 sdkwork_iam_bootstrap = { workspace = true }
 sdkwork_iam_web_adapter = { workspace = true }
 sqlx = { workspace = true, features = ["postgres", "runtime-tokio"] }

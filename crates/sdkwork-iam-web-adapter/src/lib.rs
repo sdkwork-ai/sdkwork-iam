@@ -329,7 +329,18 @@ fn iam_web_security_policy(environment: &WebEnvironment) -> SecurityPolicy {
             .reject_untrusted_state_changing_origins = false;
         security_policy.cross_site.reject_cookie_auth_without_origin = false;
     }
-    security_policy
+    // CORS_SPEC §5/§6 (`Embedded host`): any process that mounts dependency
+    // routers and must accept the whole fleet's console origins projects the
+    // registered console host pattern into its pipeline policy, not only into
+    // its edge layer. The IAM adapter builds the pipeline security policy for
+    // the platform gateway and every embedded IAM surface, so the pattern has
+    // to be attached here; otherwise the edge admits `http://<label><suffix>.<base>`
+    // while the request-path Cors interceptor rejects the very same origin with
+    // a 40301 `failedStage: cors` problem. A half-configured pattern is
+    // fail-closed at startup per §5.
+    sdkwork_web_bootstrap::with_registered_console_hosts_from_env(security_policy).unwrap_or_else(
+        |error| panic!("IAM Web Framework CORS configuration is invalid: {error}"),
+    )
 }
 
 pub fn build_web_framework_layer<R>(
@@ -604,4 +615,64 @@ fn configure_iam_resolver_for_audiences(
     resolver.try_with_saas_production_claim_policy(
         sdkwork_web_core::JwtProductionClaimPolicy::saas_production(issuers, audiences),
     )
+}
+
+#[cfg(test)]
+mod cors_console_host_tests {
+    use super::iam_web_security_policy;
+    use sdkwork_web_core::WebEnvironment;
+
+    const KEYS: [&str; 4] = [
+        "SDKWORK_CORS_CONSOLE_HOST_LABELS",
+        "SDKWORK_CORS_CONSOLE_HOST_SUFFIX",
+        "SDKWORK_CORS_CONSOLE_HOST_SCHEMES",
+        "SDKWORK_CORS_ALLOWED_ORIGINS",
+    ];
+
+    fn clear() {
+        for key in KEYS {
+            std::env::remove_var(key);
+        }
+    }
+
+    /// CORS_SPEC §5/§6: an embedded host accepts the whole fleet's console
+    /// origins through the registered console host pattern, and never widens
+    /// into an arbitrary sub-domain wildcard.
+    #[test]
+    fn embedded_pipeline_policy_accepts_registered_console_hosts_only() {
+        clear();
+        std::env::set_var("SDKWORK_CORS_CONSOLE_HOST_LABELS", "im,server,account");
+        std::env::set_var("SDKWORK_CORS_CONSOLE_HOST_SUFFIX", "-dev");
+        std::env::set_var("SDKWORK_CORS_CONSOLE_HOST_SCHEMES", "http,https");
+        std::env::set_var(
+            "SDKWORK_CORS_ALLOWED_ORIGINS",
+            "http://localhost:3910,http://127.0.0.1:3910",
+        );
+
+        let policy = iam_web_security_policy(&WebEnvironment::Dev);
+        for allowed in [
+            "http://im-dev.sdkwork.com",
+            "https://im-dev.sdkwork.com",
+            "http://server-dev.sdkwork.com",
+        ] {
+            policy
+                .cors
+                .validate_origin_value(allowed)
+                .unwrap_or_else(|error| panic!("{allowed} must be allowed: {error}"));
+        }
+        for rejected in [
+            "https://evil.example.com",
+            "http://im-dev.sdkwork.com.evil.example.com",
+            "http://im-dev.sdkwork.com:8443",
+            "http://im.sdkwork.com",
+            "http://im-test.sdkwork.com",
+        ] {
+            assert!(
+                policy.cors.validate_origin_value(rejected).is_err(),
+                "{rejected} must stay rejected"
+            );
+        }
+
+        clear();
+    }
 }

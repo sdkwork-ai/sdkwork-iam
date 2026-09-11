@@ -1,10 +1,13 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-iam-rpc-rust"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "SDKWork IAM RPC service manifest and adapter foundation."
 
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_iam_rpc"
 path = "src/lib.rs"

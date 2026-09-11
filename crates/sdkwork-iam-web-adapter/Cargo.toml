@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-iam-web-adapter"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "IAM adapters for sdkwork-web-framework request context pipeline."
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_iam_web_adapter"
 path = "src/lib.rs"

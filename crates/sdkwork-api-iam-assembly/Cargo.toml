@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-api-iam-assembly"
 edition.workspace = true
 license.workspace = true
 version.workspace = true
 description = "Generated API assembly for sdkwork-iam application HTTP plane."
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_api_iam_assembly"
 path = "src/lib.rs"
@@ -12,10 +16,9 @@ path = "src/lib.rs"
 [dependencies]
 axum.workspace = true
 tokio.workspace = true
-sdkwork-web-bootstrap.workspace = true
+sdkwork-web-bootstrap = { workspace = true, features = ["sqlx"] }
 sdkwork-web-core.workspace = true
 serde_json.workspace = true
-sdkwork_web_bootstrap = { workspace = true, features = ["sqlx"] }
 sdkwork-web-contract.workspace = true
 sdkwork_database_sqlx.workspace = true
 sdkwork_iam_database_host = { workspace = true }

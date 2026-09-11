@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-iam-embedded-application-bootstrap"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "Embedded IAM tenant application bootstrap from sdkwork.app.config.json."
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_iam_embedded_application_bootstrap"
 path = "src/lib.rs"

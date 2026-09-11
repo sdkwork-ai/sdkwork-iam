@@ -14,6 +14,7 @@
     "check": "pnpm exec sdkwork-app check",
     "verify": "pnpm exec sdkwork-app verify",
     "check:pagination": "node ../sdkwork-specs/tools/check-pagination.mjs --workspace .",
+    "check:cors-standard": "node ../sdkwork-specs/tools/check-cors-standard.mjs --root .",
     "check:api-envelope": "node ../sdkwork-specs/tools/check-api-response-envelope.mjs --workspace .",
     "check:gateway-assembly": "pnpm run api:assembly:validate",
     "test:rust-workspace": "node scripts/run-rust-workspace-tests.mjs",
@@ -51,7 +52,7 @@
     "admin:iam-modules:reconcile": "node tools/validators/reconcile-iam-module-openapi-permissions.mjs",
     "admin:iam-modules:materialize:manifests": "node tools/generators/materialize-iam-module-manifests.mjs",
     "admin:bootstrap:app": "node scripts/bootstrap/bootstrap-app.mjs",
-    "env:token:ensure": "node scripts/dev/ensure-repo-bootstrap-access-token.mjs",
+    "admin:token:ensure": "node scripts/dev/ensure-repo-bootstrap-access-token.mjs",
     "api:assembly:materialize": "node ../sdkwork-specs/tools/materialize-api-assembly.mjs --root .",
     "api:assembly:validate": "node ../sdkwork-specs/tools/validate-api-assembly.mjs --root .",
     "db:postgres:init": "node ../sdkwork-specs/tools/postgres/postgres-db-cli.mjs --mode init --config .env.postgres --app-root .",
@@ -64,7 +65,7 @@
     "_sdkwork:build": "node scripts/sdkwork-command.mjs build",
     "_sdkwork:test": "node scripts/run-iam-standard-contracts.mjs",
     "_sdkwork:check": "pnpm run check:pnpm-scripts && pnpm run check:structure && pnpm run check:database && pnpm run check:iam-application-bootstrap && pnpm run check:app-composition && pnpm run check:api-envelope && pnpm run check:pagination && pnpm run check:gateway-assembly",
-    "_sdkwork:verify": "pnpm run check:pnpm-scripts && pnpm run check:structure && pnpm run check:database && pnpm run check:iam-application-bootstrap && pnpm run check:app-composition && pnpm run check:api-envelope && pnpm run check:pagination && pnpm run check:gateway-assembly && pnpm run typecheck && pnpm run api:materialize && pnpm run test:governance-node && pnpm run test:rust-workspace",
+    "_sdkwork:verify": "pnpm run check:pnpm-scripts && pnpm run check:structure && pnpm run check:database && pnpm run check:iam-application-bootstrap && pnpm run check:app-composition && pnpm run check:api-envelope && pnpm run check:pagination && pnpm run check:gateway-assembly && pnpm run typecheck && pnpm run api:materialize && pnpm run test:governance-node && pnpm run test:rust-workspace && pnpm check:cors-standard",
     "_sdkwork:clean": "node scripts/sdkwork-command.mjs clean"
   },
   "devDependencies": {

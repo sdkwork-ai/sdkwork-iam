@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-routes-iam-app-api"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "SDKWork canonical IAM HTTP route contracts for Rust local/private deployments."
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_routes_iam_app_api"
 path = "src/lib.rs"

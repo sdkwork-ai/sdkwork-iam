@@ -1188,10 +1188,10 @@ CREATE INDEX IF NOT EXISTS idx_iam_oauth_operational_resource_account
 CREATE INDEX IF NOT EXISTS idx_iam_oauth_operational_resource_target
   ON iam_oauth_operational_resource (tenant_id, target_app_id, target_url_hash, target_path, status);
 
--- source: database/ddl/baseline/postgres/0001_iam_legacy_baseline.sql#drop-legacy-organization-member
+-- source: database/ddl/baseline/postgres/0001_iam_baseline.sql#drop-legacy-organization-member
 DROP TABLE IF EXISTS iam_organization_member;
 
--- source: database/ddl/baseline/postgres/0001_iam_legacy_baseline.sql#user-enhancements
+-- source: database/ddl/baseline/postgres/0001_iam_baseline.sql#user-enhancements
 -- Enhance iam_user with industry-standard security and profile fields
 ALTER TABLE iam_user ADD COLUMN IF NOT EXISTS nickname TEXT;
 ALTER TABLE iam_user ADD COLUMN IF NOT EXISTS given_name TEXT;
@@ -1242,7 +1242,7 @@ WHERE id IN (
 CREATE UNIQUE INDEX IF NOT EXISTS iam_credential_tenant_user_type_unique
     ON iam_credential (tenant_id, user_id, credential_type);
 
--- source: database/ddl/baseline/postgres/0001_iam_legacy_baseline.sql#password-history
+-- source: database/ddl/baseline/postgres/0001_iam_baseline.sql#password-history
 -- Password history table to prevent password reuse
 CREATE TABLE IF NOT EXISTS iam_password_history (
     id TEXT PRIMARY KEY,
@@ -1254,7 +1254,7 @@ CREATE TABLE IF NOT EXISTS iam_password_history (
 
 CREATE INDEX IF NOT EXISTS iam_password_history_user_idx ON iam_password_history (tenant_id, user_id, created_at DESC);
 
--- source: database/ddl/baseline/postgres/0001_iam_legacy_baseline.sql#shared-database-compat
+-- source: database/ddl/baseline/postgres/0001_iam_baseline.sql#shared-database-compat
 -- Bridge sdkwork-cloudrouter-router shared PostgreSQL tables to appbase IAM foundation columns.
 -- This migration must run before appbase foundation indexes are created on existing tables.
 
@@ -1290,7 +1290,7 @@ ALTER TABLE iam_session ADD COLUMN IF NOT EXISTS auth_token_kid TEXT NOT NULL DE
 ALTER TABLE iam_session ADD COLUMN IF NOT EXISTS access_token_kid TEXT NOT NULL DEFAULT '';
 ALTER TABLE iam_session ADD COLUMN IF NOT EXISTS refresh_token_kid TEXT NOT NULL DEFAULT '';
 
--- source: database/ddl/baseline/postgres/0001_iam_legacy_baseline.sql#ephemeral-artifacts
+-- source: database/ddl/baseline/postgres/0001_iam_baseline.sql#ephemeral-artifacts
 CREATE TABLE IF NOT EXISTS iam_ephemeral_artifact (
   artifact_key TEXT PRIMARY KEY,
   tenant_id TEXT NOT NULL,
