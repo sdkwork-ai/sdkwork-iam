@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.database.migration-metadata",
+  "engine": "postgres",
+  "sourcePolicy": "historical-immutable",
+  "migrations": {
+    "0001_oauth_secret_hash_non_unique.up.sql": {
+      "rollback": "down-migration",
+      "correctionReason": "The structured header recorded the down action in prose ('re-creates the unique index (fails if duplicate hashes exist)') instead of a strategy token. The paired 0001_oauth_secret_hash_non_unique.down.sql is a bounded, data-preserving reversal that refuses to apply when duplicate hashes exist rather than losing data, so the machine-readable strategy is down-migration. The migration SQL is unchanged and remains checksum-covered."
+    },
+    "0002_oauth_config_missing_columns.up.sql": {
+      "reversible": "false",
+      "rollback": "forward-fix",
+      "correctionReason": "The structured header recorded 'reversible: true' with a prose rollback, but the paired down migration dropped the columns it added ('drops both columns (loses stored display names and mode registry)'). DATABASE_FRAMEWORK_SPEC.md section 7.1 permits a .down.sql only for a bounded, data-preserving reversal, so the lossy down file was removed and the strategy is recorded as irreversible with a forward-fix rollback. The migration SQL is unchanged and remains checksum-covered."
+    },
+    "0003_core_auth_missing_columns.up.sql": {
+      "reversible": "false",
+      "rollback": "forward-fix",
+      "correctionReason": "The structured header recorded 'reversible: true' with a prose rollback, but the paired down migration dropped all ten columns it added ('drops all ten columns (loses stored verification/lockout/timestamps)'). DATABASE_FRAMEWORK_SPEC.md section 7.1 permits a .down.sql only for a bounded, data-preserving reversal, so the lossy down file was removed and the strategy is recorded as irreversible with a forward-fix rollback. The migration SQL is unchanged and remains checksum-covered."
+    }
+  }
+}
