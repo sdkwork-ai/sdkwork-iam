@@ -17,7 +17,7 @@ Owner: SDKWork maintainers
 ## Local development
 
 ```powershell
-cd E:\sdkwork-space\sdkwork-iam
+cd <workspace-root>/sdkwork-iam
 pnpm install
 pnpm run verify
 ```

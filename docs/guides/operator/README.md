@@ -30,9 +30,9 @@ Database bootstrap allocates a Snowflake `node_id` from `sdkwork_node_registry` 
 ## Verification
 
 ```powershell
-cd E:\sdkwork-space\sdkwork-iam
+cd <workspace-root>/sdkwork-iam
 pnpm run verify
-node E:\sdkwork-space\sdkwork-specs\tools\check-pagination.mjs --workspace E:\sdkwork-space\sdkwork-iam
+node <workspace-root>/sdkwork-specs\tools\check-pagination.mjs --workspace <workspace-root>/sdkwork-iam
 ```
 
 ## Security and tenancy

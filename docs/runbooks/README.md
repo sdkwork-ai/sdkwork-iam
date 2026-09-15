@@ -13,7 +13,7 @@ Operational runbooks for IAM production and staging deployments.
 ## Verification
 
 ```powershell
-cd E:\sdkwork-space\sdkwork-iam
+cd <workspace-root>/sdkwork-iam
 pnpm run verify
 ```
 

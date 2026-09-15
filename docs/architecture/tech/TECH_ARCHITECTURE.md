@@ -89,7 +89,7 @@ PC admin audit visibility: `@sdkwork/iam-pc-admin-audit` (`auditEvents.list`/`re
 ## 7. Verification
 
 ```powershell
-cd E:\sdkwork-space\sdkwork-iam
+cd <workspace-root>/sdkwork-iam
 pnpm run verify
 ```
 

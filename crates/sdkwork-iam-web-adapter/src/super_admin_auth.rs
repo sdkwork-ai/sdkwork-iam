@@ -505,7 +505,7 @@ fn read_env_value(names: &[&str]) -> Option<String> {
     })
 }
 
-#[cfg(test)]
+#[cfg(test)] // WORKSPACE-PATH:allow-fixture-block: this module is the file's #[cfg(test)] unit-test fixture data
 mod tests {
     use super::*;
     use sdkwork_iam_context_service::{DeploymentMode, Environment};

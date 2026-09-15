@@ -1,7 +1,13 @@
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
-const uiPcReactSrc = "E:/sdkwork-space/sdkwork-ui/sdkwork-ui-pc-react/src";
+// `<workspace-root>/sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react/`
+const PACKAGE_DIR = path.dirname(fileURLToPath(import.meta.url));
+
+// `sdkwork-ui` is a sibling repository inside the same relocatable checkout root
+// (five levels up), resolved by position instead of the drive it was authored on.
+const uiPcReactSrc = path.resolve(PACKAGE_DIR, "../../../../..", "sdkwork-ui/sdkwork-ui-pc-react/src");
 
 // Minimal local config so the parity regression test can run on a Windows
 // checkout where the repo-root vitest.config.ts cannot resolve
