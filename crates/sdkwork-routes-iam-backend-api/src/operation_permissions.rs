@@ -29,6 +29,8 @@ enum IamResource {
     SecurityEvents,
     AuditEvents,
     AccountBindingPolicy,
+    ProviderAccounts,
+    ProviderCredentials,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -73,6 +75,13 @@ fn explicit_bootstrap_permission(operation_id: &str) -> Option<&'static str> {
         "accessCredentials.create" => Some("iam.access_credentials.create"),
         "serviceAccounts.credentials.create" => Some("iam.service_account_credentials.create"),
         "serviceAccountCredentials.revoke" => Some("iam.service_account_credentials.revoke"),
+        // Resolution must NOT ride on `iam.provider_accounts.read`: that code is
+        // also matched by read-only wildcards (e.g. `org_auditor` holds `*.read`),
+        // and resolving a *pinned* account id reports the chosen account even when
+        // the caller cannot list it. Tenant/organization scoped accounts must stay
+        // invisible to non-admins (cloud-account-centre §scope-visibility), so
+        // resolution gets its own code held only by consumer/service identities.
+        "providerAccounts.resolve" => Some("iam.provider_accounts.resolve"),
         _ => None,
     }
 }
@@ -103,6 +112,12 @@ fn parse_core_operation(operation_id: &str) -> Option<(IamResource, IamAction)> 
     if parts.len() >= 3 && parts[0] == "tenants" && parts[1] == "members" {
         return Some((IamResource::TenantMembers, parse_action(parts.last()?)?));
     }
+    if parts.len() >= 3 && parts[0] == "providerAccounts" && parts[1] == "credentials" {
+        return Some((
+            IamResource::ProviderCredentials,
+            parse_action(parts.last()?)?,
+        ));
+    }
 
     let action = parse_action(parts.last()?)?;
     let resource = match parts[0] {
@@ -123,6 +138,8 @@ fn parse_core_operation(operation_id: &str) -> Option<(IamResource, IamAction)> 
         "securityEvents" => IamResource::SecurityEvents,
         "auditEvents" => IamResource::AuditEvents,
         "accountBindingPolicy" => IamResource::AccountBindingPolicy,
+        "providerAccounts" => IamResource::ProviderAccounts,
+        "providerCredentials" => IamResource::ProviderCredentials,
         _ => return None,
     };
 
@@ -131,9 +148,13 @@ fn parse_core_operation(operation_id: &str) -> Option<(IamResource, IamAction)> 
 
 fn parse_action(action: &str) -> Option<IamAction> {
     Some(match action {
-        "list" | "retrieve" | "tree" => IamAction::Read,
+        // Generic default for `resolve` is read; `providerAccounts.resolve` is
+        // overridden to a dedicated code in `explicit_bootstrap_permission`
+        // because pinned resolution can name an account the caller cannot list.
+        // `setDefault` mutates the account, so it needs update rights.
+        "list" | "retrieve" | "tree" | "resolve" => IamAction::Read,
         "create" => IamAction::Create,
-        "update" | "ban" | "unban" => IamAction::Update,
+        "update" | "ban" | "unban" | "setDefault" => IamAction::Update,
         "delete" => IamAction::Delete,
         "revoke" => IamAction::Revoke,
         "deactivate" => IamAction::Deactivate,
@@ -219,6 +240,16 @@ fn permission_code(resource: IamResource, action: IamAction) -> &'static str {
         (IamResource::AccountBindingPolicy, IamAction::Update) => {
             "iam.account_binding_policy.update"
         }
+        (IamResource::ProviderAccounts, IamAction::Read) => "iam.provider_accounts.read",
+        (IamResource::ProviderAccounts, IamAction::Create) => "iam.provider_accounts.create",
+        (IamResource::ProviderAccounts, IamAction::Update) => "iam.provider_accounts.update",
+        (IamResource::ProviderAccounts, IamAction::Delete | IamAction::Deactivate) => {
+            "iam.provider_accounts.delete"
+        }
+        (IamResource::ProviderCredentials, IamAction::Read) => "iam.provider_credentials.read",
+        (IamResource::ProviderCredentials, IamAction::Create) => "iam.provider_credentials.create",
+        (IamResource::ProviderCredentials, IamAction::Revoke) => "iam.provider_credentials.revoke",
+        (IamResource::ProviderCredentials, IamAction::Delete) => "iam.provider_credentials.delete",
         _ => "iam.permissions.manage",
     }
 }
@@ -280,6 +311,54 @@ mod tests {
         assert_eq!(
             iam_backend_permission_for_operation("securityEvents.retrieve"),
             Some("iam.security_events.read")
+        );
+    }
+
+    #[test]
+    fn maps_provider_account_operations_to_provider_permissions() {
+        assert_eq!(
+            iam_backend_permission_for_operation("providerAccounts.list"),
+            Some("iam.provider_accounts.read")
+        );
+        assert_eq!(
+            iam_backend_permission_for_operation("providerAccounts.create"),
+            Some("iam.provider_accounts.create")
+        );
+        assert_eq!(
+            iam_backend_permission_for_operation("providerAccounts.update"),
+            Some("iam.provider_accounts.update")
+        );
+        assert_eq!(
+            iam_backend_permission_for_operation("providerAccounts.delete"),
+            Some("iam.provider_accounts.delete")
+        );
+        // Resolution is a *consumer* right, deliberately not a read: a read-only
+        // wildcard such as `*.read` (org_auditor) must not be able to name a
+        // tenant/organization scoped account it cannot list.
+        assert_eq!(
+            iam_backend_permission_for_operation("providerAccounts.resolve"),
+            Some("iam.provider_accounts.resolve")
+        );
+        // Promoting a default mutates the account, so it needs update rights.
+        assert_eq!(
+            iam_backend_permission_for_operation("providerAccounts.setDefault"),
+            Some("iam.provider_accounts.update")
+        );
+    }
+
+    #[test]
+    fn nested_provider_credential_operations_map_to_credential_permissions() {
+        assert_eq!(
+            iam_backend_permission_for_operation("providerAccounts.credentials.list"),
+            Some("iam.provider_credentials.read")
+        );
+        assert_eq!(
+            iam_backend_permission_for_operation("providerAccounts.credentials.create"),
+            Some("iam.provider_credentials.create")
+        );
+        assert_eq!(
+            iam_backend_permission_for_operation("providerCredentials.revoke"),
+            Some("iam.provider_credentials.revoke")
         );
     }
 }

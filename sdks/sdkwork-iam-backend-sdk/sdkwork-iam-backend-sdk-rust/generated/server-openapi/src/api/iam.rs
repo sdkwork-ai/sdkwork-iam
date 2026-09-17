@@ -407,6 +407,94 @@ impl IamApi {
         self.client.patch(&path, Some(body), None, None, Some("application/json")).await
     }
 
+    /// Provider Accounts list.
+    pub async fn provider_accounts_list(&self, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>, vendor_code: Option<&str>, scope_type: Option<&str>, owner_user_id: Option<&str>, organization_id: Option<&str>, status: Option<&str>, mine: Option<bool>, include_platform: Option<bool>) -> Result<SdkWorkPageData, SdkworkError> {
+        let query = build_query_string(&[
+            QueryParameterSpec::new("page", page, "form", true, false, None),
+            QueryParameterSpec::new("page_size", page_size, "form", true, false, None),
+            QueryParameterSpec::new("cursor", cursor, "form", true, false, None),
+            QueryParameterSpec::new("sort", sort, "form", true, false, None),
+            QueryParameterSpec::new("q", q, "form", true, false, None),
+            QueryParameterSpec::new("vendorCode", vendor_code, "form", true, false, None),
+            QueryParameterSpec::new("scopeType", scope_type, "form", true, false, None),
+            QueryParameterSpec::new("ownerUserId", owner_user_id, "form", true, false, None),
+            QueryParameterSpec::new("organizationId", organization_id, "form", true, false, None),
+            QueryParameterSpec::new("status", status, "form", true, false, None),
+            QueryParameterSpec::new("mine", mine, "form", true, false, None),
+            QueryParameterSpec::new("includePlatform", include_platform, "form", true, false, None),
+        ]);
+        let path = append_query_string(backend_path(&"/iam/provider_accounts".to_string()), &query);
+        self.client.get(&path, None, None).await
+    }
+
+    /// Provider Accounts create.
+    pub async fn provider_accounts_create(&self, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&"/iam/provider_accounts".to_string());
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Provider Accounts delete.
+    pub async fn provider_accounts_delete(&self, provider_account_id: &str) -> Result<(), SdkworkError> {
+        let path = backend_path(&format!("/iam/provider_accounts/{}", serialize_path_parameter(provider_account_id, PathParameterSpec::new("providerAccountId", "simple", false))));
+        self.client.delete(&path, None, None).await
+    }
+
+    /// Provider Accounts retrieve.
+    pub async fn provider_accounts_retrieve(&self, provider_account_id: &str) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/provider_accounts/{}", serialize_path_parameter(provider_account_id, PathParameterSpec::new("providerAccountId", "simple", false))));
+        self.client.get(&path, None, None).await
+    }
+
+    /// Provider Accounts update.
+    pub async fn provider_accounts_update(&self, provider_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/provider_accounts/{}", serialize_path_parameter(provider_account_id, PathParameterSpec::new("providerAccountId", "simple", false))));
+        self.client.patch(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Provider Accounts credentials list.
+    pub async fn provider_accounts_credentials_list(&self, provider_account_id: &str, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>) -> Result<SdkWorkPageData, SdkworkError> {
+        let query = build_query_string(&[
+            QueryParameterSpec::new("page", page, "form", true, false, None),
+            QueryParameterSpec::new("page_size", page_size, "form", true, false, None),
+            QueryParameterSpec::new("cursor", cursor, "form", true, false, None),
+            QueryParameterSpec::new("sort", sort, "form", true, false, None),
+            QueryParameterSpec::new("q", q, "form", true, false, None),
+        ]);
+        let path = append_query_string(backend_path(&format!("/iam/provider_accounts/{}/credentials", serialize_path_parameter(provider_account_id, PathParameterSpec::new("providerAccountId", "simple", false)))), &query);
+        self.client.get(&path, None, None).await
+    }
+
+    /// Provider Accounts credentials create.
+    pub async fn provider_accounts_credentials_create(&self, provider_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/provider_accounts/{}/credentials", serialize_path_parameter(provider_account_id, PathParameterSpec::new("providerAccountId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Provider Accounts set Default.
+    pub async fn provider_accounts_set_default(&self, provider_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/provider_accounts/{}/default", serialize_path_parameter(provider_account_id, PathParameterSpec::new("providerAccountId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Provider Accounts resolve.
+    pub async fn provider_accounts_resolve(&self, vendor_code: &str, capability_code: Option<&str>, environment: Option<&str>, user_id: Option<&str>, organization_id: Option<&str>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let query = build_query_string(&[
+            QueryParameterSpec::new("vendorCode", vendor_code, "form", true, false, None),
+            QueryParameterSpec::new("capabilityCode", capability_code, "form", true, false, None),
+            QueryParameterSpec::new("environment", environment, "form", true, false, None),
+            QueryParameterSpec::new("userId", user_id, "form", true, false, None),
+            QueryParameterSpec::new("organizationId", organization_id, "form", true, false, None),
+        ]);
+        let path = append_query_string(backend_path(&"/iam/provider_accounts/resolve".to_string()), &query);
+        self.client.get(&path, None, None).await
+    }
+
+    /// Provider Credentials revoke.
+    pub async fn provider_credentials_revoke(&self, credential_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<SdkWorkCommandData, SdkworkError> {
+        let path = backend_path(&format!("/iam/provider_credentials/{}/revoke", serialize_path_parameter(credential_id, PathParameterSpec::new("credentialId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
     /// Role Bindings list.
     pub async fn role_bindings_list(&self, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>, role_id: Option<&str>, principal_kind: Option<&str>, principal_id: Option<&str>, scope_kind: Option<&str>, scope_id: Option<&str>) -> Result<SdkWorkPageData, SdkworkError> {
         let query = build_query_string(&[
@@ -712,13 +800,14 @@ impl IamApi {
     }
 
     /// Users list.
-    pub async fn users_list(&self, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>) -> Result<SdkWorkPageData, SdkworkError> {
+    pub async fn users_list(&self, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>, status: Option<&str>) -> Result<SdkWorkPageData, SdkworkError> {
         let query = build_query_string(&[
             QueryParameterSpec::new("page", page, "form", true, false, None),
             QueryParameterSpec::new("page_size", page_size, "form", true, false, None),
             QueryParameterSpec::new("cursor", cursor, "form", true, false, None),
             QueryParameterSpec::new("sort", sort, "form", true, false, None),
             QueryParameterSpec::new("q", q, "form", true, false, None),
+            QueryParameterSpec::new("status", status, "form", true, false, None),
         ]);
         let path = append_query_string(backend_path(&"/iam/users".to_string()), &query);
         self.client.get(&path, None, None).await
@@ -746,6 +835,18 @@ impl IamApi {
     pub async fn users_update(&self, user_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = backend_path(&format!("/iam/users/{}", serialize_path_parameter(user_id, PathParameterSpec::new("userId", "simple", false))));
         self.client.patch(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Users ban.
+    pub async fn users_ban(&self, user_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/users/{}/ban", serialize_path_parameter(user_id, PathParameterSpec::new("userId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Users unban.
+    pub async fn users_unban(&self, user_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/users/{}/unban", serialize_path_parameter(user_id, PathParameterSpec::new("userId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
 
 }

@@ -14,6 +14,7 @@ members = [
     "crates/sdkwork-routes-iam-open-api",
     "crates/sdkwork-iam-rpc-rust",
     "crates/sdkwork-iam-directory-repository-sqlx",
+    "crates/sdkwork-iam-provider-account-service",
     "crates/sdkwork-iam-tauri-host",
     "crates/sdkwork-user-center-tauri-host",
 ]
@@ -70,6 +71,7 @@ sdkwork_routes_iam_backend_api = { package = "sdkwork-routes-iam-backend-api", p
 sdkwork_routes_iam_open_api = { package = "sdkwork-routes-iam-open-api", path = "crates/sdkwork-routes-iam-open-api" }
 sdkwork_iam_rpc = { package = "sdkwork-iam-rpc-rust", path = "crates/sdkwork-iam-rpc-rust" }
 sdkwork_iam_directory_repository_sqlx = { package = "sdkwork-iam-directory-repository-sqlx", path = "crates/sdkwork-iam-directory-repository-sqlx" }
+sdkwork_iam_provider_account_service = { package = "sdkwork-iam-provider-account-service", path = "crates/sdkwork-iam-provider-account-service" }
 sdkwork_iam_tauri_host = { package = "sdkwork-iam-tauri-host", path = "crates/sdkwork-iam-tauri-host" }
 sdkwork_user_center_tauri_host = { package = "sdkwork-user-center-tauri-host", path = "crates/sdkwork-user-center-tauri-host" }
 sdkwork_iam_database_host = { package = "sdkwork-iam-database-host", path = "crates/sdkwork-iam-database-host" }

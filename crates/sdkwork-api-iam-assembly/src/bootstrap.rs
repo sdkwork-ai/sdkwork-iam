@@ -73,8 +73,44 @@ pub async fn assemble_owner_api_surfaces() -> Result<ApiAssembly, String> {
 pub async fn assemble_owner_api_surfaces_with_pool(
     pool: DatabasePool,
 ) -> Result<ApiAssembly, String> {
+    assemble_owner_api_surfaces_with_pool_and_module_manifests(pool, &[]).await
+}
+
+/// Assembles all IAM surfaces as one contribution on the caller's process-shared
+/// pool, after materializing the consumer-owned IAM modules named by
+/// `manifest_paths`.
+///
+/// API_ASSEMBLY_SPEC §4.1.1 gives one served owner exactly one contribution, so
+/// a host that serves the whole IAM owner cannot install
+/// [`assemble_app_api_contribution_with_module_manifests`] and
+/// [`assemble_backend_api_contribution_with_pool`] side by side:
+/// `ComposedApiAssembly::try_compose` rejects the second selection of
+/// `sdkwork-iam`. A host that fetched only one of them would leave the other
+/// surface unreachable while its component contract still declares the surface
+/// as served (API_ASSEMBLY_SPEC §6.1) — for the standalone gateway, mounting the
+/// App API alone silently drops the backend cloud account center on
+/// `/backend/v3/api/iam/provider_accounts`. The per-surface entrypoints above
+/// remain for hosts that serve exactly one IAM surface.
+pub async fn assemble_owner_api_surfaces_with_pool_and_module_manifests(
+    pool: DatabasePool,
+    manifest_paths: &[PathBuf],
+) -> Result<ApiAssembly, String> {
     let host = bootstrap_iam_application_state_with_pool(pool).await?;
+    materialize_iam_modules(host.pool(), manifest_paths).await?;
     assemble_owner_api_surfaces_with_host(host).await
+}
+
+/// Materializes the consumer-owned IAM modules into the shared IAM catalog.
+///
+/// An empty `manifest_paths` is a no-op, which is why the per-surface App API
+/// entrypoint can share this with the whole-owner entrypoint.
+async fn materialize_iam_modules(
+    pool: &DatabasePool,
+    manifest_paths: &[PathBuf],
+) -> Result<(), String> {
+    sdkwork_iam_database_host::materialize_iam_application_modules(pool, manifest_paths)
+        .await
+        .map_err(|error| format!("materialize consumer IAM modules failed: {error}"))
 }
 
 /// Runs the IAM-owned database lifecycle on the caller's process-shared pool
@@ -147,9 +183,7 @@ async fn assemble_app_api_contribution_with_host(
     host: IamDatabaseHost,
     manifest_paths: &[PathBuf],
 ) -> Result<ApiAssemblyContribution, String> {
-    sdkwork_iam_database_host::materialize_iam_application_modules(host.pool(), manifest_paths)
-        .await
-        .map_err(|error| format!("materialize consumer IAM modules failed: {error}"))?;
+    materialize_iam_modules(host.pool(), manifest_paths).await?;
     let route_manifest = sdkwork_routes_iam_app_api::iam_app_api_route_manifest();
     let router =
         sdkwork_routes_iam_app_api::build_sdkwork_iam_app_api_business_router_with_initialized_pool(

@@ -14,25 +14,25 @@ public class IamApi {
     }
 
     /** Access Credentials create. */
-    public AppbaseApiResult accessCredentialsCreate(AppbaseAccessCredentialCreateCommand body) throws Exception {
-        Object raw = client.post(ApiPaths.backendPath("/iam/access_credentials"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public SdkWorkResourceResponse accessCredentialsCreate(AppbaseAccessCredentialCreateCommand body) throws Exception {
+        Object raw = client.request("POST", ApiPaths.backendPath("/iam/access_credentials"), body, null, null, "application/json", true, false);
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Account Binding Policy retrieve. */
-    public AppbaseApiResult accountBindingPolicyRetrieve() throws Exception {
+    public SdkWorkResourceResponse accountBindingPolicyRetrieve() throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/account_binding_policy"));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Account Binding Policy update. */
-    public AppbaseApiResult accountBindingPolicyUpdate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse accountBindingPolicyUpdate(Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/account_binding_policy"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Api Keys list. */
-    public AppbaseApiResult apiKeysList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse apiKeysList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -41,23 +41,23 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/api_keys"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Api Keys revoke. */
-    public AppbaseApiResult apiKeysRevoke(String apiKeyId, Map<String, Object> body) throws Exception {
+    public SdkWorkCommandResponse apiKeysRevoke(String apiKeyId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/api_keys/" + serializePathParameter(apiKeyId, new PathParameterSpec("apiKeyId", "simple", false)) + "/revoke"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
     }
 
     /** Applications register. */
-    public AppbaseApiResult applicationsRegister(AppbaseApplicationRegisterCommand body) throws Exception {
-        Object raw = client.post(ApiPaths.backendPath("/iam/applications/register"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public SdkWorkCommandResponse applicationsRegister(AppbaseApplicationRegisterCommand body) throws Exception {
+        Object raw = client.request("POST", ApiPaths.backendPath("/iam/applications/register"), body, null, null, "application/json", true, false);
+        return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
     }
 
     /** Audit Events list. */
-    public AppbaseApiResult auditEventsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse auditEventsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -66,11 +66,17 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/audit_events"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
+    }
+
+    /** Audit Events retrieve. */
+    public SdkWorkResourceResponse auditEventsRetrieve(String auditEventId) throws Exception {
+        Object raw = client.get(ApiPaths.backendPath("/iam/audit_events/" + serializePathParameter(auditEventId, new PathParameterSpec("auditEventId", "simple", false)) + ""));
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Department Assignments list. */
-    public AppbaseApiResult departmentAssignmentsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse departmentAssignmentsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -79,23 +85,23 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/department_assignments"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Department Assignments create. */
-    public AppbaseApiResult departmentAssignmentsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse departmentAssignmentsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/department_assignments"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Department Assignments update. */
-    public AppbaseApiResult departmentAssignmentsUpdate(String assignmentId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse departmentAssignmentsUpdate(String assignmentId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/department_assignments/" + serializePathParameter(assignmentId, new PathParameterSpec("assignmentId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Departments list. */
-    public AppbaseApiResult departmentsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse departmentsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -104,41 +110,41 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/departments"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Departments create. */
-    public AppbaseApiResult departmentsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse departmentsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/departments"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Departments delete. */
-    public AppbaseApiResult departmentsDelete(String departmentId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/departments/" + serializePathParameter(departmentId, new PathParameterSpec("departmentId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void departmentsDelete(String departmentId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/departments/" + serializePathParameter(departmentId, new PathParameterSpec("departmentId", "simple", false)) + ""));
+        return null;
     }
 
     /** Departments retrieve. */
-    public AppbaseApiResult departmentsRetrieve(String departmentId) throws Exception {
+    public SdkWorkResourceResponse departmentsRetrieve(String departmentId) throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/departments/" + serializePathParameter(departmentId, new PathParameterSpec("departmentId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Departments update. */
-    public AppbaseApiResult departmentsUpdate(String departmentId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse departmentsUpdate(String departmentId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/departments/" + serializePathParameter(departmentId, new PathParameterSpec("departmentId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Departments tree retrieve. */
-    public AppbaseApiResult departmentsTreeRetrieve() throws Exception {
+    public SdkWorkResourceResponse departmentsTreeRetrieve() throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/departments/tree"));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Groups list. */
-    public AppbaseApiResult groupsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse groupsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -147,35 +153,35 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/groups"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Groups create. */
-    public AppbaseApiResult groupsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse groupsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/groups"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Groups delete. */
-    public AppbaseApiResult groupsDelete(String groupId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/groups/" + serializePathParameter(groupId, new PathParameterSpec("groupId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void groupsDelete(String groupId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/groups/" + serializePathParameter(groupId, new PathParameterSpec("groupId", "simple", false)) + ""));
+        return null;
     }
 
     /** Groups retrieve. */
-    public AppbaseApiResult groupsRetrieve(String groupId) throws Exception {
+    public SdkWorkResourceResponse groupsRetrieve(String groupId) throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/groups/" + serializePathParameter(groupId, new PathParameterSpec("groupId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Groups update. */
-    public AppbaseApiResult groupsUpdate(String groupId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse groupsUpdate(String groupId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/groups/" + serializePathParameter(groupId, new PathParameterSpec("groupId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Groups members list. */
-    public AppbaseApiResult groupsMembersList(String groupId, Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse groupsMembersList(String groupId, Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -184,23 +190,23 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/groups/" + serializePathParameter(groupId, new PathParameterSpec("groupId", "simple", false)) + "/members"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Groups members create. */
-    public AppbaseApiResult groupsMembersCreate(String groupId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse groupsMembersCreate(String groupId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/groups/" + serializePathParameter(groupId, new PathParameterSpec("groupId", "simple", false)) + "/members"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Groups members delete. */
-    public AppbaseApiResult groupsMembersDelete(String groupId, String memberId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/groups/" + serializePathParameter(groupId, new PathParameterSpec("groupId", "simple", false)) + "/members/" + serializePathParameter(memberId, new PathParameterSpec("memberId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void groupsMembersDelete(String groupId, String memberId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/groups/" + serializePathParameter(groupId, new PathParameterSpec("groupId", "simple", false)) + "/members/" + serializePathParameter(memberId, new PathParameterSpec("memberId", "simple", false)) + ""));
+        return null;
     }
 
     /** Organization Memberships list. */
-    public AppbaseApiResult organizationMembershipsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse organizationMembershipsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -209,23 +215,23 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/organization_memberships"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Organization Memberships create. */
-    public AppbaseApiResult organizationMembershipsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse organizationMembershipsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/organization_memberships"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Organization Memberships update. */
-    public AppbaseApiResult organizationMembershipsUpdate(String membershipId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse organizationMembershipsUpdate(String membershipId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/organization_memberships/" + serializePathParameter(membershipId, new PathParameterSpec("membershipId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Organizations list. */
-    public AppbaseApiResult organizationsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse organizationsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -234,41 +240,41 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/organizations"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Organizations create. */
-    public AppbaseApiResult organizationsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse organizationsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/organizations"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Organizations delete. */
-    public AppbaseApiResult organizationsDelete(String organizationId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/organizations/" + serializePathParameter(organizationId, new PathParameterSpec("organizationId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void organizationsDelete(String organizationId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/organizations/" + serializePathParameter(organizationId, new PathParameterSpec("organizationId", "simple", false)) + ""));
+        return null;
     }
 
     /** Organizations retrieve. */
-    public AppbaseApiResult organizationsRetrieve(String organizationId) throws Exception {
+    public SdkWorkResourceResponse organizationsRetrieve(String organizationId) throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/organizations/" + serializePathParameter(organizationId, new PathParameterSpec("organizationId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Organizations update. */
-    public AppbaseApiResult organizationsUpdate(String organizationId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse organizationsUpdate(String organizationId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/organizations/" + serializePathParameter(organizationId, new PathParameterSpec("organizationId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Organizations tree retrieve. */
-    public AppbaseApiResult organizationsTreeRetrieve() throws Exception {
+    public SdkWorkResourceResponse organizationsTreeRetrieve() throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/organizations/tree"));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Permissions list. */
-    public AppbaseApiResult permissionsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse permissionsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -277,35 +283,35 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/permissions"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Permissions create. */
-    public AppbaseApiResult permissionsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse permissionsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/permissions"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Permissions delete. */
-    public AppbaseApiResult permissionsDelete(String permissionId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/permissions/" + serializePathParameter(permissionId, new PathParameterSpec("permissionId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void permissionsDelete(String permissionId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/permissions/" + serializePathParameter(permissionId, new PathParameterSpec("permissionId", "simple", false)) + ""));
+        return null;
     }
 
     /** Permissions retrieve. */
-    public AppbaseApiResult permissionsRetrieve(String permissionId) throws Exception {
+    public SdkWorkResourceResponse permissionsRetrieve(String permissionId) throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/permissions/" + serializePathParameter(permissionId, new PathParameterSpec("permissionId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Permissions update. */
-    public AppbaseApiResult permissionsUpdate(String permissionId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse permissionsUpdate(String permissionId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/permissions/" + serializePathParameter(permissionId, new PathParameterSpec("permissionId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Policies list. */
-    public AppbaseApiResult policiesList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse policiesList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -314,35 +320,35 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/policies"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Policies create. */
-    public AppbaseApiResult policiesCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse policiesCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/policies"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Policies delete. */
-    public AppbaseApiResult policiesDelete(String policyId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/policies/" + serializePathParameter(policyId, new PathParameterSpec("policyId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void policiesDelete(String policyId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/policies/" + serializePathParameter(policyId, new PathParameterSpec("policyId", "simple", false)) + ""));
+        return null;
     }
 
     /** Policies retrieve. */
-    public AppbaseApiResult policiesRetrieve(String policyId) throws Exception {
+    public SdkWorkResourceResponse policiesRetrieve(String policyId) throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/policies/" + serializePathParameter(policyId, new PathParameterSpec("policyId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Policies update. */
-    public AppbaseApiResult policiesUpdate(String policyId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse policiesUpdate(String policyId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/policies/" + serializePathParameter(policyId, new PathParameterSpec("policyId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Position Assignments list. */
-    public AppbaseApiResult positionAssignmentsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse positionAssignmentsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -351,23 +357,23 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/position_assignments"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Position Assignments create. */
-    public AppbaseApiResult positionAssignmentsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse positionAssignmentsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/position_assignments"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Position Assignments update. */
-    public AppbaseApiResult positionAssignmentsUpdate(String assignmentId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse positionAssignmentsUpdate(String assignmentId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/position_assignments/" + serializePathParameter(assignmentId, new PathParameterSpec("assignmentId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Positions list. */
-    public AppbaseApiResult positionsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse positionsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -376,29 +382,73 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/positions"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Positions create. */
-    public AppbaseApiResult positionsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse positionsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/positions"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Positions delete. */
-    public AppbaseApiResult positionsDelete(String positionId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/positions/" + serializePathParameter(positionId, new PathParameterSpec("positionId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void positionsDelete(String positionId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/positions/" + serializePathParameter(positionId, new PathParameterSpec("positionId", "simple", false)) + ""));
+        return null;
     }
 
     /** Positions update. */
-    public AppbaseApiResult positionsUpdate(String positionId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse positionsUpdate(String positionId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/positions/" + serializePathParameter(positionId, new PathParameterSpec("positionId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Role Bindings list. */
-    public AppbaseApiResult roleBindingsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    /** Provider Accounts list. */
+    public SdkWorkListResponse providerAccountsList(Integer page, Integer pageSize, String cursor, String sort, String q, String vendorCode, String scopeType, String ownerUserId, String organizationId, String status, Boolean mine, Boolean includePlatform) throws Exception {
+        String query = buildQueryString(List.of(
+            new QueryParameterSpec("page", page, "form", true, false, null),
+            new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
+            new QueryParameterSpec("cursor", cursor, "form", true, false, null),
+            new QueryParameterSpec("sort", sort, "form", true, false, null),
+            new QueryParameterSpec("q", q, "form", true, false, null),
+            new QueryParameterSpec("vendorCode", vendorCode, "form", true, false, null),
+            new QueryParameterSpec("scopeType", scopeType, "form", true, false, null),
+            new QueryParameterSpec("ownerUserId", ownerUserId, "form", true, false, null),
+            new QueryParameterSpec("organizationId", organizationId, "form", true, false, null),
+            new QueryParameterSpec("status", status, "form", true, false, null),
+            new QueryParameterSpec("mine", mine, "form", true, false, null),
+            new QueryParameterSpec("includePlatform", includePlatform, "form", true, false, null)
+        ));
+        Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/provider_accounts"), query));
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
+    }
+
+    /** Provider Accounts create. */
+    public SdkWorkResourceResponse providerAccountsCreate(Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/provider_accounts"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Provider Accounts delete. */
+    public Void providerAccountsDelete(String providerAccountId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/provider_accounts/" + serializePathParameter(providerAccountId, new PathParameterSpec("providerAccountId", "simple", false)) + ""));
+        return null;
+    }
+
+    /** Provider Accounts retrieve. */
+    public SdkWorkResourceResponse providerAccountsRetrieve(String providerAccountId) throws Exception {
+        Object raw = client.get(ApiPaths.backendPath("/iam/provider_accounts/" + serializePathParameter(providerAccountId, new PathParameterSpec("providerAccountId", "simple", false)) + ""));
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Provider Accounts update. */
+    public SdkWorkResourceResponse providerAccountsUpdate(String providerAccountId, Map<String, Object> body) throws Exception {
+        Object raw = client.patch(ApiPaths.backendPath("/iam/provider_accounts/" + serializePathParameter(providerAccountId, new PathParameterSpec("providerAccountId", "simple", false)) + ""), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Provider Accounts credentials list. */
+    public SdkWorkListResponse providerAccountsCredentialsList(String providerAccountId, Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -406,24 +456,73 @@ public class IamApi {
             new QueryParameterSpec("sort", sort, "form", true, false, null),
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
+        Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/provider_accounts/" + serializePathParameter(providerAccountId, new PathParameterSpec("providerAccountId", "simple", false)) + "/credentials"), query));
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
+    }
+
+    /** Provider Accounts credentials create. */
+    public SdkWorkResourceResponse providerAccountsCredentialsCreate(String providerAccountId, Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/provider_accounts/" + serializePathParameter(providerAccountId, new PathParameterSpec("providerAccountId", "simple", false)) + "/credentials"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Provider Accounts set Default. */
+    public SdkWorkResourceResponse providerAccountsSetDefault(String providerAccountId, Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/provider_accounts/" + serializePathParameter(providerAccountId, new PathParameterSpec("providerAccountId", "simple", false)) + "/default"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Provider Accounts resolve. */
+    public SdkWorkResourceResponse providerAccountsResolve(String vendorCode, String capabilityCode, String environment, String userId, String organizationId) throws Exception {
+        String query = buildQueryString(List.of(
+            new QueryParameterSpec("vendorCode", vendorCode, "form", true, false, null),
+            new QueryParameterSpec("capabilityCode", capabilityCode, "form", true, false, null),
+            new QueryParameterSpec("environment", environment, "form", true, false, null),
+            new QueryParameterSpec("userId", userId, "form", true, false, null),
+            new QueryParameterSpec("organizationId", organizationId, "form", true, false, null)
+        ));
+        Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/provider_accounts/resolve"), query));
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Provider Credentials revoke. */
+    public SdkWorkCommandResponse providerCredentialsRevoke(String credentialId, Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/provider_credentials/" + serializePathParameter(credentialId, new PathParameterSpec("credentialId", "simple", false)) + "/revoke"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
+    }
+
+    /** Role Bindings list. */
+    public SdkWorkListResponse roleBindingsList(Integer page, Integer pageSize, String cursor, String sort, String q, String roleId, String principalKind, String principalId, String scopeKind, String scopeId) throws Exception {
+        String query = buildQueryString(List.of(
+            new QueryParameterSpec("page", page, "form", true, false, null),
+            new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
+            new QueryParameterSpec("cursor", cursor, "form", true, false, null),
+            new QueryParameterSpec("sort", sort, "form", true, false, null),
+            new QueryParameterSpec("q", q, "form", true, false, null),
+            new QueryParameterSpec("roleId", roleId, "form", true, false, null),
+            new QueryParameterSpec("principalKind", principalKind, "form", true, false, null),
+            new QueryParameterSpec("principalId", principalId, "form", true, false, null),
+            new QueryParameterSpec("scopeKind", scopeKind, "form", true, false, null),
+            new QueryParameterSpec("scopeId", scopeId, "form", true, false, null)
+        ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/role_bindings"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Role Bindings create. */
-    public AppbaseApiResult roleBindingsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse roleBindingsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/role_bindings"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Role Bindings delete. */
-    public AppbaseApiResult roleBindingsDelete(String roleBindingId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/role_bindings/" + serializePathParameter(roleBindingId, new PathParameterSpec("roleBindingId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void roleBindingsDelete(String roleBindingId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/role_bindings/" + serializePathParameter(roleBindingId, new PathParameterSpec("roleBindingId", "simple", false)) + ""));
+        return null;
     }
 
     /** Roles list. */
-    public AppbaseApiResult rolesList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse rolesList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -432,35 +531,35 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/roles"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Roles create. */
-    public AppbaseApiResult rolesCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse rolesCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/roles"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Roles delete. */
-    public AppbaseApiResult rolesDelete(String roleId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/roles/" + serializePathParameter(roleId, new PathParameterSpec("roleId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void rolesDelete(String roleId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/roles/" + serializePathParameter(roleId, new PathParameterSpec("roleId", "simple", false)) + ""));
+        return null;
     }
 
     /** Roles retrieve. */
-    public AppbaseApiResult rolesRetrieve(String roleId) throws Exception {
+    public SdkWorkResourceResponse rolesRetrieve(String roleId) throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/roles/" + serializePathParameter(roleId, new PathParameterSpec("roleId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Roles update. */
-    public AppbaseApiResult rolesUpdate(String roleId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse rolesUpdate(String roleId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/roles/" + serializePathParameter(roleId, new PathParameterSpec("roleId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Roles permissions list. */
-    public AppbaseApiResult rolesPermissionsList(String roleId, Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse rolesPermissionsList(String roleId, Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -469,23 +568,23 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/roles/" + serializePathParameter(roleId, new PathParameterSpec("roleId", "simple", false)) + "/permissions"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Roles permissions create. */
-    public AppbaseApiResult rolesPermissionsCreate(String roleId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse rolesPermissionsCreate(String roleId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/roles/" + serializePathParameter(roleId, new PathParameterSpec("roleId", "simple", false)) + "/permissions"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Roles permissions delete. */
-    public AppbaseApiResult rolesPermissionsDelete(String roleId, String permissionId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/roles/" + serializePathParameter(roleId, new PathParameterSpec("roleId", "simple", false)) + "/permissions/" + serializePathParameter(permissionId, new PathParameterSpec("permissionId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void rolesPermissionsDelete(String roleId, String permissionId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/roles/" + serializePathParameter(roleId, new PathParameterSpec("roleId", "simple", false)) + "/permissions/" + serializePathParameter(permissionId, new PathParameterSpec("permissionId", "simple", false)) + ""));
+        return null;
     }
 
     /** Security Events list. */
-    public AppbaseApiResult securityEventsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse securityEventsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -494,11 +593,29 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/security_events"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
+    }
+
+    /** Security Events retrieve. */
+    public SdkWorkResourceResponse securityEventsRetrieve(String securityEventId) throws Exception {
+        Object raw = client.get(ApiPaths.backendPath("/iam/security_events/" + serializePathParameter(securityEventId, new PathParameterSpec("securityEventId", "simple", false)) + ""));
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Service Account Credentials revoke. */
+    public SdkWorkCommandResponse serviceAccountCredentialsRevoke(String credentialId, ServiceAccountCredentialRevokeCommand body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/service_account_credentials/" + serializePathParameter(credentialId, new PathParameterSpec("credentialId", "simple", false)) + "/revoke"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
+    }
+
+    /** Service Account Tokens create. */
+    public SdkWorkResourceResponse serviceAccountTokensCreate(ServiceAccountTokenExchangeCommand body) throws Exception {
+        Object raw = client.request("POST", ApiPaths.backendPath("/iam/service_account_tokens"), body, null, null, "application/json", true, false);
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Service Accounts list. */
-    public AppbaseApiResult serviceAccountsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse serviceAccountsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -507,53 +624,65 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/service_accounts"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Service Accounts create. */
-    public AppbaseApiResult serviceAccountsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse serviceAccountsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/service_accounts"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Service Accounts delete. */
-    public AppbaseApiResult serviceAccountsDelete(String serviceAccountId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/service_accounts/" + serializePathParameter(serviceAccountId, new PathParameterSpec("serviceAccountId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void serviceAccountsDelete(String serviceAccountId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/service_accounts/" + serializePathParameter(serviceAccountId, new PathParameterSpec("serviceAccountId", "simple", false)) + ""));
+        return null;
     }
 
     /** Service Accounts retrieve. */
-    public AppbaseApiResult serviceAccountsRetrieve(String serviceAccountId) throws Exception {
+    public SdkWorkResourceResponse serviceAccountsRetrieve(String serviceAccountId) throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/service_accounts/" + serializePathParameter(serviceAccountId, new PathParameterSpec("serviceAccountId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Service Accounts update. */
-    public AppbaseApiResult serviceAccountsUpdate(String serviceAccountId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse serviceAccountsUpdate(String serviceAccountId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/service_accounts/" + serializePathParameter(serviceAccountId, new PathParameterSpec("serviceAccountId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Tenant Applications provision. */
-    public AppbaseApiResult tenantApplicationsProvision(AppbaseTenantApplicationProvisionCommand body) throws Exception {
-        Object raw = client.post(ApiPaths.backendPath("/iam/tenant_applications"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    /** Service Accounts credentials create. */
+    public SdkWorkResourceResponse serviceAccountsCredentialsCreate(String serviceAccountId, ServiceAccountCredentialCreateCommand body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/service_accounts/" + serializePathParameter(serviceAccountId, new PathParameterSpec("serviceAccountId", "simple", false)) + "/credentials"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Tenant Applications create. */
+    public SdkWorkResourceResponse tenantApplicationsCreate(AppbaseTenantApplicationProvisionCommand body) throws Exception {
+        Object raw = client.request("POST", ApiPaths.backendPath("/iam/tenant_applications"), body, null, null, "application/json", true, false);
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Tenant Applications retrieve. */
+    public SdkWorkResourceResponse tenantApplicationsRetrieve(String tenantApplicationId) throws Exception {
+        Object raw = client.get(ApiPaths.backendPath("/iam/tenant_applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + ""));
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Tenant Applications update. */
-    public AppbaseApiResult tenantApplicationsUpdate(String tenantApplicationId, AppbaseTenantApplicationUpdateCommand body) throws Exception {
-        Object raw = client.patch(ApiPaths.backendPath("/iam/tenant_applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public SdkWorkResourceResponse tenantApplicationsUpdate(String tenantApplicationId, AppbaseTenantApplicationUpdateCommand body) throws Exception {
+        Object raw = client.request("PATCH", ApiPaths.backendPath("/iam/tenant_applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + ""), body, null, null, "application/json", true, false);
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Tenant Applications enable. */
-    public AppbaseApiResult tenantApplicationsEnable(String tenantApplicationId, AppbaseTenantApplicationEnableCommand body) throws Exception {
-        Object raw = client.post(ApiPaths.backendPath("/iam/tenant_applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + "/enable"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public SdkWorkCommandResponse tenantApplicationsEnable(String tenantApplicationId, AppbaseTenantApplicationEnableCommand body) throws Exception {
+        Object raw = client.request("POST", ApiPaths.backendPath("/iam/tenant_applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + "/enable"), body, null, null, "application/json", true, false);
+        return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
     }
 
     /** Tenants list. */
-    public AppbaseApiResult tenantsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse tenantsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -562,35 +691,81 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/tenants"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Tenants create. */
-    public AppbaseApiResult tenantsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse tenantsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/tenants"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Tenants delete. */
-    public AppbaseApiResult tenantsDelete(String tenantId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void tenantsDelete(String tenantId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + ""));
+        return null;
     }
 
     /** Tenants retrieve. */
-    public AppbaseApiResult tenantsRetrieve(String tenantId) throws Exception {
+    public SdkWorkResourceResponse tenantsRetrieve(String tenantId) throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Tenants update. */
-    public AppbaseApiResult tenantsUpdate(String tenantId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse tenantsUpdate(String tenantId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Tenant Applications list. */
+    public SdkWorkListResponse tenantApplicationsList(String tenantId, Integer page, Integer pageSize, String cursor, String sort, String q, String status, String environment, String applicationType) throws Exception {
+        String query = buildQueryString(List.of(
+            new QueryParameterSpec("page", page, "form", true, false, null),
+            new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
+            new QueryParameterSpec("cursor", cursor, "form", true, false, null),
+            new QueryParameterSpec("sort", sort, "form", true, false, null),
+            new QueryParameterSpec("q", q, "form", true, false, null),
+            new QueryParameterSpec("status", status, "form", true, false, null),
+            new QueryParameterSpec("environment", environment, "form", true, false, null),
+            new QueryParameterSpec("application_type", applicationType, "form", true, false, null)
+        ));
+        Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications"), query));
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
+    }
+
+    /** Tenant Applications management create. */
+    public SdkWorkResourceResponse tenantApplicationsManagementCreate(String tenantId, IamTenantApplicationManagementProvisionCommand body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Tenant Applications management update. */
+    public SdkWorkResourceResponse tenantApplicationsManagementUpdate(String tenantId, String tenantApplicationId, IamTenantApplicationManagementUpdateCommand body) throws Exception {
+        Object raw = client.patch(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + ""), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Tenant Applications management disable. */
+    public SdkWorkCommandResponse tenantApplicationsManagementDisable(String tenantId, String tenantApplicationId, IamTenantApplicationStatusCommand body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + "/disable"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
+    }
+
+    /** Tenant Applications management enable. */
+    public SdkWorkCommandResponse tenantApplicationsManagementEnable(String tenantId, String tenantApplicationId, IamTenantApplicationStatusCommand body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + "/enable"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
+    }
+
+    /** Tenant Applications summary retrieve. */
+    public SdkWorkResourceResponse tenantApplicationsSummaryRetrieve(String tenantId) throws Exception {
+        Object raw = client.get(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications/summary"));
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Tenants members list. */
-    public AppbaseApiResult tenantsMembersList(String tenantId, Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse tenantsMembersList(String tenantId, Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -599,62 +774,75 @@ public class IamApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/members"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Tenants members create. */
-    public AppbaseApiResult tenantsMembersCreate(String tenantId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse tenantsMembersCreate(String tenantId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/members"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Tenants members delete. */
-    public AppbaseApiResult tenantsMembersDelete(String tenantId, String userId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/members/" + serializePathParameter(userId, new PathParameterSpec("userId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void tenantsMembersDelete(String tenantId, String userId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/members/" + serializePathParameter(userId, new PathParameterSpec("userId", "simple", false)) + ""));
+        return null;
     }
 
     /** Tenants members update. */
-    public AppbaseApiResult tenantsMembersUpdate(String tenantId, String userId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse tenantsMembersUpdate(String tenantId, String userId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/members/" + serializePathParameter(userId, new PathParameterSpec("userId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Users list. */
-    public AppbaseApiResult usersList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse usersList(Integer page, Integer pageSize, String cursor, String sort, String q, String status) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
             new QueryParameterSpec("cursor", cursor, "form", true, false, null),
             new QueryParameterSpec("sort", sort, "form", true, false, null),
-            new QueryParameterSpec("q", q, "form", true, false, null)
+            new QueryParameterSpec("q", q, "form", true, false, null),
+            new QueryParameterSpec("status", status, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/users"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Users create. */
-    public AppbaseApiResult usersCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse usersCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/users"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Users delete. */
-    public AppbaseApiResult usersDelete(String userId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/users/" + serializePathParameter(userId, new PathParameterSpec("userId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void usersDelete(String userId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/users/" + serializePathParameter(userId, new PathParameterSpec("userId", "simple", false)) + ""));
+        return null;
     }
 
     /** Users retrieve. */
-    public AppbaseApiResult usersRetrieve(String userId) throws Exception {
+    public SdkWorkResourceResponse usersRetrieve(String userId) throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/users/" + serializePathParameter(userId, new PathParameterSpec("userId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Users update. */
-    public AppbaseApiResult usersUpdate(String userId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse usersUpdate(String userId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/users/" + serializePathParameter(userId, new PathParameterSpec("userId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Users ban. */
+    public SdkWorkResourceResponse usersBan(String userId, Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/users/" + serializePathParameter(userId, new PathParameterSpec("userId", "simple", false)) + "/ban"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Users unban. */
+    public SdkWorkResourceResponse usersUnban(String userId, Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/users/" + serializePathParameter(userId, new PathParameterSpec("userId", "simple", false)) + "/unban"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     private record PathParameterSpec(String name, String style, boolean explode) {}

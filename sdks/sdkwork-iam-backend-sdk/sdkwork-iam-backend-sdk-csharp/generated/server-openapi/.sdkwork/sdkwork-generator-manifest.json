@@ -20,15 +20,15 @@
     },
     {
       "path": "Api/IamApi.cs",
-      "sha256": "aa4ec0fa5210a3b8ecf781e1ebaa891d2a5d711bb50ef8aa3dcd4d518e05923d"
+      "sha256": "c21ccde367e6c54d098fe3cc769667e65ac824920f33990dc0d67594857022b9"
     },
     {
       "path": "Api/IamOauthApi.cs",
-      "sha256": "0ffe364fa19e9cda42ed04ff8804ccd30c959820f0aea05c662589ad4fe008e3"
+      "sha256": "3c8673f68ba52f815f8094b9a46a33ed9443949ca2fc87201e91ee0e517e2850"
     },
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -44,7 +44,7 @@
     },
     {
       "path": "Http/HttpClient.cs",
-      "sha256": "72ecb82b4cafb781c5e2a84e610406b1926f5b464ddafae767f1d9416025dfd4"
+      "sha256": "c373898eef7cb05bf6d0d9f4d5f93c361f2c4abc89487d0539f73ff185f15d0e"
     },
     {
       "path": "LICENSE",
@@ -55,16 +55,8 @@
       "sha256": "0002851faa284ea766156f6e2f0ec5504d943edfa999abc5ee6f83c2c462aebe"
     },
     {
-      "path": "Models/AppbaseApiResult.cs",
-      "sha256": "0f46fbff2293879a256c69823868b00add37cb331786f44d46ef51266b39bc92"
-    },
-    {
       "path": "Models/AppbaseApplicationRegisterCommand.cs",
       "sha256": "b46f5d691b0b71970d5da042f77c1b85180b5cb1176dbffa09b58f8f0adfdf64"
-    },
-    {
-      "path": "Models/AppbaseSessionCreateCommand.cs",
-      "sha256": "b2fc15ed12c75b4ff115d634eea696bf3d3bab6fcb33aef0b6baecc0acfe9ab9"
     },
     {
       "path": "Models/AppbaseTenantApplicationEnableCommand.cs",
@@ -72,7 +64,7 @@
     },
     {
       "path": "Models/AppbaseTenantApplicationProvisionCommand.cs",
-      "sha256": "7e44f78c4b12e7e049e9100ba491d95ca5336ab8b6b7597e99515366ae14cd1f"
+      "sha256": "4e482eb118c3b0cb0bf21144799316edf9d9fe1badd245cca3025e3091cd86e2"
     },
     {
       "path": "Models/AppbaseTenantApplicationUpdateCommand.cs",
@@ -80,19 +72,79 @@
     },
     {
       "path": "Models/FieldError.cs",
-      "sha256": "a7746b8e90178032969dec89a9f4b15c493e1c10bf37f5b094d170f21b2ad310"
+      "sha256": "9b01ad88d0d5609d02a927991cfe065515cb4fd246060134e84d6e3aa2cd697f"
+    },
+    {
+      "path": "Models/IamOauthClientCreateCommand.cs",
+      "sha256": "d3364fcc4fa3488509e0fa0211da44f1888e41ea195f3b54104ae1e0b78902ff"
+    },
+    {
+      "path": "Models/IamTenantApplicationManagementProvisionCommand.cs",
+      "sha256": "b70eddeb28fb7fad6db7fd7132083d751fbfbeddf87dfd30435ec2466ed1206f"
+    },
+    {
+      "path": "Models/IamTenantApplicationManagementUpdateCommand.cs",
+      "sha256": "b3ea2d1d716b89c00c79ae36af8c52298724f0dae8a2624d7902cebbfa7dad65"
+    },
+    {
+      "path": "Models/IamTenantApplicationStatusCommand.cs",
+      "sha256": "35a43f62b6de245e7d30be819bdbdb929e2e662d2575fd2f468e4b38d7be1d60"
+    },
+    {
+      "path": "Models/PageInfo.cs",
+      "sha256": "abfd2d6786ed67b64dcbe31810501e610079add77ee622a38f4fc39810f3abf4"
     },
     {
       "path": "Models/ProblemDetail.cs",
-      "sha256": "241d8e70a0eb8d1a976c70a43a68576feb98dd3e49841bf37ff878923c497ae5"
+      "sha256": "536b33f4b39a37455c8b6ac27e7091daee3bb56741c6864d3f96236e9dabdf03"
+    },
+    {
+      "path": "Models/SdkWorkApiResponse.cs",
+      "sha256": "dea79d11a8708ede1d2d11ae17276b9d18bcf87c2281e9141b737a326fe7d1c7"
+    },
+    {
+      "path": "Models/SdkWorkCommandData.cs",
+      "sha256": "387af2c1c4c3b7f26d730ebc5e4d8f8519b9e8f7c93bd810d577dc00efb55036"
+    },
+    {
+      "path": "Models/SdkWorkCommandResponse.cs",
+      "sha256": "dee11f27365a55caa4599b668730ae6ba3bb91e7cb7e79d5c7b9d2a0aeb06c7f"
+    },
+    {
+      "path": "Models/SdkWorkListResponse.cs",
+      "sha256": "087cc2d508363da6ac38d494436aee17b907a5c28025bb9511ddbe3df59dc1d3"
+    },
+    {
+      "path": "Models/SdkWorkPageData.cs",
+      "sha256": "cb0a32a69ea8f50b6b221e808e82739c9c07b22501635ce75e9941b8abf2e103"
+    },
+    {
+      "path": "Models/SdkWorkResourceData.cs",
+      "sha256": "c91b348cb07f8cd3447c51f41d090aafd00f23718a87bbdc88911388a2534352"
+    },
+    {
+      "path": "Models/SdkWorkResourceResponse.cs",
+      "sha256": "4b4636c6bfabd536fcff55fa7104137420550cb092f9b083305634423f99eda6"
+    },
+    {
+      "path": "Models/ServiceAccountCredentialCreateCommand.cs",
+      "sha256": "c1d9adff06509d8ed126e65c8db644422614a3ca97cd643a4b2efb2dfb0f1b31"
+    },
+    {
+      "path": "Models/ServiceAccountCredentialRevokeCommand.cs",
+      "sha256": "fd327a1ec62fa1661c17284e505ea1ad14118c4c52513030421abdfca1214cc3"
+    },
+    {
+      "path": "Models/ServiceAccountTokenExchangeCommand.cs",
+      "sha256": "fd52e83fa390518a4733c618e84956be88a302f7c1fdc714f336e58b01119258"
     },
     {
       "path": "README.md",
-      "sha256": "226517153bef352df8d39254d92eec97a2f66eb26e23b43caa785b10bfbd53de"
+      "sha256": "403e1c1e4b479cf0b9cc70e4820218669f189e336c4f54b92af80507b891a484"
     },
     {
       "path": "sdkwork-sdk.json",
-      "sha256": "6e767f036f6c36795a37c4c6fd690d55b364a96c6aaebdb352df108b504fac3c"
+      "sha256": "7a7eb83a17e1e9e1ed5d5fb59c81009ab0e6e799b2c7bc182138d08dce7093c4"
     },
     {
       "path": "SDKWork.Iam.BackendSdk.csproj",

@@ -48,6 +48,13 @@ function explicitBootstrapPermission(operationId) {
       return 'iam.service_account_credentials.create';
     case 'serviceAccountCredentials.revoke':
       return 'iam.service_account_credentials.revoke';
+    // Resolution must NOT ride on `iam.provider_accounts.read`: that code is
+    // also matched by read-only wildcards (`org_auditor` holds `*.read`), and
+    // resolving a *pinned* account id reports the chosen account even when the
+    // caller cannot list it. Shared tenant/organization accounts must stay
+    // invisible to non-admins, so resolution gets its own code.
+    case 'providerAccounts.resolve':
+      return 'iam.provider_accounts.resolve';
     default:
       return undefined;
   }
@@ -77,6 +84,10 @@ function parseCoreOperation(operationId) {
   if (parts.length >= 3 && parts[0] === 'tenants' && parts[1] === 'members') {
     const action = parseAction(parts.at(-1));
     return action ? { resource: 'tenantMembers', action } : undefined;
+  }
+  if (parts.length >= 3 && parts[0] === 'providerAccounts' && parts[1] === 'credentials') {
+    const action = parseAction(parts.at(-1));
+    return action ? { resource: 'providerCredentials', action } : undefined;
   }
 
   const action = parseAction(parts.at(-1));
@@ -116,6 +127,10 @@ function parseCoreOperation(operationId) {
       return { resource: 'auditEvents', action };
     case 'accountBindingPolicy':
       return { resource: 'accountBindingPolicy', action };
+    case 'providerAccounts':
+      return { resource: 'providerAccounts', action };
+    case 'providerCredentials':
+      return { resource: 'providerCredentials', action };
     default:
       return undefined;
   }
@@ -126,12 +141,16 @@ function parseAction(action) {
     case 'list':
     case 'retrieve':
     case 'tree':
+    // `resolve` only reports which account would be chosen.
+    case 'resolve':
       return 'read';
     case 'create':
       return 'create';
     case 'update':
     case 'ban':
     case 'unban':
+    // Promoting a default mutates the account.
+    case 'setDefault':
       return 'update';
     case 'delete':
       return 'delete';
@@ -180,6 +199,18 @@ function permissionCode(resource, action) {
       return 'iam.audit_events.read';
     case 'accountBindingPolicy':
       return action === 'update' ? 'iam.account_binding_policy.update' : 'iam.account_binding_policy.read';
+    case 'providerAccounts':
+      if (action === 'read') return 'iam.provider_accounts.read';
+      if (action === 'create') return 'iam.provider_accounts.create';
+      if (action === 'update') return 'iam.provider_accounts.update';
+      if (action === 'delete' || action === 'deactivate') return 'iam.provider_accounts.delete';
+      return 'iam.permissions.manage';
+    case 'providerCredentials':
+      if (action === 'read') return 'iam.provider_credentials.read';
+      if (action === 'create') return 'iam.provider_credentials.create';
+      if (action === 'revoke') return 'iam.provider_credentials.revoke';
+      if (action === 'delete') return 'iam.provider_credentials.delete';
+      return 'iam.permissions.manage';
     default:
       return 'iam.permissions.manage';
   }

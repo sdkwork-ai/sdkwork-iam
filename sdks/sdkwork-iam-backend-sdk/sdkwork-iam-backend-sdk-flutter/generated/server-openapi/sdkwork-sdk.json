@@ -5,6 +5,8 @@
   "language": "flutter",
   "sdkType": "backend",
   "packageName": "sdkwork_iam_backend_sdk",
+  "transportPackageName": "sdkwork_iam_backend_sdk",
+  "consumerPackageName": "sdkwork_iam_backend_sdk",
   "generator": "@sdkwork/sdk-generator",
   "capabilities": {
     "supportsGeneratedTests": true,

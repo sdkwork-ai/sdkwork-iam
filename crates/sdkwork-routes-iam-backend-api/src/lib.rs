@@ -6,6 +6,7 @@ mod manifest;
 mod oauth_management;
 mod operation_permissions;
 mod paths;
+mod provider_accounts;
 mod routes;
 mod service_account_credentials;
 mod web_bootstrap;

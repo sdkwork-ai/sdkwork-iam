@@ -16,6 +16,7 @@ public class AppbaseTenantApplicationProvisionCommand {
     private String instanceKey;
     private String displayName;
     private String environment;
+    private String applicationType;
     private String primaryDomain;
     private List<String> accessPermissions;
     private Map<String, Object> runtimeConfig;
@@ -114,6 +115,14 @@ public class AppbaseTenantApplicationProvisionCommand {
 
     public void setEnvironment(String environment) {
         this.environment = environment;
+    }
+
+    public String getApplicationType() {
+        return this.applicationType;
+    }
+
+    public void setApplicationType(String applicationType) {
+        this.applicationType = applicationType;
     }
 
     public String getPrimaryDomain() {

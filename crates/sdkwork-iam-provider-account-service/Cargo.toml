@@ -1,0 +1,33 @@
+[package]
+rust-version.workspace = true
+name = "sdkwork-iam-provider-account-service"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "SDKWork IAM platform-wide service-provider account center: reusable vendor accounts with write-only envelope-encrypted credentials."
+
+[lints]
+workspace = true
+
+[lib]
+name = "sdkwork_iam_provider_account_service"
+path = "src/lib.rs"
+
+[dependencies]
+aes-gcm = "0.10"
+base64 = "0.22"
+chrono = { workspace = true }
+rand_core = { version = "0.6", features = ["getrandom"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = "0.10"
+sqlx = { workspace = true }
+uuid = { version = "1", features = ["v7"] }
+
+# The scope rules are a security boundary, and `CALLER_VISIBILITY_PREDICATE` is
+# raw SQL that a unit test can only check for placeholder order. The integration
+# test reaches a real PostgreSQL instance through the IAM database host's
+# workspace profile, so the predicate is executed rather than merely inspected.
+[dev-dependencies]
+sdkwork_iam_database_host.workspace = true
+tokio.workspace = true

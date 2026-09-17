@@ -18,7 +18,7 @@ namespace SDKWork.Iam.BackendSdk.Api
         /// <summary>
         /// Iam oauth account Links list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> AccountLinksListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> AccountLinksListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -28,21 +28,21 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/account_links"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/account_links"), queryString));
         }
 
         /// <summary>
         /// Iam oauth account Links update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> AccountLinksUpdateAsync(string accountLinkId, Dictionary<string, object>? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> AccountLinksUpdateAsync(string accountLinkId, Dictionary<string, object>? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/account_links/{SerializePathParameter(accountLinkId, new PathParameterSpec("accountLinkId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/account_links/{SerializePathParameter(accountLinkId, new PathParameterSpec("accountLinkId", "simple", false))}"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth callback Events list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> CallbackEventsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> CallbackEventsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -52,13 +52,13 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/callback_events"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/callback_events"), queryString));
         }
 
         /// <summary>
         /// Iam oauth claim Mappings list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ClaimMappingsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> ClaimMappingsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -68,29 +68,29 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/claim_mappings"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/claim_mappings"), queryString));
         }
 
         /// <summary>
         /// Iam oauth claim Mappings create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ClaimMappingsCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ClaimMappingsCreateAsync(Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/claim_mappings"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/claim_mappings"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth claim Mappings update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ClaimMappingsUpdateAsync(string mappingId, Dictionary<string, object>? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ClaimMappingsUpdateAsync(string mappingId, Dictionary<string, object>? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/claim_mappings/{SerializePathParameter(mappingId, new PathParameterSpec("mappingId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/claim_mappings/{SerializePathParameter(mappingId, new PathParameterSpec("mappingId", "simple", false))}"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth clients list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ClientsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> ClientsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -100,45 +100,45 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/clients"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/clients"), queryString));
         }
 
         /// <summary>
         /// Iam oauth clients create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ClientsCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ClientsCreateAsync(SDKWork.Iam.BackendSdk.Models.IamOauthClientCreateCommand body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/clients"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/clients"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth clients delete.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ClientsDeleteAsync(string oauthClientId)
+        public async Task ClientsDeleteAsync(string oauthClientId)
         {
-            return await _client.DeleteAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/clients/{SerializePathParameter(oauthClientId, new PathParameterSpec("oauthClientId", "simple", false))}"));
+            await _client.DeleteAsync<object>(ApiPaths.BackendPath($"/iam/oauth/clients/{SerializePathParameter(oauthClientId, new PathParameterSpec("oauthClientId", "simple", false))}"));
         }
 
         /// <summary>
         /// Iam oauth clients retrieve.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ClientsRetrieveAsync(string oauthClientId)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ClientsRetrieveAsync(string oauthClientId)
         {
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/clients/{SerializePathParameter(oauthClientId, new PathParameterSpec("oauthClientId", "simple", false))}"));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/clients/{SerializePathParameter(oauthClientId, new PathParameterSpec("oauthClientId", "simple", false))}"));
         }
 
         /// <summary>
         /// Iam oauth clients update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ClientsUpdateAsync(string oauthClientId, Dictionary<string, object>? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ClientsUpdateAsync(string oauthClientId, Dictionary<string, object>? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/clients/{SerializePathParameter(oauthClientId, new PathParameterSpec("oauthClientId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/clients/{SerializePathParameter(oauthClientId, new PathParameterSpec("oauthClientId", "simple", false))}"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth diagnostic Runs list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> DiagnosticRunsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> DiagnosticRunsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -148,29 +148,29 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/diagnostic_runs"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/diagnostic_runs"), queryString));
         }
 
         /// <summary>
         /// Iam oauth diagnostic Runs create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> DiagnosticRunsCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> DiagnosticRunsCreateAsync(Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/diagnostic_runs"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/diagnostic_runs"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth diagnostic Runs retrieve.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> DiagnosticRunsRetrieveAsync(string diagnosticRunId)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> DiagnosticRunsRetrieveAsync(string diagnosticRunId)
         {
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/diagnostic_runs/{SerializePathParameter(diagnosticRunId, new PathParameterSpec("diagnosticRunId", "simple", false))}"));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/diagnostic_runs/{SerializePathParameter(diagnosticRunId, new PathParameterSpec("diagnosticRunId", "simple", false))}"));
         }
 
         /// <summary>
         /// Iam oauth flow Configs list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> FlowConfigsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> FlowConfigsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -180,29 +180,29 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/flow_configs"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/flow_configs"), queryString));
         }
 
         /// <summary>
         /// Iam oauth flow Configs create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> FlowConfigsCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> FlowConfigsCreateAsync(Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/flow_configs"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/flow_configs"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth flow Configs update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> FlowConfigsUpdateAsync(string flowConfigId, Dictionary<string, object>? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> FlowConfigsUpdateAsync(string flowConfigId, Dictionary<string, object>? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/flow_configs/{SerializePathParameter(flowConfigId, new PathParameterSpec("flowConfigId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/flow_configs/{SerializePathParameter(flowConfigId, new PathParameterSpec("flowConfigId", "simple", false))}"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth grants list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> GrantsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> GrantsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -212,21 +212,21 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/grants"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/grants"), queryString));
         }
 
         /// <summary>
         /// Iam oauth grants delete.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> GrantsDeleteAsync(string grantId)
+        public async Task GrantsDeleteAsync(string grantId)
         {
-            return await _client.DeleteAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/grants/{SerializePathParameter(grantId, new PathParameterSpec("grantId", "simple", false))}"));
+            await _client.DeleteAsync<object>(ApiPaths.BackendPath($"/iam/oauth/grants/{SerializePathParameter(grantId, new PathParameterSpec("grantId", "simple", false))}"));
         }
 
         /// <summary>
         /// Iam oauth integrations list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> IntegrationsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> IntegrationsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -236,45 +236,45 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/integrations"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/integrations"), queryString));
         }
 
         /// <summary>
         /// Iam oauth integrations create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> IntegrationsCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> IntegrationsCreateAsync(Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/integrations"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/integrations"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth integrations delete.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> IntegrationsDeleteAsync(string integrationId)
+        public async Task IntegrationsDeleteAsync(string integrationId)
         {
-            return await _client.DeleteAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/integrations/{SerializePathParameter(integrationId, new PathParameterSpec("integrationId", "simple", false))}"));
+            await _client.DeleteAsync<object>(ApiPaths.BackendPath($"/iam/oauth/integrations/{SerializePathParameter(integrationId, new PathParameterSpec("integrationId", "simple", false))}"));
         }
 
         /// <summary>
         /// Iam oauth integrations retrieve.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> IntegrationsRetrieveAsync(string integrationId)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> IntegrationsRetrieveAsync(string integrationId)
         {
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/integrations/{SerializePathParameter(integrationId, new PathParameterSpec("integrationId", "simple", false))}"));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/integrations/{SerializePathParameter(integrationId, new PathParameterSpec("integrationId", "simple", false))}"));
         }
 
         /// <summary>
         /// Iam oauth integrations update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> IntegrationsUpdateAsync(string integrationId, Dictionary<string, object>? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> IntegrationsUpdateAsync(string integrationId, Dictionary<string, object>? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/integrations/{SerializePathParameter(integrationId, new PathParameterSpec("integrationId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/integrations/{SerializePathParameter(integrationId, new PathParameterSpec("integrationId", "simple", false))}"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth operational Resources list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> OperationalResourcesListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> OperationalResourcesListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -284,45 +284,45 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/operational_resources"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/operational_resources"), queryString));
         }
 
         /// <summary>
         /// Iam oauth operational Resources create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> OperationalResourcesCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> OperationalResourcesCreateAsync(Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/operational_resources"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/operational_resources"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth operational Resources delete.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> OperationalResourcesDeleteAsync(string resourceId)
+        public async Task OperationalResourcesDeleteAsync(string resourceId)
         {
-            return await _client.DeleteAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/operational_resources/{SerializePathParameter(resourceId, new PathParameterSpec("resourceId", "simple", false))}"));
+            await _client.DeleteAsync<object>(ApiPaths.BackendPath($"/iam/oauth/operational_resources/{SerializePathParameter(resourceId, new PathParameterSpec("resourceId", "simple", false))}"));
         }
 
         /// <summary>
         /// Iam oauth operational Resources update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> OperationalResourcesUpdateAsync(string resourceId, Dictionary<string, object>? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> OperationalResourcesUpdateAsync(string resourceId, Dictionary<string, object>? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/operational_resources/{SerializePathParameter(resourceId, new PathParameterSpec("resourceId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/operational_resources/{SerializePathParameter(resourceId, new PathParameterSpec("resourceId", "simple", false))}"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth operational Resources publishes create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> OperationalResourcesPublishesCreateAsync(string resourceId, Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> OperationalResourcesPublishesCreateAsync(string resourceId, Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/operational_resources/{SerializePathParameter(resourceId, new PathParameterSpec("resourceId", "simple", false))}/publishes"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/operational_resources/{SerializePathParameter(resourceId, new PathParameterSpec("resourceId", "simple", false))}/publishes"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth operator Platforms list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> OperatorPlatformsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> OperatorPlatformsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -332,37 +332,37 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/operator_platforms"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/operator_platforms"), queryString));
         }
 
         /// <summary>
         /// Iam oauth operator Platforms create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> OperatorPlatformsCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> OperatorPlatformsCreateAsync(Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/operator_platforms"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/operator_platforms"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth operator Platforms update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> OperatorPlatformsUpdateAsync(string operatorPlatformId, Dictionary<string, object>? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> OperatorPlatformsUpdateAsync(string operatorPlatformId, Dictionary<string, object>? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/operator_platforms/{SerializePathParameter(operatorPlatformId, new PathParameterSpec("operatorPlatformId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/operator_platforms/{SerializePathParameter(operatorPlatformId, new PathParameterSpec("operatorPlatformId", "simple", false))}"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth operator Platforms pre Authorizations create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> OperatorPlatformsPreAuthorizationsCreateAsync(string operatorPlatformId, Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> OperatorPlatformsPreAuthorizationsCreateAsync(string operatorPlatformId, Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/operator_platforms/{SerializePathParameter(operatorPlatformId, new PathParameterSpec("operatorPlatformId", "simple", false))}/pre_authorizations"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/operator_platforms/{SerializePathParameter(operatorPlatformId, new PathParameterSpec("operatorPlatformId", "simple", false))}/pre_authorizations"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth policies list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> PoliciesListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> PoliciesListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -372,29 +372,29 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/policies"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/policies"), queryString));
         }
 
         /// <summary>
         /// Iam oauth policies create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> PoliciesCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> PoliciesCreateAsync(Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/policies"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/policies"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth policies update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> PoliciesUpdateAsync(string policyId, Dictionary<string, object>? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> PoliciesUpdateAsync(string policyId, Dictionary<string, object>? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/policies/{SerializePathParameter(policyId, new PathParameterSpec("policyId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/policies/{SerializePathParameter(policyId, new PathParameterSpec("policyId", "simple", false))}"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth provider Catalog list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ProviderCatalogListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> ProviderCatalogListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -404,37 +404,37 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/provider_catalog"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/provider_catalog"), queryString));
         }
 
         /// <summary>
         /// Iam oauth provider Catalog create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ProviderCatalogCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ProviderCatalogCreateAsync(Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/provider_catalog"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/provider_catalog"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth provider Catalog retrieve.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ProviderCatalogRetrieveAsync(string providerCatalogId)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ProviderCatalogRetrieveAsync(string providerCatalogId)
         {
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/provider_catalog/{SerializePathParameter(providerCatalogId, new PathParameterSpec("providerCatalogId", "simple", false))}"));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/provider_catalog/{SerializePathParameter(providerCatalogId, new PathParameterSpec("providerCatalogId", "simple", false))}"));
         }
 
         /// <summary>
         /// Iam oauth provider Catalog update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ProviderCatalogUpdateAsync(string providerCatalogId, Dictionary<string, object>? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ProviderCatalogUpdateAsync(string providerCatalogId, Dictionary<string, object>? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/provider_catalog/{SerializePathParameter(providerCatalogId, new PathParameterSpec("providerCatalogId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/provider_catalog/{SerializePathParameter(providerCatalogId, new PathParameterSpec("providerCatalogId", "simple", false))}"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth resource Accounts list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ResourceAccountsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> ResourceAccountsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -444,53 +444,85 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/resource_accounts"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/resource_accounts"), queryString));
         }
 
         /// <summary>
         /// Iam oauth resource Accounts create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ResourceAccountsCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ResourceAccountsCreateAsync(Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/resource_accounts"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/resource_accounts"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth resource Accounts update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ResourceAccountsUpdateAsync(string resourceAccountId, Dictionary<string, object>? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ResourceAccountsUpdateAsync(string resourceAccountId, Dictionary<string, object>? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth resource Accounts authorization Refreshes create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ResourceAccountsAuthorizationRefreshesCreateAsync(string resourceAccountId, Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ResourceAccountsAuthorizationRefreshesCreateAsync(string resourceAccountId, Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}/authorization_refreshes"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}/authorization_refreshes"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Iam oauth resource Accounts custom Menus retrieve.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ResourceAccountsCustomMenusRetrieveAsync(string resourceAccountId)
+        {
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}/custom_menus"));
+        }
+
+        /// <summary>
+        /// Iam oauth resource Accounts custom Menus update.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ResourceAccountsCustomMenusUpdateAsync(string resourceAccountId, Dictionary<string, object>? body = null)
+        {
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}/custom_menus"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Iam oauth resource Accounts custom Menus publish.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ResourceAccountsCustomMenusPublishAsync(string resourceAccountId, Dictionary<string, object> body)
+        {
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}/custom_menus/publish"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Iam oauth resource Accounts follow Qr Codes create.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ResourceAccountsFollowQrCodesCreateAsync(string resourceAccountId, Dictionary<string, object> body)
+        {
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}/follow_qr_codes"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth resource Accounts mini Program Login Checks create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ResourceAccountsMiniProgramLoginChecksCreateAsync(string resourceAccountId, Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ResourceAccountsMiniProgramLoginChecksCreateAsync(string resourceAccountId, Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}/mini_program_login_checks"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}/mini_program_login_checks"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth resource Accounts verifications create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ResourceAccountsVerificationsCreateAsync(string resourceAccountId, Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ResourceAccountsVerificationsCreateAsync(string resourceAccountId, Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}/verifications"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}/verifications"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth resource Authorizations list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ResourceAuthorizationsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> ResourceAuthorizationsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -500,29 +532,53 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/resource_authorizations"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/resource_authorizations"), queryString));
         }
 
         /// <summary>
         /// Iam oauth resource Authorizations create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ResourceAuthorizationsCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ResourceAuthorizationsCreateAsync(Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/resource_authorizations"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/resource_authorizations"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth resource Authorizations update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ResourceAuthorizationsUpdateAsync(string authorizationId, Dictionary<string, object>? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ResourceAuthorizationsUpdateAsync(string authorizationId, Dictionary<string, object>? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/resource_authorizations/{SerializePathParameter(authorizationId, new PathParameterSpec("authorizationId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/resource_authorizations/{SerializePathParameter(authorizationId, new PathParameterSpec("authorizationId", "simple", false))}"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Iam oauth scan Login Previews create.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ScanLoginPreviewsCreateAsync(Dictionary<string, object> body)
+        {
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/scan_login_previews"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Iam oauth scan Login Settings retrieve.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ScanLoginSettingsRetrieveAsync()
+        {
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/scan_login_settings"));
+        }
+
+        /// <summary>
+        /// Iam oauth scan Login Settings update.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ScanLoginSettingsUpdateAsync(Dictionary<string, object>? body = null)
+        {
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/scan_login_settings"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth scope Profiles list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ScopeProfilesListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> ScopeProfilesListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -532,29 +588,29 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/scope_profiles"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/scope_profiles"), queryString));
         }
 
         /// <summary>
         /// Iam oauth scope Profiles create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ScopeProfilesCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ScopeProfilesCreateAsync(Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/scope_profiles"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/scope_profiles"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth scope Profiles update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> ScopeProfilesUpdateAsync(string scopeProfileId, Dictionary<string, object>? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ScopeProfilesUpdateAsync(string scopeProfileId, Dictionary<string, object>? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/scope_profiles/{SerializePathParameter(scopeProfileId, new PathParameterSpec("scopeProfileId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/scope_profiles/{SerializePathParameter(scopeProfileId, new PathParameterSpec("scopeProfileId", "simple", false))}"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth secrets list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> SecretsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> SecretsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -564,29 +620,29 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/secrets"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/secrets"), queryString));
         }
 
         /// <summary>
         /// Iam oauth secrets create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> SecretsCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> SecretsCreateAsync(Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/secrets"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/secrets"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth secrets delete.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> SecretsDeleteAsync(string secretId)
+        public async Task SecretsDeleteAsync(string secretId)
         {
-            return await _client.DeleteAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/secrets/{SerializePathParameter(secretId, new PathParameterSpec("secretId", "simple", false))}"));
+            await _client.DeleteAsync<object>(ApiPaths.BackendPath($"/iam/oauth/secrets/{SerializePathParameter(secretId, new PathParameterSpec("secretId", "simple", false))}"));
         }
 
         /// <summary>
         /// Iam oauth surfaces list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> SurfacesListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> SurfacesListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -596,37 +652,37 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/surfaces"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/surfaces"), queryString));
         }
 
         /// <summary>
         /// Iam oauth surfaces create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> SurfacesCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> SurfacesCreateAsync(Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/surfaces"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/surfaces"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth surfaces delete.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> SurfacesDeleteAsync(string surfaceId)
+        public async Task SurfacesDeleteAsync(string surfaceId)
         {
-            return await _client.DeleteAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/surfaces/{SerializePathParameter(surfaceId, new PathParameterSpec("surfaceId", "simple", false))}"));
+            await _client.DeleteAsync<object>(ApiPaths.BackendPath($"/iam/oauth/surfaces/{SerializePathParameter(surfaceId, new PathParameterSpec("surfaceId", "simple", false))}"));
         }
 
         /// <summary>
         /// Iam oauth surfaces update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> SurfacesUpdateAsync(string surfaceId, Dictionary<string, object>? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> SurfacesUpdateAsync(string surfaceId, Dictionary<string, object>? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/surfaces/{SerializePathParameter(surfaceId, new PathParameterSpec("surfaceId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/surfaces/{SerializePathParameter(surfaceId, new PathParameterSpec("surfaceId", "simple", false))}"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth tenant Bindings list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> TenantBindingsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> TenantBindingsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -636,29 +692,29 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/tenant_bindings"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/tenant_bindings"), queryString));
         }
 
         /// <summary>
         /// Iam oauth tenant Bindings create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> TenantBindingsCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> TenantBindingsCreateAsync(Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/tenant_bindings"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/tenant_bindings"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth tenant Bindings update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> TenantBindingsUpdateAsync(string bindingId, Dictionary<string, object>? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> TenantBindingsUpdateAsync(string bindingId, Dictionary<string, object>? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/tenant_bindings/{SerializePathParameter(bindingId, new PathParameterSpec("bindingId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/tenant_bindings/{SerializePathParameter(bindingId, new PathParameterSpec("bindingId", "simple", false))}"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth webhook Configs list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> WebhookConfigsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> WebhookConfigsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -668,31 +724,39 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/webhook_configs"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/oauth/webhook_configs"), queryString));
         }
 
         /// <summary>
         /// Iam oauth webhook Configs create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> WebhookConfigsCreateAsync(Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> WebhookConfigsCreateAsync(Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath("/iam/oauth/webhook_configs"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/oauth/webhook_configs"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Iam oauth webhook Configs delete.
+        /// </summary>
+        public async Task WebhookConfigsDeleteAsync(string webhookConfigId)
+        {
+            await _client.DeleteAsync<object>(ApiPaths.BackendPath($"/iam/oauth/webhook_configs/{SerializePathParameter(webhookConfigId, new PathParameterSpec("webhookConfigId", "simple", false))}"));
         }
 
         /// <summary>
         /// Iam oauth webhook Configs update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> WebhookConfigsUpdateAsync(string webhookConfigId, Dictionary<string, object>? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> WebhookConfigsUpdateAsync(string webhookConfigId, Dictionary<string, object>? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/webhook_configs/{SerializePathParameter(webhookConfigId, new PathParameterSpec("webhookConfigId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/webhook_configs/{SerializePathParameter(webhookConfigId, new PathParameterSpec("webhookConfigId", "simple", false))}"), body, null, null, "application/json");
         }
 
         /// <summary>
         /// Iam oauth webhook Configs verifications create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult?> WebhookConfigsVerificationsCreateAsync(string webhookConfigId, Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> WebhookConfigsVerificationsCreateAsync(string webhookConfigId, Dictionary<string, object> body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.AppbaseApiResult>(ApiPaths.BackendPath($"/iam/oauth/webhook_configs/{SerializePathParameter(webhookConfigId, new PathParameterSpec("webhookConfigId", "simple", false))}/verifications"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/webhook_configs/{SerializePathParameter(webhookConfigId, new PathParameterSpec("webhookConfigId", "simple", false))}/verifications"), body, null, null, "application/json");
         }
 
         private sealed record PathParameterSpec(string Name, string Style, bool Explode);

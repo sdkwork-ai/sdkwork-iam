@@ -12,95 +12,31 @@
   "mode": "apply",
   "hasChanges": true,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "5f857fc22524cd0a22996036c8bda1b7b734393ce9dd557cd1ac2e88d1fe1bcc",
+  "changeFingerprint": "f22a586f7c14ce08b0d846ee5ad4069a234b83ffd2b69a7b4693a6df7672a7d1",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface",
-      "runtime",
-      "build-metadata",
-      "publish-workflow",
-      "documentation",
-      "custom-scaffold",
-      "unknown"
+      "api-surface"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/Api.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/ApiPaths.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamOauthApi.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/SdkworkBackendClient.kt"
-        ]
-      },
-      {
-        "area": "runtime",
-        "paths": [
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/http/HttpClient.kt"
-        ]
-      },
-      {
-        "area": "build-metadata",
-        "paths": [
-          "build.gradle.kts",
-          "sdkwork-sdk.json",
-          "settings.gradle.kts"
-        ]
-      },
-      {
-        "area": "publish-workflow",
-        "paths": [
-          "bin/publish-core.mjs",
-          "bin/publish.ps1",
-          "bin/publish.sh"
-        ]
-      },
-      {
-        "area": "documentation",
-        "paths": [
-          "CHANGELOG.md",
-          "custom/README.md",
-          "README.md"
-        ]
-      },
-      {
-        "area": "custom-scaffold",
-        "paths": [
-          "custom/README.md"
-        ]
-      },
-      {
-        "area": "unknown",
-        "paths": [
-          "LICENSE",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseAccessCredentialCreateCommand.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseApiResult.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseApplicationRegisterCommand.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseSessionCreateCommand.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationEnableCommand.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationProvisionCommand.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationUpdateCommand.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/FieldError.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/ProblemDetail.kt"
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required."
+    "summary": "Detected impact areas: api-surface. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "manual-review-required",
-      "preserved-legacy-files",
-      "unknown-impact",
       "verification-required"
     ]
   },
@@ -112,8 +48,8 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
-        "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-kotlin\\generated\\server-openapi",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-kotlin\\generated\\server-openapi",
         "command": "node",
         "args": [
           "./bin/publish-core.mjs",
@@ -131,14 +67,14 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
-        "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-kotlin\\generated\\server-openapi",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-kotlin\\generated\\server-openapi",
         "command": "node",
         "args": [
           "./bin/publish-core.mjs",
@@ -159,7 +95,7 @@
     "language": "kotlin",
     "sdkType": "backend",
     "protocol": "http",
-    "outputPath": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-kotlin\\generated\\server-openapi",
+    "outputPath": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-kotlin\\generated\\server-openapi",
     "packageName": "com.sdkwork:sdkwork-iam-backend-sdk"
   },
   "versioning": {
@@ -167,8 +103,8 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 25,
-    "models": 9,
+    "totalFiles": 38,
+    "models": 22,
     "apis": 2,
     "types": 0
   },
@@ -176,14 +112,18 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 25,
-    "skippedScaffoldFiles": 0,
-    "skippedUnchangedGeneratedFiles": 0,
+    "writtenFiles": 1,
+    "skippedScaffoldFiles": 1,
+    "skippedUnchangedGeneratedFiles": 36,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "5f857fc22524cd0a22996036c8bda1b7b734393ce9dd557cd1ac2e88d1fe1bcc",
+    "changeFingerprint": "f22a586f7c14ce08b0d846ee5ad4069a234b83ffd2b69a7b4693a6df7672a7d1",
     "changes": {
-      "createdGeneratedFiles": [
+      "createdGeneratedFiles": [],
+      "updatedGeneratedFiles": [
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt"
+      ],
+      "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
         "bin/publish.ps1",
         "bin/publish.sh",
@@ -195,117 +135,66 @@
         "settings.gradle.kts",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/Api.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/ApiPaths.kt",
-        "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamOauthApi.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseAccessCredentialCreateCommand.kt",
-        "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseApiResult.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseApplicationRegisterCommand.kt",
-        "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseSessionCreateCommand.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationEnableCommand.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationProvisionCommand.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationUpdateCommand.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/FieldError.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/http/HttpClient.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamOauthClientCreateCommand.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementProvisionCommand.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementUpdateCommand.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationStatusCommand.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/PageInfo.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/ProblemDetail.kt",
-        "src/main/kotlin/com/sdkwork/iam/backend/sdk/SdkworkBackendClient.kt"
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/SdkWorkApiResponse.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/SdkworkBackendClient.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/SdkWorkCommandData.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/SdkWorkCommandResponse.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/SdkWorkListResponse.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/SdkWorkPageData.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/SdkWorkResourceData.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/SdkWorkResourceResponse.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/ServiceAccountCredentialCreateCommand.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/ServiceAccountCredentialRevokeCommand.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/ServiceAccountTokenExchangeCommand.kt"
       ],
-      "updatedGeneratedFiles": [],
-      "unchangedGeneratedFiles": [],
       "deletedGeneratedFiles": [],
-      "scaffoldedFiles": [
+      "scaffoldedFiles": [],
+      "preservedScaffoldFiles": [
         "custom/README.md"
       ],
-      "preservedScaffoldFiles": [],
       "backedUpFiles": []
     },
     "impact": {
       "schemaVersion": 1,
       "areas": [
-        "api-surface",
-        "runtime",
-        "build-metadata",
-        "publish-workflow",
-        "documentation",
-        "custom-scaffold",
-        "unknown"
+        "api-surface"
       ],
       "details": [
         {
           "area": "api-surface",
           "paths": [
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/Api.kt",
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/ApiPaths.kt",
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt",
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamOauthApi.kt",
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/SdkworkBackendClient.kt"
-          ]
-        },
-        {
-          "area": "runtime",
-          "paths": [
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/http/HttpClient.kt"
-          ]
-        },
-        {
-          "area": "build-metadata",
-          "paths": [
-            "build.gradle.kts",
-            "sdkwork-sdk.json",
-            "settings.gradle.kts"
-          ]
-        },
-        {
-          "area": "publish-workflow",
-          "paths": [
-            "bin/publish-core.mjs",
-            "bin/publish.ps1",
-            "bin/publish.sh"
-          ]
-        },
-        {
-          "area": "documentation",
-          "paths": [
-            "CHANGELOG.md",
-            "custom/README.md",
-            "README.md"
-          ]
-        },
-        {
-          "area": "custom-scaffold",
-          "paths": [
-            "custom/README.md"
-          ]
-        },
-        {
-          "area": "unknown",
-          "paths": [
-            "LICENSE",
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseAccessCredentialCreateCommand.kt",
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseApiResult.kt",
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseApplicationRegisterCommand.kt",
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseSessionCreateCommand.kt",
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationEnableCommand.kt",
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationProvisionCommand.kt",
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationUpdateCommand.kt",
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/FieldError.kt",
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/ProblemDetail.kt"
+            "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required."
+      "summary": "Detected impact areas: api-surface. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
-          "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-kotlin\\generated\\server-openapi",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+          "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-kotlin\\generated\\server-openapi",
           "command": "node",
           "args": [
             "./bin/publish-core.mjs",
@@ -322,19 +211,16 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "high",
+      "riskLevel": "medium",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
-        "manual-review-required",
-        "preserved-legacy-files",
-        "unknown-impact",
         "verification-required"
       ]
     },
     "backedUpFiles": [],
-    "preservedLegacyFiles": true
+    "preservedLegacyFiles": false
   }
 }

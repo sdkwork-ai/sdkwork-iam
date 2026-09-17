@@ -1902,3 +1902,291 @@ CREATE TABLE IF NOT EXISTS iam_oauth_scan_login_config (
 -- exists), url], preserving pre-registry behavior.
 ALTER TABLE iam_oauth_scan_login_config
     ADD COLUMN IF NOT EXISTS modes_json TEXT NOT NULL DEFAULT '[]';
+
+-- folded migration: migrations/postgres/0016_iam_provider_accounts.up.sql
+-- Platform-wide service-provider account center.
+--
+-- iam_provider_account holds one row per reusable upstream account (for
+-- example one Alibaba Cloud account) and is owned by a tenant/organization.
+-- iam_provider_credential holds that account's write-only secret material as
+-- an AES-256-GCM envelope, so no plaintext secret is ever persisted.
+-- Consuming domains (drive object storage today, further provider capabilities
+-- later) reference the account by id instead of embedding a private credential
+-- copy, so one account is reused across businesses and rotates once.
+CREATE TABLE IF NOT EXISTS iam_provider_account (
+  id TEXT PRIMARY KEY,
+  uuid TEXT NOT NULL,
+  tenant_id TEXT NOT NULL,
+  organization_id TEXT NOT NULL DEFAULT '0',
+  vendor_code TEXT NOT NULL,
+  account_code TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  display_name_i18n TEXT NOT NULL DEFAULT '{}',
+  account_type TEXT NOT NULL DEFAULT 'standard',
+  environment TEXT NOT NULL DEFAULT 'production',
+  external_account_id TEXT,
+  capability_codes TEXT NOT NULL DEFAULT '[]',
+  region_code TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  metadata_json TEXT NOT NULL DEFAULT '{}',
+  version BIGINT NOT NULL DEFAULT 1,
+  created_by TEXT NOT NULL,
+  updated_by TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMPTZ,
+  CONSTRAINT ck_iam_provider_account_vendor_code
+    CHECK (vendor_code ~ '^[a-z][a-z0-9_]{1,31}$'),
+  CONSTRAINT ck_iam_provider_account_account_code
+    CHECK (account_code ~ '^[a-z0-9][a-z0-9_.-]{1,63}$'),
+  CONSTRAINT ck_iam_provider_account_display_name
+    CHECK (display_name = btrim(display_name) AND length(display_name) BETWEEN 1 AND 128),
+  CONSTRAINT ck_iam_provider_account_account_type
+    CHECK (account_type IN ('standard', 'partner', 'delegated')),
+  CONSTRAINT ck_iam_provider_account_environment
+    CHECK (environment IN ('development', 'sandbox', 'production')),
+  CONSTRAINT ck_iam_provider_account_status
+    CHECK (status IN ('active', 'disabled', 'deleted')),
+  CONSTRAINT ck_iam_provider_account_version
+    CHECK (version >= 1)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_iam_provider_account_uuid
+  ON iam_provider_account (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_iam_provider_account_scope_code
+  ON iam_provider_account (tenant_id, organization_id, account_code)
+  WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_iam_provider_account_vendor_status
+  ON iam_provider_account (tenant_id, organization_id, vendor_code, status, account_code)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS iam_provider_credential (
+  id TEXT PRIMARY KEY,
+  uuid TEXT NOT NULL,
+  tenant_id TEXT NOT NULL,
+  organization_id TEXT NOT NULL DEFAULT '0',
+  provider_account_id TEXT NOT NULL,
+  credential_kind TEXT NOT NULL DEFAULT 'access_key_pair',
+  credential_name TEXT NOT NULL DEFAULT 'default',
+  secret_ciphertext TEXT NOT NULL,
+  secret_key_id TEXT NOT NULL,
+  secret_algorithm TEXT NOT NULL DEFAULT 'aes-256-gcm',
+  secret_fingerprint TEXT NOT NULL,
+  masked_label TEXT,
+  credential_version BIGINT NOT NULL DEFAULT 1,
+  status TEXT NOT NULL DEFAULT 'active',
+  expires_at TIMESTAMPTZ,
+  last_rotated_at TIMESTAMPTZ,
+  last_verified_at TIMESTAMPTZ,
+  revoked_at TIMESTAMPTZ,
+  deleted_at TIMESTAMPTZ,
+  created_by TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT iam_provider_credential_account_fk
+    FOREIGN KEY (provider_account_id) REFERENCES iam_provider_account(id),
+  CONSTRAINT ck_iam_provider_credential_kind
+    CHECK (credential_kind IN ('access_key_pair', 'bearer_token', 'service_account_json', 'secret_text')),
+  CONSTRAINT ck_iam_provider_credential_name
+    CHECK (credential_name = btrim(credential_name) AND length(credential_name) BETWEEN 1 AND 64),
+  CONSTRAINT ck_iam_provider_credential_status
+    CHECK (status IN ('active', 'superseded', 'revoked')),
+  CONSTRAINT ck_iam_provider_credential_version
+    CHECK (credential_version >= 1)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_iam_provider_credential_uuid
+  ON iam_provider_credential (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_iam_provider_credential_active
+  ON iam_provider_credential (tenant_id, organization_id, provider_account_id, credential_kind, credential_name)
+  WHERE status = 'active' AND deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_iam_provider_credential_account
+  ON iam_provider_credential (tenant_id, provider_account_id, credential_kind, status, credential_version DESC);
+
+-- folded migration: migrations/postgres/0017_iam_provider_account_scopes.up.sql
+ALTER TABLE iam_provider_account
+  ADD COLUMN IF NOT EXISTS scope_type TEXT NOT NULL DEFAULT 'tenant';
+
+ALTER TABLE iam_provider_account
+  ADD COLUMN IF NOT EXISTS owner_user_id TEXT;
+
+ALTER TABLE iam_provider_account
+  ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Adding a NOT NULL column with a DEFAULT already stamps existing rows, but be
+-- explicit so a row inserted by an older build mid-upgrade cannot stay blank.
+UPDATE iam_provider_account
+   SET scope_type = 'tenant'
+ WHERE scope_type IS NULL OR scope_type = '';
+
+-- Constraints first, then the indexes: a bad payload must fail on the CHECK
+-- with a readable name rather than on an index collision.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'ck_iam_provider_account_scope'
+      AND conrelid = 'iam_provider_account'::regclass
+  ) THEN
+    ALTER TABLE iam_provider_account
+      ADD CONSTRAINT ck_iam_provider_account_scope
+      CHECK (scope_type IN ('platform', 'tenant', 'user'));
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'ck_iam_provider_account_scope_owner'
+      AND conrelid = 'iam_provider_account'::regclass
+  ) THEN
+    ALTER TABLE iam_provider_account
+      ADD CONSTRAINT ck_iam_provider_account_scope_owner
+      CHECK ((scope_type = 'user') = (owner_user_id IS NOT NULL));
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'ck_iam_provider_account_owner_user_id'
+      AND conrelid = 'iam_provider_account'::regclass
+  ) THEN
+    ALTER TABLE iam_provider_account
+      ADD CONSTRAINT ck_iam_provider_account_owner_user_id
+      CHECK (owner_user_id IS NULL
+             OR (owner_user_id = btrim(owner_user_id)
+                 AND length(owner_user_id) BETWEEN 1 AND 64));
+  END IF;
+END
+$$;
+
+-- Replaced by the six-column shared/owned pair below.
+DROP INDEX IF EXISTS ux_iam_provider_account_scope_code;
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_iam_provider_account_shared_code
+  ON iam_provider_account (scope_type, tenant_id, organization_id, account_code)
+  WHERE owner_user_id IS NULL AND deleted_at IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_iam_provider_account_owned_code
+  ON iam_provider_account (scope_type, tenant_id, organization_id, owner_user_id, account_code)
+  WHERE owner_user_id IS NOT NULL AND deleted_at IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_iam_provider_account_shared_default
+  ON iam_provider_account (scope_type, tenant_id, organization_id, vendor_code, environment)
+  WHERE is_default AND owner_user_id IS NULL AND deleted_at IS NULL AND status = 'active';
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_iam_provider_account_owned_default
+  ON iam_provider_account (scope_type, tenant_id, organization_id, owner_user_id, vendor_code, environment)
+  WHERE is_default AND owner_user_id IS NOT NULL AND deleted_at IS NULL AND status = 'active';
+
+CREATE INDEX IF NOT EXISTS idx_iam_provider_account_resolution
+  ON iam_provider_account (vendor_code, scope_type, tenant_id, owner_user_id, is_default)
+  WHERE status = 'active' AND deleted_at IS NULL;
+
+-- folded migration: migrations/postgres/0018_iam_provider_account_organization_scope_and_identity_kind.up.sql
+-- ---------------------------------------------------------------------------
+-- (2a) Preserve the relationship label before the column is repurposed.
+--      Guarded on a well-formed JSON object so a row written by an older build
+--      cannot abort the migration on a cast error.
+-- ---------------------------------------------------------------------------
+UPDATE iam_provider_account
+   SET metadata_json = (
+         CASE
+           WHEN btrim(metadata_json) LIKE '{%'
+             THEN (btrim(metadata_json)::jsonb
+                   || jsonb_build_object('legacyAccountType', account_type))::text
+           ELSE jsonb_build_object('legacyAccountType', account_type)::text
+         END)
+ WHERE account_type IN ('standard', 'partner', 'delegated');
+
+-- ---------------------------------------------------------------------------
+-- (2b) Map the relationship label onto the identity shape it was standing in
+--      for. 'standard' and 'partner' accounts were both created from a long-term
+--      key pair (0016 made credential_kind default to 'access_key_pair'), and
+--      'delegated' described an account the platform was authorised to act
+--      through, which is what a service-linked role is.
+-- ---------------------------------------------------------------------------
+UPDATE iam_provider_account
+   SET account_type = CASE account_type
+                        WHEN 'delegated' THEN 'service_linked_role'
+                        ELSE 'long_term_key'
+                      END,
+       updated_at   = CURRENT_TIMESTAMP
+ WHERE account_type IN ('standard', 'partner', 'delegated');
+
+-- ---------------------------------------------------------------------------
+-- (2c) Swap the account_type CHECK and default. Constraints are dropped by name
+--      and re-added inside the same transaction so no window exists where the
+--      column is unconstrained.
+-- ---------------------------------------------------------------------------
+ALTER TABLE iam_provider_account
+  ALTER COLUMN account_type SET DEFAULT 'long_term_key';
+
+ALTER TABLE iam_provider_account
+  DROP CONSTRAINT IF EXISTS ck_iam_provider_account_account_type;
+
+ALTER TABLE iam_provider_account
+  ADD CONSTRAINT ck_iam_provider_account_account_type
+  CHECK (account_type IN (
+    'long_term_key',
+    'temporary_credential',
+    'service_account',
+    'service_linked_role',
+    'federated_identity',
+    'managed_identity',
+    'api_key'
+  ));
+
+-- ---------------------------------------------------------------------------
+-- (1a) Admit the fourth scope level.
+-- ---------------------------------------------------------------------------
+ALTER TABLE iam_provider_account
+  DROP CONSTRAINT IF EXISTS ck_iam_provider_account_scope;
+
+ALTER TABLE iam_provider_account
+  ADD CONSTRAINT ck_iam_provider_account_scope
+  CHECK (scope_type IN ('platform', 'tenant', 'organization', 'user'));
+
+-- ---------------------------------------------------------------------------
+-- (1b) An organization-scoped account must name a real organization. The root
+--      sentinel '0' is excluded so it cannot shadow the tenant-wide default
+--      (see the purpose block).
+-- ---------------------------------------------------------------------------
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'ck_iam_provider_account_organization_scope_org'
+      AND conrelid = 'iam_provider_account'::regclass
+  ) THEN
+    ALTER TABLE iam_provider_account
+      ADD CONSTRAINT ck_iam_provider_account_organization_scope_org
+      CHECK (scope_type <> 'organization'
+             OR (organization_id IS NOT NULL
+                 AND btrim(organization_id) <> ''
+                 AND organization_id <> '0'));
+  END IF;
+END
+$$;
+
+-- ---------------------------------------------------------------------------
+-- (1c) Indexes need no new uniqueness: the shared/owned unique index pair and
+--      the default-uniqueness pair added by 0017 already key on
+--      (scope_type, tenant_id, organization_id, ...), so organization-scoped
+--      rows get the same "one default per vendor and environment" guarantee as
+--      every other level without a new index.
+--
+--      The resolution index DOES need replacing. 0017 built it without
+--      organization_id, which was correct while only three scope levels existed
+--      (tenant-wide defaults had no organization to key on). Now that a fourth
+--      level resolves per organization, the per-level lookup must be index
+--      driven on organization_id too. A plain CREATE INDEX IF NOT EXISTS would
+--      silently keep the old column list because the name already exists, so
+--      drop first and recreate.
+-- ---------------------------------------------------------------------------
+DROP INDEX IF EXISTS idx_iam_provider_account_resolution;
+
+CREATE INDEX IF NOT EXISTS idx_iam_provider_account_resolution
+  ON iam_provider_account (vendor_code, scope_type, tenant_id, organization_id, owner_user_id, is_default)
+  WHERE status = 'active' AND deleted_at IS NULL;

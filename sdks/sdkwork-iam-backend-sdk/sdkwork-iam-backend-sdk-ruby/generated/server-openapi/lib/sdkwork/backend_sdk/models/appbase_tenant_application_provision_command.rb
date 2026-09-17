@@ -3,7 +3,7 @@ module Sdkwork
     module Models
       class AppbaseTenantApplicationProvisionCommand
               # Provision a tenant application from a registered application template.
-              attr_accessor :auth_token, :username, :email, :phone, :password, :tenant_id, :organization_id, :template_id, :app_key, :instance_key, :display_name, :environment, :primary_domain, :access_permissions, :runtime_config
+              attr_accessor :auth_token, :username, :email, :phone, :password, :tenant_id, :organization_id, :template_id, :app_key, :instance_key, :display_name, :environment, :application_type, :primary_domain, :access_permissions, :runtime_config
 
               def initialize(attributes = {})
                 attributes = (attributes || {}).transform_keys(&:to_s)
@@ -19,6 +19,7 @@ module Sdkwork
                 @instance_key = attributes['instanceKey']
                 @display_name = attributes['displayName']
                 @environment = attributes['environment']
+                @application_type = attributes['applicationType']
                 @primary_domain = attributes['primaryDomain']
                 @access_permissions = attributes['accessPermissions'].is_a?(Array) ? attributes['accessPermissions'].map { |item| item } : []
                 @runtime_config = attributes['runtimeConfig'].is_a?(Hash) ? attributes['runtimeConfig'] : {}
@@ -44,6 +45,7 @@ module Sdkwork
                   'instanceKey' => @instance_key,
                   'displayName' => @display_name,
                   'environment' => @environment,
+                  'applicationType' => @application_type,
                   'primaryDomain' => @primary_domain,
                   'accessPermissions' => @access_permissions.is_a?(Array) ? @access_permissions.map { |item| item } : [],
                   'runtimeConfig' => @runtime_config,

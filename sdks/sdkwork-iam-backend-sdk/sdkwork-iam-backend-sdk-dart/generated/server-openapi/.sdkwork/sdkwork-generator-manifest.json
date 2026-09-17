@@ -16,7 +16,7 @@
     },
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -44,11 +44,11 @@
     },
     {
       "path": "lib/src/api/iam_oauth.dart",
-      "sha256": "8e9aad2ca8c752dfdd8020ba9143546fa011593de9b1bcadceda6a94fca22d1c"
+      "sha256": "2bfa8e508ffa3237270c9a8d398ec5bbe84a1d2f8254cf5e5a1c1a7ca1958085"
     },
     {
       "path": "lib/src/api/iam.dart",
-      "sha256": "69d8e5d27d344a4b351564dbfac0a8d3e172021dc7153ecb7a2013efd6c3d1fe"
+      "sha256": "6927cf1c02aa7677a9835f4374818bc843caa1174d2e96a98c6036d598848b25"
     },
     {
       "path": "lib/src/api/paths.dart",
@@ -60,7 +60,7 @@
     },
     {
       "path": "lib/src/http/client.dart",
-      "sha256": "9984029605ea1e2e05ae5fa024e80567197d76af4853a7e8251c2e92f77b7360"
+      "sha256": "146b0e454877420723d49e87b6331cae7098dc8dc53760b0e888f16d1da4a9e5"
     },
     {
       "path": "lib/src/http/sdk_config.dart",
@@ -68,7 +68,7 @@
     },
     {
       "path": "lib/src/models.dart",
-      "sha256": "3998792350b2ad62004d698b8acf33403270454f333328660c1d31a841c9da28"
+      "sha256": "ba2d33ababd746c63d4673c9877ed18b22ac72bb8b43788d42e361e0e50d4979"
     },
     {
       "path": "LICENSE",
@@ -76,15 +76,15 @@
     },
     {
       "path": "pubspec.yaml",
-      "sha256": "bcbc713ab9a0147b0d611f67af9407ba40f8032915cfb05fd26fbc852f98c154"
+      "sha256": "75ad14aae172bec8df0fd23ad68d61acf2bf15fedf00856c6793f8885dd7b79f"
     },
     {
       "path": "README.md",
-      "sha256": "feaed09ed382747383fdda80ad1e511fcdc30f31aa259a0e2753915bd31fe024"
+      "sha256": "94c6531c180024e2665a365d7cb3ecfc4fce9371ce7134631efa6b625b0e9475"
     },
     {
       "path": "sdkwork-sdk.json",
-      "sha256": "3c1dec8471ee51b59fa80476b72d1e2decf08b9e0546c9ab8f09da0fbb9964fc"
+      "sha256": "a5b44f3f7643b5f083faf2755a36a2659a4b27358c1502f3a5eab3d8589f8d2e"
     }
   ],
   "scaffoldFiles": [

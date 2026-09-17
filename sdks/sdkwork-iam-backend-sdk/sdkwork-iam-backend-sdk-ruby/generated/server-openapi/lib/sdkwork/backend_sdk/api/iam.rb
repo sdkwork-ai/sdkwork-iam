@@ -1,10 +1,18 @@
 require_relative 'base_api'
 require_relative '../models/appbase_access_credential_create_command'
-require_relative '../models/appbase_api_result'
 require_relative '../models/appbase_application_register_command'
 require_relative '../models/appbase_tenant_application_enable_command'
 require_relative '../models/appbase_tenant_application_provision_command'
 require_relative '../models/appbase_tenant_application_update_command'
+require_relative '../models/iam_tenant_application_management_provision_command'
+require_relative '../models/iam_tenant_application_management_update_command'
+require_relative '../models/iam_tenant_application_status_command'
+require_relative '../models/sdk_work_command_response'
+require_relative '../models/sdk_work_list_response'
+require_relative '../models/sdk_work_resource_response'
+require_relative '../models/service_account_credential_create_command'
+require_relative '../models/service_account_credential_revoke_command'
+require_relative '../models/service_account_token_exchange_command'
 
 module Sdkwork
   module BackendSdk
@@ -15,9 +23,10 @@ module Sdkwork
             path = '/backend/v3/api/iam/access_credentials'
             payload = body.respond_to?(:to_hash) ? body.to_hash : body
             options = {}
+            options[:skip_auth] = true
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Account Binding Policy retrieve.
@@ -26,7 +35,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Account Binding Policy update.
@@ -36,7 +45,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Api Keys list.
@@ -53,7 +62,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Api Keys revoke.
@@ -63,7 +72,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkCommandResponse.from_hash(result) : nil
           end
 
           # Applications register.
@@ -71,9 +80,10 @@ module Sdkwork
             path = '/backend/v3/api/iam/applications/register'
             payload = body.respond_to?(:to_hash) ? body.to_hash : body
             options = {}
+            options[:skip_auth] = true
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkCommandResponse.from_hash(result) : nil
           end
 
           # Audit Events list.
@@ -90,7 +100,16 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
+          end
+
+          # Audit Events retrieve.
+          def audit_events_retrieve(audit_event_id)
+            path = interpolate_path('/backend/v3/api/iam/audit_events/{auditEventId}', auditEventId: serialize_path_parameter(audit_event_id, PathParameterSpec.new('auditEventId', 'simple', false)))
+            options = {}
+
+            result = @client.request('GET', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Department Assignments list.
@@ -107,7 +126,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Department Assignments create.
@@ -117,7 +136,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Department Assignments update.
@@ -127,7 +146,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Departments list.
@@ -144,7 +163,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Departments create.
@@ -154,7 +173,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Departments delete.
@@ -163,7 +182,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Departments retrieve.
@@ -172,7 +191,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Departments update.
@@ -182,7 +201,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Departments tree retrieve.
@@ -191,7 +210,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Groups list.
@@ -208,7 +227,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Groups create.
@@ -218,7 +237,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Groups delete.
@@ -227,7 +246,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Groups retrieve.
@@ -236,7 +255,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Groups update.
@@ -246,7 +265,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Groups members list.
@@ -263,7 +282,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Groups members create.
@@ -273,7 +292,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Groups members delete.
@@ -282,7 +301,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Organization Memberships list.
@@ -299,7 +318,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Organization Memberships create.
@@ -309,7 +328,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Organization Memberships update.
@@ -319,7 +338,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Organizations list.
@@ -336,7 +355,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Organizations create.
@@ -346,7 +365,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Organizations delete.
@@ -355,7 +374,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Organizations retrieve.
@@ -364,7 +383,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Organizations update.
@@ -374,7 +393,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Organizations tree retrieve.
@@ -383,7 +402,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Permissions list.
@@ -400,7 +419,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Permissions create.
@@ -410,7 +429,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Permissions delete.
@@ -419,7 +438,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Permissions retrieve.
@@ -428,7 +447,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Permissions update.
@@ -438,7 +457,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Policies list.
@@ -455,7 +474,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Policies create.
@@ -465,7 +484,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Policies delete.
@@ -474,7 +493,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Policies retrieve.
@@ -483,7 +502,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Policies update.
@@ -493,7 +512,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Position Assignments list.
@@ -510,7 +529,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Position Assignments create.
@@ -520,7 +539,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Position Assignments update.
@@ -530,7 +549,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Positions list.
@@ -547,7 +566,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Positions create.
@@ -557,7 +576,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Positions delete.
@@ -566,7 +585,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Positions update.
@@ -576,12 +595,74 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
-          # Role Bindings list.
-          def role_bindings_list(page: nil, page_size: nil, cursor: nil, sort: nil, q: nil)
-            path = '/backend/v3/api/iam/role_bindings'
+          # Provider Accounts list.
+          def provider_accounts_list(page: nil, page_size: nil, cursor: nil, sort: nil, q: nil, vendor_code: nil, scope_type: nil, owner_user_id: nil, organization_id: nil, status: nil, mine: nil, include_platform: nil)
+            path = '/backend/v3/api/iam/provider_accounts'
+            query = build_query_string([
+              QueryParameterSpec.new('page', page, 'form', true, false, nil),
+              QueryParameterSpec.new('page_size', page_size, 'form', true, false, nil),
+              QueryParameterSpec.new('cursor', cursor, 'form', true, false, nil),
+              QueryParameterSpec.new('sort', sort, 'form', true, false, nil),
+              QueryParameterSpec.new('q', q, 'form', true, false, nil),
+              QueryParameterSpec.new('vendorCode', vendor_code, 'form', true, false, nil),
+              QueryParameterSpec.new('scopeType', scope_type, 'form', true, false, nil),
+              QueryParameterSpec.new('ownerUserId', owner_user_id, 'form', true, false, nil),
+              QueryParameterSpec.new('organizationId', organization_id, 'form', true, false, nil),
+              QueryParameterSpec.new('status', status, 'form', true, false, nil),
+              QueryParameterSpec.new('mine', mine, 'form', true, false, nil),
+              QueryParameterSpec.new('includePlatform', include_platform, 'form', true, false, nil),
+            ])
+            path = append_query_string(path, query)
+            options = {}
+
+            result = @client.request('GET', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
+          end
+
+          # Provider Accounts create.
+          def provider_accounts_create(body: nil)
+            path = '/backend/v3/api/iam/provider_accounts'
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Provider Accounts delete.
+          def provider_accounts_delete(provider_account_id)
+            path = interpolate_path('/backend/v3/api/iam/provider_accounts/{providerAccountId}', providerAccountId: serialize_path_parameter(provider_account_id, PathParameterSpec.new('providerAccountId', 'simple', false)))
+            options = {}
+
+            result = @client.request('DELETE', path, **options)
+            result
+          end
+
+          # Provider Accounts retrieve.
+          def provider_accounts_retrieve(provider_account_id)
+            path = interpolate_path('/backend/v3/api/iam/provider_accounts/{providerAccountId}', providerAccountId: serialize_path_parameter(provider_account_id, PathParameterSpec.new('providerAccountId', 'simple', false)))
+            options = {}
+
+            result = @client.request('GET', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Provider Accounts update.
+          def provider_accounts_update(provider_account_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/provider_accounts/{providerAccountId}', providerAccountId: serialize_path_parameter(provider_account_id, PathParameterSpec.new('providerAccountId', 'simple', false)))
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('PATCH', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Provider Accounts credentials list.
+          def provider_accounts_credentials_list(provider_account_id, page: nil, page_size: nil, cursor: nil, sort: nil, q: nil)
+            path = interpolate_path('/backend/v3/api/iam/provider_accounts/{providerAccountId}/credentials', providerAccountId: serialize_path_parameter(provider_account_id, PathParameterSpec.new('providerAccountId', 'simple', false)))
             query = build_query_string([
               QueryParameterSpec.new('page', page, 'form', true, false, nil),
               QueryParameterSpec.new('page_size', page_size, 'form', true, false, nil),
@@ -593,7 +674,76 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
+          end
+
+          # Provider Accounts credentials create.
+          def provider_accounts_credentials_create(provider_account_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/provider_accounts/{providerAccountId}/credentials', providerAccountId: serialize_path_parameter(provider_account_id, PathParameterSpec.new('providerAccountId', 'simple', false)))
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Provider Accounts set Default.
+          def provider_accounts_set_default(provider_account_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/provider_accounts/{providerAccountId}/default', providerAccountId: serialize_path_parameter(provider_account_id, PathParameterSpec.new('providerAccountId', 'simple', false)))
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Provider Accounts resolve.
+          def provider_accounts_resolve(vendor_code, capability_code: nil, environment: nil, user_id: nil, organization_id: nil)
+            path = '/backend/v3/api/iam/provider_accounts/resolve'
+            query = build_query_string([
+              QueryParameterSpec.new('vendorCode', vendor_code, 'form', true, false, nil),
+              QueryParameterSpec.new('capabilityCode', capability_code, 'form', true, false, nil),
+              QueryParameterSpec.new('environment', environment, 'form', true, false, nil),
+              QueryParameterSpec.new('userId', user_id, 'form', true, false, nil),
+              QueryParameterSpec.new('organizationId', organization_id, 'form', true, false, nil),
+            ])
+            path = append_query_string(path, query)
+            options = {}
+
+            result = @client.request('GET', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Provider Credentials revoke.
+          def provider_credentials_revoke(credential_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/provider_credentials/{credentialId}/revoke', credentialId: serialize_path_parameter(credential_id, PathParameterSpec.new('credentialId', 'simple', false)))
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkCommandResponse.from_hash(result) : nil
+          end
+
+          # Role Bindings list.
+          def role_bindings_list(page: nil, page_size: nil, cursor: nil, sort: nil, q: nil, role_id: nil, principal_kind: nil, principal_id: nil, scope_kind: nil, scope_id: nil)
+            path = '/backend/v3/api/iam/role_bindings'
+            query = build_query_string([
+              QueryParameterSpec.new('page', page, 'form', true, false, nil),
+              QueryParameterSpec.new('page_size', page_size, 'form', true, false, nil),
+              QueryParameterSpec.new('cursor', cursor, 'form', true, false, nil),
+              QueryParameterSpec.new('sort', sort, 'form', true, false, nil),
+              QueryParameterSpec.new('q', q, 'form', true, false, nil),
+              QueryParameterSpec.new('roleId', role_id, 'form', true, false, nil),
+              QueryParameterSpec.new('principalKind', principal_kind, 'form', true, false, nil),
+              QueryParameterSpec.new('principalId', principal_id, 'form', true, false, nil),
+              QueryParameterSpec.new('scopeKind', scope_kind, 'form', true, false, nil),
+              QueryParameterSpec.new('scopeId', scope_id, 'form', true, false, nil),
+            ])
+            path = append_query_string(path, query)
+            options = {}
+
+            result = @client.request('GET', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Role Bindings create.
@@ -603,7 +753,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Role Bindings delete.
@@ -612,7 +762,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Roles list.
@@ -629,7 +779,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Roles create.
@@ -639,7 +789,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Roles delete.
@@ -648,7 +798,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Roles retrieve.
@@ -657,7 +807,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Roles update.
@@ -667,7 +817,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Roles permissions list.
@@ -684,7 +834,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Roles permissions create.
@@ -694,7 +844,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Roles permissions delete.
@@ -703,7 +853,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Security Events list.
@@ -720,7 +870,37 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
+          end
+
+          # Security Events retrieve.
+          def security_events_retrieve(security_event_id)
+            path = interpolate_path('/backend/v3/api/iam/security_events/{securityEventId}', securityEventId: serialize_path_parameter(security_event_id, PathParameterSpec.new('securityEventId', 'simple', false)))
+            options = {}
+
+            result = @client.request('GET', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Service Account Credentials revoke.
+          def service_account_credentials_revoke(credential_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/service_account_credentials/{credentialId}/revoke', credentialId: serialize_path_parameter(credential_id, PathParameterSpec.new('credentialId', 'simple', false)))
+            payload = body.respond_to?(:to_hash) ? body.to_hash : body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkCommandResponse.from_hash(result) : nil
+          end
+
+          # Service Account Tokens create.
+          def service_account_tokens_create(body: nil)
+            path = '/backend/v3/api/iam/service_account_tokens'
+            payload = body.respond_to?(:to_hash) ? body.to_hash : body
+            options = {}
+            options[:skip_auth] = true
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Service Accounts list.
@@ -737,7 +917,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Service Accounts create.
@@ -747,7 +927,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Service Accounts delete.
@@ -756,7 +936,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Service Accounts retrieve.
@@ -765,7 +945,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Service Accounts update.
@@ -775,17 +955,37 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
-          # Tenant Applications provision.
-          def tenant_applications_provision(body: nil)
-            path = '/backend/v3/api/iam/tenant_applications'
+          # Service Accounts credentials create.
+          def service_accounts_credentials_create(service_account_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/service_accounts/{serviceAccountId}/credentials', serviceAccountId: serialize_path_parameter(service_account_id, PathParameterSpec.new('serviceAccountId', 'simple', false)))
             payload = body.respond_to?(:to_hash) ? body.to_hash : body
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Tenant Applications create.
+          def tenant_applications_create(body: nil)
+            path = '/backend/v3/api/iam/tenant_applications'
+            payload = body.respond_to?(:to_hash) ? body.to_hash : body
+            options = {}
+            options[:skip_auth] = true
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Tenant Applications retrieve.
+          def tenant_applications_retrieve(tenant_application_id)
+            path = interpolate_path('/backend/v3/api/iam/tenant_applications/{tenantApplicationId}', tenantApplicationId: serialize_path_parameter(tenant_application_id, PathParameterSpec.new('tenantApplicationId', 'simple', false)))
+            options = {}
+
+            result = @client.request('GET', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Tenant Applications update.
@@ -793,9 +993,10 @@ module Sdkwork
             path = interpolate_path('/backend/v3/api/iam/tenant_applications/{tenantApplicationId}', tenantApplicationId: serialize_path_parameter(tenant_application_id, PathParameterSpec.new('tenantApplicationId', 'simple', false)))
             payload = body.respond_to?(:to_hash) ? body.to_hash : body
             options = {}
+            options[:skip_auth] = true
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Tenant Applications enable.
@@ -803,9 +1004,10 @@ module Sdkwork
             path = interpolate_path('/backend/v3/api/iam/tenant_applications/{tenantApplicationId}/enable', tenantApplicationId: serialize_path_parameter(tenant_application_id, PathParameterSpec.new('tenantApplicationId', 'simple', false)))
             payload = body.respond_to?(:to_hash) ? body.to_hash : body
             options = {}
+            options[:skip_auth] = true
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkCommandResponse.from_hash(result) : nil
           end
 
           # Tenants list.
@@ -822,7 +1024,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Tenants create.
@@ -832,7 +1034,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Tenants delete.
@@ -841,7 +1043,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Tenants retrieve.
@@ -850,7 +1052,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Tenants update.
@@ -860,7 +1062,76 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Tenant Applications list.
+          def tenant_applications_list(tenant_id, page: nil, page_size: nil, cursor: nil, sort: nil, q: nil, status: nil, environment: nil, application_type: nil)
+            path = interpolate_path('/backend/v3/api/iam/tenants/{tenantId}/applications', tenantId: serialize_path_parameter(tenant_id, PathParameterSpec.new('tenantId', 'simple', false)))
+            query = build_query_string([
+              QueryParameterSpec.new('page', page, 'form', true, false, nil),
+              QueryParameterSpec.new('page_size', page_size, 'form', true, false, nil),
+              QueryParameterSpec.new('cursor', cursor, 'form', true, false, nil),
+              QueryParameterSpec.new('sort', sort, 'form', true, false, nil),
+              QueryParameterSpec.new('q', q, 'form', true, false, nil),
+              QueryParameterSpec.new('status', status, 'form', true, false, nil),
+              QueryParameterSpec.new('environment', environment, 'form', true, false, nil),
+              QueryParameterSpec.new('application_type', application_type, 'form', true, false, nil),
+            ])
+            path = append_query_string(path, query)
+            options = {}
+
+            result = @client.request('GET', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
+          end
+
+          # Tenant Applications management create.
+          def tenant_applications_management_create(tenant_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/tenants/{tenantId}/applications', tenantId: serialize_path_parameter(tenant_id, PathParameterSpec.new('tenantId', 'simple', false)))
+            payload = body.respond_to?(:to_hash) ? body.to_hash : body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Tenant Applications management update.
+          def tenant_applications_management_update(tenant_id, tenant_application_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}', tenantId: serialize_path_parameter(tenant_id, PathParameterSpec.new('tenantId', 'simple', false)), tenantApplicationId: serialize_path_parameter(tenant_application_id, PathParameterSpec.new('tenantApplicationId', 'simple', false)))
+            payload = body.respond_to?(:to_hash) ? body.to_hash : body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('PATCH', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Tenant Applications management disable.
+          def tenant_applications_management_disable(tenant_id, tenant_application_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/disable', tenantId: serialize_path_parameter(tenant_id, PathParameterSpec.new('tenantId', 'simple', false)), tenantApplicationId: serialize_path_parameter(tenant_application_id, PathParameterSpec.new('tenantApplicationId', 'simple', false)))
+            payload = body.respond_to?(:to_hash) ? body.to_hash : body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkCommandResponse.from_hash(result) : nil
+          end
+
+          # Tenant Applications management enable.
+          def tenant_applications_management_enable(tenant_id, tenant_application_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/enable', tenantId: serialize_path_parameter(tenant_id, PathParameterSpec.new('tenantId', 'simple', false)), tenantApplicationId: serialize_path_parameter(tenant_application_id, PathParameterSpec.new('tenantApplicationId', 'simple', false)))
+            payload = body.respond_to?(:to_hash) ? body.to_hash : body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkCommandResponse.from_hash(result) : nil
+          end
+
+          # Tenant Applications summary retrieve.
+          def tenant_applications_summary_retrieve(tenant_id)
+            path = interpolate_path('/backend/v3/api/iam/tenants/{tenantId}/applications/summary', tenantId: serialize_path_parameter(tenant_id, PathParameterSpec.new('tenantId', 'simple', false)))
+            options = {}
+
+            result = @client.request('GET', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Tenants members list.
@@ -877,7 +1148,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Tenants members create.
@@ -887,7 +1158,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Tenants members delete.
@@ -896,7 +1167,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Tenants members update.
@@ -906,11 +1177,11 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Users list.
-          def users_list(page: nil, page_size: nil, cursor: nil, sort: nil, q: nil)
+          def users_list(page: nil, page_size: nil, cursor: nil, sort: nil, q: nil, status: nil)
             path = '/backend/v3/api/iam/users'
             query = build_query_string([
               QueryParameterSpec.new('page', page, 'form', true, false, nil),
@@ -918,12 +1189,13 @@ module Sdkwork
               QueryParameterSpec.new('cursor', cursor, 'form', true, false, nil),
               QueryParameterSpec.new('sort', sort, 'form', true, false, nil),
               QueryParameterSpec.new('q', q, 'form', true, false, nil),
+              QueryParameterSpec.new('status', status, 'form', true, false, nil),
             ])
             path = append_query_string(path, query)
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Users create.
@@ -933,7 +1205,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Users delete.
@@ -942,7 +1214,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Users retrieve.
@@ -951,7 +1223,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Users update.
@@ -961,7 +1233,27 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Users ban.
+          def users_ban(user_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/users/{userId}/ban', userId: serialize_path_parameter(user_id, PathParameterSpec.new('userId', 'simple', false)))
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Users unban.
+          def users_unban(user_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/users/{userId}/unban', userId: serialize_path_parameter(user_id, PathParameterSpec.new('userId', 'simple', false)))
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
       end

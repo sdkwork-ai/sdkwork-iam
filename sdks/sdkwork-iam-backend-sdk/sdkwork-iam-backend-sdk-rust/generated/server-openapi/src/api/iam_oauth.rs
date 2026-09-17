@@ -370,6 +370,24 @@ impl IamOauthApi {
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
 
+    /// Iam oauth resource Accounts custom Menus retrieve.
+    pub async fn resource_accounts_custom_menus_retrieve(&self, resource_account_id: &str) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/oauth/resource_accounts/{}/custom_menus", serialize_path_parameter(resource_account_id, PathParameterSpec::new("resourceAccountId", "simple", false))));
+        self.client.get(&path, None, None).await
+    }
+
+    /// Iam oauth resource Accounts custom Menus update.
+    pub async fn resource_accounts_custom_menus_update(&self, resource_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/oauth/resource_accounts/{}/custom_menus", serialize_path_parameter(resource_account_id, PathParameterSpec::new("resourceAccountId", "simple", false))));
+        self.client.patch(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Iam oauth resource Accounts custom Menus publish.
+    pub async fn resource_accounts_custom_menus_publish(&self, resource_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/oauth/resource_accounts/{}/custom_menus/publish", serialize_path_parameter(resource_account_id, PathParameterSpec::new("resourceAccountId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
     /// Iam oauth resource Accounts follow Qr Codes create.
     pub async fn resource_accounts_follow_qr_codes_create(&self, resource_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = backend_path(&format!("/iam/oauth/resource_accounts/{}/follow_qr_codes", serialize_path_parameter(resource_account_id, PathParameterSpec::new("resourceAccountId", "simple", false))));

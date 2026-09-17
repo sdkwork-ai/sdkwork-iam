@@ -15,8 +15,7 @@ require 'sdkwork/backend_sdk'
 
 config = Sdkwork::BackendSdk::SdkConfig.new(base_url: 'http://localhost:8080')
 client = Sdkwork::BackendSdk::SdkworkBackendClient.new(config)
-params = { 'page' => 1, 'page_size' => 2, 'cursor' => 'cursor', 'sort' => 'sort', 'q' => 'q' }
-result = client.iam_oauth.account_links_list(params: params)
+result = client.iam_oauth.scan_login_settings_retrieve()
 
 
 puts result.inspect
@@ -58,9 +57,8 @@ puts result.inspect
 ### iam_oauth
 
 ```ruby
-# Iam oauth account Links list.
-params = { 'page' => 1, 'page_size' => 2, 'cursor' => 'cursor', 'sort' => 'sort', 'q' => 'q' }
-result = client.iam_oauth.account_links_list(params: params)
+# Iam oauth scan Login Settings retrieve.
+result = client.iam_oauth.scan_login_settings_retrieve()
 puts result.inspect
 ```
 
@@ -68,8 +66,7 @@ puts result.inspect
 
 ```ruby
 begin
-  params = { 'page' => 1, 'page_size' => 2, 'cursor' => 'cursor', 'sort' => 'sort', 'q' => 'q' }
-  client.iam_oauth.account_links_list(params: params)
+  client.iam_oauth.scan_login_settings_retrieve()
 rescue StandardError => e
   warn("Error: #{e.message}")
 end

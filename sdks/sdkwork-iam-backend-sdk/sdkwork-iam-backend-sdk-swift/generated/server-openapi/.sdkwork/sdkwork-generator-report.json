@@ -12,92 +12,31 @@
   "mode": "apply",
   "hasChanges": true,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "4718374032996a2a49eda82b4bc50f3a24d39d7289ae05beef4250fe011ab7fa",
+  "changeFingerprint": "118e7ed5a282c0603092d6b15b13cfc4cc47e04568ad007563049ce7951cda2d",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface",
-      "models",
-      "runtime",
-      "build-metadata",
-      "publish-workflow",
-      "documentation",
-      "custom-scaffold",
-      "unknown"
+      "api-surface"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "Sources/API/API.swift",
-          "Sources/API/ApiPaths.swift",
-          "Sources/API/IamApi.swift",
-          "Sources/API/IamOauthApi.swift"
-        ]
-      },
-      {
-        "area": "models",
-        "paths": [
-          "Sources/Models.swift"
-        ]
-      },
-      {
-        "area": "runtime",
-        "paths": [
-          "Sources/HTTP/HttpClient.swift"
-        ]
-      },
-      {
-        "area": "build-metadata",
-        "paths": [
-          "Package.swift",
-          "sdkwork-sdk.json"
-        ]
-      },
-      {
-        "area": "publish-workflow",
-        "paths": [
-          "bin/publish-core.mjs",
-          "bin/publish.ps1",
-          "bin/publish.sh"
-        ]
-      },
-      {
-        "area": "documentation",
-        "paths": [
-          "CHANGELOG.md",
-          "custom/README.md",
-          "README.md"
-        ]
-      },
-      {
-        "area": "custom-scaffold",
-        "paths": [
-          "custom/README.md"
-        ]
-      },
-      {
-        "area": "unknown",
-        "paths": [
-          "LICENSE",
-          "Sources/SdkworkBackendClient.swift"
+          "Sources/API/IamApi.swift"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required."
+    "summary": "Detected impact areas: api-surface. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "manual-review-required",
-      "preserved-legacy-files",
-      "unknown-impact",
       "verification-required"
     ]
   },
@@ -109,8 +48,8 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
-        "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-swift\\generated\\server-openapi",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-swift\\generated\\server-openapi",
         "command": "node",
         "args": [
           "./bin/publish-core.mjs",
@@ -128,14 +67,14 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
-        "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-swift\\generated\\server-openapi",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-swift\\generated\\server-openapi",
         "command": "node",
         "args": [
           "./bin/publish-core.mjs",
@@ -156,7 +95,7 @@
     "language": "swift",
     "sdkType": "backend",
     "protocol": "http",
-    "outputPath": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-swift\\generated\\server-openapi",
+    "outputPath": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-swift\\generated\\server-openapi",
     "packageName": "sdkwork-iam-backend-sdk"
   },
   "versioning": {
@@ -165,7 +104,7 @@
   },
   "stats": {
     "totalFiles": 16,
-    "models": 9,
+    "models": 22,
     "apis": 2,
     "types": 0
   },
@@ -173,14 +112,18 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 16,
-    "skippedScaffoldFiles": 0,
-    "skippedUnchangedGeneratedFiles": 0,
+    "writtenFiles": 1,
+    "skippedScaffoldFiles": 1,
+    "skippedUnchangedGeneratedFiles": 14,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "4718374032996a2a49eda82b4bc50f3a24d39d7289ae05beef4250fe011ab7fa",
+    "changeFingerprint": "118e7ed5a282c0603092d6b15b13cfc4cc47e04568ad007563049ce7951cda2d",
     "changes": {
-      "createdGeneratedFiles": [
+      "createdGeneratedFiles": [],
+      "updatedGeneratedFiles": [
+        "Sources/API/IamApi.swift"
+      ],
+      "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
         "bin/publish.ps1",
         "bin/publish.sh",
@@ -191,106 +134,45 @@
         "sdkwork-sdk.json",
         "Sources/API/API.swift",
         "Sources/API/ApiPaths.swift",
-        "Sources/API/IamApi.swift",
         "Sources/API/IamOauthApi.swift",
         "Sources/HTTP/HttpClient.swift",
         "Sources/Models.swift",
         "Sources/SdkworkBackendClient.swift"
       ],
-      "updatedGeneratedFiles": [],
-      "unchangedGeneratedFiles": [],
       "deletedGeneratedFiles": [],
-      "scaffoldedFiles": [
+      "scaffoldedFiles": [],
+      "preservedScaffoldFiles": [
         "custom/README.md"
       ],
-      "preservedScaffoldFiles": [],
       "backedUpFiles": []
     },
     "impact": {
       "schemaVersion": 1,
       "areas": [
-        "api-surface",
-        "models",
-        "runtime",
-        "build-metadata",
-        "publish-workflow",
-        "documentation",
-        "custom-scaffold",
-        "unknown"
+        "api-surface"
       ],
       "details": [
         {
           "area": "api-surface",
           "paths": [
-            "Sources/API/API.swift",
-            "Sources/API/ApiPaths.swift",
-            "Sources/API/IamApi.swift",
-            "Sources/API/IamOauthApi.swift"
-          ]
-        },
-        {
-          "area": "models",
-          "paths": [
-            "Sources/Models.swift"
-          ]
-        },
-        {
-          "area": "runtime",
-          "paths": [
-            "Sources/HTTP/HttpClient.swift"
-          ]
-        },
-        {
-          "area": "build-metadata",
-          "paths": [
-            "Package.swift",
-            "sdkwork-sdk.json"
-          ]
-        },
-        {
-          "area": "publish-workflow",
-          "paths": [
-            "bin/publish-core.mjs",
-            "bin/publish.ps1",
-            "bin/publish.sh"
-          ]
-        },
-        {
-          "area": "documentation",
-          "paths": [
-            "CHANGELOG.md",
-            "custom/README.md",
-            "README.md"
-          ]
-        },
-        {
-          "area": "custom-scaffold",
-          "paths": [
-            "custom/README.md"
-          ]
-        },
-        {
-          "area": "unknown",
-          "paths": [
-            "LICENSE",
-            "Sources/SdkworkBackendClient.swift"
+            "Sources/API/IamApi.swift"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required."
+      "summary": "Detected impact areas: api-surface. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
-          "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-swift\\generated\\server-openapi",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+          "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-swift\\generated\\server-openapi",
           "command": "node",
           "args": [
             "./bin/publish-core.mjs",
@@ -307,19 +189,16 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "high",
+      "riskLevel": "medium",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
-        "manual-review-required",
-        "preserved-legacy-files",
-        "unknown-impact",
         "verification-required"
       ]
     },
     "backedUpFiles": [],
-    "preservedLegacyFiles": true
+    "preservedLegacyFiles": false
   }
 }

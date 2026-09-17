@@ -189,6 +189,12 @@
       "lifecycle_status": "active"
     },
     {
+      "table_name": "iam_oauth_scan_login_config",
+      "owner": "sdkwork-iam",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
       "table_name": "iam_oauth_scope_profile",
       "owner": "sdkwork-iam",
       "compliance_level": "L2",
@@ -262,6 +268,18 @@
     },
     {
       "table_name": "iam_position_assignment",
+      "owner": "sdkwork-iam",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "iam_provider_account",
+      "owner": "sdkwork-iam",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "iam_provider_credential",
       "owner": "sdkwork-iam",
       "compliance_level": "L2",
       "lifecycle_status": "active"

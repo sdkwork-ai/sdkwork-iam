@@ -526,6 +526,62 @@ function buildOperation(surface, route) {
     );
   }
 
+  if (route.operationId === 'providerAccounts.list') {
+    operation.parameters.push(
+      queryParameter('vendorCode', {
+        type: 'string',
+        description: 'Exact cloud vendor code filter (for example aliyun).',
+      }),
+      queryParameter('scopeType', {
+        type: 'string',
+        description:
+          'Restrict to a single account scope: platform | tenant | organization | user.',
+      }),
+      queryParameter('ownerUserId', {
+        type: 'string',
+        description: 'Restrict to the personal accounts of one owner.',
+      }),
+      queryParameter('organizationId', { type: 'string', description: 'Exact organization id filter.' }),
+      queryParameter('status', {
+        type: 'string',
+        description: 'Exact account status filter (active | disabled | deleted).',
+      }),
+      queryParameter('mine', {
+        type: 'boolean',
+        description: 'Return only the personal accounts owned by the caller.',
+      }),
+      queryParameter('includePlatform', {
+        type: 'boolean',
+        default: true,
+        description: 'Include the globally shared platform-scope accounts.',
+      }),
+    );
+  }
+
+  if (route.operationId === 'providerAccounts.resolve') {
+    const vendorCode = queryParameter('vendorCode', {
+      type: 'string',
+      description: 'Cloud vendor code to resolve, for example aliyun.',
+    });
+    vendorCode.required = true;
+    operation.parameters.push(
+      vendorCode,
+      queryParameter('capabilityCode', {
+        type: 'string',
+        description: 'Cloud capability the account must serve, for example object_storage.',
+      }),
+      queryParameter('environment', {
+        type: 'string',
+        description: 'Exact environment filter (development | sandbox | production).',
+      }),
+      queryParameter('userId', {
+        type: 'string',
+        description: 'Resolve on behalf of this user; defaults to the caller.',
+      }),
+      queryParameter('organizationId', { type: 'string', description: 'Exact organization id filter.' }),
+    );
+  }
+
   if (route.operationId === 'tenantApplications.list') {
     operation.parameters.push(
       queryParameter('status', { type: 'string' }),

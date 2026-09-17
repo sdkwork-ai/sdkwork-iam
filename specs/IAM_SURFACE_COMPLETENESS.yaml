@@ -13,7 +13,7 @@ ratingScale:
 
 database:
   status: complete
-  tables: 57
+  tables: 61
   baseline: database/ddl/baseline/postgres/0001_iam_baseline.sql
   migrations: database/migrations/postgres/
 

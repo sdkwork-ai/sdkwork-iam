@@ -12,100 +12,31 @@
   "mode": "apply",
   "hasChanges": true,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "875e5d62a10ee16e7dbcce54c8346a470240c0f098cab8d06a93625a46f5b693",
+  "changeFingerprint": "c7fbafa247abb594e41607eca04ba09d3c7ef5b9f4c82139f42711e7f7d26dce",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface",
-      "models",
-      "runtime",
-      "build-metadata",
-      "publish-workflow",
-      "documentation",
-      "custom-scaffold",
-      "unknown"
+      "api-surface"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "Api/Api.cs",
-          "Api/ApiPaths.cs",
-          "Api/IamApi.cs",
-          "Api/IamOauthApi.cs",
-          "SdkworkBackendClient.cs"
-        ]
-      },
-      {
-        "area": "models",
-        "paths": [
-          "Models/AppbaseAccessCredentialCreateCommand.cs",
-          "Models/AppbaseApiResult.cs",
-          "Models/AppbaseApplicationRegisterCommand.cs",
-          "Models/AppbaseSessionCreateCommand.cs",
-          "Models/AppbaseTenantApplicationEnableCommand.cs",
-          "Models/AppbaseTenantApplicationProvisionCommand.cs",
-          "Models/AppbaseTenantApplicationUpdateCommand.cs",
-          "Models/FieldError.cs",
-          "Models/ProblemDetail.cs"
-        ]
-      },
-      {
-        "area": "runtime",
-        "paths": [
-          "Http/HttpClient.cs"
-        ]
-      },
-      {
-        "area": "build-metadata",
-        "paths": [
-          "sdkwork-sdk.json",
-          "SDKWork.Iam.BackendSdk.csproj"
-        ]
-      },
-      {
-        "area": "publish-workflow",
-        "paths": [
-          "bin/publish-core.mjs",
-          "bin/publish.ps1",
-          "bin/publish.sh"
-        ]
-      },
-      {
-        "area": "documentation",
-        "paths": [
-          "CHANGELOG.md",
-          "custom/README.md",
-          "README.md"
-        ]
-      },
-      {
-        "area": "custom-scaffold",
-        "paths": [
-          "custom/README.md"
-        ]
-      },
-      {
-        "area": "unknown",
-        "paths": [
-          "LICENSE"
+          "Api/IamApi.cs"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required."
+    "summary": "Detected impact areas: api-surface. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "manual-review-required",
-      "preserved-legacy-files",
-      "unknown-impact",
       "verification-required"
     ]
   },
@@ -117,8 +48,8 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
-        "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-csharp\\generated\\server-openapi",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-csharp\\generated\\server-openapi",
         "command": "node",
         "args": [
           "./bin/publish-core.mjs",
@@ -136,14 +67,14 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
-        "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-csharp\\generated\\server-openapi",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-csharp\\generated\\server-openapi",
         "command": "node",
         "args": [
           "./bin/publish-core.mjs",
@@ -164,7 +95,7 @@
     "language": "csharp",
     "sdkType": "backend",
     "protocol": "http",
-    "outputPath": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-csharp\\generated\\server-openapi",
+    "outputPath": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-csharp\\generated\\server-openapi",
     "packageName": "SDKWork.Iam.BackendSdk"
   },
   "versioning": {
@@ -172,8 +103,8 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 24,
-    "models": 9,
+    "totalFiles": 37,
+    "models": 22,
     "apis": 2,
     "types": 0
   },
@@ -181,17 +112,20 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 24,
-    "skippedScaffoldFiles": 0,
-    "skippedUnchangedGeneratedFiles": 0,
+    "writtenFiles": 1,
+    "skippedScaffoldFiles": 1,
+    "skippedUnchangedGeneratedFiles": 35,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "875e5d62a10ee16e7dbcce54c8346a470240c0f098cab8d06a93625a46f5b693",
+    "changeFingerprint": "c7fbafa247abb594e41607eca04ba09d3c7ef5b9f4c82139f42711e7f7d26dce",
     "changes": {
-      "createdGeneratedFiles": [
+      "createdGeneratedFiles": [],
+      "updatedGeneratedFiles": [
+        "Api/IamApi.cs"
+      ],
+      "unchangedGeneratedFiles": [
         "Api/Api.cs",
         "Api/ApiPaths.cs",
-        "Api/IamApi.cs",
         "Api/IamOauthApi.cs",
         "bin/publish-core.mjs",
         "bin/publish.ps1",
@@ -200,121 +134,66 @@
         "Http/HttpClient.cs",
         "LICENSE",
         "Models/AppbaseAccessCredentialCreateCommand.cs",
-        "Models/AppbaseApiResult.cs",
         "Models/AppbaseApplicationRegisterCommand.cs",
-        "Models/AppbaseSessionCreateCommand.cs",
         "Models/AppbaseTenantApplicationEnableCommand.cs",
         "Models/AppbaseTenantApplicationProvisionCommand.cs",
         "Models/AppbaseTenantApplicationUpdateCommand.cs",
         "Models/FieldError.cs",
+        "Models/IamOauthClientCreateCommand.cs",
+        "Models/IamTenantApplicationManagementProvisionCommand.cs",
+        "Models/IamTenantApplicationManagementUpdateCommand.cs",
+        "Models/IamTenantApplicationStatusCommand.cs",
+        "Models/PageInfo.cs",
         "Models/ProblemDetail.cs",
+        "Models/SdkWorkApiResponse.cs",
+        "Models/SdkWorkCommandData.cs",
+        "Models/SdkWorkCommandResponse.cs",
+        "Models/SdkWorkListResponse.cs",
+        "Models/SdkWorkPageData.cs",
+        "Models/SdkWorkResourceData.cs",
+        "Models/SdkWorkResourceResponse.cs",
+        "Models/ServiceAccountCredentialCreateCommand.cs",
+        "Models/ServiceAccountCredentialRevokeCommand.cs",
+        "Models/ServiceAccountTokenExchangeCommand.cs",
         "README.md",
         "sdkwork-sdk.json",
         "SDKWork.Iam.BackendSdk.csproj",
         "SdkworkBackendClient.cs"
       ],
-      "updatedGeneratedFiles": [],
-      "unchangedGeneratedFiles": [],
       "deletedGeneratedFiles": [],
-      "scaffoldedFiles": [
+      "scaffoldedFiles": [],
+      "preservedScaffoldFiles": [
         "custom/README.md"
       ],
-      "preservedScaffoldFiles": [],
       "backedUpFiles": []
     },
     "impact": {
       "schemaVersion": 1,
       "areas": [
-        "api-surface",
-        "models",
-        "runtime",
-        "build-metadata",
-        "publish-workflow",
-        "documentation",
-        "custom-scaffold",
-        "unknown"
+        "api-surface"
       ],
       "details": [
         {
           "area": "api-surface",
           "paths": [
-            "Api/Api.cs",
-            "Api/ApiPaths.cs",
-            "Api/IamApi.cs",
-            "Api/IamOauthApi.cs",
-            "SdkworkBackendClient.cs"
-          ]
-        },
-        {
-          "area": "models",
-          "paths": [
-            "Models/AppbaseAccessCredentialCreateCommand.cs",
-            "Models/AppbaseApiResult.cs",
-            "Models/AppbaseApplicationRegisterCommand.cs",
-            "Models/AppbaseSessionCreateCommand.cs",
-            "Models/AppbaseTenantApplicationEnableCommand.cs",
-            "Models/AppbaseTenantApplicationProvisionCommand.cs",
-            "Models/AppbaseTenantApplicationUpdateCommand.cs",
-            "Models/FieldError.cs",
-            "Models/ProblemDetail.cs"
-          ]
-        },
-        {
-          "area": "runtime",
-          "paths": [
-            "Http/HttpClient.cs"
-          ]
-        },
-        {
-          "area": "build-metadata",
-          "paths": [
-            "sdkwork-sdk.json",
-            "SDKWork.Iam.BackendSdk.csproj"
-          ]
-        },
-        {
-          "area": "publish-workflow",
-          "paths": [
-            "bin/publish-core.mjs",
-            "bin/publish.ps1",
-            "bin/publish.sh"
-          ]
-        },
-        {
-          "area": "documentation",
-          "paths": [
-            "CHANGELOG.md",
-            "custom/README.md",
-            "README.md"
-          ]
-        },
-        {
-          "area": "custom-scaffold",
-          "paths": [
-            "custom/README.md"
-          ]
-        },
-        {
-          "area": "unknown",
-          "paths": [
-            "LICENSE"
+            "Api/IamApi.cs"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required."
+      "summary": "Detected impact areas: api-surface. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
-          "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-csharp\\generated\\server-openapi",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+          "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-csharp\\generated\\server-openapi",
           "command": "node",
           "args": [
             "./bin/publish-core.mjs",
@@ -331,19 +210,16 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "high",
+      "riskLevel": "medium",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
-        "manual-review-required",
-        "preserved-legacy-files",
-        "unknown-impact",
         "verification-required"
       ]
     },
     "backedUpFiles": [],
-    "preservedLegacyFiles": true
+    "preservedLegacyFiles": false
   }
 }

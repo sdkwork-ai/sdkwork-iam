@@ -1,5 +1,7 @@
 require_relative 'base_api'
-require_relative '../models/appbase_api_result'
+require_relative '../models/iam_oauth_client_create_command'
+require_relative '../models/sdk_work_list_response'
+require_relative '../models/sdk_work_resource_response'
 
 module Sdkwork
   module BackendSdk
@@ -19,7 +21,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth account Links update.
@@ -29,7 +31,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth callback Events list.
@@ -46,7 +48,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth claim Mappings list.
@@ -63,7 +65,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth claim Mappings create.
@@ -73,7 +75,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth claim Mappings update.
@@ -83,7 +85,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth clients list.
@@ -100,17 +102,17 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth clients create.
           def clients_create(body: nil)
             path = '/backend/v3/api/iam/oauth/clients'
-            payload = body
+            payload = body.respond_to?(:to_hash) ? body.to_hash : body
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth clients delete.
@@ -119,7 +121,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Iam oauth clients retrieve.
@@ -128,7 +130,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth clients update.
@@ -138,7 +140,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth diagnostic Runs list.
@@ -155,7 +157,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth diagnostic Runs create.
@@ -165,7 +167,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth diagnostic Runs retrieve.
@@ -174,7 +176,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth flow Configs list.
@@ -191,7 +193,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth flow Configs create.
@@ -201,7 +203,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth flow Configs update.
@@ -211,7 +213,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth grants list.
@@ -228,7 +230,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth grants delete.
@@ -237,7 +239,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Iam oauth integrations list.
@@ -254,7 +256,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth integrations create.
@@ -264,7 +266,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth integrations delete.
@@ -273,7 +275,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Iam oauth integrations retrieve.
@@ -282,7 +284,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth integrations update.
@@ -292,7 +294,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth operational Resources list.
@@ -309,7 +311,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth operational Resources create.
@@ -319,7 +321,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth operational Resources delete.
@@ -328,7 +330,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Iam oauth operational Resources update.
@@ -338,7 +340,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth operational Resources publishes create.
@@ -348,7 +350,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth operator Platforms list.
@@ -365,7 +367,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth operator Platforms create.
@@ -375,7 +377,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth operator Platforms update.
@@ -385,7 +387,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth operator Platforms pre Authorizations create.
@@ -395,7 +397,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth policies list.
@@ -412,7 +414,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth policies create.
@@ -422,7 +424,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth policies update.
@@ -432,7 +434,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth provider Catalog list.
@@ -449,7 +451,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth provider Catalog create.
@@ -459,7 +461,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth provider Catalog retrieve.
@@ -468,7 +470,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth provider Catalog update.
@@ -478,7 +480,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth resource Accounts list.
@@ -495,7 +497,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth resource Accounts create.
@@ -505,7 +507,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth resource Accounts update.
@@ -515,7 +517,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth resource Accounts authorization Refreshes create.
@@ -525,7 +527,46 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Iam oauth resource Accounts custom Menus retrieve.
+          def resource_accounts_custom_menus_retrieve(resource_account_id)
+            path = interpolate_path('/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus', resourceAccountId: serialize_path_parameter(resource_account_id, PathParameterSpec.new('resourceAccountId', 'simple', false)))
+            options = {}
+
+            result = @client.request('GET', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Iam oauth resource Accounts custom Menus update.
+          def resource_accounts_custom_menus_update(resource_account_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus', resourceAccountId: serialize_path_parameter(resource_account_id, PathParameterSpec.new('resourceAccountId', 'simple', false)))
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('PATCH', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Iam oauth resource Accounts custom Menus publish.
+          def resource_accounts_custom_menus_publish(resource_account_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/publish', resourceAccountId: serialize_path_parameter(resource_account_id, PathParameterSpec.new('resourceAccountId', 'simple', false)))
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Iam oauth resource Accounts follow Qr Codes create.
+          def resource_accounts_follow_qr_codes_create(resource_account_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/follow_qr_codes', resourceAccountId: serialize_path_parameter(resource_account_id, PathParameterSpec.new('resourceAccountId', 'simple', false)))
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth resource Accounts mini Program Login Checks create.
@@ -535,7 +576,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth resource Accounts verifications create.
@@ -545,7 +586,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth resource Authorizations list.
@@ -562,7 +603,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth resource Authorizations create.
@@ -572,7 +613,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth resource Authorizations update.
@@ -582,7 +623,36 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Iam oauth scan Login Previews create.
+          def scan_login_previews_create(body: nil)
+            path = '/backend/v3/api/iam/oauth/scan_login_previews'
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Iam oauth scan Login Settings retrieve.
+          def scan_login_settings_retrieve()
+            path = '/backend/v3/api/iam/oauth/scan_login_settings'
+            options = {}
+
+            result = @client.request('GET', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Iam oauth scan Login Settings update.
+          def scan_login_settings_update(body: nil)
+            path = '/backend/v3/api/iam/oauth/scan_login_settings'
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('PATCH', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth scope Profiles list.
@@ -599,7 +669,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth scope Profiles create.
@@ -609,7 +679,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth scope Profiles update.
@@ -619,7 +689,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth secrets list.
@@ -636,7 +706,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth secrets create.
@@ -646,7 +716,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth secrets delete.
@@ -655,7 +725,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Iam oauth surfaces list.
@@ -672,7 +742,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth surfaces create.
@@ -682,7 +752,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth surfaces delete.
@@ -691,7 +761,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('DELETE', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result
           end
 
           # Iam oauth surfaces update.
@@ -701,7 +771,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth tenant Bindings list.
@@ -718,7 +788,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth tenant Bindings create.
@@ -728,7 +798,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth tenant Bindings update.
@@ -738,7 +808,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth webhook Configs list.
@@ -755,7 +825,7 @@ module Sdkwork
             options = {}
 
             result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
           # Iam oauth webhook Configs create.
@@ -765,7 +835,16 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Iam oauth webhook Configs delete.
+          def webhook_configs_delete(webhook_config_id)
+            path = interpolate_path('/backend/v3/api/iam/oauth/webhook_configs/{webhookConfigId}', webhookConfigId: serialize_path_parameter(webhook_config_id, PathParameterSpec.new('webhookConfigId', 'simple', false)))
+            options = {}
+
+            result = @client.request('DELETE', path, **options)
+            result
           end
 
           # Iam oauth webhook Configs update.
@@ -775,7 +854,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('PATCH', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Iam oauth webhook Configs verifications create.
@@ -785,7 +864,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AppbaseApiResult.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
       end

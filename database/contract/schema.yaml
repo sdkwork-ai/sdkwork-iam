@@ -102,6 +102,9 @@ tables:
   - name: iam_oauth_resource_authorization
     lifecycle_status: active
     owner: sdkwork-iam
+  - name: iam_oauth_scan_login_config
+    lifecycle_status: active
+    owner: sdkwork-iam
   - name: iam_oauth_scope_profile
     lifecycle_status: active
     owner: sdkwork-iam
@@ -139,6 +142,12 @@ tables:
     lifecycle_status: active
     owner: sdkwork-iam
   - name: iam_position_assignment
+    lifecycle_status: active
+    owner: sdkwork-iam
+  - name: iam_provider_account
+    lifecycle_status: active
+    owner: sdkwork-iam
+  - name: iam_provider_credential
     lifecycle_status: active
     owner: sdkwork-iam
   - name: iam_role

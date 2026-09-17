@@ -9,7 +9,7 @@ import com.sdkwork.iam.backend.sdk.http.HttpClient
 class IamOauthApi(private val client: HttpClient) {
 
     /** Iam oauth account Links list. */
-    suspend fun accountLinksList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun accountLinksList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -18,17 +18,17 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/account_links"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth account Links update. */
-    suspend fun accountLinksUpdate(accountLinkId: String, body: Map<String, Any>? = null): AppbaseApiResult? {
+    suspend fun accountLinksUpdate(accountLinkId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/account_links/${serializePathParameter(accountLinkId, PathParameterSpec("accountLinkId", "simple", false))}"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth callback Events list. */
-    suspend fun callbackEventsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun callbackEventsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -37,11 +37,11 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/callback_events"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth claim Mappings list. */
-    suspend fun claimMappingsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun claimMappingsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -50,23 +50,23 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/claim_mappings"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth claim Mappings create. */
-    suspend fun claimMappingsCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun claimMappingsCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/claim_mappings"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth claim Mappings update. */
-    suspend fun claimMappingsUpdate(mappingId: String, body: Map<String, Any>? = null): AppbaseApiResult? {
+    suspend fun claimMappingsUpdate(mappingId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/claim_mappings/${serializePathParameter(mappingId, PathParameterSpec("mappingId", "simple", false))}"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth clients list. */
-    suspend fun clientsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun clientsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -75,35 +75,34 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/clients"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth clients create. */
-    suspend fun clientsCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun clientsCreate(body: IamOauthClientCreateCommand): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/clients"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth clients delete. */
-    suspend fun clientsDelete(oauthClientId: String): AppbaseApiResult? {
-        val raw = client.delete(ApiPaths.backendPath("/iam/oauth/clients/${serializePathParameter(oauthClientId, PathParameterSpec("oauthClientId", "simple", false))}"))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+    suspend fun clientsDelete(oauthClientId: String): Unit {
+        client.delete(ApiPaths.backendPath("/iam/oauth/clients/${serializePathParameter(oauthClientId, PathParameterSpec("oauthClientId", "simple", false))}"))
     }
 
     /** Iam oauth clients retrieve. */
-    suspend fun clientsRetrieve(oauthClientId: String): AppbaseApiResult? {
+    suspend fun clientsRetrieve(oauthClientId: String): SdkWorkResourceResponse? {
         val raw = client.get(ApiPaths.backendPath("/iam/oauth/clients/${serializePathParameter(oauthClientId, PathParameterSpec("oauthClientId", "simple", false))}"))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth clients update. */
-    suspend fun clientsUpdate(oauthClientId: String, body: Map<String, Any>? = null): AppbaseApiResult? {
+    suspend fun clientsUpdate(oauthClientId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/clients/${serializePathParameter(oauthClientId, PathParameterSpec("oauthClientId", "simple", false))}"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth diagnostic Runs list. */
-    suspend fun diagnosticRunsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun diagnosticRunsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -112,23 +111,23 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/diagnostic_runs"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth diagnostic Runs create. */
-    suspend fun diagnosticRunsCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun diagnosticRunsCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/diagnostic_runs"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth diagnostic Runs retrieve. */
-    suspend fun diagnosticRunsRetrieve(diagnosticRunId: String): AppbaseApiResult? {
+    suspend fun diagnosticRunsRetrieve(diagnosticRunId: String): SdkWorkResourceResponse? {
         val raw = client.get(ApiPaths.backendPath("/iam/oauth/diagnostic_runs/${serializePathParameter(diagnosticRunId, PathParameterSpec("diagnosticRunId", "simple", false))}"))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth flow Configs list. */
-    suspend fun flowConfigsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun flowConfigsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -137,23 +136,23 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/flow_configs"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth flow Configs create. */
-    suspend fun flowConfigsCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun flowConfigsCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/flow_configs"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth flow Configs update. */
-    suspend fun flowConfigsUpdate(flowConfigId: String, body: Map<String, Any>? = null): AppbaseApiResult? {
+    suspend fun flowConfigsUpdate(flowConfigId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/flow_configs/${serializePathParameter(flowConfigId, PathParameterSpec("flowConfigId", "simple", false))}"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth grants list. */
-    suspend fun grantsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun grantsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -162,17 +161,16 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/grants"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth grants delete. */
-    suspend fun grantsDelete(grantId: String): AppbaseApiResult? {
-        val raw = client.delete(ApiPaths.backendPath("/iam/oauth/grants/${serializePathParameter(grantId, PathParameterSpec("grantId", "simple", false))}"))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+    suspend fun grantsDelete(grantId: String): Unit {
+        client.delete(ApiPaths.backendPath("/iam/oauth/grants/${serializePathParameter(grantId, PathParameterSpec("grantId", "simple", false))}"))
     }
 
     /** Iam oauth integrations list. */
-    suspend fun integrationsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun integrationsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -181,35 +179,34 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/integrations"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth integrations create. */
-    suspend fun integrationsCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun integrationsCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/integrations"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth integrations delete. */
-    suspend fun integrationsDelete(integrationId: String): AppbaseApiResult? {
-        val raw = client.delete(ApiPaths.backendPath("/iam/oauth/integrations/${serializePathParameter(integrationId, PathParameterSpec("integrationId", "simple", false))}"))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+    suspend fun integrationsDelete(integrationId: String): Unit {
+        client.delete(ApiPaths.backendPath("/iam/oauth/integrations/${serializePathParameter(integrationId, PathParameterSpec("integrationId", "simple", false))}"))
     }
 
     /** Iam oauth integrations retrieve. */
-    suspend fun integrationsRetrieve(integrationId: String): AppbaseApiResult? {
+    suspend fun integrationsRetrieve(integrationId: String): SdkWorkResourceResponse? {
         val raw = client.get(ApiPaths.backendPath("/iam/oauth/integrations/${serializePathParameter(integrationId, PathParameterSpec("integrationId", "simple", false))}"))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth integrations update. */
-    suspend fun integrationsUpdate(integrationId: String, body: Map<String, Any>? = null): AppbaseApiResult? {
+    suspend fun integrationsUpdate(integrationId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/integrations/${serializePathParameter(integrationId, PathParameterSpec("integrationId", "simple", false))}"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth operational Resources list. */
-    suspend fun operationalResourcesList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun operationalResourcesList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -218,35 +215,34 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/operational_resources"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth operational Resources create. */
-    suspend fun operationalResourcesCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun operationalResourcesCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/operational_resources"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth operational Resources delete. */
-    suspend fun operationalResourcesDelete(resourceId: String): AppbaseApiResult? {
-        val raw = client.delete(ApiPaths.backendPath("/iam/oauth/operational_resources/${serializePathParameter(resourceId, PathParameterSpec("resourceId", "simple", false))}"))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+    suspend fun operationalResourcesDelete(resourceId: String): Unit {
+        client.delete(ApiPaths.backendPath("/iam/oauth/operational_resources/${serializePathParameter(resourceId, PathParameterSpec("resourceId", "simple", false))}"))
     }
 
     /** Iam oauth operational Resources update. */
-    suspend fun operationalResourcesUpdate(resourceId: String, body: Map<String, Any>? = null): AppbaseApiResult? {
+    suspend fun operationalResourcesUpdate(resourceId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/operational_resources/${serializePathParameter(resourceId, PathParameterSpec("resourceId", "simple", false))}"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth operational Resources publishes create. */
-    suspend fun operationalResourcesPublishesCreate(resourceId: String, body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun operationalResourcesPublishesCreate(resourceId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/operational_resources/${serializePathParameter(resourceId, PathParameterSpec("resourceId", "simple", false))}/publishes"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth operator Platforms list. */
-    suspend fun operatorPlatformsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun operatorPlatformsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -255,29 +251,29 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/operator_platforms"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth operator Platforms create. */
-    suspend fun operatorPlatformsCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun operatorPlatformsCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/operator_platforms"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth operator Platforms update. */
-    suspend fun operatorPlatformsUpdate(operatorPlatformId: String, body: Map<String, Any>? = null): AppbaseApiResult? {
+    suspend fun operatorPlatformsUpdate(operatorPlatformId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/operator_platforms/${serializePathParameter(operatorPlatformId, PathParameterSpec("operatorPlatformId", "simple", false))}"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth operator Platforms pre Authorizations create. */
-    suspend fun operatorPlatformsPreAuthorizationsCreate(operatorPlatformId: String, body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun operatorPlatformsPreAuthorizationsCreate(operatorPlatformId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/operator_platforms/${serializePathParameter(operatorPlatformId, PathParameterSpec("operatorPlatformId", "simple", false))}/pre_authorizations"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth policies list. */
-    suspend fun policiesList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun policiesList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -286,23 +282,23 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/policies"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth policies create. */
-    suspend fun policiesCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun policiesCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/policies"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth policies update. */
-    suspend fun policiesUpdate(policyId: String, body: Map<String, Any>? = null): AppbaseApiResult? {
+    suspend fun policiesUpdate(policyId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/policies/${serializePathParameter(policyId, PathParameterSpec("policyId", "simple", false))}"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth provider Catalog list. */
-    suspend fun providerCatalogList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun providerCatalogList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -311,29 +307,29 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/provider_catalog"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth provider Catalog create. */
-    suspend fun providerCatalogCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun providerCatalogCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/provider_catalog"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth provider Catalog retrieve. */
-    suspend fun providerCatalogRetrieve(providerCatalogId: String): AppbaseApiResult? {
+    suspend fun providerCatalogRetrieve(providerCatalogId: String): SdkWorkResourceResponse? {
         val raw = client.get(ApiPaths.backendPath("/iam/oauth/provider_catalog/${serializePathParameter(providerCatalogId, PathParameterSpec("providerCatalogId", "simple", false))}"))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth provider Catalog update. */
-    suspend fun providerCatalogUpdate(providerCatalogId: String, body: Map<String, Any>? = null): AppbaseApiResult? {
+    suspend fun providerCatalogUpdate(providerCatalogId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/provider_catalog/${serializePathParameter(providerCatalogId, PathParameterSpec("providerCatalogId", "simple", false))}"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth resource Accounts list. */
-    suspend fun resourceAccountsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun resourceAccountsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -342,41 +338,65 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/resource_accounts"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth resource Accounts create. */
-    suspend fun resourceAccountsCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun resourceAccountsCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth resource Accounts update. */
-    suspend fun resourceAccountsUpdate(resourceAccountId: String, body: Map<String, Any>? = null): AppbaseApiResult? {
+    suspend fun resourceAccountsUpdate(resourceAccountId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, PathParameterSpec("resourceAccountId", "simple", false))}"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth resource Accounts authorization Refreshes create. */
-    suspend fun resourceAccountsAuthorizationRefreshesCreate(resourceAccountId: String, body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun resourceAccountsAuthorizationRefreshesCreate(resourceAccountId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, PathParameterSpec("resourceAccountId", "simple", false))}/authorization_refreshes"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
+    }
+
+    /** Iam oauth resource Accounts custom Menus retrieve. */
+    suspend fun resourceAccountsCustomMenusRetrieve(resourceAccountId: String): SdkWorkResourceResponse? {
+        val raw = client.get(ApiPaths.backendPath("/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, PathParameterSpec("resourceAccountId", "simple", false))}/custom_menus"))
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
+    }
+
+    /** Iam oauth resource Accounts custom Menus update. */
+    suspend fun resourceAccountsCustomMenusUpdate(resourceAccountId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
+        val raw = client.patch(ApiPaths.backendPath("/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, PathParameterSpec("resourceAccountId", "simple", false))}/custom_menus"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
+    }
+
+    /** Iam oauth resource Accounts custom Menus publish. */
+    suspend fun resourceAccountsCustomMenusPublish(resourceAccountId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
+        val raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, PathParameterSpec("resourceAccountId", "simple", false))}/custom_menus/publish"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
+    }
+
+    /** Iam oauth resource Accounts follow Qr Codes create. */
+    suspend fun resourceAccountsFollowQrCodesCreate(resourceAccountId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
+        val raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, PathParameterSpec("resourceAccountId", "simple", false))}/follow_qr_codes"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth resource Accounts mini Program Login Checks create. */
-    suspend fun resourceAccountsMiniProgramLoginChecksCreate(resourceAccountId: String, body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun resourceAccountsMiniProgramLoginChecksCreate(resourceAccountId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, PathParameterSpec("resourceAccountId", "simple", false))}/mini_program_login_checks"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth resource Accounts verifications create. */
-    suspend fun resourceAccountsVerificationsCreate(resourceAccountId: String, body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun resourceAccountsVerificationsCreate(resourceAccountId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, PathParameterSpec("resourceAccountId", "simple", false))}/verifications"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth resource Authorizations list. */
-    suspend fun resourceAuthorizationsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun resourceAuthorizationsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -385,23 +405,41 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/resource_authorizations"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth resource Authorizations create. */
-    suspend fun resourceAuthorizationsCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun resourceAuthorizationsCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_authorizations"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth resource Authorizations update. */
-    suspend fun resourceAuthorizationsUpdate(authorizationId: String, body: Map<String, Any>? = null): AppbaseApiResult? {
+    suspend fun resourceAuthorizationsUpdate(authorizationId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/resource_authorizations/${serializePathParameter(authorizationId, PathParameterSpec("authorizationId", "simple", false))}"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
+    }
+
+    /** Iam oauth scan Login Previews create. */
+    suspend fun scanLoginPreviewsCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
+        val raw = client.post(ApiPaths.backendPath("/iam/oauth/scan_login_previews"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
+    }
+
+    /** Iam oauth scan Login Settings retrieve. */
+    suspend fun scanLoginSettingsRetrieve(): SdkWorkResourceResponse? {
+        val raw = client.get(ApiPaths.backendPath("/iam/oauth/scan_login_settings"))
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
+    }
+
+    /** Iam oauth scan Login Settings update. */
+    suspend fun scanLoginSettingsUpdate(body: Map<String, Any>? = null): SdkWorkResourceResponse? {
+        val raw = client.patch(ApiPaths.backendPath("/iam/oauth/scan_login_settings"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth scope Profiles list. */
-    suspend fun scopeProfilesList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun scopeProfilesList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -410,23 +448,23 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/scope_profiles"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth scope Profiles create. */
-    suspend fun scopeProfilesCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun scopeProfilesCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/scope_profiles"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth scope Profiles update. */
-    suspend fun scopeProfilesUpdate(scopeProfileId: String, body: Map<String, Any>? = null): AppbaseApiResult? {
+    suspend fun scopeProfilesUpdate(scopeProfileId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/scope_profiles/${serializePathParameter(scopeProfileId, PathParameterSpec("scopeProfileId", "simple", false))}"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth secrets list. */
-    suspend fun secretsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun secretsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -435,23 +473,22 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/secrets"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth secrets create. */
-    suspend fun secretsCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun secretsCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/secrets"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth secrets delete. */
-    suspend fun secretsDelete(secretId: String): AppbaseApiResult? {
-        val raw = client.delete(ApiPaths.backendPath("/iam/oauth/secrets/${serializePathParameter(secretId, PathParameterSpec("secretId", "simple", false))}"))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+    suspend fun secretsDelete(secretId: String): Unit {
+        client.delete(ApiPaths.backendPath("/iam/oauth/secrets/${serializePathParameter(secretId, PathParameterSpec("secretId", "simple", false))}"))
     }
 
     /** Iam oauth surfaces list. */
-    suspend fun surfacesList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun surfacesList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -460,29 +497,28 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/surfaces"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth surfaces create. */
-    suspend fun surfacesCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun surfacesCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/surfaces"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth surfaces delete. */
-    suspend fun surfacesDelete(surfaceId: String): AppbaseApiResult? {
-        val raw = client.delete(ApiPaths.backendPath("/iam/oauth/surfaces/${serializePathParameter(surfaceId, PathParameterSpec("surfaceId", "simple", false))}"))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+    suspend fun surfacesDelete(surfaceId: String): Unit {
+        client.delete(ApiPaths.backendPath("/iam/oauth/surfaces/${serializePathParameter(surfaceId, PathParameterSpec("surfaceId", "simple", false))}"))
     }
 
     /** Iam oauth surfaces update. */
-    suspend fun surfacesUpdate(surfaceId: String, body: Map<String, Any>? = null): AppbaseApiResult? {
+    suspend fun surfacesUpdate(surfaceId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/surfaces/${serializePathParameter(surfaceId, PathParameterSpec("surfaceId", "simple", false))}"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth tenant Bindings list. */
-    suspend fun tenantBindingsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun tenantBindingsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -491,23 +527,23 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/tenant_bindings"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth tenant Bindings create. */
-    suspend fun tenantBindingsCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun tenantBindingsCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/tenant_bindings"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth tenant Bindings update. */
-    suspend fun tenantBindingsUpdate(bindingId: String, body: Map<String, Any>? = null): AppbaseApiResult? {
+    suspend fun tenantBindingsUpdate(bindingId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/tenant_bindings/${serializePathParameter(bindingId, PathParameterSpec("bindingId", "simple", false))}"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth webhook Configs list. */
-    suspend fun webhookConfigsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): AppbaseApiResult? {
+    suspend fun webhookConfigsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
             QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -516,25 +552,30 @@ class IamOauthApi(private val client: HttpClient) {
             QueryParameterSpec("q", q, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/webhook_configs"), query))
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
     /** Iam oauth webhook Configs create. */
-    suspend fun webhookConfigsCreate(body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun webhookConfigsCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/webhook_configs"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
+    }
+
+    /** Iam oauth webhook Configs delete. */
+    suspend fun webhookConfigsDelete(webhookConfigId: String): Unit {
+        client.delete(ApiPaths.backendPath("/iam/oauth/webhook_configs/${serializePathParameter(webhookConfigId, PathParameterSpec("webhookConfigId", "simple", false))}"))
     }
 
     /** Iam oauth webhook Configs update. */
-    suspend fun webhookConfigsUpdate(webhookConfigId: String, body: Map<String, Any>? = null): AppbaseApiResult? {
+    suspend fun webhookConfigsUpdate(webhookConfigId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/webhook_configs/${serializePathParameter(webhookConfigId, PathParameterSpec("webhookConfigId", "simple", false))}"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Iam oauth webhook Configs verifications create. */
-    suspend fun webhookConfigsVerificationsCreate(webhookConfigId: String, body: Map<String, Any>): AppbaseApiResult? {
+    suspend fun webhookConfigsVerificationsCreate(webhookConfigId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/webhook_configs/${serializePathParameter(webhookConfigId, PathParameterSpec("webhookConfigId", "simple", false))}/verifications"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AppbaseApiResult>() {})
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     private data class PathParameterSpec(val name: String, val style: String, val explode: Boolean)

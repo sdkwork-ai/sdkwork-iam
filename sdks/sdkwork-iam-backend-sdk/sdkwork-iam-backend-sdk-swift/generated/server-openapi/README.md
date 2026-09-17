@@ -64,15 +64,8 @@ print(result)
 ### iam_oauth
 
 ```swift
-// Iam oauth account Links list.
-let params: [String: Any] = [
-    "page": 1,
-    "page_size": 2,
-    "cursor": "cursor",
-    "sort": "sort",
-    "q": "q"
-]
-let result = try await client.iamOauth.accountLinksList(params: params)
+// Iam oauth scan Login Settings retrieve.
+let result = try await client.iamOauth.scanLoginSettingsRetrieve()
 print(result)
 ```
 

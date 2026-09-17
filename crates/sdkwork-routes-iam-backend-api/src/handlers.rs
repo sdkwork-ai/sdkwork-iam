@@ -167,8 +167,9 @@ pub async fn build_sdkwork_iam_backend_api_router_from_env() -> Router {
 
 fn build_sdkwork_iam_backend_api_business_router_with_state(state: BackendIamState) -> Router {
     oauth_management::apply_oauth_routes(management::apply_management_routes(
-        crate::service_account_credentials::apply_service_account_credential_routes(
-            Router::new()
+        crate::provider_accounts::apply_provider_account_routes(
+            crate::service_account_credentials::apply_service_account_credential_routes(
+                Router::new()
                 .route(
                     "/backend/v3/api/iam/account_binding_policy",
                     get(retrieve_account_binding_policy).patch(update_account_binding_policy),
@@ -215,6 +216,7 @@ fn build_sdkwork_iam_backend_api_business_router_with_state(state: BackendIamSta
                     "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/disable",
                     post(disable_tenant_application_management_handler),
                 ),
+            ),
         ),
     ))
     .with_state(state.clone())

@@ -9,13 +9,16 @@
     "protocol": "http",
     "packageName": "github.com/sdkwork/sdkwork-iam-backend-sdk"
   },
-  "changeFingerprint": "9861c06ae0baa5874ff49be6f9eac54952651ff0139969cc4ec91add21566755",
+  "changeFingerprint": "55d4bc5b0191f22795f1d375b7bf9d89041769dec675af80d3345b4a81fc1b79",
   "changes": {
-    "createdGeneratedFiles": [
+    "createdGeneratedFiles": [],
+    "updatedGeneratedFiles": [
+      "api/iam.go"
+    ],
+    "unchangedGeneratedFiles": [
       "api/base.go",
       "api/doc.go",
       "api/iam_oauth.go",
-      "api/iam.go",
       "api/paths.go",
       "bin/publish-core.mjs",
       "bin/publish.ps1",
@@ -30,127 +33,66 @@
       "sdk.go",
       "sdkwork-sdk.json",
       "types/appbase_access_credential_create_command.go",
-      "types/appbase_api_result.go",
       "types/appbase_application_register_command.go",
       "types/appbase_operation_command.go",
-      "types/appbase_session_create_command.go",
       "types/appbase_tenant_application_enable_command.go",
       "types/appbase_tenant_application_provision_command.go",
       "types/appbase_tenant_application_update_command.go",
       "types/common.go",
       "types/doc.go",
       "types/field_error.go",
-      "types/problem_detail.go"
+      "types/iam_oauth_client_create_command.go",
+      "types/iam_tenant_application_management_provision_command.go",
+      "types/iam_tenant_application_management_update_command.go",
+      "types/iam_tenant_application_status_command.go",
+      "types/page_info.go",
+      "types/problem_detail.go",
+      "types/sdk_work_api_response.go",
+      "types/sdk_work_command_data.go",
+      "types/sdk_work_command_response.go",
+      "types/sdk_work_list_response.go",
+      "types/sdk_work_page_data.go",
+      "types/sdk_work_platform_error_code.go",
+      "types/sdk_work_resource_data.go",
+      "types/sdk_work_resource_response.go",
+      "types/service_account_credential_create_command.go",
+      "types/service_account_credential_revoke_command.go",
+      "types/service_account_token_exchange_command.go"
     ],
-    "updatedGeneratedFiles": [],
-    "unchangedGeneratedFiles": [],
     "deletedGeneratedFiles": [],
-    "scaffoldedFiles": [
+    "scaffoldedFiles": [],
+    "preservedScaffoldFiles": [
       "custom/README.md"
     ],
-    "preservedScaffoldFiles": [],
     "backedUpFiles": []
   },
   "impact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface",
-      "models",
-      "runtime",
-      "build-metadata",
-      "publish-workflow",
-      "documentation",
-      "custom-scaffold",
-      "unknown"
+      "api-surface"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "api/base.go",
-          "api/doc.go",
-          "api/iam_oauth.go",
-          "api/iam.go",
-          "api/paths.go",
-          "http/client.go"
-        ]
-      },
-      {
-        "area": "models",
-        "paths": [
-          "types/appbase_access_credential_create_command.go",
-          "types/appbase_api_result.go",
-          "types/appbase_application_register_command.go",
-          "types/appbase_operation_command.go",
-          "types/appbase_session_create_command.go",
-          "types/appbase_tenant_application_enable_command.go",
-          "types/appbase_tenant_application_provision_command.go",
-          "types/appbase_tenant_application_update_command.go",
-          "types/common.go",
-          "types/doc.go",
-          "types/field_error.go",
-          "types/problem_detail.go"
-        ]
-      },
-      {
-        "area": "runtime",
-        "paths": [
-          "http/client.go",
-          "http/doc.go"
-        ]
-      },
-      {
-        "area": "build-metadata",
-        "paths": [
-          "go.mod",
-          "sdkwork-sdk.json"
-        ]
-      },
-      {
-        "area": "publish-workflow",
-        "paths": [
-          "bin/publish-core.mjs",
-          "bin/publish.ps1",
-          "bin/publish.sh"
-        ]
-      },
-      {
-        "area": "documentation",
-        "paths": [
-          "CHANGELOG.md",
-          "custom/README.md",
-          "README.md"
-        ]
-      },
-      {
-        "area": "custom-scaffold",
-        "paths": [
-          "custom/README.md"
-        ]
-      },
-      {
-        "area": "unknown",
-        "paths": [
-          "doc.go",
-          "LICENSE",
-          "sdk.go"
+          "api/iam.go"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required."
+    "summary": "Detected impact areas: api-surface. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
-        "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-go\\generated\\server-openapi",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-go\\generated\\server-openapi",
         "command": "node",
         "args": [
           "./bin/publish-core.mjs",
@@ -167,17 +109,14 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "manual-review-required",
-      "preserved-legacy-files",
-      "unknown-impact",
       "verification-required"
     ]
   },
-  "preservedLegacyFiles": true
+  "preservedLegacyFiles": false
 }

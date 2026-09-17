@@ -48,6 +48,7 @@ impl IamTables {
     pub const OAUTH_GRANT: &'static str = "iam_oauth_grant";
     pub const OAUTH_CALLBACK_EVENT: &'static str = "iam_oauth_callback_event";
     pub const OAUTH_DIAGNOSTIC_RUN: &'static str = "iam_oauth_diagnostic_run";
+    pub const OAUTH_SCAN_LOGIN_CONFIG: &'static str = "iam_oauth_scan_login_config";
     pub const EPHEMERAL_ARTIFACT: &'static str = "iam_ephemeral_artifact";
     pub const APPLICATION_TEMPLATE: &'static str = "iam_application_template";
     pub const APPLICATION_TEMPLATE_PACKAGE: &'static str = "iam_application_template_package";
@@ -59,6 +60,8 @@ impl IamTables {
     pub const GROUP_MEMBER: &'static str = "iam_group_member";
     pub const SERVICE_ACCOUNT: &'static str = "iam_service_account";
     pub const SERVICE_ACCOUNT_CREDENTIAL: &'static str = "iam_service_account_credential";
+    pub const PROVIDER_ACCOUNT: &'static str = "iam_provider_account";
+    pub const PROVIDER_CREDENTIAL: &'static str = "iam_provider_credential";
     pub const ROLE_EXCLUSION: &'static str = "iam_role_exclusion";
 }
 
@@ -110,6 +113,7 @@ pub fn iam_database_tables() -> Vec<&'static str> {
         IamTables::OAUTH_GRANT,
         IamTables::OAUTH_CALLBACK_EVENT,
         IamTables::OAUTH_DIAGNOSTIC_RUN,
+        IamTables::OAUTH_SCAN_LOGIN_CONFIG,
         IamTables::EPHEMERAL_ARTIFACT,
         IamTables::APPLICATION_TEMPLATE,
         IamTables::APPLICATION_TEMPLATE_PACKAGE,
@@ -121,6 +125,8 @@ pub fn iam_database_tables() -> Vec<&'static str> {
         IamTables::GROUP_MEMBER,
         IamTables::SERVICE_ACCOUNT,
         IamTables::SERVICE_ACCOUNT_CREDENTIAL,
+        IamTables::PROVIDER_ACCOUNT,
+        IamTables::PROVIDER_CREDENTIAL,
         IamTables::ROLE_EXCLUSION,
     ]
 }

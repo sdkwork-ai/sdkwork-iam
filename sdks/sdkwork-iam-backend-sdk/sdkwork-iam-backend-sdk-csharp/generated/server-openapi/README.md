@@ -66,16 +66,8 @@ Console.WriteLine(result);
 ### iam_oauth
 
 ```csharp
-// Iam oauth account Links list.
-var query = new Dictionary<string, object>
-{
-    ["page"] = 1,
-    ["page_size"] = 2,
-    ["cursor"] = "cursor",
-    ["sort"] = "sort",
-    ["q"] = "q",
-};
-var result = await client.IamOauth.AccountLinksListAsync(query);
+// Iam oauth scan Login Settings retrieve.
+var result = await client.IamOauth.ScanLoginSettingsRetrieveAsync();
 Console.WriteLine(result);
 ```
 

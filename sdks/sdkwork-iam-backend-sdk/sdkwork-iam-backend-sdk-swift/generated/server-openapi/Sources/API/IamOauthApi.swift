@@ -8,7 +8,7 @@ public class IamOauthApi {
     }
 
     /// Iam oauth account Links list.
-    public func accountLinksList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func accountLinksList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -16,16 +16,16 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/account_links"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/account_links"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth account Links update.
-    public func accountLinksUpdate(accountLinkId: String, body: [String: Any]? = nil) async throws -> AppbaseApiResult? {
-        return try await client.patch(ApiPaths.backendPath("/iam/oauth/account_links/\(serializePathParameter(accountLinkId, PathParameterSpec(name: "accountLinkId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func accountLinksUpdate(accountLinkId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/account_links/\(serializePathParameter(accountLinkId, PathParameterSpec(name: "accountLinkId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth callback Events list.
-    public func callbackEventsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func callbackEventsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -33,11 +33,11 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/callback_events"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/callback_events"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth claim Mappings list.
-    public func claimMappingsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func claimMappingsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -45,21 +45,21 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/claim_mappings"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/claim_mappings"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth claim Mappings create.
-    public func claimMappingsCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/claim_mappings"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func claimMappingsCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/claim_mappings"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth claim Mappings update.
-    public func claimMappingsUpdate(mappingId: String, body: [String: Any]? = nil) async throws -> AppbaseApiResult? {
-        return try await client.patch(ApiPaths.backendPath("/iam/oauth/claim_mappings/\(serializePathParameter(mappingId, PathParameterSpec(name: "mappingId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func claimMappingsUpdate(mappingId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/claim_mappings/\(serializePathParameter(mappingId, PathParameterSpec(name: "mappingId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth clients list.
-    public func clientsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func clientsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -67,31 +67,31 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/clients"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/clients"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth clients create.
-    public func clientsCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/clients"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func clientsCreate(body: IamOauthClientCreateCommand) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/clients"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth clients delete.
-    public func clientsDelete(oauthClientId: String) async throws -> AppbaseApiResult? {
-        return try await client.delete(ApiPaths.backendPath("/iam/oauth/clients/\(serializePathParameter(oauthClientId, PathParameterSpec(name: "oauthClientId", style: "simple", explode: false)))"), responseType: AppbaseApiResult.self)
+    public func clientsDelete(oauthClientId: String) async throws -> Void {
+        _ = try await client.delete(ApiPaths.backendPath("/iam/oauth/clients/\(serializePathParameter(oauthClientId, PathParameterSpec(name: "oauthClientId", style: "simple", explode: false)))"))
     }
 
     /// Iam oauth clients retrieve.
-    public func clientsRetrieve(oauthClientId: String) async throws -> AppbaseApiResult? {
-        return try await client.get(ApiPaths.backendPath("/iam/oauth/clients/\(serializePathParameter(oauthClientId, PathParameterSpec(name: "oauthClientId", style: "simple", explode: false)))"), responseType: AppbaseApiResult.self)
+    public func clientsRetrieve(oauthClientId: String) async throws -> SdkWorkResourceResponse? {
+        return try await client.get(ApiPaths.backendPath("/iam/oauth/clients/\(serializePathParameter(oauthClientId, PathParameterSpec(name: "oauthClientId", style: "simple", explode: false)))"), responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth clients update.
-    public func clientsUpdate(oauthClientId: String, body: [String: Any]? = nil) async throws -> AppbaseApiResult? {
-        return try await client.patch(ApiPaths.backendPath("/iam/oauth/clients/\(serializePathParameter(oauthClientId, PathParameterSpec(name: "oauthClientId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func clientsUpdate(oauthClientId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/clients/\(serializePathParameter(oauthClientId, PathParameterSpec(name: "oauthClientId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth diagnostic Runs list.
-    public func diagnosticRunsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func diagnosticRunsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -99,21 +99,21 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/diagnostic_runs"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/diagnostic_runs"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth diagnostic Runs create.
-    public func diagnosticRunsCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/diagnostic_runs"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func diagnosticRunsCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/diagnostic_runs"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth diagnostic Runs retrieve.
-    public func diagnosticRunsRetrieve(diagnosticRunId: String) async throws -> AppbaseApiResult? {
-        return try await client.get(ApiPaths.backendPath("/iam/oauth/diagnostic_runs/\(serializePathParameter(diagnosticRunId, PathParameterSpec(name: "diagnosticRunId", style: "simple", explode: false)))"), responseType: AppbaseApiResult.self)
+    public func diagnosticRunsRetrieve(diagnosticRunId: String) async throws -> SdkWorkResourceResponse? {
+        return try await client.get(ApiPaths.backendPath("/iam/oauth/diagnostic_runs/\(serializePathParameter(diagnosticRunId, PathParameterSpec(name: "diagnosticRunId", style: "simple", explode: false)))"), responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth flow Configs list.
-    public func flowConfigsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func flowConfigsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -121,21 +121,21 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/flow_configs"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/flow_configs"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth flow Configs create.
-    public func flowConfigsCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/flow_configs"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func flowConfigsCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/flow_configs"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth flow Configs update.
-    public func flowConfigsUpdate(flowConfigId: String, body: [String: Any]? = nil) async throws -> AppbaseApiResult? {
-        return try await client.patch(ApiPaths.backendPath("/iam/oauth/flow_configs/\(serializePathParameter(flowConfigId, PathParameterSpec(name: "flowConfigId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func flowConfigsUpdate(flowConfigId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/flow_configs/\(serializePathParameter(flowConfigId, PathParameterSpec(name: "flowConfigId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth grants list.
-    public func grantsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func grantsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -143,16 +143,16 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/grants"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/grants"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth grants delete.
-    public func grantsDelete(grantId: String) async throws -> AppbaseApiResult? {
-        return try await client.delete(ApiPaths.backendPath("/iam/oauth/grants/\(serializePathParameter(grantId, PathParameterSpec(name: "grantId", style: "simple", explode: false)))"), responseType: AppbaseApiResult.self)
+    public func grantsDelete(grantId: String) async throws -> Void {
+        _ = try await client.delete(ApiPaths.backendPath("/iam/oauth/grants/\(serializePathParameter(grantId, PathParameterSpec(name: "grantId", style: "simple", explode: false)))"))
     }
 
     /// Iam oauth integrations list.
-    public func integrationsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func integrationsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -160,31 +160,31 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/integrations"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/integrations"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth integrations create.
-    public func integrationsCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/integrations"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func integrationsCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/integrations"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth integrations delete.
-    public func integrationsDelete(integrationId: String) async throws -> AppbaseApiResult? {
-        return try await client.delete(ApiPaths.backendPath("/iam/oauth/integrations/\(serializePathParameter(integrationId, PathParameterSpec(name: "integrationId", style: "simple", explode: false)))"), responseType: AppbaseApiResult.self)
+    public func integrationsDelete(integrationId: String) async throws -> Void {
+        _ = try await client.delete(ApiPaths.backendPath("/iam/oauth/integrations/\(serializePathParameter(integrationId, PathParameterSpec(name: "integrationId", style: "simple", explode: false)))"))
     }
 
     /// Iam oauth integrations retrieve.
-    public func integrationsRetrieve(integrationId: String) async throws -> AppbaseApiResult? {
-        return try await client.get(ApiPaths.backendPath("/iam/oauth/integrations/\(serializePathParameter(integrationId, PathParameterSpec(name: "integrationId", style: "simple", explode: false)))"), responseType: AppbaseApiResult.self)
+    public func integrationsRetrieve(integrationId: String) async throws -> SdkWorkResourceResponse? {
+        return try await client.get(ApiPaths.backendPath("/iam/oauth/integrations/\(serializePathParameter(integrationId, PathParameterSpec(name: "integrationId", style: "simple", explode: false)))"), responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth integrations update.
-    public func integrationsUpdate(integrationId: String, body: [String: Any]? = nil) async throws -> AppbaseApiResult? {
-        return try await client.patch(ApiPaths.backendPath("/iam/oauth/integrations/\(serializePathParameter(integrationId, PathParameterSpec(name: "integrationId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func integrationsUpdate(integrationId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/integrations/\(serializePathParameter(integrationId, PathParameterSpec(name: "integrationId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth operational Resources list.
-    public func operationalResourcesList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func operationalResourcesList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -192,31 +192,31 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/operational_resources"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/operational_resources"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth operational Resources create.
-    public func operationalResourcesCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/operational_resources"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func operationalResourcesCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/operational_resources"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth operational Resources delete.
-    public func operationalResourcesDelete(resourceId: String) async throws -> AppbaseApiResult? {
-        return try await client.delete(ApiPaths.backendPath("/iam/oauth/operational_resources/\(serializePathParameter(resourceId, PathParameterSpec(name: "resourceId", style: "simple", explode: false)))"), responseType: AppbaseApiResult.self)
+    public func operationalResourcesDelete(resourceId: String) async throws -> Void {
+        _ = try await client.delete(ApiPaths.backendPath("/iam/oauth/operational_resources/\(serializePathParameter(resourceId, PathParameterSpec(name: "resourceId", style: "simple", explode: false)))"))
     }
 
     /// Iam oauth operational Resources update.
-    public func operationalResourcesUpdate(resourceId: String, body: [String: Any]? = nil) async throws -> AppbaseApiResult? {
-        return try await client.patch(ApiPaths.backendPath("/iam/oauth/operational_resources/\(serializePathParameter(resourceId, PathParameterSpec(name: "resourceId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func operationalResourcesUpdate(resourceId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/operational_resources/\(serializePathParameter(resourceId, PathParameterSpec(name: "resourceId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth operational Resources publishes create.
-    public func operationalResourcesPublishesCreate(resourceId: String, body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/operational_resources/\(serializePathParameter(resourceId, PathParameterSpec(name: "resourceId", style: "simple", explode: false)))/publishes"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func operationalResourcesPublishesCreate(resourceId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/operational_resources/\(serializePathParameter(resourceId, PathParameterSpec(name: "resourceId", style: "simple", explode: false)))/publishes"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth operator Platforms list.
-    public func operatorPlatformsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func operatorPlatformsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -224,26 +224,26 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/operator_platforms"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/operator_platforms"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth operator Platforms create.
-    public func operatorPlatformsCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/operator_platforms"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func operatorPlatformsCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/operator_platforms"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth operator Platforms update.
-    public func operatorPlatformsUpdate(operatorPlatformId: String, body: [String: Any]? = nil) async throws -> AppbaseApiResult? {
-        return try await client.patch(ApiPaths.backendPath("/iam/oauth/operator_platforms/\(serializePathParameter(operatorPlatformId, PathParameterSpec(name: "operatorPlatformId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func operatorPlatformsUpdate(operatorPlatformId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/operator_platforms/\(serializePathParameter(operatorPlatformId, PathParameterSpec(name: "operatorPlatformId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth operator Platforms pre Authorizations create.
-    public func operatorPlatformsPreAuthorizationsCreate(operatorPlatformId: String, body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/operator_platforms/\(serializePathParameter(operatorPlatformId, PathParameterSpec(name: "operatorPlatformId", style: "simple", explode: false)))/pre_authorizations"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func operatorPlatformsPreAuthorizationsCreate(operatorPlatformId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/operator_platforms/\(serializePathParameter(operatorPlatformId, PathParameterSpec(name: "operatorPlatformId", style: "simple", explode: false)))/pre_authorizations"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth policies list.
-    public func policiesList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func policiesList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -251,21 +251,21 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/policies"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/policies"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth policies create.
-    public func policiesCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/policies"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func policiesCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/policies"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth policies update.
-    public func policiesUpdate(policyId: String, body: [String: Any]? = nil) async throws -> AppbaseApiResult? {
-        return try await client.patch(ApiPaths.backendPath("/iam/oauth/policies/\(serializePathParameter(policyId, PathParameterSpec(name: "policyId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func policiesUpdate(policyId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/policies/\(serializePathParameter(policyId, PathParameterSpec(name: "policyId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth provider Catalog list.
-    public func providerCatalogList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func providerCatalogList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -273,26 +273,26 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/provider_catalog"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/provider_catalog"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth provider Catalog create.
-    public func providerCatalogCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/provider_catalog"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func providerCatalogCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/provider_catalog"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth provider Catalog retrieve.
-    public func providerCatalogRetrieve(providerCatalogId: String) async throws -> AppbaseApiResult? {
-        return try await client.get(ApiPaths.backendPath("/iam/oauth/provider_catalog/\(serializePathParameter(providerCatalogId, PathParameterSpec(name: "providerCatalogId", style: "simple", explode: false)))"), responseType: AppbaseApiResult.self)
+    public func providerCatalogRetrieve(providerCatalogId: String) async throws -> SdkWorkResourceResponse? {
+        return try await client.get(ApiPaths.backendPath("/iam/oauth/provider_catalog/\(serializePathParameter(providerCatalogId, PathParameterSpec(name: "providerCatalogId", style: "simple", explode: false)))"), responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth provider Catalog update.
-    public func providerCatalogUpdate(providerCatalogId: String, body: [String: Any]? = nil) async throws -> AppbaseApiResult? {
-        return try await client.patch(ApiPaths.backendPath("/iam/oauth/provider_catalog/\(serializePathParameter(providerCatalogId, PathParameterSpec(name: "providerCatalogId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func providerCatalogUpdate(providerCatalogId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/provider_catalog/\(serializePathParameter(providerCatalogId, PathParameterSpec(name: "providerCatalogId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth resource Accounts list.
-    public func resourceAccountsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func resourceAccountsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -300,36 +300,56 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/resource_accounts"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/resource_accounts"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth resource Accounts create.
-    public func resourceAccountsCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func resourceAccountsCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth resource Accounts update.
-    public func resourceAccountsUpdate(resourceAccountId: String, body: [String: Any]? = nil) async throws -> AppbaseApiResult? {
-        return try await client.patch(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func resourceAccountsUpdate(resourceAccountId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth resource Accounts authorization Refreshes create.
-    public func resourceAccountsAuthorizationRefreshesCreate(resourceAccountId: String, body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))/authorization_refreshes"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func resourceAccountsAuthorizationRefreshesCreate(resourceAccountId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))/authorization_refreshes"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth resource Accounts custom Menus retrieve.
+    public func resourceAccountsCustomMenusRetrieve(resourceAccountId: String) async throws -> SdkWorkResourceResponse? {
+        return try await client.get(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))/custom_menus"), responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth resource Accounts custom Menus update.
+    public func resourceAccountsCustomMenusUpdate(resourceAccountId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))/custom_menus"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth resource Accounts custom Menus publish.
+    public func resourceAccountsCustomMenusPublish(resourceAccountId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))/custom_menus/publish"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth resource Accounts follow Qr Codes create.
+    public func resourceAccountsFollowQrCodesCreate(resourceAccountId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))/follow_qr_codes"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth resource Accounts mini Program Login Checks create.
-    public func resourceAccountsMiniProgramLoginChecksCreate(resourceAccountId: String, body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))/mini_program_login_checks"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func resourceAccountsMiniProgramLoginChecksCreate(resourceAccountId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))/mini_program_login_checks"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth resource Accounts verifications create.
-    public func resourceAccountsVerificationsCreate(resourceAccountId: String, body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))/verifications"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func resourceAccountsVerificationsCreate(resourceAccountId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))/verifications"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth resource Authorizations list.
-    public func resourceAuthorizationsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func resourceAuthorizationsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -337,21 +357,36 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/resource_authorizations"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/resource_authorizations"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth resource Authorizations create.
-    public func resourceAuthorizationsCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_authorizations"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func resourceAuthorizationsCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_authorizations"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth resource Authorizations update.
-    public func resourceAuthorizationsUpdate(authorizationId: String, body: [String: Any]? = nil) async throws -> AppbaseApiResult? {
-        return try await client.patch(ApiPaths.backendPath("/iam/oauth/resource_authorizations/\(serializePathParameter(authorizationId, PathParameterSpec(name: "authorizationId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func resourceAuthorizationsUpdate(authorizationId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/resource_authorizations/\(serializePathParameter(authorizationId, PathParameterSpec(name: "authorizationId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth scan Login Previews create.
+    public func scanLoginPreviewsCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/scan_login_previews"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth scan Login Settings retrieve.
+    public func scanLoginSettingsRetrieve() async throws -> SdkWorkResourceResponse? {
+        return try await client.get(ApiPaths.backendPath("/iam/oauth/scan_login_settings"), responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth scan Login Settings update.
+    public func scanLoginSettingsUpdate(body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/scan_login_settings"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth scope Profiles list.
-    public func scopeProfilesList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func scopeProfilesList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -359,21 +394,21 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/scope_profiles"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/scope_profiles"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth scope Profiles create.
-    public func scopeProfilesCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/scope_profiles"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func scopeProfilesCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/scope_profiles"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth scope Profiles update.
-    public func scopeProfilesUpdate(scopeProfileId: String, body: [String: Any]? = nil) async throws -> AppbaseApiResult? {
-        return try await client.patch(ApiPaths.backendPath("/iam/oauth/scope_profiles/\(serializePathParameter(scopeProfileId, PathParameterSpec(name: "scopeProfileId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func scopeProfilesUpdate(scopeProfileId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/scope_profiles/\(serializePathParameter(scopeProfileId, PathParameterSpec(name: "scopeProfileId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth secrets list.
-    public func secretsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func secretsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -381,21 +416,21 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/secrets"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/secrets"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth secrets create.
-    public func secretsCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/secrets"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func secretsCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/secrets"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth secrets delete.
-    public func secretsDelete(secretId: String) async throws -> AppbaseApiResult? {
-        return try await client.delete(ApiPaths.backendPath("/iam/oauth/secrets/\(serializePathParameter(secretId, PathParameterSpec(name: "secretId", style: "simple", explode: false)))"), responseType: AppbaseApiResult.self)
+    public func secretsDelete(secretId: String) async throws -> Void {
+        _ = try await client.delete(ApiPaths.backendPath("/iam/oauth/secrets/\(serializePathParameter(secretId, PathParameterSpec(name: "secretId", style: "simple", explode: false)))"))
     }
 
     /// Iam oauth surfaces list.
-    public func surfacesList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func surfacesList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -403,26 +438,26 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/surfaces"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/surfaces"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth surfaces create.
-    public func surfacesCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/surfaces"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func surfacesCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/surfaces"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth surfaces delete.
-    public func surfacesDelete(surfaceId: String) async throws -> AppbaseApiResult? {
-        return try await client.delete(ApiPaths.backendPath("/iam/oauth/surfaces/\(serializePathParameter(surfaceId, PathParameterSpec(name: "surfaceId", style: "simple", explode: false)))"), responseType: AppbaseApiResult.self)
+    public func surfacesDelete(surfaceId: String) async throws -> Void {
+        _ = try await client.delete(ApiPaths.backendPath("/iam/oauth/surfaces/\(serializePathParameter(surfaceId, PathParameterSpec(name: "surfaceId", style: "simple", explode: false)))"))
     }
 
     /// Iam oauth surfaces update.
-    public func surfacesUpdate(surfaceId: String, body: [String: Any]? = nil) async throws -> AppbaseApiResult? {
-        return try await client.patch(ApiPaths.backendPath("/iam/oauth/surfaces/\(serializePathParameter(surfaceId, PathParameterSpec(name: "surfaceId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func surfacesUpdate(surfaceId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/surfaces/\(serializePathParameter(surfaceId, PathParameterSpec(name: "surfaceId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth tenant Bindings list.
-    public func tenantBindingsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func tenantBindingsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -430,21 +465,21 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/tenant_bindings"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/tenant_bindings"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth tenant Bindings create.
-    public func tenantBindingsCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/tenant_bindings"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func tenantBindingsCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/tenant_bindings"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth tenant Bindings update.
-    public func tenantBindingsUpdate(bindingId: String, body: [String: Any]? = nil) async throws -> AppbaseApiResult? {
-        return try await client.patch(ApiPaths.backendPath("/iam/oauth/tenant_bindings/\(serializePathParameter(bindingId, PathParameterSpec(name: "bindingId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func tenantBindingsUpdate(bindingId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/tenant_bindings/\(serializePathParameter(bindingId, PathParameterSpec(name: "bindingId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth webhook Configs list.
-    public func webhookConfigsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> AppbaseApiResult? {
+    public func webhookConfigsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
@@ -452,22 +487,27 @@ public class IamOauthApi {
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/webhook_configs"), query), responseType: AppbaseApiResult.self)
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/webhook_configs"), query), responseType: SdkWorkListResponse.self)
     }
 
     /// Iam oauth webhook Configs create.
-    public func webhookConfigsCreate(body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/webhook_configs"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func webhookConfigsCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/webhook_configs"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth webhook Configs delete.
+    public func webhookConfigsDelete(webhookConfigId: String) async throws -> Void {
+        _ = try await client.delete(ApiPaths.backendPath("/iam/oauth/webhook_configs/\(serializePathParameter(webhookConfigId, PathParameterSpec(name: "webhookConfigId", style: "simple", explode: false)))"))
     }
 
     /// Iam oauth webhook Configs update.
-    public func webhookConfigsUpdate(webhookConfigId: String, body: [String: Any]? = nil) async throws -> AppbaseApiResult? {
-        return try await client.patch(ApiPaths.backendPath("/iam/oauth/webhook_configs/\(serializePathParameter(webhookConfigId, PathParameterSpec(name: "webhookConfigId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func webhookConfigsUpdate(webhookConfigId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.backendPath("/iam/oauth/webhook_configs/\(serializePathParameter(webhookConfigId, PathParameterSpec(name: "webhookConfigId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth webhook Configs verifications create.
-    public func webhookConfigsVerificationsCreate(webhookConfigId: String, body: [String: Any]) async throws -> AppbaseApiResult? {
-        return try await client.post(ApiPaths.backendPath("/iam/oauth/webhook_configs/\(serializePathParameter(webhookConfigId, PathParameterSpec(name: "webhookConfigId", style: "simple", explode: false)))/verifications"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AppbaseApiResult.self)
+    public func webhookConfigsVerificationsCreate(webhookConfigId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/webhook_configs/\(serializePathParameter(webhookConfigId, PathParameterSpec(name: "webhookConfigId", style: "simple", explode: false)))/verifications"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     private struct PathParameterSpec {

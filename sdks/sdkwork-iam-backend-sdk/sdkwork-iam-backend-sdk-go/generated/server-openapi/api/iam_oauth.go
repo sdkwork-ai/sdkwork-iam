@@ -18,7 +18,7 @@ func NewIamOauthApi(client *sdkhttp.Client) *IamOauthApi {
 }
 
 // Iam oauth account Links list.
-func (a *IamOauthApi) AccountLinksList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) AccountLinksList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -28,24 +28,24 @@ func (a *IamOauthApi) AccountLinksList(page *int, pageSize *int, cursor *string,
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/account_links"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth account Links update.
-func (a *IamOauthApi) AccountLinksUpdate(accountLinkId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) AccountLinksUpdate(accountLinkId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/account_links/%s", SerializePathParameter(accountLinkId, PathParameterSpec{Name: "accountLinkId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth callback Events list.
-func (a *IamOauthApi) CallbackEventsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) CallbackEventsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -55,14 +55,14 @@ func (a *IamOauthApi) CallbackEventsList(page *int, pageSize *int, cursor *strin
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/callback_events"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth claim Mappings list.
-func (a *IamOauthApi) ClaimMappingsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ClaimMappingsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -72,34 +72,34 @@ func (a *IamOauthApi) ClaimMappingsList(page *int, pageSize *int, cursor *string
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/claim_mappings"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth claim Mappings create.
-func (a *IamOauthApi) ClaimMappingsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ClaimMappingsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/claim_mappings"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth claim Mappings update.
-func (a *IamOauthApi) ClaimMappingsUpdate(mappingId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ClaimMappingsUpdate(mappingId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/claim_mappings/%s", SerializePathParameter(mappingId, PathParameterSpec{Name: "mappingId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth clients list.
-func (a *IamOauthApi) ClientsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ClientsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -109,54 +109,54 @@ func (a *IamOauthApi) ClientsList(page *int, pageSize *int, cursor *string, sort
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/clients"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth clients create.
-func (a *IamOauthApi) ClientsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ClientsCreate(body sdktypes.IamOauthClientCreateCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/clients"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth clients delete.
-func (a *IamOauthApi) ClientsDelete(oauthClientId string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ClientsDelete(oauthClientId string) (struct{}, error) {
     raw, err := a.client.Delete(BackendApiPath(fmt.Sprintf("/iam/oauth/clients/%s", SerializePathParameter(oauthClientId, PathParameterSpec{Name: "oauthClientId", Style: "simple", Explode: false}))), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero struct{}
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[struct{}](raw)
 }
 
 // Iam oauth clients retrieve.
-func (a *IamOauthApi) ClientsRetrieve(oauthClientId string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ClientsRetrieve(oauthClientId string) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Get(BackendApiPath(fmt.Sprintf("/iam/oauth/clients/%s", SerializePathParameter(oauthClientId, PathParameterSpec{Name: "oauthClientId", Style: "simple", Explode: false}))), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth clients update.
-func (a *IamOauthApi) ClientsUpdate(oauthClientId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ClientsUpdate(oauthClientId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/clients/%s", SerializePathParameter(oauthClientId, PathParameterSpec{Name: "oauthClientId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth diagnostic Runs list.
-func (a *IamOauthApi) DiagnosticRunsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) DiagnosticRunsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -166,34 +166,34 @@ func (a *IamOauthApi) DiagnosticRunsList(page *int, pageSize *int, cursor *strin
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/diagnostic_runs"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth diagnostic Runs create.
-func (a *IamOauthApi) DiagnosticRunsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) DiagnosticRunsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/diagnostic_runs"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth diagnostic Runs retrieve.
-func (a *IamOauthApi) DiagnosticRunsRetrieve(diagnosticRunId string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) DiagnosticRunsRetrieve(diagnosticRunId string) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Get(BackendApiPath(fmt.Sprintf("/iam/oauth/diagnostic_runs/%s", SerializePathParameter(diagnosticRunId, PathParameterSpec{Name: "diagnosticRunId", Style: "simple", Explode: false}))), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth flow Configs list.
-func (a *IamOauthApi) FlowConfigsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) FlowConfigsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -203,34 +203,34 @@ func (a *IamOauthApi) FlowConfigsList(page *int, pageSize *int, cursor *string, 
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/flow_configs"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth flow Configs create.
-func (a *IamOauthApi) FlowConfigsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) FlowConfigsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/flow_configs"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth flow Configs update.
-func (a *IamOauthApi) FlowConfigsUpdate(flowConfigId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) FlowConfigsUpdate(flowConfigId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/flow_configs/%s", SerializePathParameter(flowConfigId, PathParameterSpec{Name: "flowConfigId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth grants list.
-func (a *IamOauthApi) GrantsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) GrantsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -240,24 +240,24 @@ func (a *IamOauthApi) GrantsList(page *int, pageSize *int, cursor *string, sort 
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/grants"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth grants delete.
-func (a *IamOauthApi) GrantsDelete(grantId string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) GrantsDelete(grantId string) (struct{}, error) {
     raw, err := a.client.Delete(BackendApiPath(fmt.Sprintf("/iam/oauth/grants/%s", SerializePathParameter(grantId, PathParameterSpec{Name: "grantId", Style: "simple", Explode: false}))), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero struct{}
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[struct{}](raw)
 }
 
 // Iam oauth integrations list.
-func (a *IamOauthApi) IntegrationsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) IntegrationsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -267,54 +267,54 @@ func (a *IamOauthApi) IntegrationsList(page *int, pageSize *int, cursor *string,
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/integrations"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth integrations create.
-func (a *IamOauthApi) IntegrationsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) IntegrationsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/integrations"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth integrations delete.
-func (a *IamOauthApi) IntegrationsDelete(integrationId string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) IntegrationsDelete(integrationId string) (struct{}, error) {
     raw, err := a.client.Delete(BackendApiPath(fmt.Sprintf("/iam/oauth/integrations/%s", SerializePathParameter(integrationId, PathParameterSpec{Name: "integrationId", Style: "simple", Explode: false}))), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero struct{}
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[struct{}](raw)
 }
 
 // Iam oauth integrations retrieve.
-func (a *IamOauthApi) IntegrationsRetrieve(integrationId string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) IntegrationsRetrieve(integrationId string) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Get(BackendApiPath(fmt.Sprintf("/iam/oauth/integrations/%s", SerializePathParameter(integrationId, PathParameterSpec{Name: "integrationId", Style: "simple", Explode: false}))), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth integrations update.
-func (a *IamOauthApi) IntegrationsUpdate(integrationId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) IntegrationsUpdate(integrationId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/integrations/%s", SerializePathParameter(integrationId, PathParameterSpec{Name: "integrationId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth operational Resources list.
-func (a *IamOauthApi) OperationalResourcesList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) OperationalResourcesList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -324,54 +324,54 @@ func (a *IamOauthApi) OperationalResourcesList(page *int, pageSize *int, cursor 
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/operational_resources"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth operational Resources create.
-func (a *IamOauthApi) OperationalResourcesCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) OperationalResourcesCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/operational_resources"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth operational Resources delete.
-func (a *IamOauthApi) OperationalResourcesDelete(resourceId string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) OperationalResourcesDelete(resourceId string) (struct{}, error) {
     raw, err := a.client.Delete(BackendApiPath(fmt.Sprintf("/iam/oauth/operational_resources/%s", SerializePathParameter(resourceId, PathParameterSpec{Name: "resourceId", Style: "simple", Explode: false}))), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero struct{}
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[struct{}](raw)
 }
 
 // Iam oauth operational Resources update.
-func (a *IamOauthApi) OperationalResourcesUpdate(resourceId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) OperationalResourcesUpdate(resourceId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/operational_resources/%s", SerializePathParameter(resourceId, PathParameterSpec{Name: "resourceId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth operational Resources publishes create.
-func (a *IamOauthApi) OperationalResourcesPublishesCreate(resourceId string, body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) OperationalResourcesPublishesCreate(resourceId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/oauth/operational_resources/%s/publishes", SerializePathParameter(resourceId, PathParameterSpec{Name: "resourceId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth operator Platforms list.
-func (a *IamOauthApi) OperatorPlatformsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) OperatorPlatformsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -381,44 +381,44 @@ func (a *IamOauthApi) OperatorPlatformsList(page *int, pageSize *int, cursor *st
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/operator_platforms"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth operator Platforms create.
-func (a *IamOauthApi) OperatorPlatformsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) OperatorPlatformsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/operator_platforms"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth operator Platforms update.
-func (a *IamOauthApi) OperatorPlatformsUpdate(operatorPlatformId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) OperatorPlatformsUpdate(operatorPlatformId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/operator_platforms/%s", SerializePathParameter(operatorPlatformId, PathParameterSpec{Name: "operatorPlatformId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth operator Platforms pre Authorizations create.
-func (a *IamOauthApi) OperatorPlatformsPreAuthorizationsCreate(operatorPlatformId string, body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) OperatorPlatformsPreAuthorizationsCreate(operatorPlatformId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/oauth/operator_platforms/%s/pre_authorizations", SerializePathParameter(operatorPlatformId, PathParameterSpec{Name: "operatorPlatformId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth policies list.
-func (a *IamOauthApi) PoliciesList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) PoliciesList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -428,34 +428,34 @@ func (a *IamOauthApi) PoliciesList(page *int, pageSize *int, cursor *string, sor
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/policies"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth policies create.
-func (a *IamOauthApi) PoliciesCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) PoliciesCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/policies"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth policies update.
-func (a *IamOauthApi) PoliciesUpdate(policyId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) PoliciesUpdate(policyId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/policies/%s", SerializePathParameter(policyId, PathParameterSpec{Name: "policyId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth provider Catalog list.
-func (a *IamOauthApi) ProviderCatalogList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ProviderCatalogList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -465,44 +465,44 @@ func (a *IamOauthApi) ProviderCatalogList(page *int, pageSize *int, cursor *stri
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/provider_catalog"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth provider Catalog create.
-func (a *IamOauthApi) ProviderCatalogCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ProviderCatalogCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/provider_catalog"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth provider Catalog retrieve.
-func (a *IamOauthApi) ProviderCatalogRetrieve(providerCatalogId string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ProviderCatalogRetrieve(providerCatalogId string) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Get(BackendApiPath(fmt.Sprintf("/iam/oauth/provider_catalog/%s", SerializePathParameter(providerCatalogId, PathParameterSpec{Name: "providerCatalogId", Style: "simple", Explode: false}))), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth provider Catalog update.
-func (a *IamOauthApi) ProviderCatalogUpdate(providerCatalogId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ProviderCatalogUpdate(providerCatalogId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/provider_catalog/%s", SerializePathParameter(providerCatalogId, PathParameterSpec{Name: "providerCatalogId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth resource Accounts list.
-func (a *IamOauthApi) ResourceAccountsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ResourceAccountsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -512,64 +512,104 @@ func (a *IamOauthApi) ResourceAccountsList(page *int, pageSize *int, cursor *str
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/resource_accounts"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth resource Accounts create.
-func (a *IamOauthApi) ResourceAccountsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ResourceAccountsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/resource_accounts"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth resource Accounts update.
-func (a *IamOauthApi) ResourceAccountsUpdate(resourceAccountId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ResourceAccountsUpdate(resourceAccountId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/resource_accounts/%s", SerializePathParameter(resourceAccountId, PathParameterSpec{Name: "resourceAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth resource Accounts authorization Refreshes create.
-func (a *IamOauthApi) ResourceAccountsAuthorizationRefreshesCreate(resourceAccountId string, body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ResourceAccountsAuthorizationRefreshesCreate(resourceAccountId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/oauth/resource_accounts/%s/authorization_refreshes", SerializePathParameter(resourceAccountId, PathParameterSpec{Name: "resourceAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
+}
+
+// Iam oauth resource Accounts custom Menus retrieve.
+func (a *IamOauthApi) ResourceAccountsCustomMenusRetrieve(resourceAccountId string) (sdktypes.SdkWorkResourceResponse, error) {
+    raw, err := a.client.Get(BackendApiPath(fmt.Sprintf("/iam/oauth/resource_accounts/%s/custom_menus", SerializePathParameter(resourceAccountId, PathParameterSpec{Name: "resourceAccountId", Style: "simple", Explode: false}))), nil, nil)
+    if err != nil {
+        var zero sdktypes.SdkWorkResourceResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
+}
+
+// Iam oauth resource Accounts custom Menus update.
+func (a *IamOauthApi) ResourceAccountsCustomMenusUpdate(resourceAccountId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
+    raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/resource_accounts/%s/custom_menus", SerializePathParameter(resourceAccountId, PathParameterSpec{Name: "resourceAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
+    if err != nil {
+        var zero sdktypes.SdkWorkResourceResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
+}
+
+// Iam oauth resource Accounts custom Menus publish.
+func (a *IamOauthApi) ResourceAccountsCustomMenusPublish(resourceAccountId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
+    raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/oauth/resource_accounts/%s/custom_menus/publish", SerializePathParameter(resourceAccountId, PathParameterSpec{Name: "resourceAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
+    if err != nil {
+        var zero sdktypes.SdkWorkResourceResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
+}
+
+// Iam oauth resource Accounts follow Qr Codes create.
+func (a *IamOauthApi) ResourceAccountsFollowQrCodesCreate(resourceAccountId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
+    raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/oauth/resource_accounts/%s/follow_qr_codes", SerializePathParameter(resourceAccountId, PathParameterSpec{Name: "resourceAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
+    if err != nil {
+        var zero sdktypes.SdkWorkResourceResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth resource Accounts mini Program Login Checks create.
-func (a *IamOauthApi) ResourceAccountsMiniProgramLoginChecksCreate(resourceAccountId string, body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ResourceAccountsMiniProgramLoginChecksCreate(resourceAccountId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/oauth/resource_accounts/%s/mini_program_login_checks", SerializePathParameter(resourceAccountId, PathParameterSpec{Name: "resourceAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth resource Accounts verifications create.
-func (a *IamOauthApi) ResourceAccountsVerificationsCreate(resourceAccountId string, body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ResourceAccountsVerificationsCreate(resourceAccountId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/oauth/resource_accounts/%s/verifications", SerializePathParameter(resourceAccountId, PathParameterSpec{Name: "resourceAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth resource Authorizations list.
-func (a *IamOauthApi) ResourceAuthorizationsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ResourceAuthorizationsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -579,34 +619,64 @@ func (a *IamOauthApi) ResourceAuthorizationsList(page *int, pageSize *int, curso
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/resource_authorizations"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth resource Authorizations create.
-func (a *IamOauthApi) ResourceAuthorizationsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ResourceAuthorizationsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/resource_authorizations"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth resource Authorizations update.
-func (a *IamOauthApi) ResourceAuthorizationsUpdate(authorizationId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ResourceAuthorizationsUpdate(authorizationId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/resource_authorizations/%s", SerializePathParameter(authorizationId, PathParameterSpec{Name: "authorizationId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
+}
+
+// Iam oauth scan Login Previews create.
+func (a *IamOauthApi) ScanLoginPreviewsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
+    raw, err := a.client.Post(BackendApiPath("/iam/oauth/scan_login_previews"), body, nil, nil, "application/json")
+    if err != nil {
+        var zero sdktypes.SdkWorkResourceResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
+}
+
+// Iam oauth scan Login Settings retrieve.
+func (a *IamOauthApi) ScanLoginSettingsRetrieve() (sdktypes.SdkWorkResourceResponse, error) {
+    raw, err := a.client.Get(BackendApiPath("/iam/oauth/scan_login_settings"), nil, nil)
+    if err != nil {
+        var zero sdktypes.SdkWorkResourceResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
+}
+
+// Iam oauth scan Login Settings update.
+func (a *IamOauthApi) ScanLoginSettingsUpdate(body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
+    raw, err := a.client.Patch(BackendApiPath("/iam/oauth/scan_login_settings"), body, nil, nil, "application/json")
+    if err != nil {
+        var zero sdktypes.SdkWorkResourceResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth scope Profiles list.
-func (a *IamOauthApi) ScopeProfilesList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ScopeProfilesList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -616,34 +686,34 @@ func (a *IamOauthApi) ScopeProfilesList(page *int, pageSize *int, cursor *string
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/scope_profiles"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth scope Profiles create.
-func (a *IamOauthApi) ScopeProfilesCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ScopeProfilesCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/scope_profiles"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth scope Profiles update.
-func (a *IamOauthApi) ScopeProfilesUpdate(scopeProfileId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) ScopeProfilesUpdate(scopeProfileId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/scope_profiles/%s", SerializePathParameter(scopeProfileId, PathParameterSpec{Name: "scopeProfileId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth secrets list.
-func (a *IamOauthApi) SecretsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) SecretsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -653,34 +723,34 @@ func (a *IamOauthApi) SecretsList(page *int, pageSize *int, cursor *string, sort
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/secrets"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth secrets create.
-func (a *IamOauthApi) SecretsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) SecretsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/secrets"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth secrets delete.
-func (a *IamOauthApi) SecretsDelete(secretId string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) SecretsDelete(secretId string) (struct{}, error) {
     raw, err := a.client.Delete(BackendApiPath(fmt.Sprintf("/iam/oauth/secrets/%s", SerializePathParameter(secretId, PathParameterSpec{Name: "secretId", Style: "simple", Explode: false}))), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero struct{}
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[struct{}](raw)
 }
 
 // Iam oauth surfaces list.
-func (a *IamOauthApi) SurfacesList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) SurfacesList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -690,44 +760,44 @@ func (a *IamOauthApi) SurfacesList(page *int, pageSize *int, cursor *string, sor
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/surfaces"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth surfaces create.
-func (a *IamOauthApi) SurfacesCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) SurfacesCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/surfaces"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth surfaces delete.
-func (a *IamOauthApi) SurfacesDelete(surfaceId string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) SurfacesDelete(surfaceId string) (struct{}, error) {
     raw, err := a.client.Delete(BackendApiPath(fmt.Sprintf("/iam/oauth/surfaces/%s", SerializePathParameter(surfaceId, PathParameterSpec{Name: "surfaceId", Style: "simple", Explode: false}))), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero struct{}
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[struct{}](raw)
 }
 
 // Iam oauth surfaces update.
-func (a *IamOauthApi) SurfacesUpdate(surfaceId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) SurfacesUpdate(surfaceId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/surfaces/%s", SerializePathParameter(surfaceId, PathParameterSpec{Name: "surfaceId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth tenant Bindings list.
-func (a *IamOauthApi) TenantBindingsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) TenantBindingsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -737,34 +807,34 @@ func (a *IamOauthApi) TenantBindingsList(page *int, pageSize *int, cursor *strin
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/tenant_bindings"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth tenant Bindings create.
-func (a *IamOauthApi) TenantBindingsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) TenantBindingsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/tenant_bindings"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth tenant Bindings update.
-func (a *IamOauthApi) TenantBindingsUpdate(bindingId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) TenantBindingsUpdate(bindingId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/tenant_bindings/%s", SerializePathParameter(bindingId, PathParameterSpec{Name: "bindingId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth webhook Configs list.
-func (a *IamOauthApi) WebhookConfigsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) WebhookConfigsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
@@ -774,40 +844,50 @@ func (a *IamOauthApi) WebhookConfigsList(page *int, pageSize *int, cursor *strin
     })
     raw, err := a.client.Get(AppendQueryString(BackendApiPath("/iam/oauth/webhook_configs"), query), nil, nil)
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkListResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
 // Iam oauth webhook Configs create.
-func (a *IamOauthApi) WebhookConfigsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) WebhookConfigsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath("/iam/oauth/webhook_configs"), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
+}
+
+// Iam oauth webhook Configs delete.
+func (a *IamOauthApi) WebhookConfigsDelete(webhookConfigId string) (struct{}, error) {
+    raw, err := a.client.Delete(BackendApiPath(fmt.Sprintf("/iam/oauth/webhook_configs/%s", SerializePathParameter(webhookConfigId, PathParameterSpec{Name: "webhookConfigId", Style: "simple", Explode: false}))), nil, nil)
+    if err != nil {
+        var zero struct{}
+        return zero, err
+    }
+    return decodeResult[struct{}](raw)
 }
 
 // Iam oauth webhook Configs update.
-func (a *IamOauthApi) WebhookConfigsUpdate(webhookConfigId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) WebhookConfigsUpdate(webhookConfigId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/webhook_configs/%s", SerializePathParameter(webhookConfigId, PathParameterSpec{Name: "webhookConfigId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Iam oauth webhook Configs verifications create.
-func (a *IamOauthApi) WebhookConfigsVerificationsCreate(webhookConfigId string, body sdktypes.AppbaseOperationCommand) (sdktypes.AppbaseApiResult, error) {
+func (a *IamOauthApi) WebhookConfigsVerificationsCreate(webhookConfigId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/oauth/webhook_configs/%s/verifications", SerializePathParameter(webhookConfigId, PathParameterSpec{Name: "webhookConfigId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AppbaseApiResult
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.AppbaseApiResult](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 type PathParameterSpec struct {

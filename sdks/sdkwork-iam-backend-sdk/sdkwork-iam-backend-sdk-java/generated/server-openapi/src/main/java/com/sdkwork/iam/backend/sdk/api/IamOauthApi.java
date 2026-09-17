@@ -14,7 +14,7 @@ public class IamOauthApi {
     }
 
     /** Iam oauth account Links list. */
-    public AppbaseApiResult accountLinksList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse accountLinksList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -23,17 +23,17 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/account_links"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth account Links update. */
-    public AppbaseApiResult accountLinksUpdate(String accountLinkId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse accountLinksUpdate(String accountLinkId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/account_links/" + serializePathParameter(accountLinkId, new PathParameterSpec("accountLinkId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth callback Events list. */
-    public AppbaseApiResult callbackEventsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse callbackEventsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -42,11 +42,11 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/callback_events"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth claim Mappings list. */
-    public AppbaseApiResult claimMappingsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse claimMappingsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -55,23 +55,23 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/claim_mappings"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth claim Mappings create. */
-    public AppbaseApiResult claimMappingsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse claimMappingsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/claim_mappings"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth claim Mappings update. */
-    public AppbaseApiResult claimMappingsUpdate(String mappingId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse claimMappingsUpdate(String mappingId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/claim_mappings/" + serializePathParameter(mappingId, new PathParameterSpec("mappingId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth clients list. */
-    public AppbaseApiResult clientsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse clientsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -80,35 +80,35 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/clients"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth clients create. */
-    public AppbaseApiResult clientsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse clientsCreate(IamOauthClientCreateCommand body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/clients"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth clients delete. */
-    public AppbaseApiResult clientsDelete(String oauthClientId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/oauth/clients/" + serializePathParameter(oauthClientId, new PathParameterSpec("oauthClientId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void clientsDelete(String oauthClientId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/oauth/clients/" + serializePathParameter(oauthClientId, new PathParameterSpec("oauthClientId", "simple", false)) + ""));
+        return null;
     }
 
     /** Iam oauth clients retrieve. */
-    public AppbaseApiResult clientsRetrieve(String oauthClientId) throws Exception {
+    public SdkWorkResourceResponse clientsRetrieve(String oauthClientId) throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/oauth/clients/" + serializePathParameter(oauthClientId, new PathParameterSpec("oauthClientId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth clients update. */
-    public AppbaseApiResult clientsUpdate(String oauthClientId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse clientsUpdate(String oauthClientId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/clients/" + serializePathParameter(oauthClientId, new PathParameterSpec("oauthClientId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth diagnostic Runs list. */
-    public AppbaseApiResult diagnosticRunsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse diagnosticRunsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -117,23 +117,23 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/diagnostic_runs"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth diagnostic Runs create. */
-    public AppbaseApiResult diagnosticRunsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse diagnosticRunsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/diagnostic_runs"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth diagnostic Runs retrieve. */
-    public AppbaseApiResult diagnosticRunsRetrieve(String diagnosticRunId) throws Exception {
+    public SdkWorkResourceResponse diagnosticRunsRetrieve(String diagnosticRunId) throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/oauth/diagnostic_runs/" + serializePathParameter(diagnosticRunId, new PathParameterSpec("diagnosticRunId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth flow Configs list. */
-    public AppbaseApiResult flowConfigsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse flowConfigsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -142,23 +142,23 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/flow_configs"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth flow Configs create. */
-    public AppbaseApiResult flowConfigsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse flowConfigsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/flow_configs"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth flow Configs update. */
-    public AppbaseApiResult flowConfigsUpdate(String flowConfigId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse flowConfigsUpdate(String flowConfigId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/flow_configs/" + serializePathParameter(flowConfigId, new PathParameterSpec("flowConfigId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth grants list. */
-    public AppbaseApiResult grantsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse grantsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -167,17 +167,17 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/grants"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth grants delete. */
-    public AppbaseApiResult grantsDelete(String grantId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/oauth/grants/" + serializePathParameter(grantId, new PathParameterSpec("grantId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void grantsDelete(String grantId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/oauth/grants/" + serializePathParameter(grantId, new PathParameterSpec("grantId", "simple", false)) + ""));
+        return null;
     }
 
     /** Iam oauth integrations list. */
-    public AppbaseApiResult integrationsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse integrationsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -186,35 +186,35 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/integrations"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth integrations create. */
-    public AppbaseApiResult integrationsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse integrationsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/integrations"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth integrations delete. */
-    public AppbaseApiResult integrationsDelete(String integrationId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/oauth/integrations/" + serializePathParameter(integrationId, new PathParameterSpec("integrationId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void integrationsDelete(String integrationId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/oauth/integrations/" + serializePathParameter(integrationId, new PathParameterSpec("integrationId", "simple", false)) + ""));
+        return null;
     }
 
     /** Iam oauth integrations retrieve. */
-    public AppbaseApiResult integrationsRetrieve(String integrationId) throws Exception {
+    public SdkWorkResourceResponse integrationsRetrieve(String integrationId) throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/oauth/integrations/" + serializePathParameter(integrationId, new PathParameterSpec("integrationId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth integrations update. */
-    public AppbaseApiResult integrationsUpdate(String integrationId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse integrationsUpdate(String integrationId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/integrations/" + serializePathParameter(integrationId, new PathParameterSpec("integrationId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth operational Resources list. */
-    public AppbaseApiResult operationalResourcesList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse operationalResourcesList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -223,35 +223,35 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/operational_resources"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth operational Resources create. */
-    public AppbaseApiResult operationalResourcesCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse operationalResourcesCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/operational_resources"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth operational Resources delete. */
-    public AppbaseApiResult operationalResourcesDelete(String resourceId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/oauth/operational_resources/" + serializePathParameter(resourceId, new PathParameterSpec("resourceId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void operationalResourcesDelete(String resourceId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/oauth/operational_resources/" + serializePathParameter(resourceId, new PathParameterSpec("resourceId", "simple", false)) + ""));
+        return null;
     }
 
     /** Iam oauth operational Resources update. */
-    public AppbaseApiResult operationalResourcesUpdate(String resourceId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse operationalResourcesUpdate(String resourceId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/operational_resources/" + serializePathParameter(resourceId, new PathParameterSpec("resourceId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth operational Resources publishes create. */
-    public AppbaseApiResult operationalResourcesPublishesCreate(String resourceId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse operationalResourcesPublishesCreate(String resourceId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/operational_resources/" + serializePathParameter(resourceId, new PathParameterSpec("resourceId", "simple", false)) + "/publishes"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth operator Platforms list. */
-    public AppbaseApiResult operatorPlatformsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse operatorPlatformsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -260,29 +260,29 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/operator_platforms"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth operator Platforms create. */
-    public AppbaseApiResult operatorPlatformsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse operatorPlatformsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/operator_platforms"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth operator Platforms update. */
-    public AppbaseApiResult operatorPlatformsUpdate(String operatorPlatformId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse operatorPlatformsUpdate(String operatorPlatformId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/operator_platforms/" + serializePathParameter(operatorPlatformId, new PathParameterSpec("operatorPlatformId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth operator Platforms pre Authorizations create. */
-    public AppbaseApiResult operatorPlatformsPreAuthorizationsCreate(String operatorPlatformId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse operatorPlatformsPreAuthorizationsCreate(String operatorPlatformId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/operator_platforms/" + serializePathParameter(operatorPlatformId, new PathParameterSpec("operatorPlatformId", "simple", false)) + "/pre_authorizations"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth policies list. */
-    public AppbaseApiResult policiesList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse policiesList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -291,23 +291,23 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/policies"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth policies create. */
-    public AppbaseApiResult policiesCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse policiesCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/policies"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth policies update. */
-    public AppbaseApiResult policiesUpdate(String policyId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse policiesUpdate(String policyId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/policies/" + serializePathParameter(policyId, new PathParameterSpec("policyId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth provider Catalog list. */
-    public AppbaseApiResult providerCatalogList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse providerCatalogList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -316,29 +316,29 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/provider_catalog"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth provider Catalog create. */
-    public AppbaseApiResult providerCatalogCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse providerCatalogCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/provider_catalog"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth provider Catalog retrieve. */
-    public AppbaseApiResult providerCatalogRetrieve(String providerCatalogId) throws Exception {
+    public SdkWorkResourceResponse providerCatalogRetrieve(String providerCatalogId) throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/oauth/provider_catalog/" + serializePathParameter(providerCatalogId, new PathParameterSpec("providerCatalogId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth provider Catalog update. */
-    public AppbaseApiResult providerCatalogUpdate(String providerCatalogId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse providerCatalogUpdate(String providerCatalogId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/provider_catalog/" + serializePathParameter(providerCatalogId, new PathParameterSpec("providerCatalogId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth resource Accounts list. */
-    public AppbaseApiResult resourceAccountsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse resourceAccountsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -347,41 +347,65 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/resource_accounts"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth resource Accounts create. */
-    public AppbaseApiResult resourceAccountsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse resourceAccountsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth resource Accounts update. */
-    public AppbaseApiResult resourceAccountsUpdate(String resourceAccountId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse resourceAccountsUpdate(String resourceAccountId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/resource_accounts/" + serializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth resource Accounts authorization Refreshes create. */
-    public AppbaseApiResult resourceAccountsAuthorizationRefreshesCreate(String resourceAccountId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse resourceAccountsAuthorizationRefreshesCreate(String resourceAccountId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/" + serializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false)) + "/authorization_refreshes"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth resource Accounts custom Menus retrieve. */
+    public SdkWorkResourceResponse resourceAccountsCustomMenusRetrieve(String resourceAccountId) throws Exception {
+        Object raw = client.get(ApiPaths.backendPath("/iam/oauth/resource_accounts/" + serializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false)) + "/custom_menus"));
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth resource Accounts custom Menus update. */
+    public SdkWorkResourceResponse resourceAccountsCustomMenusUpdate(String resourceAccountId, Map<String, Object> body) throws Exception {
+        Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/resource_accounts/" + serializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false)) + "/custom_menus"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth resource Accounts custom Menus publish. */
+    public SdkWorkResourceResponse resourceAccountsCustomMenusPublish(String resourceAccountId, Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/" + serializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false)) + "/custom_menus/publish"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth resource Accounts follow Qr Codes create. */
+    public SdkWorkResourceResponse resourceAccountsFollowQrCodesCreate(String resourceAccountId, Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/" + serializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false)) + "/follow_qr_codes"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth resource Accounts mini Program Login Checks create. */
-    public AppbaseApiResult resourceAccountsMiniProgramLoginChecksCreate(String resourceAccountId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse resourceAccountsMiniProgramLoginChecksCreate(String resourceAccountId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/" + serializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false)) + "/mini_program_login_checks"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth resource Accounts verifications create. */
-    public AppbaseApiResult resourceAccountsVerificationsCreate(String resourceAccountId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse resourceAccountsVerificationsCreate(String resourceAccountId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/" + serializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false)) + "/verifications"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth resource Authorizations list. */
-    public AppbaseApiResult resourceAuthorizationsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse resourceAuthorizationsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -390,23 +414,41 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/resource_authorizations"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth resource Authorizations create. */
-    public AppbaseApiResult resourceAuthorizationsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse resourceAuthorizationsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_authorizations"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth resource Authorizations update. */
-    public AppbaseApiResult resourceAuthorizationsUpdate(String authorizationId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse resourceAuthorizationsUpdate(String authorizationId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/resource_authorizations/" + serializePathParameter(authorizationId, new PathParameterSpec("authorizationId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth scan Login Previews create. */
+    public SdkWorkResourceResponse scanLoginPreviewsCreate(Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/oauth/scan_login_previews"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth scan Login Settings retrieve. */
+    public SdkWorkResourceResponse scanLoginSettingsRetrieve() throws Exception {
+        Object raw = client.get(ApiPaths.backendPath("/iam/oauth/scan_login_settings"));
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth scan Login Settings update. */
+    public SdkWorkResourceResponse scanLoginSettingsUpdate(Map<String, Object> body) throws Exception {
+        Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/scan_login_settings"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth scope Profiles list. */
-    public AppbaseApiResult scopeProfilesList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse scopeProfilesList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -415,23 +457,23 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/scope_profiles"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth scope Profiles create. */
-    public AppbaseApiResult scopeProfilesCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse scopeProfilesCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/scope_profiles"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth scope Profiles update. */
-    public AppbaseApiResult scopeProfilesUpdate(String scopeProfileId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse scopeProfilesUpdate(String scopeProfileId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/scope_profiles/" + serializePathParameter(scopeProfileId, new PathParameterSpec("scopeProfileId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth secrets list. */
-    public AppbaseApiResult secretsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse secretsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -440,23 +482,23 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/secrets"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth secrets create. */
-    public AppbaseApiResult secretsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse secretsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/secrets"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth secrets delete. */
-    public AppbaseApiResult secretsDelete(String secretId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/oauth/secrets/" + serializePathParameter(secretId, new PathParameterSpec("secretId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void secretsDelete(String secretId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/oauth/secrets/" + serializePathParameter(secretId, new PathParameterSpec("secretId", "simple", false)) + ""));
+        return null;
     }
 
     /** Iam oauth surfaces list. */
-    public AppbaseApiResult surfacesList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse surfacesList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -465,29 +507,29 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/surfaces"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth surfaces create. */
-    public AppbaseApiResult surfacesCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse surfacesCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/surfaces"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth surfaces delete. */
-    public AppbaseApiResult surfacesDelete(String surfaceId) throws Exception {
-        Object raw = client.delete(ApiPaths.backendPath("/iam/oauth/surfaces/" + serializePathParameter(surfaceId, new PathParameterSpec("surfaceId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+    public Void surfacesDelete(String surfaceId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/oauth/surfaces/" + serializePathParameter(surfaceId, new PathParameterSpec("surfaceId", "simple", false)) + ""));
+        return null;
     }
 
     /** Iam oauth surfaces update. */
-    public AppbaseApiResult surfacesUpdate(String surfaceId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse surfacesUpdate(String surfaceId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/surfaces/" + serializePathParameter(surfaceId, new PathParameterSpec("surfaceId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth tenant Bindings list. */
-    public AppbaseApiResult tenantBindingsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse tenantBindingsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -496,23 +538,23 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/tenant_bindings"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth tenant Bindings create. */
-    public AppbaseApiResult tenantBindingsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse tenantBindingsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/tenant_bindings"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth tenant Bindings update. */
-    public AppbaseApiResult tenantBindingsUpdate(String bindingId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse tenantBindingsUpdate(String bindingId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/tenant_bindings/" + serializePathParameter(bindingId, new PathParameterSpec("bindingId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth webhook Configs list. */
-    public AppbaseApiResult webhookConfigsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse webhookConfigsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -521,25 +563,31 @@ public class IamOauthApi {
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/oauth/webhook_configs"), query));
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
     /** Iam oauth webhook Configs create. */
-    public AppbaseApiResult webhookConfigsCreate(Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse webhookConfigsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/webhook_configs"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth webhook Configs delete. */
+    public Void webhookConfigsDelete(String webhookConfigId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/oauth/webhook_configs/" + serializePathParameter(webhookConfigId, new PathParameterSpec("webhookConfigId", "simple", false)) + ""));
+        return null;
     }
 
     /** Iam oauth webhook Configs update. */
-    public AppbaseApiResult webhookConfigsUpdate(String webhookConfigId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse webhookConfigsUpdate(String webhookConfigId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/webhook_configs/" + serializePathParameter(webhookConfigId, new PathParameterSpec("webhookConfigId", "simple", false)) + ""), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Iam oauth webhook Configs verifications create. */
-    public AppbaseApiResult webhookConfigsVerificationsCreate(String webhookConfigId, Map<String, Object> body) throws Exception {
+    public SdkWorkResourceResponse webhookConfigsVerificationsCreate(String webhookConfigId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/webhook_configs/" + serializePathParameter(webhookConfigId, new PathParameterSpec("webhookConfigId", "simple", false)) + "/verifications"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AppbaseApiResult>() {});
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     private record PathParameterSpec(String name, String style, boolean explode) {}

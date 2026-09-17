@@ -1,6 +1,23 @@
 #!/usr/bin/env node
 // Materialize iam module manifests from legacy Rust catalogs.
 // Source of truth transitions to JSON manifests; Rust bootstrap consumes the registry crate.
+//
+// ⚠️ DEPRECATED — DO NOT RUN. The direction is inverted.
+//
+// `iam/modules/*/iam.module.manifest.json` is the CANONICAL source for IAM
+// permissions; `crates/sdkwork-iam-bootstrap/src/permission_catalog.rs` is
+// materialized FROM it by `tools/generators/materialize-iam-kernel-permission-catalog.mjs`
+// (see the `Canonical source:` note at the top of that Rust file). This script
+// runs the opposite way and will silently destroy curated manifest data:
+//
+//   1. rewrites `owner` from `sdkwork-iam` to the legacy `sdkwork-appbase`;
+//   2. resets every permission's `since` to the hardcoded "1.0.0", wiping
+//      release provenance (e.g. the `1.1.0` markers on newer permissions);
+//   3. re-sorts the whole catalog with localeCompare, which orders
+//      `iam.group_members.*` before `iam.groups.*` and reshuffles ~78 lines.
+//
+// To add a permission: edit the manifest first, then run
+// `node tools/generators/materialize-iam-kernel-permission-catalog.mjs`.
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";

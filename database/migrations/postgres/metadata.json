@@ -17,6 +17,11 @@
       "reversible": "false",
       "rollback": "forward-fix",
       "correctionReason": "The structured header recorded 'reversible: true' with a prose rollback, but the paired down migration dropped all ten columns it added ('drops all ten columns (loses stored verification/lockout/timestamps)'). DATABASE_FRAMEWORK_SPEC.md section 7.1 permits a .down.sql only for a bounded, data-preserving reversal, so the lossy down file was removed and the strategy is recorded as irreversible with a forward-fix rollback. The migration SQL is unchanged and remains checksum-covered."
+    },
+    "0016_iam_provider_accounts.up.sql": {
+      "reversible": "false",
+      "rollback": "forward-fix",
+      "correctionReason": "The structured header recorded 'reversible: true' with rollback token 'down-migration', but the paired down migration dropped both tables it created (iam_provider_credential and iam_provider_account), which loses every reusable cloud account and every sealed secret. DATABASE_FRAMEWORK_SPEC.md section 7.1 permits a .down.sql only for a bounded, data-preserving reversal, so the lossy down file was removed and the strategy is recorded as irreversible with a forward-fix rollback. The migration SQL is unchanged and remains checksum-covered (sha256 9fb347c38ea7826f13fab832ac4bee28ca382e62c057cb12e8a0071591263d06)."
     }
   }
 }

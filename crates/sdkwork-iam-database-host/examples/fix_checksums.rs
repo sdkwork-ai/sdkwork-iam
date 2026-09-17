@@ -1,9 +1,14 @@
 #[tokio::main]
 async fn main() {
     use sqlx::Row;
+    // The checksum dump is produced by another run, so its location is supplied
+    // by the operator instead of being baked into the example.
+    let checksums_path = std::env::args().nth(1).unwrap_or_else(|| {
+        eprintln!("usage: fix_checksums <org-id-checksums.json>");
+        std::process::exit(2);
+    });
     let map: serde_json::Map<String, serde_json::Value> = serde_json::from_str(
-        &std::fs::read_to_string("C:/Users/admin/.zcode/tmp/org-id-checksums.json")
-            .expect("read checksums json"),
+        &std::fs::read_to_string(&checksums_path).expect("read checksums json"),
     )
     .expect("parse checksums json");
     let pool = sdkwork_database_sqlx::create_pool_from_env("")

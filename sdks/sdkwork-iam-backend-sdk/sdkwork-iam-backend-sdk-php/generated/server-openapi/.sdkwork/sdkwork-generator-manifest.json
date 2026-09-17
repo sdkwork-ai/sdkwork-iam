@@ -12,7 +12,7 @@
   "generatedFiles": [
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -36,11 +36,11 @@
     },
     {
       "path": "README.md",
-      "sha256": "e89c8032da5fcd9b4b509cbd858b8850a71c2674238ed522b0cda2937a34ae59"
+      "sha256": "9889ff8d5be4bc06714ddeb8b48277ac56b7629d69c894f9254a5110ff790f18"
     },
     {
       "path": "sdkwork-sdk.json",
-      "sha256": "190a2ac7d9fa43da1b88363bd9362900947a0b317ae9891fd28c7877e3b09dcf"
+      "sha256": "02752d7c89ab5d351d4675f9fb22c75da6fc4e23fcdb3d81d35fb84a85c549a8"
     },
     {
       "path": "src/Api/BaseApi.php",
@@ -48,31 +48,23 @@
     },
     {
       "path": "src/Api/Iam.php",
-      "sha256": "4ab73629fb68baf11064963f89d00582d8ee42d7c9bb5a532ff449881b6dea1e"
+      "sha256": "8753d9070068ddc1027855e272ff09b0a63f71fb29079f5a59e50d37d30b734a"
     },
     {
       "path": "src/Api/IamOauth.php",
-      "sha256": "c256f83216b467ed87949f0b6d27d193f341aec5556f7daba6fc24391149df2b"
+      "sha256": "21df053e3cd04edd66b7bd0c82bb0abcd67b0044594f511b2ff3c3c8732a2c86"
     },
     {
       "path": "src/Http/HttpClient.php",
-      "sha256": "60f67d91f1d0dcfcebd1698e3ecc3fcc38f3434e274d5e0204379774f962008a"
+      "sha256": "427b85284697753c6d8f708e28eda87fbdf6d1ac2963ed30790ed9e85cdf1e51"
     },
     {
       "path": "src/Models/AppbaseAccessCredentialCreateCommand.php",
       "sha256": "28dd3fae5dd20210902b3631c660d8f61a1bcceee5b7d5f4413794c094e05f43"
     },
     {
-      "path": "src/Models/AppbaseApiResult.php",
-      "sha256": "92ea6fdba52dc7ef1b6f72e868485eb91366c4a90abc2d55b03edd6bcb6b05e6"
-    },
-    {
       "path": "src/Models/AppbaseApplicationRegisterCommand.php",
       "sha256": "57e07d3222749ccf25a7f0de7366487d2f51e61d4b876f70726f5b0f6a54c32d"
-    },
-    {
-      "path": "src/Models/AppbaseSessionCreateCommand.php",
-      "sha256": "dd584db88aaa88d7810aa8db674be64aa44bbb7daa4e33ac52f62d90ce38257b"
     },
     {
       "path": "src/Models/AppbaseTenantApplicationEnableCommand.php",
@@ -80,7 +72,7 @@
     },
     {
       "path": "src/Models/AppbaseTenantApplicationProvisionCommand.php",
-      "sha256": "0857d18a4cd521fd4868a13516b18bea0df3beae62a590af8c7f353837054f4f"
+      "sha256": "b3765be0a5b7d281e482e6498e98f48c30bd62aac657488915ad47b78322b65b"
     },
     {
       "path": "src/Models/AppbaseTenantApplicationUpdateCommand.php",
@@ -88,11 +80,71 @@
     },
     {
       "path": "src/Models/FieldError.php",
-      "sha256": "05196700b5eeb50ac04df84d6adb9bcf5e135da56ec8f2abbd22b219a7309349"
+      "sha256": "dd4ee8d5969091906e2afaabd8c7911d99c4f5b518818167ae0a7998a1e7fc5d"
+    },
+    {
+      "path": "src/Models/IamOauthClientCreateCommand.php",
+      "sha256": "364fcf49abb82c4995ef8c5613ecca1a57a266e16db22ff540ff0fabca78046a"
+    },
+    {
+      "path": "src/Models/IamTenantApplicationManagementProvisionCommand.php",
+      "sha256": "cae971c0651063f202f44284dffb294d05116d4c802ded37efd92f91878f12b6"
+    },
+    {
+      "path": "src/Models/IamTenantApplicationManagementUpdateCommand.php",
+      "sha256": "49153d561f658291dfc3891df2a5bb7944ae88ec4fd91011c15095e6b0183775"
+    },
+    {
+      "path": "src/Models/IamTenantApplicationStatusCommand.php",
+      "sha256": "402a2e7431ae2c2ac6a9aeeaa10bd2c6cec7107317db047168d2643895bd754e"
+    },
+    {
+      "path": "src/Models/PageInfo.php",
+      "sha256": "87ad1a0f6353c0ca0710de03ee6802d17276ad185cc276e40c9830612da946a1"
     },
     {
       "path": "src/Models/ProblemDetail.php",
-      "sha256": "684a772555e39d51b7d9612f9b9d2cf7209fd2fedc5ffdd58f8c8ae9e27ba5a4"
+      "sha256": "39cee395cae3f8b14ede3a5b1ae4cd751c4b817c51f91b30b7f40459373161a6"
+    },
+    {
+      "path": "src/Models/SdkWorkApiResponse.php",
+      "sha256": "ebc865c22b1660175bbcddd5abaaa8969d36dc81700a3e374683c8a88adc7759"
+    },
+    {
+      "path": "src/Models/SdkWorkCommandData.php",
+      "sha256": "d90875202d61020d5dc8c9148eaa9d7165a3faf01c0738adfe01c48a6b6b9dd6"
+    },
+    {
+      "path": "src/Models/SdkWorkCommandResponse.php",
+      "sha256": "17620ad9826d08f613b846ed82f4506829bd326574c7f0f58756a4eb9aa27b5d"
+    },
+    {
+      "path": "src/Models/SdkWorkListResponse.php",
+      "sha256": "3ab2cc616a635b13a1b1d6827127a79631a42b4af2ad578b2743f85e45ad683e"
+    },
+    {
+      "path": "src/Models/SdkWorkPageData.php",
+      "sha256": "9a9120de7691a01f8a37053e53bfc75dee94e8efdf9c2b4742319e418016e0ed"
+    },
+    {
+      "path": "src/Models/SdkWorkResourceData.php",
+      "sha256": "4cbbba2019f9316af9cdd451a92f537b1ac3ff9024d5a55ace6dd867881666bf"
+    },
+    {
+      "path": "src/Models/SdkWorkResourceResponse.php",
+      "sha256": "36ed299a3d7dd37150258557a259dce40483c8a6c5c88b0c6c2b83b22c797bc2"
+    },
+    {
+      "path": "src/Models/ServiceAccountCredentialCreateCommand.php",
+      "sha256": "a678b60c24213d845349b483f209f71b209191e495090ab6455f7b19e02758db"
+    },
+    {
+      "path": "src/Models/ServiceAccountCredentialRevokeCommand.php",
+      "sha256": "4c17b42b273410fd4016a9fe6ecf691c1c03bb1067ad57cc921caba417554ae2"
+    },
+    {
+      "path": "src/Models/ServiceAccountTokenExchangeCommand.php",
+      "sha256": "77726f0c2735593e37ba69c6230fb2418c8c9177c5b02c6b6ff628a24fda108e"
     },
     {
       "path": "src/SdkConfig.php",

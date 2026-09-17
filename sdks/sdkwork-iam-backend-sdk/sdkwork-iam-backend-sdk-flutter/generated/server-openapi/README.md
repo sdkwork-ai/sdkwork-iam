@@ -58,15 +58,8 @@ print(result);
 
 ### iam_oauth
 ```dart
-// Iam oauth account Links list.
-final params = <String, dynamic>{
-  'page': 1,
-  'page_size': 2,
-  'cursor': 'cursor',
-  'sort': 'sort',
-  'q': 'q',
-};
-final result = await client.iamOauth.accountLinksList(params);
+// Iam oauth scan Login Settings retrieve.
+final result = await client.iamOauth.scanLoginSettingsRetrieve();
 print(result);
 ```
 

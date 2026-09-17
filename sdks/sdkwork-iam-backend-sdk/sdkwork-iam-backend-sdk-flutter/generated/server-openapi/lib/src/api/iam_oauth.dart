@@ -12,7 +12,7 @@ class IamOauthApi {
   IamOauthApi(this._client);
 
   /// Iam oauth account Links list.
-  Future<AppbaseApiResult?> accountLinksList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> accountLinksList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -23,22 +23,22 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/account_links'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth account Links update.
-  Future<AppbaseApiResult?> accountLinksUpdate(String accountLinkId, [Map<String, dynamic>? body]) async {
+  Future<SdkWorkResourceResponse?> accountLinksUpdate(String accountLinkId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/account_links/${serializePathParameter(accountLinkId, const PathParameterSpec('accountLinkId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth callback Events list.
-  Future<AppbaseApiResult?> callbackEventsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> callbackEventsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -49,12 +49,12 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/callback_events'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth claim Mappings list.
-  Future<AppbaseApiResult?> claimMappingsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> claimMappingsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -65,32 +65,32 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/claim_mappings'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth claim Mappings create.
-  Future<AppbaseApiResult?> claimMappingsCreate(Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> claimMappingsCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/claim_mappings'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth claim Mappings update.
-  Future<AppbaseApiResult?> claimMappingsUpdate(String mappingId, [Map<String, dynamic>? body]) async {
+  Future<SdkWorkResourceResponse?> claimMappingsUpdate(String mappingId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/claim_mappings/${serializePathParameter(mappingId, const PathParameterSpec('mappingId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth clients list.
-  Future<AppbaseApiResult?> clientsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> clientsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -101,50 +101,46 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/clients'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth clients create.
-  Future<AppbaseApiResult?> clientsCreate(Map<String, dynamic> body) async {
-    final payload = body;
+  Future<SdkWorkResourceResponse?> clientsCreate(IamOauthClientCreateCommand body) async {
+    final payload = body.toJson();
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/clients'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth clients delete.
-  Future<AppbaseApiResult?> clientsDelete(String oauthClientId) async {
-    final response = await _client.delete(ApiPaths.backendPath('/iam/oauth/clients/${serializePathParameter(oauthClientId, const PathParameterSpec('oauthClientId', 'simple', false))}'));
-    return (() {
-      final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
-    })();
+  Future<void> clientsDelete(String oauthClientId) async {
+    await _client.delete(ApiPaths.backendPath('/iam/oauth/clients/${serializePathParameter(oauthClientId, const PathParameterSpec('oauthClientId', 'simple', false))}'));
   }
 
   /// Iam oauth clients retrieve.
-  Future<AppbaseApiResult?> clientsRetrieve(String oauthClientId) async {
+  Future<SdkWorkResourceResponse?> clientsRetrieve(String oauthClientId) async {
     final response = await _client.get(ApiPaths.backendPath('/iam/oauth/clients/${serializePathParameter(oauthClientId, const PathParameterSpec('oauthClientId', 'simple', false))}'));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth clients update.
-  Future<AppbaseApiResult?> clientsUpdate(String oauthClientId, [Map<String, dynamic>? body]) async {
+  Future<SdkWorkResourceResponse?> clientsUpdate(String oauthClientId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/clients/${serializePathParameter(oauthClientId, const PathParameterSpec('oauthClientId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth diagnostic Runs list.
-  Future<AppbaseApiResult?> diagnosticRunsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> diagnosticRunsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -155,31 +151,31 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/diagnostic_runs'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth diagnostic Runs create.
-  Future<AppbaseApiResult?> diagnosticRunsCreate(Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> diagnosticRunsCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/diagnostic_runs'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth diagnostic Runs retrieve.
-  Future<AppbaseApiResult?> diagnosticRunsRetrieve(String diagnosticRunId) async {
+  Future<SdkWorkResourceResponse?> diagnosticRunsRetrieve(String diagnosticRunId) async {
     final response = await _client.get(ApiPaths.backendPath('/iam/oauth/diagnostic_runs/${serializePathParameter(diagnosticRunId, const PathParameterSpec('diagnosticRunId', 'simple', false))}'));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth flow Configs list.
-  Future<AppbaseApiResult?> flowConfigsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> flowConfigsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -190,32 +186,32 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/flow_configs'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth flow Configs create.
-  Future<AppbaseApiResult?> flowConfigsCreate(Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> flowConfigsCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/flow_configs'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth flow Configs update.
-  Future<AppbaseApiResult?> flowConfigsUpdate(String flowConfigId, [Map<String, dynamic>? body]) async {
+  Future<SdkWorkResourceResponse?> flowConfigsUpdate(String flowConfigId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/flow_configs/${serializePathParameter(flowConfigId, const PathParameterSpec('flowConfigId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth grants list.
-  Future<AppbaseApiResult?> grantsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> grantsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -226,21 +222,17 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/grants'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth grants delete.
-  Future<AppbaseApiResult?> grantsDelete(String grantId) async {
-    final response = await _client.delete(ApiPaths.backendPath('/iam/oauth/grants/${serializePathParameter(grantId, const PathParameterSpec('grantId', 'simple', false))}'));
-    return (() {
-      final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
-    })();
+  Future<void> grantsDelete(String grantId) async {
+    await _client.delete(ApiPaths.backendPath('/iam/oauth/grants/${serializePathParameter(grantId, const PathParameterSpec('grantId', 'simple', false))}'));
   }
 
   /// Iam oauth integrations list.
-  Future<AppbaseApiResult?> integrationsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> integrationsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -251,50 +243,46 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/integrations'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth integrations create.
-  Future<AppbaseApiResult?> integrationsCreate(Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> integrationsCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/integrations'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth integrations delete.
-  Future<AppbaseApiResult?> integrationsDelete(String integrationId) async {
-    final response = await _client.delete(ApiPaths.backendPath('/iam/oauth/integrations/${serializePathParameter(integrationId, const PathParameterSpec('integrationId', 'simple', false))}'));
-    return (() {
-      final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
-    })();
+  Future<void> integrationsDelete(String integrationId) async {
+    await _client.delete(ApiPaths.backendPath('/iam/oauth/integrations/${serializePathParameter(integrationId, const PathParameterSpec('integrationId', 'simple', false))}'));
   }
 
   /// Iam oauth integrations retrieve.
-  Future<AppbaseApiResult?> integrationsRetrieve(String integrationId) async {
+  Future<SdkWorkResourceResponse?> integrationsRetrieve(String integrationId) async {
     final response = await _client.get(ApiPaths.backendPath('/iam/oauth/integrations/${serializePathParameter(integrationId, const PathParameterSpec('integrationId', 'simple', false))}'));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth integrations update.
-  Future<AppbaseApiResult?> integrationsUpdate(String integrationId, [Map<String, dynamic>? body]) async {
+  Future<SdkWorkResourceResponse?> integrationsUpdate(String integrationId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/integrations/${serializePathParameter(integrationId, const PathParameterSpec('integrationId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth operational Resources list.
-  Future<AppbaseApiResult?> operationalResourcesList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> operationalResourcesList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -305,51 +293,47 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/operational_resources'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth operational Resources create.
-  Future<AppbaseApiResult?> operationalResourcesCreate(Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> operationalResourcesCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/operational_resources'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth operational Resources delete.
-  Future<AppbaseApiResult?> operationalResourcesDelete(String resourceId) async {
-    final response = await _client.delete(ApiPaths.backendPath('/iam/oauth/operational_resources/${serializePathParameter(resourceId, const PathParameterSpec('resourceId', 'simple', false))}'));
-    return (() {
-      final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
-    })();
+  Future<void> operationalResourcesDelete(String resourceId) async {
+    await _client.delete(ApiPaths.backendPath('/iam/oauth/operational_resources/${serializePathParameter(resourceId, const PathParameterSpec('resourceId', 'simple', false))}'));
   }
 
   /// Iam oauth operational Resources update.
-  Future<AppbaseApiResult?> operationalResourcesUpdate(String resourceId, [Map<String, dynamic>? body]) async {
+  Future<SdkWorkResourceResponse?> operationalResourcesUpdate(String resourceId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/operational_resources/${serializePathParameter(resourceId, const PathParameterSpec('resourceId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth operational Resources publishes create.
-  Future<AppbaseApiResult?> operationalResourcesPublishesCreate(String resourceId, Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> operationalResourcesPublishesCreate(String resourceId, Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/operational_resources/${serializePathParameter(resourceId, const PathParameterSpec('resourceId', 'simple', false))}/publishes'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth operator Platforms list.
-  Future<AppbaseApiResult?> operatorPlatformsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> operatorPlatformsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -360,42 +344,42 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/operator_platforms'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth operator Platforms create.
-  Future<AppbaseApiResult?> operatorPlatformsCreate(Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> operatorPlatformsCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/operator_platforms'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth operator Platforms update.
-  Future<AppbaseApiResult?> operatorPlatformsUpdate(String operatorPlatformId, [Map<String, dynamic>? body]) async {
+  Future<SdkWorkResourceResponse?> operatorPlatformsUpdate(String operatorPlatformId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/operator_platforms/${serializePathParameter(operatorPlatformId, const PathParameterSpec('operatorPlatformId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth operator Platforms pre Authorizations create.
-  Future<AppbaseApiResult?> operatorPlatformsPreAuthorizationsCreate(String operatorPlatformId, Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> operatorPlatformsPreAuthorizationsCreate(String operatorPlatformId, Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/operator_platforms/${serializePathParameter(operatorPlatformId, const PathParameterSpec('operatorPlatformId', 'simple', false))}/pre_authorizations'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth policies list.
-  Future<AppbaseApiResult?> policiesList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> policiesList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -406,32 +390,32 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/policies'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth policies create.
-  Future<AppbaseApiResult?> policiesCreate(Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> policiesCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/policies'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth policies update.
-  Future<AppbaseApiResult?> policiesUpdate(String policyId, [Map<String, dynamic>? body]) async {
+  Future<SdkWorkResourceResponse?> policiesUpdate(String policyId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/policies/${serializePathParameter(policyId, const PathParameterSpec('policyId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth provider Catalog list.
-  Future<AppbaseApiResult?> providerCatalogList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> providerCatalogList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -442,41 +426,41 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/provider_catalog'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth provider Catalog create.
-  Future<AppbaseApiResult?> providerCatalogCreate(Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> providerCatalogCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/provider_catalog'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth provider Catalog retrieve.
-  Future<AppbaseApiResult?> providerCatalogRetrieve(String providerCatalogId) async {
+  Future<SdkWorkResourceResponse?> providerCatalogRetrieve(String providerCatalogId) async {
     final response = await _client.get(ApiPaths.backendPath('/iam/oauth/provider_catalog/${serializePathParameter(providerCatalogId, const PathParameterSpec('providerCatalogId', 'simple', false))}'));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth provider Catalog update.
-  Future<AppbaseApiResult?> providerCatalogUpdate(String providerCatalogId, [Map<String, dynamic>? body]) async {
+  Future<SdkWorkResourceResponse?> providerCatalogUpdate(String providerCatalogId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/provider_catalog/${serializePathParameter(providerCatalogId, const PathParameterSpec('providerCatalogId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth resource Accounts list.
-  Future<AppbaseApiResult?> resourceAccountsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> resourceAccountsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -487,62 +471,101 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/resource_accounts'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth resource Accounts create.
-  Future<AppbaseApiResult?> resourceAccountsCreate(Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> resourceAccountsCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/resource_accounts'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth resource Accounts update.
-  Future<AppbaseApiResult?> resourceAccountsUpdate(String resourceAccountId, [Map<String, dynamic>? body]) async {
+  Future<SdkWorkResourceResponse?> resourceAccountsUpdate(String resourceAccountId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, const PathParameterSpec('resourceAccountId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth resource Accounts authorization Refreshes create.
-  Future<AppbaseApiResult?> resourceAccountsAuthorizationRefreshesCreate(String resourceAccountId, Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> resourceAccountsAuthorizationRefreshesCreate(String resourceAccountId, Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, const PathParameterSpec('resourceAccountId', 'simple', false))}/authorization_refreshes'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Iam oauth resource Accounts custom Menus retrieve.
+  Future<SdkWorkResourceResponse?> resourceAccountsCustomMenusRetrieve(String resourceAccountId) async {
+    final response = await _client.get(ApiPaths.backendPath('/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, const PathParameterSpec('resourceAccountId', 'simple', false))}/custom_menus'));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Iam oauth resource Accounts custom Menus update.
+  Future<SdkWorkResourceResponse?> resourceAccountsCustomMenusUpdate(String resourceAccountId, [Map<String, dynamic>? body]) async {
+    final payload = body;
+    final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, const PathParameterSpec('resourceAccountId', 'simple', false))}/custom_menus'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Iam oauth resource Accounts custom Menus publish.
+  Future<SdkWorkResourceResponse?> resourceAccountsCustomMenusPublish(String resourceAccountId, Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.post(ApiPaths.backendPath('/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, const PathParameterSpec('resourceAccountId', 'simple', false))}/custom_menus/publish'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Iam oauth resource Accounts follow Qr Codes create.
+  Future<SdkWorkResourceResponse?> resourceAccountsFollowQrCodesCreate(String resourceAccountId, Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.post(ApiPaths.backendPath('/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, const PathParameterSpec('resourceAccountId', 'simple', false))}/follow_qr_codes'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth resource Accounts mini Program Login Checks create.
-  Future<AppbaseApiResult?> resourceAccountsMiniProgramLoginChecksCreate(String resourceAccountId, Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> resourceAccountsMiniProgramLoginChecksCreate(String resourceAccountId, Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, const PathParameterSpec('resourceAccountId', 'simple', false))}/mini_program_login_checks'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth resource Accounts verifications create.
-  Future<AppbaseApiResult?> resourceAccountsVerificationsCreate(String resourceAccountId, Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> resourceAccountsVerificationsCreate(String resourceAccountId, Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, const PathParameterSpec('resourceAccountId', 'simple', false))}/verifications'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth resource Authorizations list.
-  Future<AppbaseApiResult?> resourceAuthorizationsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> resourceAuthorizationsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -553,32 +576,61 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/resource_authorizations'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth resource Authorizations create.
-  Future<AppbaseApiResult?> resourceAuthorizationsCreate(Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> resourceAuthorizationsCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/resource_authorizations'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth resource Authorizations update.
-  Future<AppbaseApiResult?> resourceAuthorizationsUpdate(String authorizationId, [Map<String, dynamic>? body]) async {
+  Future<SdkWorkResourceResponse?> resourceAuthorizationsUpdate(String authorizationId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/resource_authorizations/${serializePathParameter(authorizationId, const PathParameterSpec('authorizationId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Iam oauth scan Login Previews create.
+  Future<SdkWorkResourceResponse?> scanLoginPreviewsCreate(Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.post(ApiPaths.backendPath('/iam/oauth/scan_login_previews'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Iam oauth scan Login Settings retrieve.
+  Future<SdkWorkResourceResponse?> scanLoginSettingsRetrieve() async {
+    final response = await _client.get(ApiPaths.backendPath('/iam/oauth/scan_login_settings'));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Iam oauth scan Login Settings update.
+  Future<SdkWorkResourceResponse?> scanLoginSettingsUpdate([Map<String, dynamic>? body]) async {
+    final payload = body;
+    final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/scan_login_settings'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth scope Profiles list.
-  Future<AppbaseApiResult?> scopeProfilesList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> scopeProfilesList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -589,32 +641,32 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/scope_profiles'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth scope Profiles create.
-  Future<AppbaseApiResult?> scopeProfilesCreate(Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> scopeProfilesCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/scope_profiles'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth scope Profiles update.
-  Future<AppbaseApiResult?> scopeProfilesUpdate(String scopeProfileId, [Map<String, dynamic>? body]) async {
+  Future<SdkWorkResourceResponse?> scopeProfilesUpdate(String scopeProfileId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/scope_profiles/${serializePathParameter(scopeProfileId, const PathParameterSpec('scopeProfileId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth secrets list.
-  Future<AppbaseApiResult?> secretsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> secretsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -625,31 +677,27 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/secrets'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth secrets create.
-  Future<AppbaseApiResult?> secretsCreate(Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> secretsCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/secrets'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth secrets delete.
-  Future<AppbaseApiResult?> secretsDelete(String secretId) async {
-    final response = await _client.delete(ApiPaths.backendPath('/iam/oauth/secrets/${serializePathParameter(secretId, const PathParameterSpec('secretId', 'simple', false))}'));
-    return (() {
-      final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
-    })();
+  Future<void> secretsDelete(String secretId) async {
+    await _client.delete(ApiPaths.backendPath('/iam/oauth/secrets/${serializePathParameter(secretId, const PathParameterSpec('secretId', 'simple', false))}'));
   }
 
   /// Iam oauth surfaces list.
-  Future<AppbaseApiResult?> surfacesList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> surfacesList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -660,41 +708,37 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/surfaces'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth surfaces create.
-  Future<AppbaseApiResult?> surfacesCreate(Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> surfacesCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/surfaces'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth surfaces delete.
-  Future<AppbaseApiResult?> surfacesDelete(String surfaceId) async {
-    final response = await _client.delete(ApiPaths.backendPath('/iam/oauth/surfaces/${serializePathParameter(surfaceId, const PathParameterSpec('surfaceId', 'simple', false))}'));
-    return (() {
-      final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
-    })();
+  Future<void> surfacesDelete(String surfaceId) async {
+    await _client.delete(ApiPaths.backendPath('/iam/oauth/surfaces/${serializePathParameter(surfaceId, const PathParameterSpec('surfaceId', 'simple', false))}'));
   }
 
   /// Iam oauth surfaces update.
-  Future<AppbaseApiResult?> surfacesUpdate(String surfaceId, [Map<String, dynamic>? body]) async {
+  Future<SdkWorkResourceResponse?> surfacesUpdate(String surfaceId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/surfaces/${serializePathParameter(surfaceId, const PathParameterSpec('surfaceId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth tenant Bindings list.
-  Future<AppbaseApiResult?> tenantBindingsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> tenantBindingsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -705,32 +749,32 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/tenant_bindings'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth tenant Bindings create.
-  Future<AppbaseApiResult?> tenantBindingsCreate(Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> tenantBindingsCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/tenant_bindings'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth tenant Bindings update.
-  Future<AppbaseApiResult?> tenantBindingsUpdate(String bindingId, [Map<String, dynamic>? body]) async {
+  Future<SdkWorkResourceResponse?> tenantBindingsUpdate(String bindingId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/tenant_bindings/${serializePathParameter(bindingId, const PathParameterSpec('bindingId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth webhook Configs list.
-  Future<AppbaseApiResult?> webhookConfigsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> webhookConfigsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -741,37 +785,42 @@ class IamOauthApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/oauth/webhook_configs'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth webhook Configs create.
-  Future<AppbaseApiResult?> webhookConfigsCreate(Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> webhookConfigsCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/webhook_configs'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
+  /// Iam oauth webhook Configs delete.
+  Future<void> webhookConfigsDelete(String webhookConfigId) async {
+    await _client.delete(ApiPaths.backendPath('/iam/oauth/webhook_configs/${serializePathParameter(webhookConfigId, const PathParameterSpec('webhookConfigId', 'simple', false))}'));
+  }
+
   /// Iam oauth webhook Configs update.
-  Future<AppbaseApiResult?> webhookConfigsUpdate(String webhookConfigId, [Map<String, dynamic>? body]) async {
+  Future<SdkWorkResourceResponse?> webhookConfigsUpdate(String webhookConfigId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.backendPath('/iam/oauth/webhook_configs/${serializePathParameter(webhookConfigId, const PathParameterSpec('webhookConfigId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
   /// Iam oauth webhook Configs verifications create.
-  Future<AppbaseApiResult?> webhookConfigsVerificationsCreate(String webhookConfigId, Map<String, dynamic> body) async {
+  Future<SdkWorkResourceResponse?> webhookConfigsVerificationsCreate(String webhookConfigId, Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/oauth/webhook_configs/${serializePathParameter(webhookConfigId, const PathParameterSpec('webhookConfigId', 'simple', false))}/verifications'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AppbaseApiResult.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 }

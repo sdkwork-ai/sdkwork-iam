@@ -528,6 +528,144 @@ export class IamRoleBindingsApi {
   }
 }
 
+export class IamProviderCredentialsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Provider Credentials revoke. */
+  async revoke(credentialId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
+    return this.client.request<SdkWorkCommandData>(backendApiPath(`/iam/provider_credentials/${serializePathParameter(credentialId, { name: 'credentialId', style: 'simple', explode: false })}/revoke`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
+  }
+}
+
+export interface IamProviderAccountsCredentialsListParams {
+  page?: number;
+  pageSize?: number;
+  cursor?: string;
+  sort?: string;
+  q?: string;
+}
+
+export class IamProviderAccountsCredentialsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Provider Accounts credentials list. */
+  async list(providerAccountId: string, params?: IamProviderAccountsCredentialsListParams, requestOptions?: ApiRequestOptions): Promise<SdkWorkPageData> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
+      { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/iam/provider_accounts/${serializePathParameter(providerAccountId, { name: 'providerAccountId', style: 'simple', explode: false })}/credentials`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+
+/** Provider Accounts credentials create. */
+  async create(providerAccountId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/provider_accounts/${serializePathParameter(providerAccountId, { name: 'providerAccountId', style: 'simple', explode: false })}/credentials`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
+export interface IamProviderAccountsListParams {
+  page?: number;
+  pageSize?: number;
+  cursor?: string;
+  sort?: string;
+  q?: string;
+  vendorCode?: string;
+  scopeType?: string;
+  ownerUserId?: string;
+  organizationId?: string;
+  status?: string;
+  mine?: boolean;
+  includePlatform?: boolean;
+}
+
+export interface IamProviderAccountsResolveParams {
+  vendorCode: string;
+  capabilityCode?: string;
+  environment?: string;
+  userId?: string;
+  organizationId?: string;
+}
+
+export class IamProviderAccountsApi {
+  private client: HttpClient;
+  public readonly credentials: IamProviderAccountsCredentialsApi;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+    this.credentials = new IamProviderAccountsCredentialsApi(client);
+  }
+
+
+/** Provider Accounts list. */
+  async list(params?: IamProviderAccountsListParams, requestOptions?: ApiRequestOptions): Promise<SdkWorkPageData> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
+      { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+      { name: 'vendorCode', value: params?.vendorCode, style: 'form', explode: true, allowReserved: false },
+      { name: 'scopeType', value: params?.scopeType, style: 'form', explode: true, allowReserved: false },
+      { name: 'ownerUserId', value: params?.ownerUserId, style: 'form', explode: true, allowReserved: false },
+      { name: 'organizationId', value: params?.organizationId, style: 'form', explode: true, allowReserved: false },
+      { name: 'status', value: params?.status, style: 'form', explode: true, allowReserved: false },
+      { name: 'mine', value: params?.mine, style: 'form', explode: true, allowReserved: false },
+      { name: 'includePlatform', value: params?.includePlatform, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/iam/provider_accounts`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+
+/** Provider Accounts create. */
+  async create(body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/provider_accounts`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Provider Accounts delete. */
+  async delete(providerAccountId: string, requestOptions?: ApiRequestOptions): Promise<void> {
+    return this.client.request<void>(backendApiPath(`/iam/provider_accounts/${serializePathParameter(providerAccountId, { name: 'providerAccountId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'DELETE' as any });
+  }
+
+/** Provider Accounts retrieve. */
+  async retrieve(providerAccountId: string, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/provider_accounts/${serializePathParameter(providerAccountId, { name: 'providerAccountId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+
+/** Provider Accounts update. */
+  async update(providerAccountId: string, body?: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/provider_accounts/${serializePathParameter(providerAccountId, { name: 'providerAccountId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PATCH' as any, ...(body !== undefined ? { body, contentType: 'application/json' } : {}), sdkworkUnwrapKind: 'item' });
+  }
+
+/** Provider Accounts set Default. */
+  async setDefault(providerAccountId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/provider_accounts/${serializePathParameter(providerAccountId, { name: 'providerAccountId', style: 'simple', explode: false })}/default`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Provider Accounts resolve. */
+  async resolve(params: IamProviderAccountsResolveParams, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    const query = buildQueryString([
+      { name: 'vendorCode', value: params.vendorCode, style: 'form', explode: true, allowReserved: false },
+      { name: 'capabilityCode', value: params.capabilityCode, style: 'form', explode: true, allowReserved: false },
+      { name: 'environment', value: params.environment, style: 'form', explode: true, allowReserved: false },
+      { name: 'userId', value: params.userId, style: 'form', explode: true, allowReserved: false },
+      { name: 'organizationId', value: params.organizationId, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<Record<string, unknown>>(appendQueryString(backendApiPath(`/iam/provider_accounts/resolve`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export interface IamPositionsListParams {
   page?: number;
   pageSize?: number;
@@ -1137,6 +1275,8 @@ export class IamApi {
   public readonly policies: IamPoliciesApi;
   public readonly positionAssignments: IamPositionAssignmentsApi;
   public readonly positions: IamPositionsApi;
+  public readonly providerAccounts: IamProviderAccountsApi;
+  public readonly providerCredentials: IamProviderCredentialsApi;
   public readonly roleBindings: IamRoleBindingsApi;
   public readonly roles: IamRolesApi;
   public readonly securityEvents: IamSecurityEventsApi;
@@ -1162,6 +1302,8 @@ export class IamApi {
     this.policies = new IamPoliciesApi(client);
     this.positionAssignments = new IamPositionAssignmentsApi(client);
     this.positions = new IamPositionsApi(client);
+    this.providerAccounts = new IamProviderAccountsApi(client);
+    this.providerCredentials = new IamProviderCredentialsApi(client);
     this.roleBindings = new IamRoleBindingsApi(client);
     this.roles = new IamRolesApi(client);
     this.securityEvents = new IamSecurityEventsApi(client);

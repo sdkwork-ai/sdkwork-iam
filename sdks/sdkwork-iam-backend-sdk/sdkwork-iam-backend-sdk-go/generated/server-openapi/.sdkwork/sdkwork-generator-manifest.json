@@ -12,7 +12,7 @@
   "generatedFiles": [
     {
       "path": "api/base.go",
-      "sha256": "e1547029ab3f0205fb8c7e91c1a743315dc2e08df6da46d1fe4fdc0644c58cb8"
+      "sha256": "c76133be687c08d11d86082e6097cbd2be42d61aa9396526415fbfee09b6a231"
     },
     {
       "path": "api/doc.go",
@@ -20,11 +20,11 @@
     },
     {
       "path": "api/iam_oauth.go",
-      "sha256": "19dc6c7c05314c0c053909e0d9d9b90eafa1a9f342904589da2be01d5cae5988"
+      "sha256": "9bde8c6f67beee037bccfad83540be82cdfc5ff3e63dcedd94fea487d1e91d79"
     },
     {
       "path": "api/iam.go",
-      "sha256": "c950e01743ebe6bad1fe87ea20282f94f1f957bbee13026ef5cdca3690e2aa63"
+      "sha256": "8bb29e54e894a56c19b4e7c3caf5cd0be43620c069821955cfd1744a1477469e"
     },
     {
       "path": "api/paths.go",
@@ -32,7 +32,7 @@
     },
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -56,7 +56,7 @@
     },
     {
       "path": "http/client.go",
-      "sha256": "5574d28592e72078ae744ce20c0930fa7825b32ab3e2b18ed3de16652df50b0e"
+      "sha256": "f3df614e72134be31d440adb40a7867c9bd2db848a8d57cfa577bdf81f960d47"
     },
     {
       "path": "http/doc.go",
@@ -68,7 +68,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "d5dcd5aae9a2be60127ef292400caa59855f1d66a948c7966d1299f190f1ddc1"
+      "sha256": "526fa95f9d204245e75afbd07e202a7698b9cd8f2b93723ec1a70099c0a8a3b9"
     },
     {
       "path": "sdk.go",
@@ -76,15 +76,11 @@
     },
     {
       "path": "sdkwork-sdk.json",
-      "sha256": "e781d94550ab2b5c83845e2fea1e7bc398202813147b51d0cfbb9ab416968690"
+      "sha256": "fafca21a65bfbb41828a3742797d6799faf25cb4dab79da6bc924579a6ec89d4"
     },
     {
       "path": "types/appbase_access_credential_create_command.go",
       "sha256": "a9f9547d00440f7358b9b56855a6f91e7644ff1f557012c4cf5d940dbc2608bf"
-    },
-    {
-      "path": "types/appbase_api_result.go",
-      "sha256": "b8ac02f26f22eb79b96d479742bd3ab29edd5be9f8d6361bf97bf7f6b206f55c"
     },
     {
       "path": "types/appbase_application_register_command.go",
@@ -92,11 +88,7 @@
     },
     {
       "path": "types/appbase_operation_command.go",
-      "sha256": "08b5848c5271547e26dd569bcf32728e5ad51487a363807d0c4d5c64f58c39ae"
-    },
-    {
-      "path": "types/appbase_session_create_command.go",
-      "sha256": "9476cd0a7f41c62d86da49d3acab8b52a1fdca39c3ea5a3bc5ccdae06d52b918"
+      "sha256": "94a49b82c73506dd6c5e6627496542598783f21a3eb69834809dc8ffd5011c3e"
     },
     {
       "path": "types/appbase_tenant_application_enable_command.go",
@@ -104,7 +96,7 @@
     },
     {
       "path": "types/appbase_tenant_application_provision_command.go",
-      "sha256": "de2d070d0c92987e75a5b7e40d6be572a3438b9465f51b3873d85ab65b6feebd"
+      "sha256": "4a3ee22785b5844eb75aeaaf03089efd24cd819c669b2a86c1f462ff4079bf7a"
     },
     {
       "path": "types/appbase_tenant_application_update_command.go",
@@ -120,11 +112,75 @@
     },
     {
       "path": "types/field_error.go",
-      "sha256": "27378d0617d9dd86431e84cdfcce5c0623e159921cecbf873faf7f438de4510f"
+      "sha256": "67c3493456d4029e45dabf6a06b7659dceac1ae577a9dce55011367fbae43d25"
+    },
+    {
+      "path": "types/iam_oauth_client_create_command.go",
+      "sha256": "09c7533ac498bb5a8e1552512a5346ad790697943943964c9b9cdfd8967d69d0"
+    },
+    {
+      "path": "types/iam_tenant_application_management_provision_command.go",
+      "sha256": "6d1b0459dca7eabd5d6ead3c001e7956e53d1dde4bc2f79a56380d39aa1f7efd"
+    },
+    {
+      "path": "types/iam_tenant_application_management_update_command.go",
+      "sha256": "896b3b4c96d59396ced44469fd2afbe351adf48fc225bb5812ca9a222f439833"
+    },
+    {
+      "path": "types/iam_tenant_application_status_command.go",
+      "sha256": "6c34c17b270833d175cd20a9d972f66f0f40e07f914950f67edaeaba613030a2"
+    },
+    {
+      "path": "types/page_info.go",
+      "sha256": "e3ed0f4d7f04c05a38a7b1c3932d98eeaaa25143954e65d843a19a69a3777af0"
     },
     {
       "path": "types/problem_detail.go",
-      "sha256": "44971e8989526db7de091ae602799043927c96bc40a8f879b76f679a663a96e8"
+      "sha256": "69c1f1a0c372c9bcd6ab9162497a075745d3d674f5d56b726bd573d0cf55aa0f"
+    },
+    {
+      "path": "types/sdk_work_api_response.go",
+      "sha256": "5db6f23abcb089d1d69ea0b883363a56d40249fedbc148c1873d5e1a1035b908"
+    },
+    {
+      "path": "types/sdk_work_command_data.go",
+      "sha256": "ce5269d30af68dbe995c0abdb510d2d6a1b8e3063cad46016fb13595d1c157ea"
+    },
+    {
+      "path": "types/sdk_work_command_response.go",
+      "sha256": "398a82020d73e539fc7db61c0d3a3ee5a668d85f4ef0407897e590d7ea214053"
+    },
+    {
+      "path": "types/sdk_work_list_response.go",
+      "sha256": "2aa039f6f18ef4bf65e827d3d65c54689db4515e9f8bbd2931ccf4f758599a52"
+    },
+    {
+      "path": "types/sdk_work_page_data.go",
+      "sha256": "854e133027dfe779912cc299365a97b48d1b088e88cbb87def3db92174c23a17"
+    },
+    {
+      "path": "types/sdk_work_platform_error_code.go",
+      "sha256": "6b6ca36f06dc0804cf6429312f6c6352017e0b119d9a77e81d5eb7bc36bdb092"
+    },
+    {
+      "path": "types/sdk_work_resource_data.go",
+      "sha256": "63de7a9fff9c0b683c1e3f50d53d8b50128732347f4b480bbb5dee6da57e1287"
+    },
+    {
+      "path": "types/sdk_work_resource_response.go",
+      "sha256": "0f08181bbc0578265fd0987c4c7cff522a7f8693a0fe36483ea431566481deaf"
+    },
+    {
+      "path": "types/service_account_credential_create_command.go",
+      "sha256": "c57cdfcad1644fc446e80d5cdd0c6813c44197ec324734375e27a0c8e0629d22"
+    },
+    {
+      "path": "types/service_account_credential_revoke_command.go",
+      "sha256": "053c4782083a64116b84c72554a9d48bdef55c3c572fdc1a2bb4a9eb12d25a7c"
+    },
+    {
+      "path": "types/service_account_token_exchange_command.go",
+      "sha256": "ec904c3e58ef877eddf2dd7d4ac060615e1fd3a0a7c048018070f907a03209d6"
     }
   ],
   "scaffoldFiles": [

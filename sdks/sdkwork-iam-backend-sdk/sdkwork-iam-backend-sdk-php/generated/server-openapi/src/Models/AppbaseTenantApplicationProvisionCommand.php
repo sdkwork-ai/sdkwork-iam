@@ -38,6 +38,9 @@ final class AppbaseTenantApplicationProvisionCommand
 
     public ?string $environment = null;
 
+    /** Product-semantic application type (api | h5 | pc | flutter | other); defaults to a mapping of the template app_type. */
+    public ?string $applicationType = null;
+
     public ?string $primaryDomain = null;
 
     public array $accessPermissions = [];
@@ -82,6 +85,9 @@ final class AppbaseTenantApplicationProvisionCommand
         $this->environment = array_key_exists('environment', $data)
             ? $data['environment']
             : null;
+        $this->applicationType = array_key_exists('applicationType', $data)
+            ? $data['applicationType']
+            : null;
         $this->primaryDomain = array_key_exists('primaryDomain', $data)
             ? $data['primaryDomain']
             : null;
@@ -115,6 +121,7 @@ final class AppbaseTenantApplicationProvisionCommand
             'instanceKey' => $this->instanceKey,
             'displayName' => $this->displayName,
             'environment' => $this->environment,
+            'applicationType' => $this->applicationType,
             'primaryDomain' => $this->primaryDomain,
             'accessPermissions' => array_values(array_map(static fn($item) => $item, $this->accessPermissions)),
             'runtimeConfig' => $this->runtimeConfig,

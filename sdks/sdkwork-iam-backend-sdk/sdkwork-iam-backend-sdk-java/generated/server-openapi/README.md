@@ -35,7 +35,7 @@ public class Main {
 client.setAccessToken("your-access-token");
 
         // Use the SDK
-        AppbaseApiResult result = client.getIam().accountBindingPolicyRetrieve();
+        SdkWorkResourceResponse result = client.getIam().accountBindingPolicyRetrieve();
         System.out.println(result);
     }
 }
@@ -70,21 +70,15 @@ client.getHttpClient().setHeader("X-Custom-Header", "value");
 
 ```java
 // Account Binding Policy retrieve.
-AppbaseApiResult result = client.getIam().accountBindingPolicyRetrieve();
+SdkWorkResourceResponse result = client.getIam().accountBindingPolicyRetrieve();
 System.out.println(result);
 ```
 
 ### iam_oauth
 
 ```java
-// Iam oauth account Links list.
-Map<String, Object> params = new LinkedHashMap<>();
-params.put("page", 1);
-params.put("page_size", 2);
-params.put("cursor", "cursor");
-params.put("sort", "sort");
-params.put("q", "q");
-AppbaseApiResult result = client.getIamOauth().accountLinksList(params);
+// Iam oauth scan Login Settings retrieve.
+SdkWorkResourceResponse result = client.getIamOauth().scanLoginSettingsRetrieve();
 System.out.println(result);
 ```
 
@@ -92,7 +86,7 @@ System.out.println(result);
 
 ```java
 try {
-    AppbaseApiResult result = client.getIam().accountBindingPolicyRetrieve();
+    SdkWorkResourceResponse result = client.getIam().accountBindingPolicyRetrieve();
     System.out.println(result);
 } catch (Exception e) {
     System.err.println("Error: " + e.getMessage());

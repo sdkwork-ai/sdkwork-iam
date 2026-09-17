@@ -6567,7 +6567,7 @@
           "oauth"
         ],
         "summary": "Wechat Payment Oauth callback.",
-        "operationId": "wechatPaymentOauth.list",
+        "operationId": "wechatPaymentOauth.callback",
         "parameters": [],
         "responses": {
           "200": {
@@ -6689,7 +6689,7 @@
           "oauth"
         ],
         "summary": "Wechat Payment Oauth start.",
-        "operationId": "wechatPaymentOauth.list",
+        "operationId": "wechatPaymentOauth.start",
         "parameters": [
           {
             "name": "redirect",

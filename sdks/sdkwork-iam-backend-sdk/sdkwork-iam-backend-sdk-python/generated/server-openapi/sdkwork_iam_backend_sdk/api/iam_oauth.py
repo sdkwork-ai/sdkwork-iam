@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 from ..http_client import HttpClient
-from ..models import AppbaseApiResult
+from ..models import IamOauthClientCreateCommand, SdkWorkListResponse, SdkWorkResourceResponse
 
 def _append_query_string(path: str, raw_query_string: str) -> str:
     query = raw_query_string.lstrip('?')
@@ -219,6 +219,8 @@ class IamOauthIamOauthApi:
         self.provider_catalog = IamOauthIamOauthProviderCatalogApi(client)
         self.resource_accounts = IamOauthIamOauthResourceAccountsApi(client)
         self.resource_authorizations = IamOauthIamOauthResourceAuthorizationsApi(client)
+        self.scan_login_previews = IamOauthIamOauthScanLoginPreviewsApi(client)
+        self.scan_login_settings = IamOauthIamOauthScanLoginSettingsApi(client)
         self.scope_profiles = IamOauthIamOauthScopeProfilesApi(client)
         self.secrets = IamOauthIamOauthSecretsApi(client)
         self.surfaces = IamOauthIamOauthSurfacesApi(client)
@@ -233,7 +235,7 @@ class IamOauthIamOauthAccountLinksApi:
         self._client = client
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth account Links list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -244,7 +246,7 @@ class IamOauthIamOauthAccountLinksApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/account_links", query))
 
-    def update(self, account_link_id: str, body: Optional[Dict[str, Any]] = None) -> AppbaseApiResult:
+    def update(self, account_link_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth account Links update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/account_links/{serialize_path_parameter(account_link_id, {'name': 'accountLinkId', 'style': 'simple', 'explode': False})}", json=body)
 
@@ -255,7 +257,7 @@ class IamOauthIamOauthCallbackEventsApi:
         self._client = client
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth callback Events list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -273,7 +275,7 @@ class IamOauthIamOauthClaimMappingsApi:
         self._client = client
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth claim Mappings list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -284,11 +286,11 @@ class IamOauthIamOauthClaimMappingsApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/claim_mappings", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth claim Mappings create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/claim_mappings", json=body)
 
-    def update(self, mapping_id: str, body: Optional[Dict[str, Any]] = None) -> AppbaseApiResult:
+    def update(self, mapping_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth claim Mappings update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/claim_mappings/{serialize_path_parameter(mapping_id, {'name': 'mappingId', 'style': 'simple', 'explode': False})}", json=body)
 
@@ -299,7 +301,7 @@ class IamOauthIamOauthClientsApi:
         self._client = client
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth clients list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -310,19 +312,19 @@ class IamOauthIamOauthClientsApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/clients", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: IamOauthClientCreateCommand) -> SdkWorkResourceResponse:
         """Iam oauth clients create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/clients", json=body)
 
-    def delete(self, oauth_client_id: str) -> AppbaseApiResult:
+    def delete(self, oauth_client_id: str) -> None:
         """Iam oauth clients delete."""
         return self._client.delete(f"/backend/v3/api/iam/oauth/clients/{serialize_path_parameter(oauth_client_id, {'name': 'oauthClientId', 'style': 'simple', 'explode': False})}")
 
-    def retrieve(self, oauth_client_id: str) -> AppbaseApiResult:
+    def retrieve(self, oauth_client_id: str) -> SdkWorkResourceResponse:
         """Iam oauth clients retrieve."""
         return self._client.get(f"/backend/v3/api/iam/oauth/clients/{serialize_path_parameter(oauth_client_id, {'name': 'oauthClientId', 'style': 'simple', 'explode': False})}")
 
-    def update(self, oauth_client_id: str, body: Optional[Dict[str, Any]] = None) -> AppbaseApiResult:
+    def update(self, oauth_client_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth clients update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/clients/{serialize_path_parameter(oauth_client_id, {'name': 'oauthClientId', 'style': 'simple', 'explode': False})}", json=body)
 
@@ -333,7 +335,7 @@ class IamOauthIamOauthDiagnosticRunsApi:
         self._client = client
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth diagnostic Runs list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -344,11 +346,11 @@ class IamOauthIamOauthDiagnosticRunsApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/diagnostic_runs", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth diagnostic Runs create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/diagnostic_runs", json=body)
 
-    def retrieve(self, diagnostic_run_id: str) -> AppbaseApiResult:
+    def retrieve(self, diagnostic_run_id: str) -> SdkWorkResourceResponse:
         """Iam oauth diagnostic Runs retrieve."""
         return self._client.get(f"/backend/v3/api/iam/oauth/diagnostic_runs/{serialize_path_parameter(diagnostic_run_id, {'name': 'diagnosticRunId', 'style': 'simple', 'explode': False})}")
 
@@ -359,7 +361,7 @@ class IamOauthIamOauthFlowConfigsApi:
         self._client = client
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth flow Configs list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -370,11 +372,11 @@ class IamOauthIamOauthFlowConfigsApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/flow_configs", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth flow Configs create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/flow_configs", json=body)
 
-    def update(self, flow_config_id: str, body: Optional[Dict[str, Any]] = None) -> AppbaseApiResult:
+    def update(self, flow_config_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth flow Configs update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/flow_configs/{serialize_path_parameter(flow_config_id, {'name': 'flowConfigId', 'style': 'simple', 'explode': False})}", json=body)
 
@@ -385,7 +387,7 @@ class IamOauthIamOauthGrantsApi:
         self._client = client
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth grants list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -396,7 +398,7 @@ class IamOauthIamOauthGrantsApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/grants", query))
 
-    def delete(self, grant_id: str) -> AppbaseApiResult:
+    def delete(self, grant_id: str) -> None:
         """Iam oauth grants delete."""
         return self._client.delete(f"/backend/v3/api/iam/oauth/grants/{serialize_path_parameter(grant_id, {'name': 'grantId', 'style': 'simple', 'explode': False})}")
 
@@ -407,7 +409,7 @@ class IamOauthIamOauthIntegrationsApi:
         self._client = client
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth integrations list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -418,19 +420,19 @@ class IamOauthIamOauthIntegrationsApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/integrations", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth integrations create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/integrations", json=body)
 
-    def delete(self, integration_id: str) -> AppbaseApiResult:
+    def delete(self, integration_id: str) -> None:
         """Iam oauth integrations delete."""
         return self._client.delete(f"/backend/v3/api/iam/oauth/integrations/{serialize_path_parameter(integration_id, {'name': 'integrationId', 'style': 'simple', 'explode': False})}")
 
-    def retrieve(self, integration_id: str) -> AppbaseApiResult:
+    def retrieve(self, integration_id: str) -> SdkWorkResourceResponse:
         """Iam oauth integrations retrieve."""
         return self._client.get(f"/backend/v3/api/iam/oauth/integrations/{serialize_path_parameter(integration_id, {'name': 'integrationId', 'style': 'simple', 'explode': False})}")
 
-    def update(self, integration_id: str, body: Optional[Dict[str, Any]] = None) -> AppbaseApiResult:
+    def update(self, integration_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth integrations update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/integrations/{serialize_path_parameter(integration_id, {'name': 'integrationId', 'style': 'simple', 'explode': False})}", json=body)
 
@@ -442,7 +444,7 @@ class IamOauthIamOauthOperationalResourcesApi:
         self.publishes = IamOauthIamOauthOperationalResourcesPublishesApi(client)
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth operational Resources list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -453,15 +455,15 @@ class IamOauthIamOauthOperationalResourcesApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/operational_resources", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth operational Resources create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/operational_resources", json=body)
 
-    def delete(self, resource_id: str) -> AppbaseApiResult:
+    def delete(self, resource_id: str) -> None:
         """Iam oauth operational Resources delete."""
         return self._client.delete(f"/backend/v3/api/iam/oauth/operational_resources/{serialize_path_parameter(resource_id, {'name': 'resourceId', 'style': 'simple', 'explode': False})}")
 
-    def update(self, resource_id: str, body: Optional[Dict[str, Any]] = None) -> AppbaseApiResult:
+    def update(self, resource_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth operational Resources update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/operational_resources/{serialize_path_parameter(resource_id, {'name': 'resourceId', 'style': 'simple', 'explode': False})}", json=body)
 
@@ -472,7 +474,7 @@ class IamOauthIamOauthOperationalResourcesPublishesApi:
         self._client = client
 
 
-    def create(self, resource_id: str, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, resource_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth operational Resources publishes create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/operational_resources/{serialize_path_parameter(resource_id, {'name': 'resourceId', 'style': 'simple', 'explode': False})}/publishes", json=body)
 
@@ -484,7 +486,7 @@ class IamOauthIamOauthOperatorPlatformsApi:
         self.pre_authorizations = IamOauthIamOauthOperatorPlatformsPreAuthorizationsApi(client)
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth operator Platforms list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -495,11 +497,11 @@ class IamOauthIamOauthOperatorPlatformsApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/operator_platforms", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth operator Platforms create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/operator_platforms", json=body)
 
-    def update(self, operator_platform_id: str, body: Optional[Dict[str, Any]] = None) -> AppbaseApiResult:
+    def update(self, operator_platform_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth operator Platforms update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/operator_platforms/{serialize_path_parameter(operator_platform_id, {'name': 'operatorPlatformId', 'style': 'simple', 'explode': False})}", json=body)
 
@@ -510,7 +512,7 @@ class IamOauthIamOauthOperatorPlatformsPreAuthorizationsApi:
         self._client = client
 
 
-    def create(self, operator_platform_id: str, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, operator_platform_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth operator Platforms pre Authorizations create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/operator_platforms/{serialize_path_parameter(operator_platform_id, {'name': 'operatorPlatformId', 'style': 'simple', 'explode': False})}/pre_authorizations", json=body)
 
@@ -521,7 +523,7 @@ class IamOauthIamOauthPoliciesApi:
         self._client = client
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth policies list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -532,11 +534,11 @@ class IamOauthIamOauthPoliciesApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/policies", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth policies create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/policies", json=body)
 
-    def update(self, policy_id: str, body: Optional[Dict[str, Any]] = None) -> AppbaseApiResult:
+    def update(self, policy_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth policies update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/policies/{serialize_path_parameter(policy_id, {'name': 'policyId', 'style': 'simple', 'explode': False})}", json=body)
 
@@ -547,7 +549,7 @@ class IamOauthIamOauthProviderCatalogApi:
         self._client = client
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth provider Catalog list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -558,15 +560,15 @@ class IamOauthIamOauthProviderCatalogApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/provider_catalog", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth provider Catalog create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/provider_catalog", json=body)
 
-    def retrieve(self, provider_catalog_id: str) -> AppbaseApiResult:
+    def retrieve(self, provider_catalog_id: str) -> SdkWorkResourceResponse:
         """Iam oauth provider Catalog retrieve."""
         return self._client.get(f"/backend/v3/api/iam/oauth/provider_catalog/{serialize_path_parameter(provider_catalog_id, {'name': 'providerCatalogId', 'style': 'simple', 'explode': False})}")
 
-    def update(self, provider_catalog_id: str, body: Optional[Dict[str, Any]] = None) -> AppbaseApiResult:
+    def update(self, provider_catalog_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth provider Catalog update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/provider_catalog/{serialize_path_parameter(provider_catalog_id, {'name': 'providerCatalogId', 'style': 'simple', 'explode': False})}", json=body)
 
@@ -576,11 +578,13 @@ class IamOauthIamOauthResourceAccountsApi:
     def __init__(self, client: HttpClient):
         self._client = client
         self.authorization_refreshes = IamOauthIamOauthResourceAccountsAuthorizationRefreshesApi(client)
+        self.custom_menus = IamOauthIamOauthResourceAccountsCustomMenusApi(client)
+        self.follow_qr_codes = IamOauthIamOauthResourceAccountsFollowQrCodesApi(client)
         self.mini_program_login_checks = IamOauthIamOauthResourceAccountsMiniProgramLoginChecksApi(client)
         self.verifications = IamOauthIamOauthResourceAccountsVerificationsApi(client)
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth resource Accounts list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -591,11 +595,11 @@ class IamOauthIamOauthResourceAccountsApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/resource_accounts", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth resource Accounts create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/resource_accounts", json=body)
 
-    def update(self, resource_account_id: str, body: Optional[Dict[str, Any]] = None) -> AppbaseApiResult:
+    def update(self, resource_account_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth resource Accounts update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/resource_accounts/{serialize_path_parameter(resource_account_id, {'name': 'resourceAccountId', 'style': 'simple', 'explode': False})}", json=body)
 
@@ -606,9 +610,39 @@ class IamOauthIamOauthResourceAccountsAuthorizationRefreshesApi:
         self._client = client
 
 
-    def create(self, resource_account_id: str, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, resource_account_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth resource Accounts authorization Refreshes create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/resource_accounts/{serialize_path_parameter(resource_account_id, {'name': 'resourceAccountId', 'style': 'simple', 'explode': False})}/authorization_refreshes", json=body)
+
+class IamOauthIamOauthResourceAccountsCustomMenusApi:
+    """iam_oauth iam_oauth.iam.oauth.resource_accounts.custom_menus API client."""
+
+    def __init__(self, client: HttpClient):
+        self._client = client
+
+
+    def retrieve(self, resource_account_id: str) -> SdkWorkResourceResponse:
+        """Iam oauth resource Accounts custom Menus retrieve."""
+        return self._client.get(f"/backend/v3/api/iam/oauth/resource_accounts/{serialize_path_parameter(resource_account_id, {'name': 'resourceAccountId', 'style': 'simple', 'explode': False})}/custom_menus")
+
+    def update(self, resource_account_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
+        """Iam oauth resource Accounts custom Menus update."""
+        return self._client.patch(f"/backend/v3/api/iam/oauth/resource_accounts/{serialize_path_parameter(resource_account_id, {'name': 'resourceAccountId', 'style': 'simple', 'explode': False})}/custom_menus", json=body)
+
+    def publish(self, resource_account_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
+        """Iam oauth resource Accounts custom Menus publish."""
+        return self._client.post(f"/backend/v3/api/iam/oauth/resource_accounts/{serialize_path_parameter(resource_account_id, {'name': 'resourceAccountId', 'style': 'simple', 'explode': False})}/custom_menus/publish", json=body)
+
+class IamOauthIamOauthResourceAccountsFollowQrCodesApi:
+    """iam_oauth iam_oauth.iam.oauth.resource_accounts.follow_qr_codes API client."""
+
+    def __init__(self, client: HttpClient):
+        self._client = client
+
+
+    def create(self, resource_account_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
+        """Iam oauth resource Accounts follow Qr Codes create."""
+        return self._client.post(f"/backend/v3/api/iam/oauth/resource_accounts/{serialize_path_parameter(resource_account_id, {'name': 'resourceAccountId', 'style': 'simple', 'explode': False})}/follow_qr_codes", json=body)
 
 class IamOauthIamOauthResourceAccountsMiniProgramLoginChecksApi:
     """iam_oauth iam_oauth.iam.oauth.resource_accounts.mini_program_login_checks API client."""
@@ -617,7 +651,7 @@ class IamOauthIamOauthResourceAccountsMiniProgramLoginChecksApi:
         self._client = client
 
 
-    def create(self, resource_account_id: str, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, resource_account_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth resource Accounts mini Program Login Checks create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/resource_accounts/{serialize_path_parameter(resource_account_id, {'name': 'resourceAccountId', 'style': 'simple', 'explode': False})}/mini_program_login_checks", json=body)
 
@@ -628,7 +662,7 @@ class IamOauthIamOauthResourceAccountsVerificationsApi:
         self._client = client
 
 
-    def create(self, resource_account_id: str, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, resource_account_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth resource Accounts verifications create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/resource_accounts/{serialize_path_parameter(resource_account_id, {'name': 'resourceAccountId', 'style': 'simple', 'explode': False})}/verifications", json=body)
 
@@ -639,7 +673,7 @@ class IamOauthIamOauthResourceAuthorizationsApi:
         self._client = client
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth resource Authorizations list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -650,13 +684,39 @@ class IamOauthIamOauthResourceAuthorizationsApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/resource_authorizations", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth resource Authorizations create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/resource_authorizations", json=body)
 
-    def update(self, authorization_id: str, body: Optional[Dict[str, Any]] = None) -> AppbaseApiResult:
+    def update(self, authorization_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth resource Authorizations update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/resource_authorizations/{serialize_path_parameter(authorization_id, {'name': 'authorizationId', 'style': 'simple', 'explode': False})}", json=body)
+
+class IamOauthIamOauthScanLoginPreviewsApi:
+    """iam_oauth iam_oauth.iam.oauth.scan_login_previews API client."""
+
+    def __init__(self, client: HttpClient):
+        self._client = client
+
+
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
+        """Iam oauth scan Login Previews create."""
+        return self._client.post(f"/backend/v3/api/iam/oauth/scan_login_previews", json=body)
+
+class IamOauthIamOauthScanLoginSettingsApi:
+    """iam_oauth iam_oauth.iam.oauth.scan_login_settings API client."""
+
+    def __init__(self, client: HttpClient):
+        self._client = client
+
+
+    def retrieve(self) -> SdkWorkResourceResponse:
+        """Iam oauth scan Login Settings retrieve."""
+        return self._client.get(f"/backend/v3/api/iam/oauth/scan_login_settings")
+
+    def update(self, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
+        """Iam oauth scan Login Settings update."""
+        return self._client.patch(f"/backend/v3/api/iam/oauth/scan_login_settings", json=body)
 
 class IamOauthIamOauthScopeProfilesApi:
     """iam_oauth iam_oauth.iam.oauth.scope_profiles API client."""
@@ -665,7 +725,7 @@ class IamOauthIamOauthScopeProfilesApi:
         self._client = client
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth scope Profiles list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -676,11 +736,11 @@ class IamOauthIamOauthScopeProfilesApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/scope_profiles", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth scope Profiles create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/scope_profiles", json=body)
 
-    def update(self, scope_profile_id: str, body: Optional[Dict[str, Any]] = None) -> AppbaseApiResult:
+    def update(self, scope_profile_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth scope Profiles update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/scope_profiles/{serialize_path_parameter(scope_profile_id, {'name': 'scopeProfileId', 'style': 'simple', 'explode': False})}", json=body)
 
@@ -691,7 +751,7 @@ class IamOauthIamOauthSecretsApi:
         self._client = client
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth secrets list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -702,11 +762,11 @@ class IamOauthIamOauthSecretsApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/secrets", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth secrets create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/secrets", json=body)
 
-    def delete(self, secret_id: str) -> AppbaseApiResult:
+    def delete(self, secret_id: str) -> None:
         """Iam oauth secrets delete."""
         return self._client.delete(f"/backend/v3/api/iam/oauth/secrets/{serialize_path_parameter(secret_id, {'name': 'secretId', 'style': 'simple', 'explode': False})}")
 
@@ -717,7 +777,7 @@ class IamOauthIamOauthSurfacesApi:
         self._client = client
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth surfaces list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -728,15 +788,15 @@ class IamOauthIamOauthSurfacesApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/surfaces", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth surfaces create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/surfaces", json=body)
 
-    def delete(self, surface_id: str) -> AppbaseApiResult:
+    def delete(self, surface_id: str) -> None:
         """Iam oauth surfaces delete."""
         return self._client.delete(f"/backend/v3/api/iam/oauth/surfaces/{serialize_path_parameter(surface_id, {'name': 'surfaceId', 'style': 'simple', 'explode': False})}")
 
-    def update(self, surface_id: str, body: Optional[Dict[str, Any]] = None) -> AppbaseApiResult:
+    def update(self, surface_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth surfaces update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/surfaces/{serialize_path_parameter(surface_id, {'name': 'surfaceId', 'style': 'simple', 'explode': False})}", json=body)
 
@@ -747,7 +807,7 @@ class IamOauthIamOauthTenantBindingsApi:
         self._client = client
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth tenant Bindings list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -758,11 +818,11 @@ class IamOauthIamOauthTenantBindingsApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/tenant_bindings", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth tenant Bindings create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/tenant_bindings", json=body)
 
-    def update(self, binding_id: str, body: Optional[Dict[str, Any]] = None) -> AppbaseApiResult:
+    def update(self, binding_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth tenant Bindings update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/tenant_bindings/{serialize_path_parameter(binding_id, {'name': 'bindingId', 'style': 'simple', 'explode': False})}", json=body)
 
@@ -774,7 +834,7 @@ class IamOauthIamOauthWebhookConfigsApi:
         self.verifications = IamOauthIamOauthWebhookConfigsVerificationsApi(client)
 
 
-    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> AppbaseApiResult:
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
         """Iam oauth webhook Configs list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -785,11 +845,15 @@ class IamOauthIamOauthWebhookConfigsApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/oauth/webhook_configs", query))
 
-    def create(self, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth webhook Configs create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/webhook_configs", json=body)
 
-    def update(self, webhook_config_id: str, body: Optional[Dict[str, Any]] = None) -> AppbaseApiResult:
+    def delete(self, webhook_config_id: str) -> None:
+        """Iam oauth webhook Configs delete."""
+        return self._client.delete(f"/backend/v3/api/iam/oauth/webhook_configs/{serialize_path_parameter(webhook_config_id, {'name': 'webhookConfigId', 'style': 'simple', 'explode': False})}")
+
+    def update(self, webhook_config_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth webhook Configs update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/webhook_configs/{serialize_path_parameter(webhook_config_id, {'name': 'webhookConfigId', 'style': 'simple', 'explode': False})}", json=body)
 
@@ -800,6 +864,6 @@ class IamOauthIamOauthWebhookConfigsVerificationsApi:
         self._client = client
 
 
-    def create(self, webhook_config_id: str, body: Dict[str, Any]) -> AppbaseApiResult:
+    def create(self, webhook_config_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth webhook Configs verifications create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/webhook_configs/{serialize_path_parameter(webhook_config_id, {'name': 'webhookConfigId', 'style': 'simple', 'explode': False})}/verifications", json=body)

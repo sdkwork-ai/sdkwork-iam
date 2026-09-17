@@ -5,6 +5,8 @@
   "language": "java",
   "sdkType": "backend",
   "packageName": "com.sdkwork:sdkwork-iam-backend-sdk",
+  "transportPackageName": "com.sdkwork:sdkwork-iam-backend-sdk",
+  "consumerPackageName": "com.sdkwork:sdkwork-iam-backend-sdk",
   "generator": "@sdkwork/sdk-generator",
   "capabilities": {
     "supportsGeneratedTests": true,

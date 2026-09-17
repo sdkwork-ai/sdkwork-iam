@@ -18,6 +18,7 @@ class AppbaseTenantApplicationProvisionCommand:
     password: Optional[str] = None
     template_id: Optional[str] = None
     app_key: Optional[str] = None
+    application_type: Optional[str] = None
     primary_domain: Optional[str] = None
     access_permissions: Optional[List[str]] = None
     runtime_config: Optional[Dict[str, Any]] = None

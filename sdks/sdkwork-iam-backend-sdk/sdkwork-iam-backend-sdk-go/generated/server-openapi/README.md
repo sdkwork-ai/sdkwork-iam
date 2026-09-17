@@ -74,15 +74,8 @@ fmt.Println(result)
 ### iam_oauth
 
 ```go
-// Iam oauth account Links list.
-params := map[string]interface{}{
-    "page": 1,
-    "page_size": 2,
-    "cursor": "cursor",
-    "sort": "sort",
-    "q": "q",
-}
-result, err := client.IamOauth.AccountLinksList(params)
+// Iam oauth scan Login Settings retrieve.
+result, err := client.IamOauth.ScanLoginSettingsRetrieve()
 if err != nil {
     panic(err)
 }

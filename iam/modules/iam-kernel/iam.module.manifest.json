@@ -4,7 +4,7 @@
   "moduleId": "iam-kernel",
   "catalogVersion": "1.0.0",
   "domain": "iam",
-  "owner": "sdkwork-iam",
+  "owner": "sdkwork-appbase",
   "displayName": "IAM Kernel Module",
   "permissions": {
     "catalog": [
@@ -165,6 +165,69 @@
         "code": "iam.departments.update",
         "name": "Update departments",
         "resource": "iam.departments",
+        "action": "update",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.group_members.create",
+        "name": "Add IAM group members",
+        "resource": "iam.group_members",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.group_members.delete",
+        "name": "Remove IAM group members",
+        "resource": "iam.group_members",
+        "action": "delete",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.group_members.read",
+        "name": "Read IAM group members",
+        "resource": "iam.group_members",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.groups.create",
+        "name": "Create IAM groups",
+        "resource": "iam.groups",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.groups.delete",
+        "name": "Delete IAM groups",
+        "resource": "iam.groups",
+        "action": "delete",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.groups.read",
+        "name": "Read IAM groups",
+        "resource": "iam.groups",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.groups.update",
+        "name": "Update IAM groups",
+        "resource": "iam.groups",
         "action": "update",
         "status": "active",
         "since": "1.0.0",
@@ -396,6 +459,96 @@
         "replacementCode": null
       },
       {
+        "code": "iam.provider_accounts.create",
+        "name": "Create provider accounts",
+        "resource": "iam.provider_accounts",
+        "action": "create",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.provider_accounts.delete",
+        "name": "Delete provider accounts",
+        "resource": "iam.provider_accounts",
+        "action": "delete",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.provider_accounts.manage_shared",
+        "name": "Manage shared (tenant/organization scoped) provider accounts",
+        "resource": "iam.provider_accounts",
+        "action": "manage_shared",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.provider_accounts.read",
+        "name": "Read provider accounts",
+        "resource": "iam.provider_accounts",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.provider_accounts.resolve",
+        "name": "Resolve provider accounts for consumers",
+        "resource": "iam.provider_accounts",
+        "action": "resolve",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.provider_accounts.update",
+        "name": "Update provider accounts",
+        "resource": "iam.provider_accounts",
+        "action": "update",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.provider_credentials.create",
+        "name": "Create provider credentials",
+        "resource": "iam.provider_credentials",
+        "action": "create",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.provider_credentials.delete",
+        "name": "Delete provider credentials",
+        "resource": "iam.provider_credentials",
+        "action": "delete",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.provider_credentials.read",
+        "name": "Read provider credentials",
+        "resource": "iam.provider_credentials",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.provider_credentials.revoke",
+        "name": "Revoke provider credentials",
+        "resource": "iam.provider_credentials",
+        "action": "revoke",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
         "code": "iam.role_bindings.create",
         "name": "Create role bindings",
         "resource": "iam.role_bindings",
@@ -522,6 +675,60 @@
         "replacementCode": null
       },
       {
+        "code": "iam.service_account_credentials.create",
+        "name": "Create IAM service account credentials",
+        "resource": "iam.service_account_credentials",
+        "action": "create",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.service_account_credentials.revoke",
+        "name": "Revoke IAM service account credentials",
+        "resource": "iam.service_account_credentials",
+        "action": "revoke",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.service_accounts.create",
+        "name": "Create IAM service accounts",
+        "resource": "iam.service_accounts",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.service_accounts.delete",
+        "name": "Delete IAM service accounts",
+        "resource": "iam.service_accounts",
+        "action": "delete",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.service_accounts.read",
+        "name": "Read IAM service accounts",
+        "resource": "iam.service_accounts",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.service_accounts.update",
+        "name": "Update IAM service accounts",
+        "resource": "iam.service_accounts",
+        "action": "update",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
         "code": "iam.sessions.read",
         "name": "Read own sessions",
         "resource": "iam.sessions",
@@ -639,123 +846,6 @@
         "replacementCode": null
       },
       {
-        "code": "iam.group_members.create",
-        "name": "Add IAM group members",
-        "resource": "iam.group_members",
-        "action": "create",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "iam.group_members.delete",
-        "name": "Remove IAM group members",
-        "resource": "iam.group_members",
-        "action": "delete",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "iam.group_members.read",
-        "name": "Read IAM group members",
-        "resource": "iam.group_members",
-        "action": "read",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "iam.groups.create",
-        "name": "Create IAM groups",
-        "resource": "iam.groups",
-        "action": "create",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "iam.groups.delete",
-        "name": "Delete IAM groups",
-        "resource": "iam.groups",
-        "action": "delete",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "iam.groups.read",
-        "name": "Read IAM groups",
-        "resource": "iam.groups",
-        "action": "read",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "iam.groups.update",
-        "name": "Update IAM groups",
-        "resource": "iam.groups",
-        "action": "update",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "iam.service_accounts.create",
-        "name": "Create IAM service accounts",
-        "resource": "iam.service_accounts",
-        "action": "create",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "iam.service_account_credentials.create",
-        "name": "Create IAM service account credentials",
-        "resource": "iam.service_account_credentials",
-        "action": "create",
-        "status": "active",
-        "since": "1.1.0",
-        "replacementCode": null
-      },
-      {
-        "code": "iam.service_account_credentials.revoke",
-        "name": "Revoke IAM service account credentials",
-        "resource": "iam.service_account_credentials",
-        "action": "revoke",
-        "status": "active",
-        "since": "1.1.0",
-        "replacementCode": null
-      },
-      {
-        "code": "iam.service_accounts.delete",
-        "name": "Delete IAM service accounts",
-        "resource": "iam.service_accounts",
-        "action": "delete",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "iam.service_accounts.read",
-        "name": "Read IAM service accounts",
-        "resource": "iam.service_accounts",
-        "action": "read",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "iam.service_accounts.update",
-        "name": "Update IAM service accounts",
-        "resource": "iam.service_accounts",
-        "action": "update",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
         "code": "iam.users.create",
         "name": "Create IAM users",
         "resource": "iam.users",
@@ -808,6 +898,14 @@
           "iam.memberships.read",
           "iam.departments.read",
           "iam.assignments.read",
+          "iam.provider_accounts.read",
+          "iam.provider_accounts.create",
+          "iam.provider_accounts.update",
+          "iam.provider_accounts.delete",
+          "iam.provider_credentials.read",
+          "iam.provider_credentials.create",
+          "iam.provider_credentials.revoke",
+          "iam.provider_credentials.delete",
           "apps.app_center.read",
           "courses.catalog.read",
           "courses.content.read",
@@ -840,13 +938,12 @@
       {
         "roleCode": "org_admin",
         "patterns": [
+          "iam:self",
           "iam.*",
           "iam.oauth.*",
           "commerce.*",
           "courses.*",
           "ai.*",
-          "knowledge.*",
-          "mail.*",
           "messaging.*",
           "integrations.*",
           "drive.*",
@@ -926,12 +1023,7 @@
         ]
       }
     ],
-    "roleExclusions": [
-      {
-        "roleCode": "org_finance",
-        "excludesRoleCode": "org_auditor"
-      }
-    ]
+    "roleExclusions": []
   },
   "directory": {
     "organizationTemplates": [

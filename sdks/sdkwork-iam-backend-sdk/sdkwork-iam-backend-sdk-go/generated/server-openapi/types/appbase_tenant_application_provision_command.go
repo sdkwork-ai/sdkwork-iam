@@ -14,6 +14,7 @@ type AppbaseTenantApplicationProvisionCommand struct {
 	InstanceKey string `json:"instanceKey"`
 	DisplayName string `json:"displayName"`
 	Environment string `json:"environment"`
+	ApplicationType string `json:"applicationType"`
 	PrimaryDomain string `json:"primaryDomain"`
 	AccessPermissions []string `json:"accessPermissions"`
 	RuntimeConfig map[string]interface{} `json:"runtimeConfig"`

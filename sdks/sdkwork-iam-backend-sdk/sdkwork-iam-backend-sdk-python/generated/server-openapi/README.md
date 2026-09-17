@@ -64,15 +64,8 @@ print(result)
 ### iam_oauth
 
 ```python
-# Iam oauth account Links list.
-params = {
-    'page': 1,
-    'page_size': 2,
-    'cursor': 'cursor',
-    'sort': 'sort',
-    'q': 'q',
-}
-result = client.iam_oauth.iam.oauth.account_links.list(params)
+# Iam oauth scan Login Settings retrieve.
+result = client.iam_oauth.iam.oauth.scan_login_settings.retrieve()
 print(result)
 ```
 
