@@ -1,0 +1,27 @@
+{
+  "@@locale": "en",
+  "title": "SDKWork IAM Flutter Mobile Organization",
+  "@title": {
+    "description": "Title of the capability screen."
+  },
+  "subtitle": "SDKWork IAM Flutter Mobile Organization workspace",
+  "@subtitle": {
+    "description": "Supporting line under the title."
+  },
+  "loading": "Loading…",
+  "@loading": {
+    "description": "Shown while the capability loads its first page."
+  },
+  "empty": "Nothing to show yet.",
+  "@empty": {
+    "description": "Empty state shown when the capability has no records."
+  },
+  "loadError": "Unable to load this view.",
+  "@loadError": {
+    "description": "User-safe error shown when loading fails."
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Label of the retry action."
+  }
+}

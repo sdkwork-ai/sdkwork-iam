@@ -1,0 +1,38 @@
+name: sdkwork_iam_flutter_mobile_admin_shell
+description: SDKWork IAM Flutter Mobile Admin Shell — shell boundary.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+  flutter: '>=3.24.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sdkwork_iam_flutter_mobile_admin_core:
+    path: ../sdkwork_iam_flutter_mobile_admin_core
+  sdkwork_iam_flutter_mobile_commons:
+    path: ../sdkwork_iam_flutter_mobile_commons
+  sdkwork_iam_flutter_mobile_admin_oauth:
+    path: ../sdkwork_iam_flutter_mobile_admin_oauth
+  sdkwork_iam_flutter_mobile_admin_tenant:
+    path: ../sdkwork_iam_flutter_mobile_admin_tenant
+  sdkwork_iam_flutter_mobile_admin_organization:
+    path: ../sdkwork_iam_flutter_mobile_admin_organization
+  sdkwork_iam_flutter_mobile_admin_permission:
+    path: ../sdkwork_iam_flutter_mobile_admin_permission
+  sdkwork_iam_flutter_mobile_admin_account_binding:
+    path: ../sdkwork_iam_flutter_mobile_admin_account_binding
+  sdkwork_iam_flutter_mobile_admin_user:
+    path: ../sdkwork_iam_flutter_mobile_admin_user
+  sdkwork_iam_flutter_mobile_admin_audit:
+    path: ../sdkwork_iam_flutter_mobile_admin_audit
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

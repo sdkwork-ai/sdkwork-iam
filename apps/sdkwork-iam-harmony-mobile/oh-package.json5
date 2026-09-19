@@ -1,0 +1,40 @@
+{
+  "modelVersion": "5.0.0",
+  "name": "sdkwork-iam-harmony-mobile",
+  "version": "0.1.0",
+  "description": "SDKWork IAM native HarmonyOS mobile client for authentication, user center, account binding, and approved management surfaces.",
+  "main": "",
+  "author": "SDKWork",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@sdkwork/sdkwork-iam-harmony-mobile-core": "file:./packages/sdkwork-iam-harmony-mobile-core",
+    "@sdkwork/sdkwork-iam-harmony-mobile-commons": "file:./packages/sdkwork-iam-harmony-mobile-commons",
+    "@sdkwork/sdkwork-iam-harmony-mobile-shell": "file:./packages/sdkwork-iam-harmony-mobile-shell",
+    "@sdkwork/sdkwork-iam-harmony-mobile-host": "file:./packages/sdkwork-iam-harmony-mobile-host",
+    "@sdkwork/sdkwork-iam-harmony-mobile-console-core": "file:./packages/sdkwork-iam-harmony-mobile-console-core",
+    "@sdkwork/sdkwork-iam-harmony-mobile-console-shell": "file:./packages/sdkwork-iam-harmony-mobile-console-shell",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-core": "file:./packages/sdkwork-iam-harmony-mobile-admin-core",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-shell": "file:./packages/sdkwork-iam-harmony-mobile-admin-shell",
+    "@sdkwork/sdkwork-iam-harmony-mobile-auth": "file:./packages/sdkwork-iam-harmony-mobile-auth",
+    "@sdkwork/sdkwork-iam-harmony-mobile-user-center": "file:./packages/sdkwork-iam-harmony-mobile-user-center",
+    "@sdkwork/sdkwork-iam-harmony-mobile-account-binding": "file:./packages/sdkwork-iam-harmony-mobile-account-binding",
+    "@sdkwork/sdkwork-iam-harmony-mobile-user": "file:./packages/sdkwork-iam-harmony-mobile-user",
+    "@sdkwork/sdkwork-iam-harmony-mobile-tenant": "file:./packages/sdkwork-iam-harmony-mobile-tenant",
+    "@sdkwork/sdkwork-iam-harmony-mobile-organization": "file:./packages/sdkwork-iam-harmony-mobile-organization",
+    "@sdkwork/sdkwork-iam-harmony-mobile-oauth": "file:./packages/sdkwork-iam-harmony-mobile-oauth",
+    "@sdkwork/sdkwork-iam-harmony-mobile-console-tenant": "file:./packages/sdkwork-iam-harmony-mobile-console-tenant",
+    "@sdkwork/sdkwork-iam-harmony-mobile-console-organization": "file:./packages/sdkwork-iam-harmony-mobile-console-organization",
+    "@sdkwork/sdkwork-iam-harmony-mobile-console-account-binding": "file:./packages/sdkwork-iam-harmony-mobile-console-account-binding",
+    "@sdkwork/sdkwork-iam-harmony-mobile-console-user-center": "file:./packages/sdkwork-iam-harmony-mobile-console-user-center",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-oauth": "file:./packages/sdkwork-iam-harmony-mobile-admin-oauth",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-tenant": "file:./packages/sdkwork-iam-harmony-mobile-admin-tenant",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-organization": "file:./packages/sdkwork-iam-harmony-mobile-admin-organization",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-permission": "file:./packages/sdkwork-iam-harmony-mobile-admin-permission",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-account-binding": "file:./packages/sdkwork-iam-harmony-mobile-admin-account-binding",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-user": "file:./packages/sdkwork-iam-harmony-mobile-admin-user",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-audit": "file:./packages/sdkwork-iam-harmony-mobile-admin-audit"
+  },
+  "devDependencies": {
+    "@ohos/hypium": "1.0.19"
+  }
+}

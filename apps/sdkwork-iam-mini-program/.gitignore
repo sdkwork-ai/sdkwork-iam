@@ -1,0 +1,4 @@
+.cache/
+dist/
+*.local.*
+project.private.config.json

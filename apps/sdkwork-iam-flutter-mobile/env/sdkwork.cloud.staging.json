@@ -1,0 +1,14 @@
+{
+  "SDKWORK_ENVIRONMENT": "staging",
+  "SDKWORK_DEPLOYMENT_PROFILE": "cloud",
+  "SDKWORK_PROFILE_ID": "cloud.staging",
+  "SDKWORK_RUNTIME_TARGET": "flutter-mobile",
+  "SDKWORK_APP_ID": "sdkwork-iam",
+  "SDKWORK_API_BASE_URL": "https://api-staging.sdkwork.com;https://api-staging.birdcoder.com;https://api-staging.dtupay.com;https://api-staging.noaper.com;https://api-staging.sdkwork.cn;https://api-staging.birdcoder.cn;https://api-staging.dtupay.cn;https://api-staging.noaper.cn;https://api-staging.skubc.com;https://api-staging.skubc.cn;https://api-staging.zowalk.com;https://api-staging.zowalk.cn;https://api-staging.offer86.com;https://api-staging.offer86.cn;https://api-staging.86offer.com;https://api-staging.86offer.cn",
+  "SDKWORK_APP_API_BASE_URL": "https://api-staging.sdkwork.com;https://api-staging.birdcoder.com;https://api-staging.dtupay.com;https://api-staging.noaper.com;https://api-staging.sdkwork.cn;https://api-staging.birdcoder.cn;https://api-staging.dtupay.cn;https://api-staging.noaper.cn;https://api-staging.skubc.com;https://api-staging.skubc.cn;https://api-staging.zowalk.com;https://api-staging.zowalk.cn;https://api-staging.offer86.com;https://api-staging.offer86.cn;https://api-staging.86offer.com;https://api-staging.86offer.cn",
+  "SDKWORK_OPEN_API_BASE_URL": "https://api-staging.sdkwork.com;https://api-staging.birdcoder.com;https://api-staging.dtupay.com;https://api-staging.noaper.com;https://api-staging.sdkwork.cn;https://api-staging.birdcoder.cn;https://api-staging.dtupay.cn;https://api-staging.noaper.cn;https://api-staging.skubc.com;https://api-staging.skubc.cn;https://api-staging.zowalk.com;https://api-staging.zowalk.cn;https://api-staging.offer86.com;https://api-staging.offer86.cn;https://api-staging.86offer.com;https://api-staging.86offer.cn",
+  "SDKWORK_IAM_ISSUER": "https://api-staging.sdkwork.com",
+  "SDKWORK_FEATURE_APP_SURFACE": true,
+  "SDKWORK_FEATURE_CONSOLE_SURFACE": true,
+  "SDKWORK_FEATURE_ADMIN_SURFACE": true
+}

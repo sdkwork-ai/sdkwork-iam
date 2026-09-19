@@ -1,0 +1,17 @@
+name: sdkwork_iam_flutter_mobile_admin_core
+description: SDKWork IAM Flutter Mobile Admin Core — core boundary.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  sdkwork_iam_flutter_mobile_core:
+    path: ../sdkwork_iam_flutter_mobile_core
+  sdkwork_iam_flutter_mobile_commons:
+    path: ../sdkwork_iam_flutter_mobile_commons
+
+dev_dependencies:
+  test: ^1.24.0
+  lints: ^3.0.0

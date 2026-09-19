@@ -29,7 +29,7 @@ const WECHAT_PROVIDER = "wechat";
 const CODE_COUNTDOWN_SECONDS = 60;
 
 /**
- * Mobile H5 login/register screen following the ClawChat mobile auth design:
+ * Mobile H5 login/register screen following the SDKWork mobile auth design:
  * password login, code login, phone registration and password recovery are
  * available through the mode switcher; the footer requires reading and
  * agreeing to the terms before submitting.

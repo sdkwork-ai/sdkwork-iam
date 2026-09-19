@@ -1,0 +1,27 @@
+{
+  "@@locale": "zh",
+  "title": "SDKWork IAM Flutter Mobile User",
+  "@title": {
+    "description": "Title of the capability screen."
+  },
+  "subtitle": "SDKWork IAM Flutter Mobile User 工作区",
+  "@subtitle": {
+    "description": "Supporting line under the title."
+  },
+  "loading": "加载中…",
+  "@loading": {
+    "description": "Shown while the capability loads its first page."
+  },
+  "empty": "暂无内容。",
+  "@empty": {
+    "description": "Empty state shown when the capability has no records."
+  },
+  "loadError": "无法加载此视图。",
+  "@loadError": {
+    "description": "User-safe error shown when loading fails."
+  },
+  "retry": "重试",
+  "@retry": {
+    "description": "Label of the retry action."
+  }
+}

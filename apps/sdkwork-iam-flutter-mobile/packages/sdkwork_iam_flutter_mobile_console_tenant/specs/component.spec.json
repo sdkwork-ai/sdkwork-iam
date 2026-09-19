@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork_iam_flutter_mobile_console_tenant",
+    "displayName": "SDKWork IAM Flutter Mobile Console Tenant",
+    "version": "0.1.0",
+    "type": "dart-package",
+    "root": "sdkwork-iam/apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_console_tenant",
+    "domain": "iam",
+    "declaredDomain": "iam",
+    "capability": "tenant",
+    "status": "standardizing",
+    "surface": "console",
+    "languages": [
+      "dart"
+    ],
+    "generated": false,
+    "private": true,
+    "manifests": [
+      "pubspec.yaml"
+    ]
+  },
+  "canonicalSpecs": [
+    {
+      "file": "COMPONENT_SPEC.md",
+      "purpose": "Local component specs directory and manifest rules.",
+      "path": "../../../../../../sdkwork-specs/COMPONENT_SPEC.md"
+    },
+    {
+      "file": "MODULE_SPEC.md",
+      "purpose": "Reusable package contract and dependency direction.",
+      "path": "../../../../../../sdkwork-specs/MODULE_SPEC.md"
+    },
+    {
+      "file": "APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md",
+      "purpose": "Cross-client package taxonomy and dependency direction.",
+      "path": "../../../../../../sdkwork-specs/APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md"
+    },
+    {
+      "file": "FLUTTER_APP_MOBILE_ARCHITECTURE_SPEC.md",
+      "purpose": "Flutter client root architecture standard.",
+      "path": "../../../../../../sdkwork-specs/FLUTTER_APP_MOBILE_ARCHITECTURE_SPEC.md"
+    },
+    {
+      "file": "APP_FLUTTER_UI_SPEC.md",
+      "purpose": "Flutter package UI rules.",
+      "path": "../../../../../../sdkwork-specs/APP_FLUTTER_UI_SPEC.md"
+    },
+    {
+      "file": "APP_SDK_INTEGRATION_SPEC.md",
+      "purpose": "Generated Dart SDK integration and TokenManager wiring.",
+      "path": "../../../../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md"
+    }
+  ],
+  "contracts": {
+    "publicExports": [
+      "lib/sdkwork_iam_flutter_mobile_console_tenant.dart"
+    ],
+    "runtimeEntrypoints": [],
+    "sdkClients": [],
+    "events": [],
+    "configKeys": [],
+    "routeManifest": "lib/src/routes/route_manifest.dart",
+    "sdkDependencies": [
+      {
+        "workspace": "sdkwork-iam-app-sdk",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api"
+      }
+    ],
+    "layerRole": "frontend-feature",
+    "providedPorts": [
+      {
+        "name": "sdkwork_iam_flutter_mobile_console_tenant-surface",
+        "export": "lib/sdkwork_iam_flutter_mobile_console_tenant.dart"
+      }
+    ],
+    "requiredPorts": [],
+    "routeIds": [
+      "console.iam.tenant.overview"
+    ],
+    "permissionComposition": {
+      "inheritanceMode": "module-catalog-with-overrides",
+      "applicationModule": {
+        "manifestRef": "../../../../iam/modules/iam-kernel/iam.module.manifest.json"
+      },
+      "moduleCatalogRefs": [
+        {
+          "moduleId": "iam-kernel",
+          "manifestRef": "../../../../iam/modules/iam-kernel/iam.module.manifest.json",
+          "inheritPermissions": true,
+          "inheritRoles": false
+        }
+      ],
+      "bootstrapAccessTokenScope": {
+        "inheritFrom": "sdkwork.app.config.json#backend.accessTokenPermissionScope",
+        "supplement": [],
+        "overrideReplace": false
+      },
+      "routePermissionHints": {
+        "inheritFromOpenApi": true,
+        "inheritFromModuleManifests": true,
+        "overrides": []
+      },
+      "consumerPolicy": {
+        "forbidLocalPermissionCatalogForDependencyDomains": true,
+        "allowExplicitOverridesOnly": true,
+        "allowFrontendHintsWithoutServerDuplication": true
+      }
+    }
+  },
+  "integration": {
+    "authority": "Root SDKWork specs remain authoritative. Local specs may extend but must not contradict them.",
+    "dependencyPolicy": "Consumers integrate through public package exports, declared runtime entrypoints, generated SDK clients, or documented adapters only.",
+    "sdkPolicy": "Generated Dart SDK clients are constructed by the bootstrap and injected through the tier core; reusable UI must not create raw HTTP clients or manual auth headers.",
+    "languagePolicy": "Dart packages follow pubspec and the Dart SDK toolchain while preserving the same component contract."
+  },
+  "verification": {
+    "commands": [
+      "flutter analyze && flutter test"
+    ]
+  }
+}

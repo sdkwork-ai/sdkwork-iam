@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.capacitor-host-config",
+  "profile": "production",
+  "appId": "sdkwork-iam-h5",
+  "bundleId": "com.sdkwork.iam.h5",
+  "packageName": "com.sdkwork.iam.h5",
+  "server": {
+    "url": "https://im.sdkwork.com",
+    "cleartext": false
+  },
+  "plugins": {},
+  "permissions": [],
+  "urlScheme": "sdkwork-iam-h5",
+  "associatedDomains": ["applinks:im.sdkwork.com"],
+  "note": "Capacitor host packaging is deferred. This example documents the future native host boundary."
+}

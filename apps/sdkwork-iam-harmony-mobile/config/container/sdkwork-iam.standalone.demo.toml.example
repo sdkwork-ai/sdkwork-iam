@@ -1,0 +1,8 @@
+# Container profile template for the SDKWork IAM HarmonyOS Mobile Harmony Mobile surface.
+# Shared deployment authority lives at ../../../etc/sdkwork.deployment.config.json.
+# This file is a safe example: it carries no credential, token or private endpoint.
+[runtime]
+target = "harmony-native"
+environment = "demo"
+deployment_profile = "standalone"
+profile_id = "standalone.demo"

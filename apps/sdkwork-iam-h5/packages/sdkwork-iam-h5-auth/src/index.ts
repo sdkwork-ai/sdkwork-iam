@@ -47,3 +47,5 @@ export { SdkworkIamH5AuthRoutes } from "./pages/AuthH5Routes";
 export type { SdkworkIamH5AuthRoutesProps } from "./pages/AuthH5Routes";
 export { isSdkworkMobileAuthViewport } from "./utils/viewport";
 export type { SdkworkMobileAuthViewportEnvironment } from "./utils/viewport";
+export * from './routes/route-contribution.js';
+export * from './services/auth-service.js';

@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component-deployment",
+  "application": "sdkwork-iam-flutter-mobile",
+  "parentDeploymentConfig": "../../../etc/sdkwork.deployment.config.json",
+  "parentTopologySpec": "../../../specs/topology.spec.json",
+  "materialization": {
+    "authority": "../../../etc/sdkwork.deployment.config.json",
+    "format": "json",
+    "outputPattern": "../env/sdkwork.{deploymentProfile}.{environment}.json",
+    "profiles": [
+      "standalone.development",
+      "standalone.test",
+      "standalone.staging",
+      "standalone.demo",
+      "standalone.production",
+      "cloud.development",
+      "cloud.test",
+      "cloud.staging",
+      "cloud.demo",
+      "cloud.production"
+    ],
+    "runtimeTarget": "flutter-mobile",
+    "checkedIn": true,
+    "deferred": true,
+    "deferredReason": "sdkwork-specs/tools/materialize-client-env.mjs does not implement this surface format yet. The runtime documents are authored and checked in and validated by the root contract test instead of being generated; declaring a generation command here would be a false signal."
+  },
+  "profiles": {
+    "standalone.development": {
+      "source": "../env/sdkwork.standalone.development.json"
+    },
+    "standalone.test": {
+      "source": "../env/sdkwork.standalone.test.json"
+    },
+    "standalone.staging": {
+      "source": "../env/sdkwork.standalone.staging.json"
+    },
+    "standalone.demo": {
+      "source": "../env/sdkwork.standalone.demo.json"
+    },
+    "standalone.production": {
+      "source": "../env/sdkwork.standalone.production.json"
+    },
+    "cloud.development": {
+      "source": "../env/sdkwork.cloud.development.json"
+    },
+    "cloud.test": {
+      "source": "../env/sdkwork.cloud.test.json"
+    },
+    "cloud.staging": {
+      "source": "../env/sdkwork.cloud.staging.json"
+    },
+    "cloud.demo": {
+      "source": "../env/sdkwork.cloud.demo.json"
+    },
+    "cloud.production": {
+      "source": "../env/sdkwork.cloud.production.json"
+    }
+  }
+}

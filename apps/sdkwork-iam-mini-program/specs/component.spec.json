@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-iam-mini-program",
+    "displayName": "SDKWork IAM Mini Program",
+    "version": "0.1.0",
+    "type": "mini-program-app-root",
+    "root": "sdkwork-iam/apps/sdkwork-iam-mini-program",
+    "domain": "iam",
+    "declaredDomain": "iam",
+    "capability": "iam",
+    "status": "standardizing",
+    "surface": "app",
+    "languages": [
+      "typescript",
+      "javascript"
+    ],
+    "generated": false,
+    "private": true,
+    "manifests": [
+      "package.json",
+      "sdkwork.app.config.json",
+      "project.config.json"
+    ]
+  },
+  "canonicalSpecs": [
+    {
+      "file": "APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md",
+      "purpose": "Cross-client package taxonomy, route identity, and dependency direction.",
+      "path": "../../../../sdkwork-specs/APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md"
+    },
+    {
+      "file": "MINI_PROGRAM_APP_ARCHITECTURE_SPEC.md",
+      "purpose": "Client root architecture standard.",
+      "path": "../../../../sdkwork-specs/MINI_PROGRAM_APP_ARCHITECTURE_SPEC.md"
+    },
+    {
+      "file": "APP_MINI_PROGRAM_UI_SPEC.md",
+      "purpose": "Client package UI rules.",
+      "path": "../../../../sdkwork-specs/APP_MINI_PROGRAM_UI_SPEC.md"
+    },
+    {
+      "file": "APP_COMPOSITION_SPEC.md",
+      "purpose": "Native-authority application composition.",
+      "path": "../../../../sdkwork-specs/APP_COMPOSITION_SPEC.md"
+    },
+    {
+      "file": "APP_SDK_INTEGRATION_SPEC.md",
+      "purpose": "Generated SDK integration, TokenManager wiring, and dependency composition rules.",
+      "path": "../../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md"
+    },
+    {
+      "file": "SOURCE_CONFIG_SPEC.md",
+      "purpose": "Source configuration authority and component deployment descriptors.",
+      "path": "../../../../sdkwork-specs/SOURCE_CONFIG_SPEC.md"
+    },
+    {
+      "file": "TEST_SPEC.md",
+      "purpose": "Contract, frontend, SDK, security, and documentation verification rules.",
+      "path": "../../../../sdkwork-specs/TEST_SPEC.md"
+    }
+  ],
+  "contracts": {
+    "publicExports": [],
+    "runtimeEntrypoints": [],
+    "sdkClients": [],
+    "events": [],
+    "configKeys": [],
+    "routeManifest": null,
+    "routeRegistry": "packages/sdkwork-iam-mp-core/src/modules/index.ts",
+    "packageCount": 26,
+    "layerRole": "runtime-composition",
+    "providedPorts": [],
+    "requiredPorts": []
+  },
+  "integration": {
+    "authority": "Root SDKWork specs remain authoritative. Local specs may extend but must not contradict them.",
+    "dependencyPolicy": "Consumers integrate through public package exports, declared runtime entrypoints, generated SDK clients, or documented adapters only.",
+    "sdkPolicy": "Generated SDK clients are injected through service/runtime boundaries; reusable UI must not create raw HTTP clients or manual auth headers.",
+    "languagePolicy": "Language-specific packages follow their native manifest and build tools while preserving the same component contract."
+  },
+  "verification": {
+    "commands": [
+      "node scripts/verify-client-app-surfaces.mjs --surface mp",
+      "pnpm --filter \"@sdkwork/iam-mp-*\" typecheck"
+    ]
+  }
+}

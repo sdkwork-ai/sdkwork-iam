@@ -1,0 +1,21 @@
+{
+  "environment": "development",
+  "deploymentProfile": "standalone",
+  "profileId": "standalone.development",
+  "runtimeTarget": "browser",
+  "browserOriginMode": "same-origin",
+  "appKey": "sdkwork-iam-h5",
+  "iamIssuer": "/",
+  "featureFlags": {
+    "appSurface": true,
+    "consoleSurface": true,
+    "adminSurface": true
+  },
+  "appApiBaseUrl": "/",
+  "backendApiBaseUrl": "/",
+  "driveAppApiBaseUrl": "/",
+  "appbaseAppApiBaseUrl": "/",
+  "deployAppApiBaseUrl": "/",
+  "openApiBaseUrl": "/",
+  "sdkBaseUrl": "/"
+}

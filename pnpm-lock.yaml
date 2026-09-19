@@ -12,6 +12,9 @@ catalogs:
     '@testing-library/react':
       specifier: 16.3.2
       version: 16.3.2
+    '@types/node':
+      specifier: ^25.9.2
+      version: 25.9.4
     '@types/qrcode':
       specifier: ^1.5.6
       version: 1.5.6
@@ -731,6 +734,118 @@ importers:
         specifier: ^6.0.2
         version: 6.0.3
 
+  apps/sdkwork-iam-h5:
+    dependencies:
+      '@sdkwork/app-topology':
+        specifier: workspace:*
+        version: link:../../../sdkwork-app-topology
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-account-binding':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-account-binding
+      '@sdkwork/iam-h5-admin-account-binding':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-admin-account-binding
+      '@sdkwork/iam-h5-admin-audit':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-admin-audit
+      '@sdkwork/iam-h5-admin-core':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-admin-core
+      '@sdkwork/iam-h5-admin-oauth':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-admin-oauth
+      '@sdkwork/iam-h5-admin-organization':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-admin-organization
+      '@sdkwork/iam-h5-admin-permission':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-admin-permission
+      '@sdkwork/iam-h5-admin-shell':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-admin-shell
+      '@sdkwork/iam-h5-admin-tenant':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-admin-tenant
+      '@sdkwork/iam-h5-admin-user':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-admin-user
+      '@sdkwork/iam-h5-auth':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-auth
+      '@sdkwork/iam-h5-capacitor':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-capacitor
+      '@sdkwork/iam-h5-commons':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-commons
+      '@sdkwork/iam-h5-console-account-binding':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-console-account-binding
+      '@sdkwork/iam-h5-console-core':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-console-core
+      '@sdkwork/iam-h5-console-organization':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-console-organization
+      '@sdkwork/iam-h5-console-shell':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-console-shell
+      '@sdkwork/iam-h5-console-tenant':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-console-tenant
+      '@sdkwork/iam-h5-console-user-center':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-console-user-center
+      '@sdkwork/iam-h5-core':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-core
+      '@sdkwork/iam-h5-oauth':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-oauth
+      '@sdkwork/iam-h5-organization':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-organization
+      '@sdkwork/iam-h5-shell':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-shell
+      '@sdkwork/iam-h5-tenant':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-tenant
+      '@sdkwork/iam-h5-user':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-user
+      '@sdkwork/iam-h5-user-center':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-h5-user-center
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-common/packages/sdkwork-iam-service
+      '@sdkwork/sdk-common':
+        specifier: workspace:*
+        version: link:../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.4
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.3(@types/react@19.2.14)
+      react:
+        specifier: 'catalog:'
+        version: 19.2.8
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
   apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-account-binding:
     dependencies:
       '@sdkwork/iam-contracts':
@@ -754,6 +869,144 @@ importers:
     devDependencies:
       typescript:
         specifier: ^6.0.2
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-admin-account-binding:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-admin-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-admin-audit:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-admin-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-admin-core:
+    dependencies:
+      '@sdkwork/iam-backend-sdk':
+        specifier: workspace:*
+        version: link:../../../../sdks/sdkwork-iam-backend-sdk/sdkwork-iam-backend-sdk-typescript
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-admin-oauth:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-admin-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-admin-organization:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-admin-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-admin-permission:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-admin-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-admin-shell:
+    dependencies:
+      '@sdkwork/iam-h5-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-admin-core
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-admin-tenant:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-admin-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-admin-user:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-admin-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
         version: 6.0.3
 
   apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-auth:
@@ -790,21 +1043,201 @@ importers:
         specifier: ^6.0.2
         version: 6.0.3
 
-  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-core:
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-capacitor:
     dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-commons:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-account-binding:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-console-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-console-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-core:
+    dependencies:
+      '@sdkwork/iam-app-sdk':
+        specifier: workspace:*
+        version: link:../../../../sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript
       '@sdkwork/iam-contracts':
         specifier: workspace:*
         version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
       '@sdkwork/iam-runtime':
         specifier: workspace:*
         version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-runtime
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-organization:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-console-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-console-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-shell:
+    dependencies:
+      '@sdkwork/iam-h5-console-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-console-core
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-tenant:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-console-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-console-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-user-center:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-console-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-console-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-core:
+    dependencies:
+      '@sdkwork/iam-app-sdk':
+        specifier: workspace:*
+        version: link:../../../../sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-runtime':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-runtime
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
     devDependencies:
       typescript:
         specifier: ^6.0.2
         version: 6.0.3
 
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-oauth:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-organization:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-shell:
+    dependencies:
+      '@sdkwork/iam-h5-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-core
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-tenant:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
   apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-user:
     dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
       '@sdkwork/iam-h5-core':
         specifier: workspace:*
         version: link:../sdkwork-iam-h5-core
@@ -823,6 +1256,514 @@ importers:
     devDependencies:
       typescript:
         specifier: ^6.0.2
+        version: 6.0.3
+
+  apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-user-center:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program:
+    dependencies:
+      '@sdkwork/app-topology':
+        specifier: workspace:*
+        version: link:../../../sdkwork-app-topology
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-account-binding':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-account-binding
+      '@sdkwork/iam-mp-admin-account-binding':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-admin-account-binding
+      '@sdkwork/iam-mp-admin-audit':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-admin-audit
+      '@sdkwork/iam-mp-admin-core':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-admin-core
+      '@sdkwork/iam-mp-admin-oauth':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-admin-oauth
+      '@sdkwork/iam-mp-admin-organization':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-admin-organization
+      '@sdkwork/iam-mp-admin-permission':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-admin-permission
+      '@sdkwork/iam-mp-admin-shell':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-admin-shell
+      '@sdkwork/iam-mp-admin-tenant':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-admin-tenant
+      '@sdkwork/iam-mp-admin-user':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-admin-user
+      '@sdkwork/iam-mp-auth':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-auth
+      '@sdkwork/iam-mp-commons':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-commons
+      '@sdkwork/iam-mp-console-account-binding':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-console-account-binding
+      '@sdkwork/iam-mp-console-core':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-console-core
+      '@sdkwork/iam-mp-console-organization':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-console-organization
+      '@sdkwork/iam-mp-console-shell':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-console-shell
+      '@sdkwork/iam-mp-console-tenant':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-console-tenant
+      '@sdkwork/iam-mp-console-user-center':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-console-user-center
+      '@sdkwork/iam-mp-core':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-core
+      '@sdkwork/iam-mp-host':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-host
+      '@sdkwork/iam-mp-oauth':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-oauth
+      '@sdkwork/iam-mp-organization':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-organization
+      '@sdkwork/iam-mp-shell':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-shell
+      '@sdkwork/iam-mp-tenant':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-tenant
+      '@sdkwork/iam-mp-user':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-user
+      '@sdkwork/iam-mp-user-center':
+        specifier: workspace:*
+        version: link:packages/sdkwork-iam-mp-user-center
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.4
+      miniprogram-api-typings:
+        specifier: ^4.1.0
+        version: 4.1.3
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-account-binding:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-admin-account-binding:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-admin-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-admin-audit:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-admin-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-admin-core:
+    dependencies:
+      '@sdkwork/iam-backend-sdk':
+        specifier: workspace:*
+        version: link:../../../../sdks/sdkwork-iam-backend-sdk/sdkwork-iam-backend-sdk-typescript
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-admin-oauth:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-admin-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-admin-organization:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-admin-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-admin-permission:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-admin-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-admin-shell:
+    dependencies:
+      '@sdkwork/iam-mp-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-admin-core
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-admin-tenant:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-admin-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-admin-user:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-admin-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-admin-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-auth:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-commons:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-console-account-binding:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-console-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-console-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-console-core:
+    dependencies:
+      '@sdkwork/iam-app-sdk':
+        specifier: workspace:*
+        version: link:../../../../sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-runtime':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-runtime
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-console-organization:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-console-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-console-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-console-shell:
+    dependencies:
+      '@sdkwork/iam-mp-console-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-console-core
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-console-tenant:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-console-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-console-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-console-user-center:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-console-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-console-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-core:
+    dependencies:
+      '@sdkwork/iam-app-sdk':
+        specifier: workspace:*
+        version: link:../../../../sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-runtime':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-runtime
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-host:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-oauth:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-organization:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-shell:
+    dependencies:
+      '@sdkwork/iam-mp-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-core
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-tenant:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-user:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-user-center:
+    dependencies:
+      '@sdkwork/iam-contracts':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-mp-core':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-mp-core
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
         version: 6.0.3
 
   apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react:
@@ -4267,6 +5208,9 @@ packages:
   minimatch@9.0.9:
     resolution: {integrity: sha512-OBwBN9AL4dqmETlpS2zasx+vTeWclWzkblfZk7KTA5j3jeOONz/tRCnZomUyvNg83wL5Zv9Ss6HMJXAgL8R2Yg==}
     engines: {node: '>=16 || 14 >=14.17'}
+
+  miniprogram-api-typings@4.1.3:
+    resolution: {integrity: sha512-5mobiXzDS3KFJMM20cIg5m7hiFSJY0YGpgm5yzFeIJ+UP15RGOtW/ztqAhRfOQIvPBD0WyYB+WFCWaeeTTEZTQ==}
 
   minisearch@7.2.0:
     resolution: {integrity: sha512-dqT2XBYUOZOiC5t2HRnwADjhNS2cecp9u+TJRiJ1Qp/f5qjkeT5APcGPjHw+bz89Ms8Jp+cG4AlE+QZ/QnDglg==}
@@ -7770,6 +8714,8 @@ snapshots:
   minimatch@9.0.9:
     dependencies:
       brace-expansion: 2.1.1
+
+  miniprogram-api-typings@4.1.3: {}
 
   minisearch@7.2.0: {}
 

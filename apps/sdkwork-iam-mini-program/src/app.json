@@ -1,0 +1,122 @@
+{
+  "pages": [
+    "pages/context-selection/index",
+    "pages/forgot-password/index",
+    "pages/login/index",
+    "pages/oauth-callback/index",
+    "pages/register/index"
+  ],
+  "subPackages": [
+    {
+      "root": "admin-account-binding",
+      "pages": [
+        "pages/list/index"
+      ]
+    },
+    {
+      "root": "admin-audit",
+      "pages": [
+        "pages/events/index"
+      ]
+    },
+    {
+      "root": "admin-oauth",
+      "pages": [
+        "pages/providers/index"
+      ]
+    },
+    {
+      "root": "admin-organization",
+      "pages": [
+        "pages/tree/index"
+      ]
+    },
+    {
+      "root": "admin-permission",
+      "pages": [
+        "pages/authorizations/index",
+        "pages/permissions/index",
+        "pages/policies/index",
+        "pages/roles/index"
+      ]
+    },
+    {
+      "root": "admin-tenant",
+      "pages": [
+        "pages/list/index"
+      ]
+    },
+    {
+      "root": "admin-user",
+      "pages": [
+        "pages/list/index"
+      ]
+    },
+    {
+      "root": "app-account-binding",
+      "pages": [
+        "pages/list/index"
+      ]
+    },
+    {
+      "root": "app-oauth",
+      "pages": [
+        "pages/providers/index"
+      ]
+    },
+    {
+      "root": "app-organization",
+      "pages": [
+        "pages/directory/index"
+      ]
+    },
+    {
+      "root": "app-tenant",
+      "pages": [
+        "pages/overview/index"
+      ]
+    },
+    {
+      "root": "app-user",
+      "pages": [
+        "pages/list/index"
+      ]
+    },
+    {
+      "root": "app-user-center",
+      "pages": [
+        "pages/password/index",
+        "pages/profile/index"
+      ]
+    },
+    {
+      "root": "console-account-binding",
+      "pages": [
+        "pages/list/index"
+      ]
+    },
+    {
+      "root": "console-organization",
+      "pages": [
+        "pages/directory/index"
+      ]
+    },
+    {
+      "root": "console-tenant",
+      "pages": [
+        "pages/overview/index"
+      ]
+    },
+    {
+      "root": "console-user-center",
+      "pages": [
+        "pages/profile/index"
+      ]
+    }
+  ],
+  "window": {
+    "navigationBarTitleText": "SDKWork IAM",
+    "navigationBarBackgroundColor": "#0f172a",
+    "navigationBarTextStyle": "white"
+  }
+}

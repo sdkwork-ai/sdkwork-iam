@@ -1,0 +1,12 @@
+{
+  "name": "@sdkwork/sdkwork-iam-harmony-mobile-console-account-binding",
+  "version": "0.1.0",
+  "description": "SDKWork IAM HarmonyOS Mobile Console Account Binding: feature.",
+  "main": "src/main/ets/Index.ets",
+  "author": "SDKWork",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@sdkwork/sdkwork-iam-harmony-mobile-commons": "file:../sdkwork-iam-harmony-mobile-commons",
+    "@sdkwork/sdkwork-iam-harmony-mobile-console-core": "file:../sdkwork-iam-harmony-mobile-console-core"
+  }
+}

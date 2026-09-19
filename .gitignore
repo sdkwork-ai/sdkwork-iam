@@ -52,6 +52,8 @@ __pycache__/
 
 # SDKWork local runtime state
 .runtime/
+.tmp/
+.workbuddy/
 **/.runtime/
 **/node_modules/
 !.env.*.example

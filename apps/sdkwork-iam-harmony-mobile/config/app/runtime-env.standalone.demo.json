@@ -1,0 +1,22 @@
+{
+  "environment": "demo",
+  "deploymentProfile": "standalone",
+  "profileId": "standalone.demo",
+  "application": {
+    "publicHttpUrl": "https://iam-demo.sdkwork.com",
+    "publicWebsocketUrl": "wss://iam-demo.sdkwork.com"
+  },
+  "appbase": {
+    "appApiBaseUrl": "https://iam-demo.sdkwork.com",
+    "loginUrl": "https://iam-demo.sdkwork.com"
+  },
+  "platform": {
+    "apiGatewayHttpUrl": "https://iam-demo.sdkwork.com"
+  },
+  "runtimeTarget": "harmony-native",
+  "metadata": {
+    "profileBinding": "runtime-configurable",
+    "applicationCode": "iam",
+    "namespace": "sdkwork-iam-harmony-mobile"
+  }
+}

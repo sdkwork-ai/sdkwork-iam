@@ -2,50 +2,87 @@
   "schemaVersion": 1,
   "kind": "sdkwork.component.spec",
   "component": {
-    "name": "@sdkwork/iam-h5",
+    "name": "sdkwork-iam-h5",
     "displayName": "SDKWork IAM H5",
     "version": "0.1.0",
-    "type": "react-package",
+    "type": "h5-app-root",
     "root": "sdkwork-iam/apps/sdkwork-iam-h5",
     "domain": "iam",
-    "capability": "iam-h5",
+    "declaredDomain": "iam",
+    "capability": "iam",
+    "status": "standardizing",
+    "surface": "app",
     "languages": [
       "typescript",
       "react"
     ],
     "generated": false,
     "private": true,
-    "status": "standard",
     "manifests": [
-      "packages/sdkwork-iam-h5-core/package.json"
+      "package.json",
+      "sdkwork.app.config.json"
     ]
   },
   "canonicalSpecs": [
     {
+      "file": "APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md",
+      "purpose": "Cross-client package taxonomy, route identity, and dependency direction.",
+      "path": "../../../../sdkwork-specs/APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md"
+    },
+    {
       "file": "APP_H5_ARCHITECTURE_SPEC.md",
-      "path": "../../../sdkwork-specs/APP_H5_ARCHITECTURE_SPEC.md",
-      "purpose": "H5 application root architecture and package taxonomy."
+      "purpose": "Client root architecture standard.",
+      "path": "../../../../sdkwork-specs/APP_H5_ARCHITECTURE_SPEC.md"
     },
     {
       "file": "APP_MOBILE_REACT_UI_SPEC.md",
-      "path": "../../../sdkwork-specs/APP_MOBILE_REACT_UI_SPEC.md",
-      "purpose": "H5/mobile React package UI rules."
+      "purpose": "Client package UI rules.",
+      "path": "../../../../sdkwork-specs/APP_MOBILE_REACT_UI_SPEC.md"
     },
     {
-      "file": "IAM_OAUTH_SPEC.md",
-      "path": "../../../sdkwork-specs/IAM_OAUTH_SPEC.md",
-      "purpose": "OAuth runtime discovery and auth metadata rules."
+      "file": "APP_COMPOSITION_SPEC.md",
+      "purpose": "Native-authority application composition.",
+      "path": "../../../../sdkwork-specs/APP_COMPOSITION_SPEC.md"
+    },
+    {
+      "file": "APP_SDK_INTEGRATION_SPEC.md",
+      "purpose": "Generated SDK integration, TokenManager wiring, and dependency composition rules.",
+      "path": "../../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md"
+    },
+    {
+      "file": "SOURCE_CONFIG_SPEC.md",
+      "purpose": "Source configuration authority and component deployment descriptors.",
+      "path": "../../../../sdkwork-specs/SOURCE_CONFIG_SPEC.md"
+    },
+    {
+      "file": "TEST_SPEC.md",
+      "purpose": "Contract, frontend, SDK, security, and documentation verification rules.",
+      "path": "../../../../sdkwork-specs/TEST_SPEC.md"
     }
   ],
+  "contracts": {
+    "publicExports": [],
+    "runtimeEntrypoints": [],
+    "sdkClients": [],
+    "events": [],
+    "configKeys": [],
+    "routeManifest": null,
+    "routeRegistry": "packages/sdkwork-iam-h5-core/src/modules/index.ts",
+    "packageCount": 26,
+    "layerRole": "runtime-composition",
+    "providedPorts": [],
+    "requiredPorts": []
+  },
   "integration": {
-    "utils": "H5 controller and screen packages use @sdkwork/utils for trim and isBlank.",
-    "sdkPolicy": "Controllers consume @sdkwork/iam-service over generated app SDK clients; no raw HTTP."
+    "authority": "Root SDKWork specs remain authoritative. Local specs may extend but must not contradict them.",
+    "dependencyPolicy": "Consumers integrate through public package exports, declared runtime entrypoints, generated SDK clients, or documented adapters only.",
+    "sdkPolicy": "Generated SDK clients are injected through service/runtime boundaries; reusable UI must not create raw HTTP clients or manual auth headers.",
+    "languagePolicy": "Language-specific packages follow their native manifest and build tools while preserving the same component contract."
   },
   "verification": {
     "commands": [
-      "pnpm run typecheck",
-      "pnpm run test:iam-standard-contracts"
+      "node scripts/verify-client-app-surfaces.mjs --surface h5",
+      "pnpm --filter \"@sdkwork/iam-h5-*\" typecheck"
     ]
-  },
-  "contracts": {}
+  }
 }

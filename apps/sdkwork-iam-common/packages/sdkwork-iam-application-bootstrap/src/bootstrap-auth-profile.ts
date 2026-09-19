@@ -85,20 +85,15 @@ export function resolveBootstrapAuthProfileCandidates(
   );
   if (explicit !== undefined) candidates.push(explicit);
 
-  const profileId = firstNonEmpty(
-    options.profileId,
-    env.SDKWORK_PROFILE_ID,
-    env.SDKWORK_BIRDCODER_PROFILE_ID,
-  );
+  const profileId = firstNonEmpty(options.profileId, env.SDKWORK_PROFILE_ID);
 
   const deploymentProfile = normalizeDeploymentProfile(
-    firstNonEmpty(options.deploymentProfile, env.SDKWORK_DEPLOYMENT_PROFILE, env.SDKWORK_BIRDCODER_DEPLOYMENT_PROFILE),
+    firstNonEmpty(options.deploymentProfile, env.SDKWORK_DEPLOYMENT_PROFILE),
   ) ?? "standalone";
   const lifecycle = normalizeLifecycleEnvironment(
     firstNonEmpty(
       options.lifecycleEnvironment,
       env.SDKWORK_ENVIRONMENT,
-      env.SDKWORK_BIRDCODER_ENVIRONMENT,
       env.SDKWORK_ENV,
       env.SDKWORK_IM_ENVIRONMENT,
       profileId?.includes(".") ? profileId.split(".")[1] : undefined,

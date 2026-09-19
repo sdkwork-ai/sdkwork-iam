@@ -532,7 +532,6 @@ pub(crate) fn sign_local_session_token_with_ttl(
         "app_id": context.app_id,
         "aud": context.app_id,
         "auth_level": auth_level_to_string(&context.auth_level),
-        "data_scope": context.data_scope,
         "deployment_mode": deployment_mode_to_string(&context.deployment_mode),
         "environment": environment_to_string(&context.environment),
         "exp": expires_at,
@@ -540,7 +539,6 @@ pub(crate) fn sign_local_session_token_with_ttl(
         "iss": "sdkwork-iam-local",
         "login_scope": login_scope_to_string(&context.login_scope),
         "organization_id": organization_id,
-        "permission_scope": context.permission_scope,
         "session_id": context.session_id,
         "tenant_id": context.tenant_id,
         "token_type": token_type,
@@ -689,7 +687,6 @@ mod tests {
             "app_id",
             "aud",
             "auth_level",
-            "data_scope",
             "deployment_mode",
             "environment",
             "exp",
@@ -697,7 +694,6 @@ mod tests {
             "iss",
             "login_scope",
             "organization_id",
-            "permission_scope",
             "session_id",
             "tenant_id",
             "token_type",
@@ -712,8 +708,24 @@ mod tests {
                 "redundant claim {key} should be absent"
             );
         }
+        // Scope arrays must no longer be embedded in the local dual-token JWT:
+        // they bloat the compact header and trigger HTTP 431 on proxy edges.
+        // The authoritative scopes live in the iam_session row and are loaded
+        // at request time, so the token copies are vestigial.
+        assert!(
+            payload.get("data_scope").is_none(),
+            "data_scope should not be embedded in the local token"
+        );
+        assert!(
+            payload.get("permission_scope").is_none(),
+            "permission_scope should not be embedded in the local token"
+        );
         assert_eq!(payload["user_id"], "user-1");
         assert_eq!(payload["session_id"], "session-1");
         assert_eq!(payload["token_type"], "access");
+        // Hard budget that prevents HTTP 431 (Request Header Fields Too Large)
+        // on the reverse-proxy edge: the full 3-part compact JWT must stay
+        // under 8 KiB even for an unusually large scope set.
+        assert!(token.len() < 8192, "token too long: {}", token.len());
     }
 }

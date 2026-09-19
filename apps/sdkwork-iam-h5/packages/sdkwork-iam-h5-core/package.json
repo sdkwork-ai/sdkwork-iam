@@ -10,6 +10,10 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./sdk": "./src/sdk/index.ts",
+    "./modules": "./src/modules/index.ts",
+    "./host": "./src/host/index.ts",
+    "./session": "./src/session/index.ts",
     "./composition": {
       "types": "./src/composition/index.ts",
       "import": "./src/composition/index.ts",
@@ -25,7 +29,10 @@
   },
   "dependencies": {
     "@sdkwork/iam-contracts": "workspace:*",
-    "@sdkwork/iam-runtime": "workspace:*"
+    "@sdkwork/iam-runtime": "workspace:*",
+    "@sdkwork/iam-service": "workspace:*",
+    "@sdkwork/iam-app-sdk": "workspace:*",
+    "@sdkwork/sdk-common": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^6.0.2"

@@ -24,6 +24,7 @@ mod production_runtime;
 mod resolver;
 mod runtime_auth_metadata;
 mod service_account_credentials;
+mod session_scope_cache;
 mod signing_secrets;
 mod super_admin_auth;
 mod tenant_signing_key_store;
@@ -191,6 +192,9 @@ pub use service_account_credentials::{
     ServiceAccountCredentialCreateRequest, ServiceAccountTokenExchangeRequest,
     IAM_SERVICE_ACCOUNT_CREDENTIALS_CREATE_PERMISSION,
     IAM_SERVICE_ACCOUNT_CREDENTIALS_REVOKE_PERMISSION,
+};
+pub use session_scope_cache::{
+    get_session_scopes, insert_session_scopes, invalidate_session_scopes, SessionScopes,
 };
 pub use signing_secrets::{
     decode_signing_secret_ref, encode_signing_secret_ref, ensure_postgres_tenant_signing_key,

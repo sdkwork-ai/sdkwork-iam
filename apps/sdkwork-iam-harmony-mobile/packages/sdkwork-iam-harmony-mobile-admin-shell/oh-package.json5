@@ -1,0 +1,19 @@
+{
+  "name": "@sdkwork/sdkwork-iam-harmony-mobile-admin-shell",
+  "version": "0.1.0",
+  "description": "SDKWork IAM HarmonyOS Mobile Admin Shell: shell.",
+  "main": "src/main/ets/Index.ets",
+  "author": "SDKWork",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-account-binding": "file:../sdkwork-iam-harmony-mobile-admin-account-binding",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-audit": "file:../sdkwork-iam-harmony-mobile-admin-audit",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-core": "file:../sdkwork-iam-harmony-mobile-admin-core",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-oauth": "file:../sdkwork-iam-harmony-mobile-admin-oauth",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-organization": "file:../sdkwork-iam-harmony-mobile-admin-organization",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-permission": "file:../sdkwork-iam-harmony-mobile-admin-permission",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-tenant": "file:../sdkwork-iam-harmony-mobile-admin-tenant",
+    "@sdkwork/sdkwork-iam-harmony-mobile-admin-user": "file:../sdkwork-iam-harmony-mobile-admin-user",
+    "@sdkwork/sdkwork-iam-harmony-mobile-commons": "file:../sdkwork-iam-harmony-mobile-commons"
+  }
+}

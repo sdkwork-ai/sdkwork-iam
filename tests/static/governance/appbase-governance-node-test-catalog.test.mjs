@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -60,8 +61,19 @@ test('iam governance node test catalog publishes the exact governed test surface
       'tests/static/governance/sdk-family-component-spec-standard.test.mjs',
       'tests/static/governance/workspace-path-standard.test.mjs',
       'tests/contract/iam-database-contract-alignment.test.mjs',
-      'tests/static/contract-parity.test.mjs',
       'tests/static/component-spec-metadata.test.mjs',
     ],
   );
+});
+
+test('iam governance node test catalog entries all exist on disk', async () => {
+  const module = await loadModule();
+  const missing = module
+    .listIamGovernanceNodeTestFiles()
+    .filter((relativePath) => !fs.existsSync(path.join(iamRoot, relativePath)));
+
+  // A catalog entry pointing at a file that does not exist is silently skipped
+  // by `node --test` when other files are present, so the governed test surface
+  // quietly shrinks. This guard keeps the list and the tree in step.
+  assert.deepEqual(missing, []);
 });

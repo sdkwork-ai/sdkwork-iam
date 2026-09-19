@@ -1,0 +1,22 @@
+{
+  "environment": "staging",
+  "deploymentProfile": "cloud",
+  "profileId": "cloud.staging",
+  "application": {
+    "publicHttpUrl": "https://iam-staging.sdkwork.com",
+    "publicWebsocketUrl": "wss://api-staging.sdkwork.com"
+  },
+  "appbase": {
+    "appApiBaseUrl": "https://api-staging.sdkwork.com;https://api-staging.birdcoder.com;https://api-staging.dtupay.com;https://api-staging.noaper.com;https://api-staging.sdkwork.cn;https://api-staging.birdcoder.cn;https://api-staging.dtupay.cn;https://api-staging.noaper.cn;https://api-staging.skubc.com;https://api-staging.skubc.cn;https://api-staging.zowalk.com;https://api-staging.zowalk.cn;https://api-staging.offer86.com;https://api-staging.offer86.cn;https://api-staging.86offer.com;https://api-staging.86offer.cn",
+    "loginUrl": "https://iam-staging.sdkwork.com"
+  },
+  "platform": {
+    "apiGatewayHttpUrl": "https://api-staging.sdkwork.com;https://api-staging.birdcoder.com;https://api-staging.dtupay.com;https://api-staging.noaper.com;https://api-staging.sdkwork.cn;https://api-staging.birdcoder.cn;https://api-staging.dtupay.cn;https://api-staging.noaper.cn;https://api-staging.skubc.com;https://api-staging.skubc.cn;https://api-staging.zowalk.com;https://api-staging.zowalk.cn;https://api-staging.offer86.com;https://api-staging.offer86.cn;https://api-staging.86offer.com;https://api-staging.86offer.cn"
+  },
+  "runtimeTarget": "harmony-native",
+  "metadata": {
+    "profileBinding": "runtime-configurable",
+    "applicationCode": "iam",
+    "namespace": "sdkwork-iam-harmony-mobile"
+  }
+}

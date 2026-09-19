@@ -14,3 +14,8 @@ export {
   type SdkworkAuthVerificationPolicyConfig,
   type SdkworkCanonicalAuthMetadataLike,
 } from "@sdkwork/iam-contracts";
+export * from './modules/index.js';
+export * from './sdk/index.js';
+export * from './host/index.js';
+export * from './session/index.js';
+export * from './composition/surface-composition.js';

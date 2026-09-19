@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-iam-harmony-mobile",
+    "displayName": "SDKWork IAM HarmonyOS Mobile Harmony Mobile",
+    "version": "0.1.0",
+    "type": "harmony-mobile-app-root",
+    "root": "sdkwork-iam/apps/sdkwork-iam-harmony-mobile",
+    "domain": "iam",
+    "declaredDomain": "iam",
+    "capability": "iam",
+    "status": "standardizing",
+    "surface": "app",
+    "languages": [
+      "arkts"
+    ],
+    "generated": false,
+    "private": true,
+    "manifests": [
+      "oh-package.json5",
+      "sdkwork.app.config.json"
+    ]
+  },
+  "canonicalSpecs": [
+    {
+      "file": "APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md",
+      "purpose": "Cross-client package taxonomy, route identity, and dependency direction.",
+      "path": "../../../../sdkwork-specs/APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md"
+    },
+    {
+      "file": "HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md",
+      "purpose": "HarmonyOS client root architecture standard.",
+      "path": "../../../../sdkwork-specs/HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md"
+    },
+    {
+      "file": "APP_HARMONY_NATIVE_UI_SPEC.md",
+      "purpose": "Harmony package UI rules.",
+      "path": "../../../../sdkwork-specs/APP_HARMONY_NATIVE_UI_SPEC.md"
+    },
+    {
+      "file": "APP_COMPOSITION_SPEC.md",
+      "purpose": "Native-authority application composition.",
+      "path": "../../../../sdkwork-specs/APP_COMPOSITION_SPEC.md"
+    },
+    {
+      "file": "APP_SDK_INTEGRATION_SPEC.md",
+      "purpose": "Generated ArkTS SDK integration and token manager wiring.",
+      "path": "../../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md"
+    },
+    {
+      "file": "I18N_SPEC.md",
+      "purpose": "Harmony ArkTS locale fragment layout.",
+      "path": "../../../../sdkwork-specs/I18N_SPEC.md"
+    },
+    {
+      "file": "SOURCE_CONFIG_SPEC.md",
+      "purpose": "Source configuration authority and component deployment descriptors.",
+      "path": "../../../../sdkwork-specs/SOURCE_CONFIG_SPEC.md"
+    },
+    {
+      "file": "TEST_SPEC.md",
+      "purpose": "Contract, frontend, SDK, security, and documentation verification rules.",
+      "path": "../../../../sdkwork-specs/TEST_SPEC.md"
+    }
+  ],
+  "contracts": {
+    "publicExports": [],
+    "runtimeEntrypoints": [],
+    "sdkClients": [],
+    "events": [],
+    "configKeys": [],
+    "routeManifest": null,
+    "routeRegistry": "packages/sdkwork-iam-harmony-mobile-core/src/main/ets/composition/RouteRegistry.ets",
+    "packageCount": 26,
+    "layerRole": "runtime-composition",
+    "providedPorts": [],
+    "requiredPorts": []
+  },
+  "integration": {
+    "authority": "Root SDKWork specs remain authoritative. Local specs may extend but must not contradict them.",
+    "dependencyPolicy": "Consumers integrate through public package exports, declared runtime entrypoints, generated SDK clients, or documented adapters only.",
+    "sdkPolicy": "Generated ArkTS SDK clients are constructed by the bootstrap and injected through the tier core; reusable UI must not create raw HTTP clients or manual auth headers.",
+    "languagePolicy": "ArkTS packages follow ohpm and hvigor while preserving the same component contract.",
+    "presentationPattern": "controllers"
+  },
+  "verification": {
+    "commands": [
+      "ohpm install && hvigorw assembleHap && hvigorw test",
+      "node ../../../sdkwork-specs/tools/check-frontend-composition.mjs --root ."
+    ]
+  }
+}

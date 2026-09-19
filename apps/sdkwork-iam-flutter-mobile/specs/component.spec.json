@@ -2,47 +2,87 @@
   "schemaVersion": 1,
   "kind": "sdkwork.component.spec",
   "component": {
-    "name": "@sdkwork/iam-flutter-mobile",
+    "name": "sdkwork-iam-flutter-mobile",
     "displayName": "SDKWork IAM Flutter Mobile",
     "version": "0.1.0",
-    "type": "flutter-package",
+    "type": "flutter-mobile-app-root",
     "root": "sdkwork-iam/apps/sdkwork-iam-flutter-mobile",
     "domain": "iam",
-    "capability": "iam-flutter-mobile",
+    "declaredDomain": "iam",
+    "capability": "iam",
+    "status": "standardizing",
+    "surface": "app",
     "languages": [
-      "dart",
-      "flutter"
+      "dart"
     ],
     "generated": false,
     "private": true,
-    "status": "standard",
-    "manifests": []
+    "manifests": [
+      "pubspec.yaml",
+      "sdkwork.app.config.json"
+    ]
   },
   "canonicalSpecs": [
     {
+      "file": "APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md",
+      "purpose": "Cross-client package taxonomy, route identity, and dependency direction.",
+      "path": "../../../../sdkwork-specs/APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md"
+    },
+    {
       "file": "FLUTTER_APP_MOBILE_ARCHITECTURE_SPEC.md",
-      "path": "../../../sdkwork-specs/FLUTTER_APP_MOBILE_ARCHITECTURE_SPEC.md",
-      "purpose": "Flutter mobile application root architecture."
+      "purpose": "Flutter client root architecture standard.",
+      "path": "../../../../sdkwork-specs/FLUTTER_APP_MOBILE_ARCHITECTURE_SPEC.md"
     },
     {
       "file": "APP_FLUTTER_UI_SPEC.md",
-      "path": "../../../sdkwork-specs/APP_FLUTTER_UI_SPEC.md",
-      "purpose": "Flutter UI package rules."
+      "purpose": "Flutter package UI rules.",
+      "path": "../../../../sdkwork-specs/APP_FLUTTER_UI_SPEC.md"
     },
     {
-      "file": "IAM_OAUTH_SPEC.md",
-      "path": "../../../sdkwork-specs/IAM_OAUTH_SPEC.md",
-      "purpose": "OAuth runtime discovery and auth metadata rules."
+      "file": "APP_COMPOSITION_SPEC.md",
+      "purpose": "Native-authority application composition.",
+      "path": "../../../../sdkwork-specs/APP_COMPOSITION_SPEC.md"
+    },
+    {
+      "file": "APP_SDK_INTEGRATION_SPEC.md",
+      "purpose": "Generated Dart SDK integration and TokenManager wiring.",
+      "path": "../../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md"
+    },
+    {
+      "file": "SOURCE_CONFIG_SPEC.md",
+      "purpose": "Source configuration authority and component deployment descriptors.",
+      "path": "../../../../sdkwork-specs/SOURCE_CONFIG_SPEC.md"
+    },
+    {
+      "file": "TEST_SPEC.md",
+      "purpose": "Contract, frontend, SDK, security, and documentation verification rules.",
+      "path": "../../../../sdkwork-specs/TEST_SPEC.md"
     }
   ],
+  "contracts": {
+    "publicExports": [],
+    "runtimeEntrypoints": [],
+    "sdkClients": [],
+    "events": [],
+    "configKeys": [],
+    "routeManifest": null,
+    "routeRegistry": "packages/sdkwork_iam_flutter_mobile_core/lib/composition/route_registry.dart",
+    "packageCount": 25,
+    "layerRole": "runtime-composition",
+    "providedPorts": [],
+    "requiredPorts": []
+  },
   "integration": {
-    "utils": "Flutter packages use sdkwork_iam_flutter_mobile_core string helpers aligned with @sdkwork/utils semantics.",
-    "sdkPolicy": "Controllers consume generated Dart app SDK clients; no raw HTTP."
+    "authority": "Root SDKWork specs remain authoritative. Local specs may extend but must not contradict them.",
+    "dependencyPolicy": "Consumers integrate through public package exports, declared runtime entrypoints, generated SDK clients, or documented adapters only.",
+    "sdkPolicy": "Generated Dart SDK clients are constructed by the bootstrap and injected through the tier core; reusable UI must not create raw HTTP clients or manual auth headers.",
+    "languagePolicy": "Dart packages follow pubspec and the Dart SDK toolchain while preserving the same component contract.",
+    "presentationPattern": "controllers"
   },
   "verification": {
     "commands": [
-      "pnpm run test:iam-standard-contracts"
+      "dart pub get && dart analyze && dart test",
+      "node ../../../sdkwork-specs/tools/check-frontend-composition.mjs --root ."
     ]
-  },
-  "contracts": {}
+  }
 }

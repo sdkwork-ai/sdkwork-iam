@@ -1,0 +1,37 @@
+{
+  "name": "@sdkwork/sdkwork-iam-harmony-mobile",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "sdkwork": {
+    "role": "harmony-native-app-root",
+    "toolchain": "ohpm",
+    "note": "This package manager owns the verification surface (gates, toolchain-free static checks); ohpm and hvigor own the application build."
+  },
+  "scripts": {
+    "dev": "pnpm dev:standalone",
+    "dev:standalone": "pnpm exec sdkwork-app dev --root ../.. --deployment-profile standalone",
+    "dev:cloud": "pnpm exec sdkwork-app dev --root ../.. --deployment-profile cloud",
+    "dev:harmony-native": "pnpm exec sdkwork-app dev --root ../.. --runtime-target harmony-native --deployment-profile standalone",
+    "dev:harmony-native:cloud": "pnpm exec sdkwork-app dev --root ../.. --runtime-target harmony-native --deployment-profile cloud",
+    "stop": "pnpm exec sdkwork-app stop --root ../..",
+    "build": "pnpm exec sdkwork-app build",
+    "test": "pnpm exec sdkwork-app test",
+    "check": "pnpm exec sdkwork-app check",
+    "verify": "pnpm exec sdkwork-app verify",
+    "clean": "pnpm exec sdkwork-app clean",
+    "test:config": "node ../../../sdkwork-specs/tools/check-app-manifest-standard.mjs --root . && node ../../../sdkwork-specs/tools/check-source-config-standard.mjs --root .",
+    "check:arkts-imports": "node ../../../sdkwork-iam/tools/check-arkts-imports.mjs --root .",
+    "test:device": "hvigorw test",
+    "build:app": "hvigorw assembleApp",
+    "_sdkwork:build": "hvigorw assembleHap",
+    "_sdkwork:test": "node --test tests/*.test.mjs",
+    "_sdkwork:check": "pnpm run test:config && pnpm run check:arkts-imports",
+    "_sdkwork:verify": "pnpm run _sdkwork:check && pnpm run _sdkwork:test",
+    "_sdkwork:clean": "hvigorw clean"
+  },
+  "devDependencies": {
+    "@sdkwork/app-topology": "workspace:*"
+  }
+}

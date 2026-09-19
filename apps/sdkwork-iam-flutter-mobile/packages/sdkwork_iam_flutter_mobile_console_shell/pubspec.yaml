@@ -1,0 +1,32 @@
+name: sdkwork_iam_flutter_mobile_console_shell
+description: SDKWork IAM Flutter Mobile Console Shell — shell boundary.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+  flutter: '>=3.24.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sdkwork_iam_flutter_mobile_console_core:
+    path: ../sdkwork_iam_flutter_mobile_console_core
+  sdkwork_iam_flutter_mobile_commons:
+    path: ../sdkwork_iam_flutter_mobile_commons
+  sdkwork_iam_flutter_mobile_console_tenant:
+    path: ../sdkwork_iam_flutter_mobile_console_tenant
+  sdkwork_iam_flutter_mobile_console_organization:
+    path: ../sdkwork_iam_flutter_mobile_console_organization
+  sdkwork_iam_flutter_mobile_console_account_binding:
+    path: ../sdkwork_iam_flutter_mobile_console_account_binding
+  sdkwork_iam_flutter_mobile_console_user_center:
+    path: ../sdkwork_iam_flutter_mobile_console_user_center
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,14 @@
+{
+  "SDKWORK_ENVIRONMENT": "development",
+  "SDKWORK_DEPLOYMENT_PROFILE": "standalone",
+  "SDKWORK_PROFILE_ID": "standalone.development",
+  "SDKWORK_RUNTIME_TARGET": "flutter-mobile",
+  "SDKWORK_APP_ID": "sdkwork-iam",
+  "SDKWORK_API_BASE_URL": "http://127.0.0.1:18089",
+  "SDKWORK_APP_API_BASE_URL": "http://127.0.0.1:18089",
+  "SDKWORK_OPEN_API_BASE_URL": "http://127.0.0.1:18089",
+  "SDKWORK_IAM_ISSUER": "http://127.0.0.1:18089",
+  "SDKWORK_FEATURE_APP_SURFACE": true,
+  "SDKWORK_FEATURE_CONSOLE_SURFACE": true,
+  "SDKWORK_FEATURE_ADMIN_SURFACE": true
+}

@@ -17,6 +17,7 @@ Runnable application roots live under `apps/<application-root>/`.
 | sdkwork-iam-common | common | no | sdkwork-iam-common | [README](sdkwork-iam-common/README.md) |
 | sdkwork-iam-flutter-mobile | flutter-mobile | yes | sdkwork-iam-flutter-mobile | [README](sdkwork-iam-flutter-mobile/README.md) |
 | sdkwork-iam-h5 | h5 | yes | sdkwork-iam-h5 | [README](sdkwork-iam-h5/README.md) |
+| sdkwork-iam-mini-program | mini-program | yes | sdkwork-iam-mini-program | [README](sdkwork-iam-mini-program/README.md) |
 | sdkwork-iam-pc | pc | yes | sdkwork-iam-pc | [README](sdkwork-iam-pc/README.md) |
 
 ## Allowed Content

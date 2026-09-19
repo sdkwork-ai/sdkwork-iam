@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 3,
+  "kind": "sdkwork.app",
+  "app": {
+    "key": "sdkwork-iam-mini-program",
+    "name": "SDKWork IAM Mini Program",
+    "displayName": "SDKWork IAM Mini Program",
+    "description": "SDKWork IAM WeChat mini program client for authentication, user center, account binding, and approved management surfaces.",
+    "vendor": "SDKWork",
+    "officialWebsiteUrl": "https://sdkwork.com/apps/sdkwork-iam-mini-program",
+    "supportUrl": "https://sdkwork.com/support",
+    "privacyPolicyUrl": "https://sdkwork.com/privacy",
+    "termsOfServiceUrl": "https://sdkwork.com/terms",
+    "iconUrl": "https://cdn.sdkwork.com/apps/sdkwork-iam-mini-program/assets/icon-1024.png",
+    "appType": "APP_UNIAPP",
+    "versionSource": "package.json",
+    "identifiers": {
+      "packageName": null,
+      "bundleId": null,
+      "desktopAppId": null,
+      "containerImage": "registry.sdkwork.com/apps/sdkwork-iam-mini-program"
+    }
+  },
+  "backend": {
+    "profileKey": "backend-root-admin",
+    "ownerMode": "tenant",
+    "grantMode": "current",
+    "platform": "MP_WEIXIN",
+    "appId": "sdkwork-iam",
+    "serviceId": "sdkwork-api-iam-assembly",
+    "tenantId": "100001",
+    "organizationId": "0",
+    "accessTokenPermissionScope": [
+      "iam:self",
+      "iam.users.read",
+      "iam.organizations.read",
+      "iam.roles.read",
+      "iam.permissions.read"
+    ]
+  },
+  "runtime": {
+    "family": "mini-program",
+    "framework": "mp-weixin",
+    "runtimes": [
+      "MP_WEIXIN"
+    ],
+    "deliveryModes": [
+      "WEB_URL"
+    ],
+    "defaultPlatform": "MP_WEIXIN",
+    "defaultArchitecture": "mini-program",
+    "targetPlatforms": [
+      "mini-program"
+    ],
+    "clientArchitectures": [
+      "mini-program"
+    ],
+    "supportedDeploymentProfiles": [
+      "standalone",
+      "cloud"
+    ],
+    "defaultDeploymentProfile": "standalone"
+  },
+  "media": {
+    "icons": {
+      "primary": {
+        "id": "sdkwork-iam-mini-program-primary-icon",
+        "type": "ICON",
+        "purpose": "PRIMARY",
+        "url": "https://cdn.sdkwork.com/apps/sdkwork-iam-mini-program/assets/icon-1024.png",
+        "platform": "MP_WEIXIN",
+        "locale": "en-US",
+        "width": 1024,
+        "height": 1024,
+        "format": "PNG",
+        "fileSizeBytes": 524288,
+        "alphaChannel": true,
+        "enabled": true,
+        "metadata": {
+          "generatedPlaceholder": true
+        }
+      },
+      "platform": [],
+      "metadata": {
+        "generatedPlaceholder": true
+      }
+    },
+    "screenshots": [],
+    "previews": [],
+    "metadata": {
+      "assetVersion": "0.1.0",
+      "defaultLocale": "en-US"
+    }
+  },
+  "publish": {
+    "status": "DRAFT",
+    "preLaunch": true,
+    "installSkill": false,
+    "platforms": [
+      "MP_WEIXIN"
+    ],
+    "installPlatforms": [
+      "MP_WEIXIN"
+    ],
+    "config": {
+      "workspaceRoot": "apps/sdkwork-iam-mini-program",
+      "framework": "mp-weixin",
+      "managedBy": "sdkwork-iam-client-app-surfaces"
+    }
+  },
+  "artifacts": {
+    "installConfig": {
+      "packages": [],
+      "metadata": {
+        "workspaceRoot": "apps/sdkwork-iam-mini-program",
+        "framework": "mp-weixin",
+        "packageManager": "pnpm",
+        "releaseBuildDeferred": true,
+        "releaseBuildDeferredReason": "WeChat DevTools CLI is not available in this environment, so the mini program bundle cannot be built or previewed here."
+      }
+    }
+  },
+  "release": {
+    "currentVersion": "0.1.0",
+    "defaultChannel": "BETA",
+    "latest": {
+      "BETA": "0.1.0"
+    },
+    "notes": [
+      {
+        "version": "0.1.0",
+        "channel": "BETA",
+        "current": true,
+        "packageIds": []
+      }
+    ]
+  },
+  "security": {
+    "checksumRequired": true,
+    "signatureRequired": false,
+    "sbomRequired": true
+  },
+  "devApp": {
+    "build": {
+      "targets": []
+    },
+    "sourceRoot": "apps/sdkwork-iam-mini-program"
+  },
+  "metadata": {
+    "standardOwner": "sdkwork-iam",
+    "initializedAt": "2026-09-18T00:00:00Z",
+    "deploymentConfig": "etc/sdkwork.deployment.config.json",
+    "releaseAuthority": "../../sdkwork.workflow.json",
+    "architectureSpec": "MINI_PROGRAM_APP_ARCHITECTURE_SPEC.md",
+    "runtimeTarget": "mini-program",
+    "appTypeNote": "APP_MANIFEST_SPEC PlusProjectType has no native mini program member; APP_UNIAPP is the closest closed-set value. This root is a native WeChat mini program (mp-weixin), not a uni-app project."
+  }
+}

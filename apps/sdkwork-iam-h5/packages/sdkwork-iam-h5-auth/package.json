@@ -19,12 +19,22 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@sdkwork/i18n-pc-react": "workspace:*",
-    "@sdkwork/iam-contracts": "workspace:*",
     "@sdkwork/iam-h5-core": "workspace:*",
     "@sdkwork/iam-service": "workspace:*",
+    "@sdkwork/iam-contracts": "workspace:*",
+    "@sdkwork/i18n-pc-react": "workspace:*",
     "@sdkwork/utils": "workspace:*",
     "lucide-react": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2"
+  },
+  "sdkwork": {
+    "architecture": "h5",
+    "surface": "app",
+    "domain": "iam",
+    "capability": "auth",
+    "status": "standard"
   },
   "peerDependencies": {
     "react": ">=18.2.0 <20.0.0",
@@ -41,15 +51,5 @@
     "react-router-dom": {
       "optional": true
     }
-  },
-  "devDependencies": {
-    "typescript": "^6.0.2"
-  },
-  "sdkwork": {
-    "architecture": "h5",
-    "surface": "app",
-    "domain": "iam",
-    "capability": "auth",
-    "status": "standard"
   }
 }

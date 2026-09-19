@@ -1,0 +1,30 @@
+name: sdkwork_iam_flutter_mobile_admin_oauth
+description: SDKWork IAM Flutter Mobile Admin Oauth capability.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+  flutter: '>=3.24.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  sdkwork_iam_flutter_mobile_admin_core:
+    path: ../sdkwork_iam_flutter_mobile_admin_core
+  sdkwork_iam_flutter_mobile_commons:
+    path: ../sdkwork_iam_flutter_mobile_commons
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - lib/src/i18n/en-US/iam/admin_oauth/
+    - lib/src/i18n/zh-CN/iam/admin_oauth/

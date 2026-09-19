@@ -1,5 +1,6 @@
-# Plugins
+<!-- SDKWORK-CLIENT-APP-SURFACES-GENERATED: do not edit by hand; regenerate with `node scripts/materialize-client-app-surfaces.mjs`. -->
+# plugins
 
-IAM Flutter mobile application-root plugins live here.
+Application-local agent plugins for `apps/sdkwork-iam-flutter-mobile` belong here. Installable plugins declare `.codex-plugin/plugin.json` and document the skills, tools, scripts and verification they contribute.
 
 Owner: `sdkwork-iam` maintainers.

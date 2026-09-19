@@ -1,0 +1,77 @@
+name: sdkwork_iam_flutter_mobile
+description: SDKWork IAM Flutter mobile application root.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+  flutter: '>=3.24.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_secure_storage: ^9.2.4
+  sdkwork_iam_app_sdk:
+    path: ../../sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-dart/generated/server-openapi
+  sdkwork_iam_backend_sdk:
+    path: ../../sdks/sdkwork-iam-backend-sdk/sdkwork-iam-backend-sdk-dart/generated/server-openapi
+  sdkwork_iam_flutter_mobile_core:
+    path: packages/sdkwork_iam_flutter_mobile_core
+  sdkwork_iam_flutter_mobile_commons:
+    path: packages/sdkwork_iam_flutter_mobile_commons
+  sdkwork_iam_flutter_mobile_shell:
+    path: packages/sdkwork_iam_flutter_mobile_shell
+  sdkwork_iam_flutter_mobile_console_core:
+    path: packages/sdkwork_iam_flutter_mobile_console_core
+  sdkwork_iam_flutter_mobile_console_shell:
+    path: packages/sdkwork_iam_flutter_mobile_console_shell
+  sdkwork_iam_flutter_mobile_admin_core:
+    path: packages/sdkwork_iam_flutter_mobile_admin_core
+  sdkwork_iam_flutter_mobile_admin_shell:
+    path: packages/sdkwork_iam_flutter_mobile_admin_shell
+  sdkwork_iam_flutter_mobile_auth:
+    path: packages/sdkwork_iam_flutter_mobile_auth
+  sdkwork_iam_flutter_mobile_user_center:
+    path: packages/sdkwork_iam_flutter_mobile_user_center
+  sdkwork_iam_flutter_mobile_account_binding:
+    path: packages/sdkwork_iam_flutter_mobile_account_binding
+  sdkwork_iam_flutter_mobile_user:
+    path: packages/sdkwork_iam_flutter_mobile_user
+  sdkwork_iam_flutter_mobile_tenant:
+    path: packages/sdkwork_iam_flutter_mobile_tenant
+  sdkwork_iam_flutter_mobile_organization:
+    path: packages/sdkwork_iam_flutter_mobile_organization
+  sdkwork_iam_flutter_mobile_oauth:
+    path: packages/sdkwork_iam_flutter_mobile_oauth
+  sdkwork_iam_flutter_mobile_console_tenant:
+    path: packages/sdkwork_iam_flutter_mobile_console_tenant
+  sdkwork_iam_flutter_mobile_console_organization:
+    path: packages/sdkwork_iam_flutter_mobile_console_organization
+  sdkwork_iam_flutter_mobile_console_account_binding:
+    path: packages/sdkwork_iam_flutter_mobile_console_account_binding
+  sdkwork_iam_flutter_mobile_console_user_center:
+    path: packages/sdkwork_iam_flutter_mobile_console_user_center
+  sdkwork_iam_flutter_mobile_admin_oauth:
+    path: packages/sdkwork_iam_flutter_mobile_admin_oauth
+  sdkwork_iam_flutter_mobile_admin_tenant:
+    path: packages/sdkwork_iam_flutter_mobile_admin_tenant
+  sdkwork_iam_flutter_mobile_admin_organization:
+    path: packages/sdkwork_iam_flutter_mobile_admin_organization
+  sdkwork_iam_flutter_mobile_admin_permission:
+    path: packages/sdkwork_iam_flutter_mobile_admin_permission
+  sdkwork_iam_flutter_mobile_admin_account_binding:
+    path: packages/sdkwork_iam_flutter_mobile_admin_account_binding
+  sdkwork_iam_flutter_mobile_admin_user:
+    path: packages/sdkwork_iam_flutter_mobile_admin_user
+  sdkwork_iam_flutter_mobile_admin_audit:
+    path: packages/sdkwork_iam_flutter_mobile_admin_audit
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

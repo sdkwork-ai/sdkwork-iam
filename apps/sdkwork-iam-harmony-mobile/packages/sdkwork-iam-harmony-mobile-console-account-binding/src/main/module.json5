@@ -1,0 +1,10 @@
+{
+  "module": {
+    "name": "sdkwork_iam_harmony_mobile_console_account_binding",
+    "type": "har",
+    "deviceTypes": [
+      "phone",
+      "tablet"
+    ]
+  }
+}

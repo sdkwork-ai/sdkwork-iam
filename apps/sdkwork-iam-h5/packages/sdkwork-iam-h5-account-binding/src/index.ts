@@ -5,3 +5,6 @@ export {
 export * from "./types/account-binding-h5-types";
 export { createSdkworkIamH5AccountBindingController } from "./services/account-binding-h5-controller";
 export { SdkworkIamH5AccountBindingScreen } from "./pages/AccountBindingScreen";
+export * from './routes/route-contribution.js';
+export * from './services/account-binding-service.js';
+export * from './i18n/index.js';

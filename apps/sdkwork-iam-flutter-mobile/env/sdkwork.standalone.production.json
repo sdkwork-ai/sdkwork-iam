@@ -1,0 +1,14 @@
+{
+  "SDKWORK_ENVIRONMENT": "production",
+  "SDKWORK_DEPLOYMENT_PROFILE": "standalone",
+  "SDKWORK_PROFILE_ID": "standalone.production",
+  "SDKWORK_RUNTIME_TARGET": "flutter-mobile",
+  "SDKWORK_APP_ID": "sdkwork-iam",
+  "SDKWORK_API_BASE_URL": "/",
+  "SDKWORK_APP_API_BASE_URL": "/",
+  "SDKWORK_OPEN_API_BASE_URL": "/",
+  "SDKWORK_IAM_ISSUER": "/",
+  "SDKWORK_FEATURE_APP_SURFACE": true,
+  "SDKWORK_FEATURE_CONSOLE_SURFACE": true,
+  "SDKWORK_FEATURE_ADMIN_SURFACE": true
+}

@@ -1,0 +1,31 @@
+{
+  "environment": "staging",
+  "bundleName": "com.sdkwork.iam.mobile",
+  "vendor": "SDKWork",
+  "moduleName": "entry",
+  "deviceTypes": [
+    "phone",
+    "tablet"
+  ],
+  "permissions": [
+    "ohos.permission.INTERNET",
+    "ohos.permission.GET_NETWORK_INFO"
+  ],
+  "signingReference": "<deveco-signing-profile-name>",
+  "pushEnvironment": "development",
+  "distribution": {
+    "appGallery": {
+      "appIdPlaceholder": "<appgallery-app-id>"
+    },
+    "privateDistribution": {
+      "channelPlaceholder": "<private-distribution-channel>"
+    }
+  },
+  "wants": [
+    {
+      "scheme": "sdkwork-iam",
+      "host": "app",
+      "pathPrefix": ""
+    }
+  ]
+}

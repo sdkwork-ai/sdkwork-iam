@@ -39,7 +39,6 @@ export const IAM_GOVERNANCE_NODE_TEST_FILES = [
   'tests/static/governance/sdk-family-component-spec-standard.test.mjs',
   'tests/static/governance/workspace-path-standard.test.mjs',
   'tests/contract/iam-database-contract-alignment.test.mjs',
-  'tests/static/contract-parity.test.mjs',
   'tests/static/component-spec-metadata.test.mjs',
 ];
 

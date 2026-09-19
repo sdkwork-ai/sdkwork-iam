@@ -1,0 +1,39 @@
+{
+  "name": "@sdkwork/iam-mp-core",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "core package for the sdkwork-iam-mini-program client root.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./sdk": "./src/sdk/index.ts",
+    "./modules": "./src/modules/index.ts",
+    "./host": "./src/host/index.ts",
+    "./session": "./src/session/index.ts",
+    "./composition": "./src/composition/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sdkwork/iam-contracts": "workspace:*",
+    "@sdkwork/iam-runtime": "workspace:*",
+    "@sdkwork/iam-service": "workspace:*",
+    "@sdkwork/iam-app-sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
+  "sdkwork": {
+    "architecture": "mini-program",
+    "surface": "app",
+    "domain": "iam",
+    "capability": "core",
+    "packageType": "runtime",
+    "status": "standardizing"
+  }
+}

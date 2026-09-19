@@ -1,0 +1,12 @@
+{
+  "name": "@sdkwork/sdkwork-iam-harmony-mobile-admin-core",
+  "version": "0.1.0",
+  "description": "SDKWork IAM HarmonyOS Mobile Admin Core: core.",
+  "main": "src/main/ets/Index.ets",
+  "author": "SDKWork",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@sdkwork/sdkwork-iam-harmony-mobile-commons": "file:../sdkwork-iam-harmony-mobile-commons",
+    "@sdkwork/sdkwork-iam-harmony-mobile-core": "file:../sdkwork-iam-harmony-mobile-core"
+  }
+}

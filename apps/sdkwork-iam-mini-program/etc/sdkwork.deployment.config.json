@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component-deployment",
+  "application": "sdkwork-iam-mini-program",
+  "parentDeploymentConfig": "../../../etc/sdkwork.deployment.config.json",
+  "parentTopologySpec": "../../../specs/topology.spec.json",
+  "materialization": {
+    "authority": "../../../etc/sdkwork.deployment.config.json",
+    "format": "json",
+    "outputPattern": "../config/mini-program/runtime-env.{deploymentProfile}.{environment}.json",
+    "profiles": [
+      "standalone.development",
+      "standalone.test",
+      "standalone.staging",
+      "standalone.demo",
+      "standalone.production",
+      "cloud.development",
+      "cloud.test",
+      "cloud.staging",
+      "cloud.demo",
+      "cloud.production"
+    ],
+    "runtimeTarget": "mini-program",
+    "checkedIn": true,
+    "deferred": true,
+    "deferredReason": "sdkwork-specs/tools/materialize-client-env.mjs does not implement this surface format yet. The runtime documents are authored and checked in and validated by the root contract test instead of being generated; declaring a generation command here would be a false signal."
+  },
+  "profiles": {
+    "standalone.development": {
+      "source": "../config/mini-program/runtime-env.standalone.development.json"
+    },
+    "standalone.test": {
+      "source": "../config/mini-program/runtime-env.standalone.test.json"
+    },
+    "standalone.staging": {
+      "source": "../config/mini-program/runtime-env.standalone.staging.json"
+    },
+    "standalone.demo": {
+      "source": "../config/mini-program/runtime-env.standalone.demo.json"
+    },
+    "standalone.production": {
+      "source": "../config/mini-program/runtime-env.standalone.production.json"
+    },
+    "cloud.development": {
+      "source": "../config/mini-program/runtime-env.cloud.development.json"
+    },
+    "cloud.test": {
+      "source": "../config/mini-program/runtime-env.cloud.test.json"
+    },
+    "cloud.staging": {
+      "source": "../config/mini-program/runtime-env.cloud.staging.json"
+    },
+    "cloud.demo": {
+      "source": "../config/mini-program/runtime-env.cloud.demo.json"
+    },
+    "cloud.production": {
+      "source": "../config/mini-program/runtime-env.cloud.production.json"
+    }
+  }
+}

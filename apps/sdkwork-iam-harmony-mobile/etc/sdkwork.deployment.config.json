@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component-deployment",
+  "application": "sdkwork-iam-harmony-mobile",
+  "parentDeploymentConfig": "../../../etc/sdkwork.deployment.config.json",
+  "parentTopologySpec": "../../../specs/topology.spec.json",
+  "materialization": {
+    "authority": "../../../etc/sdkwork.deployment.config.json",
+    "format": "json",
+    "outputPattern": "../config/app/runtime-env.{deploymentProfile}.{environment}.json",
+    "profiles": [
+      "standalone.development",
+      "standalone.test",
+      "standalone.staging",
+      "standalone.demo",
+      "standalone.production",
+      "cloud.development",
+      "cloud.test",
+      "cloud.staging",
+      "cloud.demo",
+      "cloud.production"
+    ],
+    "runtimeTarget": "harmony-native",
+    "checkedIn": true,
+    "deferred": true,
+    "deferredReason": "sdkwork-specs/tools/materialize-client-env.mjs implements only the vite, flutter, mini-program, and none surface formats. No Harmony surface format exists yet, so this root derives its runtime documents from etc/sdkwork.deployment.config.json and etc/topology/<profile-id>.env through scripts/lib/client-app-surfaces/emit-arkts.mjs and validates them with tests/harmony-runtime-config.test.mjs. Declaring a command for the workspace materializer here would be a false signal."
+  },
+  "profiles": {
+    "standalone.development": {
+      "source": "../config/app/runtime-env.standalone.development.json"
+    },
+    "standalone.test": {
+      "source": "../config/app/runtime-env.standalone.test.json"
+    },
+    "standalone.staging": {
+      "source": "../config/app/runtime-env.standalone.staging.json"
+    },
+    "standalone.demo": {
+      "source": "../config/app/runtime-env.standalone.demo.json"
+    },
+    "standalone.production": {
+      "source": "../config/app/runtime-env.standalone.production.json"
+    },
+    "cloud.development": {
+      "source": "../config/app/runtime-env.cloud.development.json"
+    },
+    "cloud.test": {
+      "source": "../config/app/runtime-env.cloud.test.json"
+    },
+    "cloud.staging": {
+      "source": "../config/app/runtime-env.cloud.staging.json"
+    },
+    "cloud.demo": {
+      "source": "../config/app/runtime-env.cloud.demo.json"
+    },
+    "cloud.production": {
+      "source": "../config/app/runtime-env.cloud.production.json"
+    }
+  }
+}

@@ -4,3 +4,6 @@ export {
 export * from "./types/user-h5-types";
 export { createSdkworkIamH5UserController } from "./services/user-h5-controller";
 export { SdkworkIamH5UserProfileScreen } from "./pages/UserProfileScreen";
+export * from './routes/route-contribution.js';
+export * from './services/user-service.js';
+export * from './i18n/index.js';

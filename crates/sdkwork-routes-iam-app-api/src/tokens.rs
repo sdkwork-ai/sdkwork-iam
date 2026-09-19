@@ -848,15 +848,6 @@ pub(crate) async fn refresh_session_scopes_from_rbac(
             session.context.organization_id.as_deref(),
         )
         .await?;
-    let jwt_data_scope = jwt_claim_string_vectors(&session.access_token, "data_scope");
-    let jwt_permission_scope = jwt_claim_string_vectors(&session.access_token, "permission_scope");
-    if sorted_string_vectors_equal(&data_scope, &jwt_data_scope)
-        && sorted_string_vectors_equal(&permission_scope, &jwt_permission_scope)
-        && sorted_string_vectors_equal(&data_scope, &session.context.data_scope)
-        && sorted_string_vectors_equal(&permission_scope, &session.context.permission_scope)
-    {
-        return Ok(());
-    }
 
     let context = crate::authorization::enrich_app_context(
         IamAppContext::new(
@@ -875,28 +866,24 @@ pub(crate) async fn refresh_session_scopes_from_rbac(
         standard_role_codes,
     );
 
-    let signing_key = ensure_tenant_signing_key(pg, &session.user.tenant_id).await?;
-    let access_token = sign_local_session_token(&signing_key, "access", &context);
-    let auth_token = sign_local_session_token(&signing_key, "auth", &context);
-    let auth_token_hash = hash_token(&auth_token);
-    let access_token_hash = hash_token(&access_token);
+    // Scope arrays are no longer embedded in the local dual-token JWTs, so
+    // there is nothing to re-sign or rotate here for scope propagation. The
+    // authoritative scopes are persisted to the iam_session row below and
+    // loaded back at request time; the optimistic token-hash guard only
+    // confirms the session row is still active/unrevoked while its scope
+    // columns are refreshed.
     let expected_auth_hash = hash_token(&session.auth_token);
     let expected_access_hash = hash_token(&session.access_token);
     let now = current_timestamp_utc();
 
     let updated = sqlx::query(
-        "UPDATE iam_session SET data_scope_json = $2, permission_scope_json = $3, \
-         auth_token_hash = $4, access_token_hash = $5, auth_token_kid = $6, access_token_kid = $6, \
-         updated_at = $7 \
-         WHERE id = $1 AND revoked_at IS NULL AND expires_at::timestamptz > $7::timestamptz \
-           AND auth_token_hash = $8 AND access_token_hash = $9",
+        "UPDATE iam_session SET data_scope_json = $2, permission_scope_json = $3, updated_at = $4 \
+         WHERE id = $1 AND revoked_at IS NULL AND expires_at::timestamptz > $4::timestamptz \
+           AND auth_token_hash = $5 AND access_token_hash = $6",
     )
     .bind(&session.session_id)
     .bind(Json(&context.data_scope))
     .bind(Json(&context.permission_scope))
-    .bind(&auth_token_hash)
-    .bind(&access_token_hash)
-    .bind(&signing_key.kid)
     .bind(&now)
     .bind(&expected_auth_hash)
     .bind(&expected_access_hash)
@@ -908,9 +895,11 @@ pub(crate) async fn refresh_session_scopes_from_rbac(
         return Err("session scope refresh rejected stale or revoked tokens".to_string());
     }
 
+    sdkwork_iam_web_adapter::invalidate_session_scopes(
+        &session.user.tenant_id,
+        &session.session_id,
+    );
     session.context = context;
-    session.auth_token = auth_token;
-    session.access_token = access_token;
     Ok(())
 }
 
@@ -1100,7 +1089,6 @@ pub(crate) fn sign_local_session_token(
         "app_id": context.app_id,
         "aud": context.app_id,
         "auth_level": auth_level_to_string(&context.auth_level),
-        "data_scope": context.data_scope,
         "deployment_mode": deployment_mode_to_string(&context.deployment_mode),
         "environment": environment_to_string(&context.environment),
         "exp": expires_at,
@@ -1108,7 +1096,6 @@ pub(crate) fn sign_local_session_token(
         "iss": "sdkwork-iam-local",
         "login_scope": login_scope_to_string(&context.login_scope),
         "organization_id": organization_id,
-        "permission_scope": context.permission_scope,
         "session_id": context.session_id,
         "tenant_id": context.tenant_id,
         "token_type": token_type,
@@ -1130,23 +1117,6 @@ pub(crate) fn encode_jwt_json(value: &Value) -> String {
 fn decode_jwt_json(part: &str) -> Option<Value> {
     let bytes = URL_SAFE_NO_PAD.decode(part).ok()?;
     serde_json::from_slice(&bytes).ok()
-}
-
-fn jwt_claim_string_vectors(token: &str, claim_key: &str) -> Vec<String> {
-    let payload_part = token.split('.').nth(1).unwrap_or_default();
-    let payload = decode_jwt_json(payload_part).unwrap_or(Value::Null);
-    payload
-        .get(claim_key)
-        .and_then(|value| serde_json::from_value(value.clone()).ok())
-        .unwrap_or_default()
-}
-
-fn sorted_string_vectors_equal(left: &[String], right: &[String]) -> bool {
-    let mut normalized_left = left.to_vec();
-    let mut normalized_right = right.to_vec();
-    normalized_left.sort();
-    normalized_right.sort();
-    normalized_left == normalized_right
 }
 
 pub(crate) fn jwt_header_kid(token: &str) -> Option<String> {

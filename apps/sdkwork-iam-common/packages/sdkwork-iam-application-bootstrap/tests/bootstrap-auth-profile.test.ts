@@ -194,9 +194,9 @@ describe("bootstrap auth profiles", () => {
       "signature",
     ].join(".");
     expect(looksLikeLocalFixtureJwt(fixture)).toBe(true);
-    expect(isUsableBootstrapAccessToken(fixture, "http://api-dev.birdcoder.com")).toBe(false);
+    expect(isUsableBootstrapAccessToken(fixture, "http://api-dev.sdkwork.com")).toBe(false);
     expect(isUsableBootstrapAccessToken(fixture, "http://127.0.0.1:8080")).toBe(true);
-    expect(isUsableBootstrapAccessToken("signed-jwt", "http://api-dev.birdcoder.com")).toBe(true);
+    expect(isUsableBootstrapAccessToken("signed-jwt", "http://api-dev.sdkwork.com")).toBe(true);
   });
 
   it("parses access tokens from CRLF env overlays", () => {
@@ -212,7 +212,7 @@ describe("bootstrap auth profiles", () => {
       const result = await ensureRepoBootstrapAccessToken({
         repoRoot,
         environment: "development",
-        env: { SDKWORK_BACKEND_BASE_URL: "http://api-dev.birdcoder.com" },
+        env: { SDKWORK_BACKEND_BASE_URL: "http://api-dev.sdkwork.com" },
         tryApplicationBootstrap: false,
       });
       expect(result).toEqual({ status: "configured", token: "signed-dev-token" });

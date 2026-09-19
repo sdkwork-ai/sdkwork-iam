@@ -1,0 +1,33 @@
+{
+  "name": "@sdkwork/iam-h5-oauth",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "capability package for the sdkwork-iam-h5 client root.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sdkwork/iam-h5-core": "workspace:*",
+    "@sdkwork/iam-service": "workspace:*",
+    "@sdkwork/iam-contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
+  "sdkwork": {
+    "architecture": "h5",
+    "surface": "app",
+    "domain": "iam",
+    "capability": "oauth",
+    "packageType": "feature",
+    "status": "standardizing"
+  }
+}

@@ -36,10 +36,22 @@ const APP_ROOTS = [
     requiredPackages: ["packages/sdkwork-iam-h5-core"],
   },
   {
+    relativePath: "apps/sdkwork-iam-mini-program",
+    architecture: "mini-program",
+    corePackageDir: "packages/sdkwork-iam-mp-core",
+    requiredPackages: ["packages/sdkwork-iam-mp-core"],
+  },
+  {
     relativePath: "apps/sdkwork-iam-flutter-mobile",
     architecture: "flutter-mobile",
-    corePackageDir: null,
-    requiredPackages: [],
+    corePackageDir: "packages/sdkwork_iam_flutter_mobile_core",
+    requiredPackages: ["packages/sdkwork_iam_flutter_mobile_core"],
+  },
+  {
+    relativePath: "apps/sdkwork-iam-harmony-mobile",
+    architecture: "harmony-mobile",
+    corePackageDir: "packages/sdkwork-iam-harmony-mobile-core",
+    requiredPackages: ["packages/sdkwork-iam-harmony-mobile-core"],
   },
 ];
 
@@ -131,10 +143,22 @@ test("iam domain workspace uses multi-surface apps layout and removes legacy pac
     }
 
     if (appRoot.corePackageDir) {
+      // The composition entry is not `src/composition/index.ts` in every language
+      // family. A Flutter core is a Dart package, so its entry is
+      // `lib/composition/composition.dart`; a HarmonyOS core is an ArkTS HAR, so
+      // its entry is `src/composition/index.ets`. Checking the TypeScript path in
+      // either family fails a root that is in fact complete, which is why the
+      // Flutter root used to opt out of the check by declaring
+      // `corePackageDir: null`. Resolving the entry per architecture inspects the
+      // root instead of skipping it.
+      const compositionEntryByArchitecture = {
+        "flutter-mobile": "lib/composition/composition.dart",
+        "harmony-mobile": "src/composition/index.ets",
+      };
       const compositionEntry = path.join(
         appRoot.relativePath,
         appRoot.corePackageDir,
-        "src/composition/index.ts",
+        compositionEntryByArchitecture[appRoot.architecture] ?? "src/composition/index.ts",
       );
       if (!exists(compositionEntry)) {
         errors.push(`missing core composition entry: ${compositionEntry}`);

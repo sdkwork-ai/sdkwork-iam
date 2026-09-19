@@ -1016,10 +1016,16 @@ async fn local_app_router_owner_session_includes_directory_permission_scope() {
 
     let access_token = body["accessToken"].as_str().expect("access token");
     let access_payload = jwt_json_part(access_token, 1);
-    let permission_scope = access_payload["permission_scope"]
+    assert!(
+        access_payload.get("permission_scope").is_none(),
+        "access token should no longer embed permission_scope, got: {:?}",
+        access_payload.get("permission_scope")
+    );
+
+    let context_permission_scope = body["context"]["permissionScope"]
         .as_array()
-        .expect("access token should include permission_scope");
-    let codes: Vec<&str> = permission_scope
+        .expect("owner session should expose permissionScope in context");
+    let codes: Vec<&str> = context_permission_scope
         .iter()
         .filter_map(|value| value.as_str())
         .collect();
@@ -2198,10 +2204,16 @@ async fn local_app_router_registered_member_session_falls_back_to_self_permissio
     .await;
     let access_token = session_data["accessToken"].as_str().expect("access token");
     let access_payload = jwt_json_part(access_token, 1);
-    let permission_scope = access_payload["permission_scope"]
+    assert!(
+        access_payload.get("permission_scope").is_none(),
+        "access token should no longer embed permission_scope, got: {:?}",
+        access_payload.get("permission_scope")
+    );
+
+    let context_permission_scope = session_data["context"]["permissionScope"]
         .as_array()
-        .expect("permission scope");
-    let codes: Vec<&str> = permission_scope
+        .expect("registered member session should expose permissionScope in context");
+    let codes: Vec<&str> = context_permission_scope
         .iter()
         .filter_map(|value| value.as_str())
         .collect();
@@ -2211,7 +2223,7 @@ async fn local_app_router_registered_member_session_falls_back_to_self_permissio
     );
     assert!(
         codes.iter().any(|code| code.starts_with("iam.")),
-        "registered members should receive IMF baseline IAM permissions: {codes:?}"
+        "registered members should receive baseline IAM permissions: {codes:?}"
     );
 }
 
@@ -4339,7 +4351,7 @@ async fn local_app_router_rejects_cross_tenant_duplicate_account_without_bootstr
 }
 
 #[tokio::test]
-async fn local_app_router_current_session_resigns_refreshed_permission_scopes() {
+async fn local_app_router_current_session_persists_refreshed_permission_scopes() {
     let app = build_router_for_open_registration().await;
     let username = unique_registration_username("scope-refresh");
     let email = format!("{username}@sdkwork-iam.local");
@@ -4387,14 +4399,10 @@ async fn local_app_router_current_session_resigns_refreshed_permission_scopes() 
         .or_else(|| session_data["user"]["tenantId"].as_str())
         .expect("registration should include tenant id");
     let stale_payload = jwt_json_part(access_token, 1);
-    let permission_scopes = stale_payload["permission_scope"]
-        .as_array()
-        .expect("registration access token should include permission_scope");
     assert!(
-        permission_scopes
-            .iter()
-            .any(|scope| scope.as_str() == Some("iam:self")),
-        "registered member should include iam:self baseline scope: {permission_scopes:?}"
+        stale_payload.get("permission_scope").is_none(),
+        "access token should no longer embed permission_scope, got: {:?}",
+        stale_payload.get("permission_scope")
     );
 
     let pg = postgres_pool_for_tests().await;
@@ -4482,19 +4490,48 @@ async fn local_app_router_current_session_resigns_refreshed_permission_scopes() 
     .await;
     assert_eq!(current_response.status(), StatusCode::OK);
     let current_body = read_json(current_response).await;
-    let refreshed_access_token = current_body["data"]["accessToken"]
-        .as_str()
-        .expect("current session should return refreshed access token");
-    assert_ne!(refreshed_access_token, access_token);
-    let refreshed_payload = jwt_json_part(refreshed_access_token, 1);
-    let permission_scope = refreshed_payload["permission_scope"]
-        .as_array()
-        .expect("refreshed access token should include permission_scope");
+    // The access token is no longer re-signed when scopes are refreshed, so
+    // the JWT payload stays scope-free; the authoritative scopes must surface
+    // in the response context and be persisted back to the session row.
+    let current_payload = jwt_json_part(
+        current_body["data"]["accessToken"]
+            .as_str()
+            .expect("current session should return access token"),
+        1,
+    );
     assert!(
-        permission_scope
+        current_payload.get("permission_scope").is_none(),
+        "access token should no longer embed permission_scope, got: {:?}",
+        current_payload.get("permission_scope")
+    );
+
+    let context_permission_scope = current_body["data"]["context"]["permissionScope"]
+        .as_array()
+        .expect("current session context should expose permissionScope");
+    assert!(
+        context_permission_scope
             .iter()
             .any(|scope| scope.as_str() == Some("iam.users.read")),
-        "refreshed access token should restore live RBAC permission scopes"
+        "current session should expose live RBAC permission scopes, got: {context_permission_scope:?}"
+    );
+
+    let persisted_scopes: sqlx::types::Json<Value> = sqlx::query_scalar(
+        "SELECT permission_scope_json FROM iam_session WHERE id = $1 AND revoked_at IS NULL",
+    )
+    .bind(session_id)
+    .fetch_one(&pg)
+    .await
+    .expect("read back persisted permission scopes");
+    let persisted_codes = persisted_scopes
+        .0
+        .as_array()
+        .expect("persisted permission scope should be an array")
+        .iter()
+        .filter_map(|value| value.as_str())
+        .collect::<Vec<&str>>();
+    assert!(
+        persisted_codes.contains(&"iam.users.read"),
+        "refreshed permission scopes should persist to iam_session, got: {persisted_codes:?}"
     );
 }
 

@@ -1,0 +1,31 @@
+{
+  "name": "@sdkwork/iam-flutter-mobile",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "pnpm dev:standalone",
+    "dev:standalone": "pnpm exec sdkwork-app dev --root ../.. --deployment-profile standalone",
+    "dev:cloud": "pnpm exec sdkwork-app dev --root ../.. --deployment-profile cloud",
+    "dev:flutter-android": "pnpm exec sdkwork-app dev --root ../.. --runtime-target flutter-android --deployment-profile standalone",
+    "dev:flutter-android:cloud": "pnpm exec sdkwork-app dev --root ../.. --runtime-target flutter-android --deployment-profile cloud",
+    "dev:flutter-ios": "pnpm exec sdkwork-app dev --root ../.. --runtime-target flutter-ios --deployment-profile standalone",
+    "dev:flutter-ios:cloud": "pnpm exec sdkwork-app dev --root ../.. --runtime-target flutter-ios --deployment-profile cloud",
+    "stop": "pnpm exec sdkwork-app stop --root ../..",
+    "build": "pnpm exec sdkwork-app build",
+    "test": "pnpm exec sdkwork-app test",
+    "check": "pnpm exec sdkwork-app check",
+    "verify": "pnpm exec sdkwork-app verify",
+    "clean": "pnpm exec sdkwork-app clean",
+    "test:config": "node ../../../sdkwork-specs/tools/check-app-manifest-standard.mjs --root . && node ../../../sdkwork-specs/tools/check-source-config-standard.mjs --root .",
+    "_sdkwork:build": "flutter build appbundle",
+    "_sdkwork:test": "flutter test",
+    "_sdkwork:check": "pnpm run test:config && flutter analyze",
+    "_sdkwork:verify": "pnpm run _sdkwork:check && pnpm run _sdkwork:test",
+    "_sdkwork:clean": "flutter clean"
+  },
+  "devDependencies": {
+    "@sdkwork/app-topology": "workspace:*"
+  }
+}

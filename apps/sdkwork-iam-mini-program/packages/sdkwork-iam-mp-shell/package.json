@@ -1,0 +1,31 @@
+{
+  "name": "@sdkwork/iam-mp-shell",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "shell package for the sdkwork-iam-mini-program client root.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sdkwork/iam-mp-core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
+  "sdkwork": {
+    "architecture": "mini-program",
+    "surface": "app",
+    "domain": "iam",
+    "capability": "shell",
+    "packageType": "feature",
+    "status": "standardizing"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "environment": "development",
+  "deploymentProfile": "standalone",
+  "profileId": "standalone.development",
+  "application": {
+    "publicHttpUrl": "http://127.0.0.1:3901",
+    "publicWebsocketUrl": "ws://127.0.0.1:3901"
+  },
+  "appbase": {
+    "appApiBaseUrl": "http://127.0.0.1:3901",
+    "loginUrl": "http://127.0.0.1:3901"
+  },
+  "platform": {
+    "apiGatewayHttpUrl": "http://127.0.0.1:3901"
+  },
+  "runtimeTarget": "harmony-native",
+  "metadata": {
+    "profileBinding": "runtime-configurable",
+    "applicationCode": "iam",
+    "namespace": "sdkwork-iam-harmony-mobile"
+  }
+}
