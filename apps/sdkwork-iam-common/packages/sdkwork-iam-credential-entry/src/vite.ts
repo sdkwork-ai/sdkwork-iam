@@ -1,4 +1,5 @@
 import { SDKWORK_CREDENTIAL_ENTRY_BOOTSTRAP_ACCESS_TOKEN_GLOBAL_KEY } from './constants.ts';
+import type { SdkworkEnvironment } from './bootstrap-access-token-core.mjs';
 import {
   readAppBootstrapAccessToken,
   readRepoBootstrapAccessToken,
@@ -112,7 +113,10 @@ export function createSdkworkCredentialEntryBootstrapVitePlugin({
  * `apps/<app>-pc/packages/<pkg>/vite.config.ts` find the artifact its repo-level
  * dev runner wrote.
  */
-function resolveTokenFromSearchRoot(repoRoot: string | undefined, lifecycle: string): string | undefined {
+function resolveTokenFromSearchRoot(
+  repoRoot: string | undefined,
+  lifecycle: SdkworkEnvironment,
+): string | undefined {
   const normalized = repoRoot?.trim();
   if (!normalized) {
     return undefined;
