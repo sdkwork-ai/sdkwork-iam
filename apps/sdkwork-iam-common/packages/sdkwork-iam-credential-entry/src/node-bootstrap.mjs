@@ -76,17 +76,57 @@ export function resolveRepoApplicationManifestPath(repoRoot, manifestPath) {
   );
 }
 
+/**
+ * Resolve the candidate bootstrap env-file paths for a search root.
+ *
+ * Two real-world layouts must both work, because the artifact *writers* and the
+ * *readers* live in different repositories and independently chose a root:
+ *
+ *  - **Repo root** — `<repoRoot>/.env.standalone.<lifecycle>.bootstrap.local`
+ *    (the canonical layout this reader was originally written against).
+ *  - **App root** — `<appRoot>/.env.<profile>.bootstrap.local`, written by the
+ *    per-application dev runners such as
+ *    `sdkwork-cloudrouter/scripts/dev/cloud-router-application-env.mjs`.
+ *
+ * Historically only the repo-root spelling was searched, so an artifact written
+ * at the app root was never found: the plugin resolved `token === undefined`,
+ * returned `undefined` without any diagnostic, and the failure surfaced much
+ * later as `access-token-only request requires Access-Token before request
+ * dispatch` on the first authenticated request. Accepting both spellings here
+ * (and, in app roots, the shorter `<appRoot>/.env.<environment>.bootstrap.local`
+ * form the dev runners actually emit) removes that silent-miss class.
+ */
+function bootstrapAccessTokenEnvFileNames(lifecycle) {
+  return [
+    '.sdkwork.local.env',
+    `.env.standalone.${lifecycle}.bootstrap.local`,
+    `.env.${lifecycle}.bootstrap.local`,
+  ];
+}
+
 export function resolveRepoBootstrapAccessTokenEnvPaths(repoRoot, environment) {
   const normalizedRepoRoot = normalizeText(repoRoot);
   if (!normalizedRepoRoot) {
     throw new Error('resolveRepoBootstrapAccessTokenEnvPaths requires repoRoot');
   }
   const lifecycle = normalizeBootstrapEnvironment(environment);
-  return [
-    path.join(normalizedRepoRoot, '.sdkwork.local.env'),
-    path.join(normalizedRepoRoot, `.env.standalone.${lifecycle}.bootstrap.local`),
-    path.join(normalizedRepoRoot, `.env.${lifecycle}.bootstrap.local`),
-  ];
+  return bootstrapAccessTokenEnvFileNames(lifecycle)
+    .map((fileName) => path.join(normalizedRepoRoot, fileName));
+}
+
+/**
+ * Sibling of {@link resolveRepoBootstrapAccessTokenEnvPaths} for a directory that
+ * is an *application* root rather than a repository root. See the note on
+ * {@link bootstrapAccessTokenEnvFileNames} for why both layouts are supported.
+ */
+export function resolveAppBootstrapAccessTokenEnvPaths(appRoot, environment) {
+  const normalizedAppRoot = normalizeText(appRoot);
+  if (!normalizedAppRoot) {
+    throw new Error('resolveAppBootstrapAccessTokenEnvPaths requires appRoot');
+  }
+  const lifecycle = normalizeBootstrapEnvironment(environment);
+  return bootstrapAccessTokenEnvFileNames(lifecycle)
+    .map((fileName) => path.join(normalizedAppRoot, fileName));
 }
 
 export function readRepoBootstrapAccessToken(repoRoot, environment) {
@@ -98,6 +138,46 @@ export function readRepoBootstrapAccessToken(repoRoot, environment) {
   }
   return undefined;
 }
+
+/**
+ * Read the bootstrap token from an application root, falling back to walking
+ * ancestor directories so an app nested at `apps/<name>-pc/packages/<pkg>` still
+ * resolves the artifact its repo-level dev runner wrote.
+ *
+ * The ancestor walk is bounded (see `MAX_BOOTSTRAP_ANCESTOR_DEPTH`) and stops at
+ * the filesystem root; it deliberately does **not** read anything outside the
+ * ancestor chain, so it cannot pick up an unrelated sibling application's token.
+ */
+export function readAppBootstrapAccessToken(appRoot, environment) {
+  return readBootstrapAccessTokenAcrossAncestors(appRoot, { read: readRepoBootstrapAccessToken, environment });
+}
+
+function readBootstrapAccessTokenAcrossAncestors(startRoot, { read, environment }) {
+  const normalizedStart = normalizeText(startRoot);
+  if (!normalizedStart) {
+    return undefined;
+  }
+  let current = path.resolve(normalizedStart);
+  for (let depth = 0; depth <= MAX_BOOTSTRAP_ANCESTOR_DEPTH; depth += 1) {
+    const token = read(current, environment);
+    if (token) {
+      return token;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) {
+      break;
+    }
+    current = parent;
+  }
+  return undefined;
+}
+
+/**
+ * How many ancestor directories `readBootstrapAccessTokenAcrossAncestors` walks
+ * before giving up. Six covers the deepest observed app nesting
+ * (`apps/<app>-pc/packages/<pkg>/` is three levels below the repo root).
+ */
+const MAX_BOOTSTRAP_ANCESTOR_DEPTH = 6;
 
 export function mergeRepoBootstrapAccessTokenEnv({
   repoRoot,

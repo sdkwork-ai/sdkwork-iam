@@ -513,6 +513,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.2.8
         version: 1.2.10(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@sdkwork/iam-credential-entry':
+        specifier: workspace:*
+        version: link:../../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-credential-entry
       '@sdkwork/utils':
         specifier: ^0.11.0
         version: 0.11.0
@@ -733,6 +736,12 @@ importers:
       typescript:
         specifier: ^6.0.2
         version: 6.0.3
+
+  apps/sdkwork-iam-flutter-mobile:
+    devDependencies:
+      '@sdkwork/app-topology':
+        specifier: workspace:*
+        version: link:../../../sdkwork-app-topology
 
   apps/sdkwork-iam-h5:
     dependencies:
@@ -1093,6 +1102,9 @@ importers:
       '@sdkwork/iam-service':
         specifier: workspace:*
         version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+      '@sdkwork/sdk-common':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
     devDependencies:
       typescript:
         specifier: 'catalog:'
@@ -1170,6 +1182,9 @@ importers:
       '@sdkwork/iam-service':
         specifier: workspace:*
         version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+      '@sdkwork/sdk-common':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
     devDependencies:
       typescript:
         specifier: ^6.0.2
@@ -1273,6 +1288,12 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+
+  apps/sdkwork-iam-harmony-mobile:
+    devDependencies:
+      '@sdkwork/app-topology':
+        specifier: workspace:*
+        version: link:../../../sdkwork-app-topology
 
   apps/sdkwork-iam-mini-program:
     dependencies:
