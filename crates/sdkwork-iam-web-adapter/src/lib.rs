@@ -346,9 +346,8 @@ fn iam_web_security_policy(environment: &WebEnvironment) -> SecurityPolicy {
     // while the request-path Cors interceptor rejects the very same origin with
     // a 40301 `failedStage: cors` problem. A half-configured pattern is
     // fail-closed at startup per §5.
-    sdkwork_web_bootstrap::with_registered_console_hosts_from_env(security_policy).unwrap_or_else(
-        |error| panic!("IAM Web Framework CORS configuration is invalid: {error}"),
-    )
+    sdkwork_web_bootstrap::with_registered_console_hosts_from_env(security_policy)
+        .unwrap_or_else(|error| panic!("IAM Web Framework CORS configuration is invalid: {error}"))
 }
 
 pub fn build_web_framework_layer<R>(

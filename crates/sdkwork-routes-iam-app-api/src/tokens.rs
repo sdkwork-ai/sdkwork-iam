@@ -1127,8 +1127,12 @@ fn decode_jwt_json(part: &str) -> Option<Value> {
 /// entrypoint header budget. Identity-only claims leave ~10x headroom; tripping
 /// this means dynamic authorization content was signed back into the payload.
 fn ensure_entrypoint_token_budget(token: &str) -> Result<(), String> {
-    sdkwork_web_core::validate_rendered_token_bytes(token.len())
-        .map_err(|error| format!("issued session token rejected by issuer budget: {}", error.message))
+    sdkwork_web_core::validate_rendered_token_bytes(token.len()).map_err(|error| {
+        format!(
+            "issued session token rejected by issuer budget: {}",
+            error.message
+        )
+    })
 }
 
 pub(crate) fn jwt_header_kid(token: &str) -> Option<String> {

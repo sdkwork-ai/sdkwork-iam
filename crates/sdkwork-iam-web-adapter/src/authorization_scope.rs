@@ -86,13 +86,11 @@ impl DynamicAuthorizationScopeSource for IamSessionAuthorizationScopeSource {
 
         let data_scope = json_string_vec(&row, 0);
         let permission_scope = json_string_vec(&row, 1);
-        let updated_at: chrono::DateTime<chrono::Utc> = row
-            .try_get(2)
-            .map_err(|error| {
-                WebFrameworkError::dependency_unavailable(format!(
-                    "IAM session row is missing updated_at: {error}"
-                ))
-            })?;
+        let updated_at: chrono::DateTime<chrono::Utc> = row.try_get(2).map_err(|error| {
+            WebFrameworkError::dependency_unavailable(format!(
+                "IAM session row is missing updated_at: {error}"
+            ))
+        })?;
 
         Ok(Some(
             WebAuthorizationScope::new(data_scope, permission_scope)
