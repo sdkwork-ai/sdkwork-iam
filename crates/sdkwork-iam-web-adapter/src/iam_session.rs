@@ -392,10 +392,14 @@ async fn find_iam_context_from_oauth_jwt(pg: &PgPool, token: &str) -> Option<Iam
     }
     let now_unix = (current_millis() / 1000) as i64;
     let claims = verify_oauth_access_token_claims_for_database(pg, token, now_unix).await?;
-    let context = iam_context_from_token_claims(&claims)?;
-    if !oauth_jwt_session_is_active(pg, &context).await {
-        return None;
-    }
+    let mut context = iam_context_from_token_claims(&claims)?;
+    // Scope is deliberately *not* taken from the claims (IAM_SPEC §5.2): the
+    // claims carry an identity envelope only, and the authoritative scope is
+    // resolved from the session row. A subject whose scope cannot be resolved
+    // is rejected rather than degraded to an empty scope.
+    let (data_scope, permission_scope) = resolve_session_authorization_scope(pg, &context).await?;
+    context.data_scope = data_scope;
+    context.permission_scope = permission_scope;
     if !oauth_access_token_grant_is_active(pg, &hash_token(token)).await {
         return None;
     }
@@ -505,29 +509,45 @@ fn oauth_access_token_claims_are_valid(payload: &Value, now_unix: i64) -> bool {
         && validate_token_version_json(payload, &TokenVersionPolicy::standard()).is_ok()
 }
 
-async fn oauth_jwt_session_is_active(pg: &PgPool, context: &IamAppContext) -> bool {
+/// IAM_SPEC §5.6: the authorization scope of an OAuth bearer subject is a
+/// server-side fact read from the authoritative session row, never a claim.
+/// Liveness and scope come from the *same* row in a *single* query, so a
+/// subject that passes this gate cannot be authorized against a row it did not
+/// pass the gate for. A subject whose row is missing/inactive resolves to
+/// `None`, which makes the caller reject the request instead of degrading to an
+/// empty (i.e. silently ungated) scope.
+async fn resolve_session_authorization_scope(
+    pg: &PgPool,
+    context: &IamAppContext,
+) -> Option<(Vec<String>, Vec<String>)> {
     if context.session_id.starts_with("oauth:") {
-        return false;
+        return None;
     }
-    sqlx::query_scalar::<_, i32>(
-        "SELECT 1 FROM iam_session s \
-         WHERE s.id = $1 AND s.tenant_id = $2 AND s.revoked_at IS NULL \
-           AND s.expires_at::timestamptz > $3::timestamptz \
-           AND (s.principal_kind = 'service_account' OR EXISTS ( \
-             SELECT 1 FROM iam_user u \
-             WHERE u.id = COALESCE(s.principal_id, s.user_id) AND u.tenant_id = s.tenant_id \
-               AND u.status = 'active' AND u.is_deleted = 0)) \
-         LIMIT 1",
-    )
-    .bind(&context.session_id)
-    .bind(&context.tenant_id)
-    .bind(current_timestamp_utc())
-    .fetch_optional(pg)
-    .await
-    .ok()
-    .flatten()
-    .is_some()
+    let row = sqlx::query(IAM_SESSION_AUTHORIZATION_SCOPE_SELECT)
+        .bind(&context.session_id)
+        .bind(&context.tenant_id)
+        .bind(current_timestamp_utc())
+        .fetch_optional(pg)
+        .await
+        .ok()
+        .flatten()?;
+    Some((
+        json_string_vec_from_row(&row, 0),
+        json_string_vec_from_row(&row, 1),
+    ))
 }
+
+/// Predicate kept byte-identical to the app-api main-path session lookup so
+/// liveness can never agree in one path and disagree in the other.
+const IAM_SESSION_AUTHORIZATION_SCOPE_SELECT: &str =
+    "SELECT s.data_scope_json, s.permission_scope_json FROM iam_session s \
+     WHERE s.id = $1 AND s.tenant_id = $2 AND s.revoked_at IS NULL \
+       AND s.expires_at::timestamptz > $3::timestamptz \
+       AND (s.principal_kind = 'service_account' OR EXISTS ( \
+         SELECT 1 FROM iam_user u \
+         WHERE u.id = COALESCE(s.principal_id, s.user_id) AND u.tenant_id = s.tenant_id \
+           AND u.status = 'active' AND u.is_deleted = 0)) \
+     LIMIT 1";
 
 fn iam_context_from_token_claims(claims: &Value) -> Option<IamAppContext> {
     let tenant_id = claim_string_value(claims, &["tenant_id"])?;
@@ -564,14 +584,14 @@ fn iam_context_from_token_claims(claims: &Value) -> Option<IamAppContext> {
         "system" => AuthLevel::System,
         _ => AuthLevel::Password,
     };
-    let data_scope = claims
-        .get("data_scope")
-        .and_then(json_value_to_string_vec)
-        .unwrap_or_default();
-    let permission_scope = claims
-        .get("permission_scope")
-        .and_then(json_value_to_string_vec)
-        .unwrap_or_default();
+    // IAM_SPEC §5.6: authorization scope is server-resolved, never a claim.
+    // Reading it from the claims here would silently re-introduce a second
+    // source of truth — and, with the claims slimmed per §5.2, an empty scope.
+    // `find_iam_context_from_oauth_jwt` overwrites both fields from the
+    // authoritative session row; anything that builds a context from claims
+    // without doing so must be treated as having no scope at all.
+    let data_scope = Vec::new();
+    let permission_scope = Vec::new();
     let normalized_organization_id = organization_id.and_then(|value| {
         if crate::is_blank(Some(value.as_str())) {
             None
@@ -608,25 +628,6 @@ fn iam_context_from_token_claims(claims: &Value) -> Option<IamAppContext> {
             .and_then(|value| value.as_bool())
             .unwrap_or(false),
     })
-}
-
-fn json_value_to_string_vec(value: &Value) -> Option<Vec<String>> {
-    match value {
-        Value::Array(items) => Some(
-            items
-                .iter()
-                .filter_map(|item| item.as_str().map(str::to_owned))
-                .collect(),
-        ),
-        Value::String(text) => Some(
-            text.split(',')
-                .map(str::trim)
-                .filter(|part| !part.is_empty())
-                .map(str::to_owned)
-                .collect(),
-        ),
-        _ => None,
-    }
 }
 
 fn verify_local_session_token_flexible(
@@ -1013,6 +1014,9 @@ mod tests {
         )
     }
 
+    // token-claims-gate: legacy-fixture — models a pre-slimming token (with the
+    // retired sid/sub/principal_id aliases plus scope claims) so this test can
+    // assert the scope is no longer an authorization source (IAM_SPEC §5.2/§5.6).
     fn legacy_payload_with_user_id(user_id: &str, now_unix: i64) -> Value {
         json!({
             "app_id": "sdkwork-cloudrouter",

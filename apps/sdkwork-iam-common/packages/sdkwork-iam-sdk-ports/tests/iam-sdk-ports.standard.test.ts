@@ -732,6 +732,22 @@ function createBackendIamManagementResources(options?: { usersRoles?: boolean })
         retrieve: vi.fn(),
         update: vi.fn(),
       },
+      providerAccounts: {
+        create: vi.fn(),
+        delete: vi.fn(),
+        list: vi.fn(),
+        resolve: vi.fn(),
+        retrieve: vi.fn(),
+        setDefault: vi.fn(),
+        update: vi.fn(),
+        credentials: {
+          create: vi.fn(),
+          list: vi.fn(),
+        },
+      },
+      providerCredentials: {
+        revoke: vi.fn(),
+      },
       accountBindingPolicy: {
         retrieve: vi.fn(),
         update: vi.fn(),

@@ -68,13 +68,16 @@ export function createIamAppSdkAdapter(client: unknown): IamAppSdkClient {
   const authSessionsLoginContextSelection = toRecord(authSessions.loginContextSelection);
   const authSessionsOrganizationSelection = toRecord(authSessions.organizationSelection);
   const authSessionsCurrent = toRecord(authSessions.current);
+  const authVerificationCodeRequests = toRecord(auth.verificationCodeRequests);
   const oauth = toRecord(source.oauth);
   const oauthProviders = toRecord(oauth.providers);
   const oauthAuthorizationUrls = toRecord(oauth.authorizationUrls);
+  const oauthScanLoginModes = toRecord(oauth.scanLoginModes);
   const oauthDeviceAuthorizations = toRecord(oauth.deviceAuthorizations);
   const oauthDeviceAuthorizationScans = toRecord(oauthDeviceAuthorizations.scans);
   const oauthDeviceAuthorizationPasswordCompletions = toRecord(oauthDeviceAuthorizations.passwordCompletions);
   const oauthDeviceAuthorizationSessionExchanges = toRecord(oauthDeviceAuthorizations.sessionExchanges);
+  const oauthDeviceAuthorizationSessionCompletions = toRecord(oauthDeviceAuthorizations.sessionCompletions);
   const oauthCallbacks = toRecord(oauth.callbacks);
   const oauthMiniProgramSessions = toRecord(oauth.miniProgramSessions);
   const oauthSessions = toRecord(oauth.sessions);
@@ -113,6 +116,13 @@ export function createIamAppSdkAdapter(client: unknown): IamAppSdkClient {
       },
       registrations: {
         create: standardResourceMethod(authRegistrations, "create", "appbaseApp.auth.registrations.create"),
+      },
+      verificationCodeRequests: {
+        create: standardResourceMethod(
+          authVerificationCodeRequests,
+          "create",
+          "appbaseApp.auth.verificationCodeRequests.create",
+        ),
       },
       sessions: {
         create: standardResourceMethod(authSessions, "create", "appbaseApp.auth.sessions.create"),
@@ -177,6 +187,14 @@ export function createIamAppSdkAdapter(client: unknown): IamAppSdkClient {
             "deviceAuthorizationId",
           ),
         },
+        sessionCompletions: {
+          create: pathResourceMethod(
+            oauthDeviceAuthorizationSessionCompletions,
+            "create",
+            "appbaseApp.oauth.deviceAuthorizations.sessionCompletions.create",
+            "deviceAuthorizationId",
+          ),
+        },
       },
       callbacks: {
         retrieve: standardResourceMethod(oauthCallbacks, "retrieve", "appbaseApp.oauth.callbacks.retrieve"),
@@ -187,6 +205,9 @@ export function createIamAppSdkAdapter(client: unknown): IamAppSdkClient {
       },
       sessions: {
         create: standardResourceMethod(oauthSessions, "create", "appbaseApp.oauth.sessions.create"),
+      },
+      scanLoginModes: {
+        list: standardResourceMethod(oauthScanLoginModes, "list", "appbaseApp.oauth.scanLoginModes.list"),
       },
       authorizations: {
         completions: {
@@ -338,6 +359,22 @@ export function createIamBackendSdkAdapter(client: unknown): IamBackendSdkClient
         retrieve: standardResourceMethod(toRecord(iam.policies), "retrieve", "appbaseBackend.iam.policies.retrieve"),
         update: standardResourceMethod(toRecord(iam.policies), "update", "appbaseBackend.iam.policies.update"),
       },
+      providerAccounts: {
+        create: standardResourceMethod(toRecord(iam.providerAccounts), "create", "appbaseBackend.iam.providerAccounts.create"),
+        delete: standardResourceMethod(toRecord(iam.providerAccounts), "delete", "appbaseBackend.iam.providerAccounts.delete"),
+        list: standardResourceMethod(toRecord(iam.providerAccounts), "list", "appbaseBackend.iam.providerAccounts.list"),
+        resolve: standardResourceMethod(toRecord(iam.providerAccounts), "resolve", "appbaseBackend.iam.providerAccounts.resolve"),
+        retrieve: standardResourceMethod(toRecord(iam.providerAccounts), "retrieve", "appbaseBackend.iam.providerAccounts.retrieve"),
+        setDefault: standardResourceMethod(toRecord(iam.providerAccounts), "setDefault", "appbaseBackend.iam.providerAccounts.setDefault"),
+        update: standardResourceMethod(toRecord(iam.providerAccounts), "update", "appbaseBackend.iam.providerAccounts.update"),
+        credentials: {
+          create: standardResourceMethod(toRecord(iam.providerAccounts?.credentials), "create", "appbaseBackend.iam.providerAccounts.credentials.create"),
+          list: standardResourceMethod(toRecord(iam.providerAccounts?.credentials), "list", "appbaseBackend.iam.providerAccounts.credentials.list"),
+        },
+      },
+      providerCredentials: {
+        revoke: standardResourceMethod(toRecord(iam.providerCredentials), "revoke", "appbaseBackend.iam.providerCredentials.revoke"),
+      },
       accountBindingPolicy: {
         retrieve: standardResourceMethod(toRecord(iam.accountBindingPolicy), "retrieve", "appbaseBackend.iam.accountBindingPolicy.retrieve"),
         update: standardResourceMethod(toRecord(iam.accountBindingPolicy), "update", "appbaseBackend.iam.accountBindingPolicy.update"),
@@ -401,10 +438,12 @@ export function createIamBackendSdkAdapter(client: unknown): IamBackendSdkClient
         },
       },
       users: {
+        ban: standardResourceMethod(toRecord(iam.users), "ban", "appbaseBackend.iam.users.ban"),
         create: standardResourceMethod(toRecord(iam.users), "create", "appbaseBackend.iam.users.create"),
         delete: standardResourceMethod(toRecord(iam.users), "delete", "appbaseBackend.iam.users.delete"),
         list: standardResourceMethod(toRecord(iam.users), "list", "appbaseBackend.iam.users.list"),
         retrieve: standardResourceMethod(toRecord(iam.users), "retrieve", "appbaseBackend.iam.users.retrieve"),
+        unban: standardResourceMethod(toRecord(iam.users), "unban", "appbaseBackend.iam.users.unban"),
         update: standardResourceMethod(toRecord(iam.users), "update", "appbaseBackend.iam.users.update"),
       },
       oauth: oauthAdapted,

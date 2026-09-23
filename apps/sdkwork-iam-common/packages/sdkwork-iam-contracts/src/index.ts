@@ -705,6 +705,22 @@ export const SDKWORK_IAM_API_ROUTES = {
       retrieve: operation("GET", `${backend}/iam/policies/{policyId}`, "iam", "policies.retrieve", "dualToken"),
       update: operation("PATCH", `${backend}/iam/policies/{policyId}`, "iam", "policies.update", "dualToken"),
     },
+    providerAccounts: {
+      create: operation("POST", `${backend}/iam/provider_accounts`, "iam", "providerAccounts.create", "dualToken"),
+      delete: operation("DELETE", `${backend}/iam/provider_accounts/{providerAccountId}`, "iam", "providerAccounts.delete", "dualToken"),
+      list: operation("GET", `${backend}/iam/provider_accounts`, "iam", "providerAccounts.list", "dualToken"),
+      resolve: operation("GET", `${backend}/iam/provider_accounts/resolve`, "iam", "providerAccounts.resolve", "dualToken"),
+      retrieve: operation("GET", `${backend}/iam/provider_accounts/{providerAccountId}`, "iam", "providerAccounts.retrieve", "dualToken"),
+      setDefault: operation("POST", `${backend}/iam/provider_accounts/{providerAccountId}/default`, "iam", "providerAccounts.setDefault", "dualToken"),
+      update: operation("PATCH", `${backend}/iam/provider_accounts/{providerAccountId}`, "iam", "providerAccounts.update", "dualToken"),
+      credentials: {
+        create: operation("POST", `${backend}/iam/provider_accounts/{providerAccountId}/credentials`, "iam", "providerAccounts.credentials.create", "dualToken"),
+        list: operation("GET", `${backend}/iam/provider_accounts/{providerAccountId}/credentials`, "iam", "providerAccounts.credentials.list", "dualToken"),
+      },
+    },
+    providerCredentials: {
+      revoke: operation("POST", `${backend}/iam/provider_credentials/{credentialId}/revoke`, "iam", "providerCredentials.revoke", "dualToken"),
+    },
     accountBindingPolicy: {
       retrieve: operation("GET", `${backend}/iam/account_binding_policy`, "iam", "accountBindingPolicy.retrieve", "dualToken"),
       update: operation("PATCH", `${backend}/iam/account_binding_policy`, "iam", "accountBindingPolicy.update", "dualToken"),
@@ -1341,3 +1357,14 @@ export type {
   IamLoginContextSelectionChallengeType,
   IamLoginContextSelectionOption,
 } from './login-context-challenge.ts';
+
+/**
+ * Cloud account center vocabulary.
+ *
+ * The pickers every cloud-account surface offers — vendors, regions, identity
+ * shapes, credential fields — restated once from the server's own validation
+ * list, so a console cannot offer a value the server would reject. Re-exported
+ * wildcard because consumers take names off it by the dozen and a list
+ * maintained here would drift from the module it restates.
+ */
+export * from './cloud-account-vocabulary.ts';

@@ -4,6 +4,7 @@ mod api_key_lookup;
 mod app_manifest;
 mod application_registry;
 mod authorization_policy;
+mod authorization_scope;
 mod dev_runtime;
 mod embedded_bootstrap;
 mod ephemeral_rate_limit;
@@ -81,6 +82,9 @@ pub use application_registry::{
     PLATFORM_APPLICATION_KEY, PLATFORM_APPLICATION_TEMPLATE_ID,
 };
 pub use authorization_policy::IamAuthorizationPolicy;
+pub use authorization_scope::{
+    iam_authorization_scope_provider_from_env, IamSessionAuthorizationScopeSource,
+};
 pub use dev_runtime::allows_dev_authentication_fallback;
 pub use embedded_bootstrap::{
     connect_iam_postgres_bootstrap_pool, discover_application_manifest_roots,

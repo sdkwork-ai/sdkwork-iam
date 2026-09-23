@@ -915,6 +915,18 @@ async fn sign_oauth_access_token(
     context: &IamAppContext,
     audience: &str,
 ) -> Result<String, String> {
+    let token = sign_oauth_access_token_payload(pg, context, audience).await?;
+    // IAM_SPEC §5.2 issuer-side assertion: an OAuth access token is also a
+    // bearer credential rendered into the entrypoint header block.
+    crate::access_token_issue::ensure_entrypoint_token_budget(&token)?;
+    Ok(token)
+}
+
+async fn sign_oauth_access_token_payload(
+    pg: &PgPool,
+    context: &IamAppContext,
+    audience: &str,
+) -> Result<String, String> {
     let issued_at = current_unix_seconds();
     let expires_at = issued_at + OAUTH_ACCESS_TOKEN_TTL_SECONDS;
     let payload = json!({
@@ -928,7 +940,6 @@ async fn sign_oauth_access_token(
         "iss": oauth_issuer_base_url(),
         "login_scope": login_scope_to_string(&context.login_scope),
         "organization_id": context.organization_id.clone().unwrap_or_else(|| "0".to_string()),
-        "permission_scope": context.permission_scope,
         "scope": "openid profile email",
         "session_id": context.session_id,
         "sub": context.user_id,

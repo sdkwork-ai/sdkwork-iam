@@ -235,6 +235,22 @@ export interface SdkworkIamService {
       list(params?: Record<string, unknown>): Promise<unknown>;
       update(assignmentId: string, body: Record<string, unknown>): Promise<unknown>;
     };
+    providerAccounts: {
+      create(body: Record<string, unknown>): Promise<unknown>;
+      delete(providerAccountId: string): Promise<unknown>;
+      list(params?: Record<string, unknown>): Promise<unknown>;
+      resolve(params: Record<string, unknown>): Promise<unknown>;
+      retrieve(providerAccountId: string): Promise<unknown>;
+      setDefault(providerAccountId: string, body: Record<string, unknown>): Promise<unknown>;
+      update(providerAccountId: string, body: Record<string, unknown>): Promise<unknown>;
+      credentials: {
+        create(providerAccountId: string, body: Record<string, unknown>): Promise<unknown>;
+        list(providerAccountId: string, params?: Record<string, unknown>): Promise<unknown>;
+      };
+    };
+    providerCredentials: {
+      revoke(credentialId: string): Promise<unknown>;
+    };
     policies: {
       create(body: Record<string, unknown>): Promise<unknown>;
       delete(policyId: string): Promise<unknown>;
@@ -647,6 +663,22 @@ export function createSdkworkIamService(input: CreateSdkworkIamServiceInput): Sd
         create: (body) => callBackendIam(backendIam, (iam) => iam.positionAssignments, "create", "iam.positionAssignments.create", body),
         list: (params) => callRaw(appIam?.positionAssignments, "list", "appbaseAppClient.iam.positionAssignments.list", iamListQuery(params)),
         update: (assignmentId, body) => callBackendIam(backendIam, (iam) => iam.positionAssignments, "update", "iam.positionAssignments.update", assignmentId, body),
+      },
+      providerAccounts: {
+        create: (body) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "create", "iam.providerAccounts.create", body),
+        delete: (providerAccountId) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "delete", "iam.providerAccounts.delete", providerAccountId),
+        list: (params) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "list", "iam.providerAccounts.list", iamListQuery(params)),
+        resolve: (params) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "resolve", "iam.providerAccounts.resolve", params),
+        retrieve: (providerAccountId) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "retrieve", "iam.providerAccounts.retrieve", providerAccountId),
+        setDefault: (providerAccountId, body) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "setDefault", "iam.providerAccounts.setDefault", providerAccountId, body),
+        update: (providerAccountId, body) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "update", "iam.providerAccounts.update", providerAccountId, body),
+        credentials: {
+          create: (providerAccountId, body) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.credentials, "create", "iam.providerAccounts.credentials.create", providerAccountId, body),
+          list: (providerAccountId, params) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.credentials, "list", "iam.providerAccounts.credentials.list", providerAccountId, iamListQuery(params)),
+        },
+      },
+      providerCredentials: {
+        revoke: (credentialId) => callBackendIam(backendIam, (iam) => iam.providerCredentials, "revoke", "iam.providerCredentials.revoke", credentialId, {}),
       },
       policies: {
         create: (body) => callBackendIam(backendIam, (iam) => iam.policies, "create", "iam.policies.create", body),

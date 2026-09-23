@@ -911,6 +911,12 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         "iam.oauth.resourceAccounts.update",
     ),
     HttpRoute::dual_token(
+        HttpMethod::Delete,
+        "/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}",
+        "iam.oauth",
+        "iam.oauth.resourceAccounts.delete",
+    ),
+    HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus",
         "iam.oauth",

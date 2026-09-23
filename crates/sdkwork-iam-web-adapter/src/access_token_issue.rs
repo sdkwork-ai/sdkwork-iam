@@ -236,6 +236,8 @@ pub async fn issue_standalone_bootstrap_access_credential(
     let access_token =
         sign_local_session_token_with_ttl(&signing_key, "access", &context, ttl as u128);
     let auth_token = sign_local_session_token_with_ttl(&signing_key, "auth", &context, ttl as u128);
+    ensure_entrypoint_token_budget(&access_token)?;
+    ensure_entrypoint_token_budget(&auth_token)?;
     let refresh_token = generate_opaque_token("refresh");
 
     let auth_token_hash = hash_token(&auth_token);
@@ -557,6 +559,18 @@ fn encode_jwt_json(value: &Value) -> String {
     URL_SAFE_NO_PAD.encode(serde_json::to_vec(value).expect("JWT JSON should serialize"))
 }
 
+/// IAM_SPEC §5.2 issuer-side assertion: a rendered session token `MUST` fit the
+/// entrypoint header budget. Identity-only claims leave ~10x headroom; tripping
+/// this means dynamic authorization content was signed back into the payload.
+pub(crate) fn ensure_entrypoint_token_budget(token: &str) -> Result<(), String> {
+    sdkwork_web_core::validate_rendered_token_bytes(token.len()).map_err(|error| {
+        format!(
+            "issued session token rejected by issuer budget: {}",
+            error.message
+        )
+    })
+}
+
 pub(crate) fn hash_token(token: &str) -> String {
     let digest = Sha256::digest(token.as_bytes());
     format!("{:x}", digest)
@@ -702,10 +716,19 @@ mod tests {
         ] {
             assert!(payload.get(key).is_some(), "claim {key} should be present");
         }
-        for key in ["sid", "sub", "principal_id", "principal_kind"] {
+        for key in [
+            "sid",
+            "sub",
+            "principal_id",
+            "principal_kind",
+            // Variable-length authorization content is server-resolved
+            // (IAM_SPEC §5.2): signing it in is what produced HTTP 431.
+            "data_scope",
+            "permission_scope",
+        ] {
             assert!(
                 payload.get(key).is_none(),
-                "redundant claim {key} should be absent"
+                "forbidden claim {key} should be absent"
             );
         }
         // Scope arrays must no longer be embedded in the local dual-token JWT:
@@ -727,5 +750,54 @@ mod tests {
         // on the reverse-proxy edge: the full 3-part compact JWT must stay
         // under 8 KiB even for an unusually large scope set.
         assert!(token.len() < 8192, "token too long: {}", token.len());
+    }
+
+    /// IAM_SPEC §5.2: the authored payload is identity-only, so a rendered token
+    /// must leave an order of magnitude of headroom under the entrypoint budget.
+    /// Before the fix a tenant super-admin token rendered at 7882 bytes, i.e.
+    /// 96% of the Nginx `large_client_header_buffers` single-buffer budget and
+    /// 220 granted permission codes away from a hard `431`.
+    #[test]
+    fn rendered_session_token_stays_far_below_the_entrypoint_budget() {
+        // Worst realistic case: a max-length permission scope must no longer move
+        // the rendered size at all, because scope is not a claim any more.
+        let wide_scope: Vec<String> = (0..2_000)
+            .map(|index| format!("domain.res{index}.read"))
+            .collect();
+        let context = IamAppContext::new(
+            "100001".to_owned(),
+            Some("9"),
+            "1".to_owned(),
+            "sdkwork-session-SBKo9fAd5gwCs2KVeErhlUdanxpB4lmEfEqymi-Ds-w".to_owned(),
+            "sdkwork-webserver-pc".to_owned(),
+            Environment::Prod,
+            DeploymentMode::Saas,
+            AuthLevel::Password,
+            wide_scope.clone(),
+            wide_scope,
+        );
+        let signing_key = TenantSigningKey {
+            kid: "100001:local-hs256:primary".to_owned(),
+            secret: b"0123456789abcdef0123456789abcdef".to_vec(),
+        };
+        let token = sign_local_session_token_with_ttl(
+            &signing_key,
+            "access",
+            &context,
+            LOCAL_TOKEN_TTL_SECONDS,
+        );
+        ensure_entrypoint_token_budget(&token).expect("identity-only token must pass the budget");
+        assert!(
+            token.len() < 1024,
+            "identity-only token rendered {} bytes; expected well under 1 KiB",
+            token.len()
+        );
+        // Two of these plus a realistic browser header set must fit the whole block.
+        sdkwork_web_core::validate_dual_token_header_budget(
+            token.len(),
+            token.len(),
+            sdkwork_web_core::DUAL_TOKEN_HEADER_NAME_BYTES,
+        )
+        .expect("dual-token block must fit");
     }
 }

@@ -152,6 +152,8 @@ pub(crate) async fn create_session_record(
     let signing_key = ensure_tenant_signing_key(pg, &user.tenant_id).await?;
     let access_token = sign_local_session_token(&signing_key, "access", &context);
     let auth_token = sign_local_session_token(&signing_key, "auth", &context);
+    ensure_entrypoint_token_budget(&access_token)?;
+    ensure_entrypoint_token_budget(&auth_token)?;
     let refresh_token = generate_opaque_token("refresh");
 
     let auth_token_hash = hash_token(&auth_token);
@@ -761,6 +763,8 @@ pub(crate) async fn rotate_current_session_context(
     let signing_key = ensure_tenant_signing_key(pg, &session.user.tenant_id).await?;
     let access_token = sign_local_session_token(&signing_key, "access", &context);
     let auth_token = sign_local_session_token(&signing_key, "auth", &context);
+    ensure_entrypoint_token_budget(&access_token)?;
+    ensure_entrypoint_token_budget(&auth_token)?;
     let refresh_token = generate_opaque_token("refresh");
     let auth_token_hash = hash_token(&auth_token);
     let access_token_hash = hash_token(&access_token);
@@ -1117,6 +1121,14 @@ pub(crate) fn encode_jwt_json(value: &Value) -> String {
 fn decode_jwt_json(part: &str) -> Option<Value> {
     let bytes = URL_SAFE_NO_PAD.decode(part).ok()?;
     serde_json::from_slice(&bytes).ok()
+}
+
+/// IAM_SPEC §5.2 issuer-side assertion: a rendered session token `MUST` fit the
+/// entrypoint header budget. Identity-only claims leave ~10x headroom; tripping
+/// this means dynamic authorization content was signed back into the payload.
+fn ensure_entrypoint_token_budget(token: &str) -> Result<(), String> {
+    sdkwork_web_core::validate_rendered_token_bytes(token.len())
+        .map_err(|error| format!("issued session token rejected by issuer budget: {}", error.message))
 }
 
 pub(crate) fn jwt_header_kid(token: &str) -> Option<String> {

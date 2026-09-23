@@ -7,7 +7,7 @@ import {
   createIamBackendSdkAdapter,
   createIamSdkAdapters,
   unwrapIamSdkResponse,
-} from "../src/index";
+} from "../src/index.ts";
 import { createGeneratedBackendOauthClient } from "./backend-oauth-test-resources";
 
 describe("SDKWork IAM generated SDK adapters", () => {
@@ -349,9 +349,18 @@ describe("SDKWork IAM generated SDK adapters", () => {
       }
     }
 
+    class OauthDeviceAuthorizationSessionCompletionsApi {
+      constructor(private readonly apiTransport: typeof transport) {}
+
+      create(deviceAuthorizationId: string, body: Record<string, unknown>) {
+        return this.apiTransport.request("oauth.deviceAuthorizations.sessionCompletions.create", [deviceAuthorizationId, body]);
+      }
+    }
+
     class OauthDeviceAuthorizationsApi {
       readonly passwordCompletions: OauthDeviceAuthorizationPasswordCompletionsApi;
       readonly sessionExchanges: OauthDeviceAuthorizationSessionExchangesApi;
+      readonly sessionCompletions: OauthDeviceAuthorizationSessionCompletionsApi;
       readonly scans: {
         create: (deviceAuthorizationId: string, body?: Record<string, unknown>) => Promise<unknown>;
       };
@@ -359,6 +368,7 @@ describe("SDKWork IAM generated SDK adapters", () => {
       constructor(private readonly apiTransport: typeof transport) {
         this.passwordCompletions = new OauthDeviceAuthorizationPasswordCompletionsApi(apiTransport);
         this.sessionExchanges = new OauthDeviceAuthorizationSessionExchangesApi(apiTransport);
+        this.sessionCompletions = new OauthDeviceAuthorizationSessionCompletionsApi(apiTransport);
         this.scans = {
           create: (deviceAuthorizationId: string, body?: Record<string, unknown>) =>
             this.apiTransport.request("oauth.deviceAuthorizations.scans.create", [deviceAuthorizationId, body]),
@@ -677,11 +687,29 @@ describe("SDKWork IAM generated SDK adapters", () => {
           },
         },
         users: {
+          ban: vi.fn().mockResolvedValue({ data: true }),
           create: vi.fn().mockResolvedValue({ data: { id: "1" } }),
           delete: vi.fn().mockResolvedValue({ data: true }),
           list: vi.fn().mockResolvedValue({ data: [] }),
           retrieve: vi.fn().mockResolvedValue({ data: { id: "u1" } }),
+          unban: vi.fn().mockResolvedValue({ data: true }),
           update: vi.fn().mockResolvedValue({ data: { id: "u1" } }),
+        },
+        providerAccounts: {
+          create: vi.fn().mockResolvedValue({ data: { id: "pa-1" } }),
+          delete: vi.fn().mockResolvedValue({ data: true }),
+          list: vi.fn().mockResolvedValue({ data: [] }),
+          resolve: vi.fn().mockResolvedValue({ data: { id: "pa-1" } }),
+          retrieve: vi.fn().mockResolvedValue({ data: { id: "pa-1" } }),
+          setDefault: vi.fn().mockResolvedValue({ data: { id: "pa-1" } }),
+          update: vi.fn().mockResolvedValue({ data: { id: "pa-1" } }),
+          credentials: {
+            create: vi.fn().mockResolvedValue({ data: { id: "pc-1" } }),
+            list: vi.fn().mockResolvedValue({ data: [] }),
+          },
+        },
+        providerCredentials: {
+          revoke: vi.fn().mockResolvedValue({ data: true }),
         },
       },
       iamOauth: {
@@ -914,6 +942,9 @@ function createGeneratedAppClient(overrides: AnyRecord = {}): AnyRecord {
         },
         refresh: vi.fn().mockResolvedValue({ data: null }),
       },
+      verificationCodeRequests: {
+        create: vi.fn().mockResolvedValue({ data: null }),
+      },
     },
     oauth: {
       providers: {
@@ -934,6 +965,9 @@ function createGeneratedAppClient(overrides: AnyRecord = {}): AnyRecord {
         sessionExchanges: {
           create: vi.fn().mockResolvedValue({ data: null }),
         },
+        sessionCompletions: {
+          create: vi.fn().mockResolvedValue({ data: null }),
+        },
       },
       callbacks: {
         create: vi.fn().mockResolvedValue({ data: null }),
@@ -944,6 +978,9 @@ function createGeneratedAppClient(overrides: AnyRecord = {}): AnyRecord {
       },
       sessions: {
         create: vi.fn().mockResolvedValue({ data: null }),
+      },
+      scanLoginModes: {
+        list: vi.fn().mockResolvedValue({ data: null }),
       },
       authorizations: {
         completions: {
@@ -1135,11 +1172,29 @@ function createGeneratedBackendClient(overrides: AnyRecord = {}): AnyRecord {
         },
       },
       users: {
+        ban: vi.fn().mockResolvedValue({ data: null }),
         create: vi.fn().mockResolvedValue({ data: null }),
         delete: vi.fn().mockResolvedValue({ data: null }),
         list: vi.fn().mockResolvedValue({ data: null }),
         retrieve: vi.fn().mockResolvedValue({ data: null }),
+        unban: vi.fn().mockResolvedValue({ data: null }),
         update: vi.fn().mockResolvedValue({ data: null }),
+      },
+      providerAccounts: {
+        create: vi.fn().mockResolvedValue({ data: null }),
+        delete: vi.fn().mockResolvedValue({ data: null }),
+        list: vi.fn().mockResolvedValue({ data: null }),
+        resolve: vi.fn().mockResolvedValue({ data: null }),
+        retrieve: vi.fn().mockResolvedValue({ data: null }),
+        setDefault: vi.fn().mockResolvedValue({ data: null }),
+        update: vi.fn().mockResolvedValue({ data: null }),
+        credentials: {
+          create: vi.fn().mockResolvedValue({ data: null }),
+          list: vi.fn().mockResolvedValue({ data: null }),
+        },
+      },
+      providerCredentials: {
+        revoke: vi.fn().mockResolvedValue({ data: null }),
       },
     },
     iamOauth: {

@@ -223,6 +223,22 @@ export interface IamBackendIamResourceClient {
     create?: IamSdkMethod;
     update?: IamSdkMethod;
   };
+  providerAccounts?: {
+    create?: IamSdkMethod;
+    delete?: IamSdkMethod;
+    list?: IamSdkMethod;
+    resolve?: IamSdkMethod;
+    retrieve?: IamSdkMethod;
+    setDefault?: IamSdkMethod;
+    update?: IamSdkMethod;
+    credentials?: {
+      create?: IamSdkMethod;
+      list?: IamSdkMethod;
+    };
+  };
+  providerCredentials?: {
+    revoke?: IamSdkMethod;
+  };
   roles?: {
     create?: IamSdkMethod;
     delete?: IamSdkMethod;
@@ -273,10 +289,12 @@ export interface IamBackendIamResourceClient {
     };
   };
   users?: {
+    ban?: IamSdkMethod;
     create?: IamSdkMethod;
     delete?: IamSdkMethod;
     list?: IamSdkMethod;
     retrieve?: IamSdkMethod;
+    unban?: IamSdkMethod;
     update?: IamSdkMethod;
   };
   oauth?: IamBackendOAuthResourceClient;
@@ -294,6 +312,8 @@ export interface IamSdkResourceClient {
   permissions?: IamBackendIamResourceClient["permissions"];
   positions?: NonNullable<IamAppIamResourceClient["positions"]> & NonNullable<IamBackendIamResourceClient["positions"]>;
   positionAssignments?: NonNullable<IamAppIamResourceClient["positionAssignments"]> & NonNullable<IamBackendIamResourceClient["positionAssignments"]>;
+  providerAccounts?: IamBackendIamResourceClient["providerAccounts"];
+  providerCredentials?: IamBackendIamResourceClient["providerCredentials"];
   policies?: IamBackendIamResourceClient["policies"];
   roles?: IamBackendIamResourceClient["roles"];
   roleBindings?: NonNullable<IamAppIamResourceClient["roleBindings"]> & NonNullable<IamBackendIamResourceClient["roleBindings"]>;

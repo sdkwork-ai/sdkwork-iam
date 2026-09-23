@@ -69,9 +69,18 @@ export const BACKEND_OAUTH_RESOURCE_TREE = {
   },
   "resourceAccounts": {
     "create": [],
+    "delete": [],
     "list": [],
     "update": [],
     "authorizationRefreshes": {
+      "create": []
+    },
+    "customMenus": {
+      "publish": [],
+      "retrieve": [],
+      "update": []
+    },
+    "followQrCodes": {
       "create": []
     },
     "miniProgramLoginChecks": {
@@ -84,6 +93,13 @@ export const BACKEND_OAUTH_RESOURCE_TREE = {
   "resourceAuthorizations": {
     "create": [],
     "list": [],
+    "update": []
+  },
+  "scanLoginPreviews": {
+    "create": []
+  },
+  "scanLoginSettings": {
+    "retrieve": [],
     "update": []
   },
   "scopeProfiles": {
@@ -109,6 +125,7 @@ export const BACKEND_OAUTH_RESOURCE_TREE = {
   },
   "webhookConfigs": {
     "create": [],
+    "delete": [],
     "list": [],
     "update": [],
     "verifications": {

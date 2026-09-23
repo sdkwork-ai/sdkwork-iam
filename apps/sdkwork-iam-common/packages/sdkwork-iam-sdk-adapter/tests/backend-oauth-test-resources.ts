@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-import { BACKEND_OAUTH_RESOURCE_TREE } from "../src/backend-oauth-resource-tree";
+import { BACKEND_OAUTH_RESOURCE_TREE } from "../src/backend-oauth-resource-tree.ts";
 
 export function createBackendOauthResourceMocks(
   tree: Record<string, unknown> = BACKEND_OAUTH_RESOURCE_TREE,
