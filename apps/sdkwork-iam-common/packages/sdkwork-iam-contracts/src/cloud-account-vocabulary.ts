@@ -200,10 +200,20 @@ export const IAM_CLOUD_ACCOUNT_ENVIRONMENTS = ["development", "sandbox", "produc
  * business-module-driven provider here: it serves DNS and CDN rather than object
  * storage, and without it a console could not offer an account Deploy's DNS-01
  * automation legitimately registers.
+ *
+ * `dnspod` is the second such case, and it is deliberately **not** folded into
+ * `tencent`. DNSPod issues two unrelated credential pairs against two different
+ * APIs: a Tencent Cloud CAM key (`SecretId` + `SecretKey`, which also unlocks the
+ * whole Tencent Cloud account, on `dnspod.tencentcloudapi.com`) and a DNSPod Token
+ * (`ID` + `Token`, DNS records only, on `dnsapi.cn`). Deploy's DNS-01 automation
+ * drives the second one, so it needs a picker entry whose credential labels say
+ * `ID` / `Token` — under `tencent` the same two boxes are labelled
+ * `SecretId` / `SecretKey`, which is a different pair that this adapter cannot use.
  */
 export const IAM_CLOUD_ACCOUNT_KNOWN_VENDOR_CODES = [
   "aliyun",
   "tencent",
+  "dnspod",
   "huawei",
   "volcengine",
   "aws",
@@ -243,7 +253,9 @@ export type IamCloudAccountVendor = (typeof IAM_CLOUD_ACCOUNT_KNOWN_VENDOR_CODES
  * including one this table has never heard of. A provider therefore appears here
  * with an empty list when it genuinely has no region concept (`cloudflare` is a
  * single anycast network; `minio` is wherever the operator installed it;
- * `custom` is by definition unknown), and the field degrades to free text.
+ * `dnspod` is one global resolution network whose only locality, the record line,
+ * is chosen per record rather than per account; `custom` is by definition
+ * unknown), and the field degrades to free text.
  *
  * `satisfies` rather than a type annotation: the table stays literal (so
  * `IamCloudAccountRegionCode` can be derived from it and every catalog is forced
@@ -311,14 +323,17 @@ export const IAM_CLOUD_ACCOUNT_REGIONS_BY_VENDOR = {
     "uksouth",
     "germanywestcentral",
   ],
-  // The three empty lists below are findings, not gaps waiting to be filled:
+  // The four empty lists below are findings, not gaps waiting to be filled:
   // Cloudflare is one anycast network whose placement is chosen for the
   // customer rather than declared by them; MinIO runs wherever the operator
-  // installed it; and `custom` names no provider at all. Each is a real answer
-  // to "which regions does this provider have?", and the field still works —
-  // with no candidates offered it simply stays an ordinary text input.
+  // installed it; DNSPod's only locality is the record line, which is a property
+  // of a record rather than of the account; and `custom` names no provider at
+  // all. Each is a real answer to "which regions does this provider have?", and
+  // the field still works — with no candidates offered it simply stays an
+  // ordinary text input.
   cloudflare: [],
   custom: [],
+  dnspod: [],
   google: [
     "asia-east1",
     "asia-east2",

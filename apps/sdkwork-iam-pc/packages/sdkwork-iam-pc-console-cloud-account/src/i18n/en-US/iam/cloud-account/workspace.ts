@@ -151,7 +151,7 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     regionEmpty: "No region of this provider matches. What you typed is saved as it is.",
     regionHint:
       "Candidates come from the selected provider. A region it does not list can still be typed in; changing the provider clears a region the new one does not publish.",
-    // `cloudflare`, `minio` and `custom` publish no regions at all, and the field
+    // `cloudflare`, `minio`, `dnspod` and `custom` publish no regions at all, and the field
     // degrades to free text there — where the sentence above is false in its first
     // clause, promising a list that does not exist. The second clause is kept and is
     // not a copy by accident: `iamCloudAccountVendorAcceptsRegion` answers `false`
@@ -283,11 +283,13 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
       "westeurope": "West Europe (Netherlands)",
       "westus2": "West US 2",
     },
-    // These three providers have no regions to name: Cloudflare is one anycast
-    // network, MinIO runs wherever it was installed, and `custom` names no
-    // provider at all. The empty map is the answer, not a gap.
+    // These four providers have no regions to name: Cloudflare is one anycast
+    // network, MinIO runs wherever it was installed, DNSPod's only locality is the
+    // record line (a property of a record rather than of the account), and
+    // `custom` names no provider at all. The empty map is the answer, not a gap.
     cloudflare: {},
     custom: {},
+    dnspod: {},
     google: {
       "asia-east1": "Asia East 1 (Taiwan, China)",
       "asia-east2": "Asia East 2 (Hong Kong, China)",
@@ -365,6 +367,7 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     azure: "Microsoft Azure",
     cloudflare: "Cloudflare",
     custom: "Custom",
+    dnspod: "DNSPod",
     google: "Google Cloud",
     huawei: "Huawei Cloud",
     minio: "MinIO",
@@ -451,6 +454,24 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
       hint: { ...neutralHints },
       keyIdLabel: "Access key id",
       keySecretLabel: "Secret access key",
+      secretLabel: { ...neutralSecretLabels },
+    },
+    // DNSPod and Tencent Cloud are **not the same key**, even though both belong to
+    // Tencent: a Tencent Cloud CAM key (`SecretId` + `SecretKey`) drives the whole
+    // Tencent Cloud account, while a DNSPod Token (`Key id` + `Token`) can only edit
+    // DNS records. This platform's DNS adapter speaks the DNSPod Token line
+    // (`dnsapi.cn`, DNSPod API 2.0), so these two labels are DNSPod's own words;
+    // calling them `SecretId` / `SecretKey` would send the operator to fetch a key
+    // the adapter cannot use.
+    dnspod: {
+      accountIdLabel: "DNSPod account id",
+      accountIdPlaceholder: "13490",
+      hint: {
+        ...neutralHints,
+        access_key_pair: "Create a DNSPod Token under Key Management in the DNSPod account centre (it grants DNS records only).",
+      },
+      keyIdLabel: "Key id",
+      keySecretLabel: "Token",
       secretLabel: { ...neutralSecretLabels },
     },
     // Google's two single-secret kinds each have their own page and are the most

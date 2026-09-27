@@ -1,9 +1,20 @@
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use sqlx::{types::Json, PgPool};
+use sqlx::PgPool;
 
 use crate::{state::LocalIamConfig, utils::*};
 
+/// Records an IAM audit event through the shared adapter.
+///
+/// Keep this a thin wrapper over `sdkwork_iam_web_adapter::record_audit_event`.
+/// `sqlx` caches a prepared statement per connection keyed by the SQL text alone
+/// and sends every parameter as binary, so the second, local copy of this INSERT
+/// that used to live here — identical text, but `created_at` bound as
+/// `chrono::DateTime<Utc>` instead of an RFC 3339 `String` — made both writers fail
+/// with `incorrect binary data format in bind parameter 13` (or, in the other
+/// order, `invalid byte sequence for encoding "UTF8"`) on any shared pooled
+/// connection. Audit writes are best-effort, so those failures silently dropped
+/// audit events instead of failing the request that produced them.
 pub(crate) async fn record_audit_event(
     pg: &PgPool,
     tenant_id: &str,
@@ -16,34 +27,23 @@ pub(crate) async fn record_audit_event(
     config: &LocalIamConfig,
     detail: Value,
 ) {
-    let organization_id = organization_id
-        .filter(|value| !crate::is_blank(Some(value)))
-        .unwrap_or("0");
-    let now = current_timestamp_utc();
-    let event_id = uuid::Uuid::now_v7().to_string();
-    let _ = sqlx::query(
-        "INSERT INTO iam_audit_event \
-         (id, tenant_id, organization_id, actor_user_id, action, resource_type, resource_id, \
-          request_id, app_id, environment, sharding_key, detail_json, created_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
+    let environment = environment_to_string(&environment_from_config(&config.environment));
+    if let Err(error) = sdkwork_iam_web_adapter::record_audit_event(
+        pg,
+        tenant_id,
+        organization_id,
+        actor_user_id,
+        action,
+        resource_type,
+        resource_id,
+        request_id,
+        environment,
+        detail,
     )
-    .bind(&event_id)
-    .bind(tenant_id)
-    .bind(organization_id)
-    .bind(actor_user_id)
-    .bind(action)
-    .bind(resource_type)
-    .bind(resource_id)
-    .bind(request_id)
-    .bind("")
-    .bind(environment_to_string(&environment_from_config(
-        &config.environment,
-    )))
-    .bind(tenant_id)
-    .bind(Json(detail))
-    .bind(&now)
-    .execute(pg)
-    .await;
+    .await
+    {
+        tracing::warn!(error = %error, action, "iam audit event write failed");
+    }
 }
 
 pub(crate) async fn record_session_created(

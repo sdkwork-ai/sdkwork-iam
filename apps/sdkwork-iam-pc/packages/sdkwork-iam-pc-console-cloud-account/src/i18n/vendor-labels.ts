@@ -209,7 +209,7 @@ export function credentialShapeHintFor(
  * The field is a combobox for a provider that publishes regions and free text for
  * one that does not, and the two need different sentences: the candidate sentence
  * opens by promising a list, which is precisely the thing that does not exist for
- * `cloudflare`, `minio` and `custom`. It is chosen from the same call the field's own
+ * `cloudflare`, `minio`, `dnspod` and `custom`. It is chosen from the same call the field's own
  * `options` come from, so the hint and the control cannot end up describing
  * different fields.
  */

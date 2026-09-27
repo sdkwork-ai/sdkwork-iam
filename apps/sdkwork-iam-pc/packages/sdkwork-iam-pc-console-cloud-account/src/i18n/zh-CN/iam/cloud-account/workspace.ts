@@ -139,9 +139,9 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     regionEmpty: "该服务商没有匹配的地域；直接输入的值同样会被保存。",
     regionHint:
       "候选地域来自所选服务商；也可直接输入它未列出的地域标识。切换服务商时，不属于新服务商的地域会被清空。",
-    // cloudflare / minio / custom 三家没有任何候选地域，这一栏退化成纯输入框，上面那句
+    // cloudflare / minio / dnspod / custom 四家没有任何候选地域，这一栏退化成纯输入框，上面那句
     // 「候选地域来自所选服务商」在那里第一句就是假的——它承诺了一份并不存在的清单。
-    // 后半句照旧保留，而且不是顺手抄的：`iamCloudAccountVendorAcceptsRegion` 对这三家
+    // 后半句照旧保留，而且不是顺手抄的：`iamCloudAccountVendorAcceptsRegion` 对这四家
     // 的任何非空值都返回 false，所以**切到**它们会清掉已填的地域，而操作者从一个自由输入框
     // 上看不出这件事。
     regionHintNoCandidates:
@@ -268,10 +268,12 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
       "westeurope": "西欧（荷兰）",
       "westus2": "美国西部 2",
     },
-    // 这三个服务商没有地域：Cloudflare 是全球任播网络、MinIO 装在哪就是哪、
+    // 这四个服务商没有地域：Cloudflare 是全球任播网络、MinIO 装在哪就是哪、
+    // DNSPod 唯一的地域性是「解析线路」而线路属于单条记录而非账号、
     // 自定义服务商无从得知。空表是结论，不是待补的缺口。
     cloudflare: {},
     custom: {},
+    dnspod: {},
     google: {
       "asia-east1": "亚洲东部 1（中国台湾）",
       "asia-east2": "亚洲东部 2（中国香港）",
@@ -349,6 +351,7 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     azure: "Microsoft Azure",
     cloudflare: "Cloudflare",
     custom: "自定义",
+    dnspod: "DNSPod",
     google: "Google 云",
     huawei: "华为云",
     minio: "MinIO",
@@ -427,6 +430,22 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
       hint: { ...neutralHints },
       keyIdLabel: "访问密钥 ID",
       keySecretLabel: "访问密钥 Secret",
+      secretLabel: { ...neutralSecretLabels },
+    },
+    // DNSPod 与腾讯云**不是同一把密钥**，尽管两者同属腾讯：腾讯云 API 密钥（SecretId +
+    // SecretKey）能操作整个腾讯云账号，而 DNSPod Token（密钥 ID + Token）只能改解析记录。
+    // 本平台的 DNS 适配器走的是 DNSPod Token 那条线（`dnsapi.cn`，DNSPod API 2.0），所以
+    // 这两栏照 DNSPod 自己的叫法写；把它们标成 SecretId / SecretKey 会把操作者引到另一个
+    // 页面去领一把这个适配器用不了的密钥。
+    dnspod: {
+      accountIdLabel: "DNSPod 账号 ID",
+      accountIdPlaceholder: "13490",
+      hint: {
+        ...neutralHints,
+        access_key_pair: "在 DNSPod 账号中心的「密钥管理」里创建 DNSPod Token（只授予解析记录权限）。",
+      },
+      keyIdLabel: "密钥 ID",
+      keySecretLabel: "Token",
       secretLabel: { ...neutralSecretLabels },
     },
     // Google 的两种单密钥类型**各有页面**，也最容易被混为一谈：服务账号密钥是一整份 JSON

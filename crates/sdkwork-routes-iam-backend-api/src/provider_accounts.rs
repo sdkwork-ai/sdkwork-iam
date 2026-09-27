@@ -44,7 +44,7 @@ use axum::{
 };
 use sdkwork_iam_provider_account_service::{
     create_account, find_account_for_caller, list_accounts, list_credentials, resolve_account,
-    revoke_credential, set_default_account, soft_delete_account, update_account,
+    revoke_credential, sealing_available, set_default_account, soft_delete_account, update_account,
     upsert_active_credential, AccountRequirement, AccountResolution, AccountVisibility,
     NewProviderAccount, NewProviderCredential, ProviderAccount, ProviderAccountError,
     ProviderAccountPatch, ProviderCredential, ScopeCaller, ACCOUNT_SCOPE_PLATFORM,
@@ -65,9 +65,29 @@ use crate::handlers::{
 const ACCOUNT_RESOURCE_TABLE: &str = "iam_provider_account";
 const CREDENTIAL_RESOURCE_TABLE: &str = "iam_provider_credential";
 
+/// Announces a missing credential master secret while the router is being built.
+///
+/// Credential material is stored in an AES-256-GCM envelope that fails closed, so
+/// without `SDKWORK_IAM_PROVIDER_CREDENTIAL_MASTER_SECRET` every credential write
+/// answers `iam_provider_credential_cipher_unavailable`. Without this warning the
+/// first symptom is a failing request an operator has to trace through the logs.
+/// Readiness deliberately stays green: the rest of IAM serves normally, and
+/// `/readyz` drives container health checks, so failing it would restart-loop every
+/// deployment that does not use the cloud account center.
+fn warn_when_credential_sealing_is_unavailable() {
+    if !sealing_available() {
+        tracing::error!(
+            env = sdkwork_iam_provider_account_service::MASTER_SECRET_ENV,
+            "provider credential sealing is not configured; credential writes will fail with \
+             iam_provider_credential_cipher_unavailable until this variable is set"
+        );
+    }
+}
+
 pub(crate) fn apply_provider_account_routes(
     router: Router<BackendIamState>,
 ) -> Router<BackendIamState> {
+    warn_when_credential_sealing_is_unavailable();
     router
         .route(
             "/backend/v3/api/iam/provider_accounts",
@@ -189,14 +209,28 @@ fn scope_or_error(context: &WebRequestContext) -> Result<RequestScope, Response>
 }
 
 fn provider_error(error: ProviderAccountError) -> Response {
-    if matches!(error, ProviderAccountError::Cipher(_)) {
-        // Sealing/opening failures carry operator-relevant detail (missing or
-        // wrong master secret) that must not reach the client.
-        return internal_handler_error(error.wire_code(), error.message());
+    match &error {
+        // A missing master secret is a deployment configuration fault, not an internal
+        // failure: answer 503 so a caller stops retrying a request that cannot succeed
+        // until an operator configures the deployment. The platform envelope renders
+        // every `ServiceUnavailable` detail generically, so the variable name stays in
+        // the logs and in the startup warning instead of on the wire.
+        ProviderAccountError::Cipher(_) if !sealing_available() => appbase_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            error.wire_code(),
+            error.message(),
+        ),
+        // Sealing is configured, so this is corrupt ciphertext or a rotated/incorrect
+        // key: operator-relevant detail that must not reach the client.
+        ProviderAccountError::Cipher(_) => {
+            internal_handler_error(error.wire_code(), error.message())
+        }
+        _ => {
+            let status = StatusCode::from_u16(error.http_status_code())
+                .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+            appbase_error(status, error.wire_code(), error.message())
+        }
     }
-    let status =
-        StatusCode::from_u16(error.http_status_code()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-    appbase_error(status, error.wire_code(), error.message())
 }
 
 fn read_string_array_field(body: &Value, keys: &[&str]) -> Vec<String> {

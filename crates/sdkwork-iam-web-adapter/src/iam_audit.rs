@@ -1,8 +1,29 @@
 //! Shared IAM audit and security-event writers for app-api and backend-api.
+//!
+//! Both INSERT statements are declared once, as the constants below, on purpose.
+//! `sqlx` caches a prepared statement **per connection, keyed by the SQL text
+//! alone** (`PgConnection::get_or_prepare`), sends every parameter with
+//! `PgValueFormat::Binary`, and derives each placeholder's server-side type from
+//! the `Parse` message it builds out of the bound Rust types
+//! (`PgArguments::add` → `Encode::produces` → `prepare`). Two writers that share
+//! one SQL text but bind a placeholder with different Rust types therefore hand
+//! the server a parameter whose type contradicts the cached statement, and
+//! PostgreSQL rejects it with `incorrect binary data format in bind parameter N`.
+//!
+//! So: keep every writer on these constants, and bind `created_at` as an RFC 3339
+//! `String` (`TEXT` column), never as `chrono::DateTime<Utc>`.
 
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use sqlx::{types::Json, Executor, PgPool};
+
+/// The one and only `iam_audit_event` INSERT. See the module docs before editing:
+/// changing this text, or binding `created_at` with a different Rust type, breaks
+/// every other writer that shares a pooled connection.
+const INSERT_IAM_AUDIT_EVENT_SQL: &str = "INSERT INTO iam_audit_event \
+ (id, tenant_id, organization_id, actor_user_id, action, resource_type, resource_id, \
+  request_id, app_id, environment, sharding_key, detail_json, created_at) \
+ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)";
 
 #[expect(
     clippy::too_many_arguments,
@@ -58,28 +79,23 @@ pub(crate) async fn record_audit_event_with_app_id(
         .unwrap_or("0");
     let now = chrono::Utc::now().to_rfc3339();
     let event_id = uuid::Uuid::now_v7().to_string();
-    sqlx::query(
-        "INSERT INTO iam_audit_event \
-         (id, tenant_id, organization_id, actor_user_id, action, resource_type, resource_id, \
-          request_id, app_id, environment, sharding_key, detail_json, created_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
-    )
-    .bind(&event_id)
-    .bind(tenant_id)
-    .bind(organization_id)
-    .bind(actor_user_id)
-    .bind(action)
-    .bind(resource_type)
-    .bind(resource_id)
-    .bind(request_id)
-    .bind(app_id)
-    .bind(environment)
-    .bind(tenant_id)
-    .bind(Json(detail))
-    .bind(&now)
-    .execute(pg)
-    .await
-    .map_err(|error| format!("insert iam audit event failed: {error}"))?;
+    sqlx::query(INSERT_IAM_AUDIT_EVENT_SQL)
+        .bind(&event_id)
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(actor_user_id)
+        .bind(action)
+        .bind(resource_type)
+        .bind(resource_id)
+        .bind(request_id)
+        .bind(app_id)
+        .bind(environment)
+        .bind(tenant_id)
+        .bind(Json(detail))
+        .bind(&now)
+        .execute(pg)
+        .await
+        .map_err(|error| format!("insert iam audit event failed: {error}"))?;
     Ok(())
 }
 
@@ -107,28 +123,23 @@ where
         .unwrap_or("0");
     let now = chrono::Utc::now().to_rfc3339();
     let event_id = uuid::Uuid::now_v7().to_string();
-    sqlx::query(
-        "INSERT INTO iam_audit_event \
-         (id, tenant_id, organization_id, actor_user_id, action, resource_type, resource_id, \
-          request_id, app_id, environment, sharding_key, detail_json, created_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
-    )
-    .bind(&event_id)
-    .bind(tenant_id)
-    .bind(organization_id)
-    .bind(actor_user_id)
-    .bind(action)
-    .bind(resource_type)
-    .bind(resource_id)
-    .bind(request_id)
-    .bind("")
-    .bind(environment)
-    .bind(tenant_id)
-    .bind(Json(detail))
-    .bind(&now)
-    .execute(executor)
-    .await
-    .map_err(|error| format!("insert iam audit event failed: {error}"))?;
+    sqlx::query(INSERT_IAM_AUDIT_EVENT_SQL)
+        .bind(&event_id)
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(actor_user_id)
+        .bind(action)
+        .bind(resource_type)
+        .bind(resource_id)
+        .bind(request_id)
+        .bind("")
+        .bind(environment)
+        .bind(tenant_id)
+        .bind(Json(detail))
+        .bind(&now)
+        .execute(executor)
+        .await
+        .map_err(|error| format!("insert iam audit event failed: {error}"))?;
     Ok(())
 }
 

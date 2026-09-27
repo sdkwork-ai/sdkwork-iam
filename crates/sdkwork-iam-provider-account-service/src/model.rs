@@ -139,9 +139,20 @@ pub const ENVIRONMENTS: &[&str] = &["development", "sandbox", "production"];
 /// `cloudflare` is the case in point: it serves DNS and CDN rather than object
 /// storage, and without it the console could not offer an account that Deploy
 /// legitimately registers.
+///
+/// `dnspod` is the second such case, and it is *not* a synonym for `tencent`.
+/// DNSPod issues two unrelated credential pairs: a Tencent Cloud CAM key
+/// (`SecretId` + `SecretKey`, which also unlocks the whole Tencent Cloud account)
+/// and a DNSPod Token (`ID` + `Token`, which can only edit DNS records). The DNS
+/// adapter in `sdkwork-webserver-acme-service` speaks the DNSPod Token API
+/// (`dnsapi.cn`, DNSPod API 2.0), so the account an operator registers for
+/// resolution is the DNSPod Token one. Listing it under `tencent` would label
+/// those two halves `SecretId`/`SecretKey` and send the operator to the wrong
+/// console page for the wrong kind of key.
 pub const KNOWN_VENDOR_CODES: &[&str] = &[
     "aliyun",
     "tencent",
+    "dnspod",
     "huawei",
     "volcengine",
     "aws",

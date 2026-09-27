@@ -51,6 +51,27 @@ Full repository verification:
 pnpm run verify
 ```
 
+## Provider Credential Master Secret
+
+The cloud account center (`/backend/v3/api/iam/provider_accounts/*/credentials`) stores provider
+credential material in an AES-256-GCM envelope that fails closed. With no master secret, every
+credential write answers `iam_provider_credential_cipher_unavailable` (HTTP 503), and the gateway
+logs `provider credential sealing is not configured` once while the backend router is built.
+
+Required in every environment that stores credentials:
+
+```bash
+export SDKWORK_IAM_PROVIDER_CREDENTIAL_MASTER_SECRET="$(openssl rand -base64 32)"
+```
+
+Rotate by moving the previous value into `SDKWORK_IAM_PROVIDER_CREDENTIAL_LEGACY_MASTER_SECRETS`
+(comma-separated); historical values are only tried after the active one.
+
+The variable is deliberately absent from this repository's tracked topology. `.env.postgres`
+rejects any key that is not `SDKWORK_DATABASE_*` (`unified_postgres_env::apply_env_file` panics),
+and dev topology files must not carry IAM master secrets. Supply it through the process
+environment of whatever starts the gateway.
+
 ## Notes
 
 - Unified PostgreSQL env resolution prefers `sdkwork-iam/.env.postgres`, then cloud-router profiles.

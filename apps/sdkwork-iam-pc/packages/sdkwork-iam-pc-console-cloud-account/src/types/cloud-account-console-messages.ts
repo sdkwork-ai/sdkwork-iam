@@ -323,8 +323,9 @@ export interface SdkworkIamCloudAccountConsoleMessages {
      * Shown inside the empty region field.
      *
      * Neutral about picking versus typing on purpose: the field is a combobox
-     * for the providers that publish regions and a plain input for the three
-     * that do not (`cloudflare`, `minio`, `custom`), and it is the same field.
+     * for the providers that publish regions and a plain input for the four
+     * that do not (`cloudflare`, `minio`, `dnspod`, `custom`), and it is the
+     * same field.
      */
     regionPlaceholder: string;
     /**
@@ -343,9 +344,10 @@ export interface SdkworkIamCloudAccountConsoleMessages {
     /**
      * The same hint for a provider that publishes no regions at all.
      *
-     * The field degrades to free text for `cloudflare`, `minio` and `custom`
-     * (three providers with no region concept between them: one anycast network,
-     * one deployment wherever it was installed, one nobody here has seen), and the
+     * The field degrades to free text for `cloudflare`, `minio`, `dnspod` and
+     * `custom` (four providers with no region concept between them: one anycast
+     * network, one deployment wherever it was installed, one whose only locality
+     * is per record, one nobody here has seen), and the
      * candidate sentence above is false there in its first clause — "candidates
      * come from the selected provider" promises a list that does not exist.
      *

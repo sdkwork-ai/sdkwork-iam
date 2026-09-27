@@ -216,10 +216,13 @@ describe("cloud account region table", () => {
   });
 
   it("keeps the providers with no region concept empty rather than guessed at", () => {
-    // Cloudflare is one anycast network and MinIO runs wherever it was installed,
-    // so inventing candidates for them would offer regions that cannot be named.
+    // Cloudflare is one anycast network, MinIO runs wherever it was installed, and
+    // DNSPod's only locality is the record line — a property of a record, not of an
+    // account — so inventing candidates for them would offer regions that cannot be
+    // named.
     expect(listIamCloudAccountVendorRegions("cloudflare")).toEqual([]);
     expect(listIamCloudAccountVendorRegions("minio")).toEqual([]);
+    expect(listIamCloudAccountVendorRegions("dnspod")).toEqual([]);
     expect(listIamCloudAccountVendorRegions("custom")).toEqual([]);
   });
 
