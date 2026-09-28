@@ -62,6 +62,55 @@ Security properties (per `IAM_OAUTH_SPEC.md` section 7):
 
 The login-success page exists for the case where the browser is in the foreground after completion: it auto-attempts the deep-link navigation, offers a manual "open desktop app" button, and explains what to check when nothing opens. When the desktop app is already waiting (browser-login entry used), the same page still fires the deep link and the app-side listener completes the flow.
 
+## Standard integration for any desktop application
+
+The one-call entry is `createSdkworkIamDesktopAuthRuntime` in
+`@sdkwork/iam-desktop-auth`. An application supplies four things — app
+identity, the generated app SDK client, the host port, and a session
+committer — and receives a ready-to-wire runtime:
+
+```ts
+import { createClient } from "@sdkwork/iam-app-sdk";
+import {
+  createSdkworkIamDesktopAuthRuntime,
+} from "@sdkwork/iam-desktop-auth";
+import { createElectronDesktopAuthHost } from "@sdkwork/iam-pc-electron";
+
+const appSdkClient = createClient({ /* app config */ });
+const runtime = createSdkworkIamDesktopAuthRuntime({
+  appId: "sdkwork-cloudrouter",        // also the OAuth client_id
+  authorizeBaseUrl: "https://iam.example.com",
+  appSdkClient,
+  host: createElectronDesktopAuthHost({ bridge: window.sdkworkDesktop }),
+  onSession: (session) => sessionBridge.commitSession(session),
+});
+
+// login entry click:
+await runtime.beginLogin();
+// app bootstrap (cold start — the OS launched the app with the callback):
+await runtime.completePendingCallbackFromLaunch();
+```
+
+The deep-link redirect URI derives from the application key
+(`sdkwork-cloudrouter://auth/callback`); keys outside `[a-z][a-z0-9-]*` must
+pass `redirectUri` explicitly. Host adapters exist per architecture
+(`@sdkwork/iam-pc-electron`, `@sdkwork/iam-pc-tauri`); browser builds use
+`createBrowserDesktopAuthHost()`.
+
+## Auth-surface semantics
+
+- The hosted hand-off page (`/auth/desktop/launch`) is exempt from the
+  authenticated-user bounce in `resolveAuthAccess`: the user is always
+  authenticated in the browser when they land there, and every other auth
+  route still redirects away as before.
+- `AuthPage` auto-completes an `oauthAuthorizationStateId` authorization when
+  the browser user is already authenticated — no second login form.
+- `SdkworkIamDesktopAuthController.cancelLogin()` abandons a waiting flow
+  without destroying the controller; `dispose()` is final teardown. A failed
+  session exchange resets the flow (the authorization code is single-use, so
+  retrying with the same code can never succeed) and the user starts a fresh
+  browser login with one click.
+
 ## Registration requirements for a desktop client
 
 1. Tenant application `app_id` with `runtimeConfig.oauth.relyingParty = { enabled: true, confidential: false, redirectUris: ["sdkwork-iam://auth/callback"], allowedScopes: ["openid", "profile", "offline_access"] }`.

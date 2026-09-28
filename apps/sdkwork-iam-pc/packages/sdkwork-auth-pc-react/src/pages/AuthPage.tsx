@@ -929,6 +929,33 @@ function SdkworkAuthPageContent({
     }
   };
 
+  // A browser user the authorize endpoint sent back with an
+  // oauthAuthorizationStateId who is already authenticated must not face the
+  // login form again — complete the authorization immediately (first-party
+  // relying parties have no consent screen). Runs once per landing.
+  const autoCompleteOauthRef = useRef(false);
+  useEffect(() => {
+    if (
+      !oauthAuthorizationStateId
+      || !authState.isAuthenticated
+      || authState.isBusy
+      || autoCompleteOauthRef.current
+    ) {
+      return;
+    }
+    autoCompleteOauthRef.current = true;
+    void completeAuthFlow().catch((error: unknown) => {
+      autoCompleteOauthRef.current = false;
+      sdkToast.error(readSdkworkIdentityErrorMessage(error, copy.common.requestFailed));
+    });
+  }, [
+    authState.isAuthenticated,
+    authState.isBusy,
+    completeAuthFlow,
+    copy.common.requestFailed,
+    oauthAuthorizationStateId,
+  ]);
+
   const [desktopBrowserLoginWaiting, setDesktopBrowserLoginWaiting] = useState(
     () => desktopBrowserLogin?.isWaiting?.() ?? false,
   );

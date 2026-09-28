@@ -104,6 +104,8 @@ export interface SdkworkDesktopAuthControllerOptions {
 
 export interface SdkworkDesktopAuthController {
   beginLogin(): Promise<{ authorizeUrl: string }>;
+  /** Abandons the pending flow but keeps the controller usable. */
+  cancelLogin(): Promise<void> | void;
   dispose(): void;
   handleOpenUrl(rawUri: string): Promise<SdkworkDesktopAuthSession>;
   isWaiting(): boolean;

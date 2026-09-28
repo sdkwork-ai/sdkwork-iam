@@ -44,7 +44,7 @@ export function createSdkworkAuthDesktopBrowserLoginBinding({
       await controller.beginLogin();
     },
     cancel: () => {
-      controller.dispose();
+      void controller.cancelLogin();
     },
     isWaiting: () => controller.isWaiting(),
     subscribe: (listener: () => void) => {

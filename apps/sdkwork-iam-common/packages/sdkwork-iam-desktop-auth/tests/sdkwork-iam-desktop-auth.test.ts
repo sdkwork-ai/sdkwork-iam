@@ -8,6 +8,8 @@ import {
   createSdkworkDesktopPkcePair,
   createSdkworkDesktopStateToken,
   createSdkworkIamDesktopAuthController,
+  createSdkworkIamDesktopAuthRuntime,
+  deriveSdkworkDesktopRedirectUri,
   isSdkworkDesktopAuthError,
   parseSdkworkDesktopAuthCallbackUri,
   statesMatch,
@@ -360,6 +362,174 @@ describe("state token", () => {
     const second = createSdkworkDesktopStateToken();
     expect(first).not.toBe(second);
     expect(first).toMatch(/^[A-Za-z0-9_-]+$/u);
+  });
+});
+
+describe("controller cancel and retry", () => {
+  const RETRY_SESSION = {
+    accessToken: "access-jwt",
+    authToken: "auth-jwt",
+    refreshToken: "refresh-token",
+  };
+
+  it("allows a fresh beginLogin after cancel without disposing", async () => {
+    const hostHarness = createHostHarness();
+    const exchange = vi.fn(async () => RETRY_SESSION);
+    const controller = createSdkworkIamDesktopAuthController({
+      descriptor: DESCRIPTOR,
+      exchangeDesktopSession: exchange,
+      host: hostHarness.host,
+    });
+    await controller.beginLogin();
+    expect(controller.isWaiting()).toBe(true);
+
+    await controller.cancelLogin();
+    expect(controller.isWaiting()).toBe(false);
+
+    await controller.beginLogin();
+    expect(controller.isWaiting()).toBe(true);
+    expect(hostHarness.dispatchedUrls).toHaveLength(2);
+    controller.dispose();
+  });
+
+  it("resets the flow and waiting state when the exchange fails", async () => {
+    const hostHarness = createHostHarness();
+    const controller = createSdkworkIamDesktopAuthController({
+      descriptor: DESCRIPTOR,
+      exchangeDesktopSession: async () => {
+        throw new Error("network down");
+      },
+      host: hostHarness.host,
+    });
+    await controller.beginLogin();
+    const state = new URL(hostHarness.dispatchedUrls[0]).searchParams.get("state");
+    await expect(
+      controller.handleOpenUrl(`${REDIRECT_URI}?code=abc&state=${state}`),
+    ).rejects.toMatchObject({ code: "exchange-failed" });
+    expect(controller.isWaiting()).toBe(false);
+
+    await controller.beginLogin();
+    expect(controller.isWaiting()).toBe(true);
+    controller.dispose();
+  });
+});
+
+describe("runtime factory", () => {
+  const RUNTIME_SESSION = {
+    accessToken: "access-jwt",
+    authToken: "auth-jwt",
+    refreshToken: "refresh-token",
+  };
+
+  function createRuntimeHarness(overrides?: {
+    createSession?: (command: Record<string, unknown>) => Promise<unknown>;
+  }) {
+    const hostHarness = createHostHarness();
+    const createSession = vi.fn(
+      overrides?.createSession ?? (async () => RUNTIME_SESSION),
+    );
+    const appSdkClient = {
+      oauth: {
+        desktopSessions: {
+          create: createSession,
+        },
+      },
+    };
+    const onSession = vi.fn(async (_session: unknown) => {});
+    const runtime = createSdkworkIamDesktopAuthRuntime({
+      appId: "sdkwork-iam",
+      appSdkClient: appSdkClient as never,
+      authorizeBaseUrl: "https://iam.example.com",
+      host: hostHarness.host,
+      onSession,
+    });
+    return { createSession, hostHarness, onSession, runtime };
+  }
+
+  it("derives the redirect uri from scheme-safe app ids", () => {
+    expect(deriveSdkworkDesktopRedirectUri("sdkwork-iam")).toBe(
+      "sdkwork-iam://auth/callback",
+    );
+    expect(deriveSdkworkDesktopRedirectUri("sdkwork-cloudrouter")).toBe(
+      "sdkwork-cloudrouter://auth/callback",
+    );
+    expect(() => deriveSdkworkDesktopRedirectUri("Sdkwork IAM")).toThrowError(
+      /application id/iu,
+    );
+    expect(() => deriveSdkworkDesktopRedirectUri("1app")).toThrowError();
+  });
+
+  it("begins login and redeems the session through the bound SDK", async () => {
+    const { createSession, hostHarness, onSession, runtime } = createRuntimeHarness();
+    await runtime.beginLogin();
+    expect(hostHarness.dispatchedUrls).toHaveLength(1);
+    expect(new URL(hostHarness.dispatchedUrls[0]).searchParams.get("redirect_uri")).toBe(
+      "sdkwork-iam://auth/callback",
+    );
+
+    const state = new URL(hostHarness.dispatchedUrls[0]).searchParams.get("state");
+    // Direct controller calls return the session; onSession fires only on
+    // runtime-owned dispatch paths (host events, cold start).
+    await expect(
+      runtime.controller.handleOpenUrl(`${REDIRECT_URI}?code=rt-code&state=${state}`),
+    ).resolves.toMatchObject({ authToken: "auth-jwt" });
+    expect(onSession).not.toHaveBeenCalled();
+    expect(createSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        authorizationCode: "rt-code",
+        clientId: "sdkwork-iam",
+        redirectUri: "sdkwork-iam://auth/callback",
+      }),
+    );
+    runtime.dispose();
+  });
+
+  it("completes a cold-start launch callback", async () => {
+    const { hostHarness, onSession, runtime } = createRuntimeHarness();
+    await runtime.beginLogin();
+    const state = new URL(hostHarness.dispatchedUrls[0]).searchParams.get("state");
+    hostHarness.setInitialUrl(`${REDIRECT_URI}?code=cold-code&state=${state}`);
+
+    await expect(runtime.completePendingCallbackFromLaunch()).resolves.toBe(true);
+    expect(onSession).toHaveBeenCalledTimes(1);
+    expect(onSession.mock.calls[0][0]).toMatchObject({ accessToken: "access-jwt" });
+    runtime.dispose();
+  });
+
+  it("reports nothing when launched without a callback", async () => {
+    const { onSession, runtime } = createRuntimeHarness();
+    await expect(runtime.completePendingCallbackFromLaunch()).resolves.toBe(false);
+    expect(onSession).not.toHaveBeenCalled();
+    runtime.dispose();
+  });
+
+  it("keeps the runtime usable after an exchange failure", async () => {
+    const { hostHarness, runtime } = createRuntimeHarness({
+      createSession: async () => {
+        throw new Error("consumed");
+      },
+    });
+    await runtime.beginLogin();
+    const state = new URL(hostHarness.dispatchedUrls[0]).searchParams.get("state");
+    await expect(
+      runtime.controller.handleOpenUrl(`${REDIRECT_URI}?code=x&state=${state}`),
+    ).rejects.toMatchObject({ code: "exchange-failed" });
+    expect(runtime.controller.isWaiting()).toBe(false);
+
+    await runtime.beginLogin();
+    expect(runtime.controller.isWaiting()).toBe(true);
+    runtime.dispose();
+  });
+
+  it("auto-dispatches host deep-link events to onSession", async () => {
+    const { hostHarness, onSession, runtime } = createRuntimeHarness();
+    await runtime.beginLogin();
+    const state = new URL(hostHarness.dispatchedUrls[0]).searchParams.get("state");
+    hostHarness.emitOpenUrl(`${REDIRECT_URI}?code=auto-code&state=${state}`);
+    await vi.waitFor(() => {
+      expect(onSession).toHaveBeenCalledTimes(1);
+    });
+    runtime.dispose();
   });
 });
 

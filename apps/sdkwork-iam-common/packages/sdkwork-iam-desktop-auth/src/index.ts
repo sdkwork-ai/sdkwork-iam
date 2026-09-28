@@ -14,6 +14,15 @@ export { parseSdkworkDesktopAuthCallbackUri } from "./callback.ts";
 export { createInMemorySdkworkDesktopAuthFlowStore } from "./flow-store.ts";
 export { createBrowserDesktopAuthHost } from "./browser-host.ts";
 export { createSdkworkIamDesktopAuthController } from "./controller.ts";
+export {
+  createSdkworkIamDesktopAuthRuntime,
+  DEFAULT_SDKWORK_DESKTOP_CALLBACK_PATH,
+  deriveSdkworkDesktopRedirectUri,
+} from "./runtime.ts";
+export type {
+  SdkworkIamDesktopAuthRuntime,
+  SdkworkIamDesktopAuthRuntimeOptions,
+} from "./runtime.ts";
 export { normalizeSdkworkDesktopAuthSession } from "./session.ts";
 export {
   isSdkworkDesktopAuthError,

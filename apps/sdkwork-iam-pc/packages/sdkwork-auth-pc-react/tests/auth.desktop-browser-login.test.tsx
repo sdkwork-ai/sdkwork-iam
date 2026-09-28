@@ -8,7 +8,9 @@ import {
 import {
   buildSdkworkAuthDesktopLaunchLocation,
   buildSdkworkAuthDesktopLaunchPath,
+  createAuthRouteCatalog,
   isSdkworkDesktopDeepLinkRedirect,
+  resolveAuthAccess,
 } from "../src/auth.ts";
 import { SdkworkAuthDesktopLaunchPage } from "../src/pages/AuthDesktopLaunchPage.tsx";
 import { SdkworkAuthPage } from "../src/pages/AuthPage.tsx";
@@ -35,6 +37,43 @@ describe("desktop deep-link redirect helpers", () => {
     );
     expect(location).toContain("/auth/desktop/launch?redirectUrl=");
     expect(location).not.toContain(" ");
+  });
+});
+
+describe("auth access for the desktop hand-off page", () => {
+  const routes = createAuthRouteCatalog("/auth");
+  const authenticatedSession = { accessToken: "a", authToken: "b" };
+
+  it("allows authenticated users on the desktop launch page (no bounce to home)", () => {
+    // The user just completed login in the browser; the hand-off page must
+    // still render even though every other auth route redirects away.
+    const decision = resolveAuthAccess({
+      currentPath: "/auth/desktop/launch",
+      routes,
+      session: authenticatedSession,
+    });
+    expect(decision).toMatchObject({ allowed: true });
+  });
+
+  it("still bounces authenticated users away from regular login routes", () => {
+    const decision = resolveAuthAccess({
+      currentPath: "/auth/login",
+      routes,
+      session: authenticatedSession,
+    });
+    expect(decision).toMatchObject({
+      allowed: false,
+      reason: "already-authenticated",
+    });
+  });
+
+  it("allows anonymous users on the desktop launch page without redirect loops", () => {
+    const decision = resolveAuthAccess({
+      currentPath: "/auth/desktop/launch",
+      routes,
+      session: null,
+    });
+    expect(decision).toMatchObject({ allowed: true });
   });
 });
 

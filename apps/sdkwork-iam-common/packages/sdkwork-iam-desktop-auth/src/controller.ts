@@ -119,6 +119,15 @@ export function createSdkworkIamDesktopAuthController(
       return { authorizeUrl };
     },
 
+    cancelLogin(): Promise<void> | void {
+      // Abandon the pending flow but keep the controller usable so the user
+      // can start a fresh browser login — unlike dispose(), which is for
+      // final teardown.
+      return Promise.resolve(flowStore.clear()).then(() => {
+        setWaiting(false);
+      });
+    },
+
     dispose(): void {
       disposed = true;
       if (unsubscribeOpenUrl) {
@@ -152,6 +161,8 @@ export function createSdkworkIamDesktopAuthController(
         );
       }
       if (!statesMatch(pending.state, callback.state)) {
+        // Keep the flow: a forged or stale deep link must not be able to
+        // kill the user's in-progress login.
         throw new SdkworkDesktopAuthError(
           "state-mismatch",
           "Deep-link state does not match the pending browser login.",
@@ -175,14 +186,28 @@ export function createSdkworkIamDesktopAuthController(
           redirectUri: pending.redirectUri,
         });
       } catch (error) {
+        // The authorization code is single-use: once the server has consumed
+        // it, a retry can never succeed, and a lost response is therefore
+        // unrecoverable too. Reset the flow so the UI leaves the waiting
+        // state and the user can start a fresh browser login.
+        setWaiting(false);
+        await flowStore.clear();
         throw new SdkworkDesktopAuthError(
           "exchange-failed",
-          "The desktop session exchange failed.",
+          "The desktop session exchange failed. Start the browser login again.",
           error instanceof Error ? error.message : undefined,
         );
       }
 
-      const session = normalizeSdkworkDesktopAuthSession(rawSession);
+      let session: SdkworkDesktopAuthSession;
+      try {
+        session = normalizeSdkworkDesktopAuthSession(rawSession);
+      } catch (error) {
+        setWaiting(false);
+        await flowStore.clear();
+        throw error;
+      }
+
       setWaiting(false);
       await flowStore.clear();
       return session;

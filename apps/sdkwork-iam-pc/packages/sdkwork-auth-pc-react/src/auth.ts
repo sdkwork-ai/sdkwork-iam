@@ -567,6 +567,21 @@ export function resolveAuthAccess({
     isAuthenticating,
   });
 
+  const desktopLaunchRoute = routes.find((route) => route.id === "desktop-launch");
+  if (
+    desktopLaunchRoute
+    && pathMatchesRoutePattern(desktopLaunchRoute.path, currentPath)
+  ) {
+    // Hand-off surface, not a login surface: the user is (or just became)
+    // authenticated in the browser when they land here after completing a
+    // desktop-originated authorization. It must never bounce back to the
+    // app, and it carries only the deep-link redirect — no protected data.
+    return {
+      allowed: true,
+      status,
+    };
+  }
+
   if (status === "authenticating") {
     return {
       allowed: false,
