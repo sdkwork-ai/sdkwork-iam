@@ -116,6 +116,13 @@ export function buildSdkworkAuthOAuthCallbackUri(
   options: {
     basePath?: string;
     fallbackRoute?: string;
+    /**
+     * Pending desktop/first-party authorization to complete after the
+     * provider round-trip. Carried through the callback URL so a login that
+     * started from a desktop app (Electron/Tauri) still hands the
+     * authorization code back to the app.
+     */
+    oauthAuthorizationStateId?: string;
   } = {},
 ): string {
   if (typeof window === "undefined" || !window.location?.origin) {
@@ -140,6 +147,10 @@ export function buildSdkworkAuthOAuthCallbackUri(
 
   if (resolvedRedirectTarget !== (options.fallbackRoute ?? "/dashboard")) {
     callbackUrl.searchParams.set("redirect", resolvedRedirectTarget);
+  }
+  const oauthAuthorizationStateId = options.oauthAuthorizationStateId?.trim();
+  if (oauthAuthorizationStateId) {
+    callbackUrl.searchParams.set("oauthAuthorizationStateId", oauthAuthorizationStateId);
   }
 
   return callbackUrl.toString();

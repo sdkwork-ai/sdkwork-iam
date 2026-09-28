@@ -93,9 +93,109 @@ await runtime.completePendingCallbackFromLaunch();
 
 The deep-link redirect URI derives from the application key
 (`sdkwork-cloudrouter://auth/callback`); keys outside `[a-z][a-z0-9-]*` must
-pass `redirectUri` explicitly. Host adapters exist per architecture
-(`@sdkwork/iam-pc-electron`, `@sdkwork/iam-pc-tauri`); browser builds use
-`createBrowserDesktopAuthHost()`.
+pass `redirectUri` explicitly.
+
+### Integration flow per host
+
+**Electron (`clientArchitecture: "electron"`, package
+`@sdkwork/iam-pc-electron`)** — three wiring points, all inside the Electron
+host package:
+
+```ts
+// 1. main process: register the scheme + collect deep links + allowlisted IPC
+import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { createSdkworkElectronDeepLinkBridge } from "@sdkwork/iam-pc-electron";
+
+createSdkworkElectronDeepLinkBridge({
+  app, ipcMain, shell,
+  scheme: "sdkwork-cloudrouter",
+  getWindow: () => BrowserWindow.getAllWindows()[0] ?? null,
+  // optional: allowedOpenSchemes (default ["https", scheme])
+});
+
+// 2. preload: expose exactly the bridge allowlist (no pass-through)
+import { exposeSdkworkDesktopPreloadBridge } from "@sdkwork/iam-pc-electron";
+exposeSdkworkDesktopPreloadBridge({ contextBridge, ipcRenderer });
+
+// 3. renderer: the host port for the auth runtime
+import { createElectronDesktopAuthHost } from "@sdkwork/iam-pc-electron";
+const host = createElectronDesktopAuthHost({ bridge: window.sdkworkDesktop });
+```
+
+macOS delivers deep links through `open-url`; Windows/Linux through
+`second-instance` argv — the bridge normalizes both, and the renderer only
+ever sees `getInitialUrl()` / `onOpenUrl()`. `shellOpen` rejects every scheme
+outside the allowlist (default `https` + the app's own scheme) before the OS
+is involved. Electron security baseline applies unchanged
+(`contextIsolation`, `sandbox`, preload allowlist).
+
+**Tauri (`clientArchitecture: "tauri"`, package `@sdkwork/iam-pc-tauri`)** —
+renderer wiring plus plugin config in the app shell's `tauri.conf.json`:
+
+```json
+{ "plugins": { "deep-link": { "desktop": { "schemes": ["sdkwork-cloudrouter"] } } } }
+```
+
+```ts
+import { createTauriDesktopAuthHost } from "@sdkwork/iam-pc-tauri";
+import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
+import { openUrl } from "@tauri-apps/plugin-opener";
+
+const host = createTauriDesktopAuthHost({
+  deepLink: { getCurrent, onOpenUrl },
+  opener: { openUrl },
+});
+```
+
+The Tauri CLI/installer registers the scheme with the OS from the plugin
+config (NSIS/MSI on Windows, Info.plist on macOS). The Rust-side contract
+lives in the `sdkwork-iam-tauri-host` crate; feature code never imports
+`@tauri-apps/*` directly.
+
+**Browser fallback (web build of the same renderer)** — no native shell:
+`createBrowserDesktopAuthHost()` opens the authorize URL in a new tab and
+never emits deep links. The desktop login entry simply does not render
+(desktopBrowserLogin binding absent), so web behavior is unchanged.
+
+**Custom/other hosts** — implement the three-method
+`SdkworkDesktopAuthHostPort` (`openExternal`, `getInitialUrl`, `onOpenUrl`)
+over whatever the shell provides (Capacitor desktop provider plugin, a custom
+bridge) and pass it to the runtime. Bridge method names follow
+`DESKTOP_APP_ARCHITECTURE_SPEC.md` section 5.6 (`sdkwork:deepLinks:*`,
+`sdkwork:shellOpen:open`).
+
+### Interaction sequences
+
+1. **Fresh login (the normal path).** User clicks "Sign in with browser" in
+   the desktop login page → PKCE pair + state stored → system browser opens
+   the IAM authorize endpoint → hosted login page (`/auth/login?oauthAuthorizationStateId=…`)
+   → the user signs in, registers, or resets a password — the full web
+   experience, login-context selection included → completion triggers the
+   hosted login-success page (`/auth/desktop/launch`) → the page auto-fires
+   the deep link (with a manual "Open desktop app" button and guidance if
+   nothing opens) → the desktop app receives `code` + `state`, validates
+   them against the pending flow, redeems the code through
+   `oauth.desktopSessions.create`, and commits the standard dual-token
+   session. The desktop page flips from "waiting" to logged in.
+2. **Browser already signed in.** Same as above, but the hosted login page
+   skips the form entirely (auto-complete effect) and goes straight to the
+   success page.
+3. **Third-party provider during a desktop authorization.** If the user
+   picks WeChat/GitHub/… on the hosted login page, the pending
+   `oauthAuthorizationStateId` rides along the provider round-trip; after the
+   provider callback creates the browser session, the callback page completes
+   the pending authorization and still hands off to the desktop app.
+4. **Cold start.** The browser finished while the desktop app was launching:
+   the OS starts the app with the deep link; `completePendingCallbackFromLaunch()`
+   during bootstrap redeems it without user interaction.
+5. **Cancel.** The waiting card on the desktop login page offers "Cancel
+   browser sign-in" — the pending flow is dropped and the entry returns; the
+   controller stays usable.
+6. **Failure handling.** Provider denial (`error=access_denied`), state
+   mismatch (forged/stale deep link — the pending flow survives), flow expiry
+   (10 minutes), and exchange failure (single-use code) all surface typed
+   errors; every terminal failure resets the waiting state so a fresh login
+   is one click away. Tokens never appear in any URL or log.
 
 ## Auth-surface semantics
 
@@ -105,6 +205,10 @@ pass `redirectUri` explicitly. Host adapters exist per architecture
   route still redirects away as before.
 - `AuthPage` auto-completes an `oauthAuthorizationStateId` authorization when
   the browser user is already authenticated — no second login form.
+- `AuthOAuthCallbackPage` keeps the component mounted when a threaded
+  `oauthAuthorizationStateId` is present (the authenticated Navigate is
+  suppressed until the pending authorization completes and the hand-off
+  runs).
 - `SdkworkIamDesktopAuthController.cancelLogin()` abandons a waiting flow
   without destroying the controller; `dispose()` is final teardown. A failed
   session exchange resets the flow (the authorization code is single-use, so
@@ -113,6 +217,15 @@ pass `redirectUri` explicitly. Host adapters exist per architecture
 
 ## Registration requirements for a desktop client
 
-1. Tenant application `app_id` with `runtimeConfig.oauth.relyingParty = { enabled: true, confidential: false, redirectUris: ["sdkwork-iam://auth/callback"], allowedScopes: ["openid", "profile", "offline_access"] }`.
-2. OS-level protocol registration for the scheme (Electron `setAsDefaultProtocolClient` in this package; Tauri deep-link plugin configuration in the app shell).
-3. The scheme must derive from the app key (lowercase letters, digits, `-`); `normalize_deep_link_scheme` in `sdkwork-iam-tauri-host` validates this at build/test time.
+1. Tenant application `app_id` with `runtimeConfig.oauth.relyingParty = { enabled: true, confidential: false, redirectUris: ["<scheme>://auth/callback"], allowedScopes: ["openid", "profile", "offline_access"] }` — register through backend-api `applications.register`.
+2. OS-level protocol registration for the scheme: Electron `setAsDefaultProtocolClient` (inside `createSdkworkElectronDeepLinkBridge`); Tauri deep-link plugin `desktop.schemes` config.
+3. The scheme must derive from the app key (lowercase letters, digits, `-`); `normalize_deep_link_scheme` in `sdkwork-iam-tauri-host` and `deriveSdkworkDesktopRedirectUri` in `@sdkwork/iam-desktop-auth` enforce the same rules on both sides.
+
+### Integration checklist for a new desktop application
+
+- [ ] Tenant application registered as a public OAuth relying party with the deep-link redirect URI (and, if used, an RFC 8252 loopback URI).
+- [ ] Host package chosen (`@sdkwork/iam-pc-electron` or `@sdkwork/iam-pc-tauri`), scheme registered with the OS.
+- [ ] `createSdkworkIamDesktopAuthRuntime` wired with the generated app SDK client and the product session bridge as `onSession`.
+- [ ] `completePendingCallbackFromLaunch()` called during app bootstrap.
+- [ ] Desktop login entry rendered by passing the `desktopBrowserLogin` binding to `SdkworkAuthPage` / `SdkworkIamAuthRoutes`.
+- [ ] Logout clears the product session and any host secure storage (spec section 10 of `IAM_LOGIN_INTEGRATION_SPEC.md`).

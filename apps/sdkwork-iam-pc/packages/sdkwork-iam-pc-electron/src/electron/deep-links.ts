@@ -37,6 +37,13 @@ export interface CreateSdkworkElectronDeepLinkBridgeOptions {
   /** Deep-link scheme, e.g. `sdkwork-iam` (registered with the OS). */
   scheme: string;
   /**
+   * URL schemes the renderer may hand to `shell.openExternal` through the
+   * bridge. Defaults to `https` plus this bridge's own deep-link scheme;
+   * arbitrary protocols (file:, smb:, custom handlers) are rejected before
+   * they reach the OS.
+   */
+  allowedOpenSchemes?: readonly string[];
+  /**
    * Resolves the window that should receive deep-link events (may be null
    * while the window is still starting).
    */
@@ -93,12 +100,23 @@ export function createSdkworkElectronDeepLinkBridge(
   app.on("open-url", handleOpenUrl);
   app.on("second-instance", handleSecondInstance);
 
+  const allowedSchemes = new Set(
+    (options.allowedOpenSchemes ?? ["https", scheme.toLowerCase()]).map((value) =>
+      value.trim().toLowerCase().replace(/:$/u, ""),
+    ),
+  );
+
   ipcMain.handle(SDKWORK_DESKTOP_BRIDGE.deepLinksGetInitialUrl, () => initialUrl);
   ipcMain.handle(
     SDKWORK_DESKTOP_BRIDGE.shellOpen,
     (_event: unknown, url: unknown) => {
       if (typeof url !== "string" || !url.trim()) {
         throw new Error("shellOpen requires a URL string");
+      }
+      const parsed = new URL(url);
+      const requestScheme = parsed.protocol.replace(/:$/u, "").toLowerCase();
+      if (!allowedSchemes.has(requestScheme)) {
+        throw new Error(`shellOpen refused scheme ${requestScheme}`);
       }
       return shell.openExternal(url);
     },

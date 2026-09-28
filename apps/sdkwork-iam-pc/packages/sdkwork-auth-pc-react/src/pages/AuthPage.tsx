@@ -1772,6 +1772,10 @@ function SdkworkAuthPageContent({
                         redirectUri: buildSdkworkAuthOAuthCallbackUri(provider, redirectTarget, {
                           basePath,
                           fallbackRoute: homePath,
+                          // A third-provider login during a desktop/first-party
+                          // authorization must still complete the pending
+                          // authorization and hand the code back to the app.
+                          oauthAuthorizationStateId: oauthAuthorizationStateId || undefined,
                         }),
                         state: redirectTarget !== homePath ? redirectTarget : undefined,
                       });

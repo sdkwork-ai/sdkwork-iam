@@ -34,6 +34,8 @@ import { coalesce } from "@sdkwork/utils";
 import { useSdkworkAuthIntl } from "../auth-intl.tsx";
 import {
   createAuthRouteCatalog,
+  buildSdkworkAuthDesktopLaunchLocation,
+  isSdkworkDesktopDeepLinkRedirect,
   resolveAuthRedirectTarget,
 } from "../auth.ts";
 import { buildSdkworkLoginRedirectPath } from "../../../sdkwork-auth-runtime-pc-react/src/sessionAuthRedirect.ts";
@@ -116,6 +118,11 @@ function SdkworkAuthOAuthCallbackPageContent({
   const [selectingPersonalLogin, setSelectingPersonalLogin] = useState(false);
   const [selectedOrganizationId, setSelectedOrganizationId] = useState("");
   const loginRoute = buildLoginRoute(basePath, redirectTarget, homePath);
+  // Pending desktop/first-party authorization threaded through the provider
+  // round-trip (see buildSdkworkAuthOAuthCallbackUri): the component must
+  // stay mounted after the provider session commits until this
+  // authorization is completed and the deep-link hand-off (if any) runs.
+  const pendingDesktopAuthorizationStateId = searchParams.get("oauthAuthorizationStateId")?.trim() || "";
   const runtimeOAuthProvidersKey = (runtimeConfig?.oauthProviders ?? []).join("|");
   const configuredProviders = useMemo(
     () => isSdkworkAuthOAuthLoginEnabled(runtimeConfig?.oauthLoginEnabled)
@@ -213,11 +220,33 @@ function SdkworkAuthOAuthCallbackPageContent({
           }),
           state: coalesce(searchParams.get("state") ?? undefined),
         });
-        if (!disposed) {
-          startTransition(() => {
-            navigate(redirectTarget, { replace: true });
-          });
+        if (disposed) {
+          return;
         }
+        // A provider login that started inside a desktop/first-party
+        // authorization must complete that pending authorization and hand
+        // the code back to the desktop app — not just navigate in the
+        // browser.
+        if (pendingDesktopAuthorizationStateId) {
+          const completion = await controller.completeOAuthAuthorization(pendingDesktopAuthorizationStateId);
+          if (disposed) {
+            return;
+          }
+          if (isSdkworkDesktopDeepLinkRedirect(completion.redirectUrl)) {
+            startTransition(() => {
+              navigate(
+                buildSdkworkAuthDesktopLaunchLocation(completion.redirectUrl, { basePath }),
+                { replace: true },
+              );
+            });
+            return;
+          }
+          window.location.assign(completion.redirectUrl);
+          return;
+        }
+        startTransition(() => {
+          navigate(redirectTarget, { replace: true });
+        });
       } catch (error) {
         if (disposed) {
           return;
@@ -251,7 +280,7 @@ function SdkworkAuthOAuthCallbackPageContent({
     };
   }, [configuredProvidersKey, controller, copy.callback.genericProviderError, copy.callback.invalidProvider, copy.callback.missingCode, copy.callback.providerDenied, copy.common.requestFailed, navigate, provider, redirectTarget, searchParams]);
 
-  if (authState.isAuthenticated) {
+  if (authState.isAuthenticated && !pendingDesktopAuthorizationStateId) {
     return <Navigate replace to={redirectTarget} />;
   }
 

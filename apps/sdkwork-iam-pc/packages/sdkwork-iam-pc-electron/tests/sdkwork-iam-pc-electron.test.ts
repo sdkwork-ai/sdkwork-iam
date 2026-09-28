@@ -169,10 +169,22 @@ describe("electron deep-link bridge", () => {
     );
   });
 
-  it("routes shellOpen through the main-process shell", async () => {
+  it("routes shellOpen through the main-process shell and enforces the scheme allowlist", async () => {
     const harness = createHarness();
     await harness.invoke(SDKWORK_DESKTOP_BRIDGE.shellOpen, "https://iam.example.com/auth/login");
     expect(harness.shellOpenExternal).toHaveBeenCalledWith("https://iam.example.com/auth/login");
+
+    // The bridge's own deep-link scheme is allowed by default.
+    await harness.invoke(SDKWORK_DESKTOP_BRIDGE.shellOpen, "sdkwork-iam://auth/callback");
+    expect(harness.shellOpenExternal).toHaveBeenCalledWith("sdkwork-iam://auth/callback");
+
+    // Arbitrary protocols never reach the OS.
+    await expect(
+      harness.invoke(SDKWORK_DESKTOP_BRIDGE.shellOpen, "file:///C:/Windows/System32"),
+    ).rejects.toThrow(/refused scheme/iu);
+    await expect(
+      harness.invoke(SDKWORK_DESKTOP_BRIDGE.shellOpen, "smb://host/share"),
+    ).rejects.toThrow(/refused scheme/iu);
     await expect(harness.invoke(SDKWORK_DESKTOP_BRIDGE.shellOpen, "")).rejects.toThrow(
       /requires a URL/iu,
     );

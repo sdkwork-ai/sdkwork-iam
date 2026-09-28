@@ -14,6 +14,7 @@ import {
 } from "../src/auth.ts";
 import { SdkworkAuthDesktopLaunchPage } from "../src/pages/AuthDesktopLaunchPage.tsx";
 import { SdkworkAuthPage } from "../src/pages/AuthPage.tsx";
+import { SdkworkAuthOAuthCallbackPage } from "../src/pages/AuthOAuthCallbackPage.tsx";
 import type { SdkworkAuthDesktopBrowserLoginBinding } from "../src/desktop-browser-login.ts";
 import { createSdkworkAuthController } from "../src/auth-controller.ts";
 
@@ -201,6 +202,65 @@ describe("sdkwork auth page desktop browser-login entry", () => {
     fireEvent.click(screen.getByTestId("sdkwork-desktop-browser-login-cancel"));
     await vi.waitFor(() => {
       expect(screen.getByTestId("sdkwork-desktop-browser-login-entry")).toBeInTheDocument();
+    });
+  });
+});
+
+describe("provider login completes a pending desktop authorization", () => {
+  function LocationProbe() {
+    return <output data-testid="desktop-handoff-location" />;
+  }
+
+  it("completes the pending authorization and hands off to the deep link", async () => {
+    const completeOAuthAuthorization = vi.fn().mockImplementation(async (stateId: string) => {
+      expect(stateId).toBe("pending-state-1");
+      return {
+        authorizationCode: "authz-code",
+        redirectUrl: "sdkwork-iam://auth/callback?code=final-code&state=s",
+      };
+    });
+    const signInWithOAuth = vi.fn().mockResolvedValue({
+      accessToken: "a",
+      authToken: "b",
+      user: { displayName: "P" },
+    });
+    const controller = createSdkworkAuthController({
+      service: {
+        completeOAuthAuthorization,
+        getCurrentSession: vi.fn().mockResolvedValue(null),
+        getCurrentUser: vi.fn().mockResolvedValue(null),
+        signInWithOAuth,
+      },
+    });
+
+    render(
+      <SdkworkI18nProvider catalogs={[SDKWORK_AUTH_I18N_CATALOG]} locale="en-US">
+        <MemoryRouter
+          initialEntries={[
+            "/auth/oauth/callback/github?code=provider-code&state=st&oauthAuthorizationStateId=pending-state-1",
+          ]}
+        >
+          <Routes>
+            <Route
+              element={
+                <SdkworkAuthOAuthCallbackPage
+                  controller={controller}
+                  runtimeConfig={{
+                    oauthLoginEnabled: true,
+                    oauthProviders: ["github"],
+                  }}
+                />
+              }
+              path="/auth/oauth/callback/:provider"
+            />
+            <Route element={<LocationProbe />} path="*" />
+          </Routes>
+        </MemoryRouter>
+      </SdkworkI18nProvider>,
+    );
+
+    await vi.waitFor(() => {
+      expect(completeOAuthAuthorization).toHaveBeenCalledWith("pending-state-1");
     });
   });
 });
