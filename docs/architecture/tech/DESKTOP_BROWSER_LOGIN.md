@@ -129,6 +129,14 @@ outside the allowlist (default `https` + the app's own scheme) before the OS
 is involved. Electron security baseline applies unchanged
 (`contextIsolation`, `sandbox`, preload allowlist).
 
+Development-mode note: on Windows, `app.setAsDefaultProtocolClient(scheme)`
+only routes deep links for a **packaged** executable. For unpackaged dev
+runs, pass the executable path and arguments explicitly —
+`app.setAsDefaultProtocolClient(scheme, { path: process.execPath, args: [path.resolve(process.argv[1])] })`
+— or register the scheme once through an installer/script. macOS dev builds
+need the `CFBundleURLTypes` entry in the dev app's Info.plist to receive
+`open-url`.
+
 **Tauri (`clientArchitecture: "tauri"`, package `@sdkwork/iam-pc-tauri`)** —
 renderer wiring plus plugin config in the app shell's `tauri.conf.json`:
 

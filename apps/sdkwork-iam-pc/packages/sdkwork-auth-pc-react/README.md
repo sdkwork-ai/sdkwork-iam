@@ -15,8 +15,16 @@ This package is the standard auth UI layer for appbase-based desktop apps. Host 
 
 ## Standard surface model
 
-- `SdkworkAuthPage` is the default page-level auth entry.
-- `SdkworkAuthOAuthCallbackPage` handles OAuth callback completion with the same visual standard.
+- `SdkworkAuthPage` is the default page-level auth entry. It accepts an
+  optional `desktopBrowserLogin` binding (built by product composition from
+  `@sdkwork/iam-desktop-auth` + a host adapter) that renders the
+  system-browser login entry for Electron/Tauri shells; absent on pure web.
+- `SdkworkAuthOAuthCallbackPage` handles OAuth callback completion with the same visual standard, including completing a pending desktop/first-party authorization threaded through the provider round-trip.
+- `SdkworkAuthDesktopLaunchPage` is the hosted login-success hand-off page
+  (`/auth/desktop/launch`): after a desktop-originated authorization
+  completes, it fires the deep-link back into the desktop app and offers a
+  manual open button plus guidance. It is exempt from the authenticated-user
+  bounce in `resolveAuthAccess`.
 - `SdkworkAuthPageShell` is the reusable shell abstraction aligned to the current `sdkwork-studio` baseline.
 - `appearance` is the single customization contract. It supports:
   - `theme`: token-level theme overrides
