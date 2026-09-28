@@ -932,7 +932,12 @@ function SdkworkAuthPageContent({
   // A browser user the authorize endpoint sent back with an
   // oauthAuthorizationStateId who is already authenticated must not face the
   // login form again — complete the authorization immediately (first-party
-  // relying parties have no consent screen). Runs once per landing.
+  // relying parties have no consent screen). One auto-attempt per landing:
+  // `completeAuthFlow` is re-created every render, so the guard MUST NOT
+  // reset on failure or every unrelated re-render would retry a
+  // deterministically failing completion forever. A failed auto-complete
+  // surfaces as a toast; the user can still sign in through the form, which
+  // completes the authorization through the normal flow.
   const autoCompleteOauthRef = useRef(false);
   useEffect(() => {
     if (
@@ -945,7 +950,6 @@ function SdkworkAuthPageContent({
     }
     autoCompleteOauthRef.current = true;
     void completeAuthFlow().catch((error: unknown) => {
-      autoCompleteOauthRef.current = false;
       sdkToast.error(readSdkworkIdentityErrorMessage(error, copy.common.requestFailed));
     });
   }, [

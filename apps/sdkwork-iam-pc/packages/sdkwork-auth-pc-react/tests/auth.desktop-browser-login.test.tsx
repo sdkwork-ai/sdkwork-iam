@@ -15,6 +15,7 @@ import {
 import { SdkworkAuthDesktopLaunchPage } from "../src/pages/AuthDesktopLaunchPage.tsx";
 import { SdkworkAuthPage } from "../src/pages/AuthPage.tsx";
 import { SdkworkAuthOAuthCallbackPage } from "../src/pages/AuthOAuthCallbackPage.tsx";
+import { mockAccessToken, mockAuthToken } from "./authJwtFixtures.ts";
 import type { SdkworkAuthDesktopBrowserLoginBinding } from "../src/desktop-browser-login.ts";
 import { createSdkworkAuthController } from "../src/auth-controller.ts";
 
@@ -262,5 +263,48 @@ describe("provider login completes a pending desktop authorization", () => {
     await vi.waitFor(() => {
       expect(completeOAuthAuthorization).toHaveBeenCalledWith("pending-state-1");
     });
+  });
+});
+
+describe("auth page auto-complete for an already-authenticated browser user", () => {
+  it("auto-completes the pending authorization exactly once even when it fails", async () => {
+    const completeOAuthAuthorization = vi.fn(async () => {
+      throw new Error("authorization state expired");
+    });
+    const controller = createSdkworkAuthController({
+      service: {
+        completeOAuthAuthorization,
+        getCurrentSession: vi.fn().mockResolvedValue({
+          accessToken: mockAccessToken("auto-complete-access"),
+          authToken: mockAuthToken("auto-complete-auth"),
+          user: { displayName: "Session User" },
+        }),
+        getCurrentUser: vi.fn().mockResolvedValue(null),
+      },
+    });
+
+    render(
+      <SdkworkI18nProvider catalogs={[SDKWORK_AUTH_I18N_CATALOG]} locale="en-US">
+        <MemoryRouter initialEntries={["/auth/login?oauthAuthorizationStateId=pending-state-9"]}>
+          <Routes>
+            <Route
+              element={<SdkworkAuthPage basePath="/auth" controller={controller} />}
+              path="/auth/login"
+            />
+          </Routes>
+        </MemoryRouter>
+      </SdkworkI18nProvider>,
+    );
+
+    // The auto-completion fires once for the authenticated browser session.
+    await vi.waitFor(() => {
+      expect(completeOAuthAuthorization).toHaveBeenCalledTimes(1);
+    });
+    // Let every pending re-render settle; a failure must not retrigger the
+    // completion (completeAuthFlow is a new reference on every render).
+    await vi.waitFor(() => {
+      expect(controller.getState().isBusy).toBe(false);
+    });
+    expect(completeOAuthAuthorization).toHaveBeenCalledTimes(1);
   });
 });
