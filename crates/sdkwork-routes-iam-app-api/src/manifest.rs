@@ -176,6 +176,16 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
         "oauth",
         "authorizations.completions.create",
     ),
+    // Desktop browser-login session bootstrap: the native app redeems a
+    // PKCE-bound authorization code (delivered through its deeplink redirect)
+    // for a standard dual-token session. Pure anonymous like the QR login
+    // device exchanges — the code + PKCE verifier is the proof.
+    HttpRoute::public(
+        HttpMethod::Post,
+        "/app/v3/api/oauth/desktop_sessions",
+        "oauth",
+        "desktopSessions.create",
+    ),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/app/v3/api/oauth/wechat/payment/start",
@@ -320,6 +330,7 @@ pub const IAM_ANONYMOUS_OPERATION_IDS: &[&str] = &[
     "deviceAuthorizations.create",
     "deviceAuthorizations.retrieve",
     "deviceAuthorizations.sessionExchanges.create",
+    "desktopSessions.create",
     "wechatPaymentOauth.callback",
 ];
 

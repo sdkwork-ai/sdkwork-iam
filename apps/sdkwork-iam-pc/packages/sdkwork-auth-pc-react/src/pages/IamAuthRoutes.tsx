@@ -17,6 +17,9 @@ import {
   SdkworkAuthPageRouterContextBoundary,
 } from "./routerContextBoundary.tsx";
 import {
+  SdkworkAuthDesktopLaunchPage,
+} from "./AuthDesktopLaunchPage.tsx";
+import {
   SdkworkAuthOAuthCallbackPage,
 } from "./AuthOAuthCallbackPage.tsx";
 import {
@@ -24,6 +27,7 @@ import {
   type SdkworkAuthPageEvents,
   type SdkworkAuthPageSlots,
 } from "./AuthPage.tsx";
+import type { SdkworkAuthDesktopBrowserLoginBinding } from "../desktop-browser-login.ts";
 import type { SdkworkAuthRuntimeConfig } from "../auth-config.ts";
 import {
   formatSdkworkAuthTemplate,
@@ -43,6 +47,8 @@ export interface SdkworkIamAuthRoutesProps {
     CreateSdkworkIamRuntimeAuthControllerOptions,
     "getRuntime"
   >;
+  /** Desktop (Electron/Tauri) browser-login entry; absent on pure web. */
+  desktopBrowserLogin?: SdkworkAuthDesktopBrowserLoginBinding;
   events?: SdkworkAuthPageEvents;
   getRuntime: () =>
     | Promise<SdkworkIamRuntimeAuthRuntimeLike>
@@ -66,6 +72,12 @@ function isOAuthCallbackRoute(pathname: string, basePath: string): boolean {
   const normalizedBasePath = normalizeBasePath(basePath);
   return pathname === `${normalizedBasePath}/oauth/callback`
     || pathname.startsWith(`${normalizedBasePath}/oauth/callback/`);
+}
+
+function isDesktopLaunchRoute(pathname: string, basePath: string): boolean {
+  const normalizedBasePath = normalizeBasePath(basePath);
+  return pathname === `${normalizedBasePath}/desktop/launch`
+    || pathname.startsWith(`${normalizedBasePath}/desktop/launch/`);
 }
 
 export function SdkworkIamAuthRoutes({
@@ -118,6 +130,7 @@ function SdkworkIamAuthRoutesPage({
   appearance,
   basePath = "/auth",
   controllerOptions,
+  desktopBrowserLogin,
   events,
   getRuntime,
   homePath = "/dashboard",
@@ -171,6 +184,10 @@ function SdkworkIamAuthRoutesPage({
     | "runtimeConfig"
   >;
 
+  if (isDesktopLaunchRoute(location.pathname, basePath)) {
+    return <SdkworkAuthDesktopLaunchPage {...commonProps} />;
+  }
+
   if (isOAuthCallbackRoute(location.pathname, basePath)) {
     return <SdkworkAuthOAuthCallbackPage {...commonProps} />;
   }
@@ -178,6 +195,7 @@ function SdkworkIamAuthRoutesPage({
   return (
     <SdkworkAuthPage
       {...commonProps}
+      desktopBrowserLogin={desktopBrowserLogin}
       events={events}
       slots={slots}
     />

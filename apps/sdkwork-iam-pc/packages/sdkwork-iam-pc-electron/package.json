@@ -1,0 +1,44 @@
+{
+  "name": "@sdkwork/iam-pc-electron",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "SDKWork IAM Electron desktop host adapter: deep-link protocol bridge and system-browser login hand-off.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm --dir ../../../.. exec vitest run apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-electron/tests --config vitest.node.config.ts --configLoader native --pool vmThreads"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "@sdkwork/iam-desktop-auth": "workspace:*"
+  },
+  "peerDependencies": {
+    "electron": ">=28.0.0"
+  },
+  "peerDependenciesMeta": {
+    "electron": {
+      "optional": true
+    }
+  },
+  "sdkwork": {
+    "architecture": "pc-react",
+    "capability": "iam-electron-host",
+    "clientArchitecture": "electron",
+    "domain": "iam",
+    "packageType": "desktop-host",
+    "status": "standard"
+  }
+}

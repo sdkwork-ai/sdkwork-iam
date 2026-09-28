@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "@sdkwork/iam-pc-electron",
+    "displayName": "SDKWork Iam PC Electron",
+    "version": "0.1.0",
+    "type": "node-package",
+    "root": "sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-electron",
+    "domain": "iam",
+    "declaredDomain": "iam",
+    "capability": "iam-electron-host",
+    "status": "standard",
+    "languages": [
+      "typescript"
+    ],
+    "generated": false,
+    "private": true,
+    "manifests": [
+      "package.json"
+    ]
+  },
+  "canonicalSpecs": [
+    {
+      "file": "COMPONENT_SPEC.md",
+      "path": "../../../../../sdkwork-specs/COMPONENT_SPEC.md",
+      "purpose": "Local component specs directory and manifest rules."
+    },
+    {
+      "file": "DESKTOP_APP_ARCHITECTURE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/DESKTOP_APP_ARCHITECTURE_SPEC.md",
+      "purpose": "Electron host profile, bridge protocol, and security baseline."
+    },
+    {
+      "file": "IAM_LOGIN_INTEGRATION_SPEC.md",
+      "path": "../../../../../sdkwork-specs/IAM_LOGIN_INTEGRATION_SPEC.md",
+      "purpose": "Desktop hosts must not own business authentication."
+    },
+    {
+      "file": "IAM_OAUTH_SPEC.md",
+      "path": "../../../../../sdkwork-specs/IAM_OAUTH_SPEC.md",
+      "purpose": "Desktop redirect surface and PKCE rules."
+    },
+    {
+      "file": "TYPESCRIPT_CODE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/TYPESCRIPT_CODE_SPEC.md",
+      "purpose": "TypeScript and Node package rules."
+    }
+  ],
+  "contracts": {
+    "publicExports": [
+      "."
+    ],
+    "runtimeEntrypoints": [
+      "package.json#scripts.typecheck",
+      "package.json#scripts.test"
+    ],
+    "sdkClients": [],
+    "events": [
+      "sdkwork:deepLinks:open"
+    ],
+    "configKeys": [
+      "package.json#sdkwork"
+    ],
+    "routeManifest": null
+  },
+  "integration": {
+    "authority": "Root SDKWork specs remain authoritative. Local specs may extend but must not contradict them.",
+    "dependencyPolicy": "Consumers integrate through public package exports; electron stays an optional peer and is imported only by the consuming Electron app.",
+    "sdkPolicy": "Host adapter exposes local OS capability only; session redemption stays in @sdkwork/iam-desktop-auth through the generated SDK.",
+    "languagePolicy": "Electron main/preload code stays inside this host package per DESKTOP_APP_ARCHITECTURE_SPEC.md section 4."
+  },
+  "verification": {
+    "commands": [
+      "pnpm --filter @sdkwork/iam-pc-electron typecheck",
+      "pnpm --filter @sdkwork/iam-pc-electron test"
+    ]
+  },
+  "metadata": {
+    "managedBy": "sdkwork-iam",
+    "standardVersion": "2026-06-18"
+  }
+}

@@ -233,6 +233,20 @@ export class OauthDeviceAuthorizationsApi {
   }
 }
 
+export class OauthDesktopSessionsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Desktop Sessions create. */
+  async create(body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(appApiPath(`/oauth/desktop_sessions`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true, sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export class OauthCallbacksApi {
   private client: HttpClient;
 
@@ -328,6 +342,7 @@ export class OauthApi {
   public readonly authorizationUrls: OauthAuthorizationUrlsApi;
   public readonly authorizations: OauthAuthorizationsApi;
   public readonly callbacks: OauthCallbacksApi;
+  public readonly desktopSessions: OauthDesktopSessionsApi;
   public readonly deviceAuthorizations: OauthDeviceAuthorizationsApi;
   public readonly grants: OauthGrantsApi;
   public readonly miniProgramSessions: OauthMiniProgramSessionsApi;
@@ -341,6 +356,7 @@ export class OauthApi {
     this.authorizationUrls = new OauthAuthorizationUrlsApi(client);
     this.authorizations = new OauthAuthorizationsApi(client);
     this.callbacks = new OauthCallbacksApi(client);
+    this.desktopSessions = new OauthDesktopSessionsApi(client);
     this.deviceAuthorizations = new OauthDeviceAuthorizationsApi(client);
     this.grants = new OauthGrantsApi(client);
     this.miniProgramSessions = new OauthMiniProgramSessionsApi(client);

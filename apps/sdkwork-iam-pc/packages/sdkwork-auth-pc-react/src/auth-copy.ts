@@ -46,6 +46,20 @@ export interface SdkworkAuthMessages {
     verificationCodeLabel: string;
     verificationCodePlaceholder: string;
   };
+  desktop: {
+    badge: string;
+    browserLoginDescription: string;
+    browserLoginMethod: string;
+    browserLoginWaitingHint: string;
+    cancelBrowserLogin: string;
+    launchBadge: string;
+    launchDescription: string;
+    launchFailed: string;
+    launchTitle: string;
+    missingRedirect: string;
+    openApp: string;
+    openAppRetryHint: string;
+  };
   forgot: {
     badge: string;
     backHelper: string;
@@ -231,6 +245,24 @@ const EN_US_MESSAGES: SdkworkAuthMessages = {
     usernamePlaceholder: "Choose a username",
     verificationCodeLabel: "Verification code",
     verificationCodePlaceholder: "Enter verification code",
+  },
+  desktop: {
+    badge: "Desktop",
+    browserLoginDescription:
+      "Finish sign-in in your system browser instead — the full login, registration, and password-reset experience, returning here automatically.",
+    browserLoginMethod: "Sign in with browser",
+    browserLoginWaitingHint:
+      "Finish signing in from your default browser. This app opens automatically once login succeeds.",
+    cancelBrowserLogin: "Cancel browser sign-in",
+    launchBadge: "Signed in",
+    launchDescription: "You are signed in. Returning to the desktop app…",
+    launchFailed: "The desktop app could not be opened automatically.",
+    launchTitle: "Login successful",
+    missingRedirect:
+      "The desktop hand-off link is missing or invalid. Please start the login again from the app.",
+    openApp: "Open desktop app",
+    openAppRetryHint:
+      "If nothing opened, click the button above, or confirm the app is installed and its deep link is registered.",
   },
   forgot: {
     badge: "Recovery",
@@ -418,6 +450,24 @@ const ZH_CN_MESSAGES: SdkworkAuthMessages = {
     usernamePlaceholder: "\u8bf7\u8f93\u5165\u7528\u6237\u540d",
     verificationCodeLabel: "\u9a8c\u8bc1\u7801",
     verificationCodePlaceholder: "\u8bf7\u8f93\u5165\u9a8c\u8bc1\u7801",
+  },
+  desktop: {
+    badge: "\u684c\u9762\u767b\u5f55",
+    browserLoginDescription:
+      "\u6539\u7528\u7cfb\u7edf\u6d4f\u89c8\u5668\u5b8c\u6210\u767b\u5f55\uff0c\u767b\u5f55\u3001\u6ce8\u518c\u3001\u627e\u56de\u5bc6\u7801\u5168\u6d41\u7a0b\u5b8c\u6210\u540e\u4f1a\u81ea\u52a8\u8fd4\u56de\u5e94\u7528\u3002",
+    browserLoginMethod: "\u4f7f\u7528\u6d4f\u89c8\u5668\u767b\u5f55",
+    browserLoginWaitingHint:
+      "\u8bf7\u5728\u9ed8\u8ba4\u6d4f\u89c8\u5668\u4e2d\u5b8c\u6210\u767b\u5f55\uff0c\u767b\u5f55\u6210\u529f\u540e\u5e94\u7528\u4f1a\u81ea\u52a8\u6253\u5f00\u3002",
+    cancelBrowserLogin: "\u53d6\u6d88\u6d4f\u89c8\u5668\u767b\u5f55",
+    launchBadge: "\u767b\u5f55\u6210\u529f",
+    launchDescription: "\u767b\u5f55\u6210\u529f\uff0c\u6b63\u5728\u8fd4\u56de\u684c\u9762\u5e94\u7528\u2026",
+    launchFailed: "\u65e0\u6cd5\u81ea\u52a8\u6253\u5f00\u684c\u9762\u5e94\u7528\u3002",
+    launchTitle: "\u767b\u5f55\u6210\u529f",
+    missingRedirect:
+      "\u684c\u9762\u56de\u8df3\u94fe\u63a5\u7f3a\u5931\u6216\u65e0\u6548\uff0c\u8bf7\u4ece\u5e94\u7528\u91cd\u65b0\u53d1\u8d77\u767b\u5f55\u3002",
+    openApp: "\u6253\u5f00\u684c\u9762\u5e94\u7528",
+    openAppRetryHint:
+      "\u5982\u679c\u5e94\u7528\u672a\u81ea\u52a8\u6253\u5f00\uff0c\u8bf7\u70b9\u51fb\u4e0a\u65b9\u6309\u94ae\uff0c\u6216\u786e\u8ba4\u5e94\u7528\u5df2\u5b89\u88c5\u4e14\u5df2\u6ce8\u518c\u94fe\u63a5\u534f\u8bae\u3002",
   },
   forgot: {
     badge: "\u8d26\u53f7\u6062\u590d",

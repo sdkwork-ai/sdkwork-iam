@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@sdkwork/iam-contracts": "workspace:*",
+    "@sdkwork/iam-desktop-auth": "workspace:*",
     "@sdkwork/iam-sdk-adapter": "workspace:*",
     "@sdkwork/i18n-pc-react": "workspace:*",
     "@sdkwork/runtime-bootstrap": "workspace:*",

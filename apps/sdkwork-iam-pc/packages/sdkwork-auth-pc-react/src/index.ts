@@ -28,6 +28,8 @@ export * from "./components/auth/useActionCooldown.ts";
 export * from "./components/auth-page-shell.tsx";
 export * from "./components/oauth-provider-grid.tsx";
 export * from "./components/qr-login-panel.tsx";
+export * from "./desktop-browser-login.ts";
+export * from "./pages/AuthDesktopLaunchPage.tsx";
 export * from "./pages/AuthOAuthCallbackPage.tsx";
 export * from "./pages/AuthPage.tsx";
 export * from "./pages/IamAuthRoutes.tsx";

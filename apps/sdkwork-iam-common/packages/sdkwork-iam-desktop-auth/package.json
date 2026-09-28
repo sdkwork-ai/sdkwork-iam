@@ -1,0 +1,35 @@
+{
+  "name": "@sdkwork/iam-desktop-auth",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "SDKWork IAM desktop browser-login runtime: PKCE authorization, deep-link callback validation, and dual-token session exchange for Electron/Tauri hosts.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm --dir ../../../.. exec vitest run apps/sdkwork-iam-common/packages/sdkwork-iam-desktop-auth/tests --config vitest.node.config.ts --configLoader native --pool vmThreads"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "@sdkwork/iam-sdk-ports": "workspace:*"
+  },
+  "sdkwork": {
+    "architecture": "common",
+    "capability": "iam-desktop-auth",
+    "domain": "iam",
+    "packageType": "runtime",
+    "status": "standard"
+  }
+}

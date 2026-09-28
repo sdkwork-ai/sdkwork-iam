@@ -12,6 +12,7 @@ import * as QRCode from "qrcode";
 import {
   KeyRound,
   Mail,
+  MonitorSmartphone,
   TriangleAlert,
   ShieldCheck,
   Smartphone,
@@ -71,8 +72,11 @@ import {
 } from "../auth-config.ts";
 import {
   createAuthRouteCatalog,
+  buildSdkworkAuthDesktopLaunchLocation,
+  isSdkworkDesktopDeepLinkRedirect,
   resolveAuthRedirectTarget,
 } from "../auth.ts";
+import type { SdkworkAuthDesktopBrowserLoginBinding } from "../desktop-browser-login.ts";
 import {
   buildSdkworkAuthRouteWithContext,
   resolveSdkworkAuthQrEntryCallbackEvent,
@@ -522,6 +526,12 @@ export interface SdkworkAuthPageProps {
   appearance?: SdkworkAuthAppearanceConfig;
   basePath?: string;
   controller?: SdkworkAuthController;
+  /**
+   * Desktop (Electron/Tauri) browser-login entry. Provided by product
+   * composition when the page runs inside a native host; absent on pure web
+   * so the entry never renders in the browser.
+   */
+  desktopBrowserLogin?: SdkworkAuthDesktopBrowserLoginBinding;
   embeddedRouting?: SdkworkAuthPageRouting;
   events?: SdkworkAuthPageEvents;
   homePath?: string;
@@ -559,6 +569,7 @@ function SdkworkAuthPageContent({
   appearance,
   basePath = "/auth",
   controller: providedController,
+  desktopBrowserLogin,
   events,
   homePath = "/dashboard",
   onAuthComplete,
@@ -801,6 +812,17 @@ function SdkworkAuthPageContent({
 
     if (oauthAuthorizationStateId) {
       const completion = await controller.completeOAuthAuthorization(oauthAuthorizationStateId);
+      if (isSdkworkDesktopDeepLinkRedirect(completion.redirectUrl)) {
+        // The authorization was started by a desktop app: hand the code to
+        // the hosted login-success page, which deep-links back into the app.
+        startTransition(() => {
+          navigate(
+            buildSdkworkAuthDesktopLaunchLocation(completion.redirectUrl, { basePath }),
+            { replace: true },
+          );
+        });
+        return;
+      }
       window.location.assign(completion.redirectUrl);
       return;
     }
@@ -906,6 +928,22 @@ function SdkworkAuthPageContent({
       );
     }
   };
+
+  const [desktopBrowserLoginWaiting, setDesktopBrowserLoginWaiting] = useState(
+    () => desktopBrowserLogin?.isWaiting?.() ?? false,
+  );
+
+  useEffect(() => {
+    if (!desktopBrowserLogin?.subscribe) {
+      setDesktopBrowserLoginWaiting(desktopBrowserLogin?.isWaiting?.() ?? false);
+      return undefined;
+    }
+    const unsubscribe = desktopBrowserLogin.subscribe(() => {
+      setDesktopBrowserLoginWaiting(desktopBrowserLogin.isWaiting?.() ?? false);
+    });
+    setDesktopBrowserLoginWaiting(desktopBrowserLogin.isWaiting?.() ?? false);
+    return unsubscribe;
+  }, [desktopBrowserLogin]);
 
   useEffect(() => {
     void controller.bootstrap();
@@ -1641,6 +1679,50 @@ function SdkworkAuthPageContent({
               showRegisterAction={showRegisterAction}
               signUpLabel={copy.register.submit}
             />
+
+            {desktopBrowserLogin && mode === "login" && !qrEntryKey ? (
+              desktopBrowserLoginWaiting ? (
+                <div
+                  className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/60"
+                  data-testid="sdkwork-desktop-browser-login-waiting"
+                >
+                  <div className="flex items-start gap-3 text-sm leading-6 text-zinc-700 dark:text-zinc-200">
+                    <MonitorSmartphone className="mt-0.5 h-4 w-4 shrink-0 text-primary-500" />
+                    <span>{copy.desktop.browserLoginWaitingHint}</span>
+                  </div>
+                  {desktopBrowserLogin?.cancel ? (
+                    <button
+                      className="mt-3 text-sm font-medium text-[var(--sdkwork-auth-muted-color)] transition-colors hover:text-primary-300"
+                      data-testid="sdkwork-desktop-browser-login-cancel"
+                      onClick={() => desktopBrowserLogin.cancel?.()}
+                      type="button"
+                    >
+                      {copy.desktop.cancelBrowserLogin}
+                    </button>
+                  ) : null}
+                </div>
+              ) : (
+                <button
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-transparent px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:border-primary-300 hover:text-primary-600 dark:border-zinc-800 dark:text-zinc-200"
+                  data-testid="sdkwork-desktop-browser-login-entry"
+                  onClick={() => {
+                    void (async () => {
+                      try {
+                        await desktopBrowserLogin.begin();
+                      } catch (error) {
+                        sdkToast.error(
+                          readSdkworkIdentityErrorMessage(error, copy.common.requestFailed),
+                        );
+                      }
+                    })();
+                  }}
+                  type="button"
+                >
+                  <MonitorSmartphone className="h-4 w-4" />
+                  {copy.desktop.browserLoginMethod}
+                </button>
+              )
+            ) : null}
 
             {oauthLoginEnabled ? (
               <SdkworkOAuthProviderGrid

@@ -14,6 +14,7 @@ import {
 
 export type SdkworkAuthStatus = "anonymous" | "authenticated" | "authenticating" | "expired";
 export type SdkworkAuthRouteId =
+  | "desktop-launch"
   | "forgot-password"
   | "login"
   | "oauth-callback"
@@ -214,6 +215,7 @@ export interface SdkworkAuthEntryReadiness {
 
 export interface SdkworkAuthWorkspaceManifest extends SdkworkAppCapabilityManifest {
   capability: "auth";
+  desktopLaunchRoutePath: string;
   forgotPasswordRoutePath: string;
   loginRoutePath: string;
   oauthCallbackRoutePattern: string;
@@ -225,6 +227,7 @@ export interface CreateAuthWorkspaceManifestOptions
   extends Partial<
     Pick<CreateSdkworkAppCapabilityManifestOptions, "description" | "host" | "id" | "packageNames" | "theme" | "title">
   > {
+  desktopLaunchRoutePath?: string;
   forgotPasswordRoutePath?: string;
   loginRoutePath?: string;
   oauthCallbackRoutePattern?: string;
@@ -233,6 +236,7 @@ export interface CreateAuthWorkspaceManifestOptions
 }
 
 export interface SdkworkAuthWorkspaceRoutes {
+  desktopLaunchRoutePath: string;
   forgotPasswordRoutePath: string;
   loginRoutePath: string;
   oauthCallbackRoutePattern: string;
@@ -453,6 +457,14 @@ export function createAuthRouteCatalog(basePath = "/auth"): SdkworkAuthRouteDefi
       id: "qr-entry",
       path: `${resolvedBasePath}/qr/:sessionKey`,
     },
+    {
+      // Hosted login-success hand-off page: after an authorization started by
+      // a desktop app (Electron/Tauri) completes in the browser, the browser
+      // lands here and deep-links back into the desktop app.
+      access: "anonymous-only",
+      id: "desktop-launch",
+      path: `${resolvedBasePath}/desktop/launch`,
+    },
   ];
 }
 
@@ -495,6 +507,7 @@ export function resolveAuthWorkspaceRoutes(basePath = "/auth"): SdkworkAuthWorks
   const routes = createAuthRouteCatalog(basePath);
 
   return {
+    desktopLaunchRoutePath: resolveAuthRoutePath("desktop-launch", routes),
     forgotPasswordRoutePath: resolveAuthRoutePath("forgot-password", routes),
     loginRoutePath: resolveAuthRoutePath("login", routes),
     oauthCallbackRoutePattern: resolveAuthRoutePath("oauth-callback", routes),
@@ -773,8 +786,58 @@ export function resolveAuthRedirectTarget(
   return sanitizeSdkworkAuthRedirectTarget(rawTarget, fallbackRoute, authBasePath);
 }
 
+export interface BuildSdkworkAuthDesktopLaunchPathOptions {
+  basePath?: string;
+}
+
+/**
+ * Path of the hosted login-success page the browser lands on after an
+ * authorization started by a desktop app completes. The page receives the
+ * deep-link redirect URL through the `redirectUrl` query parameter and hands
+ * it to the operating system.
+ */
+export function buildSdkworkAuthDesktopLaunchPath(
+  options: BuildSdkworkAuthDesktopLaunchPathOptions = {},
+): string {
+  const resolvedBasePath = normalizeSdkworkAuthBasePath(options.basePath ?? "/auth");
+  return createAuthRouteCatalog(resolvedBasePath).find((route) => route.id === "desktop-launch")
+    ?.path ?? `${resolvedBasePath}/desktop/launch`;
+}
+
+/**
+ * Builds the login-success page location carrying the desktop deep-link
+ * redirect URL. The URL contains a single-use authorization code; it is only
+ * transported through this in-app navigation, never logged or rendered.
+ */
+export function buildSdkworkAuthDesktopLaunchLocation(
+  redirectUrl: string,
+  options: BuildSdkworkAuthDesktopLaunchPathOptions = {},
+): string {
+  return `${buildSdkworkAuthDesktopLaunchPath(options)}?redirectUrl=${encodeURIComponent(redirectUrl)}`;
+}
+
+/**
+ * True when an authorization completion redirect targets a native app instead
+ * of a web page: any non-http(s) scheme (custom private-use deeplink) counts.
+ * RFC 8252 loopback redirects (http://127.0.0.1:<port>/…) also hand off to a
+ * desktop app but keep navigating the browser, so they stay on the plain
+ * assign path.
+ */
+export function isSdkworkDesktopDeepLinkRedirect(redirectUrl: string | null | undefined): boolean {
+  const trimmed = redirectUrl?.trim() ?? "";
+  if (!trimmed) {
+    return false;
+  }
+  const scheme = trimmed.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/u)?.[1]?.toLowerCase();
+  if (!scheme) {
+    return false;
+  }
+  return scheme !== "http" && scheme !== "https";
+}
+
 export function createAuthWorkspaceManifest({
   description = "Auth workspace for anonymous-entry routing, OAuth callbacks, and reusable auth surface assembly.",
+  desktopLaunchRoutePath = "/auth/desktop/launch",
   forgotPasswordRoutePath = "/auth/forgot-password",
   host,
   id = "sdkwork-auth",
@@ -799,6 +862,7 @@ export function createAuthWorkspaceManifest({
       title,
     }),
     capability: "auth",
+    desktopLaunchRoutePath,
     forgotPasswordRoutePath,
     loginRoutePath,
     oauthCallbackRoutePattern,

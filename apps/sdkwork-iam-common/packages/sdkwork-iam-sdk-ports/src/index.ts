@@ -138,6 +138,9 @@ export interface IamAppOAuthResourceClient {
       create?: IamSdkMethod;
     };
   };
+  desktopSessions?: {
+    create?: IamSdkMethod;
+  };
   scanLoginModes?: {
     list?: IamSdkMethod;
   };

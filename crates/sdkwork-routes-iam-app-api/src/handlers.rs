@@ -216,6 +216,10 @@ fn build_sdkwork_iam_app_api_core_router(state: LocalIamState) -> Router {
             post(complete_oauth_authorization),
         )
         .route(
+            "/app/v3/api/oauth/desktop_sessions",
+            post(create_desktop_session),
+        )
+        .route(
             "/app/v3/api/iam/users/current",
             get(retrieve_current_user).patch(update_current_user),
         )
@@ -3053,6 +3057,169 @@ async fn complete_oauth_authorization(
             &error,
         ),
     }
+}
+
+/// Desktop browser-login session bootstrap (Electron/Tauri and other native
+/// hosts): the desktop app opens the system browser at the OAuth authorize
+/// endpoint, the user completes login/registration/password reset on the
+/// hosted web surface, and the browser hands `code` + `state` back through a
+/// deeplink. This endpoint redeems that PKCE-bound authorization code for a
+/// standard dual-token IAM session, so the desktop runtime consumes the same
+/// `SdkworkAuthSession` shape as every other login surface.
+async fn create_desktop_session(State(state): State<LocalIamState>, Json(body): Json<Value>) -> Response {
+    let Some(client_id) = optional_string(body.get("clientId"))
+        .or_else(|| optional_string(body.get("client_id")))
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+    else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_oauth_client_required",
+            "OAuth clientId is required",
+        );
+    };
+    let Some(authorization_code) = optional_string(body.get("authorizationCode"))
+        .or_else(|| optional_string(body.get("authorization_code")))
+        .or_else(|| optional_string(body.get("code")))
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+    else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_oauth_code_required",
+            "OAuth authorizationCode is required",
+        );
+    };
+    let Some(redirect_uri) = optional_string(body.get("redirectUri"))
+        .or_else(|| optional_string(body.get("redirect_uri")))
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+    else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_oauth_redirect_uri_required",
+            "OAuth redirectUri is required",
+        );
+    };
+    let code_verifier = optional_string(body.get("codeVerifier"))
+        .or_else(|| optional_string(body.get("code_verifier")));
+    let client_secret = optional_string(body.get("clientSecret"))
+        .or_else(|| optional_string(body.get("client_secret")));
+
+    if let Some(response) = enforce_rate_limit(
+        &state,
+        LOCAL_EPHEMERAL_SCOPE,
+        &format!("oauth:desktop_session:{}", canonical_identity(&client_id)),
+    )
+    .await
+    {
+        return response;
+    }
+
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+
+    let client = match sdkwork_iam_web_adapter::resolve_relying_party_client(
+        &pg,
+        &client_id,
+        None,
+    )
+    .await
+    {
+        Ok(client) => client,
+        Err(error) => {
+            return appbase_error(
+                StatusCode::UNAUTHORIZED,
+                "iam_oauth_client_invalid",
+                &error,
+            );
+        }
+    };
+
+    let redeemed = match sdkwork_iam_web_adapter::redeem_authorization_code_session_context(
+        &pg,
+        &client,
+        &authorization_code,
+        &redirect_uri,
+        code_verifier.as_deref(),
+        client_secret.as_deref(),
+    )
+    .await
+    {
+        Ok(redeemed) => redeemed,
+        Err(error) => {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_oauth_desktop_session_exchange_failed",
+                &error,
+            );
+        }
+    };
+
+    let Some(user) = load_user_by_id(&pg, &redeemed.tenant_id, &redeemed.user_id)
+        .await
+        .ok()
+        .flatten()
+    else {
+        return appbase_error(
+            StatusCode::UNAUTHORIZED,
+            "iam_oauth_desktop_session_exchange_failed",
+            "OAuth authorization code owner is not an active user",
+        );
+    };
+
+    // The hosted web surface already resolved the personal/organization login
+    // choice before completing the authorization, so the grant's organization
+    // scope (platform sentinel "0" for personal login) becomes the session
+    // scope directly — no second login-context challenge.
+    let organization_id =
+        if redeemed.organization_id.trim().is_empty() || redeemed.organization_id.trim() == "0" {
+            None
+        } else {
+            Some(redeemed.organization_id.clone())
+        };
+    let session = match create_session_record(
+        &pg,
+        &state.config,
+        &user,
+        organization_id,
+        &client.app_id,
+    )
+    .await
+    {
+        Ok(session) => session,
+        Err(error) => {
+            tracing::error!(%error, "desktop browser-login session creation failed");
+            return appbase_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "iam_session_create_failed",
+                &error,
+            );
+        }
+    };
+
+    crate::security_events::record_login_success(
+        &pg,
+        &user.tenant_id,
+        &user.id,
+        "oauth:sdkwork",
+        "oauth",
+    )
+    .await;
+    crate::audit_events::record_login_success(
+        &pg,
+        &state.config,
+        &user.id,
+        "oauth:sdkwork",
+        "oauth",
+        &user.tenant_id,
+    )
+    .await;
+
+    appbase_ok(session_to_json(&session))
 }
 
 async fn retrieve_runtime(State(state): State<LocalIamState>, ctx: WebRequestContext) -> Response {

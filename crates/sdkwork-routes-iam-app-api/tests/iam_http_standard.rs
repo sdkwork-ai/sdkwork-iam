@@ -108,6 +108,7 @@ fn iam_app_api_limits_anonymous_operations_to_qr_login_component_requests() {
             "deviceAuthorizations.create",
             "deviceAuthorizations.retrieve",
             "deviceAuthorizations.sessionExchanges.create",
+            "desktopSessions.create",
             "wechatPaymentOauth.callback",
         ]
     );
@@ -684,6 +685,7 @@ fn app_route_manifest_matches_the_standard_operation_surface() {
         "authorizations.completions.create",
         "callbacks.create",
         "callbacks.retrieve",
+        "desktopSessions.create",
         "deviceAuthorizations.create",
         "deviceAuthorizations.passwordCompletions.create",
         "deviceAuthorizations.retrieve",

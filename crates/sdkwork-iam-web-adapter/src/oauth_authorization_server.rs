@@ -236,8 +236,8 @@ pub async fn create_pending_authorization_state(
             integration_id, oauth_client_id, surface_id, surface_kind, flow_kind, state_hash, \
             nonce_hash, pkce_challenge, pkce_challenge_method, redirect_uri, redirect_uri_hash, \
             requested_scopes_json, return_path, status, expires_at, created_at\
-         ) VALUES ($1, $2, $3, '0', $4, 'prod', $5, $6, $7, NULL, 'web', 'authorization_code', \
-                   $8, NULL, $9, $10, $11, $12, $13, $14, 'pending', $15, $16)",
+         ) VALUES ($1, $2, $3, '0', $4, 'prod', $5, $6, $7, NULL, $8, 'authorization_code', \
+                   $9, NULL, $10, $11, $12, $13, $14, $15, 'pending', $16, $17)",
     )
     .bind(&state_id)
     .bind(uuid::Uuid::now_v7().to_string())
@@ -249,6 +249,7 @@ pub async fn create_pending_authorization_state(
         client.tenant_id, SDKWORK_OAUTH_PROVIDER_CODE
     ))
     .bind(&client.app_id)
+    .bind(classify_redirect_surface_kind(&request.redirect_uri))
     .bind(request.state.as_deref().map(hash_value).unwrap_or_default())
     .bind(request.code_challenge.as_deref().unwrap_or(""))
     .bind(request.code_challenge_method.as_deref().unwrap_or("S256"))
@@ -351,10 +352,8 @@ pub async fn complete_authorization_state(
     .await
     .map_err(|error| format!("approve oauth authorization state failed: {error}"))?;
 
-    let mut redirect_url = format!(
-        "{redirect_uri}?code={}",
-        urlencoding::encode(&authorization_code)
-    );
+    let code_separator = if redirect_uri.contains('?') { '&' } else { '?' };
+    let mut redirect_url = format!("{redirect_uri}{code_separator}code={}", urlencoding::encode(&authorization_code));
     if let Some(state) = parse_oauth_state_from_return_path(&return_path) {
         redirect_url.push_str("&state=");
         redirect_url.push_str(&urlencoding::encode(&state));
@@ -366,14 +365,26 @@ pub async fn complete_authorization_state(
     })
 }
 
-pub async fn exchange_authorization_code(
+/// An authorization code that passed client, redirect, PKCE, expiry, and
+/// grant validation. The code is still unconsumed at this point; callers
+/// finish their token (or session) side effects and then consume the state.
+pub struct ApprovedAuthorizationCode {
+    pub state_id: String,
+    pub grant_id: String,
+    pub tenant_id: String,
+    pub organization_id: String,
+    pub user_id: String,
+    pub scopes_json: String,
+}
+
+async fn load_approved_authorization_code(
     pg: &PgPool,
     client: &ResolvedRelyingParty,
     code: &str,
     redirect_uri: &str,
     code_verifier: Option<&str>,
     client_secret: Option<&str>,
-) -> Result<Value, String> {
+) -> Result<ApprovedAuthorizationCode, String> {
     if client.config.confidential {
         verify_client_secret(client, client_secret)?;
     }
@@ -402,13 +413,16 @@ pub async fn exchange_authorization_code(
     let return_path: String = row.get(6);
     let grant_id = parse_grant_id_from_return_path(&return_path)
         .ok_or_else(|| "OAuth authorization grant reference is missing".to_string())?;
-    let user_id: String =
-        sqlx::query_scalar("SELECT user_id FROM iam_oauth_grant WHERE id = $1 LIMIT 1")
-            .bind(&grant_id)
-            .fetch_optional(pg)
-            .await
-            .map_err(|error| format!("load oauth grant owner failed: {error}"))?
-            .ok_or_else(|| "OAuth authorization grant was not found".to_string())?;
+    let grant_row = sqlx::query(
+        "SELECT user_id, organization_id FROM iam_oauth_grant WHERE id = $1 LIMIT 1",
+    )
+    .bind(&grant_id)
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| format!("load oauth grant owner failed: {error}"))?
+    .ok_or_else(|| "OAuth authorization grant was not found".to_string())?;
+    let user_id: String = grant_row.get(0);
+    let organization_id: String = grant_row.get(1);
 
     if stored_redirect_uri != redirect_uri {
         return Err("OAuth redirect_uri does not match the authorization request".to_string());
@@ -416,6 +430,112 @@ pub async fn exchange_authorization_code(
     if !client.config.confidential {
         validate_pkce(code_verifier, &pkce_challenge, &pkce_method)?;
     }
+    if tenant_id != client.tenant_id {
+        return Err("OAuth authorization code tenant does not match the client".to_string());
+    }
+
+    Ok(ApprovedAuthorizationCode {
+        state_id,
+        grant_id,
+        tenant_id,
+        organization_id,
+        user_id,
+        scopes_json,
+    })
+}
+
+async fn consume_authorization_code_state(pg: &PgPool, state_id: &str) -> Result<(), String> {
+    sqlx::query(
+        "UPDATE iam_oauth_authorization_state SET status = 'consumed', consumed_at = $2 WHERE id = $1",
+    )
+    .bind(state_id)
+    .bind(chrono::Utc::now().to_rfc3339())
+    .execute(pg)
+    .await
+    .map_err(|error| format!("finalize oauth authorization code failed: {error}"))?;
+    Ok(())
+}
+
+/// User context carried out of a redeemed desktop authorization code so the
+/// app-api plane can bootstrap a standard dual-token IAM session.
+pub struct RedeemedAuthorizationContext {
+    pub tenant_id: String,
+    pub organization_id: String,
+    pub user_id: String,
+    pub app_id: String,
+    pub scopes: Vec<String>,
+}
+
+/// Redeems an approved authorization code for a first-party desktop client
+/// into a validated user context instead of OAuth bearer tokens. The desktop
+/// app proves possession with the PKCE code_verifier (public clients) or the
+/// client secret (confidential clients); the code is consumed exactly once.
+pub async fn redeem_authorization_code_session_context(
+    pg: &PgPool,
+    client: &ResolvedRelyingParty,
+    code: &str,
+    redirect_uri: &str,
+    code_verifier: Option<&str>,
+    client_secret: Option<&str>,
+) -> Result<RedeemedAuthorizationContext, String> {
+    let approved = load_approved_authorization_code(
+        pg, client, code, redirect_uri, code_verifier, client_secret,
+    )
+    .await?;
+
+    let active_user: Option<String> = sqlx::query_scalar(
+        "SELECT id FROM iam_user \
+         WHERE id = $1 AND tenant_id = $2 AND status = 'active' AND is_deleted = 0 \
+         LIMIT 1",
+    )
+    .bind(&approved.user_id)
+    .bind(&approved.tenant_id)
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| format!("load oauth grant owner failed: {error}"))?;
+    if active_user.is_none() {
+        return Err("OAuth authorization code owner is not an active user".to_string());
+    }
+
+    consume_authorization_code_state(pg, &approved.state_id).await?;
+    let issued_at = chrono::Utc::now().to_rfc3339();
+    sqlx::query(
+        "UPDATE iam_oauth_grant \
+         SET status = 'active', issued_at = $2, updated_at = $2 \
+         WHERE id = $1 AND status = 'pending'",
+    )
+    .bind(&approved.grant_id)
+    .bind(issued_at)
+    .execute(pg)
+    .await
+    .map_err(|error| format!("activate oauth grant failed: {error}"))?;
+
+    Ok(RedeemedAuthorizationContext {
+        tenant_id: approved.tenant_id,
+        organization_id: approved.organization_id,
+        user_id: approved.user_id,
+        app_id: client.app_id.clone(),
+        scopes: parse_scope_json(&approved.scopes_json),
+    })
+}
+
+pub async fn exchange_authorization_code(
+    pg: &PgPool,
+    client: &ResolvedRelyingParty,
+    code: &str,
+    redirect_uri: &str,
+    code_verifier: Option<&str>,
+    client_secret: Option<&str>,
+) -> Result<Value, String> {
+    let approved = load_approved_authorization_code(
+        pg, client, code, redirect_uri, code_verifier, client_secret,
+    )
+    .await?;
+    let state_id = approved.state_id.clone();
+    let grant_id = approved.grant_id.clone();
+    let tenant_id = approved.tenant_id.clone();
+    let user_id = approved.user_id.clone();
+    let scopes_json = approved.scopes_json.clone();
 
     let session_row = sqlx::query(sqlx::AssertSqlSafe(format!(
         "SELECT {IAM_SESSION_CONTEXT_SELECT} \
@@ -467,14 +587,7 @@ pub async fn exchange_authorization_code(
     .await
     .map_err(|error| format!("update oauth grant tokens failed: {error}"))?;
 
-    sqlx::query(
-        "UPDATE iam_oauth_authorization_state SET status = 'consumed', consumed_at = $2 WHERE id = $1",
-    )
-    .bind(&state_id)
-    .bind(now.to_rfc3339())
-    .execute(pg)
-    .await
-    .map_err(|error| format!("finalize oauth authorization code failed: {error}"))?;
+    consume_authorization_code_state(pg, &state_id).await?;
 
     Ok(json!({
         "access_token": access_token,
@@ -816,7 +929,80 @@ fn redirect_uri_allowed(registered: &[String], candidate: &str) -> bool {
 }
 
 fn redirect_uris_match(expected: &str, actual: &str) -> bool {
-    expected.trim() == actual.trim()
+    let expected = expected.trim();
+    let actual = actual.trim();
+    if expected == actual {
+        return true;
+    }
+    // RFC 8252 section 7.3: the loopback interface redirect URI may vary its
+    // port on every launch, so registered loopback redirects match on
+    // scheme + host + path + query while the port is ignored.
+    match (
+        parse_loopback_redirect_uri(expected),
+        parse_loopback_redirect_uri(actual),
+    ) {
+        (Some(expected_loopback), Some(actual_loopback)) => expected_loopback == actual_loopback,
+        _ => false,
+    }
+}
+
+/// Normalized descriptor of an RFC 8252 loopback redirect URI
+/// (`http://127.0.0.1:<port>/path` or `http://[::1]:<port>/path`) with the
+/// ephemeral port erased. Returns `None` for every other shape.
+fn parse_loopback_redirect_uri(uri: &str) -> Option<(String, String, String)> {
+    let (scheme, rest) = uri.split_once("://")?;
+    if !scheme.eq_ignore_ascii_case("http") {
+        return None;
+    }
+    let (authority, path_and_query) = match rest.find(['/', '?', '#']) {
+        Some(index) => (&rest[..index], &rest[index..]),
+        None => (rest, ""),
+    };
+    let host_part = authority.rsplit('@').next().unwrap_or(authority);
+    let host = match host_part.rsplit_once(':') {
+        // Bare IPv6 without brackets never carries a port, so treat the whole
+        // segment as the host.
+        Some((host, _port)) if host.starts_with('[') => host.to_string(),
+        Some((host, _port)) if host.contains(':') => host_part.to_string(),
+        Some((host, _port)) => host.to_string(),
+        None => host_part.to_string(),
+    };
+    let normalized_host = host.trim().to_ascii_lowercase();
+    let is_loopback = normalized_host == "127.0.0.1" || normalized_host == "[::1]";
+    if !is_loopback {
+        return None;
+    }
+    let path = path_and_query
+        .split(['?', '#'])
+        .next()
+        .unwrap_or_default()
+        .trim_end_matches('/')
+        .to_string();
+    let query = path_and_query
+        .split_once('?')
+        .map(|(_, query)| query.split('#').next().unwrap_or_default().to_string())
+        .unwrap_or_default();
+    Some((normalized_host, path, query))
+}
+
+/// Redirect surface the redirect URI hands the flow back to: `desktop` for
+/// native-app redirects (custom private-use scheme deeplinks and RFC 8252
+/// loopback redirects), `web` for ordinary browser redirects.
+pub fn classify_redirect_surface_kind(redirect_uri: &str) -> &'static str {
+    let uri = redirect_uri.trim();
+    if uri.is_empty() {
+        return "web";
+    }
+    let Some((scheme, _)) = uri.split_once("://") else {
+        return "web";
+    };
+    if scheme.eq_ignore_ascii_case("http") || scheme.eq_ignore_ascii_case("https") {
+        if parse_loopback_redirect_uri(uri).is_some() {
+            return "desktop";
+        }
+        return "web";
+    }
+    "desktop"
 }
 
 fn scope_allowed(allowed: &[String], scope: &str) -> bool {
@@ -1278,5 +1464,137 @@ mod tests {
             code_challenge_method,
             tenant_id: None,
         }
+    }
+
+    fn sample_desktop_relying_party() -> ResolvedRelyingParty {
+        ResolvedRelyingParty {
+            tenant_id: "100001".to_string(),
+            app_id: "sdkwork-iam".to_string(),
+            config: RelyingPartyConfig {
+                enabled: true,
+                redirect_uris: vec![
+                    "sdkwork-iam://auth/callback".to_string(),
+                    "http://127.0.0.1:41017/auth/desktop/callback".to_string(),
+                ],
+                allowed_scopes: vec!["openid".to_string(), "profile".to_string()],
+                confidential: false,
+                client_secret_hash: None,
+            },
+        }
+    }
+
+    #[test]
+    fn desktop_deeplink_redirect_uri_is_accepted_when_registered() {
+        let client = sample_desktop_relying_party();
+        let verifier = "pkce-verifier-with-sufficient-length";
+        let challenge = {
+            let digest = Sha256::digest(verifier.as_bytes());
+            URL_SAFE_NO_PAD.encode(digest)
+        };
+        validate_authorize_request(
+            &AuthorizeRequest {
+                client_id: "sdkwork-iam".to_string(),
+                redirect_uri: "sdkwork-iam://auth/callback".to_string(),
+                response_type: "code".to_string(),
+                scope: "openid profile".to_string(),
+                state: Some("desktop-state".to_string()),
+                code_challenge: Some(challenge),
+                code_challenge_method: Some("S256".to_string()),
+                tenant_id: None,
+            },
+            &client,
+        )
+        .expect("registered deeplink redirect uri must validate");
+    }
+
+    #[test]
+    fn desktop_deeplink_redirect_uri_is_rejected_when_unregistered() {
+        let client = sample_desktop_relying_party();
+        let err = validate_authorize_request(
+            &AuthorizeRequest {
+                client_id: "sdkwork-iam".to_string(),
+                redirect_uri: "evil-app://auth/callback".to_string(),
+                response_type: "code".to_string(),
+                scope: "openid profile".to_string(),
+                state: Some("desktop-state".to_string()),
+                code_challenge: Some("eVpBbm5ub3QtZXQtc2VjcmV0".to_string()),
+                code_challenge_method: Some("S256".to_string()),
+                tenant_id: None,
+            },
+            &client,
+        )
+        .expect_err("unregistered deeplink redirect uri must fail");
+        assert!(err.contains("redirect_uri"));
+    }
+
+    #[test]
+    fn loopback_redirect_uri_matches_across_ephemeral_ports() {
+        let registered = ["http://127.0.0.1:41017/auth/desktop/callback".to_string()];
+        assert!(redirect_uri_allowed(
+            &registered,
+            "http://127.0.0.1:49999/auth/desktop/callback",
+        ));
+        assert!(redirect_uri_allowed(
+            &registered,
+            "http://127.0.0.1/auth/desktop/callback",
+        ));
+        assert!(!redirect_uri_allowed(
+            &registered,
+            "http://127.0.0.1:49999/other/path",
+        ));
+        assert!(!redirect_uri_allowed(
+            &registered,
+            "http://10.0.0.8:41017/auth/desktop/callback",
+        ));
+    }
+
+    #[test]
+    fn loopback_ipv6_redirect_uri_matches_across_ephemeral_ports() {
+        let registered = ["http://[::1]:41017/auth/desktop/callback".to_string()];
+        assert!(redirect_uri_allowed(
+            &registered,
+            "http://[::1]:51111/auth/desktop/callback",
+        ));
+        assert!(!redirect_uri_allowed(
+            &registered,
+            "http://[::1]:51111/other",
+        ));
+    }
+
+    #[test]
+    fn classify_redirect_surface_kind_separates_web_and_desktop() {
+        assert_eq!(classify_redirect_surface_kind("https://app.example.com/auth/callback"), "web");
+        assert_eq!(classify_redirect_surface_kind("http://app.example.com/callback"), "web");
+        assert_eq!(classify_redirect_surface_kind("sdkwork-iam://auth/callback"), "desktop");
+        assert_eq!(
+            classify_redirect_surface_kind("http://127.0.0.1:41017/auth/desktop/callback"),
+            "desktop",
+        );
+        assert_eq!(classify_redirect_surface_kind("http://[::1]:41017/cb"), "desktop");
+        assert_eq!(classify_redirect_surface_kind(""), "web");
+    }
+
+    #[test]
+    fn desktop_authorize_request_with_loopback_redirect_validates() {
+        let client = sample_desktop_relying_party();
+        let verifier = "pkce-verifier-with-sufficient-length";
+        let challenge = {
+            let digest = Sha256::digest(verifier.as_bytes());
+            URL_SAFE_NO_PAD.encode(digest)
+        };
+        validate_authorize_request(
+            &AuthorizeRequest {
+                client_id: "sdkwork-iam".to_string(),
+                redirect_uri: "http://127.0.0.1:52222/auth/desktop/callback".to_string(),
+                response_type: "code".to_string(),
+                scope: "openid profile".to_string(),
+                state: Some("desktop-state".to_string()),
+                code_challenge: Some(challenge),
+                code_challenge_method: Some("S256".to_string()),
+                tenant_id: None,
+            },
+            &client,
+        )
+        .expect("loopback redirect uri with ephemeral port must validate");
     }
 }

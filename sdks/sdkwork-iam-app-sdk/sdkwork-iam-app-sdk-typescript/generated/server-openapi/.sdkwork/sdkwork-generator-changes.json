@@ -9,12 +9,10 @@
     "protocol": "http",
     "packageName": "@sdkwork/iam-app-sdk"
   },
-  "changeFingerprint": "102e2926b2ded3377fbeb77167473f8ae5fbc45238c6b071fe8c6b27f4799c3b",
+  "changeFingerprint": "139c63d3de36e6b9623982bf86b276c54730da961aeee5a4f6995790e9f7d75b",
   "changes": {
     "createdGeneratedFiles": [],
-    "updatedGeneratedFiles": [],
-    "unchangedGeneratedFiles": [
-      "bin/publish-core.mjs",
+    "updatedGeneratedFiles": [
       "bin/publish.ps1",
       "bin/publish.sh",
       "bin/sdk-gen.bat",
@@ -54,6 +52,9 @@
       "src/types/wechat-mini-program-session-create-command.ts",
       "tsconfig.json"
     ],
+    "unchangedGeneratedFiles": [
+      "bin/publish-core.mjs"
+    ],
     "deletedGeneratedFiles": [
       "src/api/auth.d.ts",
       "src/api/base.d.ts",
@@ -85,86 +86,193 @@
       "custom/README.md"
     ],
     "backedUpFiles": [
+      "bin/publish.ps1",
+      "bin/publish.sh",
+      "bin/sdk-gen.bat",
+      "bin/sdk-gen.sh",
+      "CHANGELOG.md",
+      "LICENSE",
+      "package.json",
+      "README.md",
+      "sdkwork-sdk.json",
       "src/api/auth.d.ts",
+      "src/api/auth.ts",
       "src/api/base.d.ts",
+      "src/api/base.ts",
       "src/api/iam.d.ts",
+      "src/api/iam.ts",
       "src/api/index.d.ts",
+      "src/api/index.ts",
       "src/api/oauth.d.ts",
+      "src/api/oauth.ts",
       "src/api/paths.d.ts",
+      "src/api/paths.ts",
       "src/api/system.d.ts",
+      "src/api/system.ts",
+      "src/auth/index.ts",
+      "src/http/client.ts",
+      "src/http/index.ts",
+      "src/index.ts",
+      "src/sdk.ts",
       "src/types/appbase-operation-command.d.ts",
+      "src/types/appbase-operation-command.ts",
       "src/types/appbase-session-create-command.d.ts",
+      "src/types/appbase-session-create-command.ts",
       "src/types/common.d.ts",
+      "src/types/common.ts",
       "src/types/field-error.d.ts",
+      "src/types/field-error.ts",
       "src/types/index.d.ts",
+      "src/types/index.ts",
       "src/types/page-info.d.ts",
+      "src/types/page-info.ts",
       "src/types/problem-detail.d.ts",
+      "src/types/problem-detail.ts",
       "src/types/sdk-work-api-response.d.ts",
+      "src/types/sdk-work-api-response.ts",
       "src/types/sdk-work-command-data.d.ts",
+      "src/types/sdk-work-command-data.ts",
       "src/types/sdk-work-command-response.d.ts",
+      "src/types/sdk-work-command-response.ts",
       "src/types/sdk-work-list-response.d.ts",
+      "src/types/sdk-work-list-response.ts",
       "src/types/sdk-work-page-data.d.ts",
+      "src/types/sdk-work-page-data.ts",
       "src/types/sdk-work-platform-error-code.d.ts",
+      "src/types/sdk-work-platform-error-code.ts",
       "src/types/sdk-work-resource-data.d.ts",
+      "src/types/sdk-work-resource-data.ts",
       "src/types/sdk-work-resource-response.d.ts",
-      "src/types/wechat-mini-program-session-create-command.d.ts"
+      "src/types/sdk-work-resource-response.ts",
+      "src/types/wechat-mini-program-session-create-command.d.ts",
+      "src/types/wechat-mini-program-session-create-command.ts",
+      "tsconfig.json"
     ]
   },
   "impact": {
     "schemaVersion": 1,
     "areas": [
       "api-surface",
-      "models"
+      "models",
+      "runtime",
+      "build-metadata",
+      "publish-workflow",
+      "documentation",
+      "unknown"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
           "src/api/auth.d.ts",
+          "src/api/auth.ts",
           "src/api/base.d.ts",
+          "src/api/base.ts",
           "src/api/iam.d.ts",
+          "src/api/iam.ts",
           "src/api/index.d.ts",
+          "src/api/index.ts",
           "src/api/oauth.d.ts",
+          "src/api/oauth.ts",
           "src/api/paths.d.ts",
-          "src/api/system.d.ts"
+          "src/api/paths.ts",
+          "src/api/system.d.ts",
+          "src/api/system.ts",
+          "src/http/client.ts",
+          "src/sdk.ts"
         ]
       },
       {
         "area": "models",
         "paths": [
           "src/types/appbase-operation-command.d.ts",
+          "src/types/appbase-operation-command.ts",
           "src/types/appbase-session-create-command.d.ts",
+          "src/types/appbase-session-create-command.ts",
           "src/types/common.d.ts",
+          "src/types/common.ts",
           "src/types/field-error.d.ts",
+          "src/types/field-error.ts",
           "src/types/index.d.ts",
+          "src/types/index.ts",
           "src/types/page-info.d.ts",
+          "src/types/page-info.ts",
           "src/types/problem-detail.d.ts",
+          "src/types/problem-detail.ts",
           "src/types/sdk-work-api-response.d.ts",
+          "src/types/sdk-work-api-response.ts",
           "src/types/sdk-work-command-data.d.ts",
+          "src/types/sdk-work-command-data.ts",
           "src/types/sdk-work-command-response.d.ts",
+          "src/types/sdk-work-command-response.ts",
           "src/types/sdk-work-list-response.d.ts",
+          "src/types/sdk-work-list-response.ts",
           "src/types/sdk-work-page-data.d.ts",
+          "src/types/sdk-work-page-data.ts",
           "src/types/sdk-work-platform-error-code.d.ts",
+          "src/types/sdk-work-platform-error-code.ts",
           "src/types/sdk-work-resource-data.d.ts",
+          "src/types/sdk-work-resource-data.ts",
           "src/types/sdk-work-resource-response.d.ts",
-          "src/types/wechat-mini-program-session-create-command.d.ts"
+          "src/types/sdk-work-resource-response.ts",
+          "src/types/wechat-mini-program-session-create-command.d.ts",
+          "src/types/wechat-mini-program-session-create-command.ts"
+        ]
+      },
+      {
+        "area": "runtime",
+        "paths": [
+          "src/auth/index.ts",
+          "src/http/client.ts",
+          "src/http/index.ts"
+        ]
+      },
+      {
+        "area": "build-metadata",
+        "paths": [
+          "package.json",
+          "sdkwork-sdk.json",
+          "tsconfig.json"
+        ]
+      },
+      {
+        "area": "publish-workflow",
+        "paths": [
+          "bin/publish.ps1",
+          "bin/publish.sh",
+          "bin/sdk-gen.bat",
+          "bin/sdk-gen.sh"
+        ]
+      },
+      {
+        "area": "documentation",
+        "paths": [
+          "CHANGELOG.md",
+          "README.md"
+        ]
+      },
+      {
+        "area": "unknown",
+        "paths": [
+          "LICENSE",
+          "src/index.ts"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models. Verification is required."
+    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
-        "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
           "./bin/publish-core.mjs",
@@ -181,8 +289,8 @@
         "id": "build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
-        "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
           "./bin/publish-core.mjs",
@@ -208,6 +316,7 @@
       "backed-up-generated-files",
       "deleted-generated-files",
       "manual-review-required",
+      "unknown-impact",
       "verification-required"
     ]
   },
