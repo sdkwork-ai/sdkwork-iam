@@ -53,6 +53,7 @@ sdkwork_utils_rust.workspace = true
 
 [dev-dependencies]
 http-body-util = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 sdkwork_routes_iam_open_api.workspace = true
 sqlx = { workspace = true, features = ["sqlite"] }
 tokio.workspace = true

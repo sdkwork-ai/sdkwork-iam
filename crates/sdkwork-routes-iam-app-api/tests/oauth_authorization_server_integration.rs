@@ -9,9 +9,10 @@ use http_body_util::BodyExt;
 use sdkwork_iam_context_service::{AuthLevel, DeploymentMode, Environment, IamAppContext};
 use sdkwork_iam_web_adapter::{
     build_userinfo_claims, complete_authorization_state, create_pending_authorization_state,
-    exchange_authorization_code, load_oauth_bearer_scopes, parse_relying_party_config,
-    platform_runtime_app_id_for_tenant, resolve_relying_party_client, revoke_oauth_token,
-    seed_builtin_oauth_provider_catalog, validate_authorize_request, AuthorizeRequest,
+    ensure_platform_tenant_application, exchange_authorization_code, load_oauth_bearer_scopes,
+    parse_relying_party_config, platform_runtime_app_id_for_tenant, resolve_relying_party_client,
+    revoke_oauth_token, seed_builtin_oauth_provider_catalog, validate_authorize_request,
+    AuthorizeRequest,
 };
 use sdkwork_web_core::bootstrap_access_token_jwt;
 use serde_json::{json, Value};
@@ -45,6 +46,14 @@ fn configure_integration_signing_env() {
     unsafe {
         std::env::set_var("SDKWORK_IAM_RATE_LIMIT_MAX_REQUESTS", "10000");
         std::env::set_var("SDKWORK_IAM_RATE_LIMIT_WINDOW_SECONDS", "60");
+        // The login leg authenticates through the credential-entry bootstrap
+        // profile with the unsigned fixture tokens from
+        // `sdkwork_web_core::jwt_fixtures` ("integration tests only"). The
+        // framework accepts those tokens only in an explicitly test/dev
+        // deployment, so the suite declares its own environment instead of
+        // depending on an ambient shell variable.
+        std::env::set_var("SDKWORK_ENV", "test");
+        std::env::set_var("SDKWORK_IAM_ALLOW_DEV_AUTH_FALLBACK", "true");
     }
 }
 
@@ -122,6 +131,19 @@ async fn seed_oauth_e2e_fixtures() {
     sdkwork_iam_bootstrap::ensure_postgres_tenant_signing_key(&pg, OAUTH_E2E_TENANT_ID)
         .await
         .expect("provision oauth e2e tenant signing key");
+
+    // NOTE: personal-login sessions persist organization_id "0", and
+    // `iam_session_org_fk` requires that (tenant_id, "0") to exist in
+    // `iam_organization`. Because `iam_organization` currently uses a global
+    // `id` primary key, only the bootstrapped default tenant can own the
+    // sentinel row — see `oauth_desktop_session_integration.rs`, whose
+    // desktop-session fixture therefore runs against the default tenant.
+    // The credential-entry login leg resolves its runtime app scope through
+    // the tenant's platform application (`app_<tenant>`); on a fresh test
+    // database nothing else provisions it.
+    ensure_platform_tenant_application(&pg, OAUTH_E2E_TENANT_ID)
+        .await
+        .expect("provision oauth e2e platform tenant application");
 
     sqlx::query(
         "INSERT INTO iam_user (id, tenant_id, username, display_name, email, phone, \
@@ -251,8 +273,14 @@ async fn login_oauth_e2e_session(app: &axum::Router) -> Value {
         )
         .await
         .expect("oauth e2e login request");
-    assert_eq!(response.status(), StatusCode::OK, "oauth e2e login failed");
+    let login_status = response.status();
     let body = read_json(response).await;
+    assert_eq!(
+        login_status,
+        StatusCode::OK,
+        "oauth e2e login failed: {}",
+        serde_json::to_string(&body).unwrap_or_default()
+    );
     assert_eq!(body["code"].as_i64(), Some(0));
     body["data"].clone()
 }
