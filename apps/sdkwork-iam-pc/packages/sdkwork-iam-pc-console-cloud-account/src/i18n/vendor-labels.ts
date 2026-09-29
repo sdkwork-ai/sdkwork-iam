@@ -146,6 +146,36 @@ export function kindHintForKind(
 }
 
 /**
+ * Where that direction sends the operator: the page the hint above names.
+ *
+ * The same key as the hint, because the two are two halves of one instruction —
+ * a sentence that says "under AccessKey management, behind your avatar" and a
+ * link to somewhere else is worse than either alone, since the operator cannot
+ * tell which one to believe.
+ *
+ * Resolved with the provider's console entry as the fallback rather than with an
+ * empty string, and that is not a convenience: `bearer_token` is a kind most
+ * providers never issue, so most of those entries are empty by design. An
+ * operator who picked that shape still needs to reach something they can act on,
+ * and the provider's own console is exactly that. Only a kind with no page *on a
+ * provider with no console* resolves to nothing, which the page renders as no
+ * link at all rather than as a link to nowhere.
+ *
+ * An unknown kind falls back the same way, which matches `secretLabelForKind`: a
+ * row written by a newer console can name a kind this build has never heard of,
+ * and the provider's console is still the honest destination while a page this
+ * build cannot vouch for is not.
+ */
+export function kindHintUrlFor(
+  kind: string | undefined,
+  config: SdkworkIamCloudAccountVendorConfigCopy,
+): string {
+  const urls = config.hintUrl as Readonly<Record<string, string | undefined>>;
+  const direct = kind === undefined ? undefined : urls[kind];
+  return direct !== undefined && direct !== "" ? direct : config.consoleUrl;
+}
+
+/**
  * Why this identity shape has nothing to type here — and it is *per shape*, not
  * one sentence for the whole family.
  *

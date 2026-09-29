@@ -1,6 +1,7 @@
 import type {
   SdkworkIamCloudAccountConsoleMessages,
   SdkworkIamCloudAccountKindHints,
+  SdkworkIamCloudAccountKindUrls,
   SdkworkIamCloudAccountSecretLabels,
 } from "../../../../types/cloud-account-console-messages";
 
@@ -17,6 +18,21 @@ const neutralHints: SdkworkIamCloudAccountKindHints = {
   bearer_token: "该服务商不签发可长期使用的 Bearer 令牌；请改选它实际提供的凭据形态。",
   secret_text: "按该服务商的文档创建该凭据。",
   service_account_json: "按该服务商的文档创建服务账号密钥文件。",
+};
+
+/**
+ * 每种凭据类型对应的「到哪去取」，用链接表示；空串表示该服务商没有这个页面。
+ *
+ * 与 `neutralHints` 一一对应，也同样按凭据类型分键：`bearer_token` 是大多数服务商根本不
+ * 签发的类型，所以多数条目按设计就是空的——空值经 `kindHintUrlFor` 落到该服务商的控制台
+ * 入口，而不是落成一个死链。只有「该类型没有页面」遇上「该服务商没有控制台」才会真正解析
+ * 不出链接（`custom`），那时页面干脆不渲染链接，这比指一个编出来的地址诚实。
+ */
+const neutralHintUrls: SdkworkIamCloudAccountKindUrls = {
+  access_key_pair: "",
+  bearer_token: "",
+  secret_text: "",
+  service_account_json: "",
 };
 
 /**
@@ -170,6 +186,13 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     bearer_token: "Bearer 令牌",
     secret_text: "密钥文本",
     service_account_json: "服务账号 JSON",
+  },
+  // 链接文字刻意不写「控制台」：这个地址对阿里云、腾讯云这些服务商是控制台页面，对 MinIO
+  // 却是官方文档，把它叫成控制台在后者上就是假的。服务商级的帮助说明也不在这里，而在
+  // `vendorConfig.<服务商>.help`——它是关于服务商的事实，不是界面自己的措辞。
+  credentialHelp: {
+    link: "获取凭据",
+    title: "如何获取{vendor}的凭据",
   },
   detail: {
     deleteDescription: "删除「{name}」？该账号及其凭据将不再参与解析，此操作不可撤销。",
@@ -372,13 +395,25 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
   // `keyIdLabel` / `keySecretLabel` 对**没有密钥对**的服务商（google / cloudflare）是平台自己的
   // 中性措辞，不是给它们编一个不存在的厂商术语：操作者仍可能给它们选「长期密钥」形态，
   // 那时字段总得说点什么，而说错的厂商词比中性词更糟。
+  //
+  // 一家还有三样东西：`consoleUrl`（控制台入口）、`hintUrl`（每种凭据类型的直达页，空值落到
+  // 入口）与 `help`（这个服务商的凭据体系是什么）。前两者让「到哪去取」从一句话变成可点的
+  // 链接，后者把此前只写在代码注释里的知识（DNSPod 与腾讯云不是同一把密钥、Cloudflare 没有
+  // 密钥对、Google 的两种单密钥各有页面）交给操作者看。十一家都填了，`custom` 与未知服务商
+  // 除外——它们没有可以指向的公开页面，链接留空而帮助说明照给，编一个地址比不给更糟。
   vendorConfig: {
     aliyun: {
       accountIdLabel: "阿里云账号 ID",
       accountIdPlaceholder: "1234567890123456",
+      consoleUrl: "https://homenew.console.aliyun.com/",
+      help: "阿里云以 RAM 的 AccessKey 对（AccessKey ID + AccessKey Secret）作为长期凭据，一对密钥即可访问该账号下的全部资源；这里建议填 RAM 子用户的 AccessKey，而不是主账号的，出问题时可以单把吊销。阿里云不签发服务账号密钥文件，本平台使用它的对象存储与 DNS 解析时都用同一对 AccessKey。",
       hint: {
         ...neutralHints,
         access_key_pair: "在阿里云控制台右上角头像的「AccessKey 管理」里创建。",
+      },
+      hintUrl: {
+        ...neutralHintUrls,
+        access_key_pair: "https://ram.console.aliyun.com/manage/ak",
       },
       keyIdLabel: "AccessKey ID",
       keySecretLabel: "AccessKey Secret",
@@ -387,9 +422,15 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     aws: {
       accountIdLabel: "AWS 账号 ID",
       accountIdPlaceholder: "123456789012",
+      consoleUrl: "https://console.aws.amazon.com/",
+      help: "AWS 在 IAM 里签发访问密钥对（Access Key ID + Secret Access Key）。这里建议填一个专用 IAM 用户的密钥，而不是根账号的：根账号密钥权限无法收窄，而 IAM 用户的密钥可以随用户策略收紧。每个 IAM 用户最多同时持有两把访问密钥，便于先建新后删旧地轮换。",
       hint: {
         ...neutralHints,
         access_key_pair: "在 AWS 控制台的「IAM → 安全凭证」里创建访问密钥。",
+      },
+      hintUrl: {
+        ...neutralHintUrls,
+        access_key_pair: "https://console.aws.amazon.com/iam/home#/security_credentials",
       },
       keyIdLabel: "Access Key ID",
       keySecretLabel: "Secret Access Key",
@@ -398,9 +439,16 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     azure: {
       accountIdLabel: "订阅 ID",
       accountIdPlaceholder: "00000000-0000-0000-0000-000000000000",
+      consoleUrl: "https://portal.azure.com/",
+      help: "Azure 的长期凭据是「Microsoft Entra ID → 应用注册」里为应用创建的客户端密钥，它要和该应用（客户端）ID 一起使用，所以这里两栏必须来自同一个应用注册。客户端密钥带有效期，到期后需要重新创建并到本页轮换。另外注意订阅 ID 与应用注册是两个东西：前者要在「订阅」页面查看，用错会把凭据挂到另一个账号上。",
       hint: {
         ...neutralHints,
         access_key_pair: "在 Azure 门户的「Microsoft Entra ID → 应用注册」里创建客户端密钥。",
+      },
+      hintUrl: {
+        ...neutralHintUrls,
+        access_key_pair:
+          "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade",
       },
       keyIdLabel: "应用（客户端）ID",
       keySecretLabel: "客户端密钥",
@@ -411,10 +459,17 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     cloudflare: {
       accountIdLabel: "账号 ID",
       accountIdPlaceholder: "0123456789abcdef0123456789abcdef",
+      consoleUrl: "https://dash.cloudflare.com/",
+      help: "Cloudflare 不签发密钥对：它的两种长期凭据是「API 令牌」和「全局 API 密钥」，都在「我的个人资料 → API 令牌」这一页里，前者是权限可以按区域、按操作收窄的 Bearer 令牌，后者是一整份账号权限的密钥。全局 API 密钥等同于你的账号权限、也没有有效期，Cloudflare 自己建议新接入优先用 API 令牌。",
       hint: {
         ...neutralHints,
         bearer_token: "在 Cloudflare 控制台的「我的个人资料 → API 令牌」里创建。",
         secret_text: "在 Cloudflare 控制台的「我的个人资料 → API 密钥 → 全局 API 密钥」里查看。",
+      },
+      hintUrl: {
+        ...neutralHintUrls,
+        bearer_token: "https://dash.cloudflare.com/profile/api-tokens",
+        secret_text: "https://dash.cloudflare.com/profile/api-tokens",
       },
       keyIdLabel: "访问密钥 ID",
       keySecretLabel: "访问密钥 Secret",
@@ -427,7 +482,13 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     custom: {
       accountIdLabel: "服务商侧账号标识",
       accountIdPlaceholder: "account-id",
+      // 这一家按设计没有可跳转的页面，而且不是漏填：`consoleUrl` 与 `neutralHintUrls` 全空，
+      // 页面因此只渲染帮助说明、不渲染链接。编一个地址比不给链接更糟——操作者会点进一个
+      // 跟他的服务商毫无关系的页面，还以为自己走对了。
+      consoleUrl: "",
+      help: "自定义服务商由你自己定义凭据来源，本平台不对它的凭据体系做任何假设：按你所在服务商的文档创建访问密钥对或密钥文本，再填写到下面即可。因为不存在一个能指向的公开页面，这一家不提供跳转链接。",
       hint: { ...neutralHints },
+      hintUrl: { ...neutralHintUrls },
       keyIdLabel: "访问密钥 ID",
       keySecretLabel: "访问密钥 Secret",
       secretLabel: { ...neutralSecretLabels },
@@ -440,9 +501,15 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     dnspod: {
       accountIdLabel: "DNSPod 账号 ID",
       accountIdPlaceholder: "13490",
+      consoleUrl: "https://console.dnspod.cn/",
+      help: "DNSPod 与腾讯云不是同一把密钥，尽管两者同属腾讯：DNSPod Token（密钥 ID + Token）只能改解析记录，而腾讯云的 SecretId / SecretKey 能操作整个腾讯云账号。本平台的解析适配器走的是 DNSPod Token 这条线，所以请照这一页的名字填写，不要去腾讯云领一把这里用不了的密钥。Token 只在创建时明文显示一次。",
       hint: {
         ...neutralHints,
         access_key_pair: "在 DNSPod 账号中心的「密钥管理」里创建 DNSPod Token（只授予解析记录权限）。",
+      },
+      hintUrl: {
+        ...neutralHintUrls,
+        access_key_pair: "https://console.dnspod.cn/account/token",
       },
       keyIdLabel: "密钥 ID",
       keySecretLabel: "Token",
@@ -454,10 +521,17 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     google: {
       accountIdLabel: "项目 ID",
       accountIdPlaceholder: "my-project-123456",
+      consoleUrl: "https://console.cloud.google.com/",
+      help: "Google 云有两种彼此独立的凭据，按身份形态二选一：服务账号的密钥是一整份 JSON 密钥文件，API 密钥是一段不透明字符串。它们在不同的页面签发，互相不能替代——把 JSON 文件粘进「API 密钥」那一栏不会得到能用的凭据。",
       hint: {
         ...neutralHints,
         secret_text: "在 Google Cloud 控制台的「API 和服务 → 凭据 → API 密钥」里创建。",
         service_account_json: "在 Google Cloud 控制台的「IAM 和管理 → 服务账号 → 密钥」里创建 JSON 密钥。",
+      },
+      hintUrl: {
+        ...neutralHintUrls,
+        secret_text: "https://console.cloud.google.com/apis/credentials",
+        service_account_json: "https://console.cloud.google.com/iam-admin/serviceaccounts",
       },
       keyIdLabel: "访问密钥 ID",
       keySecretLabel: "访问密钥 Secret",
@@ -469,9 +543,15 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     huawei: {
       accountIdLabel: "华为云账号名",
       accountIdPlaceholder: "hw-account",
+      consoleUrl: "https://console.huaweicloud.com/",
+      help: "华为云在「我的凭证 → 访问密钥」里签发 AK/SK 长期凭据，入口在控制台右上角用户名的下拉菜单里。每个账号最多创建两个访问密钥；SK 只在创建时下载一次（credentials.csv），弹窗关闭后就无法再次获取，请当场保存。",
       hint: {
         ...neutralHints,
         access_key_pair: "在华为云控制台的「我的凭证 → 访问密钥」里创建。",
+      },
+      hintUrl: {
+        ...neutralHintUrls,
+        access_key_pair: "https://console.huaweicloud.com/iam/?locale=zh-cn#/mine/accessKey",
       },
       keyIdLabel: "Access Key ID（AK）",
       keySecretLabel: "Secret Access Key（SK）",
@@ -480,10 +560,16 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     minio: {
       accountIdLabel: "部署标识",
       accountIdPlaceholder: "minio-prod",
+      // 自托管：没有厂商控制台，链接落在 MinIO 官方文档的访问密钥章节，而不是一个不存在的
+      // 「MinIO 控制台」。操作者的 MinIO Console 在他自己部署的域名上，只有他知道。
+      consoleUrl:
+        "https://min.io/docs/minio/linux/administration/identity-access-management/minio-user-management.html#access-keys",
+      help: "MinIO 是自托管的对象存储，没有厂商控制台可以代为打开：访问密钥由部署管理员在他自己的 MinIO Console「访问密钥」页创建，或由管理员用 mc admin 命令签发。请向部署管理员索取一对，Secret Key 一经创建无法再次读取，只能重新签发。",
       hint: {
         ...neutralHints,
         access_key_pair: "由部署 MinIO 的管理员在创建服务账号时给出。",
       },
+      hintUrl: { ...neutralHintUrls },
       keyIdLabel: "Access Key",
       keySecretLabel: "Secret Key",
       secretLabel: { ...neutralSecretLabels },
@@ -491,9 +577,15 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     tencent: {
       accountIdLabel: "腾讯云主账号 APPID",
       accountIdPlaceholder: "1300000000",
+      consoleUrl: "https://console.cloud.tencent.com/",
+      help: "腾讯云在「访问管理（CAM）→ API 密钥管理」里签发密钥对（SecretId + SecretKey），主账号的密钥能操作整个腾讯云账号，这里建议用子用户的密钥。注意 DNSPod 的解析密钥不是这一把：只管理域名解析的话，请在服务商里另选 DNSPod。",
       hint: {
         ...neutralHints,
         access_key_pair: "在腾讯云控制台的「访问管理 → API 密钥管理」里创建。",
+      },
+      hintUrl: {
+        ...neutralHintUrls,
+        access_key_pair: "https://console.cloud.tencent.com/cam/capi",
       },
       keyIdLabel: "SecretId",
       keySecretLabel: "SecretKey",
@@ -502,9 +594,15 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     volcengine: {
       accountIdLabel: "火山引擎账号 ID",
       accountIdPlaceholder: "2100000000",
+      consoleUrl: "https://console.volcengine.com/",
+      help: "火山引擎在「访问控制 → 密钥管理」里签发 AK/SK 长期凭据。每个账号最多同时持有两个访问密钥；创建后 Secret Access Key 只在弹窗里显示一次，关闭后无法再次查看。",
       hint: {
         ...neutralHints,
         access_key_pair: "在火山引擎控制台的「访问控制 → 密钥管理」里创建。",
+      },
+      hintUrl: {
+        ...neutralHintUrls,
+        access_key_pair: "https://console.volcengine.com/iam/keymanage",
       },
       keyIdLabel: "Access Key ID（AK）",
       keySecretLabel: "Secret Access Key（SK）",
@@ -517,7 +615,12 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
   vendorFallbackConfig: {
     accountIdLabel: "服务商侧账号标识",
     accountIdPlaceholder: "account-id",
+    // 本版本不认识这个服务商，所以没有可以指向的页面：编一个厂商地址等于替它编了个事实。
+    // 帮助说明照旧给出来，但说的正是「我不知道」，这比留白更有用。
+    consoleUrl: "",
+    help: "本版本不认识这个服务商，因此无法说明它的凭据从哪里获取。请按该服务商自己的文档创建凭据后再填写，本页不提供跳转链接。",
     hint: { ...neutralHints },
+    hintUrl: { ...neutralHintUrls },
     keyIdLabel: "访问密钥 ID",
     keySecretLabel: "访问密钥 Secret",
     secretLabel: { ...neutralSecretLabels },

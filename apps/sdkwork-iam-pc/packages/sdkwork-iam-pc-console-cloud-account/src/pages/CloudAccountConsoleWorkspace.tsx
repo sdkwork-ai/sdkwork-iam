@@ -52,6 +52,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@sdkwork/ui-pc-react";
+import { ExternalLink } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import {
@@ -60,6 +61,7 @@ import {
   credentialNotNeededFor,
   credentialShapeHintFor,
   kindHintForKind,
+  kindHintUrlFor,
   regionHintFor,
   secretLabelForKind,
   useSdkworkIamCloudAccountConsoleMessages,
@@ -1171,15 +1173,18 @@ export function SdkworkIamConsoleCloudAccountWorkspace({
               >
                 {/*
                   Where to get *this* credential, in the provider's words — the same
-                  sentence the register form shows, because rotating a key needs the
-                  same directions as registering the account. A lead-in *above* the
-                  fields rather than a sibling of them: inside the grid it landed in
-                  the cell beside the session token's own note, which read as though it
-                  were about that one field.
+                  block the register form shows, because rotating a key needs the same
+                  directions as registering the account. A lead-in *above* the fields
+                  rather than a sibling of them: inside the grid it landed in the cell
+                  beside the session token's own note, which read as though it were
+                  about that one field.
                 */}
-                <p className="text-xs text-[var(--sdk-color-text-muted)]">
-                  {kindHintForKind(credentialDraft.credentialKind, credentialVendorConfig)}
-                </p>
+                <CredentialHelpNotes
+                  config={credentialVendorConfig}
+                  kind={credentialDraft.credentialKind}
+                  messages={messages}
+                  vendorCode={credentialEditorTarget?.vendorCode}
+                />
                 <div className="grid gap-3 md:grid-cols-2">
                   <label className="space-y-1 text-sm">
                     <span className="text-[var(--sdk-color-text-secondary)]">{messages.credentials.name}</span>
@@ -1672,9 +1677,12 @@ export function SdkworkIamConsoleCloudAccountWorkspace({
                       >
                         {credentialShapeHintFor(createDraft.accountType, messages)}
                       </p>
-                      <p className="text-xs text-[var(--sdk-color-text-muted)]">
-                        {kindHintForKind(createCredentialKind, createVendorConfig)}
-                      </p>
+                      <CredentialHelpNotes
+                        config={createVendorConfig}
+                        kind={createCredentialKind}
+                        messages={messages}
+                        vendorCode={createDraft.vendorCode}
+                      />
                       <div className="grid gap-3 md:grid-cols-2">
                         {createCredentialFields.map((field) => {
                           const fieldLabel = credentialFieldLabel(
@@ -1790,6 +1798,82 @@ export function SdkworkIamConsoleCloudAccountWorkspace({
         title={messages.actions.delete}
         tone="danger"
       />
+    </div>
+  );
+}
+
+/**
+ * Where to get the credential, and what this provider's credential system is.
+ *
+ * One component because the register form and the rotate dialog render the same
+ * block: the account is being registered once but its key rotates forever, and a
+ * rotation needs the same directions as the first registration. Two copies is how
+ * the dialog ends up pointing at a page the form stopped pointing at.
+ *
+ * Three parts, in the order the operator needs them:
+ *
+ * 1. the hint — one imperative sentence, in the provider's own words, naming the
+ *    page (`kindHintForKind`, keyed by *kind* because a service-account key
+ *    document and an API key are issued on two different pages);
+ * 2. the link to that page (`kindHintUrlFor`), which is the same direction made
+ *    clickable. It renders **only when it resolves**, and an unresolvable one is a
+ *    fact rather than a failure: `custom` and providers this build has never seen
+ *    have no public page, so they show the help without a link instead of a link
+ *    to an address invented for them. `target="_blank"` plus `noreferrer` because
+ *    the operator is being sent to another origin — the console they came from
+ *    must still be there when they come back;
+ * 3. the help itself, collapsed. It states what the provider actually issues —
+ *    that Alibaba Cloud has no service-account key, that DNSPod's key is not
+ *    Tencent Cloud's, that MinIO's is administered by whoever deployed it — which
+ *    is knowledge the operator needs *before* choosing an identity shape, not at
+ *    the box. Collapsed because the form is already long and this is the part read
+ *    once rather than at every registration; native `<details>` rather than a
+ *    stateful panel because the open/closed state is the browser's business and
+ *    nothing else on the page depends on it.
+ */
+function CredentialHelpNotes({
+  config,
+  kind,
+  messages,
+  vendorCode,
+}: {
+  config: SdkworkIamCloudAccountVendorConfigCopy;
+  kind: string | undefined;
+  messages: CloudAccountMessages;
+  vendorCode: string | undefined;
+}) {
+  const url = kindHintUrlFor(kind, config);
+  return (
+    <div className="space-y-2" data-slot="cloud-account-credential-help">
+      <p className="text-xs text-[var(--sdk-color-text-muted)]">
+        {kindHintForKind(kind, config)}
+      </p>
+      {url ? (
+        <a
+          className="inline-flex items-center gap-1 text-xs font-medium text-[var(--sdk-color-brand-primary)] underline-offset-2 hover:underline"
+          data-slot="cloud-account-credential-help-link"
+          href={url}
+          rel="noreferrer"
+          target="_blank"
+        >
+          {messages.credentialHelp.link}
+          {/* Decoration only: the label already says what the link does, and an
+              icon read out as a second name makes the link announce itself twice. */}
+          <ExternalLink aria-hidden className="size-3" />
+        </a>
+      ) : null}
+      {config.help ? (
+        <details className="text-xs" data-slot="cloud-account-credential-help-detail">
+          <summary className="cursor-pointer text-[var(--sdk-color-text-muted)]">
+            {formatMessage(messages.credentialHelp.title, {
+              vendor: vendorLabel(vendorCode, messages),
+            })}
+          </summary>
+          <p className="mt-1 max-w-3xl leading-relaxed text-[var(--sdk-color-text-secondary)]">
+            {config.help}
+          </p>
+        </details>
+      ) : null}
     </div>
   );
 }

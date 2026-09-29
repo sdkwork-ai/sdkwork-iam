@@ -93,6 +93,30 @@ export type SdkworkIamCloudAccountKindHints = Record<
 >;
 
 /**
+ * Where each credential kind is obtained, on the provider's own console.
+ *
+ * The same shape as {@link SdkworkIamCloudAccountKindHints} — one entry per
+ * credential kind, exhaustive over the contract's tuple — because the two are
+ * the two halves of one instruction: the hint says *what page to open*, the URL
+ * is that page. They are keyed by kind for the hint's own reason: a
+ * service-account key document and an API key share one field but are issued on
+ * two different pages, so a single URL per provider would send one of them
+ * somewhere that cannot issue what the field wants.
+ *
+ * The value is a URL, and it is deliberately allowed to be **empty**: a
+ * credential kind a provider does not issue has no page, and inventing one is
+ * worse than rendering no link at all. An empty entry resolves to the
+ * provider's own console entry (`consoleUrl`) through `kindHintUrlFor`, so a
+ * kind with no dedicated page still leads somewhere the operator can act — and
+ * a provider with no public console at all resolves to an empty string, which
+ * the page renders as *no link* rather than as a dead one.
+ */
+export type SdkworkIamCloudAccountKindUrls = Record<
+  (typeof IAM_CLOUD_ACCOUNT_CREDENTIAL_KINDS)[number],
+  string
+>;
+
+/**
  * What one provider calls the concrete configuration of an account.
  *
  * The credential's *shape* is contract-wide — `access_key_pair` is one kind for
@@ -125,8 +149,44 @@ export interface SdkworkIamCloudAccountVendorConfigCopy {
    */
   accountIdLabel: string;
   accountIdPlaceholder: string;
+  /**
+   * The provider's console entry — the page an operator signs in on to reach
+   * everything else this configuration names.
+   *
+   * It exists so that a credential kind with no dedicated page of its own still
+   * resolves to somewhere useful, and so that *which host a link goes to* is
+   * stated once per provider instead of once per kind. It is **not** a required
+   * destination: a provider with no public console at all (`custom`, and any
+   * code this build has never seen) states an empty string, and the page then
+   * renders the help without a link rather than a link to nowhere.
+   */
+  consoleUrl: string;
+  /**
+   * What the provider's credential system is, in the operator's own terms.
+   *
+   * This is the *help* half of the credential group, next to the hint's
+   * *directions* half, and the split is deliberate. A hint is one imperative
+   * sentence pointing at one page ("create it under AccessKey management"), which
+   * is exactly right at the field and useless one step earlier — when the
+   * operator has not yet decided which identity shape to pick, or is about to
+   * paste a value the provider cannot issue. The help says what the provider
+   * actually issues and what to watch out for: a provider with no key pair at
+   * all, one whose credential is not the sibling product's credential, one whose
+   * page issues a JSON document rather than a string.
+   *
+   * Every provider states one, including `vendorFallbackConfig`. A provider whose
+   * credential system this build has never seen has no facts to state, and says
+   * so — the same rule the hint follows for an unknown provider.
+   */
+  help: string;
   /** Where to create the credential, per kind, on the provider's own console. */
   hint: SdkworkIamCloudAccountKindHints;
+  /**
+   * The page each {@link hint} points at, per kind — keyed by kind for the same
+   * reason, and empty where the provider publishes no such page. See
+   * {@link SdkworkIamCloudAccountKindUrls}.
+   */
+  hintUrl: SdkworkIamCloudAccountKindUrls;
   /** The provider's name for the non-secret half of a key pair. */
   keyIdLabel: string;
   /** The provider's name for the secret half of a key pair. */
@@ -399,6 +459,33 @@ export interface SdkworkIamCloudAccountConsoleMessages {
   credentialKind: SdkworkIamCloudAccountVocabularyLabels<
     (typeof IAM_CLOUD_ACCOUNT_CREDENTIAL_KINDS)[number]
   >;
+  /**
+   * The "where do I get this" block, shared by both credential surfaces.
+   *
+   * It is one group rather than a member of `create` or `credentials` because
+   * *both* render it: the register form needs the directions as much as the
+   * rotate dialog does, and the two are different dialogs over the same rule —
+   * a copy kept in one of them would be the one the other silently drifts from.
+   * The per-provider half of this block is not here but on the provider
+   * (`SdkworkIamCloudAccountVendorConfigCopy.help`), because it is a fact about
+   * the provider rather than a word of the interface.
+   */
+  credentialHelp: {
+    /**
+     * Accessible name of the link that opens the provider's page. Deliberately
+     * neutral about *where* it goes: it is a console page for the providers that
+     * have one and an official document for the providers that do not, so naming
+     * it "console" would be false on the ones that are documents.
+     */
+    link: string;
+    /**
+     * Summary of the collapsible help, with `{vendor}` substituted by the page.
+     * Names the provider because the block states facts *about that provider*,
+     * and a bare "how to get the credential" reads as a generic manual the
+     * operator has to reconcile with the provider they actually chose.
+     */
+    title: string;
+  };
   detail: {
     /**
      * Confirmation the delete dialog shows. `{name}` is substituted by the page,

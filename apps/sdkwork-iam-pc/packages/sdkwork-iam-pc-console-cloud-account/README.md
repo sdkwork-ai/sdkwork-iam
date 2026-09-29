@@ -70,6 +70,40 @@ server-side, so an account can name a provider nobody here has seen, and lending
 words are the honest answer for an unknown provider, an unknown kind, and an
 unknown identity shape alike.
 
+### Where the credential comes from
+
+The same three axes also decide *where the operator is sent*, and each provider
+states three things about it:
+
+| Field | What it is |
+|---|---|
+| `hint` | one imperative sentence naming the page, keyed by credential kind |
+| `hintUrl` | that page, keyed by credential kind; empty when the kind has none |
+| `consoleUrl` | the provider's console entry, used when `hintUrl` is empty |
+| `help` | what this provider's credential system actually *is* |
+
+Keyed by kind rather than stated once per provider, because a service-account key
+document and an API key are issued on two different pages: a single URL would send
+one of them where it cannot get what the field wants. `kindHintUrlFor` resolves the
+pair, falling back to `consoleUrl` — an operator who picked a shape the provider
+does not issue (most providers issue no bearer token) still has to reach something
+they can act on, and the provider's own console is exactly that.
+
+The link renders **only when it resolves**. `custom` and any provider code this
+build has never seen have no public page, so they render the help and no link
+instead of a link to an address invented for them; the gate in `tests/` names those
+two as an exception list rather than skipping them, which is what "every provider
+is supported" has to mean if it is to mean anything. Every other provider reaches a
+dedicated page for at least the kinds it issues.
+
+`help` is the half that is not a direction. It states what the provider issues and
+what to watch out for — that Alibaba Cloud has no service-account key, that DNSPod's
+token is not Tencent Cloud's `SecretId`, that MinIO's is administered by whoever
+deployed it, that Cloudflare's two credentials live on one profile page — because
+that is knowledge the operator needs *before* choosing an identity shape, not at the
+box. It is collapsed: the form is already long, and this is the part read once
+rather than at every registration.
+
 ### The three shapes that hold no secret
 
 `service_linked_role`, `federated_identity` and `managed_identity` register no

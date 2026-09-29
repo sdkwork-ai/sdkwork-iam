@@ -32,7 +32,7 @@ sdkwork_iam_bootstrap.workspace = true
 sdkwork_iam_context_service.workspace = true
 sdkwork-database-config.workspace = true
 sdkwork_database_sqlx = { workspace = true, default-features = false }
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "query", "form", "rustls"] }
 quick-xml = "0.41"
 serde.workspace = true
 serde_json.workspace = true

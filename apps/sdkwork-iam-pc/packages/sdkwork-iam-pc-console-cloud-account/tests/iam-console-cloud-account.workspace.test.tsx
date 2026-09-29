@@ -43,6 +43,10 @@ import { sdkworkIamCloudAccountConsoleMessages as zhMessages } from "../src/i18n
  *   detail's last block, where its fields fell outside the body's visible window;
  *   its kind picker offers **every** kind the contract defines, and its one-secret
  *   field is named after the kind it is asking for;
+ * - the directions for getting a credential lead **somewhere clickable**: the link
+ *   resolves to the page the hint names, it opens beside the console rather than
+ *   over it, and a provider with no public page renders the help without a link
+ *   instead of a link that goes nowhere;
  * - registering happens in a **modal**, and deleting asks for confirmation,
  *   instead of the page carrying a permanent form and an immediate delete;
  * - capability is **not the operator's to choose**: the register form does not put
@@ -1557,5 +1561,59 @@ describe("@sdkwork/iam-pc-console-cloud-account workspace", () => {
 
     renderWorkspace({ levels: [IAM_CLOUD_ACCOUNT_SCOPE_USER], surface: "admin" });
     expect(await screen.findByText(/包括对全体租户生效的平台级默认账号/)).toBeTruthy();
+  });
+
+  it("links the operator to the page that issues the credential, with the provider's help beside it", async () => {
+    renderWorkspace({ levels: [IAM_CLOUD_ACCOUNT_SCOPE_USER] });
+    await screen.findByRole("table");
+
+    fireEvent.click(screen.getByRole("button", { name: "新建账号" }));
+    const dialog = await screen.findByRole("dialog");
+
+    // The form opens on Alibaba Cloud / long-term key, so the directions name the
+    // AccessKey manager — and the link is the *same* page, not a console front door
+    // the operator has to navigate from.
+    const help = dialog.querySelector<HTMLElement>('[data-slot="cloud-account-credential-help"]');
+    expect(help).toBeTruthy();
+    const link = help?.querySelector<HTMLAnchorElement>(
+      '[data-slot="cloud-account-credential-help-link"]',
+    );
+    expect(link?.href).toBe("https://ram.console.aliyun.com/manage/ak");
+    // Another origin, so it opens beside the console rather than replacing it, and
+    // the tab it opens cannot reach back into it.
+    expect(link?.target).toBe("_blank");
+    expect(link?.rel).toBe("noreferrer");
+
+    // The help is the provider's own paragraph, behind a summary that names the
+    // provider — a shared sentence would read as a manual for a provider the
+    // operator did not choose.
+    const detail = help?.querySelector<HTMLElement>(
+      '[data-slot="cloud-account-credential-help-detail"]',
+    );
+    expect(detail?.querySelector("summary")?.textContent).toContain("阿里云");
+    expect(detail?.querySelector("p")?.textContent).toBe(zhMessages.vendorConfig.aliyun.help);
+  });
+
+  it("offers no link for a provider that has no public console, instead of inventing one", async () => {
+    renderWorkspace({ levels: [IAM_CLOUD_ACCOUNT_SCOPE_USER] });
+    await screen.findByRole("table");
+
+    fireEvent.click(screen.getByRole("button", { name: "新建账号" }));
+    const dialog = await screen.findByRole("dialog");
+
+    // Switching the provider is what the operator does first, and the whole block
+    // has to follow it: the link, the directions and the help are all the chosen
+    // provider's.
+    await pickSelectOption(selectShowing(dialog, "阿里云"), "自定义");
+
+    const help = dialog.querySelector<HTMLElement>('[data-slot="cloud-account-credential-help"]');
+    expect(help?.querySelector('[data-slot="cloud-account-credential-help-link"]')).toBeNull();
+    // No link is not the same as no help: the provider with no page still says what
+    // it is and where the credential comes from.
+    const detail = help?.querySelector<HTMLElement>(
+      '[data-slot="cloud-account-credential-help-detail"]',
+    );
+    expect(detail?.querySelector("summary")?.textContent).toContain("自定义");
+    expect(detail?.querySelector("p")?.textContent).toBe(zhMessages.vendorConfig.custom.help);
   });
 });

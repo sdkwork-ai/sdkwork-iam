@@ -27,6 +27,7 @@ import {
   credentialNotNeededFor,
   credentialShapeHintFor,
   kindHintForKind,
+  kindHintUrlFor,
   regionHintFor,
   secretLabelForKind,
   vendorConfigFor,
@@ -48,6 +49,11 @@ import { sdkworkIamCloudAccountConsoleMessages as zhMessages } from "../src/i18n
  * 7 shapes × 11 providers × 2 catalogs, and it tests the *real* resolvers
  * (`credentialFieldLabel`, `secretLabelForKind`, `kindHintForKind`) rather than a
  * copy of them, so the page and the gate cannot drift apart.
+ *
+ * A third property joined them with the help links: every provider that has a
+ * public page reaches it for every credential kind, and the two providers that
+ * have none (`custom` and an unknown code) are named rather than silently
+ * skipped — which is the checkable form of "every provider is supported".
  */
 const CATALOGS: readonly (readonly [string, SdkworkIamCloudAccountConsoleMessages])[] = [
   ["zh-CN", zhMessages],
@@ -375,6 +381,97 @@ describe("cloud account credential form matrix", () => {
       // And a shape this build has never heard of reads as neither: the bridge gives
       // it no credential kind, so it draws nothing and gets the unknown reason.
       expect(credentialShapeHintFor("some-future-identity", messages)).toBe("");
+    }
+  });
+
+  it("sends the operator to a page for every provider that has one, and says so when it has none", () => {
+    // The directions the form prints have to lead somewhere an operator can act.
+    // Two failures are being asserted against, and they pull in opposite
+    // directions: a hint that names a page and offers no way to reach it (the
+    // form as it was — every one of these sentences was unclickable), and a link
+    // offered for a provider that has no page at all (`custom`, and any code this
+    // build has never seen), which is worse than no link because the operator
+    // lands somewhere unrelated and believes they followed the directions.
+    //
+    // So the rule is stated as an exception list rather than as a blanket
+    // requirement: **every** provider reaches a page except the two that have
+    // none, and those two are named. A provider added to the picker without one is
+    // therefore a failure, not a silent omission — which is what "every provider
+    // is supported" has to mean if it is to mean anything.
+    for (const [locale, messages] of CATALOGS) {
+      const consoleless: string[] = [];
+      for (const vendor of PROVIDERS) {
+        const config = vendorConfigFor(vendor, messages);
+        // The help is stated for *every* provider, the unknown one included: a
+        // provider whose credential system this build has never seen still has to
+        // say that it does not know, which is more use than a blank.
+        expect(config.help, `${locale} / ${vendor} states no help`).not.toBe("");
+        const reachable = IAM_CLOUD_ACCOUNT_CREDENTIAL_KINDS.map((kind) =>
+          kindHintUrlFor(kind, config),
+        );
+        if (reachable.every((url) => url === "")) {
+          consoleless.push(vendor);
+          continue;
+        }
+        for (const [index, kind] of IAM_CLOUD_ACCOUNT_CREDENTIAL_KINDS.entries()) {
+          const url = reachable[index];
+          const where = `${locale} / ${vendor} / ${kind}`;
+          expect(url, `${where}: the form names a page and offers no way to reach it`).toMatch(
+            /^https:\/\//,
+          );
+          // A URL that reaches the DOM carrying a placeholder or a stray space is
+          // a link nobody can follow, and it would still pass the scheme check.
+          expect(url, `${where}: "${url}" is not a clean URL`).not.toMatch(/[\s{}]/);
+        }
+      }
+      expect(
+        [...consoleless].sort(),
+        `${locale}: the providers with no public page changed`,
+      ).toEqual(["custom", "some-future-cloud"]);
+    }
+  });
+
+  it("falls back to the provider's own console for a kind it has no page for", () => {
+    // Most providers issue no bearer token and no service-account key file, so most
+    // of those entries are empty *by design* — and an operator who picked one of
+    // those shapes still has to reach something. The provider's console entry is
+    // that something, and this asserts the fallback is what produces it rather than
+    // an empty string: an empty href renders as a link to the current page, which
+    // looks like a working link and goes nowhere.
+    for (const [locale, messages] of CATALOGS) {
+      let fellBack = 0;
+      let dedicated = 0;
+      for (const vendor of PROVIDERS) {
+        const config = vendorConfigFor(vendor, messages);
+        for (const kind of IAM_CLOUD_ACCOUNT_CREDENTIAL_KINDS) {
+          const table = config.hintUrl as Readonly<Record<string, string>>;
+          if (table[kind] === "") {
+            if (config.consoleUrl === "") {
+              continue;
+            }
+            fellBack += 1;
+            expect(
+              kindHintUrlFor(kind, config),
+              `${locale} / ${vendor} / ${kind}: a kind with no page did not fall back to the console`,
+            ).toBe(config.consoleUrl);
+            continue;
+          }
+          dedicated += 1;
+          // A dedicated page that *is* the console entry is not a dedicated page:
+          // it means the deep link was never filled in, and the operator is sent to
+          // the front door with a hint naming a room.
+          expect(
+            table[kind],
+            `${locale} / ${vendor} / ${kind}: the "page" for this kind is just the console entry`,
+          ).not.toBe(config.consoleUrl);
+        }
+      }
+      // Both halves have to exist, or the assertions above are about one provider's
+      // shape wearing two names.
+      expect(fellBack, `${locale}: no provider has a kind without its own page`).toBeGreaterThan(0);
+      expect(dedicated, `${locale}: no provider has a page of its own for any kind`).toBeGreaterThan(
+        0,
+      );
     }
   });
 
