@@ -370,6 +370,7 @@ export function createIamBackendSdkAdapter(client: unknown): IamBackendSdkClient
         credentials: {
           create: standardResourceMethod(toRecord(iam.providerAccounts?.credentials), "create", "appbaseBackend.iam.providerAccounts.credentials.create"),
           list: standardResourceMethod(toRecord(iam.providerAccounts?.credentials), "list", "appbaseBackend.iam.providerAccounts.credentials.list"),
+          reveal: standardResourceMethod(toRecord(iam.providerAccounts?.credentials), "reveal", "appbaseBackend.iam.providerAccounts.credentials.reveal"),
         },
       },
       providerCredentials: {

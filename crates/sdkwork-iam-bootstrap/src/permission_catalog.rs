@@ -359,6 +359,12 @@ pub const IAM_STANDARD_PERMISSION_SEEDS: &[PermissionSeed] = &[
         action: "read",
     },
     PermissionSeed {
+        code: "iam.provider_credentials.reveal",
+        name: "Reveal provider credential secret material",
+        resource: "iam.provider_credentials",
+        action: "reveal",
+    },
+    PermissionSeed {
         code: "iam.provider_credentials.revoke",
         name: "Revoke provider credentials",
         resource: "iam.provider_credentials",

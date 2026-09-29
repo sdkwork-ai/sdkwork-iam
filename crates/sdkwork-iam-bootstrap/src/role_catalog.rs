@@ -42,6 +42,11 @@ pub const IAM_STANDARD_ROLE_GRANTS: &[StandardRoleGrant] = &[
             "iam.provider_credentials.create",
             "iam.provider_credentials.revoke",
             "iam.provider_credentials.delete",
+            // The edit form echoes the stored credential in plaintext, so a user
+            // who may write their own credential may also read it back. The route
+            // still applies the visibility walk, so this never reaches another
+            // member's account.
+            "iam.provider_credentials.reveal",
             "apps.app_center.read",
             "courses.catalog.read",
             "courses.content.read",
@@ -251,6 +256,9 @@ mod tests {
             "iam.provider_credentials.create",
             "iam.provider_credentials.revoke",
             "iam.provider_credentials.delete",
+            // The edit form echoes the stored credential, so reading back one's
+            // own secret material is part of self-management.
+            "iam.provider_credentials.reveal",
         ] {
             assert!(
                 expanded.iter().any(|code| code == permission),

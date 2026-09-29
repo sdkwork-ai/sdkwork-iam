@@ -498,6 +498,39 @@ export interface SdkworkIamCloudAccountConsoleMessages {
     resolutionEmpty: string;
     resolutionTitle: string;
   };
+  /**
+   * What the edit form's credential group says about reading the stored value
+   * back.
+   *
+   * The edit form is where an operator meets the platform's one plaintext
+   * projection: the reveal that lets the form echo what is already stored
+   * instead of reducing the edit to a blind rotation. Each state of that echo
+   * has its own sentence — read-back shown, read-back refused, nothing stored —
+   * because the operator's next action differs in all three.
+   */
+  edit: {
+    /** Caption of the credential group inside the edit form. */
+    credentialSection: string;
+    /**
+     * Why the fields below are showing real secret values, stated where the
+     * values appear: plaintext echo is unusual enough that an unexplained
+     * display of secrets reads as a bug rather than as a feature.
+     */
+    credentialEchoNote: string;
+    /**
+     * Shown when the read-back was refused (most commonly: the caller does not
+     * hold the reveal permission). The form stays usable — fields seed empty
+     * and typing a replacement rotates — so this explains the blank fields
+     * instead of pretending nothing was asked for.
+     */
+    credentialEchoUnavailable: string;
+    /**
+     * Shown when the account has no stored credential at all. The account is
+     * already unresolvable in this state, so the sentence names the way out
+     * (fill and save) rather than only the fact.
+     */
+    credentialMissingNote: string;
+  };
   /** Labels for the closed vocabulary of deployment environments. */
   environment: SdkworkIamCloudAccountVocabularyLabels<
     (typeof IAM_CLOUD_ACCOUNT_ENVIRONMENTS)[number]

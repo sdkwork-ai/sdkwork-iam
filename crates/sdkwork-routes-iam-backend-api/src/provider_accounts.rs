@@ -29,26 +29,32 @@
 //!   deliberately no separate member-facing surface: which level a caller reaches
 //!   is decided by the rights it holds, not by which endpoint it asked.
 //!
-//! Secret material is written through this surface only and is never projected
-//! back — responses carry the credential kind, status, fingerprint, and masked
-//! label, never ciphertext or plaintext.
+//! Secret material is written through this surface, and the listing and the
+//! single read never project it back — those responses carry the credential
+//! kind, status, fingerprint, and masked label, never ciphertext or plaintext.
+//! The one deliberate exception is `providerAccounts.credentials.reveal`, which
+//! exists so the edit form can echo the credential that is already stored: it
+//! demands the dedicated `iam.provider_credentials.reveal` permission (a code no
+//! read-only wildcard matches), applies the same account-visibility walk as the
+//! single read, and writes an audit record every time it opens the envelope.
 
 use std::collections::HashMap;
 
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
+    http::{header, HeaderValue, StatusCode},
     response::Response,
     routing::{get, post},
     Json, Router,
 };
 use sdkwork_iam_provider_account_service::{
     create_account, find_account_for_caller, list_accounts, list_credentials, resolve_account,
-    revoke_credential, sealing_available, set_default_account, soft_delete_account, update_account,
-    upsert_active_credential, AccountRequirement, AccountResolution, AccountVisibility,
-    NewProviderAccount, NewProviderCredential, ProviderAccount, ProviderAccountError,
-    ProviderAccountPatch, ProviderCredential, ScopeCaller, ACCOUNT_SCOPE_PLATFORM,
-    ACCOUNT_SCOPE_USER, ACCOUNT_TYPE_LONG_TERM_KEY, PLATFORM_TENANT_ID,
+    reveal_active_credential, revoke_credential, sealing_available, set_default_account,
+    soft_delete_account, update_account, upsert_active_credential, AccountRequirement,
+    AccountResolution, AccountVisibility, NewProviderAccount, NewProviderCredential,
+    ProviderAccount, ProviderAccountError, ProviderAccountPatch, ProviderCredential,
+    RevealedProviderCredential, ScopeCaller, ACCOUNT_SCOPE_PLATFORM, ACCOUNT_SCOPE_USER,
+    ACCOUNT_TYPE_LONG_TERM_KEY, PLATFORM_TENANT_ID,
 };
 use sdkwork_iam_web_adapter::record_audit_event;
 use sdkwork_web_core::WebRequestContext;
@@ -111,6 +117,10 @@ pub(crate) fn apply_provider_account_routes(
         .route(
             "/backend/v3/api/iam/provider_accounts/{providerAccountId}/credentials",
             get(list_provider_credentials).post(create_provider_credential),
+        )
+        .route(
+            "/backend/v3/api/iam/provider_accounts/{providerAccountId}/credentials/reveal",
+            get(reveal_provider_account_credential),
         )
         .route(
             "/backend/v3/api/iam/provider_credentials/{credentialId}/revoke",
@@ -806,6 +816,123 @@ async fn create_provider_credential(
         }
         Err(error) => provider_error(error),
     }
+}
+
+/// Reveal the active credential of one account, in plaintext.
+///
+/// The edit form has to echo the credential that is already stored — masking it
+/// there would reduce the form to a blind rotation, and an operator who cannot
+/// read what a platform holds on their behalf cannot correct it either. This is
+/// the surface's one plaintext projection, and it is fenced on three sides: the
+/// dedicated `iam.provider_credentials.reveal` permission (a code no read-only
+/// wildcard matches, so an auditor holding `*.read` gets the listing and the
+/// masked labels but not this), the same account-visibility walk the single read
+/// applies (so knowing an id is not enough to open a credential the listing
+/// would never have shown), and an audit record written on every open.
+///
+/// An account with no active credential answers `configured: false` rather than
+/// an error: "nothing stored yet" is the state the form is prepared to seed
+/// empty fields from, while a refusal is something the operator has to act on.
+async fn reveal_provider_account_credential(
+    State(state): State<BackendIamState>,
+    context: WebRequestContext,
+    Path(provider_account_id): Path<String>,
+) -> Response {
+    let pg = match postgres_pool_or_error(&state) {
+        Ok(pg) => pg,
+        Err(response) => return response,
+    };
+    let scope = match scope_or_error(&context) {
+        Ok(scope) => scope,
+        Err(response) => return response,
+    };
+    let visibility = scope.visibility(true, None, None);
+    match find_account_for_caller(pg, &provider_account_id, &visibility).await {
+        Ok(Some(_)) => {}
+        Ok(None) => {
+            return appbase_error(
+                StatusCode::NOT_FOUND,
+                "iam_provider_account_not_found",
+                "provider account not found",
+            )
+        }
+        Err(error) => return provider_error(error),
+    }
+
+    match reveal_active_credential(pg, &scope.tenant_id, &provider_account_id).await {
+        Ok(Some(revealed)) => {
+            audit_account(
+                &context,
+                pg,
+                &scope,
+                "provider_credential.reveal",
+                &revealed.credential_id,
+                json!({
+                    "providerAccountId": revealed.provider_account_id,
+                    "credentialKind": revealed.material.credential_kind,
+                    "credentialVersion": revealed.material.credential_version.to_string(),
+                }),
+            )
+            .await;
+            // A GET that answers plaintext must not land in a shared cache.
+            let mut response = appbase_ok(revealed_credential_to_json(&revealed));
+            response.headers_mut().insert(
+                header::CACHE_CONTROL,
+                HeaderValue::from_static("no-store"),
+            );
+            response
+        }
+        Ok(None) => appbase_ok(json!({
+            "configured": false,
+            "providerAccountId": provider_account_id,
+        })),
+        Err(error) => provider_error(error),
+    }
+}
+
+/// The reveal projection: the one response on this surface that carries
+/// plaintext, plus the metadata the edit form needs to rotate responsibly.
+///
+/// Absent payload parts are omitted rather than sent as empty strings, so the
+/// client reads "this credential holds no session token" instead of "the token
+/// is nothing". The version rides along as a string because `int64` is not a
+/// safe JSON number (API_SPEC §13.6).
+fn revealed_credential_to_json(revealed: &RevealedProviderCredential) -> Value {
+    let material = &revealed.material;
+    let mut body = serde_json::Map::new();
+    body.insert("configured".to_owned(), Value::Bool(true));
+    body.insert(
+        "providerAccountId".to_owned(),
+        Value::String(material.provider_account_id.clone()),
+    );
+    body.insert(
+        "credentialId".to_owned(),
+        Value::String(revealed.credential_id.clone()),
+    );
+    body.insert(
+        "credentialName".to_owned(),
+        Value::String(revealed.credential_name.clone()),
+    );
+    body.insert(
+        "credentialKind".to_owned(),
+        Value::String(material.credential_kind.clone()),
+    );
+    body.insert(
+        "credentialVersion".to_owned(),
+        Value::String(material.credential_version.to_string()),
+    );
+    for (key, value) in [
+        ("accessKeyId", material.access_key_id.as_deref()),
+        ("secretAccessKey", material.secret_access_key.as_deref()),
+        ("sessionToken", material.session_token.as_deref()),
+        ("secretText", material.secret_text.as_deref()),
+        ("expiresAt", material.expires_at.as_deref()),
+    ] {
+        if let Some(value) = value.filter(|candidate| !candidate.trim().is_empty()) {
+            body.insert(key.to_owned(), Value::String(value.to_owned()));
+        }
+    }
+    Value::Object(body)
 }
 
 async fn revoke_provider_credential(

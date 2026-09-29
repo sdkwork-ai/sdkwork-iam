@@ -55,6 +55,11 @@ function explicitBootstrapPermission(operationId) {
     // invisible to non-admins, so resolution gets its own code.
     case 'providerAccounts.resolve':
       return 'iam.provider_accounts.resolve';
+    // Revealing plaintext credential material is the surface's most sensitive
+    // read and gets its own code for the same wildcard reason: `*.read` buys the
+    // listing and the masked labels, never the secret bytes.
+    case 'providerAccounts.credentials.reveal':
+      return 'iam.provider_credentials.reveal';
     default:
       return undefined;
   }

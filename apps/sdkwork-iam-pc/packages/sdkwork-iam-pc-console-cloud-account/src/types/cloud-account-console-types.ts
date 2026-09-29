@@ -110,6 +110,28 @@ export interface SdkworkIamConsoleCloudAccountCredentialInput {
 }
 
 /**
+ * The account's active credential, opened in plaintext for the edit form.
+ *
+ * This is the read-back the reveal route exists for: an operator who has to edit
+ * an account must be able to see what is already stored in it, per field, the
+ * way the listing can never show it. The controller answers `undefined` for an
+ * account with no active credential yet (`configured: false` on the wire) — a
+ * finding the form seeds empty fields from, not a failure.
+ */
+export interface SdkworkIamConsoleCloudAccountCredentialMaterial {
+  /** The active row the material was opened from; revoking a replaced shape needs it. */
+  credentialId?: string;
+  credentialKind?: string;
+  credentialName?: string;
+  credentialVersion?: string;
+  accessKeyId?: string;
+  secretAccessKey?: string;
+  sessionToken?: string;
+  secretText?: string;
+  expiresAt?: string;
+}
+
+/**
  * Which account a requirement lands on, and why.
  *
  * `candidatesByScope` is what lets a console explain the walk instead of only
@@ -182,6 +204,17 @@ export interface SdkworkIamConsoleCloudAccountController {
   setDefaultAccount(providerAccountId: string): Promise<SdkworkIamConsoleCloudAccountRecord | undefined>;
   selectAccount(providerAccountId: string): Promise<SdkworkIamConsoleCloudAccountRecord | undefined>;
   listCredentials(providerAccountId: string): Promise<readonly SdkworkIamConsoleCloudAccountCredentialRecord[]>;
+  /**
+   * Open the account's active credential in plaintext, for the edit form's echo.
+   *
+   * `undefined` means the account has no stored credential yet, which is the
+   * state the form seeds empty fields from. A refusal (no reveal permission,
+   * unreachable backend) rejects, so the caller can degrade to an editable empty
+   * form with an explanation instead of silently showing blanks.
+   */
+  revealCredential(
+    providerAccountId: string,
+  ): Promise<SdkworkIamConsoleCloudAccountCredentialMaterial | undefined>;
   createCredential(
     providerAccountId: string,
     input: SdkworkIamConsoleCloudAccountCredentialInput,

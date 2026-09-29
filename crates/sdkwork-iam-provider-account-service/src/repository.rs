@@ -9,8 +9,8 @@ use crate::model::{
     validate_choice, validate_credential_name, validate_display_name, validate_secret_payload,
     validate_vendor_code, AccountRequirement, AccountResolution, AccountVisibility,
     NewProviderAccount, NewProviderCredential, ProviderAccount, ProviderAccountError,
-    ProviderAccountPatch, ProviderCredential, ProviderCredentialMaterial, ScopeCaller,
-    ScopeCandidateCount, ACCOUNT_SCOPES, ACCOUNT_SCOPE_PLATFORM, ACCOUNT_SCOPE_USER,
+    ProviderAccountPatch, ProviderCredential, ProviderCredentialMaterial, RevealedProviderCredential,
+    ScopeCaller, ScopeCandidateCount, ACCOUNT_SCOPES, ACCOUNT_SCOPE_PLATFORM, ACCOUNT_SCOPE_USER,
     ACCOUNT_STATUSES, ACCOUNT_STATUS_ACTIVE, ACCOUNT_TYPES, CREDENTIAL_KINDS,
     CREDENTIAL_STATUS_ACTIVE, CREDENTIAL_STATUS_REVOKED, CREDENTIAL_STATUS_SUPERSEDED,
     ENVIRONMENTS, PLATFORM_TENANT_ID, SCOPE_PRECEDENCE,
@@ -1292,6 +1292,105 @@ pub async fn resolve_credential_material(
         secret_text: payload.secret_text,
         expires_at: optional_timestamp_to_string(expires_at),
     })
+}
+
+/// Open the active credential of one account for the account center's edit echo.
+///
+/// This is the read-back half of the write-only story: the envelope exists so
+/// plaintext at rest is impossible, not so the value is unknowable to the
+/// operator who stored it and now has to edit it. Every caller of this function
+/// has already cleared the account visibility walk and holds the dedicated
+/// reveal permission; this function only answers *what is stored*.
+///
+/// Unlike [`resolve_credential_material`] the account's own status is not
+/// required to be `active`: an operator legitimately repairs a disabled account
+/// — which starts with reading back what is in it — and refusing the read would
+/// freeze the account in exactly the broken state the edit is meant to fix.
+///
+/// `Ok(None)` is a finding, not a failure: the account has no active credential
+/// row yet, and the route renders that as `configured: false` so the form seeds
+/// empty fields instead of showing an error. The row picked is the same one
+/// [`resolve_credential_material`] would hand a consumer — highest credential
+/// version across slots — so the form echoes the credential that actually runs,
+/// never a superseded sibling.
+pub async fn reveal_active_credential(
+    pg: &PgPool,
+    tenant_id: &str,
+    account_id: &str,
+) -> Result<Option<RevealedProviderCredential>, ProviderAccountError> {
+    let account_row = sqlx::query(
+        "SELECT id FROM iam_provider_account \
+         WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL",
+    )
+    .bind(tenant_id.trim())
+    .bind(account_id.trim())
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| unavailable("read provider account", error))?;
+    if account_row.is_none() {
+        return Err(ProviderAccountError::NotFound(
+            "provider account not found".to_owned(),
+        ));
+    }
+
+    let row = sqlx::query(
+        "SELECT id, credential_name, credential_kind, credential_version, secret_ciphertext, \
+             expires_at FROM iam_provider_credential \
+         WHERE tenant_id = $1 AND provider_account_id = $2 AND status = $3 AND deleted_at IS NULL \
+         ORDER BY credential_version DESC LIMIT 1",
+    )
+    .bind(tenant_id.trim())
+    .bind(account_id.trim())
+    .bind(CREDENTIAL_STATUS_ACTIVE)
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| unavailable("read provider credential", error))?;
+    let Some(row) = row else {
+        return Ok(None);
+    };
+
+    let credential_id: String = row
+        .try_get("id")
+        .map_err(|error| unavailable("read provider credential", error))?;
+    let credential_name: String = row
+        .try_get("credential_name")
+        .map_err(|error| unavailable("read provider credential", error))?;
+    let credential_kind: String = row
+        .try_get("credential_kind")
+        .map_err(|error| unavailable("read provider credential", error))?;
+    let credential_version: i64 = row
+        .try_get("credential_version")
+        .map_err(|error| unavailable("read provider credential", error))?;
+    let sealed: String = row
+        .try_get("secret_ciphertext")
+        .map_err(|error| unavailable("read provider credential", error))?;
+    let expires_at: Option<DateTime<Utc>> = row
+        .try_get("expires_at")
+        .map_err(|error| unavailable("read provider credential", error))?;
+
+    let plaintext = envelope::open(&sealed)?;
+    let payload: crate::model::CredentialSecretPayload = serde_json::from_slice(&plaintext)
+        .map_err(|error| {
+            ProviderAccountError::Cipher(format!(
+                "provider credential payload is unreadable: {error}"
+            ))
+        })?;
+
+    Ok(Some(RevealedProviderCredential {
+        credential_id,
+        provider_account_id: account_id.trim().to_owned(),
+        credential_name,
+        material: ProviderCredentialMaterial {
+            provider_account_id: account_id.trim().to_owned(),
+            credential_kind,
+            credential_version,
+            access_key_id: payload.access_key_id,
+            secret_access_key: payload.secret_access_key,
+            session_token: payload.session_token,
+            secret_text: payload.secret_text,
+            expires_at: optional_timestamp_to_string(expires_at),
+        },
+    }))
 }
 
 /// Resolve which cloud account a consumer should use.

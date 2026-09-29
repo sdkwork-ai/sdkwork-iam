@@ -222,6 +222,19 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     resolutionEmpty: "No account at any visible level serves this vendor and capability.",
     resolutionTitle: "What this requirement resolves to",
   },
+  edit: {
+    // The permission code is spelled out on purpose: the usual cause of a refused
+    // read-back is a caller without `iam.provider_credentials.reveal`, and an
+    // administrator who can read the code can grant it instead of guessing
+    // whether the blank fields are a fault or an empty account.
+    credentialEchoNote:
+      "The stored credential is echoed in plaintext; saving any change rotates it to the new value, and untouched fields keep their stored value.",
+    credentialEchoUnavailable:
+      "The stored credential could not be read back (the iam.provider_credentials.reveal permission is required). The fields below start empty; type a replacement and save to rotate.",
+    credentialMissingNote:
+      "This account has no stored credential yet, so nothing resolves through it; fill in the fields above and save to write one.",
+    credentialSection: "Credential",
+  },
   environment: {
     development: "Development",
     production: "Production",

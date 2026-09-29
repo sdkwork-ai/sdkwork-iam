@@ -201,6 +201,17 @@ export const sdkworkIamCloudAccountConsoleMessages: SdkworkIamCloudAccountConsol
     resolutionEmpty: "没有任何可见级别的账号能服务该服务商与能力。",
     resolutionTitle: "该需求的解析结果",
   },
+  edit: {
+    credentialEchoNote:
+      "已保存的凭据按存储内容明文回显；修改任意字段后保存即按新内容轮换，未改动的字段保持原值。",
+    // 读取被拒最常见的原因是调用方没有 `iam.provider_credentials.reveal` 权限：把权限码写进
+    // 文案，管理员才能照着授权，而不是对着一排空白输入框猜是出了故障还是本来就没存。
+    credentialEchoUnavailable:
+      "无法读取已保存的凭据（需要 iam.provider_credentials.reveal 权限）。下方字段已置空，直接输入新值保存即可轮换。",
+    credentialMissingNote:
+      "该账号还没有已存储的凭据，当前不会参与解析；在上方填写并保存即可写入。",
+    credentialSection: "凭据",
+  },
   environment: {
     development: "开发",
     production: "生产",

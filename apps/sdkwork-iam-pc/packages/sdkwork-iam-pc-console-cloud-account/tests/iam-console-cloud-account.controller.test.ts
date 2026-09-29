@@ -11,6 +11,7 @@ function serviceStub() {
     credentials: {
       create: vi.fn(),
       list: vi.fn().mockResolvedValue({ items: [] }),
+      reveal: vi.fn(),
     },
     delete: vi.fn().mockResolvedValue({ accepted: true }),
     list: vi.fn().mockResolvedValue({ items: [] }),
@@ -251,6 +252,70 @@ describe("@sdkwork/iam-pc-console-cloud-account", () => {
     // under the account, because a slot's superseded rows are revocable too.
     expect(stub.providerCredentials.revoke).toHaveBeenCalledWith("cred-2");
     expect(controller.getState().credentials).toEqual([]);
+  });
+
+  /**
+   * The reveal is the edit form's read-back: the one call that answers in
+   * plaintext, and therefore the one whose two "empty" answers must not be
+   * confused. "Nothing stored" resolves to `undefined` so the form can seed
+   * blank fields; a refusal rejects so the form can explain the blanks instead
+   * of presenting them as stored facts.
+   */
+  describe("revealing the active credential for the edit echo", () => {
+    it("opens the stored material field by field when the account has a credential", async () => {
+      const stub = serviceStub();
+      stub.providerAccounts.credentials.reveal.mockResolvedValue({
+        accessKeyId: " LTAIecho0001 ",
+        configured: true,
+        credentialId: "cred-echo-1",
+        credentialKind: "access_key_pair",
+        credentialName: "default",
+        credentialVersion: "3",
+        secretAccessKey: "stored-secret-value",
+      });
+      const controller = createSdkworkIamConsoleCloudAccountController({ service: { iam: stub } as never });
+
+      const material = await controller.revealCredential(" acct-1 ");
+
+      expect(stub.providerAccounts.credentials.reveal).toHaveBeenCalledWith("acct-1");
+      expect(material).toEqual({
+        accessKeyId: "LTAIecho0001",
+        credentialId: "cred-echo-1",
+        credentialKind: "access_key_pair",
+        credentialName: "default",
+        credentialVersion: "3",
+        expiresAt: undefined,
+        secretAccessKey: "stored-secret-value",
+        secretText: undefined,
+        sessionToken: undefined,
+      });
+    });
+
+    it("answers undefined — not a failure — when the account has no stored credential", async () => {
+      const stub = serviceStub();
+      stub.providerAccounts.credentials.reveal.mockResolvedValue({
+        configured: false,
+        providerAccountId: "acct-1",
+      });
+      const controller = createSdkworkIamConsoleCloudAccountController({ service: { iam: stub } as never });
+
+      // The route's `configured: false` is a finding the form seeds empty fields
+      // from; resolving it to `undefined` here is what keeps the blank-form case
+      // distinct from the refused-read case, which still rejects below.
+      await expect(controller.revealCredential("acct-1")).resolves.toBeUndefined();
+    });
+
+    it("propagates a refused read-back so the form can degrade with an explanation", async () => {
+      const stub = serviceStub();
+      stub.providerAccounts.credentials.reveal.mockRejectedValue(
+        new Error("iam.provider_credentials.reveal denied"),
+      );
+      const controller = createSdkworkIamConsoleCloudAccountController({ service: { iam: stub } as never });
+
+      await expect(controller.revealCredential("acct-1")).rejects.toThrow(
+        "iam.provider_credentials.reveal denied",
+      );
+    });
   });
 
   it("reads the resolution preview's string counts as numbers", async () => {

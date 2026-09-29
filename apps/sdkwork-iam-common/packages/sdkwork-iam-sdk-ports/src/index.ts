@@ -237,6 +237,7 @@ export interface IamBackendIamResourceClient {
     credentials?: {
       create?: IamSdkMethod;
       list?: IamSdkMethod;
+      reveal?: IamSdkMethod;
     };
   };
   providerCredentials?: {

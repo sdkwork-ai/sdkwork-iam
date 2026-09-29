@@ -22,6 +22,7 @@ import {
 } from "../src/components/RegionCombobox";
 import type {
   SdkworkIamConsoleCloudAccountController,
+  SdkworkIamConsoleCloudAccountCredentialMaterial,
   SdkworkIamConsoleCloudAccountCredentialRecord,
   SdkworkIamConsoleCloudAccountRecord,
 } from "../src/index";
@@ -130,6 +131,14 @@ function controllerStub(accounts: readonly SdkworkIamConsoleCloudAccountRecord[]
     deleteAccount: vi.fn(async () => undefined),
     listCredentials: vi.fn(async () => [...credentialRows]),
     listScopeAccounts: vi.fn(async () => [...rows]),
+    /**
+     * The edit form's read-back.
+     *
+     * `undefined` is the honest default: most stub rows describe an account whose
+     * credential was never stored, and an echo that returned material by default
+     * would make every edit test assert against a phantom stored value.
+     */
+    revealCredential: vi.fn(async () => undefined),
     revokeCredential: vi.fn(async () => undefined),
     setDefaultAccount: vi.fn(async () => rows[0]),
     updateAccount: vi.fn(async () => rows[0]),
@@ -145,9 +154,14 @@ function renderWorkspace(options: {
   accounts?: readonly SdkworkIamConsoleCloudAccountRecord[];
   credentials?: readonly SdkworkIamConsoleCloudAccountCredentialRecord[];
   levels?: readonly IamCloudAccountScopeLevel[];
+  /** What the edit form's read-back answers; the default is "nothing stored". */
+  revealed?: SdkworkIamConsoleCloudAccountCredentialMaterial;
   surface?: "admin" | "console";
 } = {}) {
   const { calls, controller, rows } = controllerStub(options.accounts, options.credentials);
+  if (options.revealed !== undefined) {
+    calls.revealCredential.mockResolvedValue(options.revealed);
+  }
   const result = render(
     <SdkworkThemeProvider defaultTheme="light">
       <SdkworkI18nProvider
@@ -696,6 +710,135 @@ describe("@sdkwork/iam-pc-console-cloud-account workspace", () => {
       "acct-1",
       expect.objectContaining({ displayName: "生产对象存储 v2" }),
     ));
+  });
+
+  /**
+   * The edit form echoes the stored credential in plaintext and edits it.
+   *
+   * An edit that cannot show what is stored is a blind rotation wearing an edit's
+   * clothes, so the cases below assert the three states the read-back can be in —
+   * echoed, refused, nothing stored — and the one behavioural rule the echo buys:
+   * an untouched secret is not re-sent, a changed one is rotated, and a shape
+   * switch that changes the credential kind revokes the slot it replaced.
+   */
+  describe("editing with the stored credential echoed", () => {
+    const storedPair: SdkworkIamConsoleCloudAccountCredentialMaterial = {
+      accessKeyId: "LTAIecho0001",
+      credentialId: "cred-echo-1",
+      credentialKind: "access_key_pair",
+      credentialName: "default",
+      credentialVersion: "3",
+      secretAccessKey: "stored-secret-value",
+    };
+
+    async function openEditor() {
+      const table = await screen.findByRole("table");
+      fireEvent.click(within(table).getAllByRole("button", { name: "编辑" })[0]);
+      return screen.findByRole("dialog");
+    }
+
+    it("echoes the stored credential in plaintext and skips the rotate when nothing changed", async () => {
+      const { calls } = renderWorkspace({ revealed: storedPair });
+      const editor = await openEditor();
+
+      // Plaintext is the point: the fields hold the stored values, readable in
+      // the DOM, under the provider's own field names.
+      expect((within(editor).getByLabelText("AccessKey ID") as HTMLInputElement).value).toBe(
+        "LTAIecho0001",
+      );
+      expect((within(editor).getByLabelText("AccessKey Secret") as HTMLInputElement).value).toBe(
+        "stored-secret-value",
+      );
+      expect(editor.querySelector('[data-slot="cloud-account-edit-credential-echo"]')).toBeTruthy();
+
+      fireEvent.change(within(editor).getByLabelText("显示名称"), {
+        target: { value: "生产对象存储 v2" },
+      });
+      fireEvent.submit(editor.querySelector("form") as HTMLFormElement);
+
+      // The rename goes out; the untouched secret does not — consumers key caches
+      // on the credential version, and an edit that did not touch the secret has
+      // no reason to bump it.
+      await waitFor(() => expect(calls.updateAccount).toHaveBeenCalled());
+      expect(calls.createCredential).not.toHaveBeenCalled();
+      expect(calls.revokeCredential).not.toHaveBeenCalled();
+    });
+
+    it("follows the switched identity shape and revokes the slot it replaced", async () => {
+      const { calls } = renderWorkspace({ revealed: storedPair });
+      calls.createCredential.mockResolvedValue(
+        credentialItem({ credentialKind: "secret_text", id: "cred-echo-2" }),
+      );
+      const editor = await openEditor();
+
+      // The account was stored as a long-term key, so the pair is on screen. The
+      // shape is the one axis that decides the fields, so switching to API 密钥 —
+      // a single-secret shape — must redraw them, keeping nothing of the pair
+      // except what a single-secret field can hold (nothing, here).
+      await pickSelectOption(selectShowing(editor, "长期密钥"), "API 密钥");
+      expect(within(editor).queryByLabelText("AccessKey ID")).toBeNull();
+      const secretField = within(editor).getByLabelText("密钥文本") as HTMLInputElement;
+      expect(secretField.value).toBe("");
+      fireEvent.change(secretField, { target: { value: "api-token-value" } });
+      fireEvent.submit(editor.querySelector("form") as HTMLFormElement);
+
+      await waitFor(() => expect(calls.createCredential).toHaveBeenCalled());
+      expect(calls.createCredential).toHaveBeenCalledWith(
+        "acct-1",
+        expect.objectContaining({ credentialKind: "secret_text", secretText: "api-token-value" }),
+      );
+      // The upsert supersedes only its own slot: without this revocation the old
+      // access_key_pair row would stay active beside the new one, and resolution —
+      // which picks the highest version across slots — could keep answering with
+      // the credential the account no longer declares.
+      await waitFor(() => expect(calls.revokeCredential).toHaveBeenCalledWith("acct-1", "cred-echo-1"));
+    });
+
+    it("keeps the form usable when the read-back is refused", async () => {
+      const { calls } = renderWorkspace();
+      calls.revealCredential.mockRejectedValue(new Error("iam.provider_credentials.reveal denied"));
+      const editor = await openEditor();
+
+      // The refusal is stated where the fields are, not thrown at the page: an
+      // operator who cannot read the old value can still write a new one.
+      expect(
+        editor.querySelector('[data-slot="cloud-account-edit-credential-unavailable"]'),
+      ).toBeTruthy();
+      expect((within(editor).getByLabelText("AccessKey ID") as HTMLInputElement).value).toBe("");
+
+      fireEvent.change(within(editor).getByLabelText("AccessKey ID"), {
+        target: { value: "LTAIreplacement" },
+      });
+      fireEvent.change(within(editor).getByLabelText("AccessKey Secret"), {
+        target: { value: "replacement-secret" },
+      });
+      fireEvent.submit(editor.querySelector("form") as HTMLFormElement);
+
+      await waitFor(() => expect(calls.createCredential).toHaveBeenCalled());
+      expect(calls.createCredential).toHaveBeenCalledWith(
+        "acct-1",
+        expect.objectContaining({
+          accessKeyId: "LTAIreplacement",
+          credentialKind: "access_key_pair",
+          secretAccessKey: "replacement-secret",
+        }),
+      );
+    });
+
+    it("names the empty account instead of rendering bare blanks when nothing is stored", async () => {
+      const { calls } = renderWorkspace();
+      const editor = await openEditor();
+
+      expect(
+        editor.querySelector('[data-slot="cloud-account-edit-credential-missing"]'),
+      ).toBeTruthy();
+
+      // Leaving it empty saves the account alone: "no credential yet" is a state
+      // the platform supports (the listing warns about it), not an error.
+      fireEvent.submit(editor.querySelector("form") as HTMLFormElement);
+      await waitFor(() => expect(calls.updateAccount).toHaveBeenCalled());
+      expect(calls.createCredential).not.toHaveBeenCalled();
+    });
   });
 
   it("registers through a modal instead of a permanent form on the page", async () => {

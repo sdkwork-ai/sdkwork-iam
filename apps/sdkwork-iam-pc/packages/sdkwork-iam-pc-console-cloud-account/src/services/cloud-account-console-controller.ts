@@ -11,6 +11,7 @@ import type {
   SdkworkIamConsoleCloudAccountController,
   SdkworkIamConsoleCloudAccountCreateInput,
   SdkworkIamConsoleCloudAccountCredentialInput,
+  SdkworkIamConsoleCloudAccountCredentialMaterial,
   SdkworkIamConsoleCloudAccountCredentialRecord,
   SdkworkIamConsoleCloudAccountPatch,
   SdkworkIamConsoleCloudAccountRecord,
@@ -299,6 +300,38 @@ export function createSdkworkIamConsoleCloudAccountController(
         setState({ status: "error" });
         throw error;
       }
+    },
+    /**
+     * Open the account's active credential in plaintext, for the edit echo.
+     *
+     * The reveal route answers `configured: false` — not an error — for an
+     * account with no active credential yet, so that case resolves to
+     * `undefined` here and the edit form seeds empty fields from it. A refusal
+     * (the reveal permission, the envelope, the backend itself) still rejects:
+     * "cannot show" and "nothing stored" are different facts, and only the
+     * second one is safe to render as blank boxes.
+     */
+    revealCredential: async (providerAccountId) => {
+      const accountId = requireId(providerAccountId, "providerAccountId");
+      const record = await service.iam.providerAccounts.credentials.reveal(accountId);
+      if (!record || typeof record !== "object") {
+        return undefined;
+      }
+      const item = record as Record<string, unknown>;
+      if (readBoolean(item.configured) === false) {
+        return undefined;
+      }
+      return {
+        accessKeyId: readString(item.accessKeyId ?? item.access_key_id),
+        credentialId: readString(item.credentialId ?? item.credential_id),
+        credentialKind: readString(item.credentialKind ?? item.credential_kind),
+        credentialName: readString(item.credentialName ?? item.credential_name),
+        credentialVersion: readString(item.credentialVersion ?? item.credential_version),
+        expiresAt: readString(item.expiresAt ?? item.expires_at),
+        secretAccessKey: readString(item.secretAccessKey ?? item.secret_access_key),
+        secretText: readString(item.secretText ?? item.secret_text),
+        sessionToken: readString(item.sessionToken ?? item.session_token),
+      };
     },
     createCredential: async (providerAccountId, credentialInput) => {
       const accountId = requireId(providerAccountId, "providerAccountId");

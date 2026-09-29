@@ -75,6 +75,7 @@ import { RegionCombobox } from "../components/RegionCombobox";
 import { SdkworkIamCloudAccountCredentialWriteError } from "../services/cloud-account-console-controller";
 import type {
   SdkworkIamConsoleCloudAccountCredentialInput,
+  SdkworkIamConsoleCloudAccountCredentialMaterial,
   SdkworkIamConsoleCloudAccountCredentialRecord,
   SdkworkIamConsoleCloudAccountRecord,
   SdkworkIamConsoleCloudAccountResolution,
@@ -119,13 +120,28 @@ interface CreateDraft {
   vendorCode: string;
 }
 
-/** The subset `PATCH` accepts for an already registered account. */
+/**
+ * The subset `PATCH` accepts for an already registered account, plus the four
+ * credential fields the edit form echoes.
+ *
+ * The credential fields are here even though `PATCH` does not take them — they
+ * ride to the rotate call (`credentials.create`) separately, exactly as the
+ * register form's do. Keeping them in the same draft is what lets the edit form
+ * follow the identity shape the way the register form does: switching the shape
+ * re-derives which of the four boxes are on screen while everything typed or
+ * echoed stays put, and `credentialDraftOf` still decides what actually goes on
+ * the wire.
+ */
 interface EditDraft {
+  accessKeyId: string;
   accountType: string;
   capabilityCodes: readonly string[];
   displayName: string;
   environment: string;
   regionCode: string;
+  secretAccessKey: string;
+  secretText: string;
+  sessionToken: string;
   /**
    * The account's provider, carried for context rather than for editing.
    *
@@ -135,6 +151,21 @@ interface EditDraft {
    * in the payload.
    */
   vendorCode: string;
+}
+
+/**
+ * The read-back of the edit target's active credential.
+ *
+ * `loading` covers the reveal in flight; `ready` carries what is stored — or
+ * nothing, when the account has no credential yet; `unavailable` means the
+ * read-back was refused (most commonly the caller without the reveal
+ * permission). The distinction matters because the three states ask the operator
+ * to do different things: read, ignore, or type a replacement blind.
+ */
+interface EditCredentialEcho {
+  /** What is stored, when the account has a credential and the caller may read it. */
+  material?: SdkworkIamConsoleCloudAccountCredentialMaterial;
+  status: "loading" | "ready" | "unavailable";
 }
 
 /** The credential form's own draft. */
@@ -261,6 +292,9 @@ export function SdkworkIamConsoleCloudAccountWorkspace({
 
   const [createDraft, setCreateDraft] = useState<CreateDraft>(() => emptyCreateDraft(levels[0]));
   const [editDraft, setEditDraft] = useState<EditDraft>(emptyEditDraft);
+  const [editCredentialEcho, setEditCredentialEcho] = useState<EditCredentialEcho>({
+    status: "loading",
+  });
   const [credentialDraft, setCredentialDraft] = useState<CredentialDraft>(emptyCredentialDraft);
   /**
    * Whether the credential write form's own dialog is open.
@@ -315,6 +349,19 @@ export function SdkworkIamConsoleCloudAccountWorkspace({
     () => vendorConfigFor(createDraft.vendorCode, messages),
     [createDraft.vendorCode, messages],
   );
+
+  /**
+   * The same words for the provider of the account the edit form is open on.
+   *
+   * A fourth resolution rather than a third because the edit form describes yet
+   * another account at the same moment: the row being edited is neither the one
+   * registering nor the one the detail shows nor the one the credential dialog
+   * writes to.
+   */
+  const editVendorConfig = useMemo(
+    () => vendorConfigFor(editDraft.vendorCode, messages),
+    [editDraft.vendorCode, messages],
+  );
   const credentialVendorConfig = useMemo(
     () => vendorConfigFor(credentialEditorTarget?.vendorCode, messages),
     [credentialEditorTarget?.vendorCode, messages],
@@ -361,6 +408,26 @@ export function SdkworkIamConsoleCloudAccountWorkspace({
   const createCredentialKind = useMemo(
     () => iamCloudAccountTypeCredentialKind(createDraft.accountType),
     [createDraft.accountType],
+  );
+
+  /**
+   * The credential fields the edit form is asking for right now, and the kind
+   * they mean.
+   *
+   * The edit form follows the identity shape exactly as the register form does —
+   * same derivation, same reason: the shape is the one axis that decides which
+   * boxes exist. Switching the shape keeps everything typed or echoed in the
+   * draft, so moving between two pair-shaped types preserves what the reveal
+   * brought back, and moving to a single-secret shape simply reads the other
+   * field.
+   */
+  const editCredentialFields = useMemo(
+    () => iamCloudAccountCredentialFields(editDraft.accountType),
+    [editDraft.accountType],
+  );
+  const editCredentialKind = useMemo(
+    () => iamCloudAccountTypeCredentialKind(editDraft.accountType),
+    [editDraft.accountType],
   );
 
   /**
@@ -470,18 +537,58 @@ export function SdkworkIamConsoleCloudAccountWorkspace({
     setEditor("create");
   };
 
+  /**
+   * Read the edit target's stored credential back, in plaintext, into the form.
+   *
+   * Echoing is what turns the edit from a blind rotation into an edit: an
+   * operator asked to fix an account has to see what is already in it. The echo
+   * lands in the draft field by field, so switching the identity shape afterwards
+   * keeps the stored values exactly as it keeps typed ones.
+   *
+   * A refusal degrades instead of blocking: the echo is marked unavailable and
+   * the credential group explains the blank fields, while the rest of the form —
+   * the account facts that `PATCH` accepts — stays fully editable. Turning the
+   * refusal into a page-level error would lock an operator out of an edit they
+   * are allowed to make because a *read-back* was refused.
+   */
+  const revealEditCredential = (accountId: string) => {
+    setEditCredentialEcho({ status: "loading" });
+    controller
+      .revealCredential(accountId)
+      .then((material) => {
+        setEditCredentialEcho({ material, status: "ready" });
+        if (material) {
+          setEditDraft((current) => ({
+            ...current,
+            accessKeyId: material.accessKeyId ?? current.accessKeyId,
+            secretAccessKey: material.secretAccessKey ?? current.secretAccessKey,
+            secretText: material.secretText ?? current.secretText,
+            sessionToken: material.sessionToken ?? current.sessionToken,
+          }));
+        }
+      })
+      .catch(() => {
+        setEditCredentialEcho({ status: "unavailable" });
+      });
+  };
+
   const openEdit = (account: SdkworkIamConsoleCloudAccountRecord) => {
     setError(undefined);
     setEditDraft({
+      accessKeyId: "",
       accountType: account.accountType ?? IAM_CLOUD_ACCOUNT_TYPES[0],
       capabilityCodes: account.capabilityCodes,
       displayName: account.displayName,
       environment: account.environment ?? DEFAULT_ENVIRONMENT,
       regionCode: account.regionCode ?? "",
+      secretAccessKey: "",
+      secretText: "",
+      sessionToken: "",
       vendorCode: account.vendorCode,
     });
     setEditAccountId(account.id);
     setEditor("edit");
+    revealEditCredential(account.id);
   };
 
   /**
@@ -531,6 +638,31 @@ export function SdkworkIamConsoleCloudAccountWorkspace({
    */
   const setCreateCredentialField = (field: IamCloudAccountCredentialField, value: string) => {
     setCreateDraft((current) => {
+      switch (field) {
+        case IAM_CLOUD_ACCOUNT_CREDENTIAL_FIELD_KEY_ID:
+          return { ...current, accessKeyId: value };
+        case IAM_CLOUD_ACCOUNT_CREDENTIAL_FIELD_KEY_SECRET:
+          return { ...current, secretAccessKey: value };
+        case IAM_CLOUD_ACCOUNT_CREDENTIAL_FIELD_SECRET_TEXT:
+          return { ...current, secretText: value };
+        case IAM_CLOUD_ACCOUNT_CREDENTIAL_FIELD_SESSION_TOKEN:
+          return { ...current, sessionToken: value };
+        default:
+          return current;
+      }
+    });
+  };
+
+  /**
+   * Write one credential field of the edit draft.
+   *
+   * The same switch as the register form's setter, for the same reason: the
+   * draft keeps all four fields whatever the current identity shape shows, so a
+   * shape change re-derives which of them are on screen instead of clearing
+   * what the operator typed or what the reveal echoed.
+   */
+  const setEditCredentialField = (field: IamCloudAccountCredentialField, value: string) => {
+    setEditDraft((current) => {
       switch (field) {
         case IAM_CLOUD_ACCOUNT_CREDENTIAL_FIELD_KEY_ID:
           return { ...current, accessKeyId: value };
@@ -607,19 +739,62 @@ export function SdkworkIamConsoleCloudAccountWorkspace({
       .finally(() => setPending(false));
   };
 
+  /**
+   * Save the account, and rotate its credential when the form changed it.
+   *
+   * The credential write is conditional by design: an edit that only renamed the
+   * account must not bump the credential version, because consumers key caches
+   * on that version and an untouched secret has no reason to invalidate them.
+   * The comparison is field-exact against the echo — the stored value the form
+   * opened with — so "unchanged" means byte-equal, not merely non-empty.
+   *
+   * When the identity shape (and with it the credential kind) changed, rotation
+   * is not enough: the upsert supersedes the *slot* it lands in, so the old
+   * shape's slot would stay `active` beside the new one and resolution — which
+   * picks the highest version across slots — could keep answering with the
+   * credential the account no longer declares. The replaced row is therefore
+   * revoked by the id the echo carried, and the account is left holding exactly
+   * the credential its new shape describes.
+   */
   const submitEdit = (account: SdkworkIamConsoleCloudAccountRecord) => {
     setPending(true);
+    const stored = editCredentialEcho.material;
+    const draft = credentialDraftOf(editDraft);
+    const changed = editCredentialChanged(editDraft, editCredentialFields, stored);
     void run(
-      controller.updateAccount(account.id, {
-        accountType: editDraft.accountType,
-        capabilityCodes: [...editDraft.capabilityCodes],
-        displayName: editDraft.displayName,
-        environment: editDraft.environment,
-        regionCode: editDraft.regionCode,
-      }),
+      (async () => {
+        const updated = await controller.updateAccount(account.id, {
+          accountType: editDraft.accountType,
+          capabilityCodes: [...editDraft.capabilityCodes],
+          displayName: editDraft.displayName,
+          environment: editDraft.environment,
+          regionCode: editDraft.regionCode,
+        });
+        if (changed) {
+          if (draft) {
+            const written = await controller.createCredential(account.id, draft);
+            // The upsert supersedes only its own slot, so a shape switch that
+            // changed the credential kind leaves the old shape's row active
+            // beside the new one. Revoke exactly the row the echo carried.
+            if (
+              written
+              && stored?.credentialId
+              && stored.credentialKind !== draft.credentialKind
+            ) {
+              await controller.revokeCredential(account.id, stored.credentialId);
+            }
+          } else if (stored?.credentialId) {
+            // Every field of the current shape was emptied: an explicit removal,
+            // not a skipped write — the fields held echoed values and the
+            // operator deleted them.
+            await controller.revokeCredential(account.id, stored.credentialId);
+          }
+        }
+        return updated;
+      })(),
       messages.errors.updateAccount,
-    ).then((stored) => {
-      if (stored) {
+    ).then((saved) => {
+      if (saved) {
         setEditor(undefined);
       }
     });
@@ -1422,6 +1597,119 @@ export function SdkworkIamConsoleCloudAccountWorkspace({
                     value={editDraft.regionCode}
                   />
                 </div>
+
+                {/*
+                  The credential the account already holds, read back in plaintext.
+
+                  An edit without the echo is a blind rotation: the operator cannot
+                  correct what they cannot see, and "edit" that only ever replaces
+                  is a rename plus a ritual. So the form follows the identity shape
+                  the register form follows — the shape derives the fields, the
+                  provider names them — and the reveal seeds each field with the
+                  stored value. Switching the shape keeps everything in the draft,
+                  so pair-shaped types share what came back and a single-secret
+                  shape reads its own field.
+
+                  The inputs are deliberately `type="text"` rather than masked:
+                  masking the echo would hide the one thing this group exists to
+                  show. Saving is still what publishes anything — until the
+                  operator submits, nothing leaves the form.
+                */}
+                <div
+                  className="space-y-3 border-t border-[var(--sdk-color-border-subtle)] pt-5"
+                  data-slot="cloud-account-edit-credentials"
+                >
+                  <GroupCaption>{messages.edit.credentialSection}</GroupCaption>
+                  {editCredentialFields.length === 0 ? (
+                    <p
+                      className="text-sm text-[var(--sdk-color-text-secondary)]"
+                      data-slot="cloud-account-edit-credential-reason"
+                    >
+                      {credentialNotNeededFor(editDraft.accountType, messages)}
+                    </p>
+                  ) : (
+                    <>
+                      <p
+                        className="max-w-3xl text-sm text-[var(--sdk-color-text-secondary)]"
+                        data-slot="cloud-account-edit-credential-shape"
+                      >
+                        {credentialShapeHintFor(editDraft.accountType, messages)}
+                      </p>
+                      <CredentialHelpNotes
+                        config={editVendorConfig}
+                        kind={editCredentialKind}
+                        messages={messages}
+                        vendorCode={editDraft.vendorCode}
+                      />
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {editCredentialFields.map((field) => {
+                          const fieldLabel = credentialFieldLabel(
+                            field,
+                            editCredentialKind,
+                            editVendorConfig,
+                            messages,
+                          );
+                          return (
+                            // The label is a sibling span plus `aria-label`, not a
+                            // wrapping `<label>`: the session token carries a hint,
+                            // and a wrapping label would fold it into the field's
+                            // accessible name.
+                            <div className="space-y-1 text-sm" key={field}>
+                              <span className="block text-[var(--sdk-color-text-secondary)]">
+                                {fieldLabel}
+                              </span>
+                              <Input
+                                aria-label={fieldLabel}
+                                onChange={(event) =>
+                                  setEditCredentialField(field, event.target.value)
+                                }
+                                type="text"
+                                value={credentialFieldValue(field, editDraft)}
+                              />
+                              {field === IAM_CLOUD_ACCOUNT_CREDENTIAL_FIELD_SESSION_TOKEN ? (
+                                <p className="text-xs text-[var(--sdk-color-text-muted)]">
+                                  {messages.credentials.sessionTokenHint}
+                                </p>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {/*
+                        One sentence about the echo, per state it can be in — the
+                        fields above are the same in all of them, so the note is
+                        what tells the operator whether they are looking at stored
+                        values, an empty account, or a refused read-back.
+                      */}
+                      {editCredentialEcho.status === "ready" ? (
+                        editCredentialEcho.material ? (
+                          <p
+                            className="text-xs text-[var(--sdk-color-text-muted)]"
+                            data-slot="cloud-account-edit-credential-echo"
+                          >
+                            {messages.edit.credentialEchoNote}
+                          </p>
+                        ) : (
+                          <p
+                            className="text-xs text-[var(--sdk-color-state-warning)]"
+                            data-slot="cloud-account-edit-credential-missing"
+                          >
+                            {messages.edit.credentialMissingNote}
+                          </p>
+                        )
+                      ) : null}
+                      {editCredentialEcho.status === "unavailable" ? (
+                        <p
+                          className="text-xs text-[var(--sdk-color-state-warning)]"
+                          data-slot="cloud-account-edit-credential-unavailable"
+                        >
+                          {messages.edit.credentialEchoUnavailable}
+                        </p>
+                      ) : null}
+                    </>
+                  )}
+                </div>
+
                 <CapabilityField
                   hint={messages.create.capabilitiesHint}
                   label={messages.create.capabilities}
@@ -2050,10 +2338,26 @@ function accountTypeLabel(
  * resolver lives with the other label rules so the three surfaces cannot drift.
  */
 
-/** What the operator typed into one credential field of the register draft. */
+/**
+ * The four credential boxes either form carries, read by field name.
+ *
+ * `CreateDraft` and `EditDraft` both hold the same four fields for the same
+ * reason — a shape change reads a different subset of one draft rather than
+ * clearing it — so the helpers below take this structural shape and both drafts
+ * satisfy it without either naming the other.
+ */
+interface CredentialFieldDraft {
+  accessKeyId: string;
+  accountType: string;
+  secretAccessKey: string;
+  secretText: string;
+  sessionToken: string;
+}
+
+/** What the operator typed into one credential field of a draft. */
 function credentialFieldValue(
   field: IamCloudAccountCredentialField,
-  draft: CreateDraft,
+  draft: CredentialFieldDraft,
 ): string {
   switch (field) {
     case IAM_CLOUD_ACCOUNT_CREDENTIAL_FIELD_KEY_ID:
@@ -2067,6 +2371,54 @@ function credentialFieldValue(
     default:
       return "";
   }
+}
+
+/** One field's value as the reveal echoed it — the stored side of the comparison. */
+function echoFieldValueOf(
+  field: IamCloudAccountCredentialField,
+  material: SdkworkIamConsoleCloudAccountCredentialMaterial | undefined,
+): string {
+  if (!material) {
+    return "";
+  }
+  switch (field) {
+    case IAM_CLOUD_ACCOUNT_CREDENTIAL_FIELD_KEY_ID:
+      return material.accessKeyId ?? "";
+    case IAM_CLOUD_ACCOUNT_CREDENTIAL_FIELD_KEY_SECRET:
+      return material.secretAccessKey ?? "";
+    case IAM_CLOUD_ACCOUNT_CREDENTIAL_FIELD_SECRET_TEXT:
+      return material.secretText ?? "";
+    case IAM_CLOUD_ACCOUNT_CREDENTIAL_FIELD_SESSION_TOKEN:
+      return material.sessionToken ?? "";
+    default:
+      return "";
+  }
+}
+
+/**
+ * Whether the edit form's credential differs from what is stored.
+ *
+ * The comparison is per field of the shape the form now shows, against the
+ * stored value each was seeded with — so a field the shape does not ask for
+ * never counts, and a value that was never echoed (refused read-back) makes
+ * anything typed count as a change. With nothing stored at all, blanks stay
+ * "unchanged" and any typed value counts, which is what makes an edit that only
+ * renamed the account skip the rotate call.
+ */
+function editCredentialChanged(
+  draft: CredentialFieldDraft,
+  fields: readonly IamCloudAccountCredentialField[],
+  material: SdkworkIamConsoleCloudAccountCredentialMaterial | undefined,
+): boolean {
+  if (fields.length === 0) {
+    return false;
+  }
+  if (!material) {
+    return fields.some((field) => credentialFieldValue(field, draft).trim().length > 0);
+  }
+  return fields.some(
+    (field) => credentialFieldValue(field, draft) !== echoFieldValueOf(field, material),
+  );
 }
 
 /**
@@ -2084,7 +2436,7 @@ function credentialFieldValue(
  * row because a key happened to be left in the draft.
  */
 function credentialDraftOf(
-  draft: CreateDraft,
+  draft: CredentialFieldDraft,
 ): SdkworkIamConsoleCloudAccountCredentialInput | undefined {
   const kind = iamCloudAccountTypeCredentialKind(draft.accountType);
   if (kind === undefined) {
@@ -2185,11 +2537,15 @@ function emptyCreateDraft(scopeType: IamCloudAccountScopeLevel): CreateDraft {
 
 function emptyEditDraft(): EditDraft {
   return {
+    accessKeyId: "",
     accountType: IAM_CLOUD_ACCOUNT_TYPES[0],
     capabilityCodes: [],
     displayName: "",
     environment: DEFAULT_ENVIRONMENT,
     regionCode: "",
+    secretAccessKey: "",
+    secretText: "",
+    sessionToken: "",
     vendorCode: IAM_CLOUD_ACCOUNT_KNOWN_VENDOR_CODES[0],
   };
 }

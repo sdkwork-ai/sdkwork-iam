@@ -389,6 +389,12 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         "providerAccounts.credentials.create",
     ),
     HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/iam/provider_accounts/{providerAccountId}/credentials/reveal",
+        "iam",
+        "providerAccounts.credentials.reveal",
+    ),
+    HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/iam/provider_credentials/{credentialId}/revoke",
         "iam",

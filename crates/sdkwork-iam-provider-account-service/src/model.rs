@@ -335,6 +335,24 @@ pub struct ProviderCredentialMaterial {
     pub expires_at: Option<String>,
 }
 
+/// The decrypted active credential of one account, as the account center's edit
+/// form reads it back.
+///
+/// The console edit form must echo what is stored, so the sealed material has to
+/// be opened once and handed to a caller that already cleared the visibility walk
+/// and holds the dedicated reveal permission. Like [`ProviderCredentialMaterial`]
+/// this is a hand-projection type: the route serializes the fields it chooses and
+/// the value is never logged or persisted in plaintext.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RevealedProviderCredential {
+    /// The active credential row the material was decrypted from, so an edit that
+    /// switches the identity shape can revoke exactly the row it replaces.
+    pub credential_id: String,
+    pub provider_account_id: String,
+    pub credential_name: String,
+    pub material: ProviderCredentialMaterial,
+}
+
 /// The JSON body that gets sealed into `secret_ciphertext`.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub(crate) struct CredentialSecretPayload {

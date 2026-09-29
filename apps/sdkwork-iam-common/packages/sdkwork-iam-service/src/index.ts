@@ -246,6 +246,7 @@ export interface SdkworkIamService {
       credentials: {
         create(providerAccountId: string, body: Record<string, unknown>): Promise<unknown>;
         list(providerAccountId: string, params?: Record<string, unknown>): Promise<unknown>;
+        reveal(providerAccountId: string): Promise<unknown>;
       };
     };
     providerCredentials: {
@@ -675,6 +676,7 @@ export function createSdkworkIamService(input: CreateSdkworkIamServiceInput): Sd
         credentials: {
           create: (providerAccountId, body) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.credentials, "create", "iam.providerAccounts.credentials.create", providerAccountId, body),
           list: (providerAccountId, params) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.credentials, "list", "iam.providerAccounts.credentials.list", providerAccountId, iamListQuery(params)),
+          reveal: (providerAccountId) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.credentials, "reveal", "iam.providerAccounts.credentials.reveal", providerAccountId),
         },
       },
       providerCredentials: {

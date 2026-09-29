@@ -82,6 +82,13 @@ fn explicit_bootstrap_permission(operation_id: &str) -> Option<&'static str> {
         // invisible to non-admins (cloud-account-centre §scope-visibility), so
         // resolution gets its own code held only by consumer/service identities.
         "providerAccounts.resolve" => Some("iam.provider_accounts.resolve"),
+        // Revealing plaintext credential material is the surface's most sensitive
+        // read, so it gets its own code too, for the same wildcard reason: `*.read`
+        // must buy the listing and the masked labels, never the secret bytes. The
+        // handler additionally applies the account-visibility walk and audits the
+        // open, but the permission is what keeps an auditor role from reaching it
+        // at all.
+        "providerAccounts.credentials.reveal" => Some("iam.provider_credentials.reveal"),
         _ => None,
     }
 }
@@ -355,6 +362,12 @@ mod tests {
         assert_eq!(
             iam_backend_permission_for_operation("providerAccounts.credentials.create"),
             Some("iam.provider_credentials.create")
+        );
+        // The reveal is a dedicated, wildcard-proof code: the plaintext read-back
+        // must not be reachable through any read-only grant.
+        assert_eq!(
+            iam_backend_permission_for_operation("providerAccounts.credentials.reveal"),
+            Some("iam.provider_credentials.reveal")
         );
         assert_eq!(
             iam_backend_permission_for_operation("providerCredentials.revoke"),
