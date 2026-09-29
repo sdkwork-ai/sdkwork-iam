@@ -839,6 +839,22 @@ describe("@sdkwork/iam-pc-console-cloud-account workspace", () => {
       await waitFor(() => expect(calls.updateAccount).toHaveBeenCalled());
       expect(calls.createCredential).not.toHaveBeenCalled();
     });
+
+    it("revokes the stored credential when every field of the shape is emptied", async () => {
+      const { calls } = renderWorkspace({ revealed: storedPair });
+      const editor = await openEditor();
+
+      // The fields hold echoed values, so emptying them is an edit — the operator
+      // deleted what was there — not a skipped write.
+      fireEvent.change(within(editor).getByLabelText("AccessKey ID"), { target: { value: "" } });
+      fireEvent.change(within(editor).getByLabelText("AccessKey Secret"), {
+        target: { value: "" },
+      });
+      fireEvent.submit(editor.querySelector("form") as HTMLFormElement);
+
+      await waitFor(() => expect(calls.revokeCredential).toHaveBeenCalledWith("acct-1", "cred-echo-1"));
+      expect(calls.createCredential).not.toHaveBeenCalled();
+    });
   });
 
   it("registers through a modal instead of a permanent form on the page", async () => {
