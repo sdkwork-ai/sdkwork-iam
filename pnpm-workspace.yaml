@@ -1,5 +1,6 @@
 packages:
   - "apps/sdkwork-iam-common"
+  - "apps/sdkwork-iam-common/packages/*"
   - "apps/sdkwork-iam-pc"
   - "apps/sdkwork-iam-h5"
   - "apps/sdkwork-iam-mini-program"
