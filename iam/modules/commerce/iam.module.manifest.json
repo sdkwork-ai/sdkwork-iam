@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "sdkwork.iam.module",
   "moduleId": "commerce",
-  "catalogVersion": "1.0.0",
+  "catalogVersion": "1.1.0",
   "domain": "commerce",
   "owner": "sdkwork-iam",
   "displayName": "commerce module",
@@ -117,6 +117,114 @@
         "replacementCode": null
       },
       {
+        "code": "commerce.payments.attempts.read",
+        "name": "View payment attempts",
+        "resource": "commerce.payments.attempts",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.certificates.create",
+        "name": "Create payment certificates",
+        "resource": "commerce.payments.certificates",
+        "action": "create",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.certificates.delete",
+        "name": "Delete payment certificates",
+        "resource": "commerce.payments.certificates",
+        "action": "delete",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.certificates.read",
+        "name": "View payment certificates",
+        "resource": "commerce.payments.certificates",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.channels.create",
+        "name": "Create payment channels",
+        "resource": "commerce.payments.channels",
+        "action": "create",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.channels.delete",
+        "name": "Delete payment channels",
+        "resource": "commerce.payments.channels",
+        "action": "delete",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.channels.read",
+        "name": "View payment channels",
+        "resource": "commerce.payments.channels",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.channels.update",
+        "name": "Update payment channels",
+        "resource": "commerce.payments.channels",
+        "action": "update",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.dev.sandbox_trigger",
+        "name": "Trigger sandbox webhook events",
+        "resource": "commerce.payments.dev",
+        "action": "sandbox_trigger",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.dev.test_payments",
+        "name": "Run development test payments",
+        "resource": "commerce.payments.dev",
+        "action": "test_payments",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.dev.webhook_signature_test",
+        "name": "Test webhook signatures",
+        "resource": "commerce.payments.dev",
+        "action": "webhook_signature_test",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.intents.read",
+        "name": "View payment intents",
+        "resource": "commerce.payments.intents",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
         "code": "commerce.payments.manage",
         "name": "Manage payments",
         "resource": "commerce.payments",
@@ -126,12 +234,264 @@
         "replacementCode": null
       },
       {
+        "code": "commerce.payments.methods.create",
+        "name": "Create payment methods",
+        "resource": "commerce.payments.methods",
+        "action": "create",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.methods.read",
+        "name": "View payment methods",
+        "resource": "commerce.payments.methods",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.methods.update",
+        "name": "Update payment methods",
+        "resource": "commerce.payments.methods",
+        "action": "update",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.notify_domains.create",
+        "name": "Create notify domains",
+        "resource": "commerce.payments.notify_domains",
+        "action": "create",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.notify_domains.delete",
+        "name": "Delete notify domains",
+        "resource": "commerce.payments.notify_domains",
+        "action": "delete",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.notify_domains.list",
+        "name": "List notify domains",
+        "resource": "commerce.payments.notify_domains",
+        "action": "list",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.notify_domains.update",
+        "name": "Update notify domains",
+        "resource": "commerce.payments.notify_domains",
+        "action": "update",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.provider_accounts.create",
+        "name": "Create payment provider accounts",
+        "resource": "commerce.payments.provider_accounts",
+        "action": "create",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.provider_accounts.credentials.rotate",
+        "name": "Rotate payment provider credentials",
+        "resource": "commerce.payments.provider_accounts",
+        "action": "rotate",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.provider_accounts.delete",
+        "name": "Delete payment provider accounts",
+        "resource": "commerce.payments.provider_accounts",
+        "action": "delete",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.provider_accounts.read",
+        "name": "View payment provider accounts",
+        "resource": "commerce.payments.provider_accounts",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.provider_accounts.test",
+        "name": "Test payment provider accounts",
+        "resource": "commerce.payments.provider_accounts",
+        "action": "test",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.provider_accounts.update",
+        "name": "Update payment provider accounts",
+        "resource": "commerce.payments.provider_accounts",
+        "action": "update",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
         "code": "commerce.payments.read",
         "name": "Read payments",
         "resource": "commerce.payments",
         "action": "read",
         "status": "active",
         "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.reconciliation_runs.create",
+        "name": "Create reconciliation runs",
+        "resource": "commerce.payments.reconciliation_runs",
+        "action": "create",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.reconciliation_runs.read",
+        "name": "View reconciliation runs",
+        "resource": "commerce.payments.reconciliation_runs",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.refunds.create",
+        "name": "Create refunds",
+        "resource": "commerce.payments.refunds",
+        "action": "create",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.refunds.read",
+        "name": "View refunds",
+        "resource": "commerce.payments.refunds",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.refunds.retry",
+        "name": "Retry refunds",
+        "resource": "commerce.payments.refunds",
+        "action": "retry",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.route_rules.create",
+        "name": "Create payment route rules",
+        "resource": "commerce.payments.route_rules",
+        "action": "create",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.route_rules.delete",
+        "name": "Delete payment route rules",
+        "resource": "commerce.payments.route_rules",
+        "action": "delete",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.route_rules.read",
+        "name": "View payment route rules",
+        "resource": "commerce.payments.route_rules",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.route_rules.update",
+        "name": "Update payment route rules",
+        "resource": "commerce.payments.route_rules",
+        "action": "update",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.sub_merchants.create",
+        "name": "Create sub-merchants",
+        "resource": "commerce.payments.sub_merchants",
+        "action": "create",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.sub_merchants.delete",
+        "name": "Delete sub-merchants",
+        "resource": "commerce.payments.sub_merchants",
+        "action": "delete",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.sub_merchants.read",
+        "name": "View sub-merchants",
+        "resource": "commerce.payments.sub_merchants",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.sub_merchants.update",
+        "name": "Update sub-merchants",
+        "resource": "commerce.payments.sub_merchants",
+        "action": "update",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.webhook_events.read",
+        "name": "View webhook events",
+        "resource": "commerce.payments.webhook_events",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.payments.webhook_events.replay",
+        "name": "Replay webhook events",
+        "resource": "commerce.payments.webhook_events",
+        "action": "replay",
+        "status": "active",
+        "since": "1.1.0",
         "replacementCode": null
       },
       {
