@@ -1297,11 +1297,11 @@ fn collect_resource_patch_assignments(body: &Value, table: &str) -> Vec<(String,
         for (column, keys) in [
             (
                 "provider_account_type",
-                &["providerAccountType", "provider_account_type"] as &[&str],
+                ["providerAccountType", "provider_account_type"].as_slice(),
             ),
             (
                 "provider_account_original_id",
-                &["providerAccountOriginalId", "provider_account_original_id"] as &[&str],
+                ["providerAccountOriginalId", "provider_account_original_id"].as_slice(),
             ),
         ] {
             let explicitly_blank = keys.iter().any(|key| {

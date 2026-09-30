@@ -353,7 +353,10 @@ pub async fn complete_authorization_state(
     .map_err(|error| format!("approve oauth authorization state failed: {error}"))?;
 
     let code_separator = if redirect_uri.contains('?') { '&' } else { '?' };
-    let mut redirect_url = format!("{redirect_uri}{code_separator}code={}", urlencoding::encode(&authorization_code));
+    let mut redirect_url = format!(
+        "{redirect_uri}{code_separator}code={}",
+        urlencoding::encode(&authorization_code)
+    );
     if let Some(state) = parse_oauth_state_from_return_path(&return_path) {
         redirect_url.push_str("&state=");
         redirect_url.push_str(&urlencoding::encode(&state));
@@ -413,14 +416,13 @@ async fn load_approved_authorization_code(
     let return_path: String = row.get(6);
     let grant_id = parse_grant_id_from_return_path(&return_path)
         .ok_or_else(|| "OAuth authorization grant reference is missing".to_string())?;
-    let grant_row = sqlx::query(
-        "SELECT user_id, organization_id FROM iam_oauth_grant WHERE id = $1 LIMIT 1",
-    )
-    .bind(&grant_id)
-    .fetch_optional(pg)
-    .await
-    .map_err(|error| format!("load oauth grant owner failed: {error}"))?
-    .ok_or_else(|| "OAuth authorization grant was not found".to_string())?;
+    let grant_row =
+        sqlx::query("SELECT user_id, organization_id FROM iam_oauth_grant WHERE id = $1 LIMIT 1")
+            .bind(&grant_id)
+            .fetch_optional(pg)
+            .await
+            .map_err(|error| format!("load oauth grant owner failed: {error}"))?
+            .ok_or_else(|| "OAuth authorization grant was not found".to_string())?;
     let user_id: String = grant_row.get(0);
     let organization_id: String = grant_row.get(1);
 
@@ -479,7 +481,12 @@ pub async fn redeem_authorization_code_session_context(
     client_secret: Option<&str>,
 ) -> Result<RedeemedAuthorizationContext, String> {
     let approved = load_approved_authorization_code(
-        pg, client, code, redirect_uri, code_verifier, client_secret,
+        pg,
+        client,
+        code,
+        redirect_uri,
+        code_verifier,
+        client_secret,
     )
     .await?;
 
@@ -528,7 +535,12 @@ pub async fn exchange_authorization_code(
     client_secret: Option<&str>,
 ) -> Result<Value, String> {
     let approved = load_approved_authorization_code(
-        pg, client, code, redirect_uri, code_verifier, client_secret,
+        pg,
+        client,
+        code,
+        redirect_uri,
+        code_verifier,
+        client_secret,
     )
     .await?;
     let state_id = approved.state_id.clone();
@@ -1563,14 +1575,26 @@ mod tests {
 
     #[test]
     fn classify_redirect_surface_kind_separates_web_and_desktop() {
-        assert_eq!(classify_redirect_surface_kind("https://app.example.com/auth/callback"), "web");
-        assert_eq!(classify_redirect_surface_kind("http://app.example.com/callback"), "web");
-        assert_eq!(classify_redirect_surface_kind("sdkwork-iam://auth/callback"), "desktop");
+        assert_eq!(
+            classify_redirect_surface_kind("https://app.example.com/auth/callback"),
+            "web"
+        );
+        assert_eq!(
+            classify_redirect_surface_kind("http://app.example.com/callback"),
+            "web"
+        );
+        assert_eq!(
+            classify_redirect_surface_kind("sdkwork-iam://auth/callback"),
+            "desktop"
+        );
         assert_eq!(
             classify_redirect_surface_kind("http://127.0.0.1:41017/auth/desktop/callback"),
             "desktop",
         );
-        assert_eq!(classify_redirect_surface_kind("http://[::1]:41017/cb"), "desktop");
+        assert_eq!(
+            classify_redirect_surface_kind("http://[::1]:41017/cb"),
+            "desktop"
+        );
         assert_eq!(classify_redirect_surface_kind(""), "web");
     }
 

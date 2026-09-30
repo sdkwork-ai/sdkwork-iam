@@ -3066,7 +3066,10 @@ async fn complete_oauth_authorization(
 /// deeplink. This endpoint redeems that PKCE-bound authorization code for a
 /// standard dual-token IAM session, so the desktop runtime consumes the same
 /// `SdkworkAuthSession` shape as every other login surface.
-async fn create_desktop_session(State(state): State<LocalIamState>, Json(body): Json<Value>) -> Response {
+async fn create_desktop_session(
+    State(state): State<LocalIamState>,
+    Json(body): Json<Value>,
+) -> Response {
     let Some(client_id) = optional_string(body.get("clientId"))
         .or_else(|| optional_string(body.get("client_id")))
         .map(|value| value.trim().to_string())
@@ -3122,22 +3125,13 @@ async fn create_desktop_session(State(state): State<LocalIamState>, Json(body): 
             .expect("error response");
     };
 
-    let client = match sdkwork_iam_web_adapter::resolve_relying_party_client(
-        &pg,
-        &client_id,
-        None,
-    )
-    .await
-    {
-        Ok(client) => client,
-        Err(error) => {
-            return appbase_error(
-                StatusCode::UNAUTHORIZED,
-                "iam_oauth_client_invalid",
-                &error,
-            );
-        }
-    };
+    let client =
+        match sdkwork_iam_web_adapter::resolve_relying_party_client(&pg, &client_id, None).await {
+            Ok(client) => client,
+            Err(error) => {
+                return appbase_error(StatusCode::UNAUTHORIZED, "iam_oauth_client_invalid", &error);
+            }
+        };
 
     let redeemed = match sdkwork_iam_web_adapter::redeem_authorization_code_session_context(
         &pg,
@@ -3181,25 +3175,20 @@ async fn create_desktop_session(State(state): State<LocalIamState>, Json(body): 
         } else {
             Some(redeemed.organization_id.clone())
         };
-    let session = match create_session_record(
-        &pg,
-        &state.config,
-        &user,
-        organization_id,
-        &client.app_id,
-    )
-    .await
-    {
-        Ok(session) => session,
-        Err(error) => {
-            tracing::error!(%error, "desktop browser-login session creation failed");
-            return appbase_error(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "iam_session_create_failed",
-                &error,
-            );
-        }
-    };
+    let session =
+        match create_session_record(&pg, &state.config, &user, organization_id, &client.app_id)
+            .await
+        {
+            Ok(session) => session,
+            Err(error) => {
+                tracing::error!(%error, "desktop browser-login session creation failed");
+                return appbase_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "iam_session_create_failed",
+                    &error,
+                );
+            }
+        };
 
     crate::security_events::record_login_success(
         &pg,

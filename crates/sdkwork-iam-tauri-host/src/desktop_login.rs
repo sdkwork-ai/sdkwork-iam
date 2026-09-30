@@ -138,7 +138,9 @@ pub fn normalize_deep_link_scheme(app_key: &str) -> Result<String, String> {
             "deep-link scheme must start with a lowercase letter: {trimmed}"
         ));
     }
-    if !chars.all(|character| character.is_ascii_lowercase() || character.is_ascii_digit() || character == '-') {
+    if !chars.all(|character| {
+        character.is_ascii_lowercase() || character.is_ascii_digit() || character == '-'
+    }) {
         return Err(format!(
             "deep-link scheme allows lowercase letters, digits, and '-' only: {trimmed}"
         ));
@@ -150,13 +152,11 @@ pub fn normalize_deep_link_scheme(app_key: &str) -> Result<String, String> {
 /// exchange the native redeem leg depends on. A host built against a manifest
 /// without this route would fail at login time instead of build time.
 pub fn assert_desktop_session_route_registered() -> Result<(), String> {
-    let registered = app_routes()
-        .iter()
-        .any(|route| {
-            route.operation_id == DESKTOP_SESSION_OPERATION_ID
-                && route.path == DESKTOP_SESSION_EXCHANGE_PATH
-                && route.auth.is_anonymous()
-        });
+    let registered = app_routes().iter().any(|route| {
+        route.operation_id == DESKTOP_SESSION_OPERATION_ID
+            && route.path == DESKTOP_SESSION_EXCHANGE_PATH
+            && route.auth.is_anonymous()
+    });
     if registered {
         Ok(())
     } else {

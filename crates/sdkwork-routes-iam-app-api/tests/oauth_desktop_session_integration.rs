@@ -133,7 +133,9 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
     let password_hash = argon2::Argon2::default()
         .hash_password(
             DESKTOP_E2E_PASSWORD.as_bytes(),
-            &argon2::password_hash::SaltString::generate(&mut argon2::password_hash::rand_core::OsRng),
+            &argon2::password_hash::SaltString::generate(
+                &mut argon2::password_hash::rand_core::OsRng,
+            ),
         )
         .expect("hash desktop e2e password")
         .to_string();
@@ -316,11 +318,11 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
 
     // 2. Desktop leg starts: public-client authorize with PKCE S256 and the
     //    deep-link redirect URI.
-    let client = resolve_relying_party_client(&pg, DESKTOP_E2E_CLIENT_APP_ID, Some(DESKTOP_E2E_TENANT_ID))
-        .await
-        .expect("resolve desktop e2e relying party client");
-    let (code_verifier, code_challenge) =
-        pkce_pair("desktop-pkce-verifier-with-sufficient-length");
+    let client =
+        resolve_relying_party_client(&pg, DESKTOP_E2E_CLIENT_APP_ID, Some(DESKTOP_E2E_TENANT_ID))
+            .await
+            .expect("resolve desktop e2e relying party client");
+    let (code_verifier, code_challenge) = pkce_pair("desktop-pkce-verifier-with-sufficient-length");
     let authorize_request = AuthorizeRequest {
         client_id: DESKTOP_E2E_CLIENT_APP_ID.to_string(),
         redirect_uri: DESKTOP_E2E_REDIRECT_URI.to_string(),
@@ -344,14 +346,16 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
         .await
         .expect("complete desktop e2e authorization state");
     assert!(
-        completion.redirect_url.starts_with(DESKTOP_E2E_REDIRECT_URI),
+        completion
+            .redirect_url
+            .starts_with(DESKTOP_E2E_REDIRECT_URI),
         "deep-link redirect must target the registered scheme: {}",
         completion.redirect_url
     );
 
     // 4. The desktop app redeems the deep-link code for a dual-token session.
-    let (status, body) = redeem_desktop_session(&app, &completion.authorization_code, &code_verifier)
-        .await;
+    let (status, body) =
+        redeem_desktop_session(&app, &completion.authorization_code, &code_verifier).await;
     assert_eq!(
         status,
         StatusCode::OK,
@@ -362,13 +366,22 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
     let session = &body["data"];
     assert!(!session["authToken"].as_str().unwrap_or_default().is_empty());
     assert!(
-        !session["accessToken"].as_str().unwrap_or_default().is_empty(),
+        !session["accessToken"]
+            .as_str()
+            .unwrap_or_default()
+            .is_empty(),
         "desktop redeem must return a dual-token session"
     );
     assert!(session["refreshToken"].as_str().is_some());
-    assert_eq!(session["context"]["tenantId"], Value::String(DESKTOP_E2E_TENANT_ID.into()));
+    assert_eq!(
+        session["context"]["tenantId"],
+        Value::String(DESKTOP_E2E_TENANT_ID.into())
+    );
     assert_eq!(session["user"]["id"], Value::String(user_id.clone()));
-    assert_eq!(session["context"]["organizationId"], Value::String("0".into()));
+    assert_eq!(
+        session["context"]["organizationId"],
+        Value::String("0".into())
+    );
 
     // 5. The redeemed session exists as a real IAM session row.
     let session_count: i64 = sqlx::query_scalar(
@@ -406,14 +419,12 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
     )
     .await
     .expect("create second desktop e2e authorization state");
-    let second_completion =
-        complete_authorization_state(&pg, &second_state_id, &login_context)
-            .await
-            .expect("complete second desktop e2e authorization state");
+    let second_completion = complete_authorization_state(&pg, &second_state_id, &login_context)
+        .await
+        .expect("complete second desktop e2e authorization state");
     let wrong_verifier = format!("{}wrong", verifier);
     let (pkce_status, pkce_body) =
-        redeem_desktop_session(&app, &second_completion.authorization_code, &wrong_verifier)
-            .await;
+        redeem_desktop_session(&app, &second_completion.authorization_code, &wrong_verifier).await;
     assert_eq!(
         pkce_status,
         StatusCode::BAD_REQUEST,
