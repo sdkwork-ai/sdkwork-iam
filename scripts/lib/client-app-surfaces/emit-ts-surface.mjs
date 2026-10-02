@@ -48,6 +48,10 @@ export const PRE_EXISTING_PACKAGE_DIRS = new Set([
   'apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-auth',
   'apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-user',
   'apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-account-binding',
+  // The mini-program user-center package hosts authored Me-page logic (the
+  // headless-core adapter and locale fragments); the mp surface otherwise has
+  // no authored package to host capability code in.
+  'apps/sdkwork-iam-mini-program/packages/sdkwork-iam-mp-user-center',
   'apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_core',
   'apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_auth',
   'apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_user',

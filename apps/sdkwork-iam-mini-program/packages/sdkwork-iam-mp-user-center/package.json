@@ -15,9 +15,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@sdkwork/iam-contracts": "workspace:*",
     "@sdkwork/iam-mp-core": "workspace:*",
     "@sdkwork/iam-service": "workspace:*",
-    "@sdkwork/iam-contracts": "workspace:*"
+    "@sdkwork/iam-user-center-core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "catalog:"

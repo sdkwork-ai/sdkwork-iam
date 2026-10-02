@@ -1872,6 +1872,9 @@ importers:
       '@sdkwork/iam-service':
         specifier: workspace:*
         version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+      '@sdkwork/iam-user-center-core':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-user-center-core
     devDependencies:
       typescript:
         specifier: 'catalog:'

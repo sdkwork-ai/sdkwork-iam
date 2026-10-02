@@ -166,6 +166,8 @@ export default defineConfig({
       "apps/sdkwork-iam-pc/packages/**/*.test.tsx",
       "apps/sdkwork-iam-h5/packages/**/*.test.ts",
       "apps/sdkwork-iam-h5/packages/**/*.test.tsx",
+      "apps/sdkwork-iam-mini-program/packages/**/*.test.ts",
+      "apps/sdkwork-iam-mini-program/packages/**/*.test.tsx",
       "sdks/**/*.test.ts",
     ],
     setupFiles: [path.join(workspaceRoot, "vitest.setup.ts")],

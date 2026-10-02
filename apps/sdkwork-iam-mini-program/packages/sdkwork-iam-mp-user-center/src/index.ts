@@ -2,3 +2,4 @@
 export * from './routes/route-contribution.js';
 export * from './services/user-center-service.js';
 export * from './i18n/index.js';
+export * from './me/me-page-adapter.js';

@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/design_tokens.dart';
+import 'sdkwork_loading_view.dart';
 
 /// Page scaffold every capability screen builds on.
 class SdkworkScaffold extends StatelessWidget {
