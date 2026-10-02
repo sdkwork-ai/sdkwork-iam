@@ -49,6 +49,21 @@
       "path": "../../../../../../sdkwork-specs/APP_MOBILE_REACT_UI_SPEC.md"
     },
     {
+      "file": "THEME_DARKMODE_SPEC.md",
+      "purpose": "Dual-mode token and mode-root contract for the Me page theme layer.",
+      "path": "../../../../../../sdkwork-specs/THEME_DARKMODE_SPEC.md"
+    },
+    {
+      "file": "I18N_SPEC.md",
+      "purpose": "Locale fragment layout and message-key ownership.",
+      "path": "../../../../../../sdkwork-specs/I18N_SPEC.md"
+    },
+    {
+      "file": "UI_ARCHITECTURE_SPEC.md",
+      "purpose": "Architecture selection gate and package ownership rules.",
+      "path": "../../../../../../sdkwork-specs/UI_ARCHITECTURE_SPEC.md"
+    },
+    {
       "file": "APP_SDK_INTEGRATION_SPEC.md",
       "purpose": "SDK integration, TokenManager wiring, and dependency composition rules.",
       "path": "../../../../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md"
@@ -119,7 +134,8 @@
   },
   "verification": {
     "commands": [
-      "pnpm --filter @sdkwork/iam-h5-user typecheck"
+      "pnpm --filter @sdkwork/iam-h5-user typecheck",
+      "pnpm exec vitest run apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-user"
     ]
   }
 }

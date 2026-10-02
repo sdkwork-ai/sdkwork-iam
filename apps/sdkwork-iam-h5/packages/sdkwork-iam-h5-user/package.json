@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "IAM H5 user-center profile controller and screens over @sdkwork/iam-app-sdk.",
+  "description": "IAM H5 user-center screens: slot-based Me page (appearance slots, dual-mode theme tokens) and the profile controller over @sdkwork/iam-app-sdk.",
   "exports": {
     ".": {
       "types": "./src/index.ts",
@@ -22,9 +22,11 @@
     "@sdkwork/iam-h5-core": "workspace:*",
     "@sdkwork/iam-service": "workspace:*",
     "@sdkwork/iam-contracts": "workspace:*",
+    "@sdkwork/iam-user-center-core": "workspace:*",
     "@sdkwork/utils": "workspace:*"
   },
   "devDependencies": {
+    "@testing-library/react": "catalog:",
     "typescript": "^6.0.2"
   },
   "sdkwork": {

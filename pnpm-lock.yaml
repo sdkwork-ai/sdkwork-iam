@@ -747,6 +747,16 @@ importers:
         specifier: ^6.0.2
         version: 6.0.3
 
+  apps/sdkwork-iam-common/packages/sdkwork-iam-user-center-core:
+    dependencies:
+      '@sdkwork/iam-service':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-service
+    devDependencies:
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.3
+
   apps/sdkwork-iam-flutter-mobile:
     devDependencies:
       '@sdkwork/app-topology':
@@ -1301,6 +1311,9 @@ importers:
       '@sdkwork/iam-service':
         specifier: workspace:*
         version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-service
+      '@sdkwork/iam-user-center-core':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-user-center-core
       '@sdkwork/utils':
         specifier: workspace:*
         version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
@@ -1311,6 +1324,9 @@ importers:
         specifier: '>=18.2.0 <20.0.0'
         version: 19.2.4(react@19.2.4)
     devDependencies:
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       typescript:
         specifier: ^6.0.2
         version: 6.0.3

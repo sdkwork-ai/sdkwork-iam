@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "@sdkwork/iam-user-center-core",
+    "displayName": "SDKWork IAM User Center Core",
+    "version": "0.1.0",
+    "type": "node-package",
+    "root": "sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-user-center-core",
+    "domain": "iam",
+    "declaredDomain": "iam",
+    "capability": "user-center-core",
+    "status": "standardizing",
+    "languages": [
+      "typescript"
+    ],
+    "generated": false,
+    "private": true,
+    "manifests": [
+      "package.json"
+    ]
+  },
+  "canonicalSpecs": [
+    {
+      "file": "COMPONENT_SPEC.md",
+      "path": "../../../../../sdkwork-specs/COMPONENT_SPEC.md",
+      "purpose": "Local component specs directory and manifest rules."
+    },
+    {
+      "file": "MODULE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/MODULE_SPEC.md",
+      "purpose": "Reusable package contract and dependency direction."
+    },
+    {
+      "file": "TYPESCRIPT_CODE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/TYPESCRIPT_CODE_SPEC.md",
+      "purpose": "TypeScript strictness, async, and error-typing baseline."
+    },
+    {
+      "file": "UI_ARCHITECTURE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/UI_ARCHITECTURE_SPEC.md",
+      "purpose": "Headless view-model and controller placement above per-architecture UI packages."
+    },
+    {
+      "file": "THEME_DARKMODE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/THEME_DARKMODE_SPEC.md",
+      "purpose": "Dual-mode token contract and mode-root rules for the theme contract exported here."
+    },
+    {
+      "file": "I18N_SPEC.md",
+      "path": "../../../../../sdkwork-specs/I18N_SPEC.md",
+      "purpose": "Canonical message-key ownership for the default menu model."
+    },
+    {
+      "file": "IAM_SPEC.md",
+      "path": "../../../../../sdkwork-specs/IAM_SPEC.md",
+      "purpose": "Auth, user, tenant, organization, role, and permission rules."
+    },
+    {
+      "file": "CODE_STYLE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/CODE_STYLE_SPEC.md",
+      "purpose": "Authored source structure and generated code boundaries."
+    },
+    {
+      "file": "NAMING_SPEC.md",
+      "path": "../../../../../sdkwork-specs/NAMING_SPEC.md",
+      "purpose": "Package and export naming standard."
+    }
+  ],
+  "contracts": {
+    "publicExports": [
+      "src/index.ts"
+    ],
+    "runtimeEntrypoints": [],
+    "sdkClients": [],
+    "events": [],
+    "configKeys": [],
+    "routeManifest": null,
+    "sdkDependencies": [
+      {
+        "workspace": "sdkwork-iam-app-sdk",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api"
+      }
+    ],
+    "layerRole": "frontend-commons",
+    "providedPorts": [
+      {
+        "name": "sdkwork-iam-user-center-me-core",
+        "export": "src/index.ts"
+      }
+    ],
+    "requiredPorts": [
+      {
+        "name": "sdkwork-iam-service",
+        "export": "src/index.ts",
+        "provider": "@sdkwork/iam-service"
+      }
+    ],
+    "routeIds": [],
+    "permissionComposition": {
+      "inheritanceMode": "module-catalog-with-overrides",
+      "applicationModule": {
+        "manifestRef": "../../../../../iam/modules/iam-kernel/iam.module.manifest.json"
+      },
+      "moduleCatalogRefs": [
+        {
+          "moduleId": "iam-kernel",
+          "manifestRef": "../../../../../iam/modules/iam-kernel/iam.module.manifest.json",
+          "inheritPermissions": true,
+          "inheritRoles": false
+        }
+      ],
+      "bootstrapAccessTokenScope": {
+        "inheritFrom": "sdkwork.app.config.json#backend.accessTokenPermissionScope",
+        "supplement": [],
+        "overrideReplace": false
+      },
+      "routePermissionHints": {
+        "inheritFromOpenApi": true,
+        "inheritFromModuleManifests": true,
+        "overrides": []
+      },
+      "consumerPolicy": {
+        "forbidLocalPermissionCatalogForDependencyDomains": true,
+        "allowExplicitOverridesOnly": true,
+        "allowFrontendHintsWithoutServerDuplication": true
+      }
+    }
+  },
+  "integration": {
+    "authority": "Root SDKWork specs remain authoritative. Local specs may extend but must not contradict them.",
+    "dependencyPolicy": "Consumers integrate through public package exports, declared runtime entrypoints, generated SDK clients, or documented adapters only.",
+    "sdkPolicy": "Generated SDK clients are injected through service/runtime boundaries; this package never constructs clients and only types against the SdkworkIamService port.",
+    "languagePolicy": "Framework-agnostic TypeScript so H5 React, mini-program, and future shells can share the same view models, menu model, theme-token contract, and controller."
+  },
+  "verification": {
+    "commands": [
+      "pnpm --filter @sdkwork/iam-user-center-core typecheck",
+      "pnpm exec vitest run apps/sdkwork-iam-common/packages/sdkwork-iam-user-center-core"
+    ]
+  }
+}
