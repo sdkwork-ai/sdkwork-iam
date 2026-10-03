@@ -24,12 +24,14 @@
     "typescript": "^6.0.2"
   },
   "dependencies": {
+    "@sdkwork/drive-upload-image-core": "workspace:*",
     "@sdkwork/iam-contracts": "workspace:*",
     "@sdkwork/iam-pc-admin-core": "workspace:*",
     "@sdkwork/iam-service": "workspace:*",
     "@sdkwork/ui-pc-react": "workspace:*",
     "@sdkwork/utils": "workspace:*",
-    "lucide-react": "catalog:"
+    "lucide-react": "catalog:",
+    "sdkwork-drive-pc-upload-image": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=18.2.0 <20.0.0",

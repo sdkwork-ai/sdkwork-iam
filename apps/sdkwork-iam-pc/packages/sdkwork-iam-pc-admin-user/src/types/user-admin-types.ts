@@ -1,3 +1,4 @@
+import type { DriveUploadImageService } from "@sdkwork/drive-upload-image-core";
 import type { SdkWorkPageInfo } from "@sdkwork/iam-contracts";
 import type { SdkworkIamService } from "@sdkwork/iam-service";
 
@@ -101,6 +102,16 @@ export interface SdkworkIamUserAdminController {
 
 export interface SdkworkIamUserAdminWorkspaceProps {
   avatarService?: SdkworkIamAdminUserAvatarService;
+  /**
+   * Shared Drive image-upload service (`createDriveUploadImageService`), built
+   * by the host service layer. When present, the edit drawer renders the shared
+   * `DriveUploadImage` component for the avatar field; create mode keeps the
+   * park-then-upload flow because the component parks picked files inside its
+   * own controller and cannot hand the raw file to the post-create
+   * `avatarService.uploadAvatar` call (`DRIVE_SPEC.md` section 18.3:
+   * persist first, upload second).
+   */
+  driveUploadImageService?: DriveUploadImageService;
   controller: SdkworkIamUserAdminController;
   locale?: string | null;
   permissions?: {

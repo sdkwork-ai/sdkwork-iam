@@ -46,6 +46,12 @@ packages:
   - "../sdkwork-search/apps/sdkwork-search-pc/packages/sdkwork-search-pc-react"
   - "../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-user-center-core"
   - "../sdkwork-appbase/packages/pc-react/foundation/sdkwork-command-pc-react"
+  # Shared Drive image-upload component family consumed by the user admin
+  # avatar field: the PC shell (`sdkwork-drive-pc-upload-image`) and its core
+  # (`@sdkwork/drive-upload-image-core`, which binds `@sdkwork/drive-app-sdk`).
+  - "../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript"
+  - "../sdkwork-drive/apps/sdkwork-drive-common/packages/sdkwork-drive-upload-image-core"
+  - "../sdkwork-drive/apps/sdkwork-drive-pc/packages/sdkwork-drive-pc-upload-image"
 
 catalog:
   "@tailwindcss/vite": ^4.3.3

@@ -24,8 +24,11 @@ import {
 } from "@sdkwork/ui-pc-react";
 
 import { USER_ADMIN_COUNTRY_OPTIONS, type UserAdminCountryOption } from "./user-admin-countries";
+import { DriveUploadImage } from "sdkwork-drive-pc-upload-image";
+import type { DriveUploadImageValue } from "@sdkwork/drive-upload-image-core";
 import type {
   SdkworkIamAdminUser,
+  SdkworkIamAdminUserAvatarResource,
   SdkworkIamAdminUserDraft,
   SdkworkIamUserAdminWorkspaceProps,
 } from "../types/user-admin-types";
@@ -42,8 +45,12 @@ const userAdminMessages = {
     avatar: "Avatar",
     avatarInvalidType: "The avatar must be an image file.",
     avatarPlaceholder: "Avatar image URL",
+    avatarRemove: "Remove avatar",
+    avatarRetry: "Retry upload",
     avatarTooLarge: "The avatar must be 5 MiB or smaller.",
+    avatarTooLargeDetail: "The avatar must be {max} or smaller.",
     avatarUpload: "Upload",
+    avatarUploadFailed: "Avatar upload failed",
     avatarUploading: "Uploading avatar…",
     ban: "Ban",
     banDescription: "Ban {name}? The user's sessions and API keys will be revoked immediately, and the account will no longer be able to sign in.",
@@ -108,8 +115,12 @@ const userAdminMessages = {
     avatar: "头像",
     avatarInvalidType: "头像必须是图片文件。",
     avatarPlaceholder: "头像图片链接",
+    avatarRemove: "移除头像",
+    avatarRetry: "重试上传",
     avatarTooLarge: "头像不能超过 5 MiB。",
+    avatarTooLargeDetail: "头像不能超过 {max}。",
     avatarUpload: "上传",
+    avatarUploadFailed: "头像上传失败",
     avatarUploading: "头像上传中…",
     ban: "封禁",
     banDescription: "确定封禁 {name} 吗？该用户的会话与 API key 将立即撤销，账号将无法再登录。",
@@ -174,6 +185,7 @@ const userAdminMessages = {
 export function SdkworkIamUserAdminWorkspace({
   avatarService,
   controller,
+  driveUploadImageService,
   locale,
   permissions = readOnlyPermissions,
 }: SdkworkIamUserAdminWorkspaceProps) {
@@ -472,6 +484,7 @@ export function SdkworkIamUserAdminWorkspace({
         busy={busy}
         copy={copy}
         draft={draft}
+        driveUploadImageService={driveUploadImageService}
         mode={drawerMode}
         onAvatarFileSelected={avatarService ? handleAvatarFileSelected : undefined}
         onDraftChange={setDraft}
@@ -480,7 +493,9 @@ export function SdkworkIamUserAdminWorkspace({
           if (!open) closeDrawer();
         }}
         onSubmit={submitDraft}
+        onError={setError}
         pendingAvatarPreviewUrl={pendingAvatarPreviewUrl}
+        selectedUserId={selectedUser?.userId}
         updateAllowed={permissions.update}
       />
 
@@ -535,13 +550,16 @@ function UserDrawer({
   busy,
   copy,
   draft,
+  driveUploadImageService,
   mode,
   onAvatarFileSelected,
   onDraftChange,
   onEdit,
+  onError,
   onOpenChange,
   onSubmit,
   pendingAvatarPreviewUrl,
+  selectedUserId,
   updateAllowed,
 }: {
   avatarService?: SdkworkIamUserAdminWorkspaceProps["avatarService"];
@@ -549,13 +567,16 @@ function UserDrawer({
   busy: boolean;
   copy: typeof userAdminMessages["en-US"] | typeof userAdminMessages["zh-CN"];
   draft: SdkworkIamAdminUserDraft;
+  driveUploadImageService?: SdkworkIamUserAdminWorkspaceProps["driveUploadImageService"];
   mode?: "create" | "edit" | "view";
   onAvatarFileSelected?: (file: File) => void;
   onDraftChange: (draft: SdkworkIamAdminUserDraft) => void;
   onEdit: () => void;
+  onError: (message: string) => void;
   onOpenChange: (open: boolean) => void;
   onSubmit: () => void;
   pendingAvatarPreviewUrl?: string;
+  selectedUserId?: string;
   updateAllowed: boolean;
 }) {
   const editing = mode === "edit";
@@ -568,16 +589,55 @@ function UserDrawer({
           <DrawerDescription>{viewing ? copy.detailsDescription : editing ? copy.editDescription : copy.createDescription}</DrawerDescription>
         </DrawerHeader>
         <DrawerBody className="space-y-4">
-          <AvatarField
-            avatarService={avatarService}
-            busy={avatarUploading}
-            copy={copy}
-            disabled={viewing}
-            onDraftChange={onDraftChange}
-            draft={draft}
-            onFileSelected={onAvatarFileSelected}
-            pendingPreviewUrl={pendingAvatarPreviewUrl}
-          />
+          {driveUploadImageService && mode !== "create" ? (
+            /*
+             * Shared Drive image-upload component for edit/view. Picking in the
+             * edit drawer uploads immediately against the existing user id; the
+             * stored resource is mapped onto the shared value shape for display.
+             * Create mode keeps the park-then-upload AvatarField below: the
+             * component parks picked files inside its own controller, which
+             * cannot hand the raw file to the post-create
+             * `avatarService.uploadAvatar` call (persist first, upload second —
+             * DRIVE_SPEC.md section 18.3).
+             */
+            <DriveUploadImage
+              appResourceId={editing && selectedUserId ? selectedUserId : () => null}
+              copy={{
+                fileTooLarge: copy.avatarTooLarge,
+                fileTooLargeDetail: copy.avatarTooLargeDetail,
+                invalidFileType: copy.avatarInvalidType,
+                pickImage: copy.avatarUpload,
+                removeImage: copy.avatarRemove,
+                replaceImage: copy.avatarUpload,
+                retryUpload: copy.avatarRetry,
+                uploadFailed: copy.avatarUploadFailed,
+                uploading: copy.avatarUploading,
+              }}
+              label={copy.avatar}
+              maxSizeBytes={avatarMaxBytes}
+              onChange={(value) => onDraftChange({ ...draft, avatar: value ?? undefined, avatarUrl: "" })}
+              onFileRejected={(rejection) => {
+                onError(rejection.code === "file-too-large" ? copy.avatarTooLarge : copy.avatarInvalidType);
+              }}
+              onUploadError={(failure) => onError(toErrorMessage(failure, copy.avatarUploadFailed))}
+              readOnly={busy || viewing}
+              service={driveUploadImageService}
+              shape="circle"
+              sizePx={48}
+              value={avatarResourceToDriveUploadImageValue(draft.avatar)}
+            />
+          ) : (
+            <AvatarField
+              avatarService={avatarService}
+              busy={avatarUploading}
+              copy={copy}
+              disabled={viewing}
+              onDraftChange={onDraftChange}
+              draft={draft}
+              onFileSelected={onAvatarFileSelected}
+              pendingPreviewUrl={pendingAvatarPreviewUrl}
+            />
+          )}
           <Field disabled={viewing} label={copy.username} onChange={(username) => onDraftChange({ ...draft, username })} value={draft.username ?? ""} />
           <Field disabled={viewing} label={copy.email} onChange={(email) => onDraftChange({ ...draft, email })} type="email" value={draft.email ?? ""} />
           <Field disabled={viewing} label={copy.displayName} onChange={(displayName) => onDraftChange({ ...draft, displayName })} value={draft.displayName ?? ""} />
@@ -649,6 +709,41 @@ function toUserDraft(user: SdkworkIamAdminUser): SdkworkIamAdminUserDraft {
     phone: user.phone ?? "",
     status: user.status ?? "",
     username: user.username ?? "",
+  };
+}
+
+/**
+ * Maps the stored avatar media resource onto the shared component's
+ * persist-safe value shape. The resource is the media snapshot
+ * (`DRIVE_SPEC.md` section 10), so only the stable reference fields travel:
+ * the `drive://` (or external) uri, the source tag, and the drive identity
+ * block. External URLs pass through so the component renders them directly.
+ */
+function avatarResourceToDriveUploadImageValue(
+  avatar: SdkworkIamAdminUserAvatarResource | undefined,
+): DriveUploadImageValue | null {
+  if (!avatar) {
+    return null;
+  }
+  const uri = avatar.uri ?? avatar.publicUrl ?? avatar.url;
+  if (!uri) {
+    return null;
+  }
+  const drive = avatar.metadata?.drive;
+  const metadata =
+    drive && drive.nodeId && drive.spaceId
+      ? {
+          drive: {
+            nodeId: drive.nodeId,
+            spaceId: drive.spaceId,
+            ...(drive.spaceType === undefined ? {} : { spaceType: drive.spaceType }),
+          },
+        }
+      : undefined;
+  return {
+    uri,
+    source: avatar.source === "drive" ? "drive" : "external",
+    ...(metadata === undefined ? {} : { metadata }),
   };
 }
 
