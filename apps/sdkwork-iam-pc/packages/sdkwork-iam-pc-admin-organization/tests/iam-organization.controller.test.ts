@@ -351,4 +351,78 @@ describe("@sdkwork/iam-pc-admin-organization", () => {
     expect(service.iam.departmentAssignments.update).toHaveBeenCalledWith("da-1", { isPrimary: true });
     expect(service.iam.organizations.delete).toHaveBeenCalledWith("org-new");
   });
+
+  it("normalizes organization drafts into the wire payload the backend create/update handlers read", async () => {
+    const create = vi.fn().mockResolvedValue({
+      address: "北京市朝阳区",
+      code: "sub",
+      contactEmail: "contact@sub.example.com",
+      contactPhone: "13800000000",
+      description: "制造子公司",
+      industryCategory: "manufacturing",
+      logo: { kind: "image", publicUrl: "data:image/png;base64,AAA", url: "data:image/png;base64,AAA" },
+      logoUrl: "data:image/png;base64,AAA",
+      name: "制造子公司",
+      organizationCategory: "subsidiary",
+      organizationId: "org-sub",
+      organizationKind: "enterprise",
+      parentOrganizationId: "org-root",
+    });
+    const update = vi.fn().mockResolvedValue({ name: "根组织", organizationId: "org-root" });
+    const controller = createSdkworkIamOrganizationController({
+      service: {
+        iam: {
+          departmentAssignments: { list: vi.fn() },
+          departments: { list: vi.fn() },
+          organizationMemberships: { list: vi.fn() },
+          organizations: { create, list: vi.fn().mockResolvedValue([]), update },
+          positions: { list: vi.fn() },
+          roleBindings: { list: vi.fn() },
+        },
+      } as never,
+    });
+
+    const created = await controller.createOrganization({
+      address: "北京市朝阳区",
+      code: "sub",
+      contactEmail: "contact@sub.example.com",
+      contactPhone: "13800000000",
+      description: "制造子公司",
+      industryCategory: "manufacturing",
+      logoUrl: "data:image/png;base64,AAA",
+      name: "制造子公司",
+      organizationCategory: "子公司",
+      organizationKind: "enterprise",
+      parentId: "org-root",
+    });
+
+    // The backend create handler reads `parentOrganizationId`, never the
+    // draft-facing `parentId`; every supplied profile field must survive the
+    // rename.
+    expect(create).toHaveBeenCalledWith({
+      address: "北京市朝阳区",
+      code: "sub",
+      contactEmail: "contact@sub.example.com",
+      contactPhone: "13800000000",
+      description: "制造子公司",
+      industryCategory: "manufacturing",
+      logoUrl: "data:image/png;base64,AAA",
+      name: "制造子公司",
+      organizationCategory: "子公司",
+      organizationKind: "enterprise",
+      parentOrganizationId: "org-root",
+    });
+    expect(created).toMatchObject({
+      industryCategory: "manufacturing",
+      logoUrl: "data:image/png;base64,AAA",
+      organizationCategory: "subsidiary",
+      organizationKind: "enterprise",
+      parentId: "org-root",
+    });
+
+    // An empty parentId is the explicit "move to root" request and must be
+    // forwarded as an empty parentOrganizationId, not dropped.
+    await controller.updateOrganization("org-root", { name: "根组织", parentId: "" });
+    expect(update).toHaveBeenCalledWith("org-root", { name: "根组织", parentOrganizationId: "" });
+  });
 });

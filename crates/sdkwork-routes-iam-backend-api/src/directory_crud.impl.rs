@@ -33,10 +33,11 @@ fn patch_fields(body: &Value) -> Vec<(String, PatchValue)> {
     assignments
 }
 
-/// Snapshot size ceiling for the operator-managed avatar. Keeps the
-/// `avatar_resource_snapshot` JSON (and therefore every users.list row that
-/// carries it) bounded regardless of what the client submits.
-const AVATAR_SNAPSHOT_MAX_BYTES: usize = 128 * 1024;
+/// Snapshot size ceiling for operator-managed images (user avatar,
+/// organization logo). Keeps the `*_resource_snapshot` JSON — and therefore
+/// every list row that carries it — bounded regardless of what the client
+/// submits.
+const IMAGE_SNAPSHOT_MAX_BYTES: usize = 128 * 1024;
 /// Password length bounds for operator-issued passwords; mirrors the app-api
 /// password policy defaults (`SDKWORK_IAM_PASSWORD_(MIN|MAX)_LENGTH`).
 const ADMIN_PASSWORD_MIN_LENGTH: usize = 8;
@@ -106,38 +107,76 @@ fn read_profile_country(body: &Value) -> Result<Option<String>, Response> {
     Ok(Some(normalized))
 }
 
-fn external_avatar_snapshot(url: &str) -> String {
+fn external_image_snapshot(url: &str) -> String {
     let source = if url.starts_with("data:") { "data_url" } else { "external_url" };
     json!({ "kind": "image", "publicUrl": url, "source": source, "url": url }).to_string()
+}
+
+/// Accepts either a full media-resource object (`object_key`) or a plain
+/// delivery URL (`url_keys`) and returns the JSON snapshot stored in the
+/// owning table's `*_resource_snapshot` column.
+fn read_image_snapshot(
+    body: &Value,
+    object_key: &str,
+    url_keys: &[&str],
+    error_code: &str,
+) -> Result<Option<String>, Response> {
+    let snapshot = match body.get(object_key) {
+        Some(Value::Object(resource)) => Some(serde_json::to_string(resource).map_err(|error| {
+            appbase_error(
+                StatusCode::BAD_REQUEST,
+                error_code,
+                &format!("{object_key} resource is not serializable: {error}"),
+            )
+        })?),
+        Some(Value::String(url)) => Some(external_image_snapshot(url.trim())),
+        _ => read_string_field(body, url_keys).map(|url| external_image_snapshot(&url)),
+    };
+    let Some(snapshot) = snapshot else {
+        return Ok(None);
+    };
+    if snapshot.len() > IMAGE_SNAPSHOT_MAX_BYTES {
+        return Err(appbase_error(
+            StatusCode::BAD_REQUEST,
+            error_code,
+            &format!("{object_key} resource exceeds the 128 KiB snapshot limit"),
+        ));
+    }
+    Ok(Some(snapshot))
 }
 
 /// Accepts either a full media-resource object (`avatar`) or a plain delivery
 /// URL (`avatarUrl`) and returns the JSON snapshot stored in
 /// `iam_user.avatar_resource_snapshot`.
 fn read_avatar_snapshot(body: &Value) -> Result<Option<String>, Response> {
-    let snapshot = match body.get("avatar") {
-        Some(Value::Object(resource)) => Some(serde_json::to_string(resource).map_err(|error| {
-            appbase_error(
-                StatusCode::BAD_REQUEST,
-                "iam_user_invalid_avatar",
-                &format!("avatar resource is not serializable: {error}"),
-            )
-        })?),
-        Some(Value::String(url)) => Some(external_avatar_snapshot(url.trim())),
-        _ => read_string_field(body, &["avatarUrl", "avatar_url"])
-            .map(|url| external_avatar_snapshot(&url)),
-    };
-    let Some(snapshot) = snapshot else {
+    read_image_snapshot(body, "avatar", &["avatarUrl", "avatar_url"], "iam_user_invalid_avatar")
+}
+
+/// Same contract as `read_avatar_snapshot` for the organization logo stored in
+/// `iam_organization.logo_resource_snapshot`.
+fn read_logo_snapshot(body: &Value) -> Result<Option<String>, Response> {
+    read_image_snapshot(body, "logo", &["logoUrl", "logo_url"], "iam_organization_invalid_logo")
+}
+
+/// Organization kinds the backend-admin console may submit for
+/// organizations.create / organizations.update. The column is free-form TEXT
+/// but the API fail-closes on an explicit token set so tree rendering and
+/// policy routing stay deterministic.
+const ORGANIZATION_KINDS: [&str; 5] = ["enterprise", "government", "nonprofit", "team", "other"];
+
+fn read_organization_kind(body: &Value) -> Result<Option<String>, Response> {
+    let Some(kind) = read_string_field(body, &["organizationKind", "organization_kind"]) else {
         return Ok(None);
     };
-    if snapshot.len() > AVATAR_SNAPSHOT_MAX_BYTES {
+    let normalized = kind.to_ascii_lowercase();
+    if !ORGANIZATION_KINDS.contains(&normalized.as_str()) {
         return Err(appbase_error(
             StatusCode::BAD_REQUEST,
-            "iam_user_invalid_avatar",
-            "avatar resource exceeds the 128 KiB snapshot limit",
+            "iam_organization_invalid_kind",
+            "organizationKind must be one of enterprise, government, nonprofit, team, other",
         ));
     }
-    Ok(Some(snapshot))
+    Ok(Some(normalized))
 }
 
 fn read_initial_password(body: &Value) -> Result<Option<String>, Response> {
@@ -374,15 +413,24 @@ fn policy_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
     })
 }
 
+/// Profile column tail appended to every iam_organization SELECT that feeds
+/// `organization_row_to_json`. The JSON builder reads columns positionally, so
+/// every caller must select the seven base columns and this tail in the same
+/// order.
+pub(crate) const ORGANIZATION_PROFILE_COLUMNS: &str =
+    "organization_category, industry_category, description, contact_phone, contact_email, \
+     address, logo_resource_snapshot";
+
 async fn fetch_organization_row<'e>(
     pg: &'e PgPool,
     tenant_id: &str,
     organization_id: &str,
 ) -> Result<Option<sqlx::postgres::PgRow>, sqlx::Error> {
-    sqlx::query(
-        "SELECT id, tenant_id, code, name, status, organization_kind, parent_organization_id \
-         FROM iam_organization WHERE tenant_id = $1 AND id = $2 LIMIT 1",
-    )
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "SELECT id, tenant_id, code, name, status, organization_kind, parent_organization_id, \
+         {ORGANIZATION_PROFILE_COLUMNS} \
+         FROM iam_organization WHERE tenant_id = $1 AND id = $2 LIMIT 1"
+    )))
     .bind(tenant_id)
     .bind(organization_id)
     .fetch_optional(pg)
@@ -874,6 +922,7 @@ let sql = sql.clone();
                     query = match value {
                         PatchValue::Text(text) => query.bind(text),
                         PatchValue::Int(int) => query.bind(*int),
+                        PatchValue::NullText => query.bind(Option::<String>::None),
                     };
                 }
                 query
@@ -1288,11 +1337,26 @@ async fn create_organization(
     if code.as_deref().unwrap_or("").is_empty() || name.as_deref().unwrap_or("").is_empty() {
         return appbase_error(StatusCode::BAD_REQUEST, "iam_organization_invalid", "code and name are required");
     }
+    let organization_kind = match read_organization_kind(&body) {
+        Ok(kind) => kind.unwrap_or_else(|| "enterprise".to_owned()),
+        Err(response) => return response,
+    };
+    let logo_snapshot = match read_logo_snapshot(&body) {
+        Ok(snapshot) => snapshot,
+        Err(response) => return response,
+    };
     let id = format!("iamorg-{}", Uuid::new_v4());
     let now = Utc::now().to_rfc3339();
     let path = format!("/{}", code.as_ref().expect("validated"));
     let parent_organization_id =
         read_string_field(&body, &["parentOrganizationId", "parent_organization_id"]);
+    let organization_category =
+        read_string_field(&body, &["organizationCategory", "organization_category"]);
+    let industry_category = read_string_field(&body, &["industryCategory", "industry_category"]);
+    let description = read_string_field(&body, &["description"]);
+    let contact_phone = read_string_field(&body, &["contactPhone", "contact_phone"]);
+    let contact_email = read_string_field(&body, &["contactEmail", "contact_email"]);
+    let address = read_string_field(&body, &["address"]);
     let mut tx = match pg.begin().await {
         Ok(transaction) => transaction,
         Err(error) => {
@@ -1302,15 +1366,24 @@ async fn create_organization(
     if let Err(error) = sqlx::query(
         "INSERT INTO iam_organization \
          (id, tenant_id, parent_organization_id, code, name, organization_kind, tenant_boundary_kind, \
-          data_boundary_kind, verification_status, path, status, created_at, updated_at) \
-         VALUES ($1, $2, $3, $4, $5, 'enterprise', 'shared', 'organization', 'verified', $6, 'active', $7, $7)",
+          data_boundary_kind, verification_status, path, logo_resource_snapshot, organization_category, \
+          industry_category, description, contact_phone, contact_email, address, status, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, 'shared', 'organization', 'verified', $7, $8, $9, $10, $11, $12, $13, $14, 'active', $15, $15)",
     )
     .bind(&id)
     .bind(&tenant_id)
     .bind(&parent_organization_id)
     .bind(code.as_ref().expect("validated"))
     .bind(name.as_ref().expect("validated"))
+    .bind(&organization_kind)
     .bind(&path)
+    .bind(&logo_snapshot)
+    .bind(&organization_category)
+    .bind(&industry_category)
+    .bind(&description)
+    .bind(&contact_phone)
+    .bind(&contact_email)
+    .bind(&address)
     .bind(&now)
     .execute(&mut *tx)
     .await
@@ -1413,15 +1486,273 @@ async fn retrieve_organization(State(state): State<BackendIamState>, ctx: WebReq
     }
 }
 
+/// Column allowlist accepted by organizations.update. Kept organization-
+/// specific (instead of the shared `patch_fields`) so a stray logo or parent
+/// field on a department/membership update can never reach a foreign table.
+fn organization_patch_fields(body: &Value) -> Result<Vec<(String, PatchValue)>, Response> {
+    let mut assignments = Vec::new();
+    for (column, keys) in [
+        ("name", ["name"].as_slice()),
+        ("code", ["code"].as_slice()),
+        ("status", ["status"].as_slice()),
+        ("organization_category", ["organizationCategory", "organization_category"].as_slice()),
+        ("industry_category", ["industryCategory", "industry_category"].as_slice()),
+        ("description", ["description"].as_slice()),
+        ("contact_phone", ["contactPhone", "contact_phone"].as_slice()),
+        ("contact_email", ["contactEmail", "contact_email"].as_slice()),
+        ("address", ["address"].as_slice()),
+    ] {
+        if let Some(value) = read_string_field(body, keys) {
+            assignments.push((column.to_owned(), PatchValue::Text(value)));
+        }
+    }
+    if let Some(kind) = read_organization_kind(body)? {
+        assignments.push(("organization_kind".to_owned(), PatchValue::Text(kind)));
+    }
+    if let Some(snapshot) = read_logo_snapshot(body)? {
+        assignments.push(("logo_resource_snapshot".to_owned(), PatchValue::Text(snapshot)));
+    }
+    Ok(assignments)
+}
+
+/// Reads the parent-move request from an organizations.update body:
+/// `Ok(None)` — key absent, parent unchanged; `Ok(Some(None))` — clear the
+/// parent (move to root); `Ok(Some(Some(id)))` — re-parent under `id`.
+fn read_parent_move_request(body: &Value) -> Result<Option<Option<String>>, Response> {
+    let Some(value) = body
+        .get("parentOrganizationId")
+        .or_else(|| body.get("parent_organization_id"))
+    else {
+        return Ok(None);
+    };
+    let parent = match value {
+        Value::Null => None,
+        Value::String(text) => {
+            let trimmed = text.trim();
+            if trimmed.is_empty() { None } else { Some(trimmed.to_owned()) }
+        }
+        _ => {
+            return Err(appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_organization_invalid_parent",
+                "parentOrganizationId must be a string",
+            ))
+        }
+    };
+    Ok(Some(parent))
+}
+
+/// Applies a parent move inside the caller's transaction: validates the new
+/// parent (exists, not self, not a descendant of the moved node) and rebuilds
+/// the `iam_organization_closure` links that cross the moved subtree's
+/// boundary. Intrinsic links inside the subtree stay untouched; links to
+/// external ancestors are deleted and re-created through the new parent
+/// chain. Returns the parent id to persist (`None` = root) so the caller can
+/// add it to the column patch.
+async fn apply_organization_parent_move(
+    tx: &mut sqlx::postgres::PgConnection,
+    tenant_id: &str,
+    organization_id: &str,
+    request: Option<String>,
+) -> Result<Option<String>, Response> {
+    if let Some(parent_id) = &request {
+        if parent_id == organization_id {
+            return Err(appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_organization_parent_cycle",
+                "an organization cannot be its own parent",
+            ));
+        }
+        let exists: Option<i32> = sqlx::query_scalar(
+            "SELECT 1 FROM iam_organization WHERE tenant_id = $1 AND id = $2 AND status = 'active'",
+        )
+        .bind(tenant_id)
+        .bind(parent_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|error| internal_handler_error("iam_organization_update_failed", error))?;
+        if exists.is_none() {
+            return Err(appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_organization_parent_not_found",
+                "parentOrganizationId does not reference an active organization in this tenant",
+            ));
+        }
+        let descendant: Option<i32> = sqlx::query_scalar(
+            "SELECT 1 FROM iam_organization_closure \
+             WHERE tenant_id = $1 AND ancestor_organization_id = $2 AND descendant_organization_id = $3",
+        )
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(parent_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|error| internal_handler_error("iam_organization_update_failed", error))?;
+        if descendant.is_some() {
+            return Err(appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_organization_parent_cycle",
+                "parentOrganizationId is a descendant of the organization",
+            ));
+        }
+    }
+
+    // Skip the rebuild when the parent is unchanged; the edit form always
+    // submits the current parent, so this keeps no-op saves cheap.
+    let current_parent: Option<Option<String>> = sqlx::query_scalar(
+        "SELECT parent_organization_id FROM iam_organization WHERE tenant_id = $1 AND id = $2",
+    )
+    .bind(tenant_id)
+    .bind(organization_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|error| internal_handler_error("iam_organization_update_failed", error))?;
+    if current_parent.is_none() {
+        // Unknown organization: let the column patch report not_found.
+        return Ok(request);
+    }
+    let normalized_request = request.clone().filter(|value| !value.is_empty());
+    if current_parent.expect("checked") == normalized_request {
+        return Ok(request);
+    }
+
+    let tree_limit = sdkwork_iam_bootstrap::IAM_TREE_MAX_NODES + 1;
+    let subtree: Vec<(String, i32)> = sqlx::query_as(
+        "SELECT descendant_organization_id, depth FROM iam_organization_closure \
+         WHERE tenant_id = $1 AND ancestor_organization_id = $2 ORDER BY depth LIMIT $3",
+    )
+    .bind(tenant_id)
+    .bind(organization_id)
+    .bind(tree_limit)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|error| internal_handler_error("iam_organization_update_failed", error))?;
+    if subtree.len() > sdkwork_iam_bootstrap::IAM_TREE_MAX_NODES as usize {
+        return Err(appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_organizations_tree_too_large",
+            "organization subtree exceeds configured node limit",
+        ));
+    }
+
+    sqlx::query(
+        "DELETE FROM iam_organization_closure \
+         WHERE tenant_id = $1 \
+           AND descendant_organization_id IN (\
+             SELECT descendant_organization_id FROM iam_organization_closure \
+             WHERE tenant_id = $1 AND ancestor_organization_id = $2) \
+           AND ancestor_organization_id NOT IN (\
+             SELECT descendant_organization_id FROM iam_organization_closure \
+             WHERE tenant_id = $1 AND ancestor_organization_id = $2)",
+    )
+    .bind(tenant_id)
+    .bind(organization_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|error| internal_handler_error("iam_organization_update_failed", error))?;
+
+    if let Some(parent_id) = &normalized_request {
+        // The closure rows under the new parent include the parent itself at
+        // depth 0, so this covers both the direct link and every ancestor.
+        let ancestors: Vec<(String, i32)> = sqlx::query_as(
+            "SELECT ancestor_organization_id, depth FROM iam_organization_closure \
+             WHERE tenant_id = $1 AND descendant_organization_id = $2 ORDER BY depth",
+        )
+        .bind(tenant_id)
+        .bind(parent_id)
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(|error| internal_handler_error("iam_organization_update_failed", error))?;
+        let now = Utc::now().to_rfc3339();
+        for (ancestor_id, ancestor_depth) in ancestors {
+            for (descendant_id, descendant_depth) in &subtree {
+                sqlx::query(
+                    "INSERT INTO iam_organization_closure \
+                     (id, tenant_id, ancestor_organization_id, descendant_organization_id, depth, created_at) \
+                     VALUES ($1, $2, $3, $4, $5, $6)",
+                )
+                .bind(format!("iamoc-{}", Uuid::new_v4()))
+                .bind(tenant_id)
+                .bind(&ancestor_id)
+                .bind(descendant_id)
+                .bind(ancestor_depth + 1 + descendant_depth)
+                .bind(&now)
+                .execute(&mut *tx)
+                .await
+                .map_err(|error| internal_handler_error("iam_organization_update_failed", error))?;
+            }
+        }
+    }
+    Ok(normalized_request)
+}
+
 async fn update_organization(State(state): State<BackendIamState>, ctx: WebRequestContext, Path(organization_id): Path<String>, Json(body): Json<Value>) -> Response {
     let Ok(pg) = postgres_pool_or_error(&state) else { return postgres_pool_or_error(&state).err().expect("error response"); };
     let Ok(tenant_id) = tenant_id_from_context(&ctx) else { return tenant_id_from_context(&ctx).err().expect("error response"); };
-    let mut assignments = patch_fields(&body);
+    let mut assignments = match organization_patch_fields(&body) {
+        Ok(assignments) => assignments,
+        Err(response) => return response,
+    };
+    let parent_request = match read_parent_move_request(&body) {
+        Ok(request) => request,
+        Err(response) => return response,
+    };
+    let parent_key_present = parent_request.is_some();
     assignments.push(("updated_at".to_owned(), PatchValue::Text(Utc::now().to_rfc3339())));
-    match patch_directory_row(pg, &ctx, &tenant_id, "iam_organization", &organization_id, &assignments).await {
-        Ok(true) => retrieve_organization(State(state), ctx, Path(organization_id)).await,
-        Ok(false) => appbase_error(StatusCode::NOT_FOUND, "iam_organization_not_found", "organization not found"),
-        Err(error) => internal_handler_error("iam_organization_update_failed", error),
+    let mut tx = match pg.begin().await {
+        Ok(transaction) => transaction,
+        Err(error) => return internal_handler_error("iam_organization_update_failed", error),
+    };
+    let moved_parent = match apply_organization_parent_move(&mut *tx, &tenant_id, &organization_id, parent_request.flatten()).await {
+        Ok(parent) => parent,
+        Err(response) => {
+            let _ = tx.rollback().await;
+            return response;
+        }
+    };
+    if parent_key_present {
+        assignments.push((
+            "parent_organization_id".to_owned(),
+            moved_parent.map_or(PatchValue::NullText, PatchValue::Text),
+        ));
+    }
+    match patch_tenant_row_tx(&mut *tx, &tenant_id, "iam_organization", &organization_id, &assignments).await {
+        Ok(true) => {}
+        Ok(false) => {
+            let _ = tx.rollback().await;
+            return appbase_error(StatusCode::NOT_FOUND, "iam_organization_not_found", "organization not found");
+        }
+        Err(error) => {
+            let _ = tx.rollback().await;
+            return internal_handler_error("iam_organization_update_failed", error);
+        }
+    }
+    let audit_detail = json!({
+        "updatedFields": assignments
+            .iter()
+            .map(|(column, _)| column.as_str())
+            .filter(|column| *column != "updated_at")
+            .collect::<Vec<_>>(),
+    });
+    if let Err(error) = record_backend_mutation_audit_tx(
+        &mut *tx,
+        &ctx,
+        "iam_organization.update",
+        "iam_organization",
+        &organization_id,
+        audit_detail,
+    )
+    .await
+    {
+        let _ = tx.rollback().await;
+        return appbase_error(StatusCode::INTERNAL_SERVER_ERROR, "iam_organization_update_failed", &error);
+    }
+    if let Err(error) = tx.commit().await {
+        return internal_handler_error("iam_organization_update_failed", error);
+    }
+    match fetch_organization_row(pg, &tenant_id, &organization_id).await {
+        Ok(Some(row)) => appbase_ok(organization_row_to_json(&row)),
+        _ => appbase_error(StatusCode::INTERNAL_SERVER_ERROR, "iam_organization_update_failed", "organization updated but could not be loaded"),
     }
 }
 
@@ -1433,7 +1764,11 @@ async fn organizations_tree(State(state): State<BackendIamState>, ctx: WebReques
     let Ok(pg) = postgres_pool_or_error(&state) else { return postgres_pool_or_error(&state).err().expect("error response"); };
     let Ok(tenant_id) = tenant_id_from_context(&ctx) else { return tenant_id_from_context(&ctx).err().expect("error response"); };
     let tree_limit = sdkwork_iam_bootstrap::IAM_TREE_MAX_NODES + 1;
-    match sqlx::query("SELECT id, tenant_id, code, name, status, organization_kind, parent_organization_id FROM iam_organization WHERE tenant_id = $1 AND status = 'active' ORDER BY name, id LIMIT $2").bind(&tenant_id).bind(tree_limit).fetch_all(pg).await {
+    match sqlx::query(sqlx::AssertSqlSafe(format!(
+        "SELECT id, tenant_id, code, name, status, organization_kind, parent_organization_id, \
+         {ORGANIZATION_PROFILE_COLUMNS} \
+         FROM iam_organization WHERE tenant_id = $1 AND status = 'active' ORDER BY name, id LIMIT $2"
+    ))).bind(&tenant_id).bind(tree_limit).fetch_all(pg).await {
         Ok(rows) => {
             if rows.len() > sdkwork_iam_bootstrap::IAM_TREE_MAX_NODES as usize {
                 return appbase_error(StatusCode::BAD_REQUEST, "iam_organizations_tree_too_large", "organization tree exceeds configured node limit");
@@ -1996,6 +2331,7 @@ let sql = sql.clone();
                     query = match value {
                         PatchValue::Text(text) => query.bind(text),
                         PatchValue::Int(int) => query.bind(*int),
+                        PatchValue::NullText => query.bind(Option::<String>::None),
                     };
                 }
                 query
@@ -2139,6 +2475,7 @@ async fn update_tenant_member(State(state): State<BackendIamState>, ctx: WebRequ
                 query = match value {
                     PatchValue::Text(text) => query.bind(text),
                     PatchValue::Int(int) => query.bind(int),
+                    PatchValue::NullText => query.bind(Option::<String>::None),
                 };
             }
             query.execute(&mut **tx).await.map(|result| result.rows_affected())

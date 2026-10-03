@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { Briefcase, Building2, GitBranch, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
+import { Briefcase, Building2, GitBranch, Image as ImageIcon, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from "lucide-react";
 import { CatalogPagination } from "@sdkwork/iam-pc-admin-core";
 import {
   Button,
@@ -26,6 +26,7 @@ import {
 } from "@sdkwork/ui-pc-react";
 
 import { useSdkworkIamOrganizationAdminMessages } from "../i18n";
+import type { SdkworkIamOrganizationAdminMessages } from "../types/organization-admin-messages";
 import type {
   SdkworkIamDepartment,
   SdkworkIamDepartmentDraft,
@@ -45,7 +46,18 @@ type DrawerMode = "create" | "edit";
 type OrganizationDetailTab = "departments" | "memberships" | "positions" | "roleBindings";
 type ListKind = "organizations" | "departments" | "memberships" | "positions" | "roleBindings";
 
-const emptyOrganizationDraft = (): SdkworkIamOrganizationDraft => ({ name: "" });
+/// Tokens accepted by the backend organizations.create/update validation.
+const ORGANIZATION_KINDS = ["enterprise", "government", "nonprofit", "team", "other"] as const;
+/// Raw file ceiling for an uploaded logo. The snapshot JSON stores the data
+/// URL twice (publicUrl + url), so the base64 payload must stay under half of
+/// the backend's 128 KiB snapshot cap: 2 × (22 + 4·⌈n/3⌉) + wrapper ≤ 128 KiB
+/// bounds a data-URL image at ~48 KB.
+const LOGO_MAX_FILE_BYTES = 48 * 1024;
+/// Radix Select forbids empty-string item values, so the "no parent" option
+/// uses this sentinel and the change handler maps it back to "".
+const ROOT_PARENT_VALUE = "__sdkwork_root__";
+
+const emptyOrganizationDraft = (): SdkworkIamOrganizationDraft => ({ name: "", organizationKind: "enterprise" });
 const emptyDepartmentDraft = (organizationId: string): SdkworkIamDepartmentDraft => ({ name: "", organizationId });
 const emptyMembershipDraft = (): SdkworkIamOrganizationMembershipDraft => ({ userId: "" });
 
@@ -272,8 +284,16 @@ export function SdkworkIamOrganizationAdminWorkspace({
   const openOrganizationEditor = (organization: SdkworkIamOrganization) => {
     setOrganizationEditTarget(organization);
     setOrganizationDraft({
+      address: organization.address ?? "",
       code: organization.code ?? "",
+      contactEmail: organization.contactEmail ?? "",
+      contactPhone: organization.contactPhone ?? "",
+      description: organization.description ?? "",
+      industryCategory: organization.industryCategory ?? "",
+      logoUrl: organization.logoUrl ?? "",
       name: organization.name,
+      organizationCategory: organization.organizationCategory ?? "",
+      organizationKind: organization.organizationKind ?? "enterprise",
       parentId: organization.parentId ?? "",
       status: organization.status ?? "",
       tenantId: organization.tenantId ?? "",
@@ -304,12 +324,16 @@ export function SdkworkIamOrganizationAdminWorkspace({
     setMembershipDrawerMode("edit");
   };
 
-  const organizationColumns = useMemo<DataTableColumn<SdkworkIamOrganization>[]>(() => [
-    { id: "name", header: messages.organizations.table.organization, cell: (item) => item.name },
-    { id: "code", header: messages.organizations.table.code, cell: (item) => item.code || "-" },
-    { id: "parent", header: messages.organizations.table.parent, cell: (item) => item.parentId || "-" },
-    { id: "status", header: messages.organizations.table.status, cell: (item) => item.status ? <StatusBadge label={statusLabel(messages.organizations.statuses, item.status)} showIcon status={item.status} /> : "-" },
-  ], [messages]);
+  const organizationColumns = useMemo<DataTableColumn<SdkworkIamOrganization>[]>(() => {
+    const nameByOrganizationId = new Map(organizations.map((organization) => [organization.organizationId, organization.name]));
+    return [
+      { id: "name", header: messages.organizations.table.organization, cell: (item) => item.name },
+      { id: "code", header: messages.organizations.table.code, cell: (item) => item.code || "-" },
+      { id: "kind", header: messages.organizations.table.kind, cell: (item) => kindLabel(messages.organizations.organizationKinds, item.organizationKind) ?? "-" },
+      { id: "parent", header: messages.organizations.table.parent, cell: (item) => (item.parentId ? nameByOrganizationId.get(item.parentId) ?? item.parentId : "-") },
+      { id: "status", header: messages.organizations.table.status, cell: (item) => item.status ? <StatusBadge label={statusLabel(messages.organizations.statuses, item.status)} showIcon status={item.status} /> : "-" },
+    ];
+  }, [messages, organizations]);
 
   const departmentColumns = useMemo<DataTableColumn<SdkworkIamDepartment>[]>(() => [
     { id: "name", header: messages.departments.table.department, cell: (item) => item.name },
@@ -404,9 +428,17 @@ export function SdkworkIamOrganizationAdminWorkspace({
           <section className="flex min-h-0 flex-1 flex-col border-t border-[var(--sdk-color-border-subtle)] pt-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--sdk-radius-control)] bg-[var(--sdk-color-surface-panel-muted)] text-[var(--sdk-color-text-secondary)]">
-                  <Building2 className="h-5 w-5" />
-                </span>
+                {selectedOrganization.logoUrl ? (
+                  <img
+                    alt=""
+                    className="h-10 w-10 shrink-0 rounded-[var(--sdk-radius-control)] border border-[var(--sdk-color-border-default)] object-cover"
+                    src={selectedOrganization.logoUrl}
+                  />
+                ) : (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--sdk-radius-control)] bg-[var(--sdk-color-surface-panel-muted)] text-[var(--sdk-color-text-secondary)]">
+                    <Building2 className="h-5 w-5" />
+                  </span>
+                )}
                 <span className="min-w-0">
                   <h2 className="truncate text-base font-semibold text-[var(--sdk-color-text-primary)]">{template(messages.organizations.selectedTitleTemplate, { name: selectedOrganization.name })}</h2>
                   <p className="truncate text-sm text-[var(--sdk-color-text-muted)]">{template(messages.organizations.selectedDescriptionTemplate, { id: selectedOrganization.organizationId })}</p>
@@ -502,9 +534,17 @@ export function SdkworkIamOrganizationAdminWorkspace({
         setOrganizationDrawerMode(undefined);
         setOrganizationEditTarget(undefined);
       }, organizationDrawerMode === "edit" ? messages.notices.organizationUpdated : messages.notices.organizationCreated)} submitDisabled={!organizationDraft.name.trim()} submitLabel={organizationDrawerMode === "edit" ? messages.common.save : messages.common.create} title={organizationDrawerMode === "edit" ? messages.drawers.organization.editTitle : messages.drawers.organization.createTitle}>
+        <LogoField copy={messages.drawers.organization} onChange={(logoUrl) => setOrganizationDraft({ ...organizationDraft, logoUrl })} value={organizationDraft.logoUrl ?? ""} />
         <Field label={messages.drawers.organization.name} onChange={(name) => setOrganizationDraft({ ...organizationDraft, name })} value={organizationDraft.name} />
         <Field label={messages.drawers.organization.code} onChange={(code) => setOrganizationDraft({ ...organizationDraft, code })} value={organizationDraft.code ?? ""} />
-        <Field label={messages.drawers.organization.parentId} onChange={(parentId) => setOrganizationDraft({ ...organizationDraft, parentId })} value={organizationDraft.parentId ?? ""} />
+        <OrganizationKindSelectField kinds={messages.organizations.organizationKinds} label={messages.drawers.organization.kind} onChange={(organizationKind) => setOrganizationDraft({ ...organizationDraft, organizationKind })} value={organizationDraft.organizationKind ?? "enterprise"} />
+        <Field label={messages.drawers.organization.category} onChange={(organizationCategory) => setOrganizationDraft({ ...organizationDraft, organizationCategory })} placeholder={messages.drawers.organization.categoryPlaceholder} value={organizationDraft.organizationCategory ?? ""} />
+        <Field label={messages.drawers.organization.industry} onChange={(industryCategory) => setOrganizationDraft({ ...organizationDraft, industryCategory })} placeholder={messages.drawers.organization.industryPlaceholder} value={organizationDraft.industryCategory ?? ""} />
+        <ParentOrganizationSelectField label={messages.drawers.organization.parentId} noParentLabel={messages.drawers.organization.noParent} onChange={(parentId) => setOrganizationDraft({ ...organizationDraft, parentId })} organizations={organizations} selfOrganizationId={organizationDrawerMode === "edit" ? organizationEditTarget?.organizationId : undefined} value={organizationDraft.parentId ?? ""} />
+        <Field label={messages.drawers.organization.description} onChange={(description) => setOrganizationDraft({ ...organizationDraft, description })} value={organizationDraft.description ?? ""} />
+        <Field label={messages.drawers.organization.contactPhone} onChange={(contactPhone) => setOrganizationDraft({ ...organizationDraft, contactPhone })} value={organizationDraft.contactPhone ?? ""} />
+        <Field label={messages.drawers.organization.contactEmail} onChange={(contactEmail) => setOrganizationDraft({ ...organizationDraft, contactEmail })} value={organizationDraft.contactEmail ?? ""} />
+        <Field label={messages.drawers.organization.address} onChange={(address) => setOrganizationDraft({ ...organizationDraft, address })} value={organizationDraft.address ?? ""} />
         {organizationDrawerMode === "edit" ? <StatusSelectField label={messages.drawers.organization.status} onChange={(status) => setOrganizationDraft({ ...organizationDraft, status })} statuses={messages.organizations.statuses} value={organizationDraft.status ?? ""} /> : null}
       </ResourceDrawer>
 
@@ -588,11 +628,115 @@ function ResourceDrawer({ busy, children, description, mode, onOpenChange, onSub
   );
 }
 
-function Field({ disabled, label, onChange, value }: { disabled?: boolean; label: string; onChange: (value: string) => void; value: string }) {
+function Field({ disabled, label, onChange, placeholder, value }: { disabled?: boolean; label: string; onChange: (value: string) => void; placeholder?: string; value: string }) {
   return (
     <label className="block space-y-1.5 text-sm">
       <span className="font-medium text-[var(--sdk-color-text-primary)]">{label}</span>
-      <Input disabled={disabled} onChange={(event) => onChange(event.target.value)} value={value} />
+      <Input disabled={disabled} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} value={value} />
+    </label>
+  );
+}
+
+function LogoField({ copy, onChange, value }: { copy: SdkworkIamOrganizationAdminMessages["drawers"]["organization"]; onChange: (value: string) => void; value: string }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [uploadError, setUploadError] = useState<string>();
+  useEffect(() => {
+    setLoadFailed(false);
+  }, [value]);
+  const readFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setUploadError(copy.logoInvalidType);
+      return;
+    }
+    if (file.size > LOGO_MAX_FILE_BYTES) {
+      setUploadError(copy.logoTooLarge);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setUploadError(undefined);
+      onChange(String(reader.result));
+    };
+    reader.onerror = () => setUploadError(copy.logoReadError);
+    reader.readAsDataURL(file);
+  };
+  return (
+    <div className="space-y-1.5 text-sm">
+      <span className="block font-medium text-[var(--sdk-color-text-primary)]">{copy.logo}</span>
+      <div className="flex items-center gap-3">
+        {value && !loadFailed ? (
+          <img
+            alt=""
+            className="h-12 w-12 shrink-0 rounded-[var(--sdk-radius-control)] border border-[var(--sdk-color-border-default)] object-cover"
+            onError={() => setLoadFailed(true)}
+            src={value}
+          />
+        ) : (
+          <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--sdk-radius-control)] border border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-subtle)] text-[var(--sdk-color-text-muted)]">
+            <ImageIcon className="h-5 w-5" />
+          </span>
+        )}
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="flex items-center gap-2">
+            <Button onClick={() => fileInputRef.current?.click()} size="sm" type="button" variant="outline">
+              {copy.logoUpload}
+            </Button>
+            <Input
+              className="flex-1"
+              onChange={(event) => onChange(event.target.value)}
+              placeholder={copy.logoPlaceholder}
+              type="url"
+              value={value}
+            />
+          </div>
+          <span className="block text-xs text-[var(--sdk-color-text-muted)]">{copy.logoHint}</span>
+          {uploadError ? <span className="block text-xs text-[var(--sdk-color-state-danger)]" role="alert">{uploadError}</span> : null}
+        </div>
+      </div>
+      <input accept="image/*" hidden onChange={readFile} ref={fileInputRef} type="file" />
+    </div>
+  );
+}
+
+function OrganizationKindSelectField({ kinds, label, onChange, value }: { kinds: { enterprise: string; government: string; nonprofit: string; other: string; team: string; unknown: string }; label: string; onChange: (value: string) => void; value: string }) {
+  const normalized = value.trim().toLowerCase();
+  const options = ORGANIZATION_KINDS.map((kind) => [kind, kinds[kind]] as const);
+  const currentUnknown = options.some(([optionValue]) => optionValue === normalized) ? undefined : value;
+  return (
+    <label className="block space-y-1.5 text-sm">
+      <span className="font-medium text-[var(--sdk-color-text-primary)]">{label}</span>
+      <Select onValueChange={onChange} value={value}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {options.map(([optionValue, optionLabel]) => <SelectItem key={optionValue} value={optionValue}>{optionLabel}</SelectItem>)}
+          {currentUnknown ? <SelectItem key={currentUnknown} value={currentUnknown}>{kinds.unknown}</SelectItem> : null}
+        </SelectContent>
+      </Select>
+    </label>
+  );
+}
+
+function ParentOrganizationSelectField({ label, noParentLabel, onChange, organizations, selfOrganizationId, value }: { label: string; noParentLabel: string; onChange: (value: string) => void; organizations: readonly SdkworkIamOrganization[]; selfOrganizationId?: string; value: string }) {
+  const candidates = organizations.filter((organization) => organization.organizationId !== selfOrganizationId);
+  const known = !value || candidates.some((organization) => organization.organizationId === value) || value === selfOrganizationId;
+  const selectValue = value || ROOT_PARENT_VALUE;
+  return (
+    <label className="block space-y-1.5 text-sm">
+      <span className="font-medium text-[var(--sdk-color-text-primary)]">{label}</span>
+      <Select onValueChange={(selected) => onChange(selected === ROOT_PARENT_VALUE ? "" : selected)} value={selectValue}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ROOT_PARENT_VALUE}>{noParentLabel}</SelectItem>
+          {candidates.map((organization) => (
+            <SelectItem key={organization.organizationId} value={organization.organizationId}>{organization.name}</SelectItem>
+          ))}
+          {!known && value ? <SelectItem value={value}>{value}</SelectItem> : null}
+        </SelectContent>
+      </Select>
     </label>
   );
 }

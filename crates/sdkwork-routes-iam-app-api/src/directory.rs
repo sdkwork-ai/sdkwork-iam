@@ -776,12 +776,80 @@ pub(crate) fn app_context_to_json(ctx: &sdkwork_iam_context_service::IamAppConte
     })
 }
 
+/// Profile column tail appended to every iam_organization SELECT that builds
+/// a `LocalOrganization`. The row mapping in `organization_from_row` reads
+/// columns positionally, so every load site must select the ten base columns
+/// and this tail in the same order.
+pub(crate) const ORGANIZATION_PROFILE_COLUMNS: &str =
+    "organization_category, industry_category, description, contact_phone, contact_email, \
+     address, logo_resource_snapshot";
+
+pub(crate) fn organization_from_row(row: &sqlx::postgres::PgRow, order: i64) -> LocalOrganization {
+    LocalOrganization {
+        address: row.get(15),
+        app_boundary_enabled: row.get::<i32, _>(7) != 0,
+        contact_email: row.get(14),
+        contact_phone: row.get(13),
+        data_boundary_kind: row.get(6),
+        description: row.get(12),
+        id: row.get(0),
+        industry_category: row.get(11),
+        logo_resource_snapshot: row.get(16),
+        name: row.get(3),
+        order,
+        organization_category: row.get(10),
+        organization_kind: row.get(4),
+        parent_organization_id: row.get(2),
+        status: row.get(9),
+        tenant_boundary_kind: row.get(5),
+        tenant_id: row.get(1),
+        verification_status: row.get(8),
+    }
+}
+
+/// Delivery URL of a stored image media-resource snapshot (organization
+/// logo); mirrors the backend-api `media_delivery_url` shape.
+fn image_delivery_url(image: &Value) -> Option<String> {
+    ["publicUrl", "url", "uri", "public_url"]
+        .iter()
+        .find_map(|key| {
+            image
+                .get(*key)
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(str::to_owned)
+        })
+}
+
 pub(crate) fn organization_to_json(o: &LocalOrganization) -> Value {
+    let logo: Option<Value> = o
+        .logo_resource_snapshot
+        .as_deref()
+        .and_then(|snapshot| serde_json::from_str::<Value>(snapshot).ok())
+        .filter(|value| value.is_object());
     json!({
-        "appBoundaryEnabled": o.app_boundary_enabled, "dataBoundaryKind": o.data_boundary_kind, "displayName": o.name,
-        "id": o.id, "name": o.name, "order": o.order, "organizationId": o.id, "organizationKind": o.organization_kind,
-        "parentOrganizationId": o.parent_organization_id, "status": o.status, "tenantBoundaryKind": o.tenant_boundary_kind,
-        "tenantId": o.tenant_id, "verificationStatus": o.verification_status
+        "address": o.address,
+        "appBoundaryEnabled": o.app_boundary_enabled,
+        "contactEmail": o.contact_email,
+        "contactPhone": o.contact_phone,
+        "dataBoundaryKind": o.data_boundary_kind,
+        "description": o.description,
+        "displayName": o.name,
+        "id": o.id,
+        "industryCategory": o.industry_category,
+        "logo": logo,
+        "logoUrl": logo.as_ref().and_then(image_delivery_url),
+        "name": o.name,
+        "order": o.order,
+        "organizationCategory": o.organization_category,
+        "organizationId": o.id,
+        "organizationKind": o.organization_kind,
+        "parentOrganizationId": o.parent_organization_id,
+        "status": o.status,
+        "tenantBoundaryKind": o.tenant_boundary_kind,
+        "tenantId": o.tenant_id,
+        "verificationStatus": o.verification_status
     })
 }
 

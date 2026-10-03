@@ -2,8 +2,16 @@ import type { SdkWorkPageInfo } from "@sdkwork/iam-contracts";
 import type { SdkworkIamService } from "@sdkwork/iam-service";
 
 export interface SdkworkIamOrganizationDraft {
+  address?: string;
   code?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  description?: string;
+  industryCategory?: string;
+  logoUrl?: string;
   name: string;
+  organizationCategory?: string;
+  organizationKind?: string;
   parentId?: string;
   status?: string;
   tenantId?: string;
@@ -35,10 +43,18 @@ export interface SdkworkIamDepartmentAssignmentUpdateDraft {
 }
 
 export interface SdkworkIamOrganization {
+  address?: string;
   code?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  description?: string;
   id: string;
+  industryCategory?: string;
+  logoUrl?: string;
   name: string;
+  organizationCategory?: string;
   organizationId: string;
+  organizationKind?: string;
   parentId?: string;
   path?: string;
   status?: string;

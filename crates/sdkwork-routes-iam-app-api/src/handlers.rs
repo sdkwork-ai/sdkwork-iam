@@ -5134,14 +5134,15 @@ async fn organizations_by_ids(
         return Ok(Vec::new());
     }
 
-    let rows = sqlx::query(
+    let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
         "SELECT id, tenant_id, parent_organization_id, name, organization_kind, \
                 tenant_boundary_kind, data_boundary_kind, app_boundary_enabled, \
-                verification_status, status \
+                verification_status, status, {} \
          FROM iam_organization \
          WHERE tenant_id = $1 AND id = ANY($2) AND status = 'active' \
          ORDER BY name, id",
-    )
+        crate::directory::ORGANIZATION_PROFILE_COLUMNS
+    )))
     .bind(tenant_id)
     .bind(organization_ids)
     .fetch_all(pg)
@@ -5149,19 +5150,7 @@ async fn organizations_by_ids(
 
     Ok(rows
         .into_iter()
-        .map(|row| LocalOrganization {
-            id: row.get(0),
-            tenant_id: row.get(1),
-            parent_organization_id: row.get(2),
-            name: row.get(3),
-            organization_kind: row.get(4),
-            tenant_boundary_kind: row.get(5),
-            data_boundary_kind: row.get(6),
-            app_boundary_enabled: row.get::<i32, _>(7) != 0,
-            verification_status: row.get(8),
-            status: row.get(9),
-            order: 0,
-        })
+        .map(|row| crate::directory::organization_from_row(&row, 0))
         .collect())
 }
 
@@ -5170,32 +5159,21 @@ async fn load_organization(
     tenant_id: &str,
     organization_id: &str,
 ) -> Option<LocalOrganization> {
-    let row = sqlx::query(
+    let row = sqlx::query(sqlx::AssertSqlSafe(format!(
         "SELECT id, tenant_id, parent_organization_id, name, organization_kind, \
                 tenant_boundary_kind, data_boundary_kind, app_boundary_enabled, \
-                verification_status, status \
+                verification_status, status, {} \
          FROM iam_organization \
          WHERE tenant_id = $1 AND id = $2 AND status = 'active' \
          LIMIT 1",
-    )
+        crate::directory::ORGANIZATION_PROFILE_COLUMNS
+    )))
     .bind(tenant_id)
     .bind(organization_id)
     .fetch_optional(pg)
     .await
     .ok()??;
-    Some(LocalOrganization {
-        id: row.get(0),
-        tenant_id: row.get(1),
-        parent_organization_id: row.get(2),
-        name: row.get(3),
-        organization_kind: row.get(4),
-        tenant_boundary_kind: row.get(5),
-        data_boundary_kind: row.get(6),
-        app_boundary_enabled: row.get::<i32, _>(7) != 0,
-        verification_status: row.get(8),
-        status: row.get(9),
-        order: 0,
-    })
+    Some(crate::directory::organization_from_row(&row, 0))
 }
 
 async fn accessible_organization_ids_for_session(
@@ -5244,13 +5222,14 @@ async fn scoped_organizations_for_session(
     let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
         "SELECT id, tenant_id, parent_organization_id, name, organization_kind, \
                 tenant_boundary_kind, data_boundary_kind, app_boundary_enabled, \
-                verification_status, status \
+                verification_status, status, {} \
          FROM iam_organization \
          WHERE tenant_id = $1 AND status = 'active' AND id = ANY($2) \
            AND ($3::text IS NULL OR id = $3) \
            AND ($4::text IS NULL OR parent_organization_id = $4) \
          ORDER BY name, id \
-         LIMIT $5"
+         LIMIT $5",
+        crate::directory::ORGANIZATION_PROFILE_COLUMNS
     )))
     .bind(&session.context.tenant_id)
     .bind(&organization_ids)
@@ -5266,19 +5245,7 @@ async fn scoped_organizations_for_session(
     Ok(rows
         .into_iter()
         .enumerate()
-        .map(|(index, row)| LocalOrganization {
-            id: row.get(0),
-            tenant_id: row.get(1),
-            parent_organization_id: row.get(2),
-            name: row.get(3),
-            organization_kind: row.get(4),
-            tenant_boundary_kind: row.get(5),
-            data_boundary_kind: row.get(6),
-            app_boundary_enabled: row.get::<i32, _>(7) != 0,
-            verification_status: row.get(8),
-            status: row.get(9),
-            order: index as i64,
-        })
+        .map(|(index, row)| crate::directory::organization_from_row(&row, index as i64))
         .collect())
 }
 
@@ -5306,14 +5273,15 @@ async fn paged_organizations_for_session(
     let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
         "SELECT id, tenant_id, parent_organization_id, name, organization_kind, \
                 tenant_boundary_kind, data_boundary_kind, app_boundary_enabled, \
-                verification_status, status, COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
+                verification_status, status, {}, COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
          FROM iam_organization \
          WHERE tenant_id = $1 AND status = 'active' AND id = ANY($2) \
            AND ($3::text IS NULL OR id = $3) \
            AND ($4::text IS NULL OR parent_organization_id = $4) \
            AND ($5::text IS NULL OR LOWER(name) LIKE $5 OR LOWER(id) LIKE $5) \
          ORDER BY name, id \
-         LIMIT $6 OFFSET $7"
+         LIMIT $6 OFFSET $7",
+        crate::directory::ORGANIZATION_PROFILE_COLUMNS
     )))
     .bind(&session.context.tenant_id)
     .bind(&organization_ids)
@@ -5328,19 +5296,7 @@ async fn paged_organizations_for_session(
     let organizations = rows
         .into_iter()
         .enumerate()
-        .map(|(index, row)| LocalOrganization {
-            id: row.get(0),
-            tenant_id: row.get(1),
-            parent_organization_id: row.get(2),
-            name: row.get(3),
-            organization_kind: row.get(4),
-            tenant_boundary_kind: row.get(5),
-            data_boundary_kind: row.get(6),
-            app_boundary_enabled: row.get::<i32, _>(7) != 0,
-            verification_status: row.get(8),
-            status: row.get(9),
-            order: index as i64,
-        })
+        .map(|(index, row)| crate::directory::organization_from_row(&row, index as i64))
         .collect();
     Ok((organizations, total, params))
 }

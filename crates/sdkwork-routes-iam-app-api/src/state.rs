@@ -72,11 +72,18 @@ pub(crate) struct LocalCredential {
 
 #[derive(Clone)]
 pub(crate) struct LocalOrganization {
+    pub(crate) address: Option<String>,
     pub(crate) app_boundary_enabled: bool,
+    pub(crate) contact_email: Option<String>,
+    pub(crate) contact_phone: Option<String>,
     pub(crate) data_boundary_kind: String,
+    pub(crate) description: Option<String>,
     pub(crate) id: String,
+    pub(crate) industry_category: Option<String>,
+    pub(crate) logo_resource_snapshot: Option<String>,
     pub(crate) name: String,
     pub(crate) order: i64,
+    pub(crate) organization_category: Option<String>,
     pub(crate) organization_kind: String,
     pub(crate) parent_organization_id: Option<String>,
     pub(crate) status: String,

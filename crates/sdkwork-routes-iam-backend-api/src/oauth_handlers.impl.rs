@@ -1578,6 +1578,7 @@ async fn update_provider_catalog(
                     query = match value {
                         PatchValue::Text(text) => query.bind(text),
                         PatchValue::Int(int) => query.bind(int),
+                        PatchValue::NullText => query.bind(Option::<String>::None),
                     };
                 }
                 query

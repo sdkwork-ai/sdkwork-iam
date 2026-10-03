@@ -940,12 +940,13 @@ async fn list_organizations(
     let search_pattern = list_search_pattern(&query);
     let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
         "SELECT id, tenant_id, code, name, status, organization_kind, parent_organization_id, \
-                COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
+                {}, COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
          FROM iam_organization \
          WHERE tenant_id = $1 AND status = 'active' \
            AND ($4::text IS NULL OR LOWER(name) LIKE $4 OR LOWER(code) LIKE $4) \
          ORDER BY name, id \
-         LIMIT $2 OFFSET $3"
+         LIMIT $2 OFFSET $3",
+        ORGANIZATION_PROFILE_COLUMNS
     )))
     .bind(&tenant_id)
     .bind(params.page_size)
@@ -1435,7 +1436,7 @@ fn user_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
         .filter(|value| value.is_object());
     json!({
         "avatar": avatar,
-        "avatarUrl": avatar.as_ref().and_then(avatar_delivery_url),
+        "avatarUrl": avatar.as_ref().and_then(media_delivery_url),
         "birthDate": row.get::<Option<String>, _>(10),
         "country": row.get::<Option<String>, _>(11),
         "createdAt": row.get::<Option<String>, _>(7),
@@ -1452,14 +1453,14 @@ fn user_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
     })
 }
 
-/// Delivery URL of a stored avatar media-resource snapshot. Reads the camelCase
-/// SDK shape first and falls back to the snake_case shape the user-center host
-/// serializes.
-fn avatar_delivery_url(avatar: &Value) -> Option<String> {
+/// Delivery URL of a stored image media-resource snapshot (user avatar,
+/// organization logo). Reads the camelCase SDK shape first and falls back to
+/// the snake_case shape the user-center host serializes.
+fn media_delivery_url(image: &Value) -> Option<String> {
     ["publicUrl", "url", "uri", "public_url"]
         .iter()
         .find_map(|key| {
-            avatar
+            image
                 .get(*key)
                 .and_then(Value::as_str)
                 .map(str::trim)
@@ -1507,10 +1508,22 @@ fn role_binding_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
 }
 
 fn organization_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
+    let logo: Option<Value> = row
+        .get::<Option<String>, _>(13)
+        .and_then(|snapshot| serde_json::from_str::<Value>(&snapshot).ok())
+        .filter(|value| value.is_object());
     json!({
+        "address": row.get::<Option<String>, _>(12),
         "code": row.get::<String, _>(2),
+        "contactEmail": row.get::<Option<String>, _>(11),
+        "contactPhone": row.get::<Option<String>, _>(10),
+        "description": row.get::<Option<String>, _>(9),
         "id": row.get::<String, _>(0),
+        "industryCategory": row.get::<Option<String>, _>(8),
+        "logo": logo,
+        "logoUrl": logo.as_ref().and_then(media_delivery_url),
         "name": row.get::<String, _>(3),
+        "organizationCategory": row.get::<Option<String>, _>(7),
         "organizationId": row.get::<String, _>(0),
         "organizationKind": row.get::<Option<String>, _>(5),
         "parentOrganizationId": row.get::<Option<String>, _>(6),

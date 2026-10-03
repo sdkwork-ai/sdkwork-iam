@@ -426,6 +426,10 @@ pub(crate) async fn retrieve_tenant_row(
 pub(crate) enum PatchValue {
     Text(String),
     Int(i32),
+    /// Explicit NULL for a nullable TEXT column (e.g. clearing an
+    /// organization's parent link); `PatchValue::Text` only ever sets a value
+    /// because empty request strings are dropped while reading fields.
+    NullText,
 }
 
 pub(crate) async fn patch_tenant_row_tx<'e, E>(
@@ -460,6 +464,7 @@ where
         query = match value {
             PatchValue::Text(text) => query.bind(text),
             PatchValue::Int(int) => query.bind(*int),
+            PatchValue::NullText => query.bind(Option::<String>::None),
         };
     }
 

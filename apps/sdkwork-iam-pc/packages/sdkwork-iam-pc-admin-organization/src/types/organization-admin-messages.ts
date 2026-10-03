@@ -39,12 +39,29 @@ export interface SdkworkIamOrganizationAdminMessages {
       userId: string;
     };
     organization: {
+      address: string;
+      category: string;
+      categoryPlaceholder: string;
       code: string;
+      contactEmail: string;
+      contactPhone: string;
       createDescription: string;
       createTitle: string;
+      description: string;
       editDescription: string;
       editTitle: string;
+      industry: string;
+      industryPlaceholder: string;
+      kind: string;
+      logo: string;
+      logoHint: string;
+      logoInvalidType: string;
+      logoPlaceholder: string;
+      logoReadError: string;
+      logoTooLarge: string;
+      logoUpload: string;
       name: string;
+      noParent: string;
       parentId: string;
       status: string;
     };
@@ -83,6 +100,7 @@ export interface SdkworkIamOrganizationAdminMessages {
     emptyDescription: string;
     emptyTitle: string;
     manage: string;
+    organizationKinds: { enterprise: string; government: string; nonprofit: string; other: string; team: string; unknown: string };
     searchAction: string;
     searchLabel: string;
     searchPlaceholder: string;
@@ -90,7 +108,7 @@ export interface SdkworkIamOrganizationAdminMessages {
     selectedTitleTemplate: string;
     statuses: { active: string; disabled: string; unknown: string };
     structure: string;
-    table: { code: string; organization: string; parent: string; status: string };
+    table: { code: string; kind: string; organization: string; parent: string; status: string };
   };
   pagination: {
     next: string;

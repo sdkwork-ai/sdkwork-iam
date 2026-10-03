@@ -175,7 +175,7 @@ export function createSdkworkIamOrganizationController(
       setState({ status: "loading" });
       try {
         const organization = toOrganization(
-          await resolved.service.iam.organizations.create(body as unknown as Record<string, unknown>),
+          await resolved.service.iam.organizations.create(toOrganizationWirePayload(body)),
         );
         if (!organization) {
           throw new Error("SDKWork IAM organization create response is missing organizationId");
@@ -482,7 +482,7 @@ export function createSdkworkIamOrganizationController(
       setState({ status: "loading" });
       try {
         const organization = toOrganization(
-          await resolved.service.iam.organizations.update(normalizedOrganizationId, body as unknown as Record<string, unknown>),
+          await resolved.service.iam.organizations.update(normalizedOrganizationId, toOrganizationWirePayload(body)),
         );
         if (!organization) {
           throw new Error("SDKWork IAM organization update response is missing organizationId");
@@ -724,15 +724,70 @@ function toOrganization(value: unknown): SdkworkIamOrganization | undefined {
   }
 
   return {
+    address: optionalString(record.address),
     code: optionalString(record.code),
+    contactEmail: optionalString(record.contactEmail) || optionalString(record.contact_email),
+    contactPhone: optionalString(record.contactPhone) || optionalString(record.contact_phone),
+    description: optionalString(record.description),
     id: optionalString(record.id) || organizationId,
+    industryCategory: optionalString(record.industryCategory) || optionalString(record.industry_category),
+    logoUrl: optionalString(record.logoUrl) || logoSnapshotUrl(record.logo),
     name: optionalString(record.name) || optionalString(record.organizationName) || organizationId,
+    organizationCategory: optionalString(record.organizationCategory) || optionalString(record.organization_category),
     organizationId,
-    parentId: optionalString(record.parentId) || optionalString(record.parent_id) || optionalString(record.parentOrganizationId),
+    organizationKind: optionalString(record.organizationKind) || optionalString(record.organization_kind),
+    parentId: optionalString(record.parentId) || optionalString(record.parent_id) || optionalString(record.parentOrganizationId) || optionalString(record.parent_organization_id),
     path: optionalString(record.path),
     status: optionalString(record.status),
     tenantId: optionalString(record.tenantId) || optionalString(record.tenant_id),
   };
+}
+
+/**
+ * Delivery URL of the logo media-resource snapshot the backend returns on
+ * `logo`. Reads the camelCase shape first and falls back to the snake_case
+ * shape, mirroring the user avatar snapshot contract.
+ */
+function logoSnapshotUrl(value: unknown): string | undefined {
+  const record = toRecord(value);
+  return optionalString(record.publicUrl) || optionalString(record.url) || optionalString(record.uri) || optionalString(record.public_url);
+}
+
+/**
+ * Wire payload for organizations.create / organizations.update. The backend
+ * create handler reads `parentOrganizationId` (never `parentId`), and its
+ * update patch only sets the columns present on the wire, so empty strings
+ * are dropped — except the parent key itself, where an empty value is the
+ * explicit "move to root" request.
+ */
+function toOrganizationWirePayload(draft: Partial<SdkworkIamOrganizationDraft>): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  const text = (key: keyof SdkworkIamOrganizationDraft, value: string | undefined) => {
+    const normalized = typeof value === "string" ? trim(value) : "";
+    if (normalized) {
+      payload[key] = normalized;
+    }
+  };
+  text("name", draft.name);
+  text("code", draft.code);
+  text("organizationKind", draft.organizationKind);
+  text("organizationCategory", draft.organizationCategory);
+  text("industryCategory", draft.industryCategory);
+  text("description", draft.description);
+  text("contactPhone", draft.contactPhone);
+  text("contactEmail", draft.contactEmail);
+  text("address", draft.address);
+  text("logoUrl", draft.logoUrl);
+  if (draft.status) {
+    payload.status = draft.status;
+  }
+  if (draft.tenantId) {
+    payload.tenantId = draft.tenantId;
+  }
+  if ("parentId" in draft) {
+    payload.parentOrganizationId = typeof draft.parentId === "string" ? trim(draft.parentId) : "";
+  }
+  return payload;
 }
 
 function toDepartment(value: unknown): SdkworkIamDepartment | undefined {
