@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Ban, Eye, Image as ImageIcon, Pencil, Plus, Search, Trash2, Unlock } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { Ban, Eye, Image as ImageIcon, LoaderCircle, Pencil, Plus, Search, Trash2, Unlock } from "lucide-react";
 import { CatalogPagination } from "@sdkwork/iam-pc-admin-core";
 import {
   Button,
@@ -34,11 +34,17 @@ const emptyUserDraft = (): SdkworkIamAdminUserDraft => ({ username: "" });
 const readOnlyPermissions = { create: false, delete: false, update: false } as const;
 const initialPasswordMinLength = 8;
 const initialPasswordMaxLength = 64;
+/** Raw image ceiling accepted from the picker; Drive still enforces its own quota. */
+const avatarMaxBytes = 5 * 1024 * 1024;
 const userAdminMessages = {
   "en-US": {
     locale: "en-US",
     avatar: "Avatar",
+    avatarInvalidType: "The avatar must be an image file.",
     avatarPlaceholder: "Avatar image URL",
+    avatarTooLarge: "The avatar must be 5 MiB or smaller.",
+    avatarUpload: "Upload",
+    avatarUploading: "Uploading avatar…",
     ban: "Ban",
     banDescription: "Ban {name}? The user's sessions and API keys will be revoked immediately, and the account will no longer be able to sign in.",
     banSuccess: "User banned",
@@ -100,7 +106,11 @@ const userAdminMessages = {
   "zh-CN": {
     locale: "zh-CN",
     avatar: "头像",
+    avatarInvalidType: "头像必须是图片文件。",
     avatarPlaceholder: "头像图片链接",
+    avatarTooLarge: "头像不能超过 5 MiB。",
+    avatarUpload: "上传",
+    avatarUploading: "头像上传中…",
     ban: "封禁",
     banDescription: "确定封禁 {name} 吗？该用户的会话与 API key 将立即撤销，账号将无法再登录。",
     banSuccess: "用户已封禁",
@@ -162,6 +172,7 @@ const userAdminMessages = {
 } as const;
 
 export function SdkworkIamUserAdminWorkspace({
+  avatarService,
   controller,
   locale,
   permissions = readOnlyPermissions,
@@ -184,6 +195,28 @@ export function SdkworkIamUserAdminWorkspace({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
+  // Create mode defers the avatar upload until the user record exists: the
+  // Drive upload contract attributes the bytes to an existing user id, so the
+  // picked file parks here (with a transient object-URL preview) and uploads
+  // after createUser returns.
+  const [pendingAvatar, setPendingAvatar] = useState<File>();
+  const [pendingAvatarPreviewUrl, setPendingAvatarPreviewUrl] = useState<string>();
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const clearPendingAvatar = () => {
+    setPendingAvatar(undefined);
+    setPendingAvatarPreviewUrl((current) => {
+      if (current) {
+        URL.revokeObjectURL(current);
+      }
+      return undefined;
+    });
+  };
+
+  const closeDrawer = () => {
+    setDrawerMode(undefined);
+    clearPendingAvatar();
+  };
 
   const refreshUsers = async (nextQuery = appliedQuery, nextPage = page, nextPageSize = pageSize, nextStatus = appliedStatus) => {
     const params: Record<string, unknown> = { page: nextPage, page_size: nextPageSize };
@@ -220,6 +253,38 @@ export function SdkworkIamUserAdminWorkspace({
     setSelectedUser(undefined);
     setDraft(emptyUserDraft());
     setDrawerMode("create");
+  };
+
+  /**
+   * File picked in the avatar field. Editing uploads immediately against the
+   * existing user id; creating parks the file for the post-create upload.
+   */
+  const handleAvatarFileSelected = (file: File) => {
+    if (!avatarService || drawerMode === "view") {
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setError(copy.avatarInvalidType);
+      return;
+    }
+    if (file.size > avatarMaxBytes) {
+      setError(copy.avatarTooLarge);
+      return;
+    }
+    setError(undefined);
+    if (drawerMode === "edit" && selectedUser) {
+      setAvatarUploading(true);
+      void avatarService.uploadAvatar(selectedUser.userId, file)
+        .then((resource) => {
+          setDraft((current) => ({ ...current, avatar: resource, avatarUrl: "" }));
+        })
+        .catch((uploadError) => setError(toErrorMessage(uploadError, copy.operationError)))
+        .finally(() => setAvatarUploading(false));
+      return;
+    }
+    clearPendingAvatar();
+    setPendingAvatar(file);
+    setPendingAvatarPreviewUrl(URL.createObjectURL(file));
   };
 
   const openUserDrawer = async (user: SdkworkIamAdminUser, mode: "edit" | "view") => {
@@ -287,8 +352,16 @@ export function SdkworkIamUserAdminWorkspace({
       if (drawerMode === "edit" && selectedUser) {
         await controller.updateUser(selectedUser.userId, draft);
       } else {
-        await controller.createUser(draft);
+        const created = await controller.createUser(draft);
+        // Persist first, upload second (DRIVE_SPEC section 18.3): the avatar
+        // upload attributes its bytes to the freshly created user id, then a
+        // follow-up update attaches the returned media resource.
+        if (pendingAvatar && avatarService) {
+          const resource = await avatarService.uploadAvatar(created.userId, pendingAvatar);
+          await controller.updateUser(created.userId, { avatar: resource });
+        }
       }
+      clearPendingAvatar();
       await refreshUsers();
       setDrawerMode(undefined);
     }, drawerMode === "edit" ? copy.editSuccess : copy.createSuccess);
@@ -394,16 +467,20 @@ export function SdkworkIamUserAdminWorkspace({
       </div>
 
       <UserDrawer
+        avatarService={avatarService}
+        avatarUploading={avatarUploading}
         busy={busy}
         copy={copy}
         draft={draft}
         mode={drawerMode}
+        onAvatarFileSelected={avatarService ? handleAvatarFileSelected : undefined}
         onDraftChange={setDraft}
         onEdit={() => setDrawerMode("edit")}
         onOpenChange={(open) => {
-          if (!open) setDrawerMode(undefined);
+          if (!open) closeDrawer();
         }}
         onSubmit={submitDraft}
+        pendingAvatarPreviewUrl={pendingAvatarPreviewUrl}
         updateAllowed={permissions.update}
       />
 
@@ -453,24 +530,32 @@ export function SdkworkIamUserAdminWorkspace({
 }
 
 function UserDrawer({
+  avatarService,
+  avatarUploading,
   busy,
   copy,
   draft,
   mode,
+  onAvatarFileSelected,
   onDraftChange,
   onEdit,
   onOpenChange,
   onSubmit,
+  pendingAvatarPreviewUrl,
   updateAllowed,
 }: {
+  avatarService?: SdkworkIamUserAdminWorkspaceProps["avatarService"];
+  avatarUploading?: boolean;
   busy: boolean;
   copy: typeof userAdminMessages["en-US"] | typeof userAdminMessages["zh-CN"];
   draft: SdkworkIamAdminUserDraft;
   mode?: "create" | "edit" | "view";
+  onAvatarFileSelected?: (file: File) => void;
   onDraftChange: (draft: SdkworkIamAdminUserDraft) => void;
   onEdit: () => void;
   onOpenChange: (open: boolean) => void;
   onSubmit: () => void;
+  pendingAvatarPreviewUrl?: string;
   updateAllowed: boolean;
 }) {
   const editing = mode === "edit";
@@ -484,10 +569,14 @@ function UserDrawer({
         </DrawerHeader>
         <DrawerBody className="space-y-4">
           <AvatarField
+            avatarService={avatarService}
+            busy={avatarUploading}
             copy={copy}
             disabled={viewing}
-            onChange={(avatarUrl) => onDraftChange({ ...draft, avatarUrl })}
-            value={draft.avatarUrl ?? ""}
+            onDraftChange={onDraftChange}
+            draft={draft}
+            onFileSelected={onAvatarFileSelected}
+            pendingPreviewUrl={pendingAvatarPreviewUrl}
           />
           <Field disabled={viewing} label={copy.username} onChange={(username) => onDraftChange({ ...draft, username })} value={draft.username ?? ""} />
           <Field disabled={viewing} label={copy.email} onChange={(email) => onDraftChange({ ...draft, email })} type="email" value={draft.email ?? ""} />
@@ -550,6 +639,7 @@ function UserDrawer({
 
 function toUserDraft(user: SdkworkIamAdminUser): SdkworkIamAdminUserDraft {
   return {
+    avatar: user.avatar,
     avatarUrl: user.avatarUrl ?? "",
     birthDate: user.birthDate ?? "",
     country: user.country ?? "",
@@ -583,37 +673,114 @@ function Field({ disabled, hint, label, onChange, placeholder, type = "text", va
   );
 }
 
-function AvatarField({ copy, disabled, onChange, value }: { copy: typeof userAdminMessages["en-US"] | typeof userAdminMessages["zh-CN"]; disabled?: boolean; onChange: (value: string) => void; value: string }) {
-  const [loadFailed, setLoadFailed] = useState(false);
+/**
+ * Avatar editing control.
+ *
+ * With a host-injected avatar service the field renders the stored avatar
+ * (resolving drive-backed resources through the service) plus an upload
+ * button; picking a file delegates to `onFileSelected` and never touches
+ * Drive from this package. Without a service the field degrades to the plain
+ * delivery-URL input.
+ */
+function AvatarField({
+  avatarService,
+  busy,
+  copy,
+  disabled,
+  draft,
+  onDraftChange,
+  onFileSelected,
+  pendingPreviewUrl,
+}: {
+  avatarService?: SdkworkIamUserAdminWorkspaceProps["avatarService"];
+  busy?: boolean;
+  copy: typeof userAdminMessages["en-US"] | typeof userAdminMessages["zh-CN"];
+  disabled?: boolean;
+  draft: SdkworkIamAdminUserDraft;
+  onDraftChange: (draft: SdkworkIamAdminUserDraft) => void;
+  onFileSelected?: (file: File) => void;
+  pendingPreviewUrl?: string;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatar = draft.avatar;
+  const avatarKey = avatar?.uri ?? avatar?.url ?? avatar?.publicUrl ?? "";
+  const [resolvedUrl, setResolvedUrl] = useState<string>();
+  const [resolving, setResolving] = useState(false);
+
   useEffect(() => {
-    setLoadFailed(false);
-  }, [value]);
+    if (!avatar || !avatarService) {
+      setResolvedUrl(undefined);
+      return;
+    }
+    let cancelled = false;
+    setResolving(true);
+    void avatarService.resolveAvatarUrl(avatar)
+      .then((url) => {
+        if (!cancelled) setResolvedUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setResolvedUrl(undefined);
+      })
+      .finally(() => {
+        if (!cancelled) setResolving(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [avatar, avatarKey, avatarService]);
+
+  const previewSrc = avatar
+    ? resolvedUrl
+    : pendingPreviewUrl || (draft.avatarUrl || "").trim() || undefined;
+  const canUpload = Boolean(onFileSelected) && !disabled;
+
   return (
-    <label className="block space-y-2 text-sm">
+    <div className="space-y-2 text-sm">
       <span>{copy.avatar}</span>
       <div className="flex items-center gap-3">
-        {value && !loadFailed ? (
+        {previewSrc ? (
           <img
             alt=""
             className="h-12 w-12 shrink-0 rounded-full border border-[var(--sdk-color-border-default)] object-cover"
-            onError={() => setLoadFailed(true)}
-            src={value}
+            src={previewSrc}
           />
         ) : (
           <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-subtle)] text-[var(--sdk-color-text-muted)]">
-            <ImageIcon className="h-5 w-5" />
+            {resolving || busy ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <ImageIcon className="h-5 w-5" />}
           </span>
         )}
-        <Input
-          className="flex-1"
-          disabled={disabled}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={copy.avatarPlaceholder}
-          type="url"
-          value={value}
-        />
+        {canUpload ? (
+          <>
+            <input
+              accept="image/*"
+              className="hidden"
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (file) onFileSelected?.(file);
+              }}
+              ref={fileInputRef}
+              type="file"
+            />
+            <Button disabled={busy} onClick={() => fileInputRef.current?.click()} size="sm" type="button" variant="outline">
+              {busy ? <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" /> : null}
+              {busy ? copy.avatarUploading : copy.avatarUpload}
+            </Button>
+          </>
+        ) : null}
+        {!canUpload && !disabled ? (
+          <label className="min-w-0 flex-1">
+            <span className="sr-only">{copy.avatar}</span>
+            <Input
+              onChange={(event) => onDraftChange({ ...draft, avatarUrl: event.target.value })}
+              placeholder={copy.avatarPlaceholder}
+              type="url"
+              value={draft.avatarUrl ?? ""}
+            />
+          </label>
+        ) : null}
       </div>
-    </label>
+    </div>
   );
 }
 

@@ -5,6 +5,7 @@ import { isBlank, trim } from "@sdkwork/utils";
 import type {
   CreateSdkworkIamUserAdminControllerInput,
   SdkworkIamAdminUser,
+  SdkworkIamAdminUserAvatarResource,
   SdkworkIamAdminUserDraft,
   SdkworkIamAdminUserState,
   SdkworkIamUserAdminController,
@@ -208,6 +209,7 @@ function toUser(value: unknown): SdkworkIamAdminUser | undefined {
     return undefined;
   }
   return {
+    avatar: readAvatarResource(record.avatar),
     avatarUrl: optionalString(record.avatarUrl) || avatarSnapshotUrl(record.avatar),
     birthDate: optionalString(record.birthDate) || optionalString(record.birth_date),
     country: optionalString(record.country),
@@ -222,6 +224,23 @@ function toUser(value: unknown): SdkworkIamAdminUser | undefined {
     userId,
     username: optionalString(record.username),
   };
+}
+
+/**
+ * Reads the avatar media-resource object the backend stores in
+ * `avatar_resource_snapshot`. Invalid shapes fall back to `undefined` so a
+ * malformed snapshot degrades to the placeholder instead of breaking the page.
+ */
+function readAvatarResource(value: unknown): SdkworkIamAdminUserAvatarResource | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  const record = value as Record<string, unknown>;
+  const source = optionalString(record.source);
+  if (!source) {
+    return undefined;
+  }
+  return record as SdkworkIamAdminUserAvatarResource;
 }
 
 /**
@@ -241,10 +260,16 @@ function avatarSnapshotUrl(value: unknown): string | undefined {
 /**
  * Wire body for users.create / users.update. Text fields are trimmed and
  * dropped when blank so a blank draft field leaves the stored value untouched,
- * matching the backend's blank-means-unchanged patch semantics.
+ * matching the backend's blank-means-unchanged patch semantics. A draft avatar
+ * resource rides the wire as the `avatar` object (the backend stores it as the
+ * media-resource snapshot); when only a plain URL is present it travels as
+ * `avatarUrl` and the backend wraps it.
  */
 function toUserPayload(body: Partial<SdkworkIamAdminUserDraft>): Record<string, unknown> {
   const payload: Record<string, unknown> = {};
+  if (body.avatar && typeof body.avatar === "object") {
+    payload.avatar = body.avatar;
+  }
   for (const key of [
     "username",
     "displayName",

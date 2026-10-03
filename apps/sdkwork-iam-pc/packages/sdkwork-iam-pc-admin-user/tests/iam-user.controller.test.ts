@@ -179,4 +179,54 @@ describe("@sdkwork/iam-pc-admin-user", () => {
       gender: "male",
     });
   });
+
+  it("passes the drive-backed avatar resource object through create and update", async () => {
+    const driveResource = {
+      fileName: "avatar.png",
+      id: "node_1",
+      kind: "image",
+      metadata: { drive: { nodeId: "node_1", spaceId: "space_1" } },
+      mimeType: "image/png",
+      sizeBytes: "12",
+      source: "drive",
+      uri: "drive://spaces/space_1/nodes/node_1",
+    };
+    const service = {
+      iam: {
+        users: {
+          create: vi.fn().mockResolvedValue({
+            avatar: driveResource,
+            userId: "user-4",
+            username: "dave",
+          }),
+          list: vi.fn().mockResolvedValue({ items: [] }),
+          retrieve: vi.fn().mockResolvedValue({ userId: "user-4" }),
+          update: vi.fn().mockResolvedValue({ avatar: driveResource, userId: "user-4" }),
+        },
+      },
+    };
+
+    const controller = createSdkworkIamUserAdminController({ service: service as never });
+
+    // Create stores the resource object; the response carries the full
+    // resource so the workspace can resolve a drive-backed preview.
+    await expect(controller.createUser({
+      avatar: driveResource,
+      displayName: "Dave",
+      username: "dave",
+    })).resolves.toMatchObject({
+      avatar: { uri: "drive://spaces/space_1/nodes/node_1" },
+      avatarUrl: "drive://spaces/space_1/nodes/node_1",
+      userId: "user-4",
+    });
+    expect(service.iam.users.create).toHaveBeenCalledWith({
+      avatar: driveResource,
+      displayName: "Dave",
+      username: "dave",
+    });
+
+    // Attach-after-create flow: the follow-up update carries the resource.
+    await controller.updateUser("user-4", { avatar: driveResource });
+    expect(service.iam.users.update).toHaveBeenCalledWith("user-4", { avatar: driveResource });
+  });
 });
