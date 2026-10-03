@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Ban, Eye, Pencil, Plus, Search, Trash2, Unlock } from "lucide-react";
+import { Ban, Eye, Image as ImageIcon, Pencil, Plus, Search, Trash2, Unlock } from "lucide-react";
 import { CatalogPagination } from "@sdkwork/iam-pc-admin-core";
 import {
   Button,
@@ -23,6 +23,7 @@ import {
   StatusNotice,
 } from "@sdkwork/ui-pc-react";
 
+import { USER_ADMIN_COUNTRY_OPTIONS, type UserAdminCountryOption } from "./user-admin-countries";
 import type {
   SdkworkIamAdminUser,
   SdkworkIamAdminUserDraft,
@@ -31,13 +32,21 @@ import type {
 
 const emptyUserDraft = (): SdkworkIamAdminUserDraft => ({ username: "" });
 const readOnlyPermissions = { create: false, delete: false, update: false } as const;
+const initialPasswordMinLength = 8;
+const initialPasswordMaxLength = 64;
 const userAdminMessages = {
   "en-US": {
+    locale: "en-US",
+    avatar: "Avatar",
+    avatarPlaceholder: "Avatar image URL",
     ban: "Ban",
     banDescription: "Ban {name}? The user's sessions and API keys will be revoked immediately, and the account will no longer be able to sign in.",
     banSuccess: "User banned",
+    birthDate: "Birth date",
     cancel: "Cancel",
     close: "Close",
+    country: "Country",
+    countryPlaceholder: "Select country",
     create: "Create user",
     createDescription: "Add a user to the IAM directory.",
     createSuccess: "User created",
@@ -55,6 +64,13 @@ const userAdminMessages = {
     email: "Email",
     emptyDescription: "Create a user to populate the IAM directory.",
     emptyTitle: "No users found",
+    gender: "Gender",
+    genderPlaceholder: "Select gender",
+    genders: { female: "Female", male: "Male", unknown: "Unknown" },
+    initialPassword: "Initial password",
+    initialPasswordEdit: "Reset password",
+    initialPasswordHint: "8-64 characters. Leave blank to skip.",
+    invalidInitialPassword: "The password must be 8-64 characters.",
     lastLoginAt: "Last login",
     loadError: "Failed to load users",
     noMatchDescription: "Try a different name, username, email, phone number, or status.",
@@ -64,6 +80,7 @@ const userAdminMessages = {
     paginationPageSize: "Per page",
     paginationPrevious: "Previous",
     paginationTotal: "{total} items in total",
+    passwordPlaceholder: "Enter password",
     phone: "Phone",
     registeredAt: "Registered at",
     save: "Save changes",
@@ -81,11 +98,17 @@ const userAdminMessages = {
     view: "View user",
   },
   "zh-CN": {
+    locale: "zh-CN",
+    avatar: "头像",
+    avatarPlaceholder: "头像图片链接",
     ban: "封禁",
     banDescription: "确定封禁 {name} 吗？该用户的会话与 API key 将立即撤销，账号将无法再登录。",
     banSuccess: "用户已封禁",
+    birthDate: "出生日期",
     cancel: "取消",
     close: "关闭",
+    country: "国家",
+    countryPlaceholder: "请选择国家",
     create: "创建用户",
     createDescription: "向 IAM 用户目录添加新用户。",
     createSuccess: "用户已创建",
@@ -103,6 +126,13 @@ const userAdminMessages = {
     email: "邮箱",
     emptyDescription: "创建用户后，账号将显示在 IAM 目录中。",
     emptyTitle: "暂无用户",
+    gender: "性别",
+    genderPlaceholder: "请选择性别",
+    genders: { female: "女", male: "男", unknown: "未知" },
+    initialPassword: "初始密码",
+    initialPasswordEdit: "重置密码",
+    initialPasswordHint: "8-64 位字符，留空则不设置。",
+    invalidInitialPassword: "密码需为 8-64 个字符。",
     lastLoginAt: "上次登录时间",
     loadError: "用户加载失败",
     noMatchDescription: "请尝试其他姓名、用户名、邮箱、手机号或状态。",
@@ -112,6 +142,7 @@ const userAdminMessages = {
     paginationPageSize: "每页",
     paginationPrevious: "上一页",
     paginationTotal: "共 {total} 条",
+    passwordPlaceholder: "请输入密码",
     phone: "手机号",
     registeredAt: "注册时间",
     save: "保存更改",
@@ -246,6 +277,23 @@ export function SdkworkIamUserAdminWorkspace({
     { id: "status", header: copy.status, cell: (user) => user.status ? <StatusBadge label={statusLabel(copy.statuses, user.status)} showIcon status={user.status} /> : "-" },
   ], [copy]);
 
+  const submitDraft = () => {
+    const password = draft.initialPassword?.trim();
+    if (password && (password.length < initialPasswordMinLength || password.length > initialPasswordMaxLength)) {
+      setError(copy.invalidInitialPassword);
+      return;
+    }
+    void runAction(async () => {
+      if (drawerMode === "edit" && selectedUser) {
+        await controller.updateUser(selectedUser.userId, draft);
+      } else {
+        await controller.createUser(draft);
+      }
+      await refreshUsers();
+      setDrawerMode(undefined);
+    }, drawerMode === "edit" ? copy.editSuccess : copy.createSuccess);
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-6">
       <div className="flex min-h-0 flex-1 flex-col gap-3">
@@ -355,15 +403,7 @@ export function SdkworkIamUserAdminWorkspace({
         onOpenChange={(open) => {
           if (!open) setDrawerMode(undefined);
         }}
-        onSubmit={() => void runAction(async () => {
-          if (drawerMode === "edit" && selectedUser) {
-            await controller.updateUser(selectedUser.userId, draft);
-          } else {
-            await controller.createUser(draft);
-          }
-          await refreshUsers();
-          setDrawerMode(undefined);
-        }, drawerMode === "edit" ? copy.editSuccess : copy.createSuccess)}
+        onSubmit={submitDraft}
         updateAllowed={permissions.update}
       />
 
@@ -443,10 +483,41 @@ function UserDrawer({
           <DrawerDescription>{viewing ? copy.detailsDescription : editing ? copy.editDescription : copy.createDescription}</DrawerDescription>
         </DrawerHeader>
         <DrawerBody className="space-y-4">
+          <AvatarField
+            copy={copy}
+            disabled={viewing}
+            onChange={(avatarUrl) => onDraftChange({ ...draft, avatarUrl })}
+            value={draft.avatarUrl ?? ""}
+          />
           <Field disabled={viewing} label={copy.username} onChange={(username) => onDraftChange({ ...draft, username })} value={draft.username ?? ""} />
           <Field disabled={viewing} label={copy.email} onChange={(email) => onDraftChange({ ...draft, email })} type="email" value={draft.email ?? ""} />
           <Field disabled={viewing} label={copy.displayName} onChange={(displayName) => onDraftChange({ ...draft, displayName })} value={draft.displayName ?? ""} />
           <Field disabled={viewing} label={copy.phone} onChange={(phone) => onDraftChange({ ...draft, phone })} type="tel" value={draft.phone ?? ""} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <GenderSelectField
+              copy={copy}
+              disabled={viewing}
+              onChange={(gender) => onDraftChange({ ...draft, gender })}
+              value={draft.gender ?? ""}
+            />
+            <Field disabled={viewing} label={copy.birthDate} onChange={(birthDate) => onDraftChange({ ...draft, birthDate })} type="date" value={draft.birthDate ?? ""} />
+          </div>
+          <CountrySelectField
+            copy={copy}
+            disabled={viewing}
+            onChange={(country) => onDraftChange({ ...draft, country })}
+            value={draft.country ?? ""}
+          />
+          {mode !== "view" ? (
+            <Field
+              hint={copy.initialPasswordHint}
+              label={editing ? copy.initialPasswordEdit : copy.initialPassword}
+              onChange={(initialPassword) => onDraftChange({ ...draft, initialPassword })}
+              placeholder={copy.passwordPlaceholder}
+              type="password"
+              value={draft.initialPassword ?? ""}
+            />
+          ) : null}
           {mode !== "create" ? (
             viewing
               ? <StatusReadonlyField label={copy.status} statuses={copy.statuses} value={draft.status ?? ""} />
@@ -462,7 +533,12 @@ function UserDrawer({
             </Button>
           ) : null}
           {!viewing ? (
-            <Button disabled={busy || (!draft.username?.trim() && !draft.email?.trim() && !draft.phone?.trim())} loading={busy} onClick={onSubmit} type="button">
+            <Button
+              disabled={busy || (mode === "create" && (!draft.username?.trim() || !draft.displayName?.trim()))}
+              loading={busy}
+              onClick={onSubmit}
+              type="button"
+            >
               {editing ? copy.save : copy.create}
             </Button>
           ) : null}
@@ -474,8 +550,12 @@ function UserDrawer({
 
 function toUserDraft(user: SdkworkIamAdminUser): SdkworkIamAdminUserDraft {
   return {
+    avatarUrl: user.avatarUrl ?? "",
+    birthDate: user.birthDate ?? "",
+    country: user.country ?? "",
     displayName: user.displayName ?? "",
     email: user.email ?? "",
+    gender: user.gender ?? "",
     phone: user.phone ?? "",
     status: user.status ?? "",
     username: user.username ?? "",
@@ -493,11 +573,85 @@ function formatMessage(template: string, values: Record<string, string>) {
   );
 }
 
-function Field({ disabled, label, onChange, type = "text", value }: { disabled?: boolean; label: string; onChange: (value: string) => void; type?: "email" | "tel" | "text"; value: string }) {
+function Field({ disabled, hint, label, onChange, placeholder, type = "text", value }: { disabled?: boolean; hint?: string; label: string; onChange: (value: string) => void; placeholder?: string; type?: "date" | "email" | "password" | "tel" | "text" | "url"; value: string }) {
   return (
     <label className="block space-y-2 text-sm">
       <span>{label}</span>
-      <Input disabled={disabled} onChange={(event) => onChange(event.target.value)} type={type} value={value} />
+      <Input disabled={disabled} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} type={type} value={value} />
+      {hint ? <span className="block text-xs text-[var(--sdk-color-text-muted)]">{hint}</span> : null}
+    </label>
+  );
+}
+
+function AvatarField({ copy, disabled, onChange, value }: { copy: typeof userAdminMessages["en-US"] | typeof userAdminMessages["zh-CN"]; disabled?: boolean; onChange: (value: string) => void; value: string }) {
+  const [loadFailed, setLoadFailed] = useState(false);
+  useEffect(() => {
+    setLoadFailed(false);
+  }, [value]);
+  return (
+    <label className="block space-y-2 text-sm">
+      <span>{copy.avatar}</span>
+      <div className="flex items-center gap-3">
+        {value && !loadFailed ? (
+          <img
+            alt=""
+            className="h-12 w-12 shrink-0 rounded-full border border-[var(--sdk-color-border-default)] object-cover"
+            onError={() => setLoadFailed(true)}
+            src={value}
+          />
+        ) : (
+          <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-subtle)] text-[var(--sdk-color-text-muted)]">
+            <ImageIcon className="h-5 w-5" />
+          </span>
+        )}
+        <Input
+          className="flex-1"
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={copy.avatarPlaceholder}
+          type="url"
+          value={value}
+        />
+      </div>
+    </label>
+  );
+}
+
+function GenderSelectField({ copy, disabled, onChange, value }: { copy: typeof userAdminMessages["en-US"] | typeof userAdminMessages["zh-CN"]; disabled?: boolean; onChange: (value: string) => void; value: string }) {
+  const options = [
+    ["male", copy.genders.male],
+    ["female", copy.genders.female],
+    ["unknown", copy.genders.unknown],
+  ] as const;
+  return (
+    <label className="block space-y-2 text-sm">
+      <span>{copy.gender}</span>
+      <Select disabled={disabled} onValueChange={onChange} value={value || undefined}>
+        <SelectTrigger><SelectValue placeholder={copy.genderPlaceholder} /></SelectTrigger>
+        <SelectContent>
+          {options.map(([optionValue, optionLabel]) => <SelectItem key={optionValue} value={optionValue}>{optionLabel}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </label>
+  );
+}
+
+function CountrySelectField({ copy, disabled, onChange, value }: { copy: typeof userAdminMessages["en-US"] | typeof userAdminMessages["zh-CN"]; disabled?: boolean; onChange: (value: string) => void; value: string }) {
+  const chinese = copy.locale === "zh-CN";
+  const labelOf = (option: UserAdminCountryOption) => (chinese ? `${option.zh} ${option.en}` : option.en);
+  const known = USER_ADMIN_COUNTRY_OPTIONS.some((option) => option.code === value);
+  return (
+    <label className="block space-y-2 text-sm">
+      <span>{copy.country}</span>
+      <Select disabled={disabled} onValueChange={onChange} value={value || undefined}>
+        <SelectTrigger><SelectValue placeholder={copy.countryPlaceholder} /></SelectTrigger>
+        <SelectContent>
+          {USER_ADMIN_COUNTRY_OPTIONS.map((option) => (
+            <SelectItem key={option.code} value={option.code}>{labelOf(option)}</SelectItem>
+          ))}
+          {!known && value ? <SelectItem value={value}>{value}</SelectItem> : null}
+        </SelectContent>
+      </Select>
     </label>
   );
 }

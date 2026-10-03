@@ -240,7 +240,7 @@ async fn list_users(
         .filter(|value| !value.is_empty());
     let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
         "SELECT id, tenant_id, username, display_name, email, phone, status, \
-                created_at, last_login_at, \
+                created_at, last_login_at, gender, birth_date, country, avatar_resource_snapshot, \
                 COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
          FROM iam_user \
          WHERE tenant_id = $1 AND COALESCE(is_deleted, 0) = 0 \
@@ -1392,7 +1392,7 @@ async fn fetch_user_row<'e>(
 ) -> Result<Option<sqlx::postgres::PgRow>, sqlx::Error> {
     sqlx::query(
         "SELECT id, tenant_id, username, display_name, email, phone, status, \
-                created_at, last_login_at \
+                created_at, last_login_at, gender, birth_date, country, avatar_resource_snapshot \
          FROM iam_user \
          WHERE tenant_id = $1 AND id = $2 AND COALESCE(is_deleted, 0) = 0 \
          LIMIT 1",
@@ -1429,10 +1429,19 @@ async fn resolve_role_id(pg: &PgPool, tenant_id: &str, role_ref: &str) -> Option
 }
 
 fn user_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
+    let avatar: Option<Value> = row
+        .get::<Option<String>, _>(12)
+        .and_then(|snapshot| serde_json::from_str::<Value>(&snapshot).ok())
+        .filter(|value| value.is_object());
     json!({
+        "avatar": avatar,
+        "avatarUrl": avatar.as_ref().and_then(avatar_delivery_url),
+        "birthDate": row.get::<Option<String>, _>(10),
+        "country": row.get::<Option<String>, _>(11),
         "createdAt": row.get::<Option<String>, _>(7),
         "displayName": row.get::<String, _>(3),
         "email": row.get::<Option<String>, _>(4),
+        "gender": row.get::<Option<String>, _>(9),
         "id": row.get::<String, _>(0),
         "lastLoginAt": row.get::<Option<String>, _>(8),
         "phone": row.get::<Option<String>, _>(5),
@@ -1441,6 +1450,22 @@ fn user_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
         "userId": row.get::<String, _>(0),
         "username": row.get::<String, _>(2),
     })
+}
+
+/// Delivery URL of a stored avatar media-resource snapshot. Reads the camelCase
+/// SDK shape first and falls back to the snake_case shape the user-center host
+/// serializes.
+fn avatar_delivery_url(avatar: &Value) -> Option<String> {
+    ["publicUrl", "url", "uri", "public_url"]
+        .iter()
+        .find_map(|key| {
+            avatar
+                .get(*key)
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(str::to_owned)
+        })
 }
 
 fn role_row_to_json(row: &sqlx::postgres::PgRow) -> Value {

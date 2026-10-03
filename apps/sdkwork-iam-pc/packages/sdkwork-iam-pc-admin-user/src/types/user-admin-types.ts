@@ -2,9 +2,13 @@ import type { SdkWorkPageInfo } from "@sdkwork/iam-contracts";
 import type { SdkworkIamService } from "@sdkwork/iam-service";
 
 export interface SdkworkIamAdminUser {
+  avatarUrl?: string;
+  birthDate?: string;
+  country?: string;
   createdAt?: string;
   displayName?: string;
   email?: string;
+  gender?: string;
   id: string;
   lastLoginAt?: string;
   phone?: string;
@@ -14,8 +18,13 @@ export interface SdkworkIamAdminUser {
 }
 
 export interface SdkworkIamAdminUserDraft {
+  avatarUrl?: string;
+  birthDate?: string;
+  country?: string;
   displayName?: string;
   email?: string;
+  gender?: string;
+  initialPassword?: string;
   phone?: string;
   status?: string;
   username?: string;

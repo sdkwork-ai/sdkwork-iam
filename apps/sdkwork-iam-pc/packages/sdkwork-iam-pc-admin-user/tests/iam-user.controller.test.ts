@@ -105,4 +105,78 @@ describe("@sdkwork/iam-pc-admin-user", () => {
     expect(service.iam.users.unban).toHaveBeenCalledWith("user-2");
     expect(service.iam.users.delete).toHaveBeenCalledWith("user-2");
   });
+
+  it("carries profile fields, the avatar, and the initial password through create and update", async () => {
+    const service = {
+      iam: {
+        users: {
+          create: vi.fn().mockResolvedValue({
+            avatar: { kind: "image", publicUrl: "https://cdn.example.com/a.png", source: "external_url", url: "https://cdn.example.com/a.png" },
+            birthDate: "1998-07-15",
+            country: "CN",
+            gender: "female",
+            userId: "user-3",
+            username: "carol",
+          }),
+          update: vi.fn().mockResolvedValue({
+            avatar: { public_url: "https://cdn.example.com/b.png" },
+            birthDate: "1999-01-02",
+            country: "JP",
+            gender: "male",
+            userId: "user-3",
+          }),
+          list: vi.fn().mockResolvedValue({ items: [] }),
+        },
+      },
+    };
+
+    const controller = createSdkworkIamUserAdminController({ service: service as never });
+
+    await expect(controller.createUser({
+      avatarUrl: " https://cdn.example.com/a.png ",
+      birthDate: "1998-07-15",
+      country: "CN",
+      displayName: "Carol",
+      gender: "female",
+      initialPassword: "Initial#2026",
+      phone: "",
+      username: "carol",
+    })).resolves.toMatchObject({
+      avatarUrl: "https://cdn.example.com/a.png",
+      birthDate: "1998-07-15",
+      country: "CN",
+      gender: "female",
+      userId: "user-3",
+    });
+
+    expect(service.iam.users.create).toHaveBeenCalledWith({
+      avatarUrl: "https://cdn.example.com/a.png",
+      birthDate: "1998-07-15",
+      country: "CN",
+      displayName: "Carol",
+      gender: "female",
+      initialPassword: "Initial#2026",
+      username: "carol",
+    });
+
+    await expect(controller.updateUser("user-3", {
+      avatarUrl: "https://cdn.example.com/b.png",
+      birthDate: "1999-01-02",
+      country: "JP",
+      displayName: "",
+      gender: "male",
+    })).resolves.toMatchObject({
+      avatarUrl: "https://cdn.example.com/b.png",
+      userId: "user-3",
+    });
+
+    // Blank fields are dropped instead of overwriting stored values, and the
+    // update response's snake_case avatar snapshot still resolves to a URL.
+    expect(service.iam.users.update).toHaveBeenCalledWith("user-3", {
+      avatarUrl: "https://cdn.example.com/b.png",
+      birthDate: "1999-01-02",
+      country: "JP",
+      gender: "male",
+    });
+  });
 });

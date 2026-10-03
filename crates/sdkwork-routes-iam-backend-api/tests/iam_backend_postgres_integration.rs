@@ -343,6 +343,234 @@ async fn backend_postgres_oauth_lists_succeed_with_and_without_search_query() {
         .await;
 }
 
+#[tokio::test]
+async fn backend_postgres_user_create_and_update_roundtrip_with_profile_fields() {
+    use backend_postgres_bootstrap::{
+        configure_backend_integration_runtime_env, integration_access_credential_request_body,
+        seed_backend_integration_bootstrap_owner, INTEGRATION_ORGANIZATION_ID,
+    };
+
+    let _guard = lock_local_iam_env();
+    let Some(_database_url) = iam_postgres_url() else {
+        eprintln!("SKIP backend_postgres_user_create_and_update_roundtrip_with_profile_fields: IAM postgres URL not configured");
+        return;
+    };
+
+    unified_database_env::apply_workspace_postgres_env();
+    configure_backend_integration_runtime_env();
+
+    let pg = connect_iam_postgres().await;
+    seed_backend_integration_bootstrap_owner(&pg).await;
+
+    // The shared harness scopes the integration owner to read-only directory
+    // permissions; this roundtrip also exercises the create/update surface, so
+    // widen the tenant application's access permissions before the credential
+    // is issued.
+    sqlx::query(
+        "UPDATE iam_tenant_application \
+         SET access_permissions_json = '[\"iam:self\", \"iam.users.read\", \"iam.users.create\", \"iam.users.update\", \"iam.oauth.read\"]'::jsonb, updated_at = CURRENT_TIMESTAMP \
+         WHERE tenant_id = $1 AND organization_id = $2",
+    )
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(INTEGRATION_ORGANIZATION_ID)
+    .execute(&pg)
+    .await
+    .expect("widen integration tenant application access permissions for user create/update roundtrip");
+
+    let router = build_sdkwork_iam_backend_api_router_from_env().await;
+    let credential_body = integration_access_credential_request_body();
+    let (credential_status, credential_text, credential_payload) = request_backend_route(
+        router.clone(),
+        Method::POST,
+        "/backend/v3/api/iam/access_credentials",
+        Some(&credential_body),
+    )
+    .await;
+
+    assert_eq!(
+        StatusCode::OK,
+        credential_status,
+        "bootstrap access credential issuance must succeed: {credential_text}"
+    );
+    let access_token = credential_payload["data"]["accessToken"]
+        .as_str()
+        .or_else(|| credential_payload["data"]["accessCredential"].as_str())
+        .expect("access credential response must include accessToken");
+    let auth_token = credential_payload["data"]["authToken"]
+        .as_str()
+        .expect("access credential response must include authToken");
+    let auth_headers = move |request: axum::http::request::Builder| {
+        request
+            .header("content-type", "application/json")
+            .header("authorization", format!("Bearer {auth_token}"))
+            .header("access-token", access_token)
+    };
+
+    let unique = Uuid::now_v7().to_string();
+    let username = format!("backend-profile-{unique}");
+    let create_body = serde_json::json!({
+        "username": username,
+        "displayName": "Backend Profile User",
+        "email": format!("{username}@sdkwork-iam.test"),
+        "phone": "+8613800000000",
+        "gender": "female",
+        "birthDate": "1998-07-15",
+        "country": "CN",
+        "avatarUrl": "https://cdn.sdkwork.test/avatars/backend-profile.png",
+        "initialPassword": "Initial#2026Pass",
+    });
+
+    let response = router
+        .clone()
+        .oneshot(
+            auth_headers(
+                Request::builder().method(Method::POST).uri("/backend/v3/api/iam/users"),
+            )
+            .body(Body::from(create_body.to_string()))
+            .unwrap(),
+        )
+        .await
+        .unwrap();
+    let create_status = response.status();
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let create_text = String::from_utf8(bytes.to_vec()).unwrap();
+    let create_payload = serde_json::from_str::<Value>(&create_text).unwrap_or(Value::Null);
+
+    assert!(
+        create_status.is_success(),
+        "authenticated user create must succeed: {create_text}"
+    );
+    assert_eq!(
+        create_payload["code"], 0,
+        "user create must return appbase success envelope: {create_text}"
+    );
+    let created = create_payload["data"].as_object().expect("user create must return data");
+    let created_user_id = created["userId"]
+        .as_str()
+        .or_else(|| created["id"].as_str())
+        .expect("user create must return userId")
+        .to_owned();
+    assert_eq!(Some("female"), created["gender"].as_str(), "create must echo gender: {create_text}");
+    assert_eq!(Some("1998-07-15"), created["birthDate"].as_str(), "create must echo birthDate: {create_text}");
+    assert_eq!(Some("CN"), created["country"].as_str(), "create must echo country: {create_text}");
+    assert_eq!(
+        Some("https://cdn.sdkwork.test/avatars/backend-profile.png"),
+        created["avatarUrl"].as_str(),
+        "create must echo avatarUrl: {create_text}"
+    );
+
+    let credential_row = sqlx::query(
+        "SELECT credential_hash FROM iam_credential \
+         WHERE tenant_id = $1 AND user_id = $2 AND credential_type = 'password' LIMIT 1",
+    )
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(&created_user_id)
+    .fetch_optional(&pg)
+    .await
+    .expect("query created password credential");
+
+    let credential_hash = credential_row
+        .expect("initial password must create an iam_credential row")
+        .get::<String, _>("credential_hash");
+    assert!(
+        credential_hash.starts_with("$argon2"),
+        "initial password must be stored as an argon2 hash: {credential_hash}"
+    );
+
+    let password_changed_row = sqlx::query(
+        "SELECT password_changed_at FROM iam_user WHERE tenant_id = $1 AND id = $2",
+    )
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(&created_user_id)
+    .fetch_optional(&pg)
+    .await
+    .expect("query password_changed_at")
+    .expect("created user row must exist");
+    assert!(
+        password_changed_row.get::<Option<String>, _>("password_changed_at").is_some(),
+        "initial password must stamp password_changed_at"
+    );
+
+    let update_body = serde_json::json!({
+        "displayName": "Backend Profile User (updated)",
+        "gender": "male",
+        "birthDate": "1999-01-02",
+        "country": "JP",
+    });
+    let response = router
+        .clone()
+        .oneshot(
+            auth_headers(
+                Request::builder()
+                    .method(Method::PATCH)
+                    .uri(format!("/backend/v3/api/iam/users/{created_user_id}").as_str()),
+            )
+            .body(Body::from(update_body.to_string()))
+            .unwrap(),
+        )
+        .await
+        .unwrap();
+    let update_status = response.status();
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let update_text = String::from_utf8(bytes.to_vec()).unwrap();
+    let update_payload = serde_json::from_str::<Value>(&update_text).unwrap_or(Value::Null);
+
+    assert!(
+        update_status.is_success(),
+        "authenticated user update must succeed: {update_text}"
+    );
+    assert_eq!(Some("male"), update_payload["data"]["gender"].as_str(), "update must apply gender: {update_text}");
+    assert_eq!(Some("1999-01-02"), update_payload["data"]["birthDate"].as_str(), "update must apply birthDate: {update_text}");
+    assert_eq!(Some("JP"), update_payload["data"]["country"].as_str(), "update must apply country: {update_text}");
+
+    let list_response = router
+        .clone()
+        .oneshot(
+            auth_headers(
+                Request::builder()
+                    .method(Method::GET)
+                    .uri(format!("/backend/v3/api/iam/users?q={username}").as_str()),
+            )
+            .body(Body::from(String::new()))
+            .unwrap(),
+        )
+        .await
+        .unwrap();
+    let list_status = list_response.status();
+    let bytes = list_response.into_body().collect().await.unwrap().to_bytes();
+    let list_text = String::from_utf8(bytes.to_vec()).unwrap();
+    let list_payload = serde_json::from_str::<Value>(&list_text).unwrap_or(Value::Null);
+
+    assert_eq!(
+        StatusCode::OK,
+        list_status,
+        "authenticated user list must succeed: {list_text}"
+    );
+    let items = list_payload["data"]["items"]
+        .as_array()
+        .expect("user list must return page items");
+    let listed = items
+        .iter()
+        .find(|item| item["id"].as_str() == Some(created_user_id.as_str()))
+        .expect("user list must include the created user");
+    assert_eq!(Some("JP"), listed["country"].as_str(), "list must carry profile columns: {list_text}");
+    assert!(
+        listed["avatarUrl"].is_string(),
+        "list must carry the avatar delivery URL: {list_text}"
+    );
+
+    let _ = sqlx::query("DELETE FROM iam_credential WHERE tenant_id = $1 AND user_id = $2")
+        .bind(DEFAULT_IAM_TENANT_ID)
+        .bind(&created_user_id)
+        .execute(&pg)
+        .await;
+    let _ = sqlx::query("DELETE FROM iam_user WHERE tenant_id = $1 AND id = $2")
+        .bind(DEFAULT_IAM_TENANT_ID)
+        .bind(&created_user_id)
+        .execute(&pg)
+        .await;
+}
+
 async fn request_backend_route(
     router: axum::Router,
     method: Method,

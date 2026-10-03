@@ -14,6 +14,7 @@ name = "sdkwork_routes_iam_backend_api"
 path = "src/lib.rs"
 
 [dependencies]
+argon2 = "0.5"
 axum.workspace = true
 chrono.workspace = true
 sdkwork_iam_bootstrap.workspace = true
@@ -32,7 +33,6 @@ urlencoding = "2"
 uuid = { version = "1", features = ["v4"] }
 
 [dev-dependencies]
-argon2 = "0.5"
 chrono = { workspace = true }
 http-body-util = "0.1"
 sdkwork-database-config = { workspace = true }

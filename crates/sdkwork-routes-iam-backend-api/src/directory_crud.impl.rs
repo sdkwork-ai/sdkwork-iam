@@ -33,6 +33,189 @@ fn patch_fields(body: &Value) -> Vec<(String, PatchValue)> {
     assignments
 }
 
+/// Snapshot size ceiling for the operator-managed avatar. Keeps the
+/// `avatar_resource_snapshot` JSON (and therefore every users.list row that
+/// carries it) bounded regardless of what the client submits.
+const AVATAR_SNAPSHOT_MAX_BYTES: usize = 128 * 1024;
+/// Password length bounds for operator-issued passwords; mirrors the app-api
+/// password policy defaults (`SDKWORK_IAM_PASSWORD_(MIN|MAX)_LENGTH`).
+const ADMIN_PASSWORD_MIN_LENGTH: usize = 8;
+const ADMIN_PASSWORD_MAX_LENGTH: usize = 64;
+
+/// Operator-managed profile fields accepted by users.create / users.update.
+struct UserProfileFields {
+    avatar_snapshot: Option<String>,
+    birth_date: Option<String>,
+    country: Option<String>,
+    gender: Option<String>,
+    initial_password: Option<String>,
+}
+
+fn read_user_profile_fields(body: &Value) -> Result<UserProfileFields, Response> {
+    Ok(UserProfileFields {
+        avatar_snapshot: read_avatar_snapshot(body)?,
+        birth_date: read_profile_birth_date(body)?,
+        country: read_profile_country(body)?,
+        gender: read_profile_gender(body)?,
+        initial_password: read_initial_password(body)?,
+    })
+}
+
+fn read_profile_gender(body: &Value) -> Result<Option<String>, Response> {
+    let Some(gender) = read_string_field(body, &["gender"]) else {
+        return Ok(None);
+    };
+    let normalized = gender.to_ascii_lowercase();
+    if !matches!(normalized.as_str(), "male" | "female" | "unknown") {
+        return Err(appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_user_invalid_gender",
+            "gender must be one of male, female, unknown",
+        ));
+    }
+    Ok(Some(normalized))
+}
+
+fn read_profile_birth_date(body: &Value) -> Result<Option<String>, Response> {
+    let Some(birth_date) = read_string_field(body, &["birthDate", "birth_date"]) else {
+        return Ok(None);
+    };
+    if chrono::NaiveDate::parse_from_str(birth_date.trim(), "%Y-%m-%d").is_err() {
+        return Err(appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_user_invalid_birth_date",
+            "birthDate must be an ISO calendar date (YYYY-MM-DD)",
+        ));
+    }
+    Ok(Some(birth_date.trim().to_owned()))
+}
+
+fn read_profile_country(body: &Value) -> Result<Option<String>, Response> {
+    let Some(country) = read_string_field(body, &["country"]) else {
+        return Ok(None);
+    };
+    let normalized = country.to_ascii_uppercase();
+    let is_alpha_two = normalized.len() == 2 && normalized.chars().all(|character| character.is_ascii_alphabetic());
+    if !is_alpha_two {
+        return Err(appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_user_invalid_country",
+            "country must be an ISO 3166-1 alpha-2 code",
+        ));
+    }
+    Ok(Some(normalized))
+}
+
+fn external_avatar_snapshot(url: &str) -> String {
+    let source = if url.starts_with("data:") { "data_url" } else { "external_url" };
+    json!({ "kind": "image", "publicUrl": url, "source": source, "url": url }).to_string()
+}
+
+/// Accepts either a full media-resource object (`avatar`) or a plain delivery
+/// URL (`avatarUrl`) and returns the JSON snapshot stored in
+/// `iam_user.avatar_resource_snapshot`.
+fn read_avatar_snapshot(body: &Value) -> Result<Option<String>, Response> {
+    let snapshot = match body.get("avatar") {
+        Some(Value::Object(resource)) => Some(serde_json::to_string(resource).map_err(|error| {
+            appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_user_invalid_avatar",
+                &format!("avatar resource is not serializable: {error}"),
+            )
+        })?),
+        Some(Value::String(url)) => Some(external_avatar_snapshot(url.trim())),
+        _ => read_string_field(body, &["avatarUrl", "avatar_url"])
+            .map(|url| external_avatar_snapshot(&url)),
+    };
+    let Some(snapshot) = snapshot else {
+        return Ok(None);
+    };
+    if snapshot.len() > AVATAR_SNAPSHOT_MAX_BYTES {
+        return Err(appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_user_invalid_avatar",
+            "avatar resource exceeds the 128 KiB snapshot limit",
+        ));
+    }
+    Ok(Some(snapshot))
+}
+
+fn read_initial_password(body: &Value) -> Result<Option<String>, Response> {
+    let Some(password) = read_string_field(body, &["initialPassword", "initial_password"]) else {
+        return Ok(None);
+    };
+    let length = password.chars().count();
+    if !(ADMIN_PASSWORD_MIN_LENGTH..=ADMIN_PASSWORD_MAX_LENGTH).contains(&length) {
+        return Err(appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_user_invalid_password",
+            "initialPassword must be 8-64 characters",
+        ));
+    }
+    Ok(Some(password))
+}
+
+fn hash_admin_password(password: &str) -> Result<String, Response> {
+    use argon2::password_hash::{rand_core::OsRng, PasswordHasher, SaltString};
+    use argon2::Argon2;
+
+    Argon2::default()
+        .hash_password(password.as_bytes(), &SaltString::generate(&mut OsRng))
+        .map(|hash| hash.to_string())
+        .map_err(|error| {
+            appbase_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "iam_user_password_hash_failed",
+                &format!("failed to hash the operator-issued password: {error}"),
+            )
+        })
+}
+
+/// Applies an operator-issued password to `iam_credential` and stamps
+/// `iam_user.password_changed_at`. Runs outside the directory mutation's
+/// transaction, mirroring how the bootstrap operator provisions credentials.
+async fn apply_admin_password(
+    pg: &PgPool,
+    tenant_id: &str,
+    user_id: &str,
+    password_hash: &str,
+) -> Result<(), String> {
+    let now = Utc::now().to_rfc3339();
+    let credential_id = format!("iamc_admin_{user_id}");
+    sqlx::query(
+        "INSERT INTO iam_credential (id, tenant_id, user_id, credential_type, credential_hash, \
+         failed_attempts, status, created_at, updated_at) \
+         VALUES ($1, $2, $3, 'password', $4, 0, 'active', $5, $5) \
+         ON CONFLICT (tenant_id, user_id, credential_type) DO UPDATE SET \
+           credential_hash = EXCLUDED.credential_hash, \
+           failed_attempts = 0, \
+           locked_until = NULL, \
+           status = 'active', \
+           updated_at = EXCLUDED.updated_at",
+    )
+    .bind(credential_id)
+    .bind(tenant_id)
+    .bind(user_id)
+    .bind(password_hash)
+    .bind(&now)
+    .execute(pg)
+    .await
+    .map(|_| ())
+    .map_err(|error| error.to_string())?;
+    sqlx::query(
+        "UPDATE iam_user SET password_changed_at = $3, updated_at = $3 \
+         WHERE tenant_id = $1 AND id = $2",
+    )
+    .bind(tenant_id)
+    .bind(user_id)
+    .bind(&now)
+    .execute(pg)
+    .await
+    .map(|_| ())
+    .map_err(|error| error.to_string())?;
+    Ok(())
+}
+
 fn read_policy_json(body: &Value) -> Option<String> {
     read_string_field(body, &["policyJson", "policy_json"]).or_else(|| {
         body.get("policy")
@@ -252,6 +435,24 @@ async fn create_user(
     let display_name_value = display_name.as_ref().expect("validated").clone();
     let email = read_string_field(&body, &["email"]);
     let phone = read_string_field(&body, &["phone"]);
+    let profile = match read_user_profile_fields(&body) {
+        Ok(profile) => profile,
+        Err(response) => return response,
+    };
+    let UserProfileFields {
+        gender,
+        birth_date,
+        country,
+        avatar_snapshot,
+        initial_password,
+    } = profile;
+    let initial_password_hash = match initial_password.as_deref() {
+        Some(password) => match hash_admin_password(password) {
+            Ok(password_hash) => Some(password_hash),
+            Err(response) => return response,
+        },
+        None => None,
+    };
     let tenant_id_for_insert = tenant_id.clone();
     let detail = json!({ "username": username });
     match directory_create_with_audit(
@@ -266,11 +467,16 @@ async fn create_user(
             let display_name_value = display_name_value.clone();
             let email = email.clone();
             let phone = phone.clone();
+            let gender = gender.clone();
+            let birth_date = birth_date.clone();
+            let country = country.clone();
+            let avatar_snapshot = avatar_snapshot.clone();
+            let initial_password_hash = initial_password_hash.clone();
             let now = now.clone();
-            
+
                 sqlx::query(
-                    "INSERT INTO iam_user (id, tenant_id, username, display_name, email, phone, status, created_at, updated_at) \
-                     VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $7)",
+                    "INSERT INTO iam_user (id, tenant_id, username, display_name, email, phone, gender, birth_date, country, avatar_resource_snapshot, password_changed_at, status, created_at, updated_at) \
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active', $12, $12)",
                 )
                 .bind(&insert_id)
                 .bind(&tenant_id)
@@ -278,11 +484,37 @@ async fn create_user(
                 .bind(&display_name_value)
                 .bind(email)
                 .bind(phone)
+                .bind(gender)
+                .bind(birth_date)
+                .bind(country)
+                .bind(avatar_snapshot)
+                .bind(initial_password_hash.as_ref().map(|_| now.clone()))
                 .bind(&now)
                 .execute(&mut **tx)
                 .await
-                .map(|_| ())
-            }),
+                .map(|_| ())?;
+            if let Some(password_hash) = initial_password_hash {
+                let credential_id = format!("iamc_admin_{insert_id}");
+                sqlx::query(
+                    "INSERT INTO iam_credential (id, tenant_id, user_id, credential_type, credential_hash, \
+                     failed_attempts, status, created_at, updated_at) \
+                     VALUES ($1, $2, $3, 'password', $4, 0, 'active', $5, $5) \
+                     ON CONFLICT (tenant_id, user_id, credential_type) DO UPDATE SET \
+                       credential_hash = EXCLUDED.credential_hash, \
+                       status = 'active', \
+                       updated_at = EXCLUDED.updated_at",
+                )
+                .bind(credential_id)
+                .bind(&tenant_id)
+                .bind(&insert_id)
+                .bind(&password_hash)
+                .bind(&now)
+                .execute(&mut **tx)
+                .await
+                .map(|_| ())?;
+            }
+            Ok(())
+        }),
     )
     .await
     {
@@ -326,9 +558,32 @@ async fn update_user(
             );
         }
     }
+    let profile = match read_user_profile_fields(&body) {
+        Ok(profile) => profile,
+        Err(response) => return response,
+    };
+    let initial_password_hash = match profile.initial_password.as_deref() {
+        Some(password) => match hash_admin_password(password) {
+            Ok(password_hash) => Some(password_hash),
+            Err(response) => return response,
+        },
+        None => None,
+    };
     let mut assignments = patch_fields(&body);
+    if let Some(gender) = profile.gender {
+        assignments.push(("gender".to_owned(), PatchValue::Text(gender)));
+    }
+    if let Some(birth_date) = profile.birth_date {
+        assignments.push(("birth_date".to_owned(), PatchValue::Text(birth_date)));
+    }
+    if let Some(country) = profile.country {
+        assignments.push(("country".to_owned(), PatchValue::Text(country)));
+    }
+    if let Some(avatar_snapshot) = profile.avatar_snapshot {
+        assignments.push(("avatar_resource_snapshot".to_owned(), PatchValue::Text(avatar_snapshot)));
+    }
     assignments.push(("updated_at".to_owned(), PatchValue::Text(Utc::now().to_rfc3339())));
-    if assignments.len() == 1 {
+    if assignments.len() == 1 && initial_password_hash.is_none() {
         return appbase_error(
             StatusCode::BAD_REQUEST,
             "iam_user_invalid",
@@ -336,10 +591,17 @@ async fn update_user(
         );
     }
     match patch_directory_row(pg, &ctx, &tenant_id, "iam_user", &user_id, &assignments).await {
-        Ok(true) => match fetch_user_row(pg, &tenant_id, &user_id).await {
-            Ok(Some(row)) => appbase_ok(user_row_to_json(&row)),
-            _ => appbase_error(StatusCode::NOT_FOUND, "iam_user_not_found", "user not found"),
-        },
+        Ok(true) => {
+            if let Some(password_hash) = initial_password_hash.as_deref() {
+                if let Err(error) = apply_admin_password(pg, &tenant_id, &user_id, password_hash).await {
+                    return internal_handler_error("iam_user_update_failed", error);
+                }
+            }
+            match fetch_user_row(pg, &tenant_id, &user_id).await {
+                Ok(Some(row)) => appbase_ok(user_row_to_json(&row)),
+                _ => appbase_error(StatusCode::NOT_FOUND, "iam_user_not_found", "user not found"),
+            }
+        }
         Ok(false) => appbase_error(StatusCode::NOT_FOUND, "iam_user_not_found", "user not found"),
         Err(error) => internal_handler_error("iam_user_update_failed", error),
     }

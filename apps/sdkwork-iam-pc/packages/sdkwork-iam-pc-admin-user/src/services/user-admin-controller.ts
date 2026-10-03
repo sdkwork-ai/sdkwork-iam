@@ -52,7 +52,7 @@ export function createSdkworkIamUserAdminController(
       requireIdentityField(body);
       setState({ status: "loading" });
       try {
-        const user = toUser(await resolved.service.iam.users.create(body as unknown as Record<string, unknown>));
+        const user = toUser(await resolved.service.iam.users.create(toUserPayload(body)));
         if (!user) {
           throw new Error("SDKWork IAM user create response is missing userId");
         }
@@ -156,7 +156,7 @@ export function createSdkworkIamUserAdminController(
       setState({ status: "loading" });
       try {
         const user = toUser(
-          await resolved.service.iam.users.update(normalizedUserId, body as unknown as Record<string, unknown>),
+          await resolved.service.iam.users.update(normalizedUserId, toUserPayload(body)),
         );
         if (!user) {
           throw new Error("SDKWork IAM user update response is missing userId");
@@ -208,9 +208,13 @@ function toUser(value: unknown): SdkworkIamAdminUser | undefined {
     return undefined;
   }
   return {
+    avatarUrl: optionalString(record.avatarUrl) || avatarSnapshotUrl(record.avatar),
+    birthDate: optionalString(record.birthDate) || optionalString(record.birth_date),
+    country: optionalString(record.country),
     createdAt: optionalString(record.createdAt) || optionalString(record.created_at),
     displayName: optionalString(record.displayName) || optionalString(record.display_name),
     email: optionalString(record.email),
+    gender: optionalString(record.gender),
     id: optionalString(record.id) || userId,
     lastLoginAt: optionalString(record.lastLoginAt) || optionalString(record.last_login_at),
     phone: optionalString(record.phone) || optionalString(record.phoneNumber) || optionalString(record.phone_number),
@@ -218,6 +222,47 @@ function toUser(value: unknown): SdkworkIamAdminUser | undefined {
     userId,
     username: optionalString(record.username),
   };
+}
+
+/**
+ * Delivery URL of the avatar media-resource snapshot the backend returns on
+ * `avatar`. Reads the camelCase SDK shape first and falls back to the
+ * snake_case shape the user-center host serializes.
+ */
+function avatarSnapshotUrl(value: unknown): string | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+  const snapshot = value as Record<string, unknown>;
+  return optionalString(snapshot.publicUrl) || optionalString(snapshot.url) || optionalString(snapshot.uri)
+    || optionalString(snapshot.public_url);
+}
+
+/**
+ * Wire body for users.create / users.update. Text fields are trimmed and
+ * dropped when blank so a blank draft field leaves the stored value untouched,
+ * matching the backend's blank-means-unchanged patch semantics.
+ */
+function toUserPayload(body: Partial<SdkworkIamAdminUserDraft>): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  for (const key of [
+    "username",
+    "displayName",
+    "email",
+    "phone",
+    "status",
+    "gender",
+    "birthDate",
+    "country",
+    "avatarUrl",
+    "initialPassword",
+  ] as const) {
+    const value = optionalString(body[key]);
+    if (value !== undefined) {
+      payload[key] = value;
+    }
+  }
+  return payload;
 }
 
 function requireIdentityField(body: SdkworkIamAdminUserDraft) {
