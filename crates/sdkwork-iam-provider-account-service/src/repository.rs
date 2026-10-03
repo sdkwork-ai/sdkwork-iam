@@ -9,11 +9,11 @@ use crate::model::{
     validate_choice, validate_credential_name, validate_display_name, validate_secret_payload,
     validate_vendor_code, AccountRequirement, AccountResolution, AccountVisibility,
     NewProviderAccount, NewProviderCredential, ProviderAccount, ProviderAccountError,
-    ProviderAccountPatch, ProviderCredential, ProviderCredentialMaterial, RevealedProviderCredential,
-    ScopeCaller, ScopeCandidateCount, ACCOUNT_SCOPES, ACCOUNT_SCOPE_PLATFORM, ACCOUNT_SCOPE_USER,
-    ACCOUNT_STATUSES, ACCOUNT_STATUS_ACTIVE, ACCOUNT_TYPES, CREDENTIAL_KINDS,
-    CREDENTIAL_STATUS_ACTIVE, CREDENTIAL_STATUS_REVOKED, CREDENTIAL_STATUS_SUPERSEDED,
-    ENVIRONMENTS, PLATFORM_TENANT_ID, SCOPE_PRECEDENCE,
+    ProviderAccountPatch, ProviderCredential, ProviderCredentialMaterial,
+    RevealedProviderCredential, ScopeCaller, ScopeCandidateCount, ACCOUNT_SCOPES,
+    ACCOUNT_SCOPE_PLATFORM, ACCOUNT_SCOPE_USER, ACCOUNT_STATUSES, ACCOUNT_STATUS_ACTIVE,
+    ACCOUNT_TYPES, CREDENTIAL_KINDS, CREDENTIAL_STATUS_ACTIVE, CREDENTIAL_STATUS_REVOKED,
+    CREDENTIAL_STATUS_SUPERSEDED, ENVIRONMENTS, PLATFORM_TENANT_ID, SCOPE_PRECEDENCE,
 };
 
 const ACCOUNT_COLUMNS: &str = "a.id, a.uuid, a.tenant_id, a.organization_id, a.scope_type, \

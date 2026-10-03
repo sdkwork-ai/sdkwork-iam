@@ -15,6 +15,9 @@ tmp-*/
 target-alt*/
 .worktrees/
 
+# Stale local pnpm donor directory left behind by install retries (not a real package)
+node_modules.__stale__donor/
+
 *.log
 *.tsbuildinfo
 pnpm-debug.log*

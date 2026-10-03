@@ -876,10 +876,9 @@ async fn reveal_provider_account_credential(
             .await;
             // A GET that answers plaintext must not land in a shared cache.
             let mut response = appbase_ok(revealed_credential_to_json(&revealed));
-            response.headers_mut().insert(
-                header::CACHE_CONTROL,
-                HeaderValue::from_static("no-store"),
-            );
+            response
+                .headers_mut()
+                .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
             response
         }
         Ok(None) => appbase_ok(json!({
