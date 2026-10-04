@@ -29,18 +29,12 @@ export interface SdkworkIamAdminUserAvatarResource {
  * Host-injected avatar capability for the user admin workspace.
  *
  * The workspace never touches the drive SDK or upload declarations itself:
- * the host (for example the webserver console) composes both and injects this
- * service. `uploadAvatar` receives the existing user's id because the Drive
- * upload contract attributes uploads to an existing entity
- * (`DRIVE_SPEC.md` section 18.3) — the create flow persists the user first
- * and uploads second.
+ * the host (for example the webserver console) composes the shared upload
+ * service and injects it below. Uploads attribute their bytes to an existing
+ * entity id (`DRIVE_SPEC.md` section 18.3) — the create flow parks the pick
+ * in the shared component's controller and flushes it after createUser
+ * returns.
  */
-export interface SdkworkIamAdminUserAvatarService {
-  /** Resolves a stored avatar resource to a transient display URL. */
-  resolveAvatarUrl(avatar: SdkworkIamAdminUserAvatarResource): Promise<string | undefined>;
-  /** Uploads the picked image for an existing user and returns the stored resource. */
-  uploadAvatar(userId: string, file: File): Promise<SdkworkIamAdminUserAvatarResource>;
-}
 
 export interface SdkworkIamAdminUser {
   avatar?: SdkworkIamAdminUserAvatarResource;
@@ -101,15 +95,14 @@ export interface SdkworkIamUserAdminController {
 }
 
 export interface SdkworkIamUserAdminWorkspaceProps {
-  avatarService?: SdkworkIamAdminUserAvatarService;
   /**
    * Shared Drive image-upload service (`createDriveUploadImageService`), built
-   * by the host service layer. When present, the edit drawer renders the shared
-   * `DriveUploadImage` component for the avatar field; create mode keeps the
-   * park-then-upload flow because the component parks picked files inside its
-   * own controller and cannot hand the raw file to the post-create
-   * `avatarService.uploadAvatar` call (`DRIVE_SPEC.md` section 18.3:
-   * persist first, upload second).
+   * by the host service layer. When present, every drawer mode renders the
+   * shared `DriveUploadImage` placeholder for the avatar field: edit uploads
+   * immediately against the existing user id, and create parks the pick in the
+   * component's controller, flushing it through the ref handle after createUser
+   * returns (`DRIVE_SPEC.md` section 18.3: persist first, upload second).
+   * Without it the field degrades to the plain delivery-URL input.
    */
   driveUploadImageService?: DriveUploadImageService;
   controller: SdkworkIamUserAdminController;

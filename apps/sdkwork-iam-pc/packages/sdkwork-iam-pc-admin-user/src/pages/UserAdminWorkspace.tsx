@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { Ban, Eye, Image as ImageIcon, LoaderCircle, Pencil, Plus, Search, Trash2, Unlock } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type RefObject } from "react";
+import { Ban, Eye, Pencil, Plus, Search, Trash2, Unlock } from "lucide-react";
 import { CatalogPagination } from "@sdkwork/iam-pc-admin-core";
 import {
   Button,
@@ -24,7 +24,7 @@ import {
 } from "@sdkwork/ui-pc-react";
 
 import { USER_ADMIN_COUNTRY_OPTIONS, type UserAdminCountryOption } from "./user-admin-countries";
-import { DriveUploadImage } from "sdkwork-drive-pc-upload-image";
+import { DriveUploadImage, type DriveUploadImageHandle } from "sdkwork-drive-pc-upload-image";
 import type { DriveUploadImageValue } from "@sdkwork/drive-upload-image-core";
 import type {
   SdkworkIamAdminUser,
@@ -43,13 +43,15 @@ const userAdminMessages = {
   "en-US": {
     locale: "en-US",
     avatar: "Avatar",
+    avatarHint: "JPG, PNG, WebP, and other image formats up to 5 MB",
     avatarInvalidType: "The avatar must be an image file.",
     avatarPlaceholder: "Avatar image URL",
     avatarRemove: "Remove avatar",
+    avatarReplace: "Replace avatar",
     avatarRetry: "Retry upload",
     avatarTooLarge: "The avatar must be 5 MiB or smaller.",
     avatarTooLargeDetail: "The avatar must be {max} or smaller.",
-    avatarUpload: "Upload",
+    avatarUpload: "Click or drop an image here",
     avatarUploadFailed: "Avatar upload failed",
     avatarUploading: "Uploading avatar…",
     ban: "Ban",
@@ -113,13 +115,15 @@ const userAdminMessages = {
   "zh-CN": {
     locale: "zh-CN",
     avatar: "头像",
+    avatarHint: "支持 JPG、PNG、WebP 等图片格式，不超过 5 MB",
     avatarInvalidType: "头像必须是图片文件。",
     avatarPlaceholder: "头像图片链接",
     avatarRemove: "移除头像",
+    avatarReplace: "更换头像",
     avatarRetry: "重试上传",
     avatarTooLarge: "头像不能超过 5 MiB。",
     avatarTooLargeDetail: "头像不能超过 {max}。",
-    avatarUpload: "上传",
+    avatarUpload: "点击或拖拽图片到此处",
     avatarUploadFailed: "头像上传失败",
     avatarUploading: "头像上传中…",
     ban: "封禁",
@@ -183,7 +187,6 @@ const userAdminMessages = {
 } as const;
 
 export function SdkworkIamUserAdminWorkspace({
-  avatarService,
   controller,
   driveUploadImageService,
   locale,
@@ -207,27 +210,15 @@ export function SdkworkIamUserAdminWorkspace({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
-  // Create mode defers the avatar upload until the user record exists: the
-  // Drive upload contract attributes the bytes to an existing user id, so the
-  // picked file parks here (with a transient object-URL preview) and uploads
-  // after createUser returns.
-  const [pendingAvatar, setPendingAvatar] = useState<File>();
-  const [pendingAvatarPreviewUrl, setPendingAvatarPreviewUrl] = useState<string>();
-  const [avatarUploading, setAvatarUploading] = useState(false);
-
-  const clearPendingAvatar = () => {
-    setPendingAvatar(undefined);
-    setPendingAvatarPreviewUrl((current) => {
-      if (current) {
-        URL.revokeObjectURL(current);
-      }
-      return undefined;
-    });
-  };
+  // The shared avatar field parks a create-mode pick inside its own
+  // controller (persist-first, `DRIVE_SPEC.md` §18.3): the drawer hands the
+  // fresh user id to the parked upload through this handle after createUser
+  // returns. The controller dies with the drawer, so closing discards a
+  // never-submitted pick.
+  const avatarFieldRef = useRef<DriveUploadImageHandle | null>(null);
 
   const closeDrawer = () => {
     setDrawerMode(undefined);
-    clearPendingAvatar();
   };
 
   const refreshUsers = async (nextQuery = appliedQuery, nextPage = page, nextPageSize = pageSize, nextStatus = appliedStatus) => {
@@ -265,38 +256,6 @@ export function SdkworkIamUserAdminWorkspace({
     setSelectedUser(undefined);
     setDraft(emptyUserDraft());
     setDrawerMode("create");
-  };
-
-  /**
-   * File picked in the avatar field. Editing uploads immediately against the
-   * existing user id; creating parks the file for the post-create upload.
-   */
-  const handleAvatarFileSelected = (file: File) => {
-    if (!avatarService || drawerMode === "view") {
-      return;
-    }
-    if (!file.type.startsWith("image/")) {
-      setError(copy.avatarInvalidType);
-      return;
-    }
-    if (file.size > avatarMaxBytes) {
-      setError(copy.avatarTooLarge);
-      return;
-    }
-    setError(undefined);
-    if (drawerMode === "edit" && selectedUser) {
-      setAvatarUploading(true);
-      void avatarService.uploadAvatar(selectedUser.userId, file)
-        .then((resource) => {
-          setDraft((current) => ({ ...current, avatar: resource, avatarUrl: "" }));
-        })
-        .catch((uploadError) => setError(toErrorMessage(uploadError, copy.operationError)))
-        .finally(() => setAvatarUploading(false));
-      return;
-    }
-    clearPendingAvatar();
-    setPendingAvatar(file);
-    setPendingAvatarPreviewUrl(URL.createObjectURL(file));
   };
 
   const openUserDrawer = async (user: SdkworkIamAdminUser, mode: "edit" | "view") => {
@@ -365,15 +324,25 @@ export function SdkworkIamUserAdminWorkspace({
         await controller.updateUser(selectedUser.userId, draft);
       } else {
         const created = await controller.createUser(draft);
-        // Persist first, upload second (DRIVE_SPEC section 18.3): the avatar
-        // upload attributes its bytes to the freshly created user id, then a
-        // follow-up update attaches the returned media resource.
-        if (pendingAvatar && avatarService) {
-          const resource = await avatarService.uploadAvatar(created.userId, pendingAvatar);
-          await controller.updateUser(created.userId, { avatar: resource });
+        try {
+          // Persist first, upload second (DRIVE_SPEC section 18.3): flush the
+          // parked avatar pick against the freshly created user id, then a
+          // follow-up update attaches the returned media resource.
+          const values = await avatarFieldRef.current?.uploadPending({ appResourceId: created.userId });
+          const avatarValue = values?.[values.length - 1];
+          if (avatarValue) {
+            await controller.updateUser(created.userId, { avatar: avatarValueToAvatarResource(avatarValue) });
+          }
+        } catch (uploadError) {
+          // The directory record exists; keep the drawer open as its edit
+          // view so the retry targets the created user instead of creating a
+          // duplicate, and the field's retry affordance stays reachable.
+          setSelectedUser(created);
+          setDraft(toUserDraft(created));
+          setDrawerMode("edit");
+          throw uploadError;
         }
       }
-      clearPendingAvatar();
       await refreshUsers();
       setDrawerMode(undefined);
     }, drawerMode === "edit" ? copy.editSuccess : copy.createSuccess);
@@ -479,14 +448,12 @@ export function SdkworkIamUserAdminWorkspace({
       </div>
 
       <UserDrawer
-        avatarService={avatarService}
-        avatarUploading={avatarUploading}
+        avatarFieldRef={avatarFieldRef}
         busy={busy}
         copy={copy}
         draft={draft}
         driveUploadImageService={driveUploadImageService}
         mode={drawerMode}
-        onAvatarFileSelected={avatarService ? handleAvatarFileSelected : undefined}
         onDraftChange={setDraft}
         onEdit={() => setDrawerMode("edit")}
         onOpenChange={(open) => {
@@ -494,7 +461,6 @@ export function SdkworkIamUserAdminWorkspace({
         }}
         onSubmit={submitDraft}
         onError={setError}
-        pendingAvatarPreviewUrl={pendingAvatarPreviewUrl}
         selectedUserId={selectedUser?.userId}
         updateAllowed={permissions.update}
       />
@@ -545,37 +511,31 @@ export function SdkworkIamUserAdminWorkspace({
 }
 
 function UserDrawer({
-  avatarService,
-  avatarUploading,
+  avatarFieldRef,
   busy,
   copy,
   draft,
   driveUploadImageService,
   mode,
-  onAvatarFileSelected,
   onDraftChange,
   onEdit,
   onError,
   onOpenChange,
   onSubmit,
-  pendingAvatarPreviewUrl,
   selectedUserId,
   updateAllowed,
 }: {
-  avatarService?: SdkworkIamUserAdminWorkspaceProps["avatarService"];
-  avatarUploading?: boolean;
+  avatarFieldRef: RefObject<DriveUploadImageHandle | null>;
   busy: boolean;
   copy: typeof userAdminMessages["en-US"] | typeof userAdminMessages["zh-CN"];
   draft: SdkworkIamAdminUserDraft;
   driveUploadImageService?: SdkworkIamUserAdminWorkspaceProps["driveUploadImageService"];
   mode?: "create" | "edit" | "view";
-  onAvatarFileSelected?: (file: File) => void;
   onDraftChange: (draft: SdkworkIamAdminUserDraft) => void;
   onEdit: () => void;
   onError: (message: string) => void;
   onOpenChange: (open: boolean) => void;
   onSubmit: () => void;
-  pendingAvatarPreviewUrl?: string;
   selectedUserId?: string;
   updateAllowed: boolean;
 }) {
@@ -589,16 +549,15 @@ function UserDrawer({
           <DrawerDescription>{viewing ? copy.detailsDescription : editing ? copy.editDescription : copy.createDescription}</DrawerDescription>
         </DrawerHeader>
         <DrawerBody className="space-y-4">
-          {driveUploadImageService && mode !== "create" ? (
+          {driveUploadImageService ? (
             /*
-             * Shared Drive image-upload component for edit/view. Picking in the
-             * edit drawer uploads immediately against the existing user id; the
-             * stored resource is mapped onto the shared value shape for display.
-             * Create mode keeps the park-then-upload AvatarField below: the
-             * component parks picked files inside its own controller, which
-             * cannot hand the raw file to the post-create
-             * `avatarService.uploadAvatar` call (persist first, upload second —
-             * DRIVE_SPEC.md section 18.3).
+             * Shared Drive image-upload placeholder for every drawer mode.
+             * Edit uploads immediately against the existing user id; create
+             * passes no anchor so the pick parks in the field's controller
+             * and the workspace flushes it through `avatarFieldRef` after
+             * createUser returns (persist first, upload second — DRIVE_SPEC
+             * section 18.3). The stored resource maps onto the shared value
+             * shape for display.
              */
             <DriveUploadImage
               appResourceId={editing && selectedUserId ? selectedUserId : () => null}
@@ -608,11 +567,12 @@ function UserDrawer({
                 invalidFileType: copy.avatarInvalidType,
                 pickImage: copy.avatarUpload,
                 removeImage: copy.avatarRemove,
-                replaceImage: copy.avatarUpload,
+                replaceImage: copy.avatarReplace,
                 retryUpload: copy.avatarRetry,
                 uploadFailed: copy.avatarUploadFailed,
                 uploading: copy.avatarUploading,
               }}
+              description={copy.avatarHint}
               label={copy.avatar}
               maxSizeBytes={avatarMaxBytes}
               onChange={(value) => onDraftChange({ ...draft, avatar: value ?? undefined, avatarUrl: "" })}
@@ -621,21 +581,18 @@ function UserDrawer({
               }}
               onUploadError={(failure) => onError(toErrorMessage(failure, copy.avatarUploadFailed))}
               readOnly={busy || viewing}
+              ref={avatarFieldRef}
               service={driveUploadImageService}
               shape="circle"
-              sizePx={48}
+              sizePx={72}
               value={avatarResourceToDriveUploadImageValue(draft.avatar)}
             />
           ) : (
-            <AvatarField
-              avatarService={avatarService}
-              busy={avatarUploading}
+            <AvatarUrlField
               copy={copy}
               disabled={viewing}
               onDraftChange={onDraftChange}
               draft={draft}
-              onFileSelected={onAvatarFileSelected}
-              pendingPreviewUrl={pendingAvatarPreviewUrl}
             />
           )}
           <Field disabled={viewing} label={copy.username} onChange={(username) => onDraftChange({ ...draft, username })} value={draft.username ?? ""} />
@@ -747,6 +704,37 @@ function avatarResourceToDriveUploadImageValue(
   };
 }
 
+/**
+ * Maps the shared component's persist-safe upload value back onto the avatar
+ * media resource the directory record stores (`DRIVE_SPEC.md` section 10):
+ * the stable `drive://` uri, the source tag, and the drive identity block —
+ * the inverse of `avatarResourceToDriveUploadImageValue`.
+ */
+function avatarValueToAvatarResource(
+  value: DriveUploadImageValue,
+): SdkworkIamAdminUserAvatarResource {
+  const drive = value.metadata?.drive;
+  return {
+    fileName: drive?.originalFileName,
+    id: drive?.nodeId,
+    kind: drive ? "image" : undefined,
+    metadata:
+      drive && drive.nodeId && drive.spaceId
+        ? {
+            drive: {
+              nodeId: drive.nodeId,
+              spaceId: drive.spaceId,
+              ...(drive.spaceType === undefined ? {} : { spaceType: drive.spaceType }),
+            },
+          }
+        : undefined,
+    mimeType: drive?.contentType,
+    sizeBytes: drive?.contentLength,
+    source: value.source,
+    uri: value.uri,
+  };
+}
+
 function toErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
 }
@@ -769,113 +757,32 @@ function Field({ disabled, hint, label, onChange, placeholder, type = "text", va
 }
 
 /**
- * Avatar editing control.
+ * Degraded avatar field for hosts without the Drive upload capability.
  *
- * With a host-injected avatar service the field renders the stored avatar
- * (resolving drive-backed resources through the service) plus an upload
- * button; picking a file delegates to `onFileSelected` and never touches
- * Drive from this package. Without a service the field degrades to the plain
- * delivery-URL input.
+ * A local data-URL read would be a fake upload, so without the injected
+ * service the field offers only the plain delivery-URL input — the same
+ * degradation contract the organization workspace follows.
  */
-function AvatarField({
-  avatarService,
-  busy,
+function AvatarUrlField({
   copy,
   disabled,
   draft,
   onDraftChange,
-  onFileSelected,
-  pendingPreviewUrl,
 }: {
-  avatarService?: SdkworkIamUserAdminWorkspaceProps["avatarService"];
-  busy?: boolean;
   copy: typeof userAdminMessages["en-US"] | typeof userAdminMessages["zh-CN"];
   disabled?: boolean;
   draft: SdkworkIamAdminUserDraft;
   onDraftChange: (draft: SdkworkIamAdminUserDraft) => void;
-  onFileSelected?: (file: File) => void;
-  pendingPreviewUrl?: string;
 }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const avatar = draft.avatar;
-  const avatarKey = avatar?.uri ?? avatar?.url ?? avatar?.publicUrl ?? "";
-  const [resolvedUrl, setResolvedUrl] = useState<string>();
-  const [resolving, setResolving] = useState(false);
-
-  useEffect(() => {
-    if (!avatar || !avatarService) {
-      setResolvedUrl(undefined);
-      return;
-    }
-    let cancelled = false;
-    setResolving(true);
-    void avatarService.resolveAvatarUrl(avatar)
-      .then((url) => {
-        if (!cancelled) setResolvedUrl(url);
-      })
-      .catch(() => {
-        if (!cancelled) setResolvedUrl(undefined);
-      })
-      .finally(() => {
-        if (!cancelled) setResolving(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [avatar, avatarKey, avatarService]);
-
-  const previewSrc = avatar
-    ? resolvedUrl
-    : pendingPreviewUrl || (draft.avatarUrl || "").trim() || undefined;
-  const canUpload = Boolean(onFileSelected) && !disabled;
-
   return (
-    <div className="space-y-2 text-sm">
-      <span>{copy.avatar}</span>
-      <div className="flex items-center gap-3">
-        {previewSrc ? (
-          <img
-            alt=""
-            className="h-12 w-12 shrink-0 rounded-full border border-[var(--sdk-color-border-default)] object-cover"
-            src={previewSrc}
-          />
-        ) : (
-          <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-subtle)] text-[var(--sdk-color-text-muted)]">
-            {resolving || busy ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <ImageIcon className="h-5 w-5" />}
-          </span>
-        )}
-        {canUpload ? (
-          <>
-            <input
-              accept="image/*"
-              className="hidden"
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                const file = event.target.files?.[0];
-                event.target.value = "";
-                if (file) onFileSelected?.(file);
-              }}
-              ref={fileInputRef}
-              type="file"
-            />
-            <Button disabled={busy} onClick={() => fileInputRef.current?.click()} size="sm" type="button" variant="outline">
-              {busy ? <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" /> : null}
-              {busy ? copy.avatarUploading : copy.avatarUpload}
-            </Button>
-          </>
-        ) : null}
-        {!canUpload && !disabled ? (
-          <label className="min-w-0 flex-1">
-            <span className="sr-only">{copy.avatar}</span>
-            <Input
-              onChange={(event) => onDraftChange({ ...draft, avatarUrl: event.target.value })}
-              placeholder={copy.avatarPlaceholder}
-              type="url"
-              value={draft.avatarUrl ?? ""}
-            />
-          </label>
-        ) : null}
-      </div>
-    </div>
+    <Field
+      disabled={disabled}
+      label={copy.avatar}
+      onChange={(avatarUrl) => onDraftChange({ ...draft, avatarUrl, avatar: undefined })}
+      placeholder={copy.avatarPlaceholder}
+      type="url"
+      value={draft.avatarUrl ?? ""}
+    />
   );
 }
 
