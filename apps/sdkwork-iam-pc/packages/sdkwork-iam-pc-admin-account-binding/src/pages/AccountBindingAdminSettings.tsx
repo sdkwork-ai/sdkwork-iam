@@ -18,6 +18,7 @@ import type {
 
 export function SdkworkIamAccountBindingSettings({
   controller,
+  canUpdate = true,
 }: SdkworkIamAccountBindingSettingsProps) {
   const messages = useSdkworkIamAccountBindingAdminMessages();
   const [draft, setDraft] = useState(controller.getState().policy);
@@ -198,7 +199,7 @@ export function SdkworkIamAccountBindingSettings({
       </SettingsSection>
 
       <Button
-        disabled={status === "loading" || status === "saving"}
+        disabled={!canUpdate || status === "loading" || status === "saving"}
         loading={status === "saving"}
         onClick={() => {
           void controller.save(draft).then((saved) => {

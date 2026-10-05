@@ -48,6 +48,9 @@ export interface SdkworkIamAccountBindingController {
 
 export interface SdkworkIamAccountBindingSettingsProps {
   controller: SdkworkIamAccountBindingController;
+  /** Absent defaults to true: callers that do not model permissions keep the
+   * current behavior, and the server still enforces the update permission. */
+  canUpdate?: boolean;
 }
 
 export const DEFAULT_ACCOUNT_BINDING_POLICY: SdkworkIamAccountBindingPolicy = {
