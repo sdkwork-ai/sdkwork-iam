@@ -1,5 +1,28 @@
+import type { DriveUploadImageService } from "@sdkwork/drive-upload-image-core";
 import type { SdkWorkPageInfo } from "@sdkwork/iam-contracts";
 import type { SdkworkIamService } from "@sdkwork/iam-service";
+
+/**
+ * The organization logo media-resource snapshot (`iam_organization.logo_resource_snapshot`).
+ *
+ * Mirrors the user avatar resource contract: a Drive-backed resource carries
+ * `source: "drive"`, the `drive://` uri, and the `metadata.drive` identity
+ * block, while a plain external delivery URL is wrapped by the backend into
+ * the same object shape.
+ */
+export interface SdkworkIamOrganizationLogoMediaResource {
+  access?: { expiresAt?: string; visibility?: string };
+  fileName?: string;
+  id?: string;
+  kind?: string;
+  metadata?: { drive?: { nodeId?: string; spaceId?: string; spaceType?: string } };
+  mimeType?: string;
+  publicUrl?: string;
+  sizeBytes?: string;
+  source?: string;
+  uri?: string;
+  url?: string;
+}
 
 export interface SdkworkIamOrganizationDraft {
   address?: string;
@@ -8,6 +31,8 @@ export interface SdkworkIamOrganizationDraft {
   contactPhone?: string;
   description?: string;
   industryCategory?: string;
+  /** Drive-backed logo media resource uploaded through the shared component. */
+  logo?: SdkworkIamOrganizationLogoMediaResource;
   logoUrl?: string;
   name: string;
   organizationCategory?: string;
@@ -50,6 +75,9 @@ export interface SdkworkIamOrganization {
   description?: string;
   id: string;
   industryCategory?: string;
+  /** Raw logo media-resource snapshot the backend returns on `logo`. */
+  logo?: SdkworkIamOrganizationLogoMediaResource;
+  /** Delivery/display URL resolved from the snapshot (or the plain `logoUrl`). */
   logoUrl?: string;
   name: string;
   organizationCategory?: string;
@@ -186,8 +214,41 @@ export interface SdkworkIamOrganizationController {
   updateOrganization(organizationId: string, body: Partial<SdkworkIamOrganizationDraft>): Promise<SdkworkIamOrganization>;
 }
 
+/**
+ * Host-injected organization logo capability for the admin workspace.
+ *
+ * The workspace never touches the drive SDK or upload declarations itself:
+ * the host (for example the webserver console) composes both and injects this
+ * service. `attachLogo` receives the existing organization's id because the
+ * Drive upload contract attributes uploads to an existing entity
+ * (`DRIVE_SPEC.md` section 18.3) — the create flow persists the organization
+ * first and uploads second.
+ */
+export interface SdkworkIamOrganizationLogoService {
+  /** Transient display URL for a stored logo snapshot (bounded Drive preview). */
+  resolveLogoUrl(logo: SdkworkIamOrganizationLogoMediaResource): Promise<string | undefined>;
+  /** Uploads the picked image against the existing organization and returns the snapshot resource. */
+  attachLogo(organizationId: string, file: File): Promise<SdkworkIamOrganizationLogoMediaResource>;
+}
+
 export interface SdkworkIamOrganizationAdminWorkspaceProps {
   controller: SdkworkIamOrganizationController;
+  /**
+   * Host-injected Drive image-upload capability (`createDriveUploadImageService`).
+   *
+   * Present: the logo drawer renders the shared `DriveUploadImage` component
+   * and uploads land in Drive through the host's declared intent. Absent: the
+   * drawer degrades to the plain external-URL field and offers no file picker
+   * — there is no local data-URL fallback, because persisting a base64 payload
+   * would be a fake upload (`DRIVE_SPEC.md` section 18).
+   */
+  driveUploadImageService?: DriveUploadImageService;
+  /**
+   * Host-injected logo attach/resolve capability. Present: the create drawer
+   * accepts a file and the detail header resolves Drive-backed snapshots.
+   * Absent: create mode offers the external-URL field only.
+   */
+  logoService?: SdkworkIamOrganizationLogoService;
   permissions?: {
     departments: {
       create: boolean;

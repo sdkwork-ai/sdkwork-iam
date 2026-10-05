@@ -407,7 +407,7 @@ export const sdkworkIamOauthAdminMessages: SdkworkIamOauthAdminMessages = {
       editTitle: "开发配置",
       logo: {
         choose: "选择图片",
-        hint: "支持 PNG / JPEG / WebP 图片，建议 200×200，大小不超过 512KB。图标以图片数据保存在账号配置中。",
+        hint: "支持 PNG / JPEG / WebP 图片，建议 200×200，大小不超过 512KB。上传的图标存入 Drive，账号配置保存其引用。",
         invalidType: "仅支持图片文件（PNG / JPEG / WebP）。",
         remove: "移除图标",
         title: "公众号图标",

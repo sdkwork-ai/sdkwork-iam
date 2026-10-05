@@ -11,6 +11,7 @@ import type {
   SdkworkIamOrganization,
   SdkworkIamOrganizationController,
   SdkworkIamOrganizationDraft,
+  SdkworkIamOrganizationLogoMediaResource,
   SdkworkIamOrganizationMembership,
   SdkworkIamOrganizationMembershipDraft,
   SdkworkIamOrganizationNode,
@@ -731,7 +732,8 @@ function toOrganization(value: unknown): SdkworkIamOrganization | undefined {
     description: optionalString(record.description),
     id: optionalString(record.id) || organizationId,
     industryCategory: optionalString(record.industryCategory) || optionalString(record.industry_category),
-    logoUrl: optionalString(record.logoUrl) || logoSnapshotUrl(record.logo),
+    logo: logoSnapshot(record.logo),
+    logoUrl: optionalString(record.logoUrl) || logoSnapshotDeliveryUrl(record.logo),
     name: optionalString(record.name) || optionalString(record.organizationName) || organizationId,
     organizationCategory: optionalString(record.organizationCategory) || optionalString(record.organization_category),
     organizationId,
@@ -744,13 +746,56 @@ function toOrganization(value: unknown): SdkworkIamOrganization | undefined {
 }
 
 /**
+ * The logo media-resource snapshot the backend returns on `logo`, mirrored as
+ * `SdkworkIamOrganizationLogoMediaResource` so the drawer can seed the shared
+ * upload component with a Drive-backed value and the submit path can send the
+ * resource object back as `logo`.
+ */
+function logoSnapshot(value: unknown): SdkworkIamOrganizationLogoMediaResource | undefined {
+  const record = toRecord(value);
+  if (Object.keys(record).length === 0) {
+    return undefined;
+  }
+  const metadata = toRecord(record.metadata);
+  const drive = toRecord(metadata.drive);
+  const resource: SdkworkIamOrganizationLogoMediaResource = {
+    fileName: optionalString(record.fileName) || optionalString(record.file_name),
+    id: optionalString(record.id),
+    kind: optionalString(record.kind),
+    metadata: Object.keys(drive).length > 0
+      ? {
+          drive: {
+            nodeId: optionalString(drive.nodeId) || optionalString(drive.node_id),
+            spaceId: optionalString(drive.spaceId) || optionalString(drive.space_id),
+            spaceType: optionalString(drive.spaceType) || optionalString(drive.space_type),
+          },
+        }
+      : undefined,
+    mimeType: optionalString(record.mimeType) || optionalString(record.mime_type),
+    publicUrl: optionalString(record.publicUrl) || optionalString(record.public_url),
+    sizeBytes: optionalString(record.sizeBytes) || optionalString(record.size_bytes),
+    source: optionalString(record.source),
+    uri: optionalString(record.uri),
+    url: optionalString(record.url),
+  };
+  // Keep only snapshots that carry at least one usable locator: a bare object
+  // without uri/url is not a media resource.
+  if (!resource.uri && !resource.url && !resource.publicUrl && !resource.id) {
+    return undefined;
+  }
+  return resource;
+}
+
+/**
  * Delivery URL of the logo media-resource snapshot the backend returns on
  * `logo`. Reads the camelCase shape first and falls back to the snake_case
- * shape, mirroring the user avatar snapshot contract.
+ * shape, mirroring the user avatar snapshot contract. A `drive://` uri is
+ * deliberately NOT a delivery URL — display resolution for Drive-backed
+ * snapshots goes through the injected upload-image service's preview reader.
  */
-function logoSnapshotUrl(value: unknown): string | undefined {
+function logoSnapshotDeliveryUrl(value: unknown): string | undefined {
   const record = toRecord(value);
-  return optionalString(record.publicUrl) || optionalString(record.url) || optionalString(record.uri) || optionalString(record.public_url);
+  return optionalString(record.publicUrl) || optionalString(record.url);
 }
 
 /**
@@ -777,6 +822,12 @@ function toOrganizationWirePayload(draft: Partial<SdkworkIamOrganizationDraft>):
   text("contactPhone", draft.contactPhone);
   text("contactEmail", draft.contactEmail);
   text("address", draft.address);
+  // A Drive-backed logo rides as the media-resource object the backend's
+  // `read_logo_snapshot` stores in `logo_resource_snapshot`; the plain string
+  // stays the external-URL path (`DRIVE_SPEC.md` section 10 mapping).
+  if (draft.logo) {
+    payload.logo = draft.logo;
+  }
   text("logoUrl", draft.logoUrl);
   if (draft.status) {
     payload.status = draft.status;

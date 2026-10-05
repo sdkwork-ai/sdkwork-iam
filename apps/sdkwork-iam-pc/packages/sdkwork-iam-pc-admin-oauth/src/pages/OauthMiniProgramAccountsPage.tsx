@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { StatusNotice } from "@sdkwork/ui-pc-react";
 
+import type { DriveUploadImageService } from "@sdkwork/drive-upload-image-core";
 import type { SdkworkIamOauthAdminController } from "../types/oauth-admin-types";
 import { useOauthAdminPageState } from "../hooks/use-oauth-admin-page-state";
 import { useSdkworkIamOauthAdminMessages } from "../i18n";
@@ -17,8 +18,15 @@ import { readResourceAccountKind } from "../utils/oauth-admin-utils";
  */
 export function SdkworkIamOauthMiniProgramAccountsPage({
   controller,
+  driveUploadImageService,
 }: {
   controller: SdkworkIamOauthAdminController;
+  /**
+   * Host-injected Drive image-upload capability, threaded to the account
+   * setup section's logo field (shared upload component + bounded preview
+   * resolution). Omitted: the logo field degrades to the external-URL input.
+   */
+  driveUploadImageService?: DriveUploadImageService;
 }) {
   const messages = useSdkworkIamOauthAdminMessages();
   const { data, disabled, error, listPageInfo, status, sync } = useOauthAdminPageState(controller, [
@@ -37,6 +45,7 @@ export function SdkworkIamOauthMiniProgramAccountsPage({
         common={messages.common}
         controller={controller}
         disabled={disabled}
+        driveUploadImageService={driveUploadImageService}
         kind="mini_program"
         listPageInfo={listPageInfo?.resourceAccounts}
         messages={messages.quickSetup.miniProgramAccounts}

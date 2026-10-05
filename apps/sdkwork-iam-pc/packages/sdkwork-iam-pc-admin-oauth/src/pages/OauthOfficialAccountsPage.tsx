@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { StatusNotice } from "@sdkwork/ui-pc-react";
 
+import type { DriveUploadImageService } from "@sdkwork/drive-upload-image-core";
 import type { SdkworkIamOauthAdminController } from "../types/oauth-admin-types";
 import { useOauthAdminPageState } from "../hooks/use-oauth-admin-page-state";
 import { useSdkworkIamOauthAdminMessages } from "../i18n";
@@ -23,9 +24,16 @@ import { readResourceAccountKind } from "../utils/oauth-admin-utils";
  */
 export function SdkworkIamOauthOfficialAccountsPage({
   controller,
+  driveUploadImageService,
   onOpenCustomMenu,
 }: {
   controller: SdkworkIamOauthAdminController;
+  /**
+   * Host-injected Drive image-upload capability, threaded to the account
+   * setup section's logo field (shared upload component + bounded preview
+   * resolution). Omitted: the logo field degrades to the external-URL input.
+   */
+  driveUploadImageService?: DriveUploadImageService;
   onOpenCustomMenu?: (resourceAccountId: string) => void;
 }) {
   const messages = useSdkworkIamOauthAdminMessages();
@@ -60,6 +68,7 @@ export function SdkworkIamOauthOfficialAccountsPage({
         common={messages.common}
         controller={controller}
         disabled={disabled}
+        driveUploadImageService={driveUploadImageService}
         initialOpen={initialOpen}
         kind="official_account"
         listPageInfo={listPageInfo?.resourceAccounts}

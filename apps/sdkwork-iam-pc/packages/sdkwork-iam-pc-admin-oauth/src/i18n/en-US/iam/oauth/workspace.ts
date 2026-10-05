@@ -407,7 +407,7 @@ export const sdkworkIamOauthAdminMessages: SdkworkIamOauthAdminMessages = {
       editTitle: "Developer configuration",
       logo: {
         choose: "Choose image",
-        hint: "PNG / JPEG / WebP images, 200×200 recommended, 512KB or smaller. The image is stored inside the account configuration.",
+        hint: "PNG / JPEG / WebP images, 200×200 recommended, 512KB or smaller. Uploaded logos are stored in Drive; the account configuration keeps the reference.",
         invalidType: "Only image files (PNG / JPEG / WebP) are supported.",
         remove: "Remove logo",
         title: "Account logo",

@@ -29,6 +29,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "@sdkwork/ui-pc-react";
+import { DriveUploadImage } from "sdkwork-drive-pc-upload-image";
+import type { DriveUploadImageService, DriveUploadImageValue } from "@sdkwork/drive-upload-image-core";
 import { CatalogPagination } from "@sdkwork/iam-pc-admin-core";
 import type { SdkWorkPageInfo } from "@sdkwork/iam-contracts";
 import { downloadRemoteImageAsFile } from "../runtime/oauth-image-download";
@@ -146,6 +148,7 @@ export function OauthAccountSetupSection({
   common,
   controller,
   disabled,
+  driveUploadImageService,
   initialOpen = false,
   kind,
   listPageInfo,
@@ -159,6 +162,18 @@ export function OauthAccountSetupSection({
   common: CommonCopy;
   controller: SdkworkIamOauthAdminController;
   disabled: boolean;
+  /**
+   * Host-injected Drive image-upload capability (`createDriveUploadImageService`).
+   *
+   * Present: the logo field uploads through the shared `DriveUploadImage`
+   * component (edit drawer, against the account id) or parks the create-mode
+   * pick and attaches it right after the account exists; list rows with a
+   * `drive://` logo resolve its display through the bounded preview reader.
+   * Absent: the logo field degrades to the plain external-URL input — there is
+   * no local data-URL fallback, because persisting a base64 payload would be a
+   * fake upload (`DRIVE_SPEC.md` section 18).
+   */
+  driveUploadImageService?: DriveUploadImageService;
   initialOpen?: boolean;
   kind: SdkworkIamOauthAccountKind;
   listPageInfo?: SdkWorkPageInfo;
@@ -206,6 +221,51 @@ export function OauthAccountSetupSection({
       webhookVerifyStatus: readWebhookVerifyStatus(item),
     };
   }), [accounts]);
+  // Drive-backed logo URIs have no delivery URL; each row's display resolves
+  // through the injected bounded preview reader. Presentation-only state and
+  // never persisted.
+  const [resolvedLogoUrls, setResolvedLogoUrls] = useState<Record<string, string>>({});
+  const driveLogoUris = useMemo(
+    () => Array.from(new Set(rows.map((row) => row.logoUrl).filter((uri): uri is string => Boolean(uri && uri.startsWith("drive://"))))),
+    [rows],
+  );
+  useEffect(() => {
+    if (!driveUploadImageService || driveLogoUris.length === 0) {
+      setResolvedLogoUrls({});
+      return;
+    }
+    let cancelled = false;
+    void Promise.all(driveLogoUris.map(async (uri) => [uri, await driveUploadImageService.resolvePreview({ uri })] as const))
+      .then((entries) => {
+        if (cancelled) return;
+        const resolved = entries.filter((entry): entry is readonly [string, string] => Boolean(entry[1]));
+        setResolvedLogoUrls(Object.fromEntries(resolved));
+      })
+      .catch(() => {
+        if (!cancelled) setResolvedLogoUrls({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [driveLogoUris, driveUploadImageService]);
+  // Create-mode parked logo: the shared component owns its own controller and
+  // cannot hand the raw file back, so create mode parks the pick locally and
+  // attaches it right after the account exists (persist first, upload second —
+  // DRIVE_SPEC.md section 18.3).
+  const [pendingLogoFile, setPendingLogoFile] = useState<File>();
+  const [pendingLogoPreviewUrl, setPendingLogoPreviewUrl] = useState<string>();
+  const clearPendingLogo = () => {
+    setPendingLogoFile(undefined);
+    setPendingLogoPreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return undefined;
+    });
+  };
+  const handleLogoFileSelected = (file: File) => {
+    clearPendingLogo();
+    setPendingLogoFile(file);
+    setPendingLogoPreviewUrl(URL.createObjectURL(file));
+  };
   const columns = useMemo<DataTableColumn<AccountRow>[]>(() => [
     {
       id: "logo",
@@ -215,7 +275,7 @@ export function OauthAccountSetupSection({
           <img
             alt={row.label}
             className="h-10 w-10 rounded-full border border-[var(--sdk-color-border-default)] object-cover"
-            src={row.logoUrl}
+            src={resolvedLogoUrls[row.logoUrl] ?? row.logoUrl}
           />
         ) : (
           <span
@@ -285,7 +345,7 @@ export function OauthAccountSetupSection({
         );
       },
     },
-  ], [common.connectionStatus, common.connectionStatusHint, common.connected, common.logo, common.notConnected, common.status, common.statusHint, messages.fields.appId, messages.fields.displayName, paginationMessages, switchMessages.enabled, switchMessages.notEnabled]);
+  ], [common.connectionStatus, common.connectionStatusHint, common.connected, common.logo, common.notConnected, common.status, common.statusHint, messages.fields.appId, messages.fields.displayName, paginationMessages, resolvedLogoUrls, switchMessages.enabled, switchMessages.notEnabled]);
 
   // A cross-page jump (e.g. the scan-login settings "add service account"
   // action) can request the add drawer to open on mount.
@@ -560,6 +620,7 @@ export function OauthAccountSetupSection({
         configCopy={paginationMessages.quickSetup.accountConfig}
         controller={controller}
         disabled={disabled}
+        driveUploadImageService={driveUploadImageService}
         onChanged={onChanged}
         row={editingRow}
         status={status}
@@ -595,7 +656,28 @@ export function OauthAccountSetupSection({
             enabled: form.enabled,
             originalId: form.originalId,
             redirectUri: form.config.redirectUri ?? "",
-          }).then(onChanged).catch(onChanged);
+          })
+            // Persist first, upload second (DRIVE_SPEC.md section 18.3): the
+            // parked create-mode logo uploads against the freshly created
+            // account id, then a follow-up config update attaches the
+            // drive:// reference.
+            .then(async (account) => {
+              const accountId = readResourceAccountId(account);
+              if (pendingLogoFile && driveUploadImageService && accountId) {
+                const uploaded = await driveUploadImageService.upload({
+                  appResourceId: accountId,
+                  file: pendingLogoFile,
+                });
+                await controller.updateAccountConfig(accountId, {
+                  ...form.config,
+                  logoUrl: uploaded.uri,
+                });
+              }
+              return account;
+            })
+            .then(onChanged)
+            .catch(onChanged)
+            .finally(clearPendingLogo);
           setForm(createEmptyForm(kind));
         }}
         open={drawerOpen}
@@ -616,10 +698,12 @@ export function OauthAccountSetupSection({
             redirectUriLabel: messages.fields.redirectUri,
             redirectUriPlaceholder: messages.fields.redirectUriPlaceholder,
           }}
+          driveUploadImageService={driveUploadImageService}
           form={form}
           kind={kind}
           mode="create"
           onChange={(patch) => setForm((current) => ({ ...current, ...patch }))}
+          onLogoFileSelected={handleLogoFileSelected}
           switchCopy={switchMessages}
         />
       </OauthResourceDrawer>
@@ -631,6 +715,7 @@ function AccountConfigDrawer({
   configCopy,
   controller,
   disabled,
+  driveUploadImageService,
   onChanged,
   onClose,
   row,
@@ -639,6 +724,7 @@ function AccountConfigDrawer({
   configCopy: AccountConfigCopy;
   controller: SdkworkIamOauthAdminController;
   disabled: boolean;
+  driveUploadImageService?: DriveUploadImageService;
   onChanged: () => void;
   onClose: () => void;
   row?: AccountRow;
@@ -779,6 +865,7 @@ function AccountConfigDrawer({
           redirectUriLabel: configCopy.basic.callbackUrl,
           redirectUriPlaceholder: "",
         }}
+        driveUploadImageService={driveUploadImageService}
         form={form}
         kind={row?.kind ?? "official_account"}
         mode="edit"
@@ -941,11 +1028,13 @@ type AccountStatusMetas = {
 function OauthAccountFormTabs({
   allMessages,
   copy,
+  driveUploadImageService,
   form,
   kind,
   mode,
   onChange,
   onNotice,
+  onLogoFileSelected,
   onVerify,
   row,
   statusMetas,
@@ -962,11 +1051,14 @@ function OauthAccountFormTabs({
     redirectUriLabel: string;
     redirectUriPlaceholder: string;
   };
+  driveUploadImageService?: DriveUploadImageService;
   form: AccountFormValues;
   kind: string;
   mode: "create" | "edit";
   onChange: (patch: Partial<AccountFormValues>) => void;
   onNotice?: (message: string) => void;
+  /** Create-mode parked-logo handoff (see the section's pending state). */
+  onLogoFileSelected?: (file: File) => void;
   onVerify?: () => void;
   row?: AccountRow;
   statusMetas?: AccountStatusMetas;
@@ -1047,9 +1139,13 @@ function OauthAccountFormTabs({
           value={form.displayName}
         />
         <OauthAccountLogoField
+          accountId={row?.accountId}
           copy={configCopy.logo}
           disabled={false}
+          driveUploadImageService={driveUploadImageService}
+          mode={mode}
           onChange={(logoUrl) => onChange({ config: { ...form.config, logoUrl } })}
+          onFileSelected={onLogoFileSelected}
           value={form.config.logoUrl}
         />
         <OauthAdminSelectField
@@ -1353,21 +1449,41 @@ function OauthAccountFormTabs({
 }
 
 /**
- * Logo upload with an inline preview and remove action. The file is read as a
- * data URL and stored in `config.logoUrl`; validation is self-contained.
+ * Logo upload for the account form, one branch per capability level.
+ *
+ * - Edit mode with the injected shared service: the canonical
+ *   `DriveUploadImage` component — picking uploads against the account id
+ *   through the host's declared intent and stores the `drive://` reference in
+ *   `config.logoUrl`.
+ * - Create mode with the injected service: park-then-attach — the picked file
+ *   is handed to the section (`onFileSelected`) and uploaded right after the
+ *   account exists (the component's controller cannot hand back the raw file).
+ * - Without the service: the plain external-URL input only. There is
+ *   deliberately no local data-URL fallback; persisting a base64 payload would
+ *   be a fake upload (`DRIVE_SPEC.md` section 18).
  */
 function OauthAccountLogoField({
+  accountId,
   copy,
   disabled,
+  driveUploadImageService,
+  mode,
   onChange,
+  onFileSelected,
   value,
 }: {
+  /** Edit-mode upload attribution anchor: the resource account id. */
+  accountId?: string;
   copy: AccountConfigCopy["logo"];
   disabled: boolean;
+  driveUploadImageService?: DriveUploadImageService;
+  mode: "create" | "edit";
   onChange: (logoUrl: string | undefined) => void;
+  onFileSelected?: (file: File) => void;
   value?: string;
 }) {
   const [error, setError] = useState<string>();
+  const [localPreview, setLocalPreview] = useState<string>();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (file: File | undefined) => {
@@ -1383,15 +1499,14 @@ function OauthAccountLogoField({
       setError(copy.tooLarge);
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result === "string") {
-        onChange(result);
-      }
-    };
-    reader.readAsDataURL(file);
+    if (onFileSelected) {
+      if (localPreview) URL.revokeObjectURL(localPreview);
+      setLocalPreview(URL.createObjectURL(file));
+      onFileSelected(file);
+    }
   };
+
+  const previewSrc = localPreview ?? (value?.startsWith("drive://") ? undefined : value);
 
   return (
     <section className="space-y-4">
@@ -1400,55 +1515,112 @@ function OauthAccountLogoField({
       </h3>
       <StatusNotice tone="default">{copy.hint}</StatusNotice>
       {error ? <StatusNotice tone="danger">{error}</StatusNotice> : null}
-      <div className="flex flex-wrap items-center gap-3">
-        {value ? (
-          <img
-            alt={copy.title}
-            className="h-14 w-14 rounded-full border border-[var(--sdk-color-border-default)] object-cover"
-            src={value}
-          />
-        ) : (
-          <span
-            aria-hidden="true"
-            className="flex h-14 w-14 items-center justify-center rounded-full border border-dashed border-[var(--sdk-color-border-default)] text-[var(--sdk-color-text-muted)]"
-          >
-            <ImageIcon className="h-5 w-5" />
-          </span>
-        )}
-        <input
-          ref={inputRef}
-          accept="image/png,image/jpeg,image/webp"
-          aria-label={copy.choose}
-          className="sr-only"
-          onChange={(event) => {
-            handleFile(event.target.files?.[0]);
-            event.target.value = "";
-          }}
-          type="file"
+      {driveUploadImageService && mode === "edit" && accountId ? (
+        <DriveUploadImage
+          accept={LOGO_MIME_TYPES}
+          alt={copy.title}
+          appResourceId={accountId}
+          label={copy.choose}
+          maxSizeBytes={LOGO_MAX_BYTES}
+          onChange={(uploaded) => onChange(uploaded?.uri)}
+          onFileRejected={(rejection) => setError(rejection.code === "file-too-large" ? copy.tooLarge : copy.invalidType)}
+          onUploadError={() => setError(copy.tooLarge)}
+          service={driveUploadImageService}
+          shape="circle"
+          sizePx={56}
+          value={logoUrlToDriveUploadImageValue(value)}
         />
-        <Button
-          disabled={disabled}
-          onClick={() => inputRef.current?.click()}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          {copy.choose}
-        </Button>
-        {value ? (
-          <Button
-            disabled={disabled}
-            onClick={() => onChange(undefined)}
-            size="sm"
-            type="button"
-            variant="danger"
-          >
-            {copy.remove}
-          </Button>
-        ) : null}
-      </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-3">
+          {previewSrc ? (
+            <img
+              alt={copy.title}
+              className="h-14 w-14 rounded-full border border-[var(--sdk-color-border-default)] object-cover"
+              src={previewSrc}
+            />
+          ) : (
+            <span
+              aria-hidden="true"
+              className="flex h-14 w-14 items-center justify-center rounded-full border border-dashed border-[var(--sdk-color-border-default)] text-[var(--sdk-color-text-muted)]"
+            >
+              <ImageIcon className="h-5 w-5" />
+            </span>
+          )}
+          {onFileSelected && driveUploadImageService ? (
+            <>
+              <input
+                ref={inputRef}
+                accept={LOGO_MIME_TYPES.join(",")}
+                aria-label={copy.choose}
+                className="sr-only"
+                onChange={(event) => {
+                  handleFile(event.target.files?.[0]);
+                  event.target.value = "";
+                }}
+                type="file"
+              />
+              <Button
+                disabled={disabled}
+                onClick={() => inputRef.current?.click()}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {copy.choose}
+              </Button>
+              {localPreview ? (
+                <Button
+                  disabled={disabled}
+                  onClick={() => {
+                    if (localPreview) URL.revokeObjectURL(localPreview);
+                    setLocalPreview(undefined);
+                    onChange(undefined);
+                  }}
+                  size="sm"
+                  type="button"
+                  variant="danger"
+                >
+                  {copy.remove}
+                </Button>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+      )}
+      <OauthLogoUrlInput copy={copy} disabled={disabled} onChange={onChange} value={value} />
     </section>
   );
+}
+
+/** The external-URL alternative: a plain delivery URL stored in `config.logoUrl`. */
+function OauthLogoUrlInput({ copy, disabled, onChange, value }: {
+  copy: AccountConfigCopy["logo"];
+  disabled: boolean;
+  onChange: (logoUrl: string | undefined) => void;
+  value?: string;
+}) {
+  return (
+    <Input
+      aria-label={copy.title}
+      className="max-w-md font-mono text-xs"
+      disabled={disabled}
+      onChange={(event) => onChange(event.target.value.trim() || undefined)}
+      placeholder={copy.hint}
+      type="url"
+      value={value && !value.startsWith("drive://") ? value : ""}
+    />
+  );
+}
+
+/** Seeds the shared component from a stored `config.logoUrl`. */
+function logoUrlToDriveUploadImageValue(value: string | undefined): DriveUploadImageValue | null {
+  if (!value) {
+    return null;
+  }
+  if (value.startsWith("drive://")) {
+    return { source: "drive", uri: value };
+  }
+  return { source: "external", uri: value };
 }
 
 function OauthDownloadVerifyButton({

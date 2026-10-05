@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "appId": "sdkwork-iam",
+  "declarations": [
+    {
+      "appResourceType": "profile.avatar",
+      "appResourceIdKind": "entity",
+      "scene": "avatar",
+      "source": "sdkwork-iam-pc",
+      "uploadProfileCode": "avatar",
+      "retention": "long_term",
+      "purpose": "IAM admin console user avatar uploaded to Drive through the shared upload-image component and attached to the user directory record."
+    }
+  ]
+}

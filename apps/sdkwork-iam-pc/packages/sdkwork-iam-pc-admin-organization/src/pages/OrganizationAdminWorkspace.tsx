@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import { Briefcase, Building2, GitBranch, Image as ImageIcon, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from "lucide-react";
+import { DriveUploadImage } from "sdkwork-drive-pc-upload-image";
+import type { DriveUploadImageValue } from "@sdkwork/drive-upload-image-core";
 import { CatalogPagination } from "@sdkwork/iam-pc-admin-core";
 import {
   Button,
@@ -33,6 +35,8 @@ import type {
   SdkworkIamOrganization,
   SdkworkIamOrganizationAdminWorkspaceProps,
   SdkworkIamOrganizationDraft,
+  SdkworkIamOrganizationLogoMediaResource,
+  SdkworkIamOrganizationLogoService,
   SdkworkIamOrganizationMembership,
   SdkworkIamOrganizationMembershipDraft,
   SdkworkIamOrganizationState,
@@ -48,11 +52,9 @@ type ListKind = "organizations" | "departments" | "memberships" | "positions" | 
 
 /// Tokens accepted by the backend organizations.create/update validation.
 const ORGANIZATION_KINDS = ["enterprise", "government", "nonprofit", "team", "other"] as const;
-/// Raw file ceiling for an uploaded logo. The snapshot JSON stores the data
-/// URL twice (publicUrl + url), so the base64 payload must stay under half of
-/// the backend's 128 KiB snapshot cap: 2 × (22 + 4·⌈n/3⌉) + wrapper ≤ 128 KiB
-/// bounds a data-URL image at ~48 KB.
-const LOGO_MAX_FILE_BYTES = 48 * 1024;
+/// Raw file ceiling for an uploaded logo, mirroring the backend's 128 KiB
+/// snapshot cap with headroom for the JSON wrapper.
+const LOGO_MAX_FILE_BYTES = 96 * 1024;
 /// Radix Select forbids empty-string item values, so the "no parent" option
 /// uses this sentinel and the change handler maps it back to "".
 const ROOT_PARENT_VALUE = "__sdkwork_root__";
@@ -63,6 +65,8 @@ const emptyMembershipDraft = (): SdkworkIamOrganizationMembershipDraft => ({ use
 
 export function SdkworkIamOrganizationAdminWorkspace({
   controller,
+  driveUploadImageService,
+  logoService,
   onOpenStructure,
   permissions = {
     departments: { create: true, delete: true, read: true, update: true },
@@ -112,6 +116,16 @@ export function SdkworkIamOrganizationAdminWorkspace({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
+  // Create-mode parked logo: the shared component owns its own controller and
+  // cannot hand the raw file back, so create mode parks the pick locally and
+  // attaches it right after the organization exists (persist first, upload
+  // second — DRIVE_SPEC.md section 18.3).
+  const [pendingLogoFile, setPendingLogoFile] = useState<File>();
+  const [pendingLogoPreviewUrl, setPendingLogoPreviewUrl] = useState<string>();
+  // Detail header display URL for a Drive-backed logo snapshot, resolved
+  // through the injected bounded preview reader. Presentation-only state and
+  // never persisted.
+  const [resolvedLogoUrl, setResolvedLogoUrl] = useState<string>();
 
   const detailTabs = useMemo(() => [
     ...(permissions.departments.read
@@ -182,6 +196,28 @@ export function SdkworkIamOrganizationAdminWorkspace({
       .catch((loadError) => setError(toErrorMessage(loadError, messages.notices.loadOrganizationsError)))
       .finally(() => setLoading(false));
   }, [controller]);
+
+  // Drive-backed logo snapshots have no delivery URL; the detail header shows
+  // the bounded preview the injected service resolves. External logos keep
+  // their own delivery URL and skip this entirely.
+  const selectedLogo = selectedOrganization?.logo;
+  useEffect(() => {
+    if (!selectedLogo || !logoService) {
+      setResolvedLogoUrl(undefined);
+      return;
+    }
+    let cancelled = false;
+    void logoService.resolveLogoUrl(selectedLogo)
+      .then((url) => {
+        if (!cancelled) setResolvedLogoUrl(url ?? undefined);
+      })
+      .catch(() => {
+        if (!cancelled) setResolvedLogoUrl(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedLogo, logoService]);
 
   const runAction = async (action: () => Promise<void>, successMessage: string, fallbackError = messages.common.operationError) => {
     setBusy(true);
@@ -290,6 +326,7 @@ export function SdkworkIamOrganizationAdminWorkspace({
       contactPhone: organization.contactPhone ?? "",
       description: organization.description ?? "",
       industryCategory: organization.industryCategory ?? "",
+      logo: organization.logo,
       logoUrl: organization.logoUrl ?? "",
       name: organization.name,
       organizationCategory: organization.organizationCategory ?? "",
@@ -299,6 +336,22 @@ export function SdkworkIamOrganizationAdminWorkspace({
       tenantId: organization.tenantId ?? "",
     });
     setOrganizationDrawerMode("edit");
+  };
+
+  // Create-mode logo park (see the pending state note above). The URL field in
+  // the drawer stays available for an external delivery URL.
+  const handleLogoFileSelected = (file: File) => {
+    clearPendingLogo();
+    setPendingLogoFile(file);
+    setPendingLogoPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const clearPendingLogo = () => {
+    setPendingLogoFile(undefined);
+    setPendingLogoPreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return undefined;
+    });
   };
 
   const openDepartmentEditor = (department: SdkworkIamDepartment) => {
@@ -378,7 +431,7 @@ export function SdkworkIamOrganizationAdminWorkspace({
             <Button disabled={loading} type="submit" variant="outline"><Search className="h-4 w-4" />{messages.organizations.searchAction}</Button>
           </form>
           {permissions.organizations.create ? (
-            <Button onClick={() => { setOrganizationDraft(emptyOrganizationDraft()); setOrganizationDrawerMode("create"); }} type="button">
+            <Button onClick={() => { clearPendingLogo(); setOrganizationDraft(emptyOrganizationDraft()); setOrganizationDrawerMode("create"); }} type="button">
               <Plus className="h-4 w-4" />{messages.organizations.create}
             </Button>
           ) : null}
@@ -428,11 +481,11 @@ export function SdkworkIamOrganizationAdminWorkspace({
           <section className="flex min-h-0 flex-1 flex-col border-t border-[var(--sdk-color-border-subtle)] pt-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex min-w-0 items-center gap-3">
-                {selectedOrganization.logoUrl ? (
+                {selectedOrganization.logoUrl || resolvedLogoUrl ? (
                   <img
                     alt=""
                     className="h-10 w-10 shrink-0 rounded-[var(--sdk-radius-control)] border border-[var(--sdk-color-border-default)] object-cover"
-                    src={selectedOrganization.logoUrl}
+                    src={selectedOrganization.logoUrl || resolvedLogoUrl}
                   />
                 ) : (
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--sdk-radius-control)] bg-[var(--sdk-color-surface-panel-muted)] text-[var(--sdk-color-text-secondary)]">
@@ -521,7 +574,19 @@ export function SdkworkIamOrganizationAdminWorkspace({
           if (selectedOrganization?.organizationId === updated.organizationId) setSelectedOrganization(updated);
         } else {
           const created = await controller.createOrganization(organizationDraft);
-          if (onOpenStructure) {
+          // Persist first, upload second (DRIVE_SPEC.md section 18.3): the
+          // parked create-mode logo uploads against the freshly created
+          // organization id, then a follow-up update attaches the returned
+          // media resource.
+          if (pendingLogoFile && logoService) {
+            const logo = await logoService.attachLogo(created.organizationId, pendingLogoFile);
+            const attached = await controller.updateOrganization(created.organizationId, { logo });
+            if (onOpenStructure) {
+              onOpenStructure(attached);
+            } else {
+              setSelectedOrganization(attached);
+            }
+          } else if (onOpenStructure) {
             onOpenStructure(created);
           } else {
             setSelectedOrganization(created);
@@ -530,11 +595,25 @@ export function SdkworkIamOrganizationAdminWorkspace({
             if (nextTab) await loadDetailTab(nextTab, created.organizationId);
           }
         }
+        clearPendingLogo();
         await refreshOrganizations();
         setOrganizationDrawerMode(undefined);
         setOrganizationEditTarget(undefined);
       }, organizationDrawerMode === "edit" ? messages.notices.organizationUpdated : messages.notices.organizationCreated)} submitDisabled={!organizationDraft.name.trim()} submitLabel={organizationDrawerMode === "edit" ? messages.common.save : messages.common.create} title={organizationDrawerMode === "edit" ? messages.drawers.organization.editTitle : messages.drawers.organization.createTitle}>
-        <LogoField copy={messages.drawers.organization} onChange={(logoUrl) => setOrganizationDraft({ ...organizationDraft, logoUrl })} value={organizationDraft.logoUrl ?? ""} />
+        <OrganizationLogoField
+          copy={messages.drawers.organization}
+          driveUploadImageService={driveUploadImageService}
+          editing={organizationDrawerMode === "edit"}
+          logoService={logoService}
+          maxBytes={LOGO_MAX_FILE_BYTES}
+          onDraftChange={setOrganizationDraft}
+          onFileSelected={handleLogoFileSelected}
+          onFileCleared={clearPendingLogo}
+          onInvalid={(message) => setError(message)}
+          draft={organizationDraft}
+          organizationId={organizationEditTarget?.organizationId}
+          pendingPreviewUrl={pendingLogoPreviewUrl}
+        />
         <Field label={messages.drawers.organization.name} onChange={(name) => setOrganizationDraft({ ...organizationDraft, name })} value={organizationDraft.name} />
         <Field label={messages.drawers.organization.code} onChange={(code) => setOrganizationDraft({ ...organizationDraft, code })} value={organizationDraft.code ?? ""} />
         <OrganizationKindSelectField kinds={messages.organizations.organizationKinds} label={messages.drawers.organization.kind} onChange={(organizationKind) => setOrganizationDraft({ ...organizationDraft, organizationKind })} value={organizationDraft.organizationKind ?? "enterprise"} />
@@ -637,69 +716,205 @@ function Field({ disabled, label, onChange, placeholder, value }: { disabled?: b
   );
 }
 
-function LogoField({ copy, onChange, value }: { copy: SdkworkIamOrganizationAdminMessages["drawers"]["organization"]; onChange: (value: string) => void; value: string }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const [uploadError, setUploadError] = useState<string>();
-  useEffect(() => {
-    setLoadFailed(false);
-  }, [value]);
-  const readFile = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setUploadError(copy.logoInvalidType);
-      return;
-    }
-    if (file.size > LOGO_MAX_FILE_BYTES) {
-      setUploadError(copy.logoTooLarge);
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setUploadError(undefined);
-      onChange(String(reader.result));
-    };
-    reader.onerror = () => setUploadError(copy.logoReadError);
-    reader.readAsDataURL(file);
-  };
-  return (
-    <div className="space-y-1.5 text-sm">
-      <span className="block font-medium text-[var(--sdk-color-text-primary)]">{copy.logo}</span>
-      <div className="flex items-center gap-3">
-        {value && !loadFailed ? (
-          <img
-            alt=""
-            className="h-12 w-12 shrink-0 rounded-[var(--sdk-radius-control)] border border-[var(--sdk-color-border-default)] object-cover"
-            onError={() => setLoadFailed(true)}
-            src={value}
-          />
-        ) : (
-          <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--sdk-radius-control)] border border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-subtle)] text-[var(--sdk-color-text-muted)]">
-            <ImageIcon className="h-5 w-5" />
-          </span>
-        )}
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="flex items-center gap-2">
-            <Button onClick={() => fileInputRef.current?.click()} size="sm" type="button" variant="outline">
-              {copy.logoUpload}
-            </Button>
-            <Input
-              className="flex-1"
-              onChange={(event) => onChange(event.target.value)}
-              placeholder={copy.logoPlaceholder}
-              type="url"
-              value={value}
-            />
-          </div>
-          <span className="block text-xs text-[var(--sdk-color-text-muted)]">{copy.logoHint}</span>
-          {uploadError ? <span className="block text-xs text-[var(--sdk-color-state-danger)]" role="alert">{uploadError}</span> : null}
-        </div>
+interface OrganizationLogoFieldProps {
+  copy: SdkworkIamOrganizationAdminMessages["drawers"]["organization"];
+  draft: SdkworkIamOrganizationDraft;
+  driveUploadImageService?: SdkworkIamOrganizationAdminWorkspaceProps["driveUploadImageService"];
+  editing: boolean;
+  logoService?: SdkworkIamOrganizationLogoService;
+  maxBytes: number;
+  onDraftChange: (draft: SdkworkIamOrganizationDraft) => void;
+  onFileCleared: () => void;
+  onFileSelected: (file: File) => void;
+  onInvalid: (message: string) => void;
+  organizationId?: string;
+  pendingPreviewUrl?: string;
+}
+
+/**
+ * The organization drawer's logo field, one branch per capability level.
+ *
+ * - Edit/view with the injected shared service: the canonical
+ *   `DriveUploadImage` component — picking uploads against the organization id
+ *   through the host's declared intent and previews through its bounded
+ *   reader.
+ * - Create mode with the injected logo service: park-then-attach — the picked
+ *   file is held by the workspace and uploaded right after the organization
+ *   exists (the component's controller cannot hand back the raw file).
+ * - Without either capability: the plain external-URL field only. There is
+ *   deliberately no local data-URL fallback; persisting a base64 payload
+ *   would be a fake upload (`DRIVE_SPEC.md` section 18).
+ */
+function OrganizationLogoField({
+  copy,
+  draft,
+  driveUploadImageService,
+  editing,
+  logoService,
+  maxBytes,
+  onDraftChange,
+  onFileCleared,
+  onFileSelected,
+  onInvalid,
+  organizationId,
+  pendingPreviewUrl,
+}: OrganizationLogoFieldProps) {
+  const draftLogoUrl = draft.logoUrl ?? "";
+  const draftLogoValue = logoResourceToDriveUploadImageValue(draft.logo);
+
+  if (driveUploadImageService && editing && organizationId) {
+    return (
+      <div className="space-y-1.5 text-sm">
+        <span className="block font-medium text-[var(--sdk-color-text-primary)]">{copy.logo}</span>
+        <DriveUploadImage
+          accept={["image/png", "image/jpeg", "image/webp"]}
+          alt={copy.logo}
+          appResourceId={organizationId}
+          label={copy.logoUpload}
+          maxSizeBytes={maxBytes}
+          onChange={(value) => onDraftChange({
+            ...draft,
+            logo: value ? driveUploadImageValueToLogoResource(value) : undefined,
+            logoUrl: "",
+          })}
+          onFileRejected={(rejection) => onInvalid(rejection.code === "file-too-large" ? copy.logoTooLarge : copy.logoInvalidType)}
+          onUploadError={() => onInvalid(copy.logoReadError)}
+          service={driveUploadImageService}
+          shape="rounded"
+          sizePx={64}
+          value={draftLogoValue}
+        />
+        <OrganizationLogoUrlField copy={copy} onDraftChange={onDraftChange} draft={draft} />
       </div>
-      <input accept="image/*" hidden onChange={readFile} ref={fileInputRef} type="file" />
-    </div>
+    );
+  }
+
+  if (logoService && !editing) {
+    const previewSrc = pendingPreviewUrl || draftLogoValue?.uri || draftLogoUrl || "";
+    return (
+      <div className="space-y-1.5 text-sm">
+        <span className="block font-medium text-[var(--sdk-color-text-primary)]">{copy.logo}</span>
+        <div className="flex items-center gap-3">
+          {previewSrc ? (
+            <img
+              alt=""
+              className="h-12 w-12 shrink-0 rounded-[var(--sdk-radius-control)] border border-[var(--sdk-color-border-default)] object-cover"
+              src={previewSrc}
+            />
+          ) : (
+            <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--sdk-radius-control)] border border-dashed border-[var(--sdk-color-border-default)] text-[var(--sdk-color-text-muted)]">
+              <ImageIcon className="h-5 w-5" />
+            </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <LogoParkFileInput copy={copy} maxBytes={maxBytes} onCleared={onFileCleared} onInvalid={onInvalid} onSelected={onFileSelected} />
+          </div>
+        </div>
+        <span className="block text-xs text-[var(--sdk-color-text-muted)]">{copy.logoHint}</span>
+        <OrganizationLogoUrlField copy={copy} onDraftChange={onDraftChange} draft={draft} />
+      </div>
+    );
+  }
+
+  return <OrganizationLogoUrlField copy={copy} onDraftChange={onDraftChange} draft={draft} />;
+}
+
+/** The external-URL alternative: a plain delivery URL the backend wraps into the snapshot. */
+function OrganizationLogoUrlField({ copy, draft, onDraftChange }: {
+  copy: SdkworkIamOrganizationAdminMessages["drawers"]["organization"];
+  draft: SdkworkIamOrganizationDraft;
+  onDraftChange: (draft: SdkworkIamOrganizationDraft) => void;
+}) {
+  return (
+    <label className="block space-y-1.5 text-xs">
+      <span className="text-[var(--sdk-color-text-muted)]">{copy.logoPlaceholder}</span>
+      <Input
+        onChange={(event) => onDraftChange({ ...draft, logoUrl: event.target.value })}
+        placeholder={copy.logoPlaceholder}
+        type="url"
+        value={draft.logoUrl ?? ""}
+      />
+    </label>
   );
+}
+
+/** Create-mode file picker that parks the pick locally instead of reading it as a data URL. */
+function LogoParkFileInput({ copy, maxBytes, onCleared, onInvalid, onSelected }: {
+  copy: SdkworkIamOrganizationAdminMessages["drawers"]["organization"];
+  maxBytes: number;
+  onCleared: () => void;
+  onInvalid: (message: string) => void;
+  onSelected: (file: File) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  return (
+    <>
+      <Button onClick={() => fileInputRef.current?.click()} size="sm" type="button" variant="outline">
+        {copy.logoUpload}
+      </Button>
+      <input
+        accept="image/png,image/jpeg,image/webp"
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (!file) {
+            onCleared();
+            return;
+          }
+          if (!file.type.startsWith("image/")) {
+            onInvalid(copy.logoInvalidType);
+            return;
+          }
+          if (file.size > maxBytes) {
+            onInvalid(copy.logoTooLarge);
+            return;
+          }
+          onSelected(file);
+        }}
+        ref={fileInputRef}
+        type="file"
+      />
+    </>
+  );
+}
+
+/** Seeds the shared component from a stored logo snapshot (uri + drive identity). */
+function logoResourceToDriveUploadImageValue(
+  logo: SdkworkIamOrganizationLogoMediaResource | undefined,
+): DriveUploadImageValue | null {
+  if (!logo) {
+    return null;
+  }
+  const uri = logo.uri ?? logo.publicUrl ?? logo.url;
+  if (!uri) {
+    return null;
+  }
+  const drive = logo.metadata?.drive;
+  const driveMetadata = logo.source === "drive" && drive?.nodeId && drive.spaceId
+    ? { drive: { nodeId: drive.nodeId, spaceId: drive.spaceId } }
+    : undefined;
+  return {
+    ...(driveMetadata === undefined ? {} : { metadata: driveMetadata }),
+    source: logo.source === "external" ? "external" : "drive",
+    uri,
+  };
+}
+
+/** Maps a freshly uploaded component value back onto the stored snapshot shape. */
+function driveUploadImageValueToLogoResource(
+  value: DriveUploadImageValue,
+): SdkworkIamOrganizationLogoMediaResource {
+  const drive = value.metadata?.drive;
+  const driveMetadata = drive?.nodeId && drive.spaceId
+    ? { drive: { nodeId: drive.nodeId, spaceId: drive.spaceId } }
+    : undefined;
+  return {
+    kind: "image",
+    ...(driveMetadata === undefined ? {} : { metadata: driveMetadata }),
+    source: value.source,
+    uri: value.uri,
+  };
 }
 
 function OrganizationKindSelectField({ kinds, label, onChange, value }: { kinds: { enterprise: string; government: string; nonprofit: string; other: string; team: string; unknown: string }; label: string; onChange: (value: string) => void; value: string }) {
