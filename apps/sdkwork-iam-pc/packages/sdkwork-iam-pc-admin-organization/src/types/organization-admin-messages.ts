@@ -89,6 +89,7 @@ export interface SdkworkIamOrganizationAdminMessages {
     membershipUpdated: string;
     organizationCreated: string;
     organizationDeleted: string;
+    organizationLogoAttachFailed: string;
     organizationUpdated: string;
   };
   organizations: {

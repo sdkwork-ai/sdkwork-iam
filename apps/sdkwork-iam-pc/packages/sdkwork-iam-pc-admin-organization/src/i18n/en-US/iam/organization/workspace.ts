@@ -46,7 +46,8 @@ export const sdkworkIamOrganizationAdminMessages: SdkworkIamOrganizationAdminMes
     loadDepartmentsError: "Departments could not be loaded.", loadMembershipsError: "Organization members could not be loaded.",
     loadOrganizationError: "The organization details could not be loaded.", loadOrganizationsError: "Organizations could not be loaded.",
     loadPositionsError: "Positions could not be loaded.", loadRoleBindingsError: "Role bindings could not be loaded.",
-    membershipCreated: "Member added.", membershipUpdated: "Membership updated.", organizationCreated: "Organization created.",
+    membershipCreated: "Member added.", membershipUpdated: "Membership updated.", organizationLogoAttachFailed: "The organization was created, but the logo upload failed; re-upload it while editing.",
+    organizationCreated: "Organization created.",
     organizationDeleted: "Organization deleted.", organizationUpdated: "Organization updated.",
   },
   organizations: {

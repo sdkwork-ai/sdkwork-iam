@@ -190,6 +190,11 @@ export function OauthAccountSetupSection({
   const [form, setForm] = useState<AccountFormValues>(() => createEmptyForm(kind));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<AccountRow>();
+  // Covers the whole persist → upload → attach chain: the controller's
+  // `saving` flag drops once the create lands, and a re-enabled confirm
+  // button mid-upload invites a duplicate account.
+  const [attachBusy, setAttachBusy] = useState(false);
+  const [attachError, setAttachError] = useState<string>();
   const [pendingDelete, setPendingDelete] = useState<AccountRow>();
   const [qrRow, setQrRow] = useState<AccountRow>();
   const [qrCode, setQrCode] = useState<SdkworkIamOauthAccountFollowQrCode>();
@@ -605,7 +610,7 @@ export function OauthAccountSetupSection({
       <ConfirmDialog
         closeOnConfirm={false}
         confirmLabel={common.delete}
-        confirmLoading={status === "saving"}
+        confirmLoading={status === "saving" || attachBusy}
         description={pendingDelete
           ? templateMessage(paginationMessages.quickSetup.deleteAccountConfirmTemplate, { name: pendingDelete.label })
           : ""}
@@ -647,6 +652,8 @@ export function OauthAccountSetupSection({
         description={messages.addDescription}
         onCancel={() => setForm(createEmptyForm(kind))}
         onConfirm={() => {
+          setAttachError(undefined);
+          setAttachBusy(true);
           void controller.createAccountSetup(kind, {
             accountType: form.accountType,
             appId: form.appId,
@@ -663,7 +670,10 @@ export function OauthAccountSetupSection({
             // drive:// reference.
             .then(async (account) => {
               const accountId = readResourceAccountId(account);
-              if (pendingLogoFile && driveUploadImageService && accountId) {
+              if (!(pendingLogoFile && driveUploadImageService && accountId)) {
+                return account;
+              }
+              try {
                 const uploaded = await driveUploadImageService.upload({
                   appResourceId: accountId,
                   file: pendingLogoFile,
@@ -672,13 +682,43 @@ export function OauthAccountSetupSection({
                   ...form.config,
                   logoUrl: uploaded.uri,
                 });
+              } catch {
+                // The account exists; a second confirm would only hit the
+                // appId dedupe. Flip to the created account's edit drawer so
+                // the retry is non-destructive, and say what failed instead
+                // of refreshing as if nothing happened.
+                setEditingRow({
+                  accountId: readResourceAccountId(account),
+                  accountType: readAccountType(account),
+                  appId: readProviderClientId(account),
+                  appSecret: readProviderClientSecret(account) || undefined,
+                  authorizationStatus: readAuthorizationStatus(account),
+                  config: readAccountConfig(account),
+                  enabled: readEnabled(account),
+                  integrationId: readAccountIntegrationId(account),
+                  kind: readResourceAccountKind(account),
+                  label: readDisplayName(account),
+                  logoUrl: readAccountConfig(account)?.logoUrl,
+                  originalId: readAccountOriginalId(account),
+                  verifyStatus: readDomainVerifyStatus(account),
+                  webhookVerifyStatus: readWebhookVerifyStatus(account),
+                });
+                setDrawerOpen(false);
+                setAttachError(paginationMessages.quickSetup.logoAttachFailed);
+                return undefined;
               }
               return account;
             })
-            .then(onChanged)
-            .catch(onChanged)
-            .finally(clearPendingLogo);
-          setForm(createEmptyForm(kind));
+            .then((account) => {
+              if (!account) return;
+              setForm(createEmptyForm(kind));
+              setDrawerOpen(false);
+              onChanged();
+            })
+            .finally(() => {
+              setAttachBusy(false);
+              clearPendingLogo();
+            });
         }}
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
@@ -686,6 +726,7 @@ export function OauthAccountSetupSection({
         triggerLabel={messages.addButton}
         width="min(60vw,60rem)"
       >
+        {attachError ? <StatusNotice tone="danger">{attachError}</StatusNotice> : null}
         <OauthAccountFormTabs
           allMessages={paginationMessages}
           copy={{

@@ -579,12 +579,24 @@ export function SdkworkIamOrganizationAdminWorkspace({
           // organization id, then a follow-up update attaches the returned
           // media resource.
           if (pendingLogoFile && logoService) {
-            const logo = await logoService.attachLogo(created.organizationId, pendingLogoFile);
-            const attached = await controller.updateOrganization(created.organizationId, { logo });
-            if (onOpenStructure) {
-              onOpenStructure(attached);
-            } else {
-              setSelectedOrganization(attached);
+            try {
+              const logo = await logoService.attachLogo(created.organizationId, pendingLogoFile);
+              const attached = await controller.updateOrganization(created.organizationId, { logo });
+              if (onOpenStructure) {
+                onOpenStructure(attached);
+              } else {
+                setSelectedOrganization(attached);
+              }
+            } catch {
+              // The organization exists; a second Create would duplicate it.
+              // Flip the drawer to the created organization's edit mode so the
+              // retry attaches to the entity that already exists, and name
+              // the failure instead of leaving the create button armed.
+              setOrganizationDrawerMode("edit");
+              setOrganizationEditTarget(created);
+              setError(messages.notices.organizationLogoAttachFailed);
+              clearPendingLogo();
+              return;
             }
           } else if (onOpenStructure) {
             onOpenStructure(created);

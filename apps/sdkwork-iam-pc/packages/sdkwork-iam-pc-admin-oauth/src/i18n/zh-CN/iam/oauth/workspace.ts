@@ -351,6 +351,7 @@ export const sdkworkIamOauthAdminMessages: SdkworkIamOauthAdminMessages = {
     },
   },
   quickSetup: {
+    logoAttachFailed: "账号已创建，但 logo 上传失败；请在编辑中重新上传。",
     accountType: {
       enterprise: "企业主体",
       label: "账号类型",

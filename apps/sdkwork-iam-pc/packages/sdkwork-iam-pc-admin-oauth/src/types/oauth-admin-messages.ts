@@ -355,6 +355,7 @@ export interface SdkworkIamOauthAdminMessages {
     };
   };
   quickSetup: {
+    logoAttachFailed: string;
     accountType: {
       enterprise: string;
       label: string;

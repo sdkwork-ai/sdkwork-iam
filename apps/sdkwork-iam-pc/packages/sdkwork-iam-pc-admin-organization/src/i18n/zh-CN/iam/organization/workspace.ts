@@ -40,6 +40,7 @@ export const sdkworkIamOrganizationAdminMessages: SdkworkIamOrganizationAdminMes
     departmentCreated: "部门已创建。", departmentDeleted: "部门已删除。", departmentUpdated: "部门已更新。", loadDepartmentsError: "部门列表加载失败。",
     loadMembershipsError: "组织成员加载失败。", loadOrganizationError: "组织详情加载失败。", loadOrganizationsError: "组织列表加载失败。",
     loadPositionsError: "岗位列表加载失败。", loadRoleBindingsError: "角色绑定加载失败。", membershipCreated: "成员已添加。", membershipUpdated: "成员关系已更新。",
+    organizationLogoAttachFailed: "组织已创建，但 logo 上传失败；请在编辑中重新上传。",
     organizationCreated: "组织已创建。", organizationDeleted: "组织已删除。", organizationUpdated: "组织已更新。",
   },
   organizations: {

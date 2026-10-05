@@ -351,6 +351,7 @@ export const sdkworkIamOauthAdminMessages: SdkworkIamOauthAdminMessages = {
     },
   },
   quickSetup: {
+    logoAttachFailed: "The account was created, but the logo upload failed; re-upload it while editing.",
     accountType: {
       enterprise: "Enterprise",
       label: "Account type",
