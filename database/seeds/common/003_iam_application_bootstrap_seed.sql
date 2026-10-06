@@ -44,6 +44,29 @@ ON CONFLICT (id) DO UPDATE SET
   default_access_permissions_json = EXCLUDED.default_access_permissions_json,
   updated_at = CURRENT_TIMESTAMP;
 
+-- The platform application row carries three unique identities (id, app_id,
+-- and the partial (tenant_id, primary_domain) index), and long-lived shared
+-- databases drift on which of them an older seed run provisioned. Update by
+-- id and insert only when the row is genuinely absent, so re-seeding never
+-- violates a sibling key.
+UPDATE iam_tenant_application SET
+  app_id = 'app_100001',
+  tenant_id = '100001',
+  organization_id = '0',
+  template_id = 'tmpl_sdkwork_platform',
+  template_version = '1.0.0',
+  instance_key = 'default',
+  display_name = 'SDKWork Default',
+  environment = 'prod',
+  application_type = 'pc',
+  status = 'enabled',
+  primary_domain = 'app_100001.localhost',
+  domain_config_json = '{}'::jsonb,
+  access_permissions_json = '["iam.self"]'::jsonb,
+  activated_at = CURRENT_TIMESTAMP,
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = 'tapp_100001_0_sdkwork_platform';
+
 INSERT INTO iam_tenant_application (
   id,
   app_id,
@@ -65,37 +88,26 @@ INSERT INTO iam_tenant_application (
   created_at,
   updated_at
 )
-VALUES
-  (
-    'tapp_100001_0_sdkwork_platform',
-    'app_100001',
-    '100001',
-    '0',
-    'tmpl_sdkwork_platform',
-    '1.0.0',
-    'default',
-    'SDKWork Default',
-    'prod',
-    'pc',
-    'enabled',
-    'localhost',
-    '{}'::jsonb,
-    '["iam.self"]'::jsonb,
-    '{}'::jsonb,
-    CURRENT_TIMESTAMP,
-    CURRENT_TIMESTAMP,
-    CURRENT_TIMESTAMP,
-    CURRENT_TIMESTAMP
-  )
-ON CONFLICT (id) DO UPDATE SET
-  app_id = EXCLUDED.app_id,
-  template_id = EXCLUDED.template_id,
-  template_version = EXCLUDED.template_version,
-  display_name = EXCLUDED.display_name,
-  environment = EXCLUDED.environment,
-  application_type = EXCLUDED.application_type,
-  status = EXCLUDED.status,
-  primary_domain = EXCLUDED.primary_domain,
-  access_permissions_json = EXCLUDED.access_permissions_json,
-  activated_at = EXCLUDED.activated_at,
-  updated_at = CURRENT_TIMESTAMP;
+SELECT
+  'tapp_100001_0_sdkwork_platform',
+  'app_100001',
+  '100001',
+  '0',
+  'tmpl_sdkwork_platform',
+  '1.0.0',
+  'default',
+  'SDKWork Default',
+  'prod',
+  'pc',
+  'enabled',
+  'app_100001.localhost',
+  '{}'::jsonb,
+  '["iam.self"]'::jsonb,
+  '{}'::jsonb,
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP
+WHERE NOT EXISTS (
+  SELECT 1 FROM iam_tenant_application WHERE id = 'tapp_100001_0_sdkwork_platform'
+);

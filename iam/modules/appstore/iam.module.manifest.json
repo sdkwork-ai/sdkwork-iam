@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "appstore",
+  "catalogVersion": "1.0.0",
+  "domain": "appstore",
+  "owner": "sdkwork-appstore",
+  "displayName": "SDKWork App Store Module",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "appstore.analytics.operator",
+        "name": "Read storefront operator analytics",
+        "resource": "appstore.analytics",
+        "action": "operator",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "appstore.analytics.publisher",
+        "name": "Read publisher analytics",
+        "resource": "appstore.analytics",
+        "action": "publisher",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "appstore.catalog.admin",
+        "name": "Administer store catalog (categories, collections, featured slots)",
+        "resource": "appstore.catalog",
+        "action": "admin",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "appstore.listings.admin",
+        "name": "Administer listing visibility and lifecycle",
+        "resource": "appstore.listings",
+        "action": "admin",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "appstore.listings.write",
+        "name": "Publish and manage own listings",
+        "resource": "appstore.listings",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "appstore.market_channels.read",
+        "name": "Read market channels",
+        "resource": "appstore.market_channels",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "appstore.market_channels.write",
+        "name": "Create and update market channels",
+        "resource": "appstore.market_channels",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "appstore.market_releases.read",
+        "name": "Read market releases",
+        "resource": "appstore.market_releases",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "appstore.market_releases.sync",
+        "name": "Sync market releases",
+        "resource": "appstore.market_releases",
+        "action": "sync",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "appstore.moderation.appeal",
+        "name": "File moderation appeals",
+        "resource": "appstore.moderation",
+        "action": "appeal",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "appstore.moderation.assign",
+        "name": "Assign moderation reviews",
+        "resource": "appstore.moderation",
+        "action": "assign",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "appstore.moderation.decide",
+        "name": "Record moderation decisions",
+        "resource": "appstore.moderation",
+        "action": "decide",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "appstore.moderation.read",
+        "name": "Read moderation queue and reviews",
+        "resource": "appstore.moderation",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "appstore.publishers.admin",
+        "name": "Administer publisher verification",
+        "resource": "appstore.publishers",
+        "action": "admin",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ]
+  },
+  "roles": {
+    "domainStandardRoles": [
+      {
+        "code": "appstore_admin_operator",
+        "name": "App Store Admin Operator",
+        "surface": "application",
+        "scope": "tenant",
+        "standard": true,
+        "assignable": true,
+        "bindingPrincipalKind": "user",
+        "permissionPatterns": [
+          "appstore.analytics.operator",
+          "appstore.analytics.publisher",
+          "appstore.catalog.admin",
+          "appstore.listings.admin",
+          "appstore.market_channels.read",
+          "appstore.market_channels.write",
+          "appstore.market_releases.read",
+          "appstore.market_releases.sync",
+          "appstore.moderation.read",
+          "appstore.moderation.assign",
+          "appstore.moderation.decide",
+          "appstore.publishers.admin"
+        ]
+      },
+      {
+        "code": "appstore_publisher",
+        "name": "App Store Publisher",
+        "surface": "application",
+        "scope": "tenant",
+        "standard": true,
+        "assignable": true,
+        "bindingPrincipalKind": "user",
+        "permissionPatterns": [
+          "appstore.listings.write",
+          "appstore.moderation.appeal",
+          "appstore.analytics.publisher"
+        ]
+      }
+    ]
+  },
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": ["iam-kernel"]
+  }
+}

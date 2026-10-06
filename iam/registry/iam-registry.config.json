@@ -14,7 +14,8 @@
     "ops",
     "system",
     "skills",
-    "mcp"
+    "mcp",
+    "appstore"
   ],
   "optionalModules": [
     "iot"
