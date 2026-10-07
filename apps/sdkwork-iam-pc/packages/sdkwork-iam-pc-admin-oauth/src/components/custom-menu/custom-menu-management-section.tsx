@@ -34,6 +34,10 @@ type CustomMenuMessages = SdkworkIamOauthAdminMessages["quickSetup"]["customMenu
 
 export interface SdkworkIamOauthCustomMenuManagementSectionProps {
   busy?: "saving" | "publishing";
+  /** Save-draft affordance (REQ-2026-0107, `customMenus.update`); defaults to true. */
+  canUpdate?: boolean;
+  /** Publish affordance (REQ-2026-0107, `customMenus.publish`); defaults to true. */
+  canPublish?: boolean;
   context?: SdkworkIamOauthCustomMenuContext;
   messages: CustomMenuMessages;
   onDirtyChange?: (dirty: boolean) => void;
@@ -68,6 +72,8 @@ interface DeleteResult {
  */
 export function SdkworkIamOauthCustomMenuManagementSection({
   busy,
+  canPublish = true,
+  canUpdate = true,
   context,
   messages,
   onDirtyChange,
@@ -354,7 +360,7 @@ export function SdkworkIamOauthCustomMenuManagementSection({
           </div>
           <Button
             className="shrink-0"
-            disabled={Boolean(busy)}
+            disabled={Boolean(busy) || !canUpdate}
             loading={busy === "saving"}
             onClick={() => { void handleSaveDraft(); }}
             type="button"
@@ -364,7 +370,7 @@ export function SdkworkIamOauthCustomMenuManagementSection({
           </Button>
           <Button
             className="shrink-0"
-            disabled={Boolean(busy)}
+            disabled={Boolean(busy) || !canPublish}
             loading={busy === "publishing"}
             onClick={handleRequestPublish}
             type="button"

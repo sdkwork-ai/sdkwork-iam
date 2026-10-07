@@ -5,6 +5,7 @@ import { StatusNotice } from "@sdkwork/ui-pc-react";
 import type {
   SdkworkIamOauthCustomMenuContext,
   SdkworkIamOauthCustomMenuDraft,
+  SdkworkIamOauthCustomMenuPermissions,
 } from "../types/oauth-admin-types";
 import type { SdkworkIamOauthAdminController } from "../types/oauth-admin-types";
 import { useSdkworkIamOauthAdminMessages } from "../i18n";
@@ -33,14 +34,19 @@ export function SdkworkIamOauthOfficialAccountCustomMenuPage({
   onBusyChange,
   onDirtyChange,
   onClose,
+  permissions,
   resourceAccountId,
 }: {
   controller: SdkworkIamOauthAdminController;
   onBusyChange?: (busy: boolean) => void;
   onDirtyChange?: (dirty: boolean) => void;
   onClose?: () => void;
+  /** UI discovery of the server-side mutation permissions (REQ-2026-0107); every member defaults to true. */
+  permissions?: SdkworkIamOauthCustomMenuPermissions;
   resourceAccountId: string;
 }) {
+  const canUpdate = permissions?.update ?? true;
+  const canPublish = permissions?.publish ?? true;
   const messages = useSdkworkIamOauthAdminMessages();
   const [context, setContext] = useState<SdkworkIamOauthCustomMenuContext | undefined>();
   const [loadError, setLoadError] = useState<string | undefined>();
@@ -157,6 +163,8 @@ export function SdkworkIamOauthOfficialAccountCustomMenuPage({
       <SdkworkIamOauthCustomMenuManagementSection
         key={resourceAccountId}
         busy={busy}
+        canPublish={canPublish}
+        canUpdate={canUpdate}
         context={context}
         messages={messages.quickSetup.customMenus}
         onDirtyChange={onDirtyChange}

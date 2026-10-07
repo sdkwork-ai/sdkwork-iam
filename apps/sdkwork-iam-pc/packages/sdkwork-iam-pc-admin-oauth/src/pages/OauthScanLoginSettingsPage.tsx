@@ -23,7 +23,10 @@ import type {
   SdkworkIamOauthScanLoginPreview,
   SdkworkIamOauthScanLoginSettings,
 } from "../types/oauth-admin-types";
-import type { SdkworkIamOauthAdminPageProps } from "../types/oauth-admin-types";
+import type {
+  SdkworkIamOauthAdminPageProps,
+  SdkworkIamOauthPagePermissions,
+} from "../types/oauth-admin-types";
 import { useSdkworkIamOauthAdminMessages } from "../i18n";
 import {
   OauthOfficialAccountScanLoginSection,
@@ -47,8 +50,26 @@ type ScanLoginModeKind = "official_account" | "url" | "provider";
  * time. The selected mode is read back from the backend on every load.
  */
 export function SdkworkIamOauthScanLoginSettingsPage({
+  accountPermissions,
   controller,
-}: SdkworkIamOauthAdminPageProps) {
+  permissions,
+}: SdkworkIamOauthAdminPageProps & {
+  /**
+   * Scan-login mutations (REQ-2026-0107): `create` maps to
+   * `iam.oauth.scanLoginPreviews.create` (QR previews), `update` to
+   * `iam.oauth.scanLoginSettings.update` (mode selection, URL origin). Every
+   * member defaults to true.
+   */
+  permissions?: SdkworkIamOauthPagePermissions;
+  /**
+   * The embedded add-official-account flow creates a resource account, which
+   * answers to `iam.oauth.resourceAccounts.create` — a different family from
+   * the scan-login codes above. Defaults to true.
+   */
+  accountPermissions?: SdkworkIamOauthPagePermissions;
+}) {
+  const canCreate = permissions?.create ?? true;
+  const canUpdate = permissions?.update ?? true;
   const messages = useSdkworkIamOauthAdminMessages();
   const copy = messages.scanLogin;
   const [settings, setSettings] = useState<SdkworkIamOauthScanLoginSettings | undefined>();
@@ -200,7 +221,7 @@ export function SdkworkIamOauthScanLoginSettingsPage({
     setBusy(true);
     void controller.generateScanLoginPreview(`provider:${providerCode.trim()}`)
       .then((nextPreview) => handlePreview(nextPreview, copy.preview.urlHint))
-      .catch((generateError) => {
+      .catch((generateError: unknown) => {
         setError(generateError instanceof Error ? generateError.message : copy.common.error);
       })
       .finally(() => setBusy(false));
@@ -231,7 +252,7 @@ export function SdkworkIamOauthScanLoginSettingsPage({
         setNotice(copy.accounts.addSuccess);
         load();
       })
-      .catch((addError) => {
+      .catch((addError: unknown) => {
         setError(addError instanceof Error ? addError.message : copy.common.error);
       })
       .finally(() => setBusy(false));
@@ -280,7 +301,7 @@ export function SdkworkIamOauthScanLoginSettingsPage({
                     <input
                       checked={selected}
                       className="mt-1 h-4 w-4 accent-[var(--sdk-color-brand-primary)]"
-                      disabled={busy}
+                      disabled={busy || !canUpdate}
                       name="oauth-scan-login-mode"
                       onChange={() => selectMode(mode)}
                       type="radio"
@@ -317,6 +338,9 @@ export function SdkworkIamOauthScanLoginSettingsPage({
             <OauthOfficialAccountScanLoginSection
               accounts={settings.officialAccounts}
               busy={busy}
+              canAddAccount={accountPermissions?.create ?? true}
+              canCreate={canCreate}
+              canUpdate={canUpdate}
               controller={controller}
               onAddAccount={() => setAddDrawerOpen(true)}
               onChanged={() => {
@@ -330,6 +354,8 @@ export function SdkworkIamOauthScanLoginSettingsPage({
           {activeMode === "url" ? (
             <OauthUrlScanLoginSection
               busy={busy}
+              canCreate={canCreate}
+              canUpdate={canUpdate}
               controller={controller}
               onChanged={(updated) => {
                 setError(undefined);
@@ -346,6 +372,7 @@ export function SdkworkIamOauthScanLoginSettingsPage({
               <div className="flex flex-wrap items-end gap-3">
                 <div className="w-72">
                   <OauthAdminSelectField
+                    disabled={busy || !canUpdate}
                     label={copy.providerSelectLabel}
                     onChange={(value) => {
                       setProviderCode(value);
@@ -364,7 +391,7 @@ export function SdkworkIamOauthScanLoginSettingsPage({
                   />
                 </div>
                 <Button
-                  disabled={busy || !providerCode.trim()}
+                  disabled={busy || !canCreate || !providerCode.trim()}
                   loading={busy}
                   onClick={generateProviderPreview}
                   size="sm"

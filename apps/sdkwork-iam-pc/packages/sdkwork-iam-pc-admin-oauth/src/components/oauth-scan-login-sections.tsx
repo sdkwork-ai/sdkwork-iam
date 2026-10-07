@@ -41,6 +41,9 @@ export type OauthScanLoginNoticeHandler = (message: string) => void;
 export function OauthOfficialAccountScanLoginSection({
   accounts,
   busy,
+  canAddAccount = true,
+  canCreate = true,
+  canUpdate = true,
   controller,
   onAddAccount,
   onChanged,
@@ -49,6 +52,12 @@ export function OauthOfficialAccountScanLoginSection({
 }: {
   accounts: SdkworkIamOauthScanLoginOfficialAccount[];
   busy: boolean;
+  /** Add-service-account affordance (`iam.oauth.resourceAccounts.create`, REQ-2026-0107); defaults to true. */
+  canAddAccount?: boolean;
+  /** QR-preview generation (`iam.oauth.scanLoginPreviews.create`, REQ-2026-0107); defaults to true. */
+  canCreate?: boolean;
+  /** Stop/start the QR login (`iam.oauth.scanLoginSettings.update`, REQ-2026-0107); defaults to true. */
+  canUpdate?: boolean;
   controller: SdkworkIamOauthAdminController;
   onAddAccount: () => void;
   onChanged: () => void;
@@ -161,7 +170,7 @@ export function OauthOfficialAccountScanLoginSection({
               <span className="flex flex-wrap items-center gap-3">
                 {active ? (
                   <Button
-                    disabled={busy}
+                    disabled={busy || !canUpdate}
                     onClick={() => toggleQrLogin(account, false)}
                     size="sm"
                     type="button"
@@ -171,7 +180,7 @@ export function OauthOfficialAccountScanLoginSection({
                   </Button>
                 ) : null}
                 <Button
-                  disabled={busy || !account.enabled}
+                  disabled={busy || !canCreate || !account.enabled}
                   loading={generating === account.accountId}
                   onClick={() => generatePreview(account.accountId)}
                   size="sm"
@@ -186,7 +195,7 @@ export function OauthOfficialAccountScanLoginSection({
         })}
       </div>
       <p className="text-xs text-[var(--sdk-color-text-muted)]">{copy.accounts.mutualExclusiveHint}</p>
-      <Button onClick={onAddAccount} size="sm" type="button" variant="outline">
+      <Button disabled={!canAddAccount} onClick={onAddAccount} size="sm" type="button" variant="outline">
         <Plus aria-hidden="true" className="h-4 w-4" />
         {copy.accounts.addServiceAccount}
       </Button>
@@ -202,6 +211,8 @@ export function OauthOfficialAccountScanLoginSection({
  */
 export function OauthUrlScanLoginSection({
   busy,
+  canCreate = true,
+  canUpdate = true,
   controller,
   onChanged,
   onError,
@@ -210,6 +221,10 @@ export function OauthUrlScanLoginSection({
   settings,
 }: {
   busy: boolean;
+  /** QR-preview generation (`iam.oauth.scanLoginPreviews.create`, REQ-2026-0107); defaults to true. */
+  canCreate?: boolean;
+  /** Saving the URL origin (`iam.oauth.scanLoginSettings.update`, REQ-2026-0107); defaults to true. */
+  canUpdate?: boolean;
   controller: SdkworkIamOauthAdminController;
   onChanged: (settings: SdkworkIamOauthScanLoginSettings) => void;
   onError: (message: string) => void;
@@ -344,7 +359,7 @@ export function OauthUrlScanLoginSection({
         </label>
         <div className="flex flex-wrap gap-2">
           <Button
-            disabled={busy || saving || !canSave}
+            disabled={busy || saving || !canSave || !canUpdate}
             loading={saving}
             onClick={saveUrlSettings}
             size="sm"
@@ -353,7 +368,7 @@ export function OauthUrlScanLoginSection({
             {copy.url.save}
           </Button>
           <Button
-            disabled={busy || generating || !canSave}
+            disabled={busy || generating || !canSave || !canCreate}
             loading={generating}
             onClick={generatePreview}
             size="sm"

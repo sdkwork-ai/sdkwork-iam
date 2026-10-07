@@ -560,3 +560,27 @@ export interface SdkworkIamOauthAdminSectionProps {
   onChanged: () => void;
   status?: SdkworkIamOauthAdminState["status"];
 }
+
+/**
+ * UI discovery of the server-side oauth mutation permissions (REQ-2026-0107).
+ *
+ * Every member defaults to `true`: callers that do not model permissions keep
+ * today's behavior (open-closed), and the backend-api manifest remains the
+ * enforcement point either way. The host derives each page's prop from the
+ * session scope with `can("iam.oauth.<family>.<action>")`.
+ */
+export interface SdkworkIamOauthPagePermissions {
+  create?: boolean;
+  update?: boolean;
+  delete?: boolean;
+}
+
+/**
+ * Custom-menu editor permissions (REQ-2026-0107): saving a draft needs
+ * `iam.oauth.resourceAccounts.customMenus.update`, publishing needs
+ * `iam.oauth.resourceAccounts.customMenus.publish`. Both default to `true`.
+ */
+export interface SdkworkIamOauthCustomMenuPermissions {
+  update?: boolean;
+  publish?: boolean;
+}

@@ -3,7 +3,7 @@
 ```yaml
 id: REQ-2026-0107
 owner: sdkwork-iam
-status: planned
+status: implemented
 type: feature
 scope:
   producers:

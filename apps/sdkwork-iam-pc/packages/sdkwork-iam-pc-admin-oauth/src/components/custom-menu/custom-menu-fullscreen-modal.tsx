@@ -11,13 +11,18 @@ import {
 } from "@sdkwork/ui-pc-react";
 
 import { useSdkworkIamOauthAdminMessages } from "../../i18n";
-import type { SdkworkIamOauthAdminController } from "../../types/oauth-admin-types";
+import type {
+  SdkworkIamOauthAdminController,
+  SdkworkIamOauthCustomMenuPermissions,
+} from "../../types/oauth-admin-types";
 import { SdkworkIamOauthOfficialAccountCustomMenuPage } from "../../pages/OauthOfficialAccountCustomMenuPage";
 
 export interface SdkworkIamOauthCustomMenuFullscreenModalProps {
   accountId: string;
   controller: SdkworkIamOauthAdminController;
   onClose: () => void;
+  /** UI discovery of the server-side mutation permissions (REQ-2026-0107); every member defaults to true. */
+  permissions?: SdkworkIamOauthCustomMenuPermissions;
 }
 
 /** Large, viewport-aware menu workspace hosted by the shared modal portal. */
@@ -25,6 +30,7 @@ export function SdkworkIamOauthCustomMenuFullscreenModal({
   accountId,
   controller,
   onClose,
+  permissions,
 }: SdkworkIamOauthCustomMenuFullscreenModalProps) {
   const messages = useSdkworkIamOauthAdminMessages().quickSetup.customMenus;
   const [busy, setBusy] = useState(false);
@@ -75,6 +81,7 @@ export function SdkworkIamOauthCustomMenuFullscreenModal({
             onClose={requestClose}
             onBusyChange={setBusy}
             onDirtyChange={setDirty}
+            permissions={permissions}
             resourceAccountId={accountId}
           />
         </div>

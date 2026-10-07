@@ -41,6 +41,7 @@ import type {
   SdkworkIamOauthAccountFollowQrCode,
   SdkworkIamOauthAccountKind,
   SdkworkIamOauthAdminController,
+  SdkworkIamOauthPagePermissions,
 } from "../types/oauth-admin-types";
 import type { SdkworkIamOauthAdminMessages } from "../types/oauth-admin-messages";
 import {
@@ -155,6 +156,7 @@ export function OauthAccountSetupSection({
   messages,
   onChanged,
   onOpenCustomMenu,
+  permissions,
   status,
   switchMessages,
 }: {
@@ -184,9 +186,14 @@ export function OauthAccountSetupSection({
    * to navigate to a dedicated route or open the full-screen modal.
    */
   onOpenCustomMenu?: (resourceAccountId: string) => void;
+  /** UI discovery of the server-side mutation permissions (REQ-2026-0107); every member defaults to true. */
+  permissions?: SdkworkIamOauthPagePermissions;
   status: string;
   switchMessages: AccountSwitchCopy;
 }) {
+  const canCreate = permissions?.create ?? true;
+  const canUpdate = permissions?.update ?? true;
+  const canDelete = permissions?.delete ?? true;
   const [form, setForm] = useState<AccountFormValues>(() => createEmptyForm(kind));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<AccountRow>();
@@ -507,7 +514,7 @@ export function OauthAccountSetupSection({
               <SelectItem value="0">{switchMessages.notEnabled}</SelectItem>
             </SelectContent>
           </Select>
-          <Button disabled={disabled} onClick={() => setDrawerOpen(true)} type="button">
+          <Button disabled={disabled || !canCreate} onClick={() => setDrawerOpen(true)} type="button">
             <Plus aria-hidden="true" className="h-4 w-4" />
             {messages.addButton}
           </Button>
@@ -546,7 +553,7 @@ export function OauthAccountSetupSection({
               <Switch
                 aria-label={enabled ? common.disable : common.enable}
                 checked={enabled}
-                disabled={disabled || !row.accountId || row.enabled === undefined}
+                disabled={disabled || !canUpdate || !row.accountId || row.enabled === undefined}
                 onCheckedChange={(checked) => toggleEnabled(row, checked)}
                 title={enabled ? common.disable : common.enable}
               />
@@ -577,7 +584,7 @@ export function OauthAccountSetupSection({
               ) : null}
               <IconButton
                 aria-label={messages.actions}
-                disabled={disabled || !row.accountId}
+                disabled={disabled || !canUpdate || !row.accountId}
                 onClick={() => setEditingRow(row)}
                 title={messages.actions}
                 variant="ghost"
@@ -586,7 +593,7 @@ export function OauthAccountSetupSection({
               </IconButton>
               <IconButton
                 aria-label={common.delete}
-                disabled={disabled || !row.accountId}
+                disabled={disabled || !canDelete || !row.accountId}
                 onClick={() => setPendingDelete(row)}
                 title={common.delete}
                 variant="ghost"

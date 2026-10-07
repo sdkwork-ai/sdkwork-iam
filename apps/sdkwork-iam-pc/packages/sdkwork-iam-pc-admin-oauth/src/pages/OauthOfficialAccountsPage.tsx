@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { StatusNotice } from "@sdkwork/ui-pc-react";
 
 import type { DriveUploadImageService } from "@sdkwork/drive-upload-image-core";
-import type { SdkworkIamOauthAdminController } from "../types/oauth-admin-types";
+import type {
+  SdkworkIamOauthAdminController,
+  SdkworkIamOauthCustomMenuPermissions,
+  SdkworkIamOauthPagePermissions,
+} from "../types/oauth-admin-types";
 import { useOauthAdminPageState } from "../hooks/use-oauth-admin-page-state";
 import { useSdkworkIamOauthAdminMessages } from "../i18n";
 import { OauthAccountSetupSection } from "../components/oauth-account-setup-section";
@@ -24,10 +28,18 @@ import { readResourceAccountKind } from "../utils/oauth-admin-utils";
  */
 export function SdkworkIamOauthOfficialAccountsPage({
   controller,
+  customMenuPermissions,
   driveUploadImageService,
   onOpenCustomMenu,
+  permissions,
 }: {
   controller: SdkworkIamOauthAdminController;
+  /**
+   * Permissions for the custom-menu editor, which answers to its own
+   * `iam.oauth.resourceAccounts.customMenus.update/.publish` codes rather
+   * than the account-mutation family above (REQ-2026-0107).
+   */
+  customMenuPermissions?: SdkworkIamOauthCustomMenuPermissions;
   /**
    * Host-injected Drive image-upload capability, threaded to the account
    * setup section's logo field (shared upload component + bounded preview
@@ -35,6 +47,8 @@ export function SdkworkIamOauthOfficialAccountsPage({
    */
   driveUploadImageService?: DriveUploadImageService;
   onOpenCustomMenu?: (resourceAccountId: string) => void;
+  /** UI discovery of the server-side mutation permissions (REQ-2026-0107); every member defaults to true. */
+  permissions?: SdkworkIamOauthPagePermissions;
 }) {
   const messages = useSdkworkIamOauthAdminMessages();
   const { data, disabled, error, listPageInfo, status, sync } = useOauthAdminPageState(controller, [
@@ -75,6 +89,7 @@ export function SdkworkIamOauthOfficialAccountsPage({
         messages={messages.quickSetup.officialAccounts}
         onChanged={sync}
         onOpenCustomMenu={handleOpenCustomMenu}
+        permissions={permissions}
         status={status}
         switchMessages={messages.quickSetup.accountSwitch}
       />
@@ -83,6 +98,7 @@ export function SdkworkIamOauthOfficialAccountsPage({
           accountId={activeMenuAccountId}
           controller={controller}
           onClose={() => setActiveMenuAccountId(undefined)}
+          permissions={customMenuPermissions}
         />
       ) : null}
     </div>

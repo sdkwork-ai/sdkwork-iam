@@ -98,11 +98,13 @@ export function OauthAdminMultilineField({
 }
 
 export function OauthAdminSelectField({
+  disabled = false,
   label,
   onChange,
   options,
   value,
 }: {
+  disabled?: boolean;
   label: string;
   onChange: (value: string) => void;
   options: Array<{ label: string; value: string }>;
@@ -111,7 +113,11 @@ export function OauthAdminSelectField({
   return (
     <label className="block space-y-1.5 text-sm">
       <span className="font-medium text-[var(--sdk-color-text-primary)]">{label}</span>
-      <Select onValueChange={onChange} value={value}>
+      <Select
+        disabled={disabled}
+        onValueChange={onChange}
+        value={value}
+      >
         <SelectTrigger aria-label={label}>
           <SelectValue />
         </SelectTrigger>

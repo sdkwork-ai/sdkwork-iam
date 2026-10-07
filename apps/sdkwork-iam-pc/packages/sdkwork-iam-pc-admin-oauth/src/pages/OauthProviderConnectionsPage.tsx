@@ -29,6 +29,7 @@ import { useSdkworkI18n } from "@sdkwork/i18n-pc-react";
 import type {
   SdkworkIamOauthAdminController,
   SdkworkIamOauthIntegrationDraft,
+  SdkworkIamOauthPagePermissions,
 } from "../types/oauth-admin-types";
 import { useOauthAdminPageState } from "../hooks/use-oauth-admin-page-state";
 import { useSdkworkIamOauthAdminMessages } from "../i18n";
@@ -96,12 +97,18 @@ const EMPTY_INTEGRATION_DRAFT = (): SdkworkIamOauthIntegrationDraft => ({
  */
 export function SdkworkIamOauthProviderConnectionsPage({
   controller,
+  permissions,
 }: {
   controller: SdkworkIamOauthAdminController;
+  /** UI discovery of the server-side mutation permissions (REQ-2026-0107); every member defaults to true. */
+  permissions?: SdkworkIamOauthPagePermissions;
 }) {
   const messages = useSdkworkIamOauthAdminMessages();
   const i18nContext = useSdkworkI18n();
   const locale = i18nContext?.locale ?? "zh-CN";
+  const canCreate = permissions?.create ?? true;
+  const canUpdate = permissions?.update ?? true;
+  const canDelete = permissions?.delete ?? true;
   const { data, disabled, error, status, sync } = useOauthAdminPageState(controller, [
     "integrations",
     "providerCatalog",
@@ -252,13 +259,13 @@ export function SdkworkIamOauthProviderConnectionsPage({
               <Switch
                 aria-label={isEnabled ? quick.disable : quick.enable}
                 checked={isEnabled}
-                disabled={disabled}
+                disabled={disabled || !canUpdate}
                 onCheckedChange={(checked) => toggleEnabled(activeIntegration.integrationId, checked)}
                 title={isEnabled ? quick.disable : quick.enable}
               />
               <IconButton
                 aria-label={messages.integrations.editButton}
-                disabled={disabled}
+                disabled={disabled || !canUpdate}
                 onClick={() => setEditingRow(activeIntegration)}
                 title={messages.integrations.editButton}
                 variant="ghost"
@@ -267,7 +274,7 @@ export function SdkworkIamOauthProviderConnectionsPage({
               </IconButton>
               <IconButton
                 aria-label={messages.common.delete}
-                disabled={disabled}
+                disabled={disabled || !canDelete}
                 onClick={() => setDeleteTarget(activeIntegration)}
                 title={messages.common.delete}
                 variant="ghost"
@@ -287,7 +294,7 @@ export function SdkworkIamOauthProviderConnectionsPage({
         title={templateMessage(quick.configuredListTitle, { count: String(configuredPlatforms.length) })}
         toolbar={(
           <Button
-            disabled={disabled}
+            disabled={disabled || !canCreate}
             onClick={() => setDrawerOpen(true)}
             type="button"
           >
