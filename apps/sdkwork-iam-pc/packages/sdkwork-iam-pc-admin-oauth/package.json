@@ -31,6 +31,7 @@
     "@sdkwork/iam-pc-admin-core": "workspace:*",
     "@sdkwork/iam-service": "workspace:*",
     "@sdkwork/ui-pc-react": "workspace:*",
+    "@sdkwork/utils": "workspace:*",
     "lucide-react": "^1.7.0",
     "qrcode": "catalog:",
     "sdkwork-drive-pc-upload-image": "workspace:*"

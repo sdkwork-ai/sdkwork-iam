@@ -262,6 +262,50 @@ importers:
         specifier: workspace:*
         version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
 
+  ../sdkwork-appbase/packages/mobile-react/foundation/sdkwork-appbase-mobile-react:
+    dependencies:
+      '@sdkwork/core-pc-react':
+        specifier: '*'
+        version: 0.1.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
+      lucide-react:
+        specifier: 'catalog:'
+        version: 1.42.0(react@19.2.8)
+      react:
+        specifier: '>=18.2.0 <20.0.0'
+        version: 19.2.8
+      react-dom:
+        specifier: '>=18.2.0 <20.0.0'
+        version: 19.2.8(react@19.2.8)
+    devDependencies:
+      '@sdkwork/ui-pc-react':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-ui/sdkwork-ui-pc-react
+
+  ../sdkwork-appbase/packages/mobile-react/foundation/sdkwork-shell-mobile-react:
+    dependencies:
+      '@sdkwork/appbase-mobile-react':
+        specifier: workspace:*
+        version: link:../sdkwork-appbase-mobile-react
+      '@sdkwork/core-pc-react':
+        specifier: '*'
+        version: 0.1.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
+      react:
+        specifier: '>=18.2.0 <20.0.0'
+        version: 19.2.8
+      react-dom:
+        specifier: '>=18.2.0 <20.0.0'
+        version: 19.2.8(react@19.2.8)
+    devDependencies:
+      '@sdkwork/ui-pc-react':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-ui/sdkwork-ui-pc-react
+
   ../sdkwork-appbase/packages/pc-react/foundation/sdkwork-appbase-pc-react:
     dependencies:
       '@sdkwork/runtime-bootstrap':
@@ -638,10 +682,10 @@ importers:
         specifier: ^29.0.1
         version: 29.1.1
       react:
-        specifier: 19.2.8
+        specifier: 'catalog:'
         version: 19.2.8
       react-dom:
-        specifier: 19.2.8
+        specifier: 'catalog:'
         version: 19.2.8(react@19.2.8)
       react-hook-form:
         specifier: ^7.72.1
@@ -2185,6 +2229,9 @@ importers:
 
   apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-admin-oauth:
     dependencies:
+      '@sdkwork/drive-upload-image-core':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-drive/apps/sdkwork-drive-common/packages/sdkwork-drive-upload-image-core
       '@sdkwork/i18n-pc-react':
         specifier: workspace:*
         version: link:../../../../../sdkwork-appbase/packages/pc-react/foundation/sdkwork-i18n-pc-react
@@ -2200,6 +2247,9 @@ importers:
       '@sdkwork/ui-pc-react':
         specifier: workspace:*
         version: link:../../../../../sdkwork-ui/sdkwork-ui-pc-react
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       lucide-react:
         specifier: ^1.7.0
         version: 1.7.0(react@19.2.4)
@@ -2212,6 +2262,9 @@ importers:
       react-dom:
         specifier: '>=18.2.0 <20.0.0'
         version: 19.2.4(react@19.2.4)
+      sdkwork-drive-pc-upload-image:
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-drive/apps/sdkwork-drive-pc/packages/sdkwork-drive-pc-upload-image
     devDependencies:
       '@types/qrcode':
         specifier: 'catalog:'
@@ -2228,6 +2281,9 @@ importers:
 
   apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-admin-organization:
     dependencies:
+      '@sdkwork/drive-upload-image-core':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-drive/apps/sdkwork-drive-common/packages/sdkwork-drive-upload-image-core
       '@sdkwork/i18n-pc-react':
         specifier: workspace:*
         version: link:../../../../../sdkwork-appbase/packages/pc-react/foundation/sdkwork-i18n-pc-react
@@ -2255,6 +2311,9 @@ importers:
       react-dom:
         specifier: '>=18.2.0 <20.0.0'
         version: 19.2.4(react@19.2.4)
+      sdkwork-drive-pc-upload-image:
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-drive/apps/sdkwork-drive-pc/packages/sdkwork-drive-pc-upload-image
     devDependencies:
       '@types/react':
         specifier: 'catalog:'
@@ -2280,6 +2339,9 @@ importers:
       '@sdkwork/ui-pc-react':
         specifier: workspace:*
         version: link:../../../../../sdkwork-ui/sdkwork-ui-pc-react
+      lucide-react:
+        specifier: ^1.7.0
+        version: 1.7.0(react@19.2.4)
       react:
         specifier: '>=18.2.0 <20.0.0'
         version: 19.2.4
@@ -4256,8 +4318,24 @@ packages:
   '@rushstack/ts-command-line@5.3.10':
     resolution: {integrity: sha512-fwI076HYknC0IrMXdY6UmjDv+PH7NHhNJX3/pY2UblSE5XrXgndXZPiOe/6ZtuFpn6DvVDVNhtkIzQ+Qu/MhVQ==}
 
+  '@sdkwork/app-sdk@1.0.34':
+    resolution: {integrity: sha512-eBp1xD+TaS5JGLWGQr1l1WAmOfDLIZmPlCy3uwVl6x7Dc4z5DzJlRjRtvUe51mxEth5mvShAWY/BAyN7hPupsg==}
+
+  '@sdkwork/core-pc-react@0.1.1':
+    resolution: {integrity: sha512-V70WPMwfMdgGeyAS+x38X7Jv5+T9C4FPoGni3gBjJPABD3yzWJC5faV2bXYguJjuuYf4rkp2jmfAFKlQGFq0Vg==, tarball: https://registry.npmjs.org/@sdkwork/core-pc-react/-/core-pc-react-0.1.1.tgz}
+    peerDependencies:
+      react: '>=18.2.0'
+      react-dom: '>=18.2.0'
+
   '@sdkwork/iam-app-sdk@0.1.6':
     resolution: {integrity: sha512-YAHgfjJT6zlKzmK0bgnN4rqQPiI4HR7VDS83gh5HwiCyoy4lqWjQtBA2k7CCKANmSqHNpm+/NUxKrou+PPkN6Q==}
+
+  '@sdkwork/im-sdk@0.1.1':
+    resolution: {integrity: sha512-OsgYx4BWifWiRr8O7XbsVRb024kx9j66RFkAjmODiotqoNuunDwovrbU2tlB4hiiH3EV2VmIUVWIMVsGFLA+nw==}
+    hasBin: true
+
+  '@sdkwork/rtc-sdk@0.1.8':
+    resolution: {integrity: sha512-hJj6W21dK1jIlWh4mcHSiwM3FdpRaBX8j7v4qJ+B7xHBGUE0+qv0/kG/WeNbje3TtkfjxmeP7wsx4C5tzLFc8w==}
 
   '@sdkwork/utils@0.11.0':
     resolution: {integrity: sha512-GTW9LPBkrNy3jdzbnEGzLd1wRYZly5NNkXt2W0ZZElmsbAfkEIi9oFa1O4+E9lSDwsYRkHjNvzeAb8waacVTow==}
@@ -6407,6 +6485,18 @@ packages:
     resolution: {integrity: sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA==}
     engines: {node: '>=8'}
 
+  ws@8.22.0:
+    resolution: {integrity: sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   xml-name-validator@5.0.0:
     resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
     engines: {node: '>=18'}
@@ -7721,10 +7811,37 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
+  '@sdkwork/app-sdk@1.0.34':
+    dependencies:
+      '@sdkwork/sdk-common': link:../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+
+  '@sdkwork/core-pc-react@0.1.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      '@sdkwork/app-sdk': 1.0.34
+      '@sdkwork/im-sdk': 0.1.1
+      '@sdkwork/rtc-sdk': 0.1.8
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   '@sdkwork/iam-app-sdk@0.1.6':
     dependencies:
       '@sdkwork/sdk-common': link:../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
       '@sdkwork/utils': 0.11.0
+
+  '@sdkwork/im-sdk@0.1.1':
+    dependencies:
+      '@sdkwork/sdk-common': link:../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+      ws: 8.22.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@sdkwork/rtc-sdk@0.1.8':
+    dependencies:
+      '@sdkwork/sdk-common': link:../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
 
   '@sdkwork/utils@0.11.0': {}
 
@@ -8980,6 +9097,10 @@ snapshots:
     dependencies:
       react: 19.2.4
 
+  lucide-react@1.42.0(react@19.2.8):
+    dependencies:
+      react: 19.2.8
+
   lucide-react@1.7.0(react@19.2.4):
     dependencies:
       react: 19.2.4
@@ -9936,6 +10057,8 @@ snapshots:
       ansi-styles: 4.3.0
       string-width: 4.2.3
       strip-ansi: 6.0.1
+
+  ws@8.22.0: {}
 
   xml-name-validator@5.0.0: {}
 
