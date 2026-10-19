@@ -13,6 +13,7 @@ import { buildSdkworkLoginRedirectPath } from "../../../sdkwork-auth-runtime-pc-
 import type { SdkworkAuthAppearanceConfig } from "../auth-appearance.ts";
 import type { SdkworkAuthRuntimeConfig } from "../auth-config.ts";
 import type { SdkworkAuthController } from "../auth-controller.ts";
+import type { SdkworkAuthDesktopBrowserLoginBinding } from "../desktop-browser-login.ts";
 import {
   createSdkworkIamRuntimeAuthController,
   type CreateSdkworkIamRuntimeAuthControllerOptions,
@@ -43,6 +44,7 @@ export interface SdkworkSessionAuthLoginModalProps {
     "getRuntime"
   >;
   copy?: Partial<SdkworkSessionAuthLoginModalCopy>;
+  desktopBrowserLogin?: SdkworkAuthDesktopBrowserLoginBinding;
   events?: SdkworkAuthPageEvents;
   getRuntime?: () =>
     | Promise<SdkworkIamRuntimeAuthRuntimeLike>
@@ -84,6 +86,7 @@ function SdkworkSessionAuthLoginModalContent({
   controller: providedController,
   controllerOptions,
   copy,
+  desktopBrowserLogin,
   events,
   getRuntime,
   homePath = "/",
@@ -159,6 +162,7 @@ function SdkworkSessionAuthLoginModalContent({
         appearance={appearance}
         basePath={basePath}
         controller={runtimeController}
+        desktopBrowserLogin={desktopBrowserLogin}
         embeddedRouting={embeddedRouting}
         events={events}
         homePath={homePath}
