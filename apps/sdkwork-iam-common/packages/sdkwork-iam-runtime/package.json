@@ -20,7 +20,7 @@
     "test": "pnpm --dir ../../../.. exec vitest run apps/sdkwork-iam-common/packages/sdkwork-iam-runtime/tests --config vitest.node.config.ts --configLoader native --pool vmThreads"
   },
   "devDependencies": {
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.3"
   },
   "dependencies": {
     "@sdkwork/iam-app-sdk": "workspace:*",
@@ -29,7 +29,7 @@
     "@sdkwork/iam-sdk-ports": "workspace:*",
     "@sdkwork/iam-service": "workspace:*",
     "@sdkwork/runtime-bootstrap": "workspace:*",
-    "@sdkwork/sdk-common": "^1.0.2"
+    "@sdkwork/sdk-common": "workspace:*"
   },
   "sdkwork": {
     "architecture": "common",

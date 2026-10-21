@@ -20,7 +20,7 @@
     "test": "pnpm --dir ../../../.. exec vitest run apps/sdkwork-iam-common/packages/sdkwork-iam-sdk-ports/tests --config vitest.config.ts --configLoader native --pool vmThreads"
   },
   "devDependencies": {
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.3"
   },
   "dependencies": {
     "@sdkwork/iam-contracts": "workspace:*"
