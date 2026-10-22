@@ -424,7 +424,9 @@ async fn backend_postgres_user_create_and_update_roundtrip_with_profile_fields()
         .clone()
         .oneshot(
             auth_headers(
-                Request::builder().method(Method::POST).uri("/backend/v3/api/iam/users"),
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/backend/v3/api/iam/users"),
             )
             .body(Body::from(create_body.to_string()))
             .unwrap(),
@@ -444,15 +446,29 @@ async fn backend_postgres_user_create_and_update_roundtrip_with_profile_fields()
         create_payload["code"], 0,
         "user create must return appbase success envelope: {create_text}"
     );
-    let created = create_payload["data"].as_object().expect("user create must return data");
+    let created = create_payload["data"]
+        .as_object()
+        .expect("user create must return data");
     let created_user_id = created["userId"]
         .as_str()
         .or_else(|| created["id"].as_str())
         .expect("user create must return userId")
         .to_owned();
-    assert_eq!(Some("female"), created["gender"].as_str(), "create must echo gender: {create_text}");
-    assert_eq!(Some("1998-07-15"), created["birthDate"].as_str(), "create must echo birthDate: {create_text}");
-    assert_eq!(Some("CN"), created["country"].as_str(), "create must echo country: {create_text}");
+    assert_eq!(
+        Some("female"),
+        created["gender"].as_str(),
+        "create must echo gender: {create_text}"
+    );
+    assert_eq!(
+        Some("1998-07-15"),
+        created["birthDate"].as_str(),
+        "create must echo birthDate: {create_text}"
+    );
+    assert_eq!(
+        Some("CN"),
+        created["country"].as_str(),
+        "create must echo country: {create_text}"
+    );
     assert_eq!(
         Some("https://cdn.sdkwork.test/avatars/backend-profile.png"),
         created["avatarUrl"].as_str(),
@@ -477,17 +493,18 @@ async fn backend_postgres_user_create_and_update_roundtrip_with_profile_fields()
         "initial password must be stored as an argon2 hash: {credential_hash}"
     );
 
-    let password_changed_row = sqlx::query(
-        "SELECT password_changed_at FROM iam_user WHERE tenant_id = $1 AND id = $2",
-    )
-    .bind(DEFAULT_IAM_TENANT_ID)
-    .bind(&created_user_id)
-    .fetch_optional(&pg)
-    .await
-    .expect("query password_changed_at")
-    .expect("created user row must exist");
+    let password_changed_row =
+        sqlx::query("SELECT password_changed_at FROM iam_user WHERE tenant_id = $1 AND id = $2")
+            .bind(DEFAULT_IAM_TENANT_ID)
+            .bind(&created_user_id)
+            .fetch_optional(&pg)
+            .await
+            .expect("query password_changed_at")
+            .expect("created user row must exist");
     assert!(
-        password_changed_row.get::<Option<String>, _>("password_changed_at").is_some(),
+        password_changed_row
+            .get::<Option<String>, _>("password_changed_at")
+            .is_some(),
         "initial password must stamp password_changed_at"
     );
 
@@ -519,9 +536,21 @@ async fn backend_postgres_user_create_and_update_roundtrip_with_profile_fields()
         update_status.is_success(),
         "authenticated user update must succeed: {update_text}"
     );
-    assert_eq!(Some("male"), update_payload["data"]["gender"].as_str(), "update must apply gender: {update_text}");
-    assert_eq!(Some("1999-01-02"), update_payload["data"]["birthDate"].as_str(), "update must apply birthDate: {update_text}");
-    assert_eq!(Some("JP"), update_payload["data"]["country"].as_str(), "update must apply country: {update_text}");
+    assert_eq!(
+        Some("male"),
+        update_payload["data"]["gender"].as_str(),
+        "update must apply gender: {update_text}"
+    );
+    assert_eq!(
+        Some("1999-01-02"),
+        update_payload["data"]["birthDate"].as_str(),
+        "update must apply birthDate: {update_text}"
+    );
+    assert_eq!(
+        Some("JP"),
+        update_payload["data"]["country"].as_str(),
+        "update must apply country: {update_text}"
+    );
 
     let list_response = router
         .clone()
@@ -537,7 +566,12 @@ async fn backend_postgres_user_create_and_update_roundtrip_with_profile_fields()
         .await
         .unwrap();
     let list_status = list_response.status();
-    let bytes = list_response.into_body().collect().await.unwrap().to_bytes();
+    let bytes = list_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let list_text = String::from_utf8(bytes.to_vec()).unwrap();
     let list_payload = serde_json::from_str::<Value>(&list_text).unwrap_or(Value::Null);
 
@@ -553,7 +587,11 @@ async fn backend_postgres_user_create_and_update_roundtrip_with_profile_fields()
         .iter()
         .find(|item| item["id"].as_str() == Some(created_user_id.as_str()))
         .expect("user list must include the created user");
-    assert_eq!(Some("JP"), listed["country"].as_str(), "list must carry profile columns: {list_text}");
+    assert_eq!(
+        Some("JP"),
+        listed["country"].as_str(),
+        "list must carry profile columns: {list_text}"
+    );
     assert!(
         listed["avatarUrl"].is_string(),
         "list must carry the avatar delivery URL: {list_text}"
