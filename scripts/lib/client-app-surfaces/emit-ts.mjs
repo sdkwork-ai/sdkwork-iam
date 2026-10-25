@@ -246,7 +246,7 @@ function appManifest(surface) {
       standardOwner: 'sdkwork-iam',
       initializedAt: '2026-09-18T00:00:00Z',
       deploymentConfig: 'etc/sdkwork.deployment.config.json',
-      releaseAuthority: '../../sdkwork.workflow.json',
+      releaseAuthority: '../../agent.workflow.json',
       architectureSpec: surface.architectureSpec,
       runtimeTarget: surface.runtimeTarget,
     },

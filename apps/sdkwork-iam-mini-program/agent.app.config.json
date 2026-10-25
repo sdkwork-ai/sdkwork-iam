@@ -150,7 +150,7 @@
     "standardOwner": "sdkwork-iam",
     "initializedAt": "2026-09-18T00:00:00Z",
     "deploymentConfig": "etc/sdkwork.deployment.config.json",
-    "releaseAuthority": "../../sdkwork.workflow.json",
+    "releaseAuthority": "../../agent.workflow.json",
     "architectureSpec": "MINI_PROGRAM_APP_ARCHITECTURE_SPEC.md",
     "runtimeTarget": "mini-program",
     "appTypeNote": "APP_MANIFEST_SPEC PlusProjectType has no native mini program member; APP_UNIAPP is the closest closed-set value. This root is a native WeChat mini program (mp-weixin), not a uni-app project."

@@ -153,7 +153,7 @@
     "standardOwner": "sdkwork-iam",
     "initializedAt": "2026-09-18T00:00:00Z",
     "deploymentConfig": "etc/sdkwork.deployment.config.json",
-    "releaseAuthority": "../../sdkwork.workflow.json",
+    "releaseAuthority": "../../agent.workflow.json",
     "architectureSpec": "FLUTTER_APP_MOBILE_ARCHITECTURE_SPEC.md",
     "runtimeTarget": "flutter-mobile"
   }
