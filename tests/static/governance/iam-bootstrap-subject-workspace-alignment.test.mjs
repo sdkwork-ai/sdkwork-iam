@@ -39,9 +39,9 @@ const DOMAIN_SEED_FIXTURES = [
 ];
 
 const APP_MANIFEST_FIXTURES = [
-  "sdkwork-llm/sdkwork.app.config.json",
-  "sdkwork-memory/sdkwork.app.config.json",
-  "sdkwork-knowledgebase/sdkwork.app.config.json",
+  "sdkwork-llm/agent.app.config.json",
+  "sdkwork-memory/agent.app.config.json",
+  "sdkwork-knowledgebase/agent.app.config.json",
 ];
 
 const JSON_PARSE_ATTEMPTS = 3;
@@ -206,7 +206,7 @@ test("zh-CN locale overlay targets canonical tenant and root organization codes"
 test("sdkwork-aiot app manifest declares canonical backend tenant scope", async () => {
   const manifest = JSON.parse(
     await readFile(
-      path.join(workspaceRoot, "sdkwork-aiot/sdkwork.app.config.json"),
+      path.join(workspaceRoot, "sdkwork-aiot/agent.app.config.json"),
       "utf8",
     ),
   );
@@ -285,7 +285,7 @@ test("all workspace app manifests with backend section declare canonical tenant 
         await walk(fullPath);
         continue;
       }
-      if (entry.name !== "sdkwork.app.config.json") continue;
+      if (entry.name !== "agent.app.config.json") continue;
       const manifest = await readJsonWithRetry(fullPath);
       if (!manifest.backend) continue;
       const backend = manifest.backend;

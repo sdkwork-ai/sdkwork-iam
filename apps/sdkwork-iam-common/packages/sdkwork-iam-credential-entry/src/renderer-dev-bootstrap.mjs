@@ -15,7 +15,7 @@ function printHelp() {
   console.log(`Usage: sdkwork-iam-renderer-dev-bootstrap [options] [--] [command ...]
 
 Starts a renderer dev process with private SDKWORK_ACCESS_TOKEN bootstrap env merged
-from sdkwork.app.config.json identity before spawn.
+from agent.app.config.json identity before spawn.
 
 Options:
   --cwd <dir>            Working directory for the child process (default: process.cwd())
@@ -81,7 +81,7 @@ export function resolveRendererDevBootstrapContext(startDir = process.cwd()) {
   let deepestManifestPath;
 
   while (true) {
-    const candidate = path.join(current, 'sdkwork.app.config.json');
+    const candidate = path.join(current, 'agent.app.config.json');
     if (existsSync(candidate) && !deepestManifestPath) {
       deepestManifestPath = candidate;
     }
@@ -93,7 +93,7 @@ export function resolveRendererDevBootstrapContext(startDir = process.cwd()) {
   }
 
   if (!deepestManifestPath) {
-    throw new Error(`Could not locate sdkwork.app.config.json from ${startDir}`);
+    throw new Error(`Could not locate agent.app.config.json from ${startDir}`);
   }
 
   let repoRoot = path.dirname(deepestManifestPath);

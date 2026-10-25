@@ -33,7 +33,7 @@ function resolveAppIdFromManifest(manifest) {
   if (backendAppId) {
     return backendAppId;
   }
-  throw new Error('sdkwork.app.config.json backend.appId is required for IAM bootstrap access token generation');
+  throw new Error('agent.app.config.json backend.appId is required for IAM bootstrap access token generation');
 }
 
 function resolveTenantIdFromManifest(manifest) {

@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-/** Registration output next to `sdkwork.app.config.json`. */
+/** Registration output next to `agent.app.config.json`. */
 export const REGISTERED_BOOTSTRAP_ENV_FILE = ".sdkwork.local.env";
 
 export function normalizeBootstrapLifecycle(value: string | undefined): string {

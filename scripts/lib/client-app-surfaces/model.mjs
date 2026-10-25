@@ -208,8 +208,8 @@ export const SURFACES = [
     languages: ['arkts'],
     componentType: 'harmony-mobile-app-root',
     appType: 'APP_HARMONY',
-    // Native mobile store identity. `apps/sdkwork-im-harmony-mobile/sdkwork.app.config.json`
-    // and `apps/sdkwork-im-flutter-mobile/sdkwork.app.config.json` both declare
+    // Native mobile store identity. `apps/sdkwork-im-harmony-mobile/agent.app.config.json`
+    // and `apps/sdkwork-im-flutter-mobile/agent.app.config.json` both declare
     // `com.sdkwork.im.mobile` for `packageName` and `bundleId`, and the Harmony host
     // config repeats it as `bundleName`. The H5 and mini program roots declare
     // `null`, so this is a property of the native mobile architectures rather than
@@ -343,7 +343,7 @@ export const REGENERATED_PATH_PATTERNS = [
   /^packages\//u,
   // identity + contracts, always re-emitted from the model
   /^package\.json$/u,
-  /^sdkwork\.app\.config\.json$/u,
+  /^agent\.app\.config\.json$/u,
   /^specs\//u,
   /^etc\/sdkwork\.deployment\.config\.json$/u,
   /^(?:README|AGENTS|CLAUDE|CODEX|GEMINI)\.md$/u,
@@ -1150,7 +1150,7 @@ export function permissionCompositionFor(entry) {
     applicationModule: { manifestRef: IAM_PERMISSION_MODULES[0].manifestRef },
     moduleCatalogRefs: IAM_PERMISSION_MODULES.map((module) => ({ ...module })),
     bootstrapAccessTokenScope: {
-      inheritFrom: 'sdkwork.app.config.json#backend.accessTokenPermissionScope',
+      inheritFrom: 'agent.app.config.json#backend.accessTokenPermissionScope',
       supplement: [],
       overrideReplace: false,
     },

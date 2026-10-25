@@ -617,7 +617,7 @@ test('root layout carries the standard ${surfaceTitle(surface)} directories', ()
     'AGENTS.md',
     'README.md',
     '.sdkwork/README.md',
-    'sdkwork.app.config.json',
+    'agent.app.config.json',
     'specs/component.spec.json',
     'etc/README.md',
     'etc/sdkwork.deployment.config.json',
@@ -887,8 +887,8 @@ ${surface.rootEnvFiles ? `test('dotenv surfaces fold to one deploy-safe edge and
 ` : ''}
 
 test('app manifest never claims a root this workspace does not build', () => {
-  const manifest = JSON.parse(read('sdkwork.app.config.json'));
-  assert.equal(manifest.kind, 'sdkwork.app');
+  const manifest = JSON.parse(read('agent.app.config.json'));
+  assert.equal(manifest.kind, 'agent.app');
   assert.equal(manifest.app.appType, '${surface.appType}');
   assert.equal(manifest.app.versionSource, '${surface.versionSource}');
   assert.deepEqual(manifest.runtime.supportedDeploymentProfiles.slice().sort(), ['cloud', 'standalone']);
@@ -1103,7 +1103,7 @@ Owner: \`sdkwork-iam\` maintainers.
   write('etc/README.md', `${docBanner()}# etc\n\nSource configuration authority for this client root. \`sdkwork.deployment.config.json\` is the component deployment descriptor consumed by \`sdkwork-specs\` tooling.\n`);
   write('public/favicon.svg', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#0f172a"/><text x="16" y="22" font-size="15" text-anchor="middle" fill="#f8fafc">IAM</text></svg>\n`);
 
-  writeJson('sdkwork.app.config.json', appManifest(surface));
+  writeJson('agent.app.config.json', appManifest(surface));
   writeJson('specs/component.spec.json', rootComponentSpec(surface, packages));
   writeJson('etc/sdkwork.deployment.config.json', deploymentIndex(surface));
 

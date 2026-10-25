@@ -369,12 +369,12 @@ describe('harmony surface contract', () => {
   it('keeps the host config secret-free and route-free, with one bundle name', () => {
     const hostDir = path.join(APP_ROOT, 'config', 'host');
     const appScope = readJson(path.join(APP_ROOT, 'AppScope', 'app.json5'));
-    const manifest = readJson(path.join(APP_ROOT, 'sdkwork.app.config.json'));
+    const manifest = readJson(path.join(APP_ROOT, 'agent.app.config.json'));
     const bundleName = appScope.app.bundleName;
     assert.equal(
       manifest.app.identifiers.packageName,
       bundleName,
-      'sdkwork.app.config.json must declare the same bundle name as AppScope/app.json5',
+      'agent.app.config.json must declare the same bundle name as AppScope/app.json5',
     );
     assert.match(bundleName, /^com\.sdkwork\.iam\.mobile$/u, 'unexpected bundle name');
     for (const file of listFiles(hostDir, (name) => name.endsWith('.example.json'))) {

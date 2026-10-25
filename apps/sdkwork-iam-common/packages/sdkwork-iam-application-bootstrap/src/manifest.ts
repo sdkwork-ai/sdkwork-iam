@@ -75,16 +75,16 @@ export function manifestToProvisionCommand(
 export function validateManifestForBootstrap(manifest: SdkworkAppManifest): void {
   const register = manifestToRegisterCommand(manifest, "validation");
   if (!register.appKey) {
-    throw new Error("app.key must be configured in sdkwork.app.config.json");
+    throw new Error("app.key must be configured in agent.app.config.json");
   }
   if (!register.name) {
-    throw new Error("app.name must be configured in sdkwork.app.config.json");
+    throw new Error("app.name must be configured in agent.app.config.json");
   }
   if (!register.appType) {
-    throw new Error("app.appType must be configured in sdkwork.app.config.json");
+    throw new Error("app.appType must be configured in agent.app.config.json");
   }
   if (!Array.isArray(register.defaultAccessPermissions) || register.defaultAccessPermissions.length === 0) {
-    throw new Error("backend.accessTokenPermissionScope must be configured in sdkwork.app.config.json");
+    throw new Error("backend.accessTokenPermissionScope must be configured in agent.app.config.json");
   }
 }
 

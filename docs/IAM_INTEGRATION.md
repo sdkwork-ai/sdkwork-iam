@@ -84,7 +84,7 @@ TypeScript surfaces use `@sdkwork/utils`; Flutter mobile surfaces use `sdkwork_i
 
 Consumer application gateways mount IAM through `sdkwork-api-iam-assembly`:
 
-- `bootstrap_iam_for_application()` — one-shot integration entry point following `IAM_APPLICATION_BOOTSTRAP_SPEC.md` §5.1: bootstraps IAM database (DDL, migrations, module catalog, super admin), provisions the tenant application from `sdkwork.app.config.json`, and assembles the app-api, backend-api, and open-api business routers
+- `bootstrap_iam_for_application()` — one-shot integration entry point following `IAM_APPLICATION_BOOTSTRAP_SPEC.md` §5.1: bootstraps IAM database (DDL, migrations, module catalog, super admin), provisions the tenant application from `agent.app.config.json`, and assembles the app-api, backend-api, and open-api business routers
 - `assemble_api_router()` — assembles only the API router; assumes the database and tenant application are already bootstrapped
 - Infrastructure probes — `/healthz` (liveness) and `/readyz` (readiness via IAM database pool when configured)
 - Route crate async `gateway_mount()` — per-surface business routers with database pool from env (no duplicate infra routes)
@@ -111,7 +111,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 The function executes three steps in order:
 
 1. `bootstrap_iam_database_from_env()` — IAM schema, migrations, module catalog materialization, super-admin/manager credentials
-2. `ensure_tenant_application_from_app_root_with_env_and_fallback()` — provisions the tenant application from `sdkwork.app.config.json` at `SDKWORK_APP_ROOT` so the app-api auth runtime can resolve signing keys, access scopes, and runtime `app_id`
+2. `ensure_tenant_application_from_app_root_with_env_and_fallback()` — provisions the tenant application from `agent.app.config.json` at `SDKWORK_APP_ROOT` so the app-api auth runtime can resolve signing keys, access scopes, and runtime `app_id`
 3. `assemble_api_router()` — merges the three API surface routers
 
 ### Required Environment For First-Run Success
@@ -119,7 +119,7 @@ The function executes three steps in order:
 | Variable | Purpose | Required |
 | --- | --- | --- |
 | `SDKWORK_DATABASE_URL` | PostgreSQL connection string for the IAM schema | Yes |
-| `SDKWORK_APP_ROOT` (or `SDKWORK_IAM_APP_ROOT`) | Consumer application root containing `sdkwork.app.config.json` for tenant application provisioning | Yes for embedded integration |
+| `SDKWORK_APP_ROOT` (or `SDKWORK_IAM_APP_ROOT`) | Consumer application root containing `agent.app.config.json` for tenant application provisioning | Yes for embedded integration |
 | `SDKWORK_IAM_SUPER_ADMIN_PASSWORD` | Bootstrap super-admin password credential | Yes (dev) / N/A (prod) |
 | `SDKWORK_IAM_BOOTSTRAP_PASSWORD` | Fallback for super-admin password when `SUPER_ADMIN_PASSWORD` is unset | Optional |
 | `SDKWORK_IAM_MANAGER_PASSWORD` | Bootstrap manager (org admin) password credential | Optional |
@@ -134,7 +134,7 @@ When `SDKWORK_IM_ENVIRONMENT` is `dev` or `test`, the bootstrap provisions the s
 | --- | --- | --- |
 | 404 on `/app/v3/api/auth/sessions` | App SDK base URL includes `/app/v3/api` prefix, producing a double-prefixed request URL | Pass the gateway origin only (`https://api.example.com`); `resolveAppSdkBaseUrl` strips a trailing prefix if present |
 | 401 on first authenticated request | Database not bootstrapped — no `iam_user` / `iam_credential` / `iam_role_binding` rows | Call `bootstrap_iam_for_application()` before serving traffic |
-| 401 on app-api auth (token issuance) | Tenant application not provisioned — `iam_tenant_application` row missing for the runtime `app_id`, so auth runtime cannot resolve signing keys or access scopes | Set `SDKWORK_APP_ROOT` to the consumer app root containing `sdkwork.app.config.json`; `bootstrap_iam_for_application()` provisions it automatically |
+| 401 on app-api auth (token issuance) | Tenant application not provisioned — `iam_tenant_application` row missing for the runtime `app_id`, so auth runtime cannot resolve signing keys or access scopes | Set `SDKWORK_APP_ROOT` to the consumer app root containing `agent.app.config.json`; `bootstrap_iam_for_application()` provisions it automatically |
 | 401 on backend-api mutations | `build_sdkwork_iam_backend_api_router()` (fail-closed) mounts without a database pool | Use `gateway_mount()` / `_from_env()` constructors or the assembly-level `bootstrap_iam_for_application()` |
 | 503 `iam_database_unavailable` | Backend route state has `pool: None` | Same as above — the `_from_env` constructor resolves the pool from `SDKWORK_DATABASE_URL` |
 

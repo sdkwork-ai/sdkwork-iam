@@ -1,6 +1,6 @@
 //! Application manifest types and parsing for embedded IAM tenant application bootstrap.
 //!
-//! Maps `sdkwork.app.config.json` to [`EnsureTenantApplicationCommand`] using the same
+//! Maps `agent.app.config.json` to [`EnsureTenantApplicationCommand`] using the same
 //! manifest fields as `@sdkwork/iam-application-bootstrap`, without raw SQL or per-app copies.
 
 use std::collections::BTreeSet;
@@ -92,7 +92,7 @@ pub struct ManifestReleaseNote {
 }
 
 pub fn load_manifest_from_app_root(app_root: &Path) -> Result<SdkworkAppManifest, String> {
-    let manifest_path = app_root.join("sdkwork.app.config.json");
+    let manifest_path = app_root.join("agent.app.config.json");
     load_manifest_from_path(&manifest_path)
 }
 
@@ -115,10 +115,10 @@ pub fn validate_manifest_for_embedded_bootstrap(
     manifest: &SdkworkAppManifest,
 ) -> Result<(), String> {
     if manifest.app.key.trim().is_empty() {
-        return Err("app.key must be configured in sdkwork.app.config.json".to_string());
+        return Err("app.key must be configured in agent.app.config.json".to_string());
     }
     if manifest.app.name.trim().is_empty() {
-        return Err("app.name must be configured in sdkwork.app.config.json".to_string());
+        return Err("app.name must be configured in agent.app.config.json".to_string());
     }
     let app_type = manifest
         .app
@@ -128,12 +128,12 @@ pub fn validate_manifest_for_embedded_bootstrap(
         .trim()
         .to_owned();
     if app_type.is_empty() {
-        return Err("app.appType must be configured in sdkwork.app.config.json".to_string());
+        return Err("app.appType must be configured in agent.app.config.json".to_string());
     }
     let permissions = default_access_permissions(manifest);
     if permissions.is_empty() {
         return Err(
-            "backend.accessTokenPermissionScope must be configured in sdkwork.app.config.json"
+            "backend.accessTokenPermissionScope must be configured in agent.app.config.json"
                 .to_string(),
         );
     }

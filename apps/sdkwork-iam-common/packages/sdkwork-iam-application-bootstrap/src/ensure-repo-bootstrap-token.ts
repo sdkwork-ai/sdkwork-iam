@@ -93,7 +93,7 @@ export async function ensureRepoBootstrapAccessToken(
     };
   }
 
-  const manifestPath = join(options.repoRoot, "sdkwork.app.config.json");
+  const manifestPath = join(options.repoRoot, "agent.app.config.json");
   let raw: string;
   try {
     raw = await readFile(manifestPath, "utf8");

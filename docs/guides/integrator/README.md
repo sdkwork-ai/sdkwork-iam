@@ -16,7 +16,7 @@ Forbidden: generator transport package names (`sdkwork-*-generated-typescript`) 
 
 ## Bootstrap
 
-1. Configure `sdkwork.app.config.json` for the consuming application.
+1. Configure `agent.app.config.json` for the consuming application.
 2. Use `@sdkwork/iam-application-bootstrap` to wire app and backend SDK clients.
 3. For PC React hosts, compose `@sdkwork/iam-pc-core` and admin capability packages from `@sdkwork/iam-pc-admin-core`.
 

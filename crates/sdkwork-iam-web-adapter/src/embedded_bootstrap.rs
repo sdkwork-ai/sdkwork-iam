@@ -1,4 +1,4 @@
-//! Embedded IAM tenant application bootstrap from `sdkwork.app.config.json`.
+//! Embedded IAM tenant application bootstrap from `agent.app.config.json`.
 //!
 //! Provides automatic provisioning of tenant applications when the IAM web request
 //! context resolver is initialized. Applications that call
@@ -270,7 +270,7 @@ pub fn discover_application_manifest_roots(app_root: &Path) -> Result<Vec<PathBu
 
     if roots.is_empty() {
         return Err(format!(
-            "sdkwork.app.config.json not found under application root {}",
+            "agent.app.config.json not found under application root {}",
             app_root.display()
         ));
     }
@@ -279,7 +279,7 @@ pub fn discover_application_manifest_roots(app_root: &Path) -> Result<Vec<PathBu
 }
 
 fn push_manifest_root(roots: &mut Vec<PathBuf>, seen: &mut BTreeSet<String>, root: PathBuf) {
-    if !root.join("sdkwork.app.config.json").is_file() {
+    if !root.join("agent.app.config.json").is_file() {
         return;
     }
     let key = root.to_string_lossy().replace('\\', "/");
@@ -336,7 +336,7 @@ pub async fn ensure_tenant_application_from_app_root_with_env_and_fallback(
     .await
 }
 
-/// Attempts auto-provisioning of the local tenant application from `sdkwork.app.config.json`.
+/// Attempts auto-provisioning of the local tenant application from `agent.app.config.json`.
 ///
 /// This is called during IAM web request context resolver initialization so that
 /// applications do not need to manually call provisioning in their gateway startup code.
@@ -386,7 +386,7 @@ mod tests {
             }
         });
         std::fs::write(
-            surface_root.join("sdkwork.app.config.json"),
+            surface_root.join("agent.app.config.json"),
             serde_json::to_vec_pretty(&manifest).expect("serialize surface manifest"),
         )
         .expect("write surface manifest");
@@ -404,8 +404,8 @@ mod tests {
         ));
         let pc_root = root.join("apps").join("sdkwork-example-pc");
         std::fs::create_dir_all(&pc_root).expect("create temp app roots");
-        std::fs::write(root.join("sdkwork.app.config.json"), "{}").expect("write root manifest");
-        std::fs::write(pc_root.join("sdkwork.app.config.json"), "{}").expect("write pc manifest");
+        std::fs::write(root.join("agent.app.config.json"), "{}").expect("write root manifest");
+        std::fs::write(pc_root.join("agent.app.config.json"), "{}").expect("write pc manifest");
 
         let roots = discover_application_manifest_roots(root.as_path()).expect("discover roots");
         let normalized = roots

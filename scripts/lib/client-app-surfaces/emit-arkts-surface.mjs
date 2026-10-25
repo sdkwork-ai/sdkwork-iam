@@ -304,7 +304,7 @@ Rules:
   route constants (\`${surface.architectureSpec}\` section 276).
 - The bundle name in \`harmony.*.example.json\` must equal
   \`AppScope/app.json5#app.bundleName\` and
-  \`sdkwork.app.config.json#app.identifiers.packageName\`; the root contract test
+  \`agent.app.config.json#app.identifiers.packageName\`; the root contract test
   asserts all three stay equal.
 - The deep-link entry names only this application's own scheme and an empty path
   prefix. The template root's \`/app/communication\` is that application's business
@@ -1066,12 +1066,12 @@ describe('harmony surface contract', () => {
   it('keeps the host config secret-free and route-free, with one bundle name', () => {
     const hostDir = path.join(APP_ROOT, 'config', 'host');
     const appScope = readJson(path.join(APP_ROOT, 'AppScope', 'app.json5'));
-    const manifest = readJson(path.join(APP_ROOT, 'sdkwork.app.config.json'));
+    const manifest = readJson(path.join(APP_ROOT, 'agent.app.config.json'));
     const bundleName = appScope.app.bundleName;
     assert.equal(
       manifest.app.identifiers.packageName,
       bundleName,
-      'sdkwork.app.config.json must declare the same bundle name as AppScope/app.json5',
+      'agent.app.config.json must declare the same bundle name as AppScope/app.json5',
     );
     assert.match(bundleName, /^com\\.sdkwork\\.iam\\.mobile$/u, 'unexpected bundle name');
     for (const file of listFiles(hostDir, (name) => name.endsWith('.example.json'))) {
@@ -1151,7 +1151,7 @@ export function materializeArktsSurface({
   write('config/host/README.md', hostConfigReadme(surface));
   write('etc/README.md', etcReadme());
 
-  writeJson('sdkwork.app.config.json', appManifest(surface));
+  writeJson('agent.app.config.json', appManifest(surface));
   writeJson('specs/component.spec.json', rootComponentSpec(surface, packages));
   writeJson('etc/sdkwork.deployment.config.json', deploymentIndex(surface));
   writeJson('package.json', rootPackageJson(surface));

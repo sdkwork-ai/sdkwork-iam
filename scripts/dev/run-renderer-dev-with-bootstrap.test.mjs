@@ -13,7 +13,7 @@ import {
 
 function writeManifest(root, appId) {
   fs.mkdirSync(root, { recursive: true });
-  fs.writeFileSync(path.join(root, 'sdkwork.app.config.json'), JSON.stringify({
+  fs.writeFileSync(path.join(root, 'agent.app.config.json'), JSON.stringify({
     app: { key: appId },
     backend: { appId, tenantId: '100001', organizationId: '0' },
   }));
@@ -38,7 +38,7 @@ test('renderer bootstrap resolves the nearest generic application manifest', () 
     );
 
     assert.equal(context.repoRoot, surfaceRoot);
-    assert.equal(context.manifestPath, 'sdkwork.app.config.json');
+    assert.equal(context.manifestPath, 'agent.app.config.json');
     assert.equal(payload.app_id, 'sdkwork-example-pc');
   } finally {
     fs.rmSync(repoRoot, { force: true, recursive: true });

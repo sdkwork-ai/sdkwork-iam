@@ -4,7 +4,7 @@ Embedded IAM tenant application bootstrap for standalone gateway, installer, and
 
 ## Responsibility
 
-- Read `sdkwork.app.config.json`
+- Read `agent.app.config.json`
 - Map manifest fields to `EnsureTenantApplicationCommand` using the same semantics as `@sdkwork/iam-application-bootstrap`
 - Connect to the unified IAM Postgres profile with schema `search_path`
 - Call `ensure_tenant_application_runtime` idempotently (upsert + reconcile + enable)

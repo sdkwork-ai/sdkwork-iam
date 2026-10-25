@@ -6,7 +6,7 @@ identity, access management, OAuth/SSO, user-center, IMF registry, database modu
 HTTP/RPC authorities, TypeScript/React/Flutter IAM packages, and generated IAM SDK families.
 
 This workspace is a **base dependency repository**, not an independent application
-root. It intentionally does not own a root `sdkwork.app.config.json`.
+root. It intentionally does not own a root `agent.app.config.json`.
 
 Applications consume IAM through `sdkwork-iam` crates, packages, and generated
 SDK clients. Platform shell, runtime bootstrap, and non-IAM foundation

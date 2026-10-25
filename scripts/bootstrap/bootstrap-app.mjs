@@ -90,7 +90,7 @@ function hasBootstrapAuthCredentials(auth) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (!options.configPath) {
-    throw new Error("--config <path-to-sdkwork.app.config.json> is required");
+    throw new Error("--config <path-to-agent.app.config.json> is required");
   }
 
   const configPath = resolve(options.configPath);

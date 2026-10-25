@@ -18,6 +18,6 @@ Production deployments MUST set `SDKWORK_IM_ENVIRONMENT=production`, `SDKWORK_IA
 
 `deployments/deploy.yaml` declares the production gateway binary package and public API ingress at `iam.sdkwork.com`. Topology bindings live in `specs/topology.spec.json`.
 
-IAM owns the root `sdkwork.app.config.json` for its standalone gateway identity and least-privilege backend bootstrap scope. Consumer applications retain their own application manifests and consume IAM through composed SDKs or federated route entrypoints.
+IAM owns the root `agent.app.config.json` for its standalone gateway identity and least-privilege backend bootstrap scope. Consumer applications retain their own application manifests and consume IAM through composed SDKs or federated route entrypoints.
 
 Owner: `sdkwork-iam` maintainers.

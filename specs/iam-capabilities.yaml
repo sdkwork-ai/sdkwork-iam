@@ -130,6 +130,6 @@ capabilities:
       domainForksForbidden: true
       sdkBoundary: generated-sdk-through-ports
       appResponsibility: >
-        Applications provide sdkwork.app.config.json and tenant-specific domain
+        Applications provide agent.app.config.json and tenant-specific domain
         configuration. sdkwork-iam owns registered applications, tenant
         applications, and delegated access credential issuance.

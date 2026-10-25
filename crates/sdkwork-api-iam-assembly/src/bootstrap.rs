@@ -284,7 +284,7 @@ fn default_iam_application_root() -> std::path::PathBuf {
         .and_then(|current_dir| {
             current_dir
                 .ancestors()
-                .find(|candidate| candidate.join("sdkwork.app.config.json").is_file())
+                .find(|candidate| candidate.join("agent.app.config.json").is_file())
                 .map(std::path::Path::to_path_buf)
         })
         .unwrap_or_else(|| std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."))
@@ -321,9 +321,9 @@ mod tests {
     fn default_application_root_resolves_the_iam_manifest() {
         assert!(
             default_iam_application_root()
-                .join("sdkwork.app.config.json")
+                .join("agent.app.config.json")
                 .is_file(),
-            "IAM application root must contain sdkwork.app.config.json"
+            "IAM application root must contain agent.app.config.json"
         );
     }
 

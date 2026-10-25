@@ -13,7 +13,7 @@ export function resolveAppIdFromManifest(
 ): string {
   const backendAppId = manifest.backend?.appId ? trim(manifest.backend.appId) : undefined;
   if (isBlank(backendAppId)) {
-    throw new Error('sdkwork.app.config.json backend.appId is required for IAM runtime identity');
+    throw new Error('agent.app.config.json backend.appId is required for IAM runtime identity');
   }
   return backendAppId!;
 }

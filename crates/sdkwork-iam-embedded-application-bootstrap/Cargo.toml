@@ -4,7 +4,7 @@ name = "sdkwork-iam-embedded-application-bootstrap"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Embedded IAM tenant application bootstrap from sdkwork.app.config.json."
+description = "Embedded IAM tenant application bootstrap from agent.app.config.json."
 
 
 [lints]

@@ -3126,7 +3126,7 @@ export function rootComponentSpec(surface, packages) {
       languages: surface.languages,
       generated: false,
       private: true,
-      manifests: [surface.manifest, 'sdkwork.app.config.json'],
+      manifests: [surface.manifest, 'agent.app.config.json'],
     },
     canonicalSpecs: canonical,
     contracts: {

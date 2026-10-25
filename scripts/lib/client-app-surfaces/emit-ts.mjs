@@ -54,7 +54,7 @@ function displayNameFor(surface, entry) {
  * section 3 shape (bare file names relative to `component.root`, not repo paths).
  *
  * Ground truth: `apps/sdkwork-im-mini-program/specs/component.spec.json` lists
- * `package.json`, `sdkwork.app.config.json`, and `project.config.json`; every
+ * `package.json`, `agent.app.config.json`, and `project.config.json`; every
  * template package lists a bare `package.json`.
  */
 const ROOT_EXTRA_MANIFESTS = {
@@ -67,7 +67,7 @@ const ROOT_EXTRA_MANIFESTS = {
 function rootManifestsFor(surface) {
   const extras = ROOT_EXTRA_MANIFESTS[surface.key];
   if (!extras) throw new Error(`no root manifest list for surface ${surface.key}`);
-  return [surface.manifest, 'sdkwork.app.config.json', ...extras];
+  return [surface.manifest, 'agent.app.config.json', ...extras];
 }
 
 const CAPABILITY_PASCAL = {
@@ -152,7 +152,7 @@ function appManifest(surface) {
 
   const manifest = {
     schemaVersion: 3,
-    kind: 'sdkwork.app',
+    kind: 'agent.app',
     app,
     backend: {
       profileKey: 'backend-root-admin',

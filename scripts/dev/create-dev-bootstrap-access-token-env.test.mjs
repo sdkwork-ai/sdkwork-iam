@@ -30,7 +30,7 @@ function decodeJwtPayload(token) {
 
 test('resolveRepoApplicationManifestPath resolves repo-root manifest by default', () => {
   const manifestPath = resolveRepoApplicationManifestPath(sdkworkImRepoRoot);
-  assert.match(manifestPath, /sdkwork\.app\.config\.json$/u);
+  assert.match(manifestPath, /agent\.app\.config\.json$/u);
 });
 
 test('mergeRepoDevBootstrapAccessTokenEnv generates bootstrap token from repo manifest', () => {
@@ -66,7 +66,7 @@ test('surface manifest paths generate architecture-specific bootstrap identities
       const surfaceRoot = path.join(tempRoot, 'apps', appId);
       mkdirSync(surfaceRoot, { recursive: true });
       writeFileSync(
-        path.join(surfaceRoot, 'sdkwork.app.config.json'),
+        path.join(surfaceRoot, 'agent.app.config.json'),
         JSON.stringify({
           app: { key: appId },
           backend: {
@@ -79,7 +79,7 @@ test('surface manifest paths generate architecture-specific bootstrap identities
         'utf8',
       );
 
-      const manifestPath = `apps/${appId}/sdkwork.app.config.json`;
+      const manifestPath = `apps/${appId}/agent.app.config.json`;
       const merged = mergeRepoDevBootstrapAccessTokenEnv({
         env: {},
         manifestPath,
@@ -99,7 +99,7 @@ test('bootstrap token generation fails closed instead of falling back to app.key
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'sdkwork-credential-entry-strict-'));
   try {
     writeFileSync(
-      path.join(tempRoot, 'sdkwork.app.config.json'),
+      path.join(tempRoot, 'agent.app.config.json'),
       JSON.stringify({
         app: { key: 'sdkwork-example-pc' },
         backend: {

@@ -13,7 +13,7 @@ Rules:
   route constants (`HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md` section 276).
 - The bundle name in `harmony.*.example.json` must equal
   `AppScope/app.json5#app.bundleName` and
-  `sdkwork.app.config.json#app.identifiers.packageName`; the root contract test
+  `agent.app.config.json#app.identifiers.packageName`; the root contract test
   asserts all three stay equal.
 - The deep-link entry names only this application's own scheme and an empty path
   prefix. The template root's `/app/communication` is that application's business

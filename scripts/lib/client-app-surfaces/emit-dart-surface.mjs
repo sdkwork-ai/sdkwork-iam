@@ -565,7 +565,7 @@ export function materializeDartSurface({
   writeJson('config/app/runtime-env.development.example.json', configAppExample(surface, 'development'));
   write('etc/README.md', etcReadme());
 
-  writeJson('sdkwork.app.config.json', appManifest(surface));
+  writeJson('agent.app.config.json', appManifest(surface));
   writeJson('specs/component.spec.json', rootComponentSpec(surface, packages));
   writeJson('etc/sdkwork.deployment.config.json', deploymentIndex(surface));
   writeJson('package.json', rootPackageJson(surface));

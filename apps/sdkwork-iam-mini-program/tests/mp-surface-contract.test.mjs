@@ -18,7 +18,7 @@ test('root layout carries the standard Mini Program directories', () => {
     'AGENTS.md',
     'README.md',
     '.sdkwork/README.md',
-    'sdkwork.app.config.json',
+    'agent.app.config.json',
     'specs/component.spec.json',
     'etc/README.md',
     'etc/sdkwork.deployment.config.json',
@@ -211,8 +211,8 @@ test('public runtime config is secret-free and complete for every profile', () =
 
 
 test('app manifest never claims a root this workspace does not build', () => {
-  const manifest = JSON.parse(read('sdkwork.app.config.json'));
-  assert.equal(manifest.kind, 'sdkwork.app');
+  const manifest = JSON.parse(read('agent.app.config.json'));
+  assert.equal(manifest.kind, 'agent.app');
   assert.equal(manifest.app.appType, 'APP_UNIAPP');
   assert.equal(manifest.app.versionSource, 'package.json');
   assert.deepEqual(manifest.runtime.supportedDeploymentProfiles.slice().sort(), ['cloud', 'standalone']);
