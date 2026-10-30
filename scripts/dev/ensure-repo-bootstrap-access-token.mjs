@@ -6,7 +6,6 @@ import { fileURLToPath } from "node:url";
 
 import {
   ensureRepoBootstrapAccessToken,
-  isLoopbackBackendUrl,
   isUsableBootstrapAccessToken,
   normalizeBootstrapLifecycle,
 } from "@sdkwork/iam-application-bootstrap";
@@ -15,8 +14,10 @@ function parseArgs(argv) {
   const options = {
     repoRoot: process.cwd(),
     environment: process.env.SDKWORK_ENV || process.env.SDKWORK_ENVIRONMENT || "development",
+    deploymentProfile: process.env.SDKWORK_DEPLOYMENT_PROFILE === "cloud" ? "cloud" : "standalone",
     tryApplicationBootstrap: true,
     allowTestTokenGeneration: false,
+    refresh: false,
     dryRun: false,
     command: "",
     commandArgs: [],
@@ -28,6 +29,10 @@ function parseArgs(argv) {
       options.repoRoot = resolve(argv[++index]);
     } else if (arg === "--environment" && argv[index + 1]) {
       options.environment = argv[++index];
+    } else if (arg === "--deployment-profile" && argv[index + 1]) {
+      options.deploymentProfile = argv[++index] === "cloud" ? "cloud" : "standalone";
+    } else if (arg === "--refresh" || arg === "--force") {
+      options.refresh = true;
     } else if (arg === "--dry-run") {
       options.dryRun = true;
     } else if (arg === "--no-provision") {
@@ -53,20 +58,20 @@ async function ensureAccessToken(options) {
     repoRoot: options.repoRoot,
     env: process.env,
     environment: options.environment,
+    deploymentProfile: options.deploymentProfile,
+    refresh: options.refresh,
     tryApplicationBootstrap: options.tryApplicationBootstrap,
     warn: (line) => console.error(line),
   });
   const backendBaseUrl = process.env.SDKWORK_BACKEND_BASE_URL;
-  if (result.token && isUsableBootstrapAccessToken(result.token, backendBaseUrl)) {
+  const lifecycle = normalizeBootstrapLifecycle(options.environment);
+  const inspection = { environment: lifecycle, ...(backendBaseUrl ? { backendBaseUrl } : {}) };
+  if (result.token && isUsableBootstrapAccessToken(result.token, backendBaseUrl, inspection)) {
     return result;
   }
 
-  const lifecycle = normalizeBootstrapLifecycle(options.environment);
-  const canGenerateFixture = isLoopbackBackendUrl(backendBaseUrl)
-    && (
-      lifecycle === "development"
-      || (lifecycle === "test" && options.allowTestTokenGeneration)
-    );
+  const canGenerateFixture = lifecycle === "development"
+    || (lifecycle === "test" && options.allowTestTokenGeneration);
   if (!canGenerateFixture) {
     return result;
   }
@@ -77,7 +82,9 @@ async function ensureAccessToken(options) {
       repoRoot: options.repoRoot,
       env: process.env,
       environment: lifecycle,
+      deploymentProfile: options.deploymentProfile,
       allowTestTokenGeneration: options.allowTestTokenGeneration,
+      refresh: options.refresh,
     });
     const token = merged[credentialEntry.SDKWORK_ACCESS_TOKEN_ENV_KEY]?.trim();
     if (token && isUsableBootstrapAccessToken(token, backendBaseUrl)) {

@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@sdkwork/iam-backend-sdk": "workspace:*",
+    "@sdkwork/iam-credential-entry": "workspace:*",
     "@sdkwork/iam-sdk-adapter": "workspace:*",
     "@sdkwork/iam-sdk-ports": "workspace:*",
     "@sdkwork/iam-service": "workspace:*",

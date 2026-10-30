@@ -1,10 +1,33 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-/** Registration output next to `agent.app.config.json`. */
+import {
+  buildBootstrapAccessTokenEnvFileContents,
+  inspectBootstrapAccessToken,
+  isBootstrapAccessTokenReusable,
+  looksLikeLocalFixtureJwt,
+  parseBootstrapAccessToken,
+  readBootstrapAccessTokenEnvFileContents,
+} from "@sdkwork/iam-credential-entry/node-bootstrap";
+import type {
+  BootstrapAccessTokenMetadata,
+  CredentialEntryBootstrapManifest,
+  SdkworkEnvironment,
+} from "@sdkwork/iam-credential-entry/node-bootstrap";
+
+/** Canonical registration output for one repository/environment scope. */
 export const REGISTERED_BOOTSTRAP_ENV_FILE = ".sdkwork.local.env";
 
-export function normalizeBootstrapLifecycle(value: string | undefined): string {
+export interface RegisteredBootstrapInspectionOptions {
+  allowTestTokenGeneration?: boolean;
+  backendBaseUrl?: string;
+  deploymentProfile?: "standalone" | "cloud";
+  manifest?: CredentialEntryBootstrapManifest;
+  nowSeconds?: number;
+  skewSeconds?: number;
+}
+
+export function normalizeBootstrapLifecycle(value: string | undefined): SdkworkEnvironment {
   const normalized = value?.trim().toLowerCase() ?? "development";
   if (normalized === "dev" || normalized === "local") return "development";
   if (normalized === "prod") return "production";
@@ -15,78 +38,123 @@ export function normalizeBootstrapLifecycle(value: string | undefined): string {
 }
 
 /**
- * Overlay files start/build loaders probe for `SDKWORK_ACCESS_TOKEN`.
- * Keep aligned with `@sdkwork/iam-credential-entry` `resolveRepoBootstrapAccessTokenEnvPaths`.
+ * Overlay files the start/build loaders probe, most canonical first.
+ *
+ * The environment-scoped artifact is the reusable cache. Legacy spellings are
+ * read-only fallbacks so a development token cannot be reused for another
+ * lifecycle merely because `.sdkwork.local.env` sorts first.
+ * @param repoRoot - repository root.
+ * @param environment - lifecycle or profile alias.
+ * @param deploymentProfile - `standalone` or `cloud`.
+ * @returns artifact paths, in read order.
  */
-export function resolveRegisteredBootstrapEnvPaths(repoRoot: string, environment?: string): string[] {
+export function resolveRegisteredBootstrapEnvPaths(
+  repoRoot: string,
+  environment?: string,
+  deploymentProfile: "standalone" | "cloud" = "standalone",
+): string[] {
   const lifecycle = normalizeBootstrapLifecycle(environment);
   return [
-    join(repoRoot, REGISTERED_BOOTSTRAP_ENV_FILE),
+    join(repoRoot, `.env.${deploymentProfile}.${lifecycle}.bootstrap.local`),
     join(repoRoot, `.env.standalone.${lifecycle}.bootstrap.local`),
     join(repoRoot, `.env.${lifecycle}.bootstrap.local`),
-  ];
+    join(repoRoot, REGISTERED_BOOTSTRAP_ENV_FILE),
+  ].filter((value, index, values) => values.indexOf(value) === index);
 }
 
 export function parseAccessTokenFromEnvFile(contents: string): string | undefined {
-  for (const line of contents.split(/\r?\n/u)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const separator = trimmed.indexOf("=");
-    if (separator <= 0) continue;
-    if (trimmed.slice(0, separator).trim() !== "SDKWORK_ACCESS_TOKEN") continue;
-    const raw = trimmed.slice(separator + 1).trim();
-    const unquoted = (
-      (raw.startsWith("\"") && raw.endsWith("\""))
-      || (raw.startsWith("'") && raw.endsWith("'"))
-    )
-      ? raw.slice(1, -1)
-      : raw;
-    const token = unquoted.trim();
-    if (token) return token;
-  }
-  return undefined;
+  return readBootstrapAccessTokenEnvFileContents(contents).token;
 }
 
+function readRegisteredRecord(contents: string): {
+  token?: string;
+  metadata: BootstrapAccessTokenMetadata;
+} {
+  return readBootstrapAccessTokenEnvFileContents(contents);
+}
+
+/**
+ * Read the first reusable registered token for one repository scope.
+ * @param repoRoot - repository root.
+ * @param environment - lifecycle or profile alias.
+ * @param options - manifest/backend inspection inputs.
+ * @returns the reusable token, or `undefined`.
+ */
 export async function readRegisteredBootstrapAccessToken(
   repoRoot: string,
   environment?: string,
+  options: RegisteredBootstrapInspectionOptions = {},
 ): Promise<string | undefined> {
-  for (const envPath of resolveRegisteredBootstrapEnvPaths(repoRoot, environment)) {
+  const lifecycle = normalizeBootstrapLifecycle(environment);
+  const deploymentProfile = options.deploymentProfile ?? "standalone";
+  for (const envPath of resolveRegisteredBootstrapEnvPaths(repoRoot, environment, deploymentProfile)) {
+    let record: { token?: string; metadata: BootstrapAccessTokenMetadata };
     try {
-      const token = parseAccessTokenFromEnvFile(await readFile(envPath, "utf8"));
-      if (token) return token;
+      record = readRegisteredRecord(await readFile(envPath, "utf8"));
     } catch {
       continue;
+    }
+    const token = record.token;
+    if (!token) continue;
+    if (
+      envPath.endsWith(REGISTERED_BOOTSTRAP_ENV_FILE)
+      && lifecycle !== "development"
+      && parseBootstrapAccessToken(token) === undefined
+    ) {
+      continue;
+    }
+    if (
+      isBootstrapAccessTokenReusable(token, {
+        ...options,
+        environment: lifecycle,
+        tokenMetadata: record.metadata,
+      })
+    ) {
+      return token;
     }
   }
   return undefined;
 }
 
+/**
+ * Write the registration output for one repository/environment scope.
+ *
+ * The canonical environment-scoped path is the only write target. The write is
+ * atomic (same-directory temporary file plus rename) and owner-only on POSIX.
+ * @param repoRoot - repository root.
+ * @param contents - env-file contents.
+ * @param environment - lifecycle or profile alias.
+ * @param deploymentProfile - `standalone` or `cloud`.
+ * @returns the written path.
+ */
 export async function writeRegisteredBootstrapEnvFiles(
   repoRoot: string,
   contents: string,
   environment?: string,
+  deploymentProfile: "standalone" | "cloud" = "standalone",
 ): Promise<string[]> {
-  const written: string[] = [];
-  for (const envPath of resolveRegisteredBootstrapEnvPaths(repoRoot, environment)) {
-    await mkdir(dirname(envPath), { recursive: true });
-    await writeFile(envPath, contents.endsWith("\n") ? contents : `${contents}\n`, "utf8");
-    written.push(envPath);
+  const targetPath = resolveRegisteredBootstrapEnvPaths(
+    repoRoot,
+    environment,
+    deploymentProfile,
+  )[0];
+  const normalizedContents = contents.endsWith("\n") ? contents : `${contents}\n`;
+  await mkdir(dirname(targetPath), { recursive: true });
+  const temporaryPath = join(
+    dirname(targetPath),
+    `.${targetPath.split(/[\\/]/u).at(-1)}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`,
+  );
+  try {
+    await writeFile(temporaryPath, normalizedContents, { encoding: "utf8", mode: 0o600 });
+    await rename(temporaryPath, targetPath);
+  } catch (error) {
+    await rm(temporaryPath, { force: true });
+    throw error;
   }
-  return written;
+  return [targetPath];
 }
 
-export function looksLikeLocalFixtureJwt(token: string): boolean {
-  const [headerPart, , signaturePart, ...rest] = token.split(".");
-  if (headerPart === undefined || signaturePart === undefined || rest.length > 0) return false;
-  if (signaturePart !== "signature") return false;
-  try {
-    const header = JSON.parse(Buffer.from(headerPart, "base64url").toString("utf8")) as { alg?: unknown };
-    return header.alg === "none";
-  } catch {
-    return false;
-  }
-}
+export { buildBootstrapAccessTokenEnvFileContents, looksLikeLocalFixtureJwt };
 
 export function isLoopbackBackendUrl(url: string | undefined): boolean {
   const trimmed = url?.trim();
@@ -99,8 +167,21 @@ export function isLoopbackBackendUrl(url: string | undefined): boolean {
   }
 }
 
-export function isUsableBootstrapAccessToken(token: string, backendBaseUrl: string | undefined): boolean {
+/**
+ * Compatibility predicate for a token that a loopback-local runtime may use.
+ * @param token - raw token.
+ * @param backendBaseUrl - active backend base URL.
+ * @param options - optional environment/manifest inspection inputs.
+ * @returns whether the token may be used without regeneration.
+ */
+export function isUsableBootstrapAccessToken(
+  token: string,
+  backendBaseUrl: string | undefined,
+  options: RegisteredBootstrapInspectionOptions = {},
+): boolean {
   if (!token.trim()) return false;
-  if (!looksLikeLocalFixtureJwt(token)) return true;
-  return isLoopbackBackendUrl(backendBaseUrl);
+  return inspectBootstrapAccessToken(token, {
+    ...options,
+    backendBaseUrl,
+  }).reusable;
 }

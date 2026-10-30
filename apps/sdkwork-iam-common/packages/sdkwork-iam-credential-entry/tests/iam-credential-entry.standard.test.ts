@@ -1,3 +1,7 @@
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { describe, expect, it, vi } from 'vitest';
 import type { AuthTokenManager } from '@sdkwork/sdk-common';
 
@@ -8,13 +12,33 @@ import {
   resolveAppIdFromManifest,
   resolveOrganizationIdFromManifest,
   resolveTenantIdFromManifest,
+  buildBootstrapAccessTokenEnvRecord,
   createDevBootstrapAccessTokenJwt,
+  inspectBootstrapAccessToken,
   mergeBootstrapAccessTokenEnv,
   wrapCredentialEntryClient,
   SDKWORK_ACCESS_TOKEN_ENV_KEY,
   SDKWORK_CREDENTIAL_ENTRY_BOOTSTRAP_ACCESS_TOKEN_GLOBAL_KEY,
 } from '../src/index.ts';
+import {
+  mergeRepoBootstrapAccessTokenEnv,
+  readRepoBootstrapAccessToken,
+} from '../src/node-bootstrap.mjs';
 import { createSdkworkCredentialEntryBootstrapVitePlugin } from '../src/vite.ts';
+
+function createFixtureRepo() {
+  const repoRoot = mkdtempSync(join(tmpdir(), 'sdkwork-credential-entry-'));
+  writeFileSync(join(repoRoot, 'agent.app.config.json'), JSON.stringify({
+    app: { key: 'sdkwork-example-pc' },
+    backend: {
+      accessTokenPermissionScope: ['example.read'],
+      appId: 'sdkwork-example-pc',
+      organizationId: '0',
+      tenantId: '100001',
+    },
+  }));
+  return repoRoot;
+}
 
 describe('@sdkwork/iam-credential-entry', () => {
   it('reads bootstrap access token from process env', () => {
@@ -158,6 +182,74 @@ describe('@sdkwork/iam-credential-entry', () => {
         backend: { appId: 'sdkwork-im-pc', tenantId: '100001', organizationId: '0' },
       },
     }).SDKWORK_ACCESS_TOKEN).toBe(token);
+  });
+
+  it('reuses a valid configured token and regenerates only an expired or foreign one', () => {
+    const manifest = {
+      app: { key: 'sdkwork-example-pc' },
+      backend: { appId: 'sdkwork-example-pc', tenantId: '100001', organizationId: '0' },
+    };
+    const token = createDevBootstrapAccessTokenJwt({ manifest });
+    expect(buildBootstrapAccessTokenEnvRecord(token, {
+      environment: 'development',
+      manifest,
+    })[SDKWORK_ACCESS_TOKEN_ENV_KEY]).toBe(token);
+
+    const expired = [
+      Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url'),
+      Buffer.from(JSON.stringify({
+        app_id: 'sdkwork-example-pc',
+        environment: 'development',
+        exp: Math.floor(Date.now() / 1000) - 10,
+        token_version: 1,
+      })).toString('base64url'),
+      'signature',
+    ].join('.');
+    expect(inspectBootstrapAccessToken(expired, {
+      environment: 'development',
+      manifest,
+    }).reason).toBe('expired');
+    expect(buildBootstrapAccessTokenEnvRecord(expired, {
+      environment: 'development',
+      manifest,
+    })[SDKWORK_ACCESS_TOKEN_ENV_KEY]).not.toBe(expired);
+
+    expect(inspectBootstrapAccessToken(token, {
+      environment: 'test',
+      manifest,
+    }).reusable).toBe(false);
+  });
+
+  it('persists one environment-scoped artifact and reuses it on the next start', () => {
+    const repoRoot = createFixtureRepo();
+    try {
+      const manifestPath = join(repoRoot, 'agent.app.config.json');
+      const first = mergeRepoBootstrapAccessTokenEnv({
+        repoRoot,
+        env: {},
+        environment: 'development',
+        manifestPath,
+      });
+      const artifactPath = join(repoRoot, '.env.standalone.development.bootstrap.local');
+      const firstContents = readFileSync(artifactPath, 'utf8');
+      expect(firstContents).toContain('sdkwork-bootstrap-environment=development');
+      expect(firstContents).toContain('sdkwork-bootstrap-deployment-profile=standalone');
+      expect(readRepoBootstrapAccessToken(repoRoot, 'test', {
+        environment: 'test',
+        allowTestTokenGeneration: true,
+      })).toBeUndefined();
+
+      const second = mergeRepoBootstrapAccessTokenEnv({
+        repoRoot,
+        env: {},
+        environment: 'development',
+        manifestPath,
+      });
+      expect(second[SDKWORK_ACCESS_TOKEN_ENV_KEY]).toBe(first[SDKWORK_ACCESS_TOKEN_ENV_KEY]);
+      expect(readFileSync(artifactPath, 'utf8')).toBe(firstContents);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
   });
 
   it('injects a safely serialized development token through the canonical Vite handoff', () => {

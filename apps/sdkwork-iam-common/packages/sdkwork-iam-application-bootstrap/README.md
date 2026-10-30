@@ -20,3 +20,7 @@ Canonical development identity: username `admin`, email `admin@sdkwork.com`. Sto
 Environment overrides: `SDKWORK_IAM_BOOTSTRAP_OPERATOR_USERNAME`, `SDKWORK_IAM_BOOTSTRAP_OPERATOR_PASSWORD` (legacy `SDKWORK_IAM_SUPER_ADMIN_*` aliases still work).
 
 Directory override: `SDKWORK_IAM_BOOTSTRAP_PROFILE_DIR` (default `~/.sdkwork/iam-bootstrap`). Home resolution uses `%USERPROFILE%` on Windows (`HOMEDRIVE`+`HOMEPATH` fallback) and `$HOME` on Linux/macOS.
+
+## Lifecycle access token reuse
+
+`ensureRepoBootstrapAccessToken(...)` reuses a configured token before it registers or provisions anything. A token is reusable when it is unexpired and its `environment`, `app_id`, `tenant_id`, and `organization_id` claims match the selected lifecycle and manifest; fixtures are accepted only where the lifecycle permits them. A manifest root keeps one artifact per deployment profile and lifecycle at `.env.<deployment-profile>.<lifecycle>.bootstrap.local`, with the compatible `.env.standalone.<lifecycle>.bootstrap.local` and `.env.<lifecycle>.bootstrap.local` spellings and the legacy `.sdkwork.local.env` read as fallbacks. Registration runs only when no reusable token exists or `refresh: true` is passed. See sdkwork-specs `IAM_APPLICATION_BOOTSTRAP_SPEC.md` section 5.4.

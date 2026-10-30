@@ -1,4 +1,5 @@
 // WORKSPACE-PATH:allow-fixture: fixtures name a foreign checkout root, drive, or home directory to exercise path handling, so the literal is the value under assertion rather than a binding this build resolves
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -169,7 +170,7 @@ describe("bootstrap auth profiles", () => {
     expect(dir.replace(/\\/gu, "/")).toBe("C:/Users/admin/.sdkwork/iam-bootstrap");
   });
 
-  it("writes start/build overlay files and parses the access token", async () => {
+  it("writes one environment-scoped overlay file and parses the access token", async () => {
     const repoRoot = await mkdtemp(join(tmpdir(), "sdkwork-bootstrap-overlays-"));
     try {
       const paths = await writeRegisteredBootstrapEnvFiles(
@@ -177,11 +178,17 @@ describe("bootstrap auth profiles", () => {
         "SDKWORK_ACCESS_TOKEN=signed-dev-token\n",
         "dev",
       );
-      expect(paths.map((path) => path.replace(/\\/gu, "/"))).toEqual(
-        resolveRegisteredBootstrapEnvPaths(repoRoot, "development").map((path) => path.replace(/\\/gu, "/")),
-      );
+      const canonicalPath = resolveRegisteredBootstrapEnvPaths(
+        repoRoot,
+        "development",
+      )[0]?.replace(/\\/gu, "/");
+      expect(paths.map((path) => path.replace(/\\/gu, "/"))).toEqual([canonicalPath]);
+      expect(canonicalPath?.endsWith(".env.standalone.development.bootstrap.local")).toBe(true);
       const contents = await readFile(paths[0] ?? "", "utf8");
       expect(parseAccessTokenFromEnvFile(contents)).toBe("signed-dev-token");
+      for (const legacyPath of resolveRegisteredBootstrapEnvPaths(repoRoot, "development").slice(1)) {
+        expect(existsSync(legacyPath)).toBe(false);
+      }
     } finally {
       await rm(repoRoot, { recursive: true, force: true });
     }
@@ -216,6 +223,54 @@ describe("bootstrap auth profiles", () => {
         tryApplicationBootstrap: false,
       });
       expect(result).toEqual({ status: "configured", token: "signed-dev-token" });
+    } finally {
+      await rm(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("does not call IAM bootstrap when the environment-scoped token is reusable", async () => {
+    const repoRoot = await mkdtemp(join(tmpdir(), "sdkwork-bootstrap-reuse-"));
+    try {
+      const manifest = {
+        backend: {
+          accessTokenPermissionScope: ["iam.users.read"],
+          appId: "sdkwork-demo-pc",
+          organizationId: "0",
+          tenantId: "100001",
+        },
+      };
+      await writeFile(join(repoRoot, "agent.app.config.json"), JSON.stringify(manifest));
+      const token = [
+        Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url"),
+        Buffer.from(JSON.stringify({
+          app_id: "sdkwork-demo-pc",
+          environment: "development",
+          exp: Math.floor(Date.now() / 1000) + 3600,
+          token_version: 1,
+        })).toString("base64url"),
+        "signature",
+      ].join(".");
+      await writeRegisteredBootstrapEnvFiles(
+        repoRoot,
+        `SDKWORK_ACCESS_TOKEN=${token}\n`,
+        "development",
+      );
+      let clientCreated = false;
+      const result = await ensureRepoBootstrapAccessToken({
+        repoRoot,
+        environment: "development",
+        env: {
+          SDKWORK_BACKEND_BASE_URL: "http://127.0.0.1:3900",
+          SDKWORK_IAM_BOOTSTRAP_OPERATOR_PASSWORD: "operator-password",
+          SDKWORK_IAM_BOOTSTRAP_OPERATOR_USERNAME: "admin",
+        },
+        createClient: () => {
+          clientCreated = true;
+          throw new Error("IAM bootstrap client must not be created while a reusable token exists");
+        },
+      });
+      expect(result).toEqual({ status: "configured", token });
+      expect(clientCreated).toBe(false);
     } finally {
       await rm(repoRoot, { recursive: true, force: true });
     }

@@ -1,8 +1,13 @@
 export {
   buildBootstrapAccessTokenEnvRecord,
   createDevBootstrapAccessTokenJwt,
+  inspectBootstrapAccessToken,
+  isBootstrapAccessTokenReusable,
   mergeBootstrapAccessTokenEnv,
+  parseBootstrapAccessToken,
   type CreateDevBootstrapAccessTokenOptions,
+  type InspectBootstrapAccessTokenOptions,
+  type InspectBootstrapAccessTokenResult,
 } from './dev-bootstrap-access-token.ts';
 export {
   SDKWORK_ACCESS_TOKEN_ENV_KEY,

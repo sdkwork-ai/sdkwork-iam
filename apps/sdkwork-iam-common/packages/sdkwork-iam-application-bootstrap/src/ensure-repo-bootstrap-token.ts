@@ -6,9 +6,11 @@ import { bootstrapApplicationFromManifest, formatBootstrapEnvFile } from "./boot
 import { loadBootstrapAuthProfileFromHome } from "./bootstrap-auth-profile.ts";
 import { createFetchIamApplicationBootstrapClient } from "./fetch-client.ts";
 import { hashManifestContent } from "./manifest.ts";
+import { isBootstrapAccessTokenReusable } from "@sdkwork/iam-credential-entry/node-bootstrap";
 import type { IamApplicationBootstrapClient, SdkworkAppManifest } from "./types.ts";
 import {
   isUsableBootstrapAccessToken,
+  normalizeBootstrapLifecycle,
   readRegisteredBootstrapAccessToken,
   writeRegisteredBootstrapEnvFiles,
 } from "./registered-env.ts";
@@ -19,6 +21,9 @@ export interface EnsureRepoBootstrapAccessTokenOptions {
   repoRoot: string;
   env?: Readonly<Record<string, string | undefined>>;
   environment?: string;
+  deploymentProfile?: "standalone" | "cloud";
+  /** Force registration even when a reusable cached token exists. */
+  refresh?: boolean;
   tryApplicationBootstrap?: boolean;
   warn?: (line: string) => void;
   /** Override the CLI fetch transport (tests inject a stub client). */
@@ -43,10 +48,31 @@ function hasBootstrapAuthCredentials(auth: {
   return Boolean(username?.trim() && auth.password?.trim());
 }
 
+async function readManifestRecord(
+  repoRoot: string,
+): Promise<{ manifest?: SdkworkAppManifest; raw?: string; reason?: string }> {
+  const manifestPath = join(repoRoot, "agent.app.config.json");
+  let raw: string;
+  try {
+    raw = await readFile(manifestPath, "utf8");
+  } catch {
+    return { reason: `missing ${manifestPath}` };
+  }
+  try {
+    return { manifest: JSON.parse(raw) as SdkworkAppManifest, raw };
+  } catch (error) {
+    return { reason: `${manifestPath} is not valid JSON: ${String(error)}` };
+  }
+}
+
 /**
  * Resolve a private `SDKWORK_ACCESS_TOKEN` for start/build.
- * Prefers registered overlays, then IAM application bootstrap when operator
- * credentials exist. Fixture JWTs are kept only for loopback backends.
+ *
+ * Reuse is the default: a configured token that still matches the selected
+ * lifecycle, manifest application identity, and backend is returned without
+ * calling IAM bootstrap. Registration runs only when no reusable token exists,
+ * when the cached token is expired or identity-incompatible, or when the
+ * caller explicitly requests `refresh`.
  */
 export async function ensureRepoBootstrapAccessToken(
   options: EnsureRepoBootstrapAccessTokenOptions,
@@ -54,26 +80,57 @@ export async function ensureRepoBootstrapAccessToken(
   const env = { ...(options.env ?? process.env) };
   // base-url-check: exempt (Node-side private bootstrap env, §6.1)
   const backendBaseUrl = env.SDKWORK_BACKEND_BASE_URL?.trim();
-  const existing = env.SDKWORK_ACCESS_TOKEN?.trim()
-    || await readRegisteredBootstrapAccessToken(options.repoRoot, options.environment);
+  const lifecycle = normalizeBootstrapLifecycle(
+    options.environment ?? env.SDKWORK_ENVIRONMENT ?? env.SDKWORK_ENV,
+  );
+  const deploymentProfile = options.deploymentProfile
+    ?? (env.SDKWORK_DEPLOYMENT_PROFILE?.trim() === "cloud" ? "cloud" : "standalone");
+  const manifestRecord = await readManifestRecord(options.repoRoot);
+  const inspection = {
+    environment: lifecycle,
+    ...(backendBaseUrl ? { backendBaseUrl } : {}),
+    ...(manifestRecord.manifest ? { manifest: manifestRecord.manifest } : {}),
+  };
 
-  if (existing && isUsableBootstrapAccessToken(existing, backendBaseUrl)) {
-    return { status: "configured", token: existing };
+  const envToken = env.SDKWORK_ACCESS_TOKEN?.trim();
+  if (envToken && options.refresh !== true && isBootstrapAccessTokenReusable(envToken, inspection)) {
+    return { status: "configured", token: envToken };
   }
+
+  const registeredToken = await readRegisteredBootstrapAccessToken(
+    options.repoRoot,
+    lifecycle,
+    { ...inspection, deploymentProfile },
+  );
+  if (
+    registeredToken
+    && options.refresh !== true
+    && isBootstrapAccessTokenReusable(registeredToken, inspection)
+  ) {
+    return { status: "configured", token: registeredToken };
+  }
+
+  const existing = envToken && isBootstrapAccessTokenReusable(envToken, inspection)
+    ? envToken
+    : registeredToken;
 
   if (options.tryApplicationBootstrap === false) {
     return {
       status: "unavailable",
       reason: existing
         ? "overlay bootstrap token is a local fixture and the backend is not loopback"
-        : "no registered SDKWORK_ACCESS_TOKEN overlay",
+        : "no reusable registered SDKWORK_ACCESS_TOKEN overlay",
     };
   }
 
-  const lifecycle = options.environment ?? env.SDKWORK_ENVIRONMENT ?? env.SDKWORK_ENV;
+  if (!manifestRecord.manifest) {
+    return { status: "unavailable", reason: manifestRecord.reason ?? "agent.app.config.json is required" };
+  }
+
   const loadedProfile = await loadBootstrapAuthProfileFromHome({
     env,
-    ...(lifecycle !== undefined ? { lifecycleEnvironment: lifecycle } : {}),
+    lifecycleEnvironment: lifecycle,
+    ...(deploymentProfile ? { deploymentProfile } : {}),
   });
   const auth = resolveBootstrapAuth({
     env,
@@ -93,31 +150,16 @@ export async function ensureRepoBootstrapAccessToken(
     };
   }
 
-  const manifestPath = join(options.repoRoot, "agent.app.config.json");
-  let raw: string;
-  try {
-    raw = await readFile(manifestPath, "utf8");
-  } catch {
-    return { status: "unavailable", reason: `missing ${manifestPath}` };
-  }
-
-  let manifest: unknown;
-  try {
-    manifest = JSON.parse(raw);
-  } catch (error) {
-    return { status: "unavailable", reason: `${manifestPath} is not valid JSON: ${String(error)}` };
-  }
-
-  const manifestRecord = manifest as SdkworkAppManifest;
-  const primaryDomain = resolveEnsurePrimaryDomain(env, manifestRecord, backendBaseUrl);
+  const manifest = manifestRecord.manifest;
+  const primaryDomain = resolveEnsurePrimaryDomain(env, manifest, backendBaseUrl);
   const environment = resolveBootstrapEnvironmentFromEnv(env, {
     backendApiBaseUrl: backendBaseUrl,
     ...(lifecycle !== undefined ? { environment: lifecycle } : {}),
-    ...(manifestRecord.backend?.tenantId !== undefined
-      ? { tenantId: manifestRecord.backend.tenantId }
+    ...(manifest.backend?.tenantId !== undefined
+      ? { tenantId: manifest.backend.tenantId }
       : {}),
-    ...(manifestRecord.backend?.organizationId !== undefined
-      ? { organizationId: manifestRecord.backend.organizationId }
+    ...(manifest.backend?.organizationId !== undefined
+      ? { organizationId: manifest.backend.organizationId }
       : {}),
     ...(primaryDomain !== undefined ? { primaryDomain } : {}),
   });
@@ -130,7 +172,7 @@ export async function ensureRepoBootstrapAccessToken(
     const result = await bootstrapApplicationFromManifest({
       client,
       manifest: manifest as never,
-      manifestHash: hashManifestContent(raw),
+      manifestHash: hashManifestContent(manifestRecord.raw ?? ""),
       auth,
       profile: loadedProfile?.profile ?? null,
       environment,
@@ -145,6 +187,7 @@ export async function ensureRepoBootstrapAccessToken(
       options.repoRoot,
       contents,
       lifecycle,
+      deploymentProfile,
     );
     const token = result.env.SDKWORK_ACCESS_TOKEN?.trim();
     if (!token) {
@@ -174,3 +217,5 @@ function resolveEnsurePrimaryDomain(
     return undefined;
   }
 }
+
+export { isUsableBootstrapAccessToken };
