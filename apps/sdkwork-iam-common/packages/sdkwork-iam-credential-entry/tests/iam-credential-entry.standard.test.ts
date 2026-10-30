@@ -220,6 +220,55 @@ describe('@sdkwork/iam-credential-entry', () => {
     }).reusable).toBe(false);
   });
 
+  it('treats the app_id claim as opaque and keeps tenant identity as the isolation', () => {
+    const manifest = {
+      app: { key: 'sdkwork-example-pc' },
+      backend: { appId: 'sdkwork-example-pc', tenantId: '100001', organizationId: '0' },
+    };
+    // The IAM backend issues credentials carrying the registration-assigned
+    // runtime application id, which is never the manifest key; a mismatch
+    // cannot prove the token belongs to another application, so reuse must not
+    // reject on it. Tenant and organization claims keep that isolation.
+    const runtimeIssued = [
+      Buffer.from(JSON.stringify({ alg: 'HS256', kid: '100001:local-hs256:primary', typ: 'JWT' })).toString('base64url'),
+      Buffer.from(JSON.stringify({
+        app_id: 'app_01a18b4f-6f61-7ff1-b86c-75b54995883f',
+        aud: 'app_01a18b4f-6f61-7ff1-b86c-75b54995883f',
+        environment: 'production',
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        iss: 'sdkwork-iam-local',
+        organization_id: '0',
+        tenant_id: '100001',
+        token_type: 'access',
+        token_version: 1,
+      })).toString('base64url'),
+      Buffer.from('signature-bytes').toString('base64url'),
+    ].join('.');
+    expect(inspectBootstrapAccessToken(runtimeIssued, {
+      environment: 'production',
+      manifest,
+    })).toMatchObject({ reusable: true, reason: 'ok' });
+
+    const foreignTenant = [
+      Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url'),
+      Buffer.from(JSON.stringify({
+        app_id: 'app_01a18b4f-6f61-7ff1-b86c-75b54995883f',
+        environment: 'production',
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        iss: 'sdkwork-iam-local',
+        organization_id: '0',
+        tenant_id: '100002',
+        token_type: 'access',
+        token_version: 1,
+      })).toString('base64url'),
+      Buffer.from('signature-bytes').toString('base64url'),
+    ].join('.');
+    expect(inspectBootstrapAccessToken(foreignTenant, {
+      environment: 'production',
+      manifest,
+    })).toMatchObject({ reusable: false, reason: 'tenant-mismatch' });
+  });
+
   it('persists one environment-scoped artifact and reuses it on the next start', () => {
     const repoRoot = createFixtureRepo();
     try {

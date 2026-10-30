@@ -165,8 +165,10 @@ function fixtureIsAllowedForEnvironment(environment, options) {
 /**
  * Inspect one candidate bootstrap token against the repository scope it is
  * about to be used for. Reuse is the default; a token is rejected only when a
- * claim proves it belongs to a different environment, application, tenant, or
- * time window.
+ * claim proves it belongs to a different environment, tenant, organization,
+ * backend, or time window. The `app_id` claim stays opaque because issued
+ * credentials carry the registration-assigned runtime id rather than the
+ * manifest key.
  * @param token - candidate token.
  * @param options - lifecycle, manifest, backend, and clock inputs.
  * @returns reuse decision with a machine-readable reason.
@@ -213,13 +215,13 @@ export function inspectBootstrapAccessToken(token, options = {}) {
   }
 
   const manifest = options.manifest;
-  const manifestAppId = normalizeText(manifest?.backend?.appId);
-  if (manifestAppId) {
-    const claimAppId = normalizeText(payload.app_id);
-    if (claimAppId && claimAppId !== manifestAppId) {
-      return { reusable: false, reason: 'app-mismatch', fixture, header, payload };
-    }
-  }
+  // The `app_id` claim is opaque for reuse: the IAM backend issues credentials
+  // carrying the runtime application id assigned at registration (an
+  // `app_<uuid>` value), which is never the manifest `backend.appId` key, so a
+  // mismatch cannot prove the token belongs to another application. Tenant and
+  // organization claims carry the cross-application isolation, and a token
+  // minted for a different backend fails at request time (audience binding)
+  // and is regenerated then.
 
   const manifestTenantId = normalizeText(manifest?.backend?.tenantId);
   const claimTenantId = normalizeText(payload.tenant_id);
