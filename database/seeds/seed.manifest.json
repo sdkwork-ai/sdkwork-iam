@@ -21,7 +21,7 @@
     "zh-CN": {
       "version": "1.1.0",
       "required": true,
-      "checksum": "sha256:43c1842f597a4b945c1a89528c1796a020e37c997f705f95c474cc04716da36f",
+      "checksum": "sha256:947510602a40b27ad536a23488db4dc567a8858a4028e6953613a88fa2e5d3ca",
       "files": [
         "locales/zh-CN/001_iam_locale_display.sql",
         "locales/zh-CN/002_iam_persona_labels.sql"
