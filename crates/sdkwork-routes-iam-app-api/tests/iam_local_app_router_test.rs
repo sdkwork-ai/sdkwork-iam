@@ -1049,6 +1049,159 @@ async fn local_app_router_owner_session_includes_directory_permission_scope() {
 }
 
 #[tokio::test]
+async fn local_app_router_serves_persona_for_the_signed_in_user_and_rejects_anonymous_reads() {
+    let app = build_router_with_bootstrap().await;
+    let session = create_bootstrap_login_session(&app).await;
+    let auth_token = session["authToken"]
+        .as_str()
+        .expect("auth token")
+        .to_owned();
+    let access_token = session["accessToken"]
+        .as_str()
+        .expect("access token")
+        .to_owned();
+
+    // A persona is account data, so an anonymous caller gets the session
+    // problem detail instead of an empty profile or a catalog read.
+    let anonymous = request_public_json(
+        &app,
+        Method::GET,
+        "/app/v3/api/iam/persona_catalog",
+        Body::empty(),
+    )
+    .await;
+    assert_eq!(anonymous.status(), StatusCode::UNAUTHORIZED);
+    assert_problem_detail_code(
+        &read_json(anonymous).await,
+        StatusCode::UNAUTHORIZED,
+        "iam_session_required",
+    );
+
+    // The signed-in catalog carries the seeded taxonomy. `iam_persona_interest`
+    // owns no description column, so an interest entry advertising one would
+    // also mean the read queried a projection the table cannot serve.
+    let catalog = request_json_with_auth(
+        &app,
+        Method::GET,
+        "/app/v3/api/iam/persona_catalog",
+        Body::empty(),
+        Some(auth_token.as_str()),
+        Some(access_token.as_str()),
+    )
+    .await;
+    assert_eq!(catalog.status(), StatusCode::OK);
+    let catalog_body = read_json(catalog).await;
+    let roles = catalog_body["data"]["item"]["roles"]
+        .as_array()
+        .expect("persona catalog roles");
+    let interests = catalog_body["data"]["item"]["interests"]
+        .as_array()
+        .expect("persona catalog interests");
+    assert!(
+        !roles.is_empty(),
+        "persona role catalog must be seeded: {catalog_body}"
+    );
+    assert!(
+        !interests.is_empty(),
+        "persona interest catalog must be seeded: {catalog_body}"
+    );
+    assert!(roles.iter().all(|role| role.get("descriptions").is_some()));
+    assert!(interests
+        .iter()
+        .all(|interest| interest.get("descriptions").is_none()));
+
+    // Start from the honest "never chose" state, then round-trip the exact full
+    // replacement the picker submits.
+    let cleared = request_json_with_auth(
+        &app,
+        Method::DELETE,
+        "/app/v3/api/iam/users/current/persona",
+        Body::empty(),
+        Some(auth_token.as_str()),
+        Some(access_token.as_str()),
+    )
+    .await;
+    assert_eq!(cleared.status(), StatusCode::NO_CONTENT);
+
+    let empty = request_json_with_auth(
+        &app,
+        Method::GET,
+        "/app/v3/api/iam/users/current/persona",
+        Body::empty(),
+        Some(auth_token.as_str()),
+        Some(access_token.as_str()),
+    )
+    .await;
+    assert_eq!(empty.status(), StatusCode::OK);
+    let empty_body = read_json(empty).await;
+    assert_eq!(empty_body["data"]["item"]["role"], Value::Null);
+    assert_eq!(empty_body["data"]["item"]["hasSelection"], json!(false));
+
+    let saved = request_json_with_auth(
+        &app,
+        Method::PUT,
+        "/app/v3/api/iam/users/current/persona",
+        Body::from(
+            json!({
+                "role": "learner",
+                "interests": ["postgraduate", "k12"],
+                "promptDismissed": true
+            })
+            .to_string(),
+        ),
+        Some(auth_token.as_str()),
+        Some(access_token.as_str()),
+    )
+    .await;
+    assert_eq!(saved.status(), StatusCode::OK, "{saved:?}");
+    let saved_body = read_json(saved).await;
+    assert_eq!(saved_body["data"]["item"]["role"], json!("learner"));
+    assert_eq!(saved_body["data"]["item"]["hasSelection"], json!(true));
+    assert_eq!(saved_body["data"]["item"]["promptDismissed"], json!(true));
+
+    let read_back = request_json_with_auth(
+        &app,
+        Method::GET,
+        "/app/v3/api/iam/users/current/persona",
+        Body::empty(),
+        Some(auth_token.as_str()),
+        Some(access_token.as_str()),
+    )
+    .await;
+    assert_eq!(read_back.status(), StatusCode::OK);
+    let read_back_body = read_json(read_back).await;
+    assert_eq!(
+        read_back_body["data"]["item"]["interests"],
+        json!(["postgraduate", "k12"])
+    );
+
+    // An unknown role is a validation failure, not a storage outage. The IAM
+    // wire mapping collapses a validation problem onto `40001`/400.
+    let rejected = request_json_with_auth(
+        &app,
+        Method::PUT,
+        "/app/v3/api/iam/users/current/persona",
+        Body::from(json!({ "role": "not-a-role", "interests": [] }).to_string()),
+        Some(auth_token.as_str()),
+        Some(access_token.as_str()),
+    )
+    .await;
+    assert_eq!(rejected.status(), StatusCode::BAD_REQUEST);
+
+    // Leave no persona behind for the next suite run.
+    let cleared = request_json_with_auth(
+        &app,
+        Method::DELETE,
+        "/app/v3/api/iam/users/current/persona",
+        Body::empty(),
+        Some(auth_token.as_str()),
+        Some(access_token.as_str()),
+    )
+    .await;
+    assert_eq!(cleared.status(), StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
 async fn local_app_router_requires_login_context_selection_for_multi_membership_login() {
     let app = build_router_with_multiple_organizations().await;
 

@@ -221,7 +221,7 @@ export class IamPersonaCatalogApi {
   }
 
 
-/** Iam persona Catalog retrieve. */
+/** Persona Catalog retrieve. */
   async retrieve(requestOptions?: ApiRequestOptions): Promise<IamPersonaCatalog> {
     return this.client.request<IamPersonaCatalog>(appApiPath(`/iam/persona_catalog`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }

@@ -17,6 +17,16 @@ function explicitBootstrapPermission(operationId) {
   switch (operationId) {
     case 'users.current.retrieve':
       return 'iam:self';
+    // The persona is the signed-in account's own profile data. It is a
+    // self-service read/write surface, so it never rides on the administrative
+    // `iam.users.*` catalog: a normal member holds `iam:self` and the profile
+    // write scope, not user-management rights.
+    case 'users.current.persona.retrieve':
+    case 'personaCatalog.retrieve':
+      return 'iam:self';
+    case 'users.current.persona.update':
+    case 'users.current.persona.delete':
+      return 'iam.profile.update';
     case 'users.current.update':
     case 'users.current.password.update':
     case 'users.current.emailBindings.create':

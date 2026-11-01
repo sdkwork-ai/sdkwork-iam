@@ -2464,8 +2464,8 @@
         "tags": [
           "iam"
         ],
-        "summary": "Iam persona Catalog retrieve.",
-        "operationId": "iam.personaCatalog.retrieve",
+        "summary": "Persona Catalog retrieve.",
+        "operationId": "personaCatalog.retrieve",
         "parameters": [],
         "responses": {
           "200": {
@@ -2580,10 +2580,11 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-app-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "iam.personaCatalog",
+        "x-sdkwork-resource": "personaCatalog",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
-        "x-sdkwork-server-request-id": true
+        "x-sdkwork-server-request-id": true,
+        "x-sdkwork-permission": "iam:self"
       }
     },
     "/app/v3/api/iam/position_assignments": {
@@ -3930,7 +3931,7 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.users.delete"
+        "x-sdkwork-permission": "iam.profile.update"
       },
       "get": {
         "tags": [
@@ -4056,7 +4057,7 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.users.read"
+        "x-sdkwork-permission": "iam:self"
       },
       "put": {
         "tags": [
@@ -4182,7 +4183,7 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.users.update",
+        "x-sdkwork-permission": "iam.profile.update",
         "requestBody": {
           "required": true,
           "content": {

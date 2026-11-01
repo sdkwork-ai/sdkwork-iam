@@ -238,7 +238,7 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
         HttpMethod::Get,
         "/app/v3/api/iam/persona_catalog",
         "iam",
-        "iam.personaCatalog.retrieve",
+        "personaCatalog.retrieve",
     )
     .with_required_permission("iam:self"),
     HttpRoute::dual_token(

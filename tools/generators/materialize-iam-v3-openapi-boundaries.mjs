@@ -899,7 +899,7 @@ function bootstrapBodyAuthProperties() {
 
 function personaSuccessSchemaRef(route) {
   switch (route.operationId) {
-    case 'iam.personaCatalog.retrieve':
+    case 'personaCatalog.retrieve':
       return '#/components/schemas/IamPersonaCatalogResponse';
     case 'users.current.persona.retrieve':
     case 'users.current.persona.update':

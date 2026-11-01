@@ -122,25 +122,94 @@ async fn require_session(
     }
 }
 
+/// One selectable-code catalog table plus the optional columns it actually owns.
+///
+/// The two catalog tables are deliberately not identical: `iam_persona_role`
+/// carries a description map and an optional authorization-role mapping, while
+/// `iam_persona_interest` carries only its label map. A reader that selects a
+/// column the table does not declare fails the whole statement, which is how a
+/// single absent column once turned every catalog read into a `503`.
+#[derive(Clone, Copy)]
+struct CatalogTable {
+    table: &'static str,
+    /// Whether the table owns `description_i18n`.
+    descriptions: bool,
+    /// Whether the table owns `iam_role_code`.
+    iam_role_code: bool,
+}
+
+impl CatalogTable {
+    /// Selectable persona roles, with descriptions and the optional role mapping.
+    const ROLES: Self = Self {
+        table: "iam_persona_role",
+        descriptions: true,
+        iam_role_code: true,
+    };
+
+    /// Selectable interest directions, which own no description and no role.
+    const INTERESTS: Self = Self {
+        table: "iam_persona_interest",
+        descriptions: false,
+        iam_role_code: false,
+    };
+
+    /// The column list this table can serve; identifiers are static, so the
+    /// formatted statement never carries request data.
+    fn select_list(&self) -> String {
+        let mut columns = String::from("code, sort_order, label_i18n");
+        if self.descriptions {
+            columns.push_str(", description_i18n");
+        }
+        if self.iam_role_code {
+            columns.push_str(", iam_role_code");
+        }
+        columns
+    }
+}
+
+/// Builds one catalog entry from the columns the table actually provides, so the
+/// response never advertises a field the storage contract does not own.
+fn catalog_entry(
+    code: String,
+    sort_order: i32,
+    labels: Value,
+    descriptions: Option<Value>,
+    iam_role_code: Option<String>,
+) -> Value {
+    let mut entry = json!({
+        "code": code,
+        "sortOrder": sort_order,
+        "labels": labels,
+    });
+    if let Some(descriptions) = descriptions {
+        entry["descriptions"] = descriptions;
+    }
+    if let Some(iam_role_code) = iam_role_code {
+        entry["iamRoleCode"] = json!(iam_role_code);
+    }
+    entry
+}
+
 /// Reads one catalog table with tenant-over-platform precedence and returns the
 /// entries in display order.
 ///
-/// `tenant_overrides_sort_last` is guaranteed by ordering tenant-owned rows
-/// after platform rows, so inserting into the code map in row order lets a
-/// tenant row replace the platform row for the same code.
+/// Tenant rows sort after platform rows, so inserting into the code map in row
+/// order lets a tenant row replace the platform row for the same code.
 async fn load_catalog_values(
     pg: &PgPool,
     tenant_id: &str,
-    table: &'static str,
-    extra_columns: &str,
+    catalog: CatalogTable,
 ) -> Result<Vec<Value>, Response> {
     let sql = format!(
-        "SELECT code, sort_order, label_i18n, description_i18n{extra_columns} \
-         FROM {table} \
+        "SELECT {} FROM {} \
          WHERE (owner_tenant_id = '0' OR owner_tenant_id = $1) AND status = 'active' \
-         ORDER BY (owner_tenant_id <> '0'), sort_order, code"
+         ORDER BY (owner_tenant_id <> '0'), sort_order, code",
+        catalog.select_list(),
+        catalog.table,
     );
-    let rows = sqlx::query(&sql)
+    // The only interpolated values are this module's static table and column
+    // identifiers; the tenant id stays a bind parameter.
+    let rows = sqlx::query(sqlx::AssertSqlSafe(sql))
         .bind(tenant_id)
         .fetch_all(pg)
         .await
@@ -156,23 +225,25 @@ async fn load_catalog_values(
             .try_get::<String, _>("label_i18n")
             .map(|raw| parse_i18n(&raw))
             .unwrap_or_else(|_| json!({}));
-        let descriptions = row
-            .try_get::<String, _>("description_i18n")
-            .map(|raw| parse_i18n(&raw))
-            .unwrap_or_else(|_| json!({}));
-        let mut entry = json!({
-            "code": code,
-            "sortOrder": sort_order,
-            "labels": labels,
-            "descriptions": descriptions,
+        let descriptions = catalog.descriptions.then(|| {
+            row.try_get::<String, _>("description_i18n")
+                .map(|raw| parse_i18n(&raw))
+                .unwrap_or_else(|_| json!({}))
         });
-        if let Some(iam_role_code) = row
-            .try_get::<Option<String>, _>("iam_role_code")
-            .ok()
-            .flatten()
-        {
-            entry["iamRoleCode"] = json!(iam_role_code);
-        }
+        let iam_role_code = if catalog.iam_role_code {
+            row.try_get::<Option<String>, _>("iam_role_code")
+                .ok()
+                .flatten()
+        } else {
+            None
+        };
+        let entry = catalog_entry(
+            code.clone(),
+            sort_order,
+            labels,
+            descriptions,
+            iam_role_code,
+        );
         by_code.insert(code, (sort_order, entry));
     }
 
@@ -185,11 +256,11 @@ async fn load_catalog_values(
 }
 
 async fn load_roles(pg: &PgPool, tenant_id: &str) -> Result<Vec<Value>, Response> {
-    load_catalog_values(pg, tenant_id, "iam_persona_role", ", iam_role_code").await
+    load_catalog_values(pg, tenant_id, CatalogTable::ROLES).await
 }
 
 async fn load_interests(pg: &PgPool, tenant_id: &str) -> Result<Vec<Value>, Response> {
-    load_catalog_values(pg, tenant_id, "iam_persona_interest", "").await
+    load_catalog_values(pg, tenant_id, CatalogTable::INTERESTS).await
 }
 
 /// Stable catalog version derived from the newest catalog row, so a client can
@@ -501,14 +572,52 @@ mod tests {
 
     #[test]
     fn catalog_codes_reports_catalog_positions() {
-        let catalog = vec![
-            json!({ "code": "learner" }),
-            json!({ "code": "teacher" }),
-        ];
+        let catalog = vec![json!({ "code": "learner" }), json!({ "code": "teacher" })];
         let codes = catalog_codes(&catalog);
         assert_eq!(codes.get("learner"), Some(&0));
         assert_eq!(codes.get("teacher"), Some(&1));
         assert_eq!(codes.get("missing"), None);
+    }
+
+    #[test]
+    fn role_catalog_selects_its_description_and_role_mapping() {
+        let select = CatalogTable::ROLES.select_list();
+        assert!(select.contains("label_i18n"));
+        assert!(select.contains("description_i18n"));
+        assert!(select.contains("iam_role_code"));
+    }
+
+    #[test]
+    fn interest_catalog_never_selects_columns_the_table_does_not_own() {
+        // `iam_persona_interest` declares only code/sort_order/label_i18n; a
+        // projection naming `description_i18n` fails the statement and makes
+        // every catalog read (and therefore the persona save) a 503.
+        let select = CatalogTable::INTERESTS.select_list();
+        assert!(!select.contains("description_i18n"));
+        assert!(!select.contains("iam_role_code"));
+        assert_eq!("iam_persona_interest", CatalogTable::INTERESTS.table);
+    }
+
+    #[test]
+    fn catalog_entry_reports_only_the_columns_the_table_owns() {
+        let interest = catalog_entry("k12".to_owned(), 80, json!({ "zh-CN": "K12" }), None, None);
+        assert_eq!(interest["code"], json!("k12"));
+        assert_eq!(interest["labels"]["zh-CN"], json!("K12"));
+        assert_eq!(interest.get("descriptions"), None);
+        assert_eq!(interest.get("iamRoleCode"), None);
+
+        let role = catalog_entry(
+            "learner".to_owned(),
+            10,
+            json!({ "en-US": "Learner" }),
+            Some(json!({ "en-US": "Learning for a course" })),
+            Some("course_learner".to_owned()),
+        );
+        assert_eq!(
+            role["descriptions"]["en-US"],
+            json!("Learning for a course")
+        );
+        assert_eq!(role["iamRoleCode"], json!("course_learner"));
     }
 
     #[test]

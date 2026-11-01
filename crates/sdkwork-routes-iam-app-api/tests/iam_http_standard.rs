@@ -450,6 +450,62 @@ fn app_routes_own_auth_sessions_and_current_user() {
 }
 
 #[test]
+fn app_routes_keep_persona_on_the_authenticated_self_surface() {
+    let routes = app_routes();
+
+    for route in [
+        HttpRoute::dual_token(
+            HttpMethod::Get,
+            "/app/v3/api/iam/persona_catalog",
+            "iam",
+            "personaCatalog.retrieve",
+        )
+        .with_required_permission("iam:self"),
+        HttpRoute::dual_token(
+            HttpMethod::Get,
+            "/app/v3/api/iam/users/current/persona",
+            "iam",
+            "users.current.persona.retrieve",
+        )
+        .with_required_permission("iam:self"),
+        HttpRoute::dual_token(
+            HttpMethod::Put,
+            "/app/v3/api/iam/users/current/persona",
+            "iam",
+            "users.current.persona.update",
+        )
+        .with_required_permission("iam.profile.update"),
+        HttpRoute::dual_token(
+            HttpMethod::Delete,
+            "/app/v3/api/iam/users/current/persona",
+            "iam",
+            "users.current.persona.delete",
+        )
+        .with_required_permission("iam.profile.update"),
+    ] {
+        assert!(
+            routes.contains(&route),
+            "persona self-service route must stay dual-token: {route:?}",
+        );
+    }
+
+    // A persona is account data behind a verified session. An anonymous caller
+    // is rejected with 401, and no persona operation may be declared
+    // credential-free (which would serve or mutate an empty profile).
+    for operation_id in [
+        "personaCatalog.retrieve",
+        "users.current.persona.retrieve",
+        "users.current.persona.update",
+        "users.current.persona.delete",
+    ] {
+        assert!(
+            !IAM_ANONYMOUS_OPERATION_IDS.contains(&operation_id),
+            "persona operation {operation_id} must require a session",
+        );
+    }
+}
+
+#[test]
 fn app_routes_expose_independent_organization_directory_reads() {
     let routes = app_routes();
 
@@ -677,6 +733,7 @@ fn app_route_manifest_matches_the_standard_operation_surface() {
         "departments.list",
         "departments.tree.retrieve",
         "iam.accountBindingPolicy.retrieve",
+        "personaCatalog.retrieve",
         "iam.runtime.retrieve",
         "iam.verificationPolicy.retrieve",
         "accountLinks.delete",
@@ -719,6 +776,9 @@ fn app_route_manifest_matches_the_standard_operation_surface() {
         "users.current.password.update",
         "users.current.phoneBindings.create",
         "users.current.phoneBindings.delete",
+        "users.current.persona.delete",
+        "users.current.persona.retrieve",
+        "users.current.persona.update",
         "users.current.retrieve",
         "users.current.update",
         "verificationCodeRequests.create",

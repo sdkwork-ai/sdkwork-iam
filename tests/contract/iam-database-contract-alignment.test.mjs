@@ -126,4 +126,54 @@ assert.equal(
   'crate-local IAM migrations directory must not exist; database/ owns lifecycle SQL',
 );
 
+const databaseManifest = JSON.parse(
+  fs.readFileSync(path.join(databaseRoot, 'database.manifest.json'), 'utf8'),
+);
+const seedManifest = JSON.parse(
+  fs.readFileSync(path.join(databaseRoot, 'seeds/seed.manifest.json'), 'utf8'),
+);
+
+assert.equal(
+  databaseManifest.lifecycle.seedOnBoot,
+  true,
+  'IAM reference data (default subject, platform application, role catalog, persona catalog) is startup-required; seedOnBoot must stay true so a fresh deployment initializes it',
+);
+
+const operationalSeeds = seedManifest.profiles[databaseManifest.lifecycle.defaultSeedProfile].common;
+for (const seedFile of [
+  '002_default_iam_subject.sql',
+  '003_iam_application_bootstrap_seed.sql',
+  '004_iam_role_catalog_seed.sql',
+  '005_iam_persona_catalog_seed.sql',
+]) {
+  assert.ok(
+    operationalSeeds.includes(seedFile),
+    `${databaseManifest.lifecycle.defaultSeedProfile} seed profile must ship startup reference data ${seedFile}`,
+  );
+  assert.ok(
+    fs.existsSync(path.join(databaseRoot, 'seeds/common', seedFile)),
+    `startup reference seed ${seedFile} must exist`,
+  );
+}
+
+const personaCatalogSeed = fs.readFileSync(
+  path.join(databaseRoot, 'seeds/common/005_iam_persona_catalog_seed.sql'),
+  'utf8',
+);
+for (const code of ['learner', 'employee', 'teacher', 'postgraduate', 'k12']) {
+  assert.match(
+    personaCatalogSeed,
+    new RegExp(`'${code}'`),
+    `persona catalog seed must ship the picker code ${code}`,
+  );
+}
+
+for (const locale of databaseManifest.lifecycle.activeSeedLocales) {
+  const localeFiles = seedManifest.profiles[databaseManifest.lifecycle.defaultSeedProfile].locales[locale] ?? [];
+  assert.ok(
+    localeFiles.some((file) => file.includes('persona_labels')),
+    `active seed locale ${locale} must ship persona display labels`,
+  );
+}
+
 process.stdout.write('iam-database-contract-alignment.test.mjs passed\n');
