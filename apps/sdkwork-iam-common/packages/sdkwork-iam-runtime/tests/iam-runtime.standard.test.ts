@@ -786,6 +786,9 @@ function createStandardAppClient(session: StandardSessionOptions = {}) {
       passwordResets: {
         create: vi.fn(),
       },
+      verificationCodeRequests: {
+        create: vi.fn(),
+      },
       registrations: {
         create: vi.fn().mockResolvedValue({ data: sessionData }),
       },
@@ -829,6 +832,12 @@ function createStandardAppClient(session: StandardSessionOptions = {}) {
         sessionExchanges: {
           create: vi.fn(),
         },
+        sessionCompletions: {
+          create: vi.fn(),
+        },
+      },
+      scanLoginModes: {
+        list: vi.fn(),
       },
       callbacks: {
         create: vi.fn(),
@@ -974,6 +983,22 @@ function createStandardBackendIamClient() {
       create: vi.fn(),
       update: vi.fn(),
     },
+    providerAccounts: {
+      create: vi.fn(),
+      delete: vi.fn(),
+      list: vi.fn(),
+      resolve: vi.fn(),
+      retrieve: vi.fn(),
+      setDefault: vi.fn(),
+      update: vi.fn(),
+      credentials: {
+        create: vi.fn(),
+        list: vi.fn(),
+      },
+    },
+    providerCredentials: {
+      revoke: vi.fn(),
+    },
     roles: {
       create: vi.fn(),
       delete: vi.fn(),
@@ -1025,6 +1050,8 @@ function createStandardBackendIamClient() {
       },
     },
     users: {
+      ban: vi.fn(),
+      unban: vi.fn(),
       create: vi.fn(),
       delete: vi.fn(),
       list: vi.fn(),

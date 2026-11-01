@@ -92,6 +92,9 @@ describe("SDKWork IAM SDK port contracts", () => {
         passwordResets: {
           create: vi.fn(),
         },
+        verificationCodeRequests: {
+          create: vi.fn(),
+        },
         registrations: {
           create: vi.fn(),
         },
@@ -203,6 +206,7 @@ describe("SDKWork IAM SDK port contracts", () => {
       auth: {
         passwordResetRequests: new OperationResource(),
         passwordResets: new OperationResource(),
+        verificationCodeRequests: new OperationResource(),
         registrations: new OperationResource(),
         sessions: {
           create: new OperationResource().create,
@@ -253,6 +257,9 @@ describe("SDKWork IAM SDK port contracts", () => {
           create: vi.fn(),
         },
         passwordResets: {
+          create: vi.fn(),
+        },
+        verificationCodeRequests: {
           create: vi.fn(),
         },
         registrations: {
@@ -348,6 +355,9 @@ describe("SDKWork IAM SDK port contracts", () => {
           create: vi.fn(),
         },
         passwordResets: {
+          create: vi.fn(),
+        },
+        verificationCodeRequests: {
           create: vi.fn(),
         },
         registrations: {
@@ -623,6 +633,12 @@ function createAppOAuthResources(createResource?: () => object) {
       sessionExchanges: {
         create: vi.fn(),
       },
+      sessionCompletions: {
+        create: vi.fn(),
+      },
+    }),
+    scanLoginModes: Object.assign(resource(), {
+      list: vi.fn(),
     }),
     callbacks: Object.assign(resource(), {
       create: vi.fn(),
@@ -782,9 +798,20 @@ function createBackendIamManagementResources(options?: { usersRoles?: boolean })
         retrieve: vi.fn(),
       },
       tenantApplications: {
+        create: vi.fn(),
         enable: vi.fn(),
+        list: vi.fn(),
+        management: {
+          create: vi.fn(),
+          disable: vi.fn(),
+          enable: vi.fn(),
+          update: vi.fn(),
+        },
         provision: vi.fn(),
         retrieve: vi.fn(),
+        summary: {
+          retrieve: vi.fn(),
+        },
         update: vi.fn(),
       },
       tenants: {
@@ -801,6 +828,8 @@ function createBackendIamManagementResources(options?: { usersRoles?: boolean })
         },
       },
       users: {
+        ban: vi.fn(),
+        unban: vi.fn(),
         create: vi.fn(),
         delete: vi.fn(),
         list: vi.fn(),

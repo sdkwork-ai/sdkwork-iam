@@ -14,7 +14,12 @@ import {
 } from "@sdkwork/runtime-bootstrap";
 
 function iamListQuery(params?: Record<string, unknown>): Record<string, string | number> {
-  return resolveSdkWorkListQuery(params);
+  const query = resolveSdkWorkListQuery(params);
+  // The generated SDK `list` methods read the camelCase `pageSize` and map it to
+  // the wire `page_size` query name themselves (`PAGINATION_SPEC.md` section 3),
+  // so handing them the wire spelling loses the page size silently.
+  const { page_size: pageSize, ...domainFilters } = query;
+  return { ...domainFilters, pageSize };
 }
 
 export interface IamUser {
@@ -246,7 +251,7 @@ export interface SdkworkIamService {
       credentials: {
         create(providerAccountId: string, body: Record<string, unknown>): Promise<unknown>;
         list(providerAccountId: string, params?: Record<string, unknown>): Promise<unknown>;
-        reveal(providerAccountId: string): Promise<unknown>;
+        reveal?(providerAccountId: string): Promise<unknown>;
       };
     };
     providerCredentials: {
@@ -676,7 +681,14 @@ export function createSdkworkIamService(input: CreateSdkworkIamServiceInput): Sd
         credentials: {
           create: (providerAccountId, body) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.credentials, "create", "iam.providerAccounts.credentials.create", providerAccountId, body),
           list: (providerAccountId, params) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.credentials, "list", "iam.providerAccounts.credentials.list", providerAccountId, iamListQuery(params)),
-          reveal: (providerAccountId) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.credentials, "reveal", "iam.providerAccounts.credentials.reveal", providerAccountId),
+          // `credentials.reveal` is optional in the SDK port contract: only surface
+          // it when the generated backend client actually carries the method, so
+          // the facade surface equals the canonical port surface.
+          ...(typeof (backendIam?.providerAccounts?.credentials as Record<string, unknown> | undefined)?.reveal === "function"
+            ? {
+                reveal: (providerAccountId: string) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.credentials, "reveal", "iam.providerAccounts.credentials.reveal", providerAccountId),
+              }
+            : {}),
         },
       },
       providerCredentials: {

@@ -799,7 +799,9 @@ describe("SDKWork IAM service", () => {
     expect(backendClient.iam.tenants.members.create).toHaveBeenCalledWith("t1", { userId: "u1" });
     expect(backendClient.iam.tenants.members.delete).toHaveBeenCalledWith("t1", "u1");
     expect(backendClient.iam.tenants.members.update).toHaveBeenCalledWith("t1", "u1", { status: "active" });
-    expect(backendClient.iam.tenants.members.list).toHaveBeenCalledWith("t1", { page_size: 20 });
+    // The facade hands every generated list the camelCase `pageSize`; the SDK
+    // maps it to the wire `page_size` query name itself.
+    expect(backendClient.iam.tenants.members.list).toHaveBeenCalledWith("t1", { pageSize: 20 });
     expect(backendClient.iam.users.create).toHaveBeenCalledWith({ username: "bob" });
     expect(backendClient.iam.users.delete).toHaveBeenCalledWith("u1");
     expect(backendClient.iam.users.retrieve).toHaveBeenCalledWith("u1");
