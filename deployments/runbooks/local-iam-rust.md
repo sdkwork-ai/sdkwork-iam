@@ -6,13 +6,13 @@ Owner: `sdkwork-iam` maintainers.
 
 ## Prerequisites
 
-- PostgreSQL profile from `.env.postgres.example` at the sdkwork-iam root
+- PostgreSQL profile from `config/host/postgres.env.example` at the sdkwork-iam root
 - Rust toolchain with workspace dependencies resolved
 
 ## Bootstrap
 
 ```bash
-cp .env.postgres.example .env.postgres
+cp config/host/postgres.env.example config/host/postgres.env
 ```
 
 ## Verification
@@ -67,14 +67,14 @@ export SDKWORK_IAM_PROVIDER_CREDENTIAL_MASTER_SECRET="$(openssl rand -base64 32)
 Rotate by moving the previous value into `SDKWORK_IAM_PROVIDER_CREDENTIAL_LEGACY_MASTER_SECRETS`
 (comma-separated); historical values are only tried after the active one.
 
-The variable is deliberately absent from this repository's tracked topology. `.env.postgres`
+The variable is deliberately absent from this repository's tracked topology. `config/host/postgres.env`
 rejects any key that is not `SDKWORK_DATABASE_*` (`unified_postgres_env::apply_env_file` panics),
 and dev topology files must not carry IAM master secrets. Supply it through the process
 environment of whatever starts the gateway.
 
 ## Notes
 
-- Unified PostgreSQL env resolution prefers `sdkwork-iam/.env.postgres`, then cloud-router profiles.
+- Unified PostgreSQL env resolution prefers `sdkwork-iam/config/host/postgres.env`, then cloud-router profiles.
 - Integration tests cap IAM SQLx pools (`max_connections=2`, `min_connections=0`) and share one seeding pool per test binary via `tests/unified_database_env.rs`.
 - Local app/backend Postgres suites repair legacy opaque IAM user ids before serving directory reads, so assignment joins must stay aligned with the repaired snowflake `user_id`.
 - If PostgreSQL integration tests fail with `PoolTimedOut`, terminate stale IAM test binaries and release idle connections on the dev database before re-running `pnpm run verify`.

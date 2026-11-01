@@ -67,7 +67,7 @@ Component verification (structure checks, CI without PostgreSQL):
 cargo test -j 1 -p sdkwork-routes-iam-app-api --test iam_http_standard -- --test-threads 1
 ```
 
-PostgreSQL integration (requires `.env.postgres` or `../sdkwork-cloudrouter/.env.postgres`, always use `--test-threads 1`):
+PostgreSQL integration (requires `config/host/postgres.env` or `../sdkwork-cloudrouter/config/host/postgres.env`, always use `--test-threads 1`):
 
 Integration tests reuse one capped SQLx pool via `tests/unified_database_env.rs` (`integration_database_pool_for_router`) so router rebuilds do not exhaust PostgreSQL connections.
 

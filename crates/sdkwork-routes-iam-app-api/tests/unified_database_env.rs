@@ -89,7 +89,7 @@ pub async fn integration_database_pool_for_router() -> DatabasePool {
 /// True when the IAM root has a local PostgreSQL profile for integration suites.
 #[allow(dead_code)]
 pub fn iam_postgres_profile_configured() -> bool {
-    iam_root().join(".env.postgres").is_file()
+    iam_root().join("config/host/postgres.env").is_file()
 }
 
 /// Tenants that must stay active across open-registration HTTP standard tests so

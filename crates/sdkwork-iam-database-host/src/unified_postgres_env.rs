@@ -8,7 +8,7 @@ use sdkwork_database_config::workspace_database::{
 /// Load and validate the selected application root's workspace PostgreSQL profile.
 pub fn apply_workspace_postgres_env(app_root: &Path) {
     if !workspace_postgres_env_is_configured() {
-        let path = app_root.join(".env.postgres");
+        let path = app_root.join("config/host/postgres.env");
         if path.is_file() {
             apply_env_file(&path);
         }
@@ -89,7 +89,7 @@ mod tests {
         ));
         std::fs::create_dir_all(&app_root).unwrap();
         std::fs::write(
-            app_root.join(".env.postgres"),
+            app_root.join("config/host/postgres.env"),
             "SDKWORK_DATABASE_URL=postgresql://ignored/ignored\n",
         )
         .unwrap();
@@ -124,7 +124,7 @@ mod tests {
         ));
         std::fs::create_dir_all(&app_root).unwrap();
         std::fs::write(
-            app_root.join(".env.postgres"),
+            app_root.join("config/host/postgres.env"),
             "SDKWORK_DATABASE_ENGINE=postgresql\nSDKWORK_DATABASE_HOST=127.0.0.1\nSDKWORK_DATABASE_PORT=5432\nSDKWORK_DATABASE_NAME=sdkwork_ai_dev\nSDKWORK_DATABASE_USERNAME=sdkwork_ai_dev\nSDKWORK_DATABASE_PASSWORD=sdkworkdev123\n",
         )
         .unwrap();

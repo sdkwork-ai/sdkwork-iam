@@ -119,10 +119,10 @@ test("IAM auth packages declare IAM_LOGIN_INTEGRATION_SPEC in component specs", 
 
 test("root workspace keeps postgres integration profile template for IAM Rust tests", () => {
   assert.ok(
-    fs.existsSync(path.join(appbaseRoot, ".env.postgres.example")),
-    ".env.postgres.example must exist for unified PostgreSQL integration tests",
+    fs.existsSync(path.join(appbaseRoot, "config/host/postgres.env.example")),
+    "config/host/postgres.env.example must exist for unified PostgreSQL integration tests",
   );
-  const example = readText(".env.postgres.example");
+  const example = readText("config/host/postgres.env.example");
   assert.match(example, /SDKWORK_DATABASE_ENGINE=postgresql/);
   assert.match(example, /SDKWORK_DATABASE_HOST=/);
 });

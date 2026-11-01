@@ -65,7 +65,7 @@ Component verification (manifest and fail-closed route surface):
 cargo test -p sdkwork-routes-iam-backend-api
 ```
 
-PostgreSQL integration (requires `.env.postgres` or `../sdkwork-cloudrouter/.env.postgres`, always use `--test-threads 1`):
+PostgreSQL integration (requires `config/host/postgres.env` or `../sdkwork-cloudrouter/config/host/postgres.env`, always use `--test-threads 1`):
 
 ```bash
 cargo test -j 1 -p sdkwork-routes-iam-backend-api --test iam_backend_postgres_integration -- --test-threads 1

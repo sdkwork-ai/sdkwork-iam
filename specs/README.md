@@ -38,10 +38,10 @@ Root SDKWork standards remain authoritative. Local component specs can narrow or
 - `pnpm run typecheck`
 - `pnpm run api:materialize`
 - `pnpm run test:governance-node`
-- `pnpm run test:rust-workspace` for governed Rust workspace tests (PostgreSQL integration suites run only when `.env.postgres` or cloud-router profile is present)
+- `pnpm run test:rust-workspace` for governed Rust workspace tests (PostgreSQL integration suites run only when `config/host/postgres.env` or cloud-router profile is present)
 - `pnpm run verify` runs the merge-ready aggregate above
 - `.github/workflows/iam-quality-gate.yml` runs `pnpm check`, `pnpm test:governance-node`, `pnpm test:iam-standard-contracts`, and `pnpm test:rust-workspace` on push and pull request
-- `pnpm run test:iam-standard-contracts` for IAM TypeScript and Rust integration parity (PostgreSQL integration tests require `.env.postgres`; includes `iam_local_app_router_test`)
+- `pnpm run test:iam-standard-contracts` for IAM TypeScript and Rust integration parity (PostgreSQL integration tests require `config/host/postgres.env`; includes `iam_local_app_router_test`)
 - `pnpm run test:iam-standard-governance` for IAM governance contract coverage
 - `pnpm run test:user-center-standard-contracts` for user-center upstream dispatch parity
 - `pnpm run test:workspace-vitest` for package-level Vitest coverage
