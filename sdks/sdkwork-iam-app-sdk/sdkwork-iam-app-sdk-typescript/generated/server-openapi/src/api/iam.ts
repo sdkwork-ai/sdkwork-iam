@@ -1,7 +1,7 @@
 import { appApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { AppbaseOperationCommand, SdkWorkPageData } from '../types';
+import type { AppbaseOperationCommand, IamPersonaCatalog, IamUserPersona, IamUserPersonaUpdateCommand, SdkWorkPageData } from '../types';
 
 
 export class IamUsersCurrentPhoneBindingsApi {
@@ -20,6 +20,30 @@ export class IamUsersCurrentPhoneBindingsApi {
 /** Users current phone Bindings create. */
   async create(body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
     return this.client.request<Record<string, unknown>>(appApiPath(`/iam/users/current/phone_bindings`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
+export class IamUsersCurrentPersonaApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Users current persona delete. */
+  async delete(requestOptions?: ApiRequestOptions): Promise<void> {
+    return this.client.request<void>(appApiPath(`/iam/users/current/persona`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'DELETE' as any });
+  }
+
+/** Users current persona retrieve. */
+  async retrieve(requestOptions?: ApiRequestOptions): Promise<IamUserPersona> {
+    return this.client.request<IamUserPersona>(appApiPath(`/iam/users/current/persona`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+
+/** Users current persona update. */
+  async update(body: IamUserPersonaUpdateCommand, requestOptions?: ApiRequestOptions): Promise<IamUserPersona> {
+    return this.client.request<IamUserPersona>(appApiPath(`/iam/users/current/persona`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PUT' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -60,12 +84,14 @@ export class IamUsersCurrentApi {
   private client: HttpClient;
   public readonly emailBindings: IamUsersCurrentEmailBindingsApi;
   public readonly password: IamUsersCurrentPasswordApi;
+  public readonly persona: IamUsersCurrentPersonaApi;
   public readonly phoneBindings: IamUsersCurrentPhoneBindingsApi;
 
   constructor(client: HttpClient) {
     this.client = client;
     this.emailBindings = new IamUsersCurrentEmailBindingsApi(client);
     this.password = new IamUsersCurrentPasswordApi(client);
+    this.persona = new IamUsersCurrentPersonaApi(client);
     this.phoneBindings = new IamUsersCurrentPhoneBindingsApi(client);
   }
 
@@ -184,6 +210,20 @@ export class IamPositionAssignmentsApi {
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<SdkWorkPageData>(appendQueryString(appApiPath(`/iam/position_assignments`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+}
+
+export class IamPersonaCatalogApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Iam persona Catalog retrieve. */
+  async retrieve(requestOptions?: ApiRequestOptions): Promise<IamPersonaCatalog> {
+    return this.client.request<IamPersonaCatalog>(appApiPath(`/iam/persona_catalog`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -340,6 +380,7 @@ export class IamApi {
   public readonly departments: IamDepartmentsApi;
   public readonly organizationMemberships: IamOrganizationMembershipsApi;
   public readonly organizations: IamOrganizationsApi;
+  public readonly personaCatalog: IamPersonaCatalogApi;
   public readonly positionAssignments: IamPositionAssignmentsApi;
   public readonly positions: IamPositionsApi;
   public readonly roleBindings: IamRoleBindingsApi;
@@ -350,6 +391,7 @@ export class IamApi {
     this.departments = new IamDepartmentsApi(client);
     this.organizationMemberships = new IamOrganizationMembershipsApi(client);
     this.organizations = new IamOrganizationsApi(client);
+    this.personaCatalog = new IamPersonaCatalogApi(client);
     this.positionAssignments = new IamPositionAssignmentsApi(client);
     this.positions = new IamPositionsApi(client);
     this.roleBindings = new IamRoleBindingsApi(client);

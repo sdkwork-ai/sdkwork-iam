@@ -124,6 +124,7 @@ pub use messaging_verification::{
 };
 pub use oauth_authorization_server::{
     build_oauth_jwks_document, build_openid_configuration_document, build_userinfo_claims,
+    authorize_error_redirect_target,
     classify_redirect_surface_kind, complete_authorization_state,
     create_pending_authorization_state, exchange_authorization_code, exchange_refresh_token,
     introspect_oauth_token, load_oauth_bearer_scopes, oauth_issuer_base_url, oauth_login_base_url,

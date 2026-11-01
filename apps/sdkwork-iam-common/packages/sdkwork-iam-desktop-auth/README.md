@@ -27,6 +27,12 @@ desktop app (Electron/Tauri)
        -> standard SdkworkAuthSession (authToken + accessToken + refreshToken)
 ```
 
+One callback is delivered once. `createSdkworkIamDesktopAuthRuntime` owns host
+deep-link dispatch for the lifetime of the runtime and creates its controller
+with `dispatchHostDeepLinks: false`; a controller that subscribed as well (the
+standalone default) would redeem the single-use code twice, and the second
+redemption would report a failed login after a successful one.
+
 ## Usage
 
 ```ts

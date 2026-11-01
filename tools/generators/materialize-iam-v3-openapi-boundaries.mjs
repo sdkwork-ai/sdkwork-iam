@@ -407,7 +407,7 @@ function materializedFromSources(surface) {
 
 function buildOperation(surface, route) {
   const authMode = operationAuthMode(surface, route);
-  const successSchemaRef = successResponseSchemaRef(route);
+  const successSchemaRef = personaSuccessSchemaRef(route) ?? successResponseSchemaRef(route);
   const responses = {
     400: problemResponse('Bad request'),
     401: problemResponse('Unauthorized'),
@@ -514,6 +514,192 @@ function buildOperation(surface, route) {
     });
     redirect.required = true;
     operation.parameters.push(redirect);
+  }
+
+  // OAuth protocol operations are external-wire contracts (API_SPEC.md
+  // section 4.5.2): the RFC shape is authoritative, so the materialized
+  // document describes the redirect/form/error semantics instead of the
+  // generic resource envelope. This is the contract any native app reuses to
+  // start a hosted browser login and is consumed by client generators.
+  if (route.operationId === 'iam.oauth.authorize.handleGet') {
+    const requiredQuery = (name, schema) => {
+      const parameter = queryParameter(name, schema);
+      parameter.required = true;
+      return parameter;
+    };
+    operation.parameters.push(
+      requiredQuery('client_id', {
+        type: 'string',
+        description: 'Registered relying-party (tenant application) identifier.',
+      }),
+      requiredQuery('redirect_uri', {
+        type: 'string',
+        format: 'uri',
+        description:
+          'Registered redirect URI. Native apps register a custom scheme or an RFC 8252 loopback address.',
+      }),
+      requiredQuery('response_type', { type: 'string', enum: ['code'] }),
+      queryParameter('scope', {
+        type: 'string',
+        description: 'Space-delimited scopes requested by the client; defaults to openid.',
+      }),
+      requiredQuery('state', {
+        type: 'string',
+        maxLength: 512,
+        description: 'Opaque client state echoed back unchanged with the code or the error.',
+      }),
+      queryParameter('code_challenge', {
+        type: 'string',
+        minLength: 43,
+        description: 'PKCE S256 challenge; required for public (native) clients.',
+      }),
+      queryParameter('code_challenge_method', { type: 'string', enum: ['S256'] }),
+      queryParameter('tenant_id', {
+        type: 'string',
+        description: 'Optional tenant hint used to resolve the client registration.',
+      }),
+    );
+    delete operation.responses[200];
+    delete operation.responses[201];
+    operation.responses[302] = {
+      description:
+        'Redirect to the hosted login, or back to the registered redirect URI with error + state (RFC 6749 section 4.1.2.1).',
+      headers: {
+        Location: { required: true, schema: { type: 'string', format: 'uri' } },
+      },
+    };
+  }
+
+  if (route.operationId === 'iam.oauth.token.create') {
+    operation.requestBody = {
+      required: true,
+      content: {
+        'application/x-www-form-urlencoded': {
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['grant_type', 'client_id'],
+            properties: {
+              grant_type: { type: 'string', enum: ['authorization_code', 'refresh_token'] },
+              client_id: { type: 'string' },
+              client_secret: { type: 'string', format: 'password' },
+              code: { type: 'string' },
+              redirect_uri: { type: 'string', format: 'uri' },
+              code_verifier: { type: 'string', minLength: 43, maxLength: 128 },
+              refresh_token: { type: 'string' },
+            },
+          },
+        },
+      },
+    };
+    delete operation.responses[200];
+    delete operation.responses[201];
+    operation.responses[200] = {
+      description: 'OAuth 2.0 token response (RFC 6749 section 5.1).',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['access_token', 'token_type'],
+            properties: {
+              access_token: { type: 'string' },
+              token_type: { type: 'string', enum: ['Bearer'] },
+              expires_in: { type: 'integer', minimum: 1 },
+              refresh_token: { type: 'string' },
+              scope: { type: 'string' },
+            },
+          },
+        },
+      },
+    };
+  }
+
+  if (route.operationId === 'desktopSessions.create') {
+    operation.requestBody = {
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['clientId', 'authorizationCode', 'codeVerifier', 'redirectUri'],
+            description:
+              'Native-app exchange of a deep-link authorization code for a dual-token session.',
+            properties: {
+              clientId: { type: 'string' },
+              authorizationCode: { type: 'string' },
+              codeVerifier: { type: 'string', minLength: 43, maxLength: 128 },
+              redirectUri: {
+                type: 'string',
+                format: 'uri',
+                description:
+                  'Registered native redirect URI; the code must have been issued for a desktop surface (custom scheme or loopback).',
+              },
+              clientSecret: { type: 'string', format: 'password' },
+            },
+          },
+        },
+      },
+    };
+    delete operation.responses[201];
+    operation.responses[200] = {
+      description: 'Dual-token desktop session installed by the native app.',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['code', 'data', 'traceId'],
+            properties: {
+              code: { type: 'integer' },
+              traceId: { type: 'string' },
+              data: {
+                type: 'object',
+                required: ['accessToken', 'authToken'],
+                properties: {
+                  accessToken: { type: 'string' },
+                  authToken: { type: 'string' },
+                  refreshToken: { type: 'string' },
+                  sessionId: { type: 'string' },
+                  context: { type: 'object', additionalProperties: true },
+                  user: { type: 'object', additionalProperties: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+  }
+
+  if (route.operationId === 'authorizations.completions.create') {
+    operation.requestBody = {
+      required: true,
+      content: { 'application/json': { schema: { type: 'object', additionalProperties: false } } },
+    };
+    delete operation.responses[201];
+    operation.responses[200] = {
+      description: 'Issued authorization code and the registered redirect URL that carries it.',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['code', 'data', 'traceId'],
+            properties: {
+              code: { type: 'integer' },
+              traceId: { type: 'string' },
+              data: {
+                type: 'object',
+                required: ['authorizationCode', 'redirectUrl'],
+                properties: {
+                  authorizationCode: { type: 'string' },
+                  redirectUrl: { type: 'string', format: 'uri' },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
   }
 
   if (isListOperation(route)) {
@@ -632,6 +818,9 @@ function buildOperation(surface, route) {
 }
 
 function requestBodySchemaRef(route) {
+  if (route.operationId === 'users.current.persona.update') {
+    return '#/components/schemas/IamUserPersonaUpdateCommand';
+  }
   if (route.operationId === 'sessions.create') {
     return '#/components/schemas/AppbaseSessionCreateCommand';
   }
@@ -708,11 +897,178 @@ function bootstrapBodyAuthProperties() {
   };
 }
 
+function personaSuccessSchemaRef(route) {
+  switch (route.operationId) {
+    case 'iam.personaCatalog.retrieve':
+      return '#/components/schemas/IamPersonaCatalogResponse';
+    case 'users.current.persona.retrieve':
+    case 'users.current.persona.update':
+      return '#/components/schemas/IamUserPersonaResponse';
+    default:
+      return undefined;
+  }
+}
+
 function buildSchemas() {
   const bootstrapAuth = bootstrapBodyAuthProperties();
 
   return {
     ...sdkWorkEnvelopeComponentSchemas,
+    IamPersonaLabels: {
+      type: 'object',
+      additionalProperties: { type: 'string' },
+      description: 'Locale to display-text map, for example {"zh-CN":"学员","en-US":"Learner"}.',
+    },
+    IamPersonaRole: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['code', 'sortOrder', 'labels', 'descriptions'],
+      description: 'One selectable persona role.',
+      properties: {
+        code: { type: 'string', pattern: '^[a-z][a-z0-9-]{0,63}$' },
+        iamRoleCode: {
+          type: ['string', 'null'],
+          description: 'Authorization role code this persona maps onto, when one exists.',
+        },
+        sortOrder: { type: 'integer', minimum: 0 },
+        labels: { $ref: '#/components/schemas/IamPersonaLabels' },
+        descriptions: { $ref: '#/components/schemas/IamPersonaLabels' },
+      },
+    },
+    IamPersonaInterest: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['code', 'sortOrder', 'labels'],
+      description: 'One selectable interest direction.',
+      properties: {
+        code: { type: 'string', pattern: '^[a-z][a-z0-9-]{0,63}$' },
+        sortOrder: { type: 'integer', minimum: 0 },
+        labels: { $ref: '#/components/schemas/IamPersonaLabels' },
+      },
+    },
+    IamPersonaCatalog: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['version', 'roles', 'interests'],
+      description: 'The selectable persona taxonomy with every active locale.',
+      properties: {
+        version: {
+          type: 'string',
+          description: 'Opaque catalog version; refresh the cached catalog when it changes.',
+        },
+        roles: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/IamPersonaRole' },
+        },
+        interests: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/IamPersonaInterest' },
+        },
+      },
+    },
+    IamUserPersona: {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'role',
+        'interests',
+        'promptDismissed',
+        'hasSelection',
+        'catalogVersion',
+        'updatedAt',
+      ],
+      description: 'The caller persona. role is null until a role is chosen.',
+      properties: {
+        role: {
+          type: ['string', 'null'],
+          pattern: '^[a-z][a-z0-9-]{0,63}$',
+          description: 'Chosen persona role code, or null while unchosen.',
+        },
+        interests: {
+          type: 'array',
+          items: { type: 'string', pattern: '^[a-z][a-z0-9-]{0,63}$' },
+          maxItems: 24,
+          uniqueItems: true,
+          description: 'Followed interest codes in catalog order.',
+        },
+        promptDismissed: {
+          type: 'boolean',
+          description: 'Whether the first-run prompt was answered without choosing a role.',
+        },
+        hasSelection: {
+          type: 'boolean',
+          description: 'True once a role is chosen.',
+        },
+        catalogVersion: {
+          type: ['string', 'null'],
+          description: 'Catalog version the stored selection was validated against.',
+        },
+        updatedAt: {
+          type: ['string', 'null'],
+          format: 'date-time',
+          description: 'Last write time, or null before the first write.',
+        },
+      },
+    },
+    IamPersonaCatalogResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              required: ['item'],
+              properties: {
+                item: { $ref: '#/components/schemas/IamPersonaCatalog' },
+              },
+            },
+          },
+        },
+      ],
+    },
+    IamUserPersonaResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              required: ['item'],
+              properties: {
+                item: { $ref: '#/components/schemas/IamUserPersona' },
+              },
+            },
+          },
+        },
+      ],
+    },
+    IamUserPersonaUpdateCommand: {
+      type: 'object',
+      additionalProperties: false,
+      description: 'Full persona replacement; omitted interests mean an empty list.',
+      properties: {
+        role: {
+          type: ['string', 'null'],
+          maxLength: 64,
+          description: 'Chosen persona role code, or null to clear it.',
+        },
+        interests: {
+          type: 'array',
+          items: { type: 'string', maxLength: 64 },
+          maxItems: 24,
+          uniqueItems: true,
+          description: 'Followed interest codes; must be active catalog codes.',
+        },
+        promptDismissed: {
+          type: 'boolean',
+          description: 'Whether the first-run prompt was answered.',
+        },
+      },
+    },
     AppbaseOperationCommand: {
       type: 'object',
       additionalProperties: true,
@@ -774,6 +1130,18 @@ function buildSchemas() {
       additionalProperties: true,
       description: 'Session creation command for credential login and external user-center session exchange.',
       properties: {
+        grantType: {
+          type: 'string',
+          enum: ['password', 'phone_code', 'email_code'],
+          default: 'password',
+          description:
+            'Credential grant to run. Omitted `grantType` means the password grant, which is the body the platform hosted login posts.',
+        },
+        account: {
+          type: 'string',
+          description:
+            'Shared account identifier understood by hosted-login clients; `email`/`username`/`phone` remain the authoritative identity fields.',
+        },
         email: {
           type: 'string',
           description: 'Email credential used by standard password login.',

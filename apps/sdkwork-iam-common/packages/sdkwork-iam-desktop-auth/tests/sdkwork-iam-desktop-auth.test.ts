@@ -522,13 +522,19 @@ describe("runtime factory", () => {
   });
 
   it("auto-dispatches host deep-link events to onSession", async () => {
-    const { hostHarness, onSession, runtime } = createRuntimeHarness();
+    const { createSession, hostHarness, onSession, runtime } = createRuntimeHarness();
     await runtime.beginLogin();
     const state = new URL(hostHarness.dispatchedUrls[0]).searchParams.get("state");
     hostHarness.emitOpenUrl(`${REDIRECT_URI}?code=auto-code&state=${state}`);
     await vi.waitFor(() => {
       expect(onSession).toHaveBeenCalledTimes(1);
     });
+    // One callback redeems once: the runtime owns host dispatch, so the
+    // controller must not subscribe as well. A second redemption would fail on
+    // the single-use code and report a failed login after a successful one.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(createSession).toHaveBeenCalledTimes(1);
+    expect(onSession).toHaveBeenCalledTimes(1);
     runtime.dispose();
   });
 });

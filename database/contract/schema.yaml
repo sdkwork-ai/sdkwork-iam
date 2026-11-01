@@ -135,6 +135,12 @@ tables:
   - name: iam_permission
     lifecycle_status: active
     owner: sdkwork-iam
+  - name: iam_persona_interest
+    lifecycle_status: active
+    owner: sdkwork-iam
+  - name: iam_persona_role
+    lifecycle_status: active
+    owner: sdkwork-iam
   - name: iam_policy
     lifecycle_status: active
     owner: sdkwork-iam
@@ -190,5 +196,8 @@ tables:
     lifecycle_status: active
     owner: sdkwork-iam
   - name: iam_user_identity
+    lifecycle_status: active
+    owner: sdkwork-iam
+  - name: iam_user_persona
     lifecycle_status: active
     owner: sdkwork-iam

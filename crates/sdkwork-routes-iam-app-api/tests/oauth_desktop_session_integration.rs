@@ -2,8 +2,8 @@
 //! `POST /app/v3/api/oauth/desktop_sessions` (`oauth.desktopSessions.create`).
 //!
 //! Flow under test (mirrors an Electron/Tauri system-browser login):
-//! credential-entry password login → OAuth authorize (public client + PKCE
-//! S256, deep-link redirect) → authorization completion → the desktop app
+//! credential-entry password login -> OAuth authorize (public client + PKCE
+//! S256, deep-link redirect) -> authorization completion -> the desktop app
 //! redeems the deep-link code for a standard dual-token session.
 //!
 //! The fixture runs against the bootstrapped default tenant because
@@ -38,6 +38,9 @@ const DESKTOP_E2E_TEMPLATE_ID: &str = "tmpl_desktop_partner_e2e";
 const DESKTOP_E2E_USERNAME: &str = "desktop-e2e@sdkwork-iam.test";
 const DESKTOP_E2E_PASSWORD: &str = "DesktopE2e#2026";
 const DESKTOP_E2E_REDIRECT_URI: &str = "sdkwork-iam://auth/callback";
+/// Web redirect registered for the same client: its codes must never become a
+/// desktop session (RFC 8252 surface binding).
+const DESKTOP_E2E_WEB_REDIRECT_URI: &str = "https://desktop-e2e.sdkwork.test/oauth/callback";
 
 fn lock_local_iam_env() -> std::sync::MutexGuard<'static, ()> {
     static ENV_LOCK: std::sync::OnceLock<std::sync::Mutex<()>> = std::sync::OnceLock::new();
@@ -110,7 +113,7 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
     let user_id = format!("iamu_{}", uuid::Uuid::now_v7());
 
     // Remove leftovers from earlier runs of this fixture (enumerated ids and
-    // the fixture user only — never the shared default-tenant baseline).
+    // the fixture user only, never the shared default-tenant baseline).
     for statement in [
         "DELETE FROM iam_session WHERE user_id IN \
          (SELECT id FROM iam_user WHERE tenant_id = $1 AND email = $2)",
@@ -185,11 +188,19 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
         .await
         .expect("provision desktop e2e platform tenant application");
 
+    // The hosted login completes the authorization over HTTP with the session
+    // dual tokens, so the tenant needs its signing key the same way a deployed
+    // tenant does; without it login falls back to a process key and the
+    // resolver rejects the session it just issued.
+    sdkwork_iam_bootstrap::ensure_postgres_tenant_signing_key(pg, DESKTOP_E2E_TENANT_ID)
+        .await
+        .expect("provision desktop e2e tenant signing key");
+
     let runtime_config = json!({
         "oauth": {
             "relyingParty": {
                 "enabled": true,
-                "redirectUris": [DESKTOP_E2E_REDIRECT_URI],
+                "redirectUris": [DESKTOP_E2E_REDIRECT_URI, DESKTOP_E2E_WEB_REDIRECT_URI],
                 "allowedScopes": ["openid", "profile", "email"],
                 "confidential": false
             }
@@ -279,6 +290,7 @@ async fn redeem_desktop_session(
     app: &Router,
     authorization_code: &str,
     code_verifier: &str,
+    redirect_uri: &str,
 ) -> (StatusCode, Value) {
     let response = app
         .clone()
@@ -292,7 +304,7 @@ async fn redeem_desktop_session(
                         "clientId": DESKTOP_E2E_CLIENT_APP_ID,
                         "authorizationCode": authorization_code,
                         "codeVerifier": code_verifier,
-                        "redirectUri": DESKTOP_E2E_REDIRECT_URI
+                        "redirectUri": redirect_uri
                     })
                     .to_string(),
                 ))
@@ -302,6 +314,46 @@ async fn redeem_desktop_session(
         .expect("desktop session request");
     let status = response.status();
     (status, read_json(response).await)
+}
+
+/// Completes a pending authorization over HTTP exactly as the hosted login
+/// page does: the signed-in browser session's dual tokens authorize the call.
+async fn complete_authorization_over_http(
+    app: &Router,
+    authorization_state_id: &str,
+    login_session: &Value,
+) -> Value {
+    let access_token = login_session["accessToken"]
+        .as_str()
+        .expect("login access token");
+    let auth_token = login_session["authToken"]
+        .as_str()
+        .expect("login auth token");
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(format!(
+                    "/app/v3/api/oauth/authorizations/{authorization_state_id}/completions"
+                ))
+                .header("content-type", "application/json")
+                .header("authorization", format!("Bearer {auth_token}"))
+                .header("access-token", access_token)
+                .body(Body::from("{}"))
+                .unwrap(),
+        )
+        .await
+        .expect("authorization completion request");
+    let status = response.status();
+    let body = read_json(response).await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "hosted-login completion failed: {}",
+        serde_json::to_string(&body).unwrap_or_default()
+    );
+    body["data"].clone()
 }
 
 #[tokio::test]
@@ -340,22 +392,63 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
             .await
             .expect("create desktop e2e pending authorization state");
 
-    // 3. Hosted login completes the authorization; the completion hands
-    //    code + state back through the deep-link redirect URL.
-    let completion = complete_authorization_state(&pg, &authorization_state_id, &login_context)
+    // 3. Hosted login completes the authorization; the completion hands code +
+    //    state back through the deep-link redirect URL. The session tokens the
+    //    login issued are a real dual-token session for app-api calls.
+    let access_token = login_session["accessToken"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .expect("login must return an access token");
+    let auth_token = login_session["authToken"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .expect("login must return an auth token");
+    let current = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri("/app/v3/api/auth/sessions/current")
+                .header("authorization", format!("Bearer {auth_token}"))
+                .header("access-token", access_token)
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
-        .expect("complete desktop e2e authorization state");
+        .expect("current session request");
+    let current_status = current.status();
+    let current_body = read_json(current).await;
+    assert_eq!(
+        current_status,
+        StatusCode::OK,
+        "the hosted-login session must authenticate app-api calls: {}",
+        serde_json::to_string(&current_body).unwrap_or_default()
+    );
+
+    let completion = complete_authorization_over_http(&app, &authorization_state_id, &login_session)
+        .await;
+    let authorization_code = completion["authorizationCode"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .expect("completion authorization code")
+        .to_owned();
+    let redirect_url = completion["redirectUrl"].as_str().expect("redirect url");
     assert!(
-        completion
-            .redirect_url
-            .starts_with(DESKTOP_E2E_REDIRECT_URI),
-        "deep-link redirect must target the registered scheme: {}",
-        completion.redirect_url
+        redirect_url.starts_with(DESKTOP_E2E_REDIRECT_URI),
+        "deep-link redirect must target the registered scheme: {redirect_url}"
+    );
+    assert!(
+        redirect_url.contains(&format!("code={authorization_code}")),
+        "deep-link redirect must carry the issued code: {redirect_url}"
+    );
+    assert!(
+        redirect_url.contains("state=desktop-e2e-state"),
+        "deep-link redirect must echo the request state: {redirect_url}"
     );
 
     // 4. The desktop app redeems the deep-link code for a dual-token session.
     let (status, body) =
-        redeem_desktop_session(&app, &completion.authorization_code, &code_verifier).await;
+        redeem_desktop_session(&app, &authorization_code, &code_verifier, DESKTOP_E2E_REDIRECT_URI).await;
     assert_eq!(
         status,
         StatusCode::OK,
@@ -373,6 +466,12 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
         "desktop redeem must return a dual-token session"
     );
     assert!(session["refreshToken"].as_str().is_some());
+    // The desktop app persists this payload under its own home, so the
+    // session id and the returned identity must travel with the tokens.
+    assert!(
+        !session["sessionId"].as_str().unwrap_or_default().is_empty(),
+        "desktop redeem must return the session id"
+    );
     assert_eq!(
         session["context"]["tenantId"],
         Value::String(DESKTOP_E2E_TENANT_ID.into())
@@ -398,7 +497,7 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
     // 6. The authorization code is single-use: a replay with the correct
     //    verifier is rejected.
     let (replay_status, replay_body) =
-        redeem_desktop_session(&app, &completion.authorization_code, &code_verifier).await;
+        redeem_desktop_session(&app, &authorization_code, &code_verifier, DESKTOP_E2E_REDIRECT_URI).await;
     assert_eq!(
         replay_status,
         StatusCode::BAD_REQUEST,
@@ -422,13 +521,127 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
     let second_completion = complete_authorization_state(&pg, &second_state_id, &login_context)
         .await
         .expect("complete second desktop e2e authorization state");
+    let second_code = second_completion.authorization_code;
     let wrong_verifier = format!("{}wrong", verifier);
     let (pkce_status, pkce_body) =
-        redeem_desktop_session(&app, &second_completion.authorization_code, &wrong_verifier).await;
+        redeem_desktop_session(&app, &second_code, &wrong_verifier, DESKTOP_E2E_REDIRECT_URI).await;
     assert_eq!(
         pkce_status,
         StatusCode::BAD_REQUEST,
         "PKCE mismatch must be rejected: {}",
         serde_json::to_string(&pkce_body).unwrap_or_default()
+    );
+}
+
+/// The platform's hosted login posts `email` + `password` without `grantType`;
+/// the session bootstrap must treat that as the password grant.
+#[tokio::test]
+async fn hosted_login_body_without_grant_type_creates_a_session() {
+    let _env_guard = lock_local_iam_env();
+    configure_desktop_e2e_env();
+    let app = build_desktop_e2e_app().await;
+    let pg = postgres_pool_for_tests().await;
+    let _ = seed_desktop_e2e_fixtures(&pg).await;
+
+    let access_token = bootstrap_access_token_jwt(
+        DESKTOP_E2E_TENANT_ID,
+        platform_runtime_app_id_for_tenant(DESKTOP_E2E_TENANT_ID).as_str(),
+    );
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/app/v3/api/auth/sessions")
+                .header("content-type", "application/json")
+                .header("access-token", access_token)
+                .body(Body::from(
+                    json!({
+                        "email": DESKTOP_E2E_USERNAME,
+                        "password": DESKTOP_E2E_PASSWORD
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .expect("hosted login request");
+    let status = response.status();
+    let body = read_json(response).await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "the hosted login body must authenticate: {}",
+        serde_json::to_string(&body).unwrap_or_default()
+    );
+    assert!(
+        !body["data"]["authToken"]
+            .as_str()
+            .unwrap_or_default()
+            .is_empty(),
+        "hosted login must return the auth token"
+    );
+    assert!(
+        !body["data"]["accessToken"]
+            .as_str()
+            .unwrap_or_default()
+            .is_empty(),
+        "hosted login must return the access token"
+    );
+}
+
+/// RFC 8252 surface binding: a code issued for a web redirect must not be
+/// redeemable as a desktop session, even with a valid PKCE verifier.
+#[tokio::test]
+async fn desktop_session_exchange_rejects_a_web_surface_code() {
+    let _env_guard = lock_local_iam_env();
+    configure_desktop_e2e_env();
+    let app = build_desktop_e2e_app().await;
+    let pg = postgres_pool_for_tests().await;
+    let _ = seed_desktop_e2e_fixtures(&pg).await;
+    let (_login_session, login_context) = login_desktop_e2e_session(&app).await;
+
+    let client =
+        resolve_relying_party_client(&pg, DESKTOP_E2E_CLIENT_APP_ID, Some(DESKTOP_E2E_TENANT_ID))
+            .await
+            .expect("resolve desktop e2e relying party client");
+    let (verifier, challenge) = pkce_pair("desktop-pkce-verifier-with-sufficient-length");
+    let web_request = AuthorizeRequest {
+        client_id: DESKTOP_E2E_CLIENT_APP_ID.to_string(),
+        redirect_uri: DESKTOP_E2E_WEB_REDIRECT_URI.to_string(),
+        response_type: "code".to_string(),
+        scope: "openid profile email".to_string(),
+        state: Some("desktop-e2e-web-state".to_string()),
+        code_challenge: Some(challenge),
+        code_challenge_method: Some("S256".to_string()),
+        tenant_id: Some(DESKTOP_E2E_TENANT_ID.to_string()),
+    };
+    let scopes = validate_authorize_request(&web_request, &client)
+        .expect("authorize web redirect request");
+    let (web_state_id, _) = create_pending_authorization_state(&pg, &client, &web_request, &scopes)
+        .await
+        .expect("create web-surface authorization state");
+    let completion = complete_authorization_state(&pg, &web_state_id, &login_context)
+        .await
+        .expect("complete web-surface authorization state");
+
+    let (status, body) = redeem_desktop_session(
+        &app,
+        &completion.authorization_code,
+        &verifier,
+        DESKTOP_E2E_WEB_REDIRECT_URI,
+    )
+    .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "a web-surface code must not become a desktop session: {}",
+        serde_json::to_string(&body).unwrap_or_default()
+    );
+    assert!(
+        serde_json::to_string(&body)
+            .unwrap_or_default()
+            .contains("desktop redirect surface"),
+        "the rejection must name the surface binding: {}",
+        serde_json::to_string(&body).unwrap_or_default()
     );
 }

@@ -28,6 +28,8 @@ client.setAccessToken('your-access-token');
 
 // Use the SDK
 const body = {
+  grantType: 'password',
+  account: 'account',
   email: 'email',
   username: 'username',
   phone: 'phone',
@@ -76,6 +78,8 @@ const client = new SdkworkAppClient({
 ```typescript
 // Sessions create.
 const body = {
+  grantType: 'password',
+  account: 'account',
   email: 'email',
   username: 'username',
   phone: 'phone',
@@ -100,6 +104,8 @@ const result = await client.iam.departments.tree.retrieve();
 ```typescript
 // Sessions create.
 const body = {
+  grantType: 'password',
+  account: 'account',
   email: 'email',
   username: 'username',
   phone: 'phone',
@@ -126,6 +132,8 @@ import { SdkworkAppClient, NetworkError, TimeoutError, AuthenticationError } fro
 
 try {
   const body = {
+    grantType: 'password',
+    account: 'account',
     email: 'email',
     username: 'username',
     phone: 'phone',

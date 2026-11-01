@@ -30,7 +30,44 @@
     "openapiAuthorities": []
   },
   "roles": {
-    "domainStandardRoles": [],
+    "domainStandardRoles": [
+      {
+        "code": "apps_employee",
+        "name": "Apps Employee",
+        "surface": "application",
+        "scope": "tenant",
+        "standard": true,
+        "assignable": true,
+        "bindingPrincipalKind": "user",
+        "permissionPatterns": [
+          "apps.app_center.read"
+        ]
+      },
+      {
+        "code": "apps_partner",
+        "name": "Apps Partner",
+        "surface": "organization",
+        "scope": "organization",
+        "standard": true,
+        "assignable": true,
+        "bindingPrincipalKind": "organization_membership",
+        "permissionPatterns": [
+          "apps.app_center.read"
+        ]
+      },
+      {
+        "code": "apps_guest",
+        "name": "Apps Guest",
+        "surface": "application",
+        "scope": "tenant",
+        "standard": true,
+        "assignable": true,
+        "bindingPrincipalKind": "user",
+        "permissionPatterns": [
+          "apps.app_center.read"
+        ]
+      }
+    ],
     "roleGrantExtensions": [
       {
         "roleCode": "app_user",

@@ -1,4 +1,4 @@
-# IAM Database Module
+﻿# IAM Database Module
 
 Canonical authoritative-server lifecycle assets for `sdkwork-iam` under `DATABASE_FRAMEWORK_SPEC.md`.
 
@@ -6,7 +6,7 @@ Canonical authoritative-server lifecycle assets for `sdkwork-iam` under `DATABAS
 - `moduleId`: `iam`
 - `serviceCode`: `IAM`
 - `tablePrefix`: `iam_`
-- `contract tables`: 61, listed in `contract/schema.yaml`
+- `contract tables`: 64, listed in `contract/schema.yaml`
 - `engine`: PostgreSQL only
 - `autoMigrate`: disabled by default
 
@@ -25,9 +25,9 @@ Lifecycle orchestration is implemented by `crates/sdkwork-iam-database-host` thr
 
 This module is in **initialization state** for greenfield deployments:
 
-1. **Baseline** — `database/ddl/baseline/{engine}/0001_iam_baseline.sql` contains the full DDL snapshot.
-2. **Migrations** — `database/migrations/{engine}/` is reserved for post-GA incremental schema changes only. It is intentionally empty at initialization.
-3. **Drift** — run `pnpm db:drift:check` before release.
+1. **Baseline** 鈥?`database/ddl/baseline/{engine}/0001_iam_baseline.sql` contains the full DDL snapshot.
+2. **Migrations** 鈥?`database/migrations/{engine}/` is reserved for post-GA incremental schema changes only. It is intentionally empty at initialization.
+3. **Drift** 鈥?run `pnpm db:drift:check` before release.
 
 ## Commands
 

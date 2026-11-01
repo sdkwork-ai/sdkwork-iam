@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "sdkwork.database.seed",
-  "i18nVersion": "1.0.0",
+  "i18nVersion": "1.1.0",
   "defaultLocale": "zh-CN",
   "fallbackLocale": "zh-CN",
   "supportedLocales": [
@@ -19,18 +19,21 @@
   ],
   "localeSets": {
     "zh-CN": {
-      "version": "1.0.0",
+      "version": "1.1.0",
       "required": true,
-      "checksum": "sha256:51114ded477fcce13dd4dd137c4c23106603f64ee504f78421dd322bc70b7e53",
+      "checksum": "sha256:43c1842f597a4b945c1a89528c1796a020e37c997f705f95c474cc04716da36f",
       "files": [
-        "locales/zh-CN/001_iam_locale_display.sql"
+        "locales/zh-CN/001_iam_locale_display.sql",
+        "locales/zh-CN/002_iam_persona_labels.sql"
       ]
     },
     "en-US": {
-      "version": "1.0.0",
+      "version": "1.1.0",
       "required": false,
-      "checksum": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "files": []
+      "checksum": "sha256:c0674bee659cf60f554f2f410651a595fb3968889602cd241efe6aa6febb55a3",
+      "files": [
+        "locales/en-US/001_iam_persona_labels.sql"
+      ]
     }
   },
   "profiles": {
@@ -43,20 +46,33 @@
     "standard": {
       "common": [
         "002_default_iam_subject.sql",
-        "001_bootstrap.sql"
+        "001_bootstrap.sql",
+        "004_iam_role_catalog_seed.sql",
+        "005_iam_persona_catalog_seed.sql"
       ],
       "locales": {
-        "zh-CN": []
+        "zh-CN": [
+          "002_iam_persona_labels.sql"
+        ],
+        "en-US": [
+          "001_iam_persona_labels.sql"
+        ]
       }
     },
     "operational": {
       "common": [
         "002_default_iam_subject.sql",
-        "003_iam_application_bootstrap_seed.sql"
+        "003_iam_application_bootstrap_seed.sql",
+        "004_iam_role_catalog_seed.sql",
+        "005_iam_persona_catalog_seed.sql"
       ],
       "locales": {
         "zh-CN": [
-          "001_iam_locale_display.sql"
+          "001_iam_locale_display.sql",
+          "002_iam_persona_labels.sql"
+        ],
+        "en-US": [
+          "001_iam_persona_labels.sql"
         ]
       }
     }

@@ -56,6 +56,8 @@ export interface SdkworkAuthMessages {
     launchDescription: string;
     launchFailed: string;
     launchTitle: string;
+    /** Clickable fallback link for a browser that blocked the automatic hand-off. */
+    manualLink: string;
     missingRedirect: string;
     openApp: string;
     openAppRetryHint: string;
@@ -258,6 +260,7 @@ const EN_US_MESSAGES: SdkworkAuthMessages = {
     launchDescription: "You are signed in. Returning to the desktop app…",
     launchFailed: "The desktop app could not be opened automatically.",
     launchTitle: "Login successful",
+    manualLink: "Open the sign-in link manually",
     missingRedirect:
       "The desktop hand-off link is missing or invalid. Please start the login again from the app.",
     openApp: "Open desktop app",
@@ -463,6 +466,7 @@ const ZH_CN_MESSAGES: SdkworkAuthMessages = {
     launchDescription: "\u767b\u5f55\u6210\u529f\uff0c\u6b63\u5728\u8fd4\u56de\u684c\u9762\u5e94\u7528\u2026",
     launchFailed: "\u65e0\u6cd5\u81ea\u52a8\u6253\u5f00\u684c\u9762\u5e94\u7528\u3002",
     launchTitle: "\u767b\u5f55\u6210\u529f",
+    manualLink: "\u624b\u52a8\u6253\u5f00\u767b\u5f55\u94fe\u63a5",
     missingRedirect:
       "\u684c\u9762\u56de\u8df3\u94fe\u63a5\u7f3a\u5931\u6216\u65e0\u6548\uff0c\u8bf7\u4ece\u5e94\u7528\u91cd\u65b0\u53d1\u8d77\u767b\u5f55\u3002",
     openApp: "\u6253\u5f00\u684c\u9762\u5e94\u7528",

@@ -122,6 +122,16 @@ describe("sdkwork desktop launch page", () => {
     expect(onLaunch).toHaveBeenCalledTimes(2);
   });
 
+  it("renders a user-activatable fallback link that carries the deep link", () => {
+    const redirect = "sdkwork-iam://auth/callback?code=abc&state=xyz";
+    renderLaunchPage(buildSdkworkAuthDesktopLaunchLocation(redirect));
+    const link = screen.getByTestId("sdkwork-desktop-launch-link");
+    expect(link).toHaveAttribute("href", redirect);
+    // The label is copy, never the URL: the one-time code stays out of the page.
+    expect(link).toHaveTextContent("Open the sign-in link manually");
+    expect(link).not.toHaveTextContent("code=");
+  });
+
   it("shows the fallback copy when the redirect parameter is missing", () => {
     renderLaunchPage("/auth/desktop/launch");
     expect(

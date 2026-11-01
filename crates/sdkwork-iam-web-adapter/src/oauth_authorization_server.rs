@@ -480,6 +480,15 @@ pub async fn redeem_authorization_code_session_context(
     code_verifier: Option<&str>,
     client_secret: Option<&str>,
 ) -> Result<RedeemedAuthorizationContext, String> {
+    // RFC 8252: this endpoint bootstraps a native app session, so the code
+    // must have been issued for a native redirect surface (custom scheme or
+    // loopback). A code issued for a web surface belongs to the browser's
+    // token delivery, not to a desktop session.
+    if classify_redirect_surface_kind(redirect_uri) != "desktop" {
+        return Err(
+            "OAuth authorization code was not issued for a desktop redirect surface".to_string(),
+        );
+    }
     let approved = load_approved_authorization_code(
         pg,
         client,
@@ -940,6 +949,24 @@ fn redirect_uri_allowed(registered: &[String], candidate: &str) -> bool {
         .any(|value| redirect_uris_match(value, candidate))
 }
 
+/// Registered redirect URI an authorization error must be returned through.
+///
+/// RFC 6749 section 4.1.2.1: once the client and its redirect URI are
+/// trusted, an authorization error is delivered to that URI with `error` and
+/// the request `state` instead of as a local document. An unregistered or
+/// missing redirect URI has no trusted destination, so the caller keeps the
+/// local error response.
+pub fn authorize_error_redirect_target(
+    request: &AuthorizeRequest,
+    client: &ResolvedRelyingParty,
+) -> Option<String> {
+    let candidate = request.redirect_uri.trim();
+    if candidate.is_empty() || !redirect_uri_allowed(&client.config.redirect_uris, candidate) {
+        return None;
+    }
+    Some(candidate.to_owned())
+}
+
 fn redirect_uris_match(expected: &str, actual: &str) -> bool {
     let expected = expected.trim();
     let actual = actual.trim();
@@ -1067,6 +1094,12 @@ fn validate_pkce(code_verifier: Option<&str>, challenge: &str, method: &str) -> 
         .map(str::trim)
         .filter(|value| !value.is_empty())
         .ok_or_else(|| "OAuth code_verifier is required".to_string())?;
+    // RFC 7636 section 4.1: a code verifier is 43-128 characters from the
+    // unreserved set. Rejecting malformed verifiers keeps clients honest and
+    // bounds the work done on this unauthenticated endpoint.
+    if !is_valid_pkce_verifier(verifier) {
+        return Err("OAuth code_verifier is invalid".to_string());
+    }
     let expected = if method == "S256" {
         let digest = Sha256::digest(verifier.as_bytes());
         URL_SAFE_NO_PAD.encode(digest)
@@ -1077,6 +1110,14 @@ fn validate_pkce(code_verifier: Option<&str>, challenge: &str, method: &str) -> 
         return Err("OAuth PKCE verification failed".to_string());
     }
     Ok(())
+}
+
+/// RFC 7636 section 4.1 code_verifier syntax.
+fn is_valid_pkce_verifier(verifier: &str) -> bool {
+    (43..=128).contains(&verifier.len())
+        && verifier.bytes().all(|byte| {
+            byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~')
+        })
 }
 
 fn parse_grant_id_from_return_path(return_path: &str) -> Option<String> {
@@ -1399,13 +1440,31 @@ mod tests {
 
     #[test]
     fn pkce_validation_requires_matching_verifier() {
-        let verifier = "challenge";
+        let verifier = "pkce-verifier-with-sufficient-length-for-s256-check";
         let challenge = {
             let digest = Sha256::digest(verifier.as_bytes());
             URL_SAFE_NO_PAD.encode(digest)
         };
         validate_pkce(Some(verifier), &challenge, "S256").expect("pkce");
-        assert!(validate_pkce(Some("wrong"), &challenge, "S256").is_err());
+        let wrong = "wrong-verifier-with-sufficient-length-for-s256-check";
+        assert!(validate_pkce(Some(wrong), &challenge, "S256").is_err());
+    }
+
+    #[test]
+    fn pkce_validation_rejects_malformed_verifiers() {
+        let verifier = "pkce-verifier-with-sufficient-length-for-s256-check";
+        let challenge = {
+            let digest = Sha256::digest(verifier.as_bytes());
+            URL_SAFE_NO_PAD.encode(digest)
+        };
+        for malformed in ["short", "challenge", "with space-abcdefghijklmnopqrstuvwxyz0123456789"] {
+            let err = validate_pkce(Some(malformed), &challenge, "S256")
+                .expect_err("malformed verifier must be rejected");
+            assert!(
+                err.contains("code_verifier"),
+                "unexpected error for {malformed}: {err}"
+            );
+        }
     }
 
     #[test]

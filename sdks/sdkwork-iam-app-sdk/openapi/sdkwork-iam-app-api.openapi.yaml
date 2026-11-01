@@ -2459,6 +2459,133 @@
         "x-sdkwork-permission": "iam.organizations.read"
       }
     },
+    "/app/v3/api/iam/persona_catalog": {
+      "get": {
+        "tags": [
+          "iam"
+        ],
+        "summary": "Iam persona Catalog retrieve.",
+        "operationId": "iam.personaCatalog.retrieve",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IamPersonaCatalogResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-forbid-credential-headers": false,
+        "x-sdkwork-owner": "sdkwork-iam",
+        "x-sdkwork-api-authority": "sdkwork-iam-app-api",
+        "x-sdkwork-domain": "iam",
+        "x-sdkwork-resource": "iam.personaCatalog",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-server-request-id": true
+      }
+    },
     "/app/v3/api/iam/position_assignments": {
       "get": {
         "tags": [
@@ -3685,6 +3812,389 @@
         }
       }
     },
+    "/app/v3/api/iam/users/current/persona": {
+      "delete": {
+        "tags": [
+          "iam"
+        ],
+        "summary": "Users current persona delete.",
+        "operationId": "users.current.persona.delete",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-forbid-credential-headers": false,
+        "x-sdkwork-owner": "sdkwork-iam",
+        "x-sdkwork-api-authority": "sdkwork-iam-app-api",
+        "x-sdkwork-domain": "iam",
+        "x-sdkwork-resource": "users.current.persona",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-server-request-id": true,
+        "x-sdkwork-permission": "iam.users.delete"
+      },
+      "get": {
+        "tags": [
+          "iam"
+        ],
+        "summary": "Users current persona retrieve.",
+        "operationId": "users.current.persona.retrieve",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IamUserPersonaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-forbid-credential-headers": false,
+        "x-sdkwork-owner": "sdkwork-iam",
+        "x-sdkwork-api-authority": "sdkwork-iam-app-api",
+        "x-sdkwork-domain": "iam",
+        "x-sdkwork-resource": "users.current.persona",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-server-request-id": true,
+        "x-sdkwork-permission": "iam.users.read"
+      },
+      "put": {
+        "tags": [
+          "iam"
+        ],
+        "summary": "Users current persona update.",
+        "operationId": "users.current.persona.update",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IamUserPersonaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-forbid-credential-headers": false,
+        "x-sdkwork-owner": "sdkwork-iam",
+        "x-sdkwork-api-authority": "sdkwork-iam-app-api",
+        "x-sdkwork-domain": "iam",
+        "x-sdkwork-resource": "users.current.persona",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-server-request-id": true,
+        "x-sdkwork-permission": "iam.users.update",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IamUserPersonaUpdateCommand"
+              }
+            }
+          }
+        }
+      }
+    },
     "/app/v3/api/iam/users/current/phone_bindings": {
       "delete": {
         "tags": [
@@ -4398,12 +4908,41 @@
           }
         ],
         "responses": {
-          "201": {
-            "description": "Created",
+          "200": {
+            "description": "Issued authorization code and the registered redirect URL that carries it.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SdkWorkResourceResponse"
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "integer"
+                    },
+                    "traceId": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "authorizationCode",
+                        "redirectUrl"
+                      ],
+                      "properties": {
+                        "authorizationCode": {
+                          "type": "string"
+                        },
+                        "redirectUrl": {
+                          "type": "string",
+                          "format": "uri"
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -4519,7 +5058,8 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AppbaseOperationCommand"
+                "type": "object",
+                "additionalProperties": false
               }
             }
           }
@@ -4813,12 +5353,54 @@
         "operationId": "desktopSessions.create",
         "parameters": [],
         "responses": {
-          "201": {
-            "description": "Created",
+          "200": {
+            "description": "Dual-token desktop session installed by the native app.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SdkWorkResourceResponse"
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "integer"
+                    },
+                    "traceId": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "accessToken",
+                        "authToken"
+                      ],
+                      "properties": {
+                        "accessToken": {
+                          "type": "string"
+                        },
+                        "authToken": {
+                          "type": "string"
+                        },
+                        "refreshToken": {
+                          "type": "string"
+                        },
+                        "sessionId": {
+                          "type": "string"
+                        },
+                        "context": {
+                          "type": "object",
+                          "additionalProperties": true
+                        },
+                        "user": {
+                          "type": "object",
+                          "additionalProperties": true
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -4929,7 +5511,37 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AppbaseOperationCommand"
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "clientId",
+                  "authorizationCode",
+                  "codeVerifier",
+                  "redirectUri"
+                ],
+                "description": "Native-app exchange of a deep-link authorization code for a dual-token session.",
+                "properties": {
+                  "clientId": {
+                    "type": "string"
+                  },
+                  "authorizationCode": {
+                    "type": "string"
+                  },
+                  "codeVerifier": {
+                    "type": "string",
+                    "minLength": 43,
+                    "maxLength": 128
+                  },
+                  "redirectUri": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Registered native redirect URI; the code must have been issued for a desktop surface (custom scheme or loopback)."
+                  },
+                  "clientSecret": {
+                    "type": "string",
+                    "format": "password"
+                  }
+                }
               }
             }
           }
@@ -7631,6 +8243,235 @@
           }
         ]
       },
+      "IamPersonaLabels": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        },
+        "description": "Locale to display-text map, for example {\"zh-CN\":\"学员\",\"en-US\":\"Learner\"}."
+      },
+      "IamPersonaRole": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "sortOrder",
+          "labels",
+          "descriptions"
+        ],
+        "description": "One selectable persona role.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,63}$"
+          },
+          "iamRoleCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Authorization role code this persona maps onto, when one exists."
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "labels": {
+            "$ref": "#/components/schemas/IamPersonaLabels"
+          },
+          "descriptions": {
+            "$ref": "#/components/schemas/IamPersonaLabels"
+          }
+        }
+      },
+      "IamPersonaInterest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "sortOrder",
+          "labels"
+        ],
+        "description": "One selectable interest direction.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,63}$"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "labels": {
+            "$ref": "#/components/schemas/IamPersonaLabels"
+          }
+        }
+      },
+      "IamPersonaCatalog": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "roles",
+          "interests"
+        ],
+        "description": "The selectable persona taxonomy with every active locale.",
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "Opaque catalog version; refresh the cached catalog when it changes."
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IamPersonaRole"
+            }
+          },
+          "interests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IamPersonaInterest"
+            }
+          }
+        }
+      },
+      "IamUserPersona": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "interests",
+          "promptDismissed",
+          "hasSelection",
+          "catalogVersion",
+          "updatedAt"
+        ],
+        "description": "The caller persona. role is null until a role is chosen.",
+        "properties": {
+          "role": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-z][a-z0-9-]{0,63}$",
+            "description": "Chosen persona role code, or null while unchosen."
+          },
+          "interests": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,63}$"
+            },
+            "maxItems": 24,
+            "uniqueItems": true,
+            "description": "Followed interest codes in catalog order."
+          },
+          "promptDismissed": {
+            "type": "boolean",
+            "description": "Whether the first-run prompt was answered without choosing a role."
+          },
+          "hasSelection": {
+            "type": "boolean",
+            "description": "True once a role is chosen."
+          },
+          "catalogVersion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Catalog version the stored selection was validated against."
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Last write time, or null before the first write."
+          }
+        }
+      },
+      "IamPersonaCatalogResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "required": [
+              "data"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "$ref": "#/components/schemas/IamPersonaCatalog"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "IamUserPersonaResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "required": [
+              "data"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "$ref": "#/components/schemas/IamUserPersona"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "IamUserPersonaUpdateCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Full persona replacement; omitted interests mean an empty list.",
+        "properties": {
+          "role": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64,
+            "description": "Chosen persona role code, or null to clear it."
+          },
+          "interests": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "maxItems": 24,
+            "uniqueItems": true,
+            "description": "Followed interest codes; must be active catalog codes."
+          },
+          "promptDismissed": {
+            "type": "boolean",
+            "description": "Whether the first-run prompt was answered."
+          }
+        }
+      },
       "AppbaseOperationCommand": {
         "type": "object",
         "additionalProperties": true,
@@ -7671,6 +8512,20 @@
         "additionalProperties": true,
         "description": "Session creation command for credential login and external user-center session exchange.",
         "properties": {
+          "grantType": {
+            "type": "string",
+            "enum": [
+              "password",
+              "phone_code",
+              "email_code"
+            ],
+            "default": "password",
+            "description": "Credential grant to run. Omitted `grantType` means the password grant, which is the body the platform hosted login posts."
+          },
+          "account": {
+            "type": "string",
+            "description": "Shared account identifier understood by hosted-login clients; `email`/`username`/`phone` remain the authoritative identity fields."
+          },
           "email": {
             "type": "string",
             "description": "Email credential used by standard password login."

@@ -66,7 +66,63 @@
     "openapiAuthorities": []
   },
   "roles": {
-    "domainStandardRoles": [],
+    "domainStandardRoles": [
+      {
+        "code": "course_learner",
+        "name": "Course Learner",
+        "surface": "application",
+        "scope": "tenant",
+        "standard": true,
+        "assignable": true,
+        "bindingPrincipalKind": "user",
+        "permissionPatterns": [
+          "courses.catalog.read",
+          "courses.content.read"
+        ]
+      },
+      {
+        "code": "course_instructor",
+        "name": "Course Instructor",
+        "surface": "organization",
+        "scope": "organization",
+        "standard": true,
+        "assignable": true,
+        "bindingPrincipalKind": "organization_membership",
+        "permissionPatterns": [
+          "courses.catalog.read",
+          "courses.content.read",
+          "courses.content.manage"
+        ]
+      },
+      {
+        "code": "course_assistant",
+        "name": "Course Teaching Assistant",
+        "surface": "organization",
+        "scope": "organization",
+        "standard": true,
+        "assignable": true,
+        "bindingPrincipalKind": "organization_membership",
+        "permissionPatterns": [
+          "courses.catalog.read",
+          "courses.content.read"
+        ]
+      },
+      {
+        "code": "course_reviewer",
+        "name": "Course Catalog Reviewer",
+        "surface": "organization",
+        "scope": "organization",
+        "standard": true,
+        "assignable": true,
+        "bindingPrincipalKind": "organization_membership",
+        "permissionPatterns": [
+          "courses.catalog.read",
+          "courses.content.read",
+          "courses.content.approve",
+          "courses.content.reject"
+        ]
+      }
+    ],
     "roleGrantExtensions": [
       {
         "roleCode": "app_user",

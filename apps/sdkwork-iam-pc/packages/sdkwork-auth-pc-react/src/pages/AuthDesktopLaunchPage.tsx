@@ -17,6 +17,7 @@ import {
 } from "../auth-appearance.ts";
 import { useSdkworkAuthIntl } from "../auth-intl.tsx";
 import { createAuthRouteCatalog } from "../auth.ts";
+import { isSafeSdkworkDesktopLaunchUrl } from "../auth-redirect.ts";
 import { SdkworkAuthPageRouterContextBoundary } from "./routerContextBoundary.tsx";
 
 export interface SdkworkAuthDesktopLaunchPageProps {
@@ -63,7 +64,13 @@ function SdkworkAuthDesktopLaunchPageContent({
   const resolvedAppearance = resolveSdkworkAuthAppearance(appearance);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirectUrl = searchParams.get("redirectUrl")?.trim() ?? "";
+  const requestedRedirectUrl = searchParams.get("redirectUrl")?.trim() ?? "";
+  // The query string is attacker-influenced: only a native-app hand-off
+  // surface (custom scheme or loopback) may be auto-navigated to, otherwise
+  // this page would be an open redirect.
+  const redirectUrl = isSafeSdkworkDesktopLaunchUrl(requestedRedirectUrl)
+    ? requestedRedirectUrl
+    : "";
   const loginRoute = resolveLoginRoutePath(basePath);
   const [phase, setPhase] = useState<SdkworkDesktopLaunchPhase>(
     redirectUrl ? "launching" : "failed",
@@ -165,6 +172,18 @@ function SdkworkAuthDesktopLaunchPageContent({
               <p className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm leading-6 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-300">
                 {phase === "failed" ? copy.desktop.launchFailed : copy.desktop.openAppRetryHint}
               </p>
+              {/* A plain anchor is the hand-off of last resort: browsers that
+                  refuse a scripted navigation to a custom scheme still follow
+                  a user-activated link. Its text stays a label, never the URL,
+                  so the one-time authorization code is not rendered. */}
+              <a
+                className="block w-full rounded-xl border border-zinc-200 bg-transparent px-4 py-2.5 text-center text-sm font-semibold text-zinc-700 transition-colors hover:border-primary-300 hover:text-primary-600 dark:border-zinc-800 dark:text-zinc-200"
+                data-testid="sdkwork-desktop-launch-link"
+                href={redirectUrl}
+                onClick={() => { setPhase("launched") }}
+              >
+                {copy.desktop.manualLink}
+              </a>
             </>
           ) : (
             <>

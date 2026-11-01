@@ -567,3 +567,134 @@ async fn oauth_public_client_token_exchange_rejects_invalid_pkce_verifier() {
     .expect_err("invalid pkce verifier must fail");
     assert!(err.contains("PKCE") || err.contains("pkce") || err.contains("verifier"));
 }
+
+/// RFC 6749 section 4.1.2.1: an authorization error returns to a trusted
+/// redirect URI with `state`; an unregistered redirect keeps a local error.
+#[tokio::test]
+async fn oauth_authorize_errors_follow_rfc6749_redirect_semantics() {
+    let _env_guard = lock_local_iam_env();
+    configure_integration_signing_env();
+    seed_oauth_e2e_fixtures().await;
+    let router = sdkwork_routes_iam_open_api::build_sdkwork_iam_open_api_router_from_env().await;
+    let challenge = "z".repeat(43);
+    let encoded_redirect = "https%3A%2F%2Fpartner.sdkwork.test%2Foauth%2Fcallback";
+
+    // Trusted client + registered redirect + unsupported response_type: the
+    // error must be delivered through the redirect URI, keeping the state.
+    let response = router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri(format!(
+                    "/iam/v3/api/oauth/authorize?response_type=token&client_id={OAUTH_E2E_CLIENT_APP_ID}\
+                     &redirect_uri={encoded_redirect}&scope=openid&state=state-bad-type\
+                     &code_challenge={challenge}&code_challenge_method=S256"
+                ))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("authorize error request");
+    assert_eq!(response.status(), StatusCode::TEMPORARY_REDIRECT);
+    let location = response
+        .headers()
+        .get("location")
+        .and_then(|value| value.to_str().ok())
+        .expect("authorize error location")
+        .to_owned();
+    assert!(
+        location.starts_with(OAUTH_E2E_REDIRECT_URI),
+        "error must return to the registered redirect: {location}"
+    );
+    assert!(location.contains("error=invalid_request"), "{location}");
+    assert!(location.contains("state=state-bad-type"), "{location}");
+
+    // Unregistered redirect: no trusted destination, so the local problem body
+    // keeps the RFC 6749 error instead of a generic 40002-only document.
+    let response = router
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri(format!(
+                    "/iam/v3/api/oauth/authorize?response_type=code&client_id={OAUTH_E2E_CLIENT_APP_ID}\
+                     &redirect_uri=https%3A%2F%2Fevil.example%2Fcallback&scope=openid&state=s\
+                     &code_challenge={challenge}&code_challenge_method=S256"
+                ))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("authorize unregistered redirect request");
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let body = read_json(response).await;
+    assert_eq!(body["error"], json!("invalid_request"), "{body}");
+    assert!(
+        body["error_description"].as_str().is_some_and(|value| !value.is_empty()),
+        "{body}"
+    );
+    assert_eq!(body["code"], json!(40002), "{body}");
+}
+
+/// A valid authorization request redirects into the configured hosted login,
+/// and the pending state it creates is what that login later completes.
+#[tokio::test]
+async fn oauth_authorize_redirects_into_the_configured_hosted_login() {
+    let _env_guard = lock_local_iam_env();
+    configure_integration_signing_env();
+    std::env::set_var(
+        "SDKWORK_IAM_LOGIN_BASE_URL",
+        "https://platform.birdcoder.com/auth",
+    );
+    seed_oauth_e2e_fixtures().await;
+    let router = sdkwork_routes_iam_open_api::build_sdkwork_iam_open_api_router_from_env().await;
+    let challenge = "z".repeat(43);
+
+    let response = router
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri(format!(
+                    "/iam/v3/api/oauth/authorize?response_type=code&client_id={OAUTH_E2E_CLIENT_APP_ID}\
+                     &redirect_uri=https%3A%2F%2Fpartner.sdkwork.test%2Foauth%2Fcallback\
+                     &scope=openid+profile&state=state-ok\
+                     &code_challenge={challenge}&code_challenge_method=S256"
+                ))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("authorize request");
+    let status = response.status();
+    let location = response
+        .headers()
+        .get("location")
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default()
+        .to_owned();
+    std::env::remove_var("SDKWORK_IAM_LOGIN_BASE_URL");
+
+    assert_eq!(status, StatusCode::TEMPORARY_REDIRECT);
+    assert!(
+        location.starts_with(
+            "https://platform.birdcoder.com/auth/login?oauthAuthorizationStateId="
+        ),
+        "authorize must enter the configured hosted login: {location}"
+    );
+
+    // The state id in that URL owns a real pending row for the login to finish.
+    let state_id = location
+        .split("oauthAuthorizationStateId=")
+        .nth(1)
+        .expect("authorization state id")
+        .to_owned();
+    let pg = postgres_pool_for_tests().await;
+    let pending: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM iam_oauth_authorization_state WHERE id = $1 AND status = 'pending'",
+    )
+    .bind(&state_id)
+    .fetch_one(&pg)
+    .await
+    .expect("count pending authorization state");
+    assert_eq!(pending, 1, "the hosted login needs a pending state row");
+}

@@ -47,7 +47,12 @@ This directory is the local standards index for `sdkwork-routes-iam-app-api`. Ro
 
 ## Local Extension Specs
 
-- No local extension specs are declared.
+### Persona profile
+
+- `GET /app/v3/api/iam/persona_catalog` returns the selectable role and interest taxonomy with every active locale and an opaque catalog version.
+- `GET` / `PUT` / `DELETE /app/v3/api/iam/users/current/persona` read, replace, and clear the caller's persona. `PUT` is a full replace validated against the active catalog; unknown or disabled codes are rejected with `422` and code `iam_persona_invalid`.
+- Storage is `iam_user_persona` (one row per tenant user) plus the platform-owned catalogs `iam_persona_role` and `iam_persona_interest` (`owner_tenant_id = '0'`). A persona role may map onto the authorization role catalog through `iam_role_code`, but selecting a persona never grants a permission.
+- Seeds live in `database/seeds/common/005_iam_persona_catalog_seed.sql` plus one locale file per locale; the migration is `database/migrations/postgres/0021_iam_user_persona.up.sql`.
 
 ## Verification
 

@@ -90,7 +90,7 @@ export function createSdkworkIamDesktopAuthController(
         state,
       });
 
-      if (!unsubscribeOpenUrl) {
+      if (options.dispatchHostDeepLinks !== false && !unsubscribeOpenUrl) {
         unsubscribeOpenUrl = options.host.onOpenUrl((url) => {
           void processUri(url);
         });

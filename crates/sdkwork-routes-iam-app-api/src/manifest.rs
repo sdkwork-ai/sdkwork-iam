@@ -235,6 +235,34 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
     )
     .with_required_permission("iam.profile.update"),
     HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/iam/persona_catalog",
+        "iam",
+        "iam.personaCatalog.retrieve",
+    )
+    .with_required_permission("iam:self"),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/iam/users/current/persona",
+        "iam",
+        "users.current.persona.retrieve",
+    )
+    .with_required_permission("iam:self"),
+    HttpRoute::dual_token(
+        HttpMethod::Put,
+        "/app/v3/api/iam/users/current/persona",
+        "iam",
+        "users.current.persona.update",
+    )
+    .with_required_permission("iam.profile.update"),
+    HttpRoute::dual_token(
+        HttpMethod::Delete,
+        "/app/v3/api/iam/users/current/persona",
+        "iam",
+        "users.current.persona.delete",
+    )
+    .with_required_permission("iam.profile.update"),
+    HttpRoute::dual_token(
         HttpMethod::Patch,
         "/app/v3/api/iam/users/current/password",
         "iam",

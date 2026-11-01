@@ -93,7 +93,36 @@
     "openapiAuthorities": []
   },
   "roles": {
-    "domainStandardRoles": [],
+    "domainStandardRoles": [
+      {
+        "code": "ops_support_agent",
+        "name": "Ops Support Agent",
+        "surface": "application",
+        "scope": "tenant",
+        "standard": true,
+        "assignable": true,
+        "bindingPrincipalKind": "user",
+        "permissionPatterns": [
+          "ops.monitor.read",
+          "ops.service_nodes.read",
+          "ops.runtime_regions.read",
+          "ops.rate_limits.read",
+          "ops.cache.read"
+        ]
+      },
+      {
+        "code": "ops_content_moderator",
+        "name": "Ops Content Moderator",
+        "surface": "application",
+        "scope": "tenant",
+        "standard": true,
+        "assignable": true,
+        "bindingPrincipalKind": "user",
+        "permissionPatterns": [
+          "ops.monitor.read"
+        ]
+      }
+    ],
     "roleGrantExtensions": [
       {
         "roleCode": "org_admin",

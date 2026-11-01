@@ -1,4 +1,4 @@
--- zh-CN display labels for IMF-materialized IAM directory and platform roles.
+-- zh-CN display labels for IMF-materialized IAM directory, platform, and domain standard roles.
 -- Idempotent updates. Re-applied after catalog materialization in IamDatabaseModule::after_seed.
 
 UPDATE iam_tenant
@@ -44,3 +44,31 @@ WHERE tenant_id = '100001' AND code = 'platform_system_admin';
 
 UPDATE iam_role SET name = '平台超级管理员', updated_at = CURRENT_TIMESTAMP
 WHERE tenant_id = '100001' AND code = 'platform_super_admin';
+
+-- Domain standard roles declared by iam/modules/<module>/iam.module.manifest.json.
+UPDATE iam_role SET name = '学员', updated_at = CURRENT_TIMESTAMP
+WHERE tenant_id = '100001' AND code = 'course_learner';
+
+UPDATE iam_role SET name = '课程讲师', updated_at = CURRENT_TIMESTAMP
+WHERE tenant_id = '100001' AND code = 'course_instructor';
+
+UPDATE iam_role SET name = '助教', updated_at = CURRENT_TIMESTAMP
+WHERE tenant_id = '100001' AND code = 'course_assistant';
+
+UPDATE iam_role SET name = '课程审核员', updated_at = CURRENT_TIMESTAMP
+WHERE tenant_id = '100001' AND code = 'course_reviewer';
+
+UPDATE iam_role SET name = '员工', updated_at = CURRENT_TIMESTAMP
+WHERE tenant_id = '100001' AND code = 'apps_employee';
+
+UPDATE iam_role SET name = '合作伙伴', updated_at = CURRENT_TIMESTAMP
+WHERE tenant_id = '100001' AND code = 'apps_partner';
+
+UPDATE iam_role SET name = '访客', updated_at = CURRENT_TIMESTAMP
+WHERE tenant_id = '100001' AND code = 'apps_guest';
+
+UPDATE iam_role SET name = '客服专员', updated_at = CURRENT_TIMESTAMP
+WHERE tenant_id = '100001' AND code = 'ops_support_agent';
+
+UPDATE iam_role SET name = '内容审核员', updated_at = CURRENT_TIMESTAMP
+WHERE tenant_id = '100001' AND code = 'ops_content_moderator';

@@ -1,5 +1,9 @@
 /** Session creation command for credential login and external user-center session exchange. */
 export interface AppbaseSessionCreateCommand {
+  /** Credential grant to run. Omitted `grantType` means the password grant, which is the body the platform hosted login posts. */
+  grantType?: 'password' | 'phone_code' | 'email_code';
+  /** Shared account identifier understood by hosted-login clients; `email`/`username`/`phone` remain the authoritative identity fields. */
+  account?: string;
   /** Email credential used by standard password login. */
   email?: string;
   /** Username credential used by standard password login. */

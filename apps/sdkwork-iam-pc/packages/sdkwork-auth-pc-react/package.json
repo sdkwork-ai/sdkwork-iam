@@ -14,6 +14,11 @@
       "types": "./src/auth-service.ts",
       "import": "./src/auth-service.ts",
       "default": "./src/auth-service.ts"
+    },
+    "./oauth-app-paths": {
+      "types": "./src/oauth-app-paths.ts",
+      "import": "./src/oauth-app-paths.ts",
+      "default": "./src/oauth-app-paths.ts"
     }
   },
   "files": [

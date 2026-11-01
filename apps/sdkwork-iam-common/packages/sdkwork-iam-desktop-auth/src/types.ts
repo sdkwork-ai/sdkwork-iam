@@ -100,6 +100,14 @@ export interface SdkworkDesktopAuthControllerOptions {
   flowTtlMs?: number;
   host: SdkworkDesktopAuthHostPort;
   now?: () => number;
+  /**
+   * Whether `beginLogin` subscribes to host deep-link events itself
+   * (default true). A runtime that owns dispatch (`createSdkworkIamDesktopAuthRuntime`
+   * listens for the whole lifetime) sets this to false, because two
+   * subscriptions deliver one callback twice: the code is single-use, so the
+   * second redemption fails and reports a failed login after a successful one.
+   */
+  dispatchHostDeepLinks?: boolean;
 }
 
 export interface SdkworkDesktopAuthController {

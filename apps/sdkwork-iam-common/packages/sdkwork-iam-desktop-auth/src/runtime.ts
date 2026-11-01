@@ -101,6 +101,10 @@ export function createSdkworkIamDesktopAuthRuntime(
 
   const controller = createSdkworkIamDesktopAuthController({
     descriptor,
+    // The runtime below owns host dispatch for the whole lifetime; letting the
+    // controller subscribe too would deliver one callback twice, and the
+    // single-use authorization code would fail the second redemption.
+    dispatchHostDeepLinks: false,
     exchangeDesktopSession: bindSdkworkDesktopSessionExchange(options.appSdkClient),
     host: options.host,
     ...(options.flowTtlMs !== undefined ? { flowTtlMs: options.flowTtlMs } : {}),

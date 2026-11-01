@@ -44,7 +44,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "7e428a05e7c4d8a8bd5ef5126c5a7f57cd410f553574b7a0fde2984e71640770"
+      "sha256": "0e7510f7b0318272aaa94313bd19ce6806b20a2eed90adccb1becb42061cf295"
     },
     {
       "path": "sdkwork-sdk.json",
@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/iam.ts",
-      "sha256": "2a96978dc361d4d105b87097cf3bcaf6f62b7b9f9776dac712e0b35e75c3b8a5"
+      "sha256": "4240a26e198fc2299f58786bef828a041417575252e9041231688e2563cff597"
     },
     {
       "path": "src/api/index.ts",
@@ -68,7 +68,7 @@
     },
     {
       "path": "src/api/oauth.ts",
-      "sha256": "df3e829b59955975ab934baa33d5d5163e779a720272d645d00f4fa0d3823d0d"
+      "sha256": "b67701c7477cce327f02e96b53c35c80aad3b4b6af4cd251236e8107a9cca2cb"
     },
     {
       "path": "src/api/paths.ts",
@@ -104,19 +104,67 @@
     },
     {
       "path": "src/types/appbase-session-create-command.ts",
-      "sha256": "817268d90eb781cc7463e833f4b704efa5c88a83551c175afc578edac3573fbb"
+      "sha256": "eefac92a4399dcf55077695fce3cda5832024e71f884811dc3e21681fd720c31"
+    },
+    {
+      "path": "src/types/authorizations-completions-create-request.ts",
+      "sha256": "8aaacf8ee525345a7d571ac0bee54489c541404ffa1272c36fc8996a05100f66"
+    },
+    {
+      "path": "src/types/authorizations-completions-create-response.ts",
+      "sha256": "dd1335d32cf68a7f17f97ddbe587402f6015b43d429869edd38fac71d32f7c65"
     },
     {
       "path": "src/types/common.ts",
       "sha256": "d2506be8c4bdbe8e7059393467e6e71d75ef1d8c018dbf997bb0ab2a77b6c7b6"
     },
     {
+      "path": "src/types/desktop-sessions-create-request.ts",
+      "sha256": "b8204c14961fa758383f581fa970ce75ff06507e6b321d6bf7259afce3177bc4"
+    },
+    {
+      "path": "src/types/desktop-sessions-create-response.ts",
+      "sha256": "bc0762215cd4df1e05cd4c63b4467e22428383e58fcd2be30db8c7e63d2d75f6"
+    },
+    {
       "path": "src/types/field-error.ts",
       "sha256": "7688827a804d5c888fdf626b89e3356832f858e24f0657069b6b842a31ae6907"
     },
     {
+      "path": "src/types/iam-persona-catalog-response.ts",
+      "sha256": "51c8e28da01d46d888bcd39f78bef2879f40e3ee4a3a9cc06b224d1eda3dbb70"
+    },
+    {
+      "path": "src/types/iam-persona-catalog.ts",
+      "sha256": "7886af3547e2d7af943f3433e7af3da19042162ccb189d38020f050ce2ea7d81"
+    },
+    {
+      "path": "src/types/iam-persona-interest.ts",
+      "sha256": "2f45fab1f74adb55e4070c3c38561fbe808bf1d0766d816059961c0008fcffb0"
+    },
+    {
+      "path": "src/types/iam-persona-labels.ts",
+      "sha256": "dcf7398c5a273f4feb763c7370399e4729cfa224cc0276847c6a8bdfb42e120f"
+    },
+    {
+      "path": "src/types/iam-persona-role.ts",
+      "sha256": "7a4701cfe06bee774b6a12077b667b72925ede9cbb40f35ea9c2c25e62afbc8b"
+    },
+    {
+      "path": "src/types/iam-user-persona-response.ts",
+      "sha256": "a9768e890895dcdb7d9b009ca6da5b5b2136d2d4d8a4bfedd2b2c6ec7ad53743"
+    },
+    {
+      "path": "src/types/iam-user-persona-update-command.ts",
+      "sha256": "c8e3c08edb55da4585a286c1c10e3ba3f2306b691e5383c4c88ee80f7819dced"
+    },
+    {
+      "path": "src/types/iam-user-persona.ts",
+      "sha256": "ebb820b7af1b08ba87cad9d8b34370baa5a995a7cd11780622474dc9976c1e10"
+    },
+    {
       "path": "src/types/index.ts",
-      "sha256": "f9cf7d4c71ff50576fe90d4ebc84d02b09d6c83bf029b1d72695fc449de73c97"
+      "sha256": "ad88eb564ca0529bb55ed685b7225cbb59cf41c366bf8dd6335556daf2c4f2c8"
     },
     {
       "path": "src/types/page-info.ts",

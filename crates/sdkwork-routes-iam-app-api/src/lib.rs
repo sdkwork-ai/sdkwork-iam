@@ -15,6 +15,7 @@ mod passwords;
 mod paths;
 #[allow(dead_code)]
 mod permissions;
+mod persona;
 mod responses;
 mod routes;
 mod scan_login;

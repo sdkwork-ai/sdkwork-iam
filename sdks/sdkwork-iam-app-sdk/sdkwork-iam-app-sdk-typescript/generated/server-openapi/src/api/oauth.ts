@@ -1,7 +1,7 @@
 import { appApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { AppbaseOperationCommand, AppbaseSessionCreateCommand, SdkWorkPageData, WechatMiniProgramSessionCreateCommand } from '../types';
+import type { AppbaseOperationCommand, AppbaseSessionCreateCommand, AuthorizationsCompletionsCreateRequest, DesktopSessionsCreateRequest, SdkWorkPageData, WechatMiniProgramSessionCreateCommand } from '../types';
 
 
 export interface OauthWechatPaymentOauthStartParams {
@@ -242,8 +242,8 @@ export class OauthDesktopSessionsApi {
 
 
 /** Desktop Sessions create. */
-  async create(body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
-    return this.client.request<Record<string, unknown>>(appApiPath(`/oauth/desktop_sessions`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true, sdkworkUnwrapKind: 'item' });
+  async create(body: DesktopSessionsCreateRequest, requestOptions?: ApiRequestOptions): Promise<{ accessToken: string; authToken: string; refreshToken?: string; sessionId?: string; context?: Record<string, unknown>; user?: Record<string, unknown>; }> {
+    return this.client.request<{ accessToken: string; authToken: string; refreshToken?: string; sessionId?: string; context?: Record<string, unknown>; user?: Record<string, unknown>; }>(appApiPath(`/oauth/desktop_sessions`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true, sdkworkUnwrapKind: 'data' });
   }
 }
 
@@ -275,8 +275,8 @@ export class OauthAuthorizationsCompletionsApi {
 
 
 /** Authorizations completions create. */
-  async create(authorizationStateId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
-    return this.client.request<Record<string, unknown>>(appApiPath(`/oauth/authorizations/${serializePathParameter(authorizationStateId, { name: 'authorizationStateId', style: 'simple', explode: false })}/completions`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  async create(authorizationStateId: string, body: AuthorizationsCompletionsCreateRequest, requestOptions?: ApiRequestOptions): Promise<{ authorizationCode: string; redirectUrl: string; }> {
+    return this.client.request<{ authorizationCode: string; redirectUrl: string; }>(appApiPath(`/oauth/authorizations/${serializePathParameter(authorizationStateId, { name: 'authorizationStateId', style: 'simple', explode: false })}/completions`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'data' });
   }
 }
 

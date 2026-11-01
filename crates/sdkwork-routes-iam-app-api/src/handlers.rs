@@ -259,6 +259,7 @@ fn build_sdkwork_iam_app_api_core_router(state: LocalIamState) -> Router {
             get(list_position_assignments),
         )
         .route("/app/v3/api/iam/role_bindings", get(list_role_bindings))
+        .merge(crate::persona::persona_routes())
         .route("/app/v3/api/system/iam/runtime", get(retrieve_runtime))
         .route(
             "/app/v3/api/system/iam/verification_policy",
@@ -421,9 +422,15 @@ async fn create_session(
         Ok(tenant_id) => tenant_id,
         Err(response) => return response,
     };
-    match resolve_login_grant_type(&body).as_deref() {
-        Some("password") => create_password_login_session(&state, &ctx, &body, &tenant_id).await,
-        Some("phone_code" | "email_code") => {
+    // A credential-entry client that omits `grantType` means the default
+    // password grant: the platform's hosted login posts `email` + `password`
+    // without it, and requiring the field would reject a valid sign-in before
+    // the credentials are even read. Unknown explicit values still fail closed.
+    let grant_type = resolve_login_grant_type(&body)
+        .unwrap_or_else(|| "password".to_string());
+    match grant_type.as_str() {
+        "password" => create_password_login_session(&state, &ctx, &body, &tenant_id).await,
+        "phone_code" | "email_code" => {
             create_code_login_session(&state, &ctx, &body, &tenant_id).await
         }
         _ => appbase_error(

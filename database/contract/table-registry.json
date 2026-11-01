@@ -255,6 +255,18 @@
       "lifecycle_status": "active"
     },
     {
+      "table_name": "iam_persona_interest",
+      "owner": "sdkwork-iam",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "iam_persona_role",
+      "owner": "sdkwork-iam",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
       "table_name": "iam_policy",
       "owner": "sdkwork-iam",
       "compliance_level": "L2",
@@ -364,6 +376,12 @@
     },
     {
       "table_name": "iam_user_identity",
+      "owner": "sdkwork-iam",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "iam_user_persona",
       "owner": "sdkwork-iam",
       "compliance_level": "L2",
       "lifecycle_status": "active"

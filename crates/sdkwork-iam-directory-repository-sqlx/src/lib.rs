@@ -15,6 +15,9 @@ impl IamTables {
     pub const POSITION_ASSIGNMENT: &'static str = "iam_position_assignment";
     pub const USER: &'static str = "iam_user";
     pub const USER_IDENTITY: &'static str = "iam_user_identity";
+    pub const USER_PERSONA: &'static str = "iam_user_persona";
+    pub const PERSONA_ROLE: &'static str = "iam_persona_role";
+    pub const PERSONA_INTEREST: &'static str = "iam_persona_interest";
     pub const CREDENTIAL: &'static str = "iam_credential";
     pub const PASSWORD_HISTORY: &'static str = "iam_password_history";
     pub const SESSION: &'static str = "iam_session";
@@ -128,6 +131,9 @@ pub fn iam_database_tables() -> Vec<&'static str> {
         IamTables::PROVIDER_ACCOUNT,
         IamTables::PROVIDER_CREDENTIAL,
         IamTables::ROLE_EXCLUSION,
+        IamTables::USER_PERSONA,
+        IamTables::PERSONA_ROLE,
+        IamTables::PERSONA_INTEREST,
     ]
 }
 

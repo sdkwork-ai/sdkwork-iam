@@ -288,14 +288,96 @@
         ],
         "summary": "Iam oauth authorize handle Get.",
         "operationId": "iam.oauth.authorize.handleGet",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Registered relying-party (tenant application) identifier."
+            }
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "description": "Registered redirect URI. Native apps register a custom scheme or an RFC 8252 loopback address."
+            }
+          },
+          {
+            "name": "response_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "code"
+              ]
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Space-delimited scopes requested by the client; defaults to openid."
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 512,
+              "description": "Opaque client state echoed back unchanged with the code or the error."
+            }
+          },
+          {
+            "name": "code_challenge",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "description": "PKCE S256 challenge; required for public (native) clients."
+            }
+          },
+          {
+            "name": "code_challenge_method",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "S256"
+              ]
+            }
+          },
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Optional tenant hint used to resolve the client registration."
+            }
+          }
+        ],
         "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
+          "302": {
+            "description": "Redirect to the hosted login, or back to the registered redirect URI with error + state (RFC 6749 section 4.1.2.1).",
+            "headers": {
+              "Location": {
+                "required": true,
                 "schema": {
-                  "$ref": "#/components/schemas/SdkWorkResourceResponse"
+                  "type": "string",
+                  "format": "uri"
                 }
               }
             }
@@ -1176,12 +1258,37 @@
         "operationId": "iam.oauth.token.create",
         "parameters": [],
         "responses": {
-          "201": {
-            "description": "Created",
+          "200": {
+            "description": "OAuth 2.0 token response (RFC 6749 section 5.1).",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SdkWorkResourceResponse"
+                  "type": "object",
+                  "required": [
+                    "access_token",
+                    "token_type"
+                  ],
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "token_type": {
+                      "type": "string",
+                      "enum": [
+                        "Bearer"
+                      ]
+                    },
+                    "expires_in": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "refresh_token": {
+                      "type": "string"
+                    },
+                    "scope": {
+                      "type": "string"
+                    }
+                  }
                 }
               }
             }
@@ -1291,9 +1398,45 @@
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
+            "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/AppbaseOperationCommand"
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "grant_type",
+                  "client_id"
+                ],
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "enum": [
+                      "authorization_code",
+                      "refresh_token"
+                    ]
+                  },
+                  "client_id": {
+                    "type": "string"
+                  },
+                  "client_secret": {
+                    "type": "string",
+                    "format": "password"
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "redirect_uri": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "code_verifier": {
+                    "type": "string",
+                    "minLength": 43,
+                    "maxLength": 128
+                  },
+                  "refresh_token": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
