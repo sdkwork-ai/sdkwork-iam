@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,7 +14,7 @@ import {
   resolveBootstrapAuthProfileCandidates,
   resolveBootstrapAuthProfileDir,
   resolveBootstrapEnvironmentFromEnv,
-  writeRegisteredBootstrapEnvFiles,
+  writeRegisteredBootstrapCredential,
 } from "@sdkwork/iam-application-bootstrap";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -29,7 +29,6 @@ function parseArgs(argv) {
     instanceKey: "",
     environment: "",
     primaryDomain: "",
-    envOutPath: "",
     authToken: "",
     username: "",
     password: "",
@@ -52,8 +51,6 @@ function parseArgs(argv) {
       options.environment = argv[++index];
     } else if (arg === "--domain" && argv[index + 1]) {
       options.primaryDomain = argv[++index];
-    } else if (arg === "--env-out" && argv[index + 1]) {
-      options.envOutPath = argv[++index];
     } else if (arg === "--auth-token" && argv[index + 1]) {
       options.authToken = argv[++index];
     } else if (arg === "--username" && argv[index + 1]) {
@@ -150,18 +147,24 @@ async function main() {
     environment,
   });
 
-  const envOutPath = options.envOutPath || join(dirname(configPath), ".sdkwork.local.env");
-  const envFileContents = `# SDKWork IAM application-bootstrap registration output (gitignored).\n${formatBootstrapEnvFile({
-    result,
-    primaryDomain: environment.primaryDomain,
-  })}`;
-  const overlayRoot = dirname(configPath);
-  const overlayPaths = options.envOutPath
-    ? [envOutPath]
-    : await writeRegisteredBootstrapEnvFiles(overlayRoot, envFileContents, environment.environment);
-  if (options.envOutPath) {
-    await writeFile(envOutPath, envFileContents, "utf8");
+  const token = result.env.SDKWORK_ACCESS_TOKEN?.trim();
+  if (!token) {
+    throw new Error("IAM application bootstrap did not return SDKWORK_ACCESS_TOKEN");
   }
+  const credentialPaths = await writeRegisteredBootstrapCredential(
+    dirname(configPath),
+    {
+      token,
+      ...(result.appId ? { appId: result.appId } : {}),
+      metadata: {
+        environment: environment.environment,
+        deploymentProfile: "standalone",
+        source: "iam-application-bootstrap",
+        ...(environment.backendApiBaseUrl ? { backend: environment.backendApiBaseUrl } : {}),
+      },
+    },
+    { environment: environment.environment },
+  );
 
   console.log(
     JSON.stringify(
@@ -170,8 +173,7 @@ async function main() {
         tenantApplicationId: result.tenantApplicationId,
         appId: result.appId,
         version: result.version,
-        envOutPath: overlayPaths[0] ?? envOutPath,
-        overlayPaths,
+        credentialPath: credentialPaths[0],
         bootstrapAuthProfilePath: loadedProfile?.profilePath,
       },
       null,

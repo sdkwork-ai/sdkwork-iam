@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { resolveBootstrapAuth, resolveBootstrapEnvironmentFromEnv } from "./auth.ts";
-import { bootstrapApplicationFromManifest, formatBootstrapEnvFile } from "./bootstrap.ts";
+import { bootstrapApplicationFromManifest } from "./bootstrap.ts";
 import { loadBootstrapAuthProfileFromHome } from "./bootstrap-auth-profile.ts";
 import { createFetchIamApplicationBootstrapClient } from "./fetch-client.ts";
 import { hashManifestContent } from "./manifest.ts";
@@ -12,7 +12,7 @@ import {
   isUsableBootstrapAccessToken,
   normalizeBootstrapLifecycle,
   readRegisteredBootstrapAccessToken,
-  writeRegisteredBootstrapEnvFiles,
+  writeRegisteredBootstrapCredential,
 } from "./registered-env.ts";
 
 export type EnsureRepoBootstrapAccessTokenStatus = "configured" | "registered" | "unavailable";
@@ -26,6 +26,8 @@ export interface EnsureRepoBootstrapAccessTokenOptions {
   refresh?: boolean;
   tryApplicationBootstrap?: boolean;
   warn?: (line: string) => void;
+  /** Home directory holding the user-private credential store (tests inject one). */
+  homeDir?: string;
   /** Override the CLI fetch transport (tests inject a stub client). */
   createClient?: (config: { baseUrl: string }) => IamApplicationBootstrapClient;
 }
@@ -33,7 +35,7 @@ export interface EnsureRepoBootstrapAccessTokenOptions {
 export interface EnsureRepoBootstrapAccessTokenResult {
   status: EnsureRepoBootstrapAccessTokenStatus;
   token?: string;
-  overlayPaths?: string[];
+  credentialPaths?: string[];
   reason?: string;
 }
 
@@ -100,7 +102,11 @@ export async function ensureRepoBootstrapAccessToken(
   const registeredToken = await readRegisteredBootstrapAccessToken(
     options.repoRoot,
     lifecycle,
-    { ...inspection, deploymentProfile },
+    {
+      ...inspection,
+      deploymentProfile,
+      ...(options.homeDir === undefined ? {} : { homeDir: options.homeDir }),
+    },
   );
   if (
     registeredToken
@@ -118,8 +124,8 @@ export async function ensureRepoBootstrapAccessToken(
     return {
       status: "unavailable",
       reason: existing
-        ? "overlay bootstrap token is a local fixture and the backend is not loopback"
-        : "no reusable registered SDKWORK_ACCESS_TOKEN overlay",
+        ? "cached bootstrap credential is a local fixture and the backend is not loopback"
+        : "no reusable registered SDKWORK_ACCESS_TOKEN credential",
     };
   }
 
@@ -177,24 +183,30 @@ export async function ensureRepoBootstrapAccessToken(
       profile: loadedProfile?.profile ?? null,
       environment,
     });
-    const contents = `# SDKWork IAM application-bootstrap registration output (gitignored).\n${formatBootstrapEnvFile({
-      result,
-      ...(environment.primaryDomain !== undefined
-        ? { primaryDomain: environment.primaryDomain }
-        : {}),
-    })}`;
-    const overlayPaths = await writeRegisteredBootstrapEnvFiles(
-      options.repoRoot,
-      contents,
-      lifecycle,
-      deploymentProfile,
-    );
     const token = result.env.SDKWORK_ACCESS_TOKEN?.trim();
     if (!token) {
       return { status: "unavailable", reason: "IAM application bootstrap did not return SDKWORK_ACCESS_TOKEN" };
     }
-    options.warn?.(`provisioned SDKWORK_ACCESS_TOKEN via IAM application bootstrap (${overlayPaths[0]})`);
-    return { status: "registered", token, overlayPaths };
+    const credentialPaths = await writeRegisteredBootstrapCredential(
+      options.repoRoot,
+      {
+        token,
+        ...(manifest.backend?.appId !== undefined ? { appId: manifest.backend.appId } : {}),
+        metadata: {
+          environment: lifecycle,
+          deploymentProfile,
+          source: "iam-application-bootstrap",
+          ...(backendBaseUrl !== undefined ? { backend: backendBaseUrl } : {}),
+        },
+      },
+      {
+        environment: lifecycle,
+        deploymentProfile,
+        ...(options.homeDir === undefined ? {} : { homeDir: options.homeDir }),
+      },
+    );
+    options.warn?.(`provisioned SDKWORK_ACCESS_TOKEN via IAM application bootstrap (${credentialPaths[0]})`);
+    return { status: "registered", token, credentialPaths };
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     options.warn?.(`IAM application bootstrap failed: ${reason}`);

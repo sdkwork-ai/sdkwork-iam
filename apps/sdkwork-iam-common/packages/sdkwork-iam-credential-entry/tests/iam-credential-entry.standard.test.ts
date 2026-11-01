@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -23,6 +23,7 @@ import {
 import {
   mergeRepoBootstrapAccessTokenEnv,
   readRepoBootstrapAccessToken,
+  resolveRepoBootstrapAccessTokenPaths,
 } from '../src/node-bootstrap.mjs';
 import { createSdkworkCredentialEntryBootstrapVitePlugin } from '../src/vite.ts';
 
@@ -269,8 +270,9 @@ describe('@sdkwork/iam-credential-entry', () => {
     })).toMatchObject({ reusable: false, reason: 'tenant-mismatch' });
   });
 
-  it('persists one environment-scoped artifact and reuses it on the next start', () => {
+  it('persists one environment-scoped credential bundle and reuses it on the next start', () => {
     const repoRoot = createFixtureRepo();
+    const home = mkdtempSync(join(tmpdir(), 'sdkwork-credential-home-'));
     try {
       const manifestPath = join(repoRoot, 'agent.app.config.json');
       const first = mergeRepoBootstrapAccessTokenEnv({
@@ -278,14 +280,26 @@ describe('@sdkwork/iam-credential-entry', () => {
         env: {},
         environment: 'development',
         manifestPath,
+        homeDir: home,
       });
-      const artifactPath = join(repoRoot, '.env.standalone.development.bootstrap.local');
-      const firstContents = readFileSync(artifactPath, 'utf8');
-      expect(firstContents).toContain('sdkwork-bootstrap-environment=development');
-      expect(firstContents).toContain('sdkwork-bootstrap-deployment-profile=standalone');
+      const { bundlePath, legacyPath } = resolveRepoBootstrapAccessTokenPaths(
+        repoRoot,
+        'development',
+        'standalone',
+        { homeDir: home },
+      );
+      expect(bundlePath.replace(/\\/gu, '/')).toContain('/.sdkwork/example-pc/credentials/standalone.development.json');
+      const firstContents = readFileSync(bundlePath, 'utf8');
+      expect(JSON.parse(firstContents)).toMatchObject({
+        environment: 'development',
+        deploymentProfile: 'standalone',
+      });
+      // No repository file is created: the store is outside every checkout.
+      expect(existsSync(legacyPath)).toBe(false);
       expect(readRepoBootstrapAccessToken(repoRoot, 'test', {
         environment: 'test',
         allowTestTokenGeneration: true,
+        homeDir: home,
       })).toBeUndefined();
 
       const second = mergeRepoBootstrapAccessTokenEnv({
@@ -293,11 +307,13 @@ describe('@sdkwork/iam-credential-entry', () => {
         env: {},
         environment: 'development',
         manifestPath,
+        homeDir: home,
       });
       expect(second[SDKWORK_ACCESS_TOKEN_ENV_KEY]).toBe(first[SDKWORK_ACCESS_TOKEN_ENV_KEY]);
-      expect(readFileSync(artifactPath, 'utf8')).toBe(firstContents);
+      expect(readFileSync(bundlePath, 'utf8')).toBe(firstContents);
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
+      rmSync(home, { recursive: true, force: true });
     }
   });
 

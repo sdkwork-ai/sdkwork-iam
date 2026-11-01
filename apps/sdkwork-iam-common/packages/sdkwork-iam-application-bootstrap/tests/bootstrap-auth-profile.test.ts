@@ -15,10 +15,10 @@ import {
   resolveBootstrapAuthProfileCandidates,
   resolveBootstrapAuthProfileDir,
   resolveBootstrapAuthProfilePaths,
-  resolveRegisteredBootstrapEnvPaths,
+  resolveRegisteredBootstrapCredentialPath,
   resolveSdkworkHomeDir,
   SDKWORK_IAM_BOOTSTRAP_DEFAULT_PROFILE,
-  writeRegisteredBootstrapEnvFiles,
+  writeRegisteredBootstrapCredential,
 } from "../src/index";
 
 describe("bootstrap auth profiles", () => {
@@ -170,27 +170,39 @@ describe("bootstrap auth profiles", () => {
     expect(dir.replace(/\\/gu, "/")).toBe("C:/Users/admin/.sdkwork/iam-bootstrap");
   });
 
-  it("writes one environment-scoped overlay file and parses the access token", async () => {
-    const repoRoot = await mkdtemp(join(tmpdir(), "sdkwork-bootstrap-overlays-"));
+  it("writes the credential bundle outside the checkout and never a repository env file", async () => {
+    const repoRoot = await mkdtemp(join(tmpdir(), "sdkwork-bootstrap-bundle-"));
+    const home = await mkdtemp(join(tmpdir(), "sdkwork-bootstrap-home-"));
     try {
-      const paths = await writeRegisteredBootstrapEnvFiles(
+      await writeFile(join(repoRoot, "agent.app.config.json"), JSON.stringify({ app: { key: "sdkwork-demo" } }));
+      const paths = await writeRegisteredBootstrapCredential(
         repoRoot,
-        "SDKWORK_ACCESS_TOKEN=signed-dev-token\n",
-        "dev",
+        { token: "signed-dev-token" },
+        { environment: "dev", homeDir: home },
       );
-      const canonicalPath = resolveRegisteredBootstrapEnvPaths(
+      const canonicalPath = resolveRegisteredBootstrapCredentialPath(
         repoRoot,
         "development",
-      )[0]?.replace(/\\/gu, "/");
+        "standalone",
+        { homeDir: home },
+      ).replace(/\\/gu, "/");
       expect(paths.map((path) => path.replace(/\\/gu, "/"))).toEqual([canonicalPath]);
-      expect(canonicalPath?.endsWith(".env.standalone.development.bootstrap.local")).toBe(true);
-      const contents = await readFile(paths[0] ?? "", "utf8");
-      expect(parseAccessTokenFromEnvFile(contents)).toBe("signed-dev-token");
-      for (const legacyPath of resolveRegisteredBootstrapEnvPaths(repoRoot, "development").slice(1)) {
-        expect(existsSync(legacyPath)).toBe(false);
-      }
+      expect(canonicalPath.endsWith("/.sdkwork/demo/credentials/standalone.development.json")).toBe(true);
+      const bundle = JSON.parse(await readFile(paths[0] ?? "", "utf8")) as {
+        accessToken: string;
+        environment: string;
+        deploymentProfile: string;
+      };
+      expect(bundle).toMatchObject({
+        accessToken: "signed-dev-token",
+        environment: "development",
+        deploymentProfile: "standalone",
+      });
+      expect(existsSync(join(repoRoot, ".sdkwork.local.env"))).toBe(false);
+      expect(existsSync(join(repoRoot, ".env.standalone.development"))).toBe(false);
     } finally {
       await rm(repoRoot, { recursive: true, force: true });
+      await rm(home, { recursive: true, force: true });
     }
   });
 
@@ -206,30 +218,38 @@ describe("bootstrap auth profiles", () => {
     expect(isUsableBootstrapAccessToken("signed-jwt", "http://api-dev.sdkwork.com")).toBe(true);
   });
 
-  it("parses access tokens from CRLF env overlays", () => {
+  it("parses an access token from operator-supplied CRLF env text", () => {
     expect(parseAccessTokenFromEnvFile("SDKWORK_TENANT_ID=100001\r\nSDKWORK_ACCESS_TOKEN=win-token\r\n")).toBe(
       "win-token",
     );
   });
 
-  it("reuses a registered overlay token during start/build ensure", async () => {
+  it("reuses a registered credential bundle during start/build ensure", async () => {
     const repoRoot = await mkdtemp(join(tmpdir(), "sdkwork-bootstrap-ensure-"));
+    const home = await mkdtemp(join(tmpdir(), "sdkwork-bootstrap-home-"));
     try {
-      await writeRegisteredBootstrapEnvFiles(repoRoot, "SDKWORK_ACCESS_TOKEN=signed-dev-token\n", "development");
+      await writeRegisteredBootstrapCredential(
+        repoRoot,
+        { token: "signed-dev-token" },
+        { environment: "development", homeDir: home },
+      );
       const result = await ensureRepoBootstrapAccessToken({
         repoRoot,
         environment: "development",
         env: { SDKWORK_BACKEND_BASE_URL: "http://api-dev.sdkwork.com" },
         tryApplicationBootstrap: false,
+        homeDir: home,
       });
       expect(result).toEqual({ status: "configured", token: "signed-dev-token" });
     } finally {
       await rm(repoRoot, { recursive: true, force: true });
+      await rm(home, { recursive: true, force: true });
     }
   });
 
   it("does not call IAM bootstrap when the environment-scoped token is reusable", async () => {
     const repoRoot = await mkdtemp(join(tmpdir(), "sdkwork-bootstrap-reuse-"));
+    const home = await mkdtemp(join(tmpdir(), "sdkwork-bootstrap-home-"));
     try {
       const manifest = {
         backend: {
@@ -250,10 +270,10 @@ describe("bootstrap auth profiles", () => {
         })).toString("base64url"),
         "signature",
       ].join(".");
-      await writeRegisteredBootstrapEnvFiles(
+      await writeRegisteredBootstrapCredential(
         repoRoot,
-        `SDKWORK_ACCESS_TOKEN=${token}\n`,
-        "development",
+        { token },
+        { environment: "development", homeDir: home },
       );
       let clientCreated = false;
       const result = await ensureRepoBootstrapAccessToken({
@@ -268,22 +288,26 @@ describe("bootstrap auth profiles", () => {
           clientCreated = true;
           throw new Error("IAM bootstrap client must not be created while a reusable token exists");
         },
+        homeDir: home,
       });
       expect(result).toEqual({ status: "configured", token });
       expect(clientCreated).toBe(false);
     } finally {
       await rm(repoRoot, { recursive: true, force: true });
+      await rm(home, { recursive: true, force: true });
     }
   });
 
-  it("fails closed when no overlay and bootstrap is disabled", async () => {
+  it("fails closed when no credential bundle exists and bootstrap is disabled", async () => {
     const repoRoot = await mkdtemp(join(tmpdir(), "sdkwork-bootstrap-ensure-missing-"));
+    const home = await mkdtemp(join(tmpdir(), "sdkwork-bootstrap-home-"));
     try {
       const result = await ensureRepoBootstrapAccessToken({
         repoRoot,
         environment: "development",
         env: {},
         tryApplicationBootstrap: false,
+        homeDir: home,
       });
       expect(result.status).toBe("unavailable");
     } finally {

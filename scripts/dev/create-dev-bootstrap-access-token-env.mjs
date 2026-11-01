@@ -13,5 +13,6 @@ export {
   readRepoBootstrapAccessToken,
   readApplicationManifest,
   resolveRepoApplicationManifestPath,
-  resolveRepoBootstrapAccessTokenEnvPaths,
+  resolveRepoBootstrapAccessTokenPaths,
+  writeRepoBootstrapAccessToken,
 } from '../../apps/sdkwork-iam-common/packages/sdkwork-iam-credential-entry/src/node-bootstrap.mjs';

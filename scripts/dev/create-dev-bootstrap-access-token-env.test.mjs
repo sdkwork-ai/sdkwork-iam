@@ -14,6 +14,17 @@ import {
 
 const sdkworkImRepoRoot = path.resolve(import.meta.dirname, '../../../sdkwork-im');
 
+/**
+ * Isolated credential store for the run.
+ *
+ * The resolver writes to `~/.sdkwork/<application-code>/credentials`, so a test
+ * that used the real home directory would overwrite the developer's own token.
+ */
+const testHome = mkdtempSync(path.join(os.tmpdir(), 'sdkwork-bootstrap-home-'));
+process.on('exit', () => {
+  rmSync(testHome, { recursive: true, force: true });
+});
+
 const clientArchitectureIds = [
   'pc',
   'h5',
@@ -35,6 +46,7 @@ test('resolveRepoApplicationManifestPath resolves repo-root manifest by default'
 
 test('mergeRepoDevBootstrapAccessTokenEnv generates bootstrap token from repo manifest', () => {
   const merged = mergeRepoDevBootstrapAccessTokenEnv({
+    homeDir: testHome,
     repoRoot: sdkworkImRepoRoot,
     appId: 'sdkwork-im-pc',
     env: {
@@ -50,6 +62,7 @@ test('mergeRepoDevBootstrapAccessTokenEnv generates bootstrap token from repo ma
 
 test('mergeRepoDevBootstrapAccessTokenEnv preserves configured bootstrap token', () => {
   const merged = mergeRepoDevBootstrapAccessTokenEnv({
+    homeDir: testHome,
     repoRoot: sdkworkImRepoRoot,
     env: {
       SDKWORK_ACCESS_TOKEN: 'configured-bootstrap-token',
@@ -81,6 +94,9 @@ test('surface manifest paths generate architecture-specific bootstrap identities
 
       const manifestPath = `apps/${appId}/agent.app.config.json`;
       const merged = mergeRepoDevBootstrapAccessTokenEnv({
+        // One store per skeleton so an earlier architecture cannot satisfy the
+        // next one from cache.
+        homeDir: path.join(tempRoot, 'home'),
         env: {},
         manifestPath,
         repoRoot: tempRoot,
@@ -111,7 +127,7 @@ test('bootstrap token generation fails closed instead of falling back to app.key
       'utf8',
     );
     assert.throws(
-      () => mergeRepoDevBootstrapAccessTokenEnv({ env: {}, repoRoot: tempRoot }),
+      () => mergeRepoDevBootstrapAccessTokenEnv({ env: {}, homeDir: testHome, repoRoot: tempRoot }),
       /backend\.appId is required/u,
     );
   } finally {
@@ -127,7 +143,7 @@ test('bootstrap environment aliases normalize to canonical lifecycle names', () 
 
 test('private bootstrap env-file reader returns only the canonical token value', () => {
   const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'sdkwork-credential-entry-'));
-  const envFile = path.join(tempRoot, '.env.development.bootstrap.local');
+  const envFile = path.join(tempRoot, 'bootstrap-token.fixture.env');
   try {
     writeFileSync(envFile, [
       '# private bootstrap fixture',
@@ -144,6 +160,7 @@ test('private bootstrap env-file reader returns only the canonical token value',
 test('test bootstrap generation requires explicit isolated-test opt-in', () => {
   assert.throws(
     () => mergeRepoBootstrapAccessTokenEnv({
+      homeDir: testHome,
       repoRoot: sdkworkImRepoRoot,
       environment: 'test',
     }),
@@ -151,6 +168,7 @@ test('test bootstrap generation requires explicit isolated-test opt-in', () => {
   );
 
   const merged = mergeRepoBootstrapAccessTokenEnv({
+    homeDir: testHome,
     repoRoot: sdkworkImRepoRoot,
     environment: 'test',
     allowTestTokenGeneration: true,
@@ -165,6 +183,7 @@ for (const environment of ['staging', 'production']) {
   test(`${environment} bootstrap fails closed without a private token`, () => {
     assert.throws(
       () => mergeRepoBootstrapAccessTokenEnv({
+        homeDir: testHome,
         repoRoot: sdkworkImRepoRoot,
         environment,
       }),
@@ -174,6 +193,7 @@ for (const environment of ['staging', 'production']) {
 
   test(`${environment} bootstrap preserves a privately provisioned token`, () => {
     const merged = mergeRepoBootstrapAccessTokenEnv({
+      homeDir: testHome,
       repoRoot: sdkworkImRepoRoot,
       environment,
       env: { SDKWORK_ACCESS_TOKEN: `${environment}-secret-token` },

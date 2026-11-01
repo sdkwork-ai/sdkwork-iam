@@ -1,22 +1,37 @@
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+/**
+ * Registration output of the IAM application bootstrap for one repository scope.
+ *
+ * `IAM_APPLICATION_BOOTSTRAP_SPEC.md` section 5.4.1 puts the reusable token in
+ * the user-private store:
+ *
+ * ```text
+ * ~/.sdkwork/<application-code>/credentials/<profile-id>.json
+ * ```
+ *
+ * `ENVIRONMENT_SPEC.md` section 5.1.7 allows exactly four dotenv shapes and
+ * retires every composed overlay, so this module never reads or writes a
+ * repository env file. The legacy unscoped `.sdkwork.local.env` stays readable
+ * as the last fallback until the next write replaces it with a bundle.
+ *
+ * @module
+ */
+// env-naming:allow-file — the doc comment above cannot name the retired spelling otherwise.
 
 import {
   buildBootstrapAccessTokenEnvFileContents,
-  inspectBootstrapAccessToken,
-  isBootstrapAccessTokenReusable,
-  looksLikeLocalFixtureJwt,
-  parseBootstrapAccessToken,
+  credentialBundlePath,
   readBootstrapAccessTokenEnvFileContents,
+  looksLikeLocalFixtureJwt,
+  writeCredentialBundle,
+  readRepoBootstrapAccessToken,
+  resolveRepoBootstrapAccessTokenPaths,
 } from "@sdkwork/iam-credential-entry/node-bootstrap";
+import { inspectBootstrapAccessToken } from "@sdkwork/iam-credential-entry/node-bootstrap";
 import type {
   BootstrapAccessTokenMetadata,
   CredentialEntryBootstrapManifest,
   SdkworkEnvironment,
 } from "@sdkwork/iam-credential-entry/node-bootstrap";
-
-/** Canonical registration output for one repository/environment scope. */
-export const REGISTERED_BOOTSTRAP_ENV_FILE = ".sdkwork.local.env";
 
 export interface RegisteredBootstrapInspectionOptions {
   allowTestTokenGeneration?: boolean;
@@ -25,6 +40,7 @@ export interface RegisteredBootstrapInspectionOptions {
   manifest?: CredentialEntryBootstrapManifest;
   nowSeconds?: number;
   skewSeconds?: number;
+  homeDir?: string;
 }
 
 export function normalizeBootstrapLifecycle(value: string | undefined): SdkworkEnvironment {
@@ -38,39 +54,30 @@ export function normalizeBootstrapLifecycle(value: string | undefined): SdkworkE
 }
 
 /**
- * Overlay files the start/build loaders probe, most canonical first.
- *
- * The environment-scoped artifact is the reusable cache. Legacy spellings are
- * read-only fallbacks so a development token cannot be reused for another
- * lifecycle merely because `.sdkwork.local.env` sorts first.
+ * The credential bundle of one repository/environment scope.
  * @param repoRoot - repository root.
  * @param environment - lifecycle or profile alias.
  * @param deploymentProfile - `standalone` or `cloud`.
- * @returns artifact paths, in read order.
+ * @param options - manifest and home-directory inputs.
+ * @returns the absolute bundle path.
  */
-export function resolveRegisteredBootstrapEnvPaths(
+export function resolveRegisteredBootstrapCredentialPath(
   repoRoot: string,
   environment?: string,
   deploymentProfile: "standalone" | "cloud" = "standalone",
-): string[] {
+  options: { manifest?: CredentialEntryBootstrapManifest; homeDir?: string; appCode?: string } = {},
+): string {
   const lifecycle = normalizeBootstrapLifecycle(environment);
-  return [
-    join(repoRoot, `.env.${deploymentProfile}.${lifecycle}.bootstrap.local`),
-    join(repoRoot, `.env.standalone.${lifecycle}.bootstrap.local`),
-    join(repoRoot, `.env.${lifecycle}.bootstrap.local`),
-    join(repoRoot, REGISTERED_BOOTSTRAP_ENV_FILE),
-  ].filter((value, index, values) => values.indexOf(value) === index);
-}
-
-export function parseAccessTokenFromEnvFile(contents: string): string | undefined {
-  return readBootstrapAccessTokenEnvFileContents(contents).token;
-}
-
-function readRegisteredRecord(contents: string): {
-  token?: string;
-  metadata: BootstrapAccessTokenMetadata;
-} {
-  return readBootstrapAccessTokenEnvFileContents(contents);
+  if (options.homeDir === undefined && options.appCode !== undefined) {
+    return credentialBundlePath({
+      applicationCode: options.appCode,
+      profileId: `${deploymentProfile}.${lifecycle}`,
+    });
+  }
+  return resolveRepoBootstrapAccessTokenPaths(repoRoot, lifecycle, deploymentProfile, {
+    ...(options.manifest ? { manifest: options.manifest } : {}),
+    ...(options.homeDir ? { homeDir: options.homeDir } : {}),
+  }).bundlePath;
 }
 
 /**
@@ -86,75 +93,64 @@ export async function readRegisteredBootstrapAccessToken(
   options: RegisteredBootstrapInspectionOptions = {},
 ): Promise<string | undefined> {
   const lifecycle = normalizeBootstrapLifecycle(environment);
-  const deploymentProfile = options.deploymentProfile ?? "standalone";
-  for (const envPath of resolveRegisteredBootstrapEnvPaths(repoRoot, environment, deploymentProfile)) {
-    let record: { token?: string; metadata: BootstrapAccessTokenMetadata };
-    try {
-      record = readRegisteredRecord(await readFile(envPath, "utf8"));
-    } catch {
-      continue;
-    }
-    const token = record.token;
-    if (!token) continue;
-    if (
-      envPath.endsWith(REGISTERED_BOOTSTRAP_ENV_FILE)
-      && lifecycle !== "development"
-      && parseBootstrapAccessToken(token) === undefined
-    ) {
-      continue;
-    }
-    if (
-      isBootstrapAccessTokenReusable(token, {
-        ...options,
-        environment: lifecycle,
-        tokenMetadata: record.metadata,
-      })
-    ) {
-      return token;
-    }
-  }
-  return undefined;
+  return readRepoBootstrapAccessToken(repoRoot, lifecycle, {
+    ...options,
+    environment: lifecycle,
+  });
 }
 
 /**
  * Write the registration output for one repository/environment scope.
  *
- * The canonical environment-scoped path is the only write target. The write is
- * atomic (same-directory temporary file plus rename) and owner-only on POSIX.
+ * The user-private bundle is the only write target: no repository file is
+ * created or updated (`IAM_APPLICATION_BOOTSTRAP_SPEC.md` section 5.4.1).
  * @param repoRoot - repository root.
- * @param contents - env-file contents.
- * @param environment - lifecycle or profile alias.
- * @param deploymentProfile - `standalone` or `cloud`.
- * @returns the written path.
+ * @param record - token plus non-secret scope metadata.
+ * @param options - lifecycle, deployment profile, and home-directory inputs.
+ * @returns the written bundle paths.
  */
-export async function writeRegisteredBootstrapEnvFiles(
+export async function writeRegisteredBootstrapCredential(
   repoRoot: string,
-  contents: string,
-  environment?: string,
-  deploymentProfile: "standalone" | "cloud" = "standalone",
+  record: { token: string; metadata?: BootstrapAccessTokenMetadata; appId?: string },
+  options: {
+    environment?: string;
+    deploymentProfile?: "standalone" | "cloud";
+    homeDir?: string;
+  } = {},
 ): Promise<string[]> {
-  const targetPath = resolveRegisteredBootstrapEnvPaths(
+  const lifecycle = normalizeBootstrapLifecycle(options.environment);
+  const deploymentProfile = options.deploymentProfile ?? "standalone";
+  const metadata = record.metadata ?? {};
+  const bundlePath = resolveRegisteredBootstrapCredentialPath(
     repoRoot,
-    environment,
+    lifecycle,
     deploymentProfile,
-  )[0];
-  const normalizedContents = contents.endsWith("\n") ? contents : `${contents}\n`;
-  await mkdir(dirname(targetPath), { recursive: true });
-  const temporaryPath = join(
-    dirname(targetPath),
-    `.${targetPath.split(/[\\/]/u).at(-1)}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`,
+    options.homeDir === undefined ? {} : { homeDir: options.homeDir },
   );
-  try {
-    await writeFile(temporaryPath, normalizedContents, { encoding: "utf8", mode: 0o600 });
-    await rename(temporaryPath, targetPath);
-  } catch (error) {
-    await rm(temporaryPath, { force: true });
-    throw error;
-  }
-  return [targetPath];
+  const backend = metadata.backend?.trim();
+  writeCredentialBundle(bundlePath, {
+    accessToken: record.token,
+    environment: lifecycle,
+    deploymentProfile,
+    ...(backend ? { backend } : {}),
+    ...(record.appId ? { appId: record.appId } : {}),
+    issuedAt: metadata.issuedAt ?? new Date().toISOString(),
+    ...(metadata.expiresAt ? { expiresAt: metadata.expiresAt } : {}),
+    source: metadata.source ?? (looksLikeLocalFixtureJwt(record.token) ? "local-fixture" : "iam-application-bootstrap"),
+  });
+  return [bundlePath];
 }
 
 export { buildBootstrapAccessTokenEnvFileContents, looksLikeLocalFixtureJwt };
+
+/**
+ * Token of one env-file body, for callers that still parse operator input.
+ * @param contents - env-file text.
+ * @returns the token, or `undefined`.
+ */
+export function parseAccessTokenFromEnvFile(contents: string): string | undefined {
+  return readBootstrapAccessTokenEnvFileContents(contents).token;
+}
 
 export function isLoopbackBackendUrl(url: string | undefined): boolean {
   const trimmed = url?.trim();

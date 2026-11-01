@@ -115,7 +115,7 @@ async function main() {
           repoRoot: options.repoRoot,
           status: result.status,
           hasToken: Boolean(result.token),
-          overlayPaths: result.overlayPaths ?? [],
+          credentialPaths: result.credentialPaths ?? [],
           reason: result.reason,
         },
         null,

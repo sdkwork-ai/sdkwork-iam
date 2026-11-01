@@ -1,4 +1,5 @@
 export * from './bootstrap-access-token-core.mjs';
+export * from './credential-bundle.mjs';
 
 import type {
   BootstrapAccessTokenMetadata,
@@ -9,6 +10,8 @@ import type {
 
 export interface BootstrappedEnvReadOptions extends InspectBootstrapAccessTokenOptions {
   deploymentProfile?: 'standalone' | 'cloud';
+  /** Home directory holding the user-private credential store. */
+  homeDir?: string;
 }
 
 export interface WriteRepoBootstrapAccessTokenOptions {
@@ -17,7 +20,7 @@ export interface WriteRepoBootstrapAccessTokenOptions {
   deploymentProfile?: 'standalone' | 'cloud';
   token: string;
   backendBaseUrl?: string;
-  manifest?: { backend?: { appId?: string } };
+  manifest?: { app?: { key?: string }; backend?: { appId?: string } };
   appId?: string;
   issuedAt?: string;
   expiresAt?: string;
@@ -34,20 +37,18 @@ export function mergeBootstrapAccessTokenEnvFromManifest(options: {
   manifestPath: string;
 } & CreateDevBootstrapAccessTokenOptions): Record<string, string | undefined>;
 export function resolveRepoApplicationManifestPath(repoRoot: string, manifestPath?: string): string;
-export function resolveRepoBootstrapAccessTokenEnvPaths(
+/**
+ * The credential bundle and the legacy unscoped file of one repository scope.
+ *
+ * The bundle is the only writable location; the legacy file is read-only and
+ * carries no lifecycle guarantee.
+ */
+export function resolveRepoBootstrapAccessTokenPaths(
   repoRoot: string,
   environment: SdkworkEnvironment | 'dev' | 'prod',
   deploymentProfile?: 'standalone' | 'cloud',
-): string[];
-/**
- * Sibling of {@link resolveRepoBootstrapAccessTokenEnvPaths} for an *application*
- * root rather than a repository root.
- */
-export function resolveAppBootstrapAccessTokenEnvPaths(
-  appRoot: string,
-  environment: SdkworkEnvironment | 'dev' | 'prod',
-  deploymentProfile?: 'standalone' | 'cloud',
-): string[];
+  options?: { manifest?: { app?: { key?: string } }; homeDir?: string },
+): { bundlePath: string; legacyPath: string };
 export function readRepoBootstrapAccessToken(
   repoRoot: string,
   environment: SdkworkEnvironment | 'dev' | 'prod',

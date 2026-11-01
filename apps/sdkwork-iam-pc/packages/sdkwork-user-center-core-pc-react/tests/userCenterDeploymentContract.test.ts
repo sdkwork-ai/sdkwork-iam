@@ -401,6 +401,7 @@ describe("user-center deployment contract", () => {
     const artifact = createUserCenterDeploymentEnvArtifactForProfile?.({
       audience: "application-runtime",
       envPrefix: "VITE_EXAMPLE_APP_",
+      // env-naming:allow — a caller-chosen name for a non-Vite desktop-local contract.
       fileName: ".env.desktop-local",
       profile: profiles.builtinLocal,
       purpose: "Example app desktop-local runtime contract",
@@ -408,6 +409,7 @@ describe("user-center deployment contract", () => {
     });
 
     expect(artifact).toMatchObject({
+      // env-naming:allow — a caller-chosen name for a non-Vite desktop-local contract.
       fileName: ".env.desktop-local",
     });
     expect(artifact?.variables.some((variable) => variable.envName === "VITE_EXAMPLE_APP_MODE")).toBe(

@@ -57,9 +57,8 @@ export {
   normalizeBootstrapLifecycle,
   parseAccessTokenFromEnvFile,
   readRegisteredBootstrapAccessToken,
-  REGISTERED_BOOTSTRAP_ENV_FILE,
-  resolveRegisteredBootstrapEnvPaths,
-  writeRegisteredBootstrapEnvFiles,
+  resolveRegisteredBootstrapCredentialPath,
+  writeRegisteredBootstrapCredential,
 } from "./registered-env.ts";
 export {
   createIamApplicationBootstrapClientFromAppbaseBackendSdk,
