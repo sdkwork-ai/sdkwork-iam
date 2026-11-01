@@ -38,13 +38,7 @@ Thumbs.db
 # IAM registry materialized lock (generated artifact with materializedAt timestamp)
 iam/registry/iam-registry.lock.json
 
-.env.local
-.env.development.local
-.env.test.local
-.env.staging.local
-.env.production.local
 config/host/postgres.env
-.env.release.local
 config/*.local.toml
 
 __pycache__/
