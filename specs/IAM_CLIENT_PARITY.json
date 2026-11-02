@@ -24,6 +24,11 @@
     "harmony": "apps/sdkwork-iam-harmony-mobile"
   },
   "defaultStatus": "scaffold",
+  "platformBlockers": {
+    "harmony": "No ArkTS/ArkUI SDK target exists for IAM and no DevEco toolchain is installed, so a capability page cannot be compiled, run or tested. The root's shell, session and routing are real; capability pages render ScreenStateView only. Unblocking requires one of: install the toolchain, or approve a hand-written ArkTS transport that can only be statically checked.",
+    "miniProgram:admin": "The mini-program runtime publishes no backend-api base URL in any profile (runtime-env.*.json carries app/open/IAM only) and the backend-admin credential model is undecided, so an admin page could not reach its resources. The app and console tiers are unaffected."
+  },
+  "blockers": "A platform-level reason for cells that cannot be implemented yet. Keys are a platform id, or \"<platform>:<tier>\" for a tier-scoped block; a per-cell blockedBy always wins over these.",
   "baseline": {
     "complete": {
       "pc": 20,

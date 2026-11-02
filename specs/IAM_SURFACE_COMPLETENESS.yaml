@@ -363,7 +363,45 @@ clientSurfaces:
       directory read.
   harmony:
     status: scaffold
-    note: Route/page map exists; capability pages do not render real data yet.
+    note: >
+      Blocked at the environment layer, not the page layer: no ArkTS/ArkUI SDK target exists
+      for IAM and no DevEco toolchain is installed, so a capability page cannot be compiled,
+      run or tested here. The root's shell, session store and routing are real; capability
+      pages render `ScreenStateView` only. Unblocking needs one of three decisions — install
+      the toolchain, approve a hand-written ArkTS transport that can only be statically
+      checked, or accept the scaffold and record the limit. Recorded once for all 26 cells in
+      `specs/IAM_CLIENT_PARITY.json` under `platformBlockers.harmony`.
+
+verification:
+  note: >
+    What the gates prove, so the next reader does not have to re-derive it. Every command
+    below was run at the state recorded here; the parity gate is also the regression gate,
+    because each platform carries a baseline of complete screens it may not drop below.
+  commands:
+    - command: node tools/check-iam-client-parity.mjs
+      result: >
+        ok — pc 20 complete, h5 21, miniProgram 11 (+10 admin blocked), flutter 20,
+        harmony 26 blocked.
+    - command: node ../sdkwork-specs/tools/check-i18n-standard.mjs --root .
+      result: passed (3345 files).
+    - command: node ../sdkwork-specs/tools/check-dependency-list-completeness.mjs --root .
+      result: passed.
+    - command: node ../sdkwork-specs/tools/check-workspace-member-protocol.mjs --root .
+      result: passed.
+    - command: node ../sdkwork-specs/tools/check-source-config-standard.mjs --root apps/sdkwork-iam-h5
+      result: passed (also passed for apps/sdkwork-iam-mini-program).
+    - command: node scripts/run-workspace-typecheck.mjs
+      result: 0 errors.
+    - command: npx vitest run apps/sdkwork-iam-h5
+      result: 25 files, 134 tests passed.
+    - command: node --test tests/*.test.mjs (in apps/sdkwork-iam-mini-program)
+      result: 21 tests passed.
+    - command: flutter test (in apps/sdkwork-iam-flutter-mobile)
+      result: 11 tests passed; package suites add 5-9 each.
+  notCovered:
+    - PC/H5 visual regression and accessibility audits.
+    - HarmonyOS: nothing is compiled or executed (see the harmony note).
+    - Mini-program admin: no page exists, so nothing is executed.
 
 priorityBacklog:
   p0: []

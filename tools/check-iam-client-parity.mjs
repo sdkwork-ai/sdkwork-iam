@@ -41,6 +41,9 @@ const MATRIX_PATH = 'specs/IAM_CLIENT_PARITY.json';
 const MODEL_PATH = 'scripts/lib/client-app-surfaces/model.mjs';
 const STATUSES = new Set(['complete', 'partial', 'scaffold', 'missing']);
 
+/** Tiers a tier-scoped platform blocker may name. */
+const TIERS = new Set(['app', 'console', 'admin']);
+
 function parseArguments(argv) {
   const options = { json: false, release: false, root: DEFAULT_ROOT, help: false };
   for (let index = 0; index < argv.length; index += 1) {
@@ -183,16 +186,26 @@ async function main(argv) {
         fail(`${id}/${platform}: unknown status "${status}"`);
         continue;
       }
-      if (blockedBy[platform] !== undefined) {
-        // A blocked cell records *why* a platform cannot implement a screen yet.
-        // It must describe a cell that is genuinely not implemented, otherwise it
-        // would be a note attached to finished work.
-        if (typeof blockedBy[platform] !== 'string' || blockedBy[platform].trim() === '') {
-          fail(`${id}/${platform}: blockedBy must be a non-empty explanation`);
-        }
-        if (status === 'complete' || status === 'partial') {
+      if (status === 'complete' || status === 'partial') {
+        // A finished cell cannot sit under a platform blocker: that would mean a screen was
+        // built on a surface the matrix says cannot reach its resources.
+        const platformWide =
+          matrix.platformBlockers?.[`${platform}:${screen.tier}`] ??
+          matrix.platformBlockers?.[platform];
+        if (blockedBy[platform] !== undefined) {
           fail(`${id}/${platform}: blockedBy is only valid on a missing/scaffold cell, found "${status}"`);
         }
+        if (typeof platformWide === 'string') {
+          fail(
+            `${id}/${platform}: status "${status}" contradicts the platform blocker for ` +
+              `${platform}:${screen.tier}`,
+          );
+        }
+      } else if (blockedBy[platform] !== undefined &&
+        (typeof blockedBy[platform] !== 'string' || blockedBy[platform].trim() === '')) {
+        // A blocked cell records *why* a platform cannot implement a screen yet, so the
+        // explanation itself has to be there.
+        fail(`${id}/${platform}: blockedBy must be a non-empty explanation`);
       }
       if (status === 'scaffold' || status === 'missing') continue;
 
@@ -232,6 +245,32 @@ async function main(argv) {
     if (!seen.has(id)) fail(`model route has no matrix row: ${id}`);
   }
 
+  // A blocker may be declared once per platform (or per platform+tier) instead of repeated on
+  // every cell: the reason is the same for all of them, and repeating it invites the copies to
+  // drift. A per-cell blockedBy always wins.
+  const platformBlockers = matrix.platformBlockers ?? {};
+  for (const [key, reason] of Object.entries(platformBlockers)) {
+    if (typeof reason !== 'string' || reason.trim() === '') {
+      fail(`platformBlockers["${key}"]: a blocker must explain why the cells cannot be built`);
+      continue;
+    }
+    const [blockedPlatform, blockedTier] = key.split(':');
+    if (!platforms.includes(blockedPlatform)) {
+      fail(`platformBlockers["${key}"]: "${blockedPlatform}" is not a platform of this matrix`);
+      continue;
+    }
+    if (blockedTier !== undefined && !TIERS.has(blockedTier)) {
+      fail(`platformBlockers["${key}"]: "${blockedTier}" is not a tier of this matrix`);
+    }
+  }
+
+  /** The reason a cell is blocked, or undefined when it is not. */
+  function blockerFor(screen, platform) {
+    const cell = screen.blockedBy?.[platform];
+    if (typeof cell === 'string') return cell;
+    return platformBlockers[`${platform}:${screen.tier}`] ?? platformBlockers[platform];
+  }
+
   // Counts per platform, and the regression comparison.
   const counts = Object.fromEntries(
     platforms.map((platform) => [platform, { blocked: 0, complete: 0, missing: 0, partial: 0, scaffold: 0 }]),
@@ -241,7 +280,7 @@ async function main(argv) {
     for (const platform of platforms) {
       const status = screen.status?.[platform] ?? matrix.defaultStatus;
       if (counts[platform] && STATUSES.has(status)) counts[platform][status] += 1;
-      if (counts[platform] && screen.blockedBy?.[platform]) counts[platform].blocked += 1;
+      if (counts[platform] && blockerFor(screen, platform) !== undefined) counts[platform].blocked += 1;
     }
   }
 
