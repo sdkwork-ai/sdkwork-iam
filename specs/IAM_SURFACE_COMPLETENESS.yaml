@@ -204,16 +204,20 @@ clientSurfaces:
         is a backend-api resource, which a mobile app surface may not consume.
         Recorded in specs/IAM_CLIENT_PARITY.json as `blockedBy`.
   miniProgram:
-    status: scaffold
+    status: partial
     note: >
-      The root declares 26 pages in `src/app.json` (5 main + 21 subpackage) and
-      ships **no page files at all**, so the project cannot compile in WeChat
-      DevTools as it stands. Its `_sdkwork:build` script also points at
-      `build-browser-client.mjs`, which builds a browser bundle rather than a
-      mini-program package. Both findings are recorded here rather than papered
-      over: the sequence is (1) a TS-to-miniprogram build target, (2) real pages
-      for the declared routes, (3) trimming `app.json` to the pages that exist so
-      the manifest never claims a page the build cannot produce.
+      Build chain repaired: `scripts/build-runtime.mjs` bundles
+      `src/bootstrap/runtimeBundle.ts` with esbuild into a self-contained
+      `src/runtime/iam-app.js` and derives `src/app.json` from the route registry
+      intersected with `IAM_MP_IMPLEMENTED_ROUTE_IDS`, failing the build when a
+      projected page has no files. The manifest previously declared 26 pages and
+      shipped none; it now declares exactly the pages that exist.
+      Shipped pages: login (password sign-in), register, forgot-password (all three
+      through the runtime's auth port), and the `app-tenant` subpackage tenant
+      overview (session context, organizations, memberships). 21 node tests cover
+      the registry, the manifest/files invariant and the runtime message port.
+      Remaining: 22 declared routes still need pages — oauth-callback and
+      context-selection in the main package first, then the capability subpackages.
   flutter:
     status: scaffold
     note: Every capability package ships a generated single-screen list stub; no production screen.

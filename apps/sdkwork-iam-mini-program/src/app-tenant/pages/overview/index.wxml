@@ -1,0 +1,44 @@
+<view class="page">
+  <view class="brand">
+    <text class="brand-title">{{title}}</text>
+  </view>
+
+  <text wx:if="{{loading}}" class="section-title">加载中…</text>
+  <text wx:if="{{errorText}}" class="error">{{errorText}}</text>
+
+  <view wx:if="{{!loading}}" class="card">
+    <text class="section-title">{{sectionSession}}</text>
+    <view class="row">
+      <text class="row-detail">租户</text>
+      <text class="row-title">{{tenantId || '—'}}</text>
+    </view>
+    <view class="row">
+      <text class="row-detail">用户</text>
+      <text class="row-title">{{userId || '—'}}</text>
+    </view>
+    <view class="row">
+      <text class="row-detail">环境</text>
+      <text class="row-title">{{environment || '—'}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{!loading}}" class="card">
+    <text class="section-title">{{sectionOrganizations}}</text>
+    <view wx:for="{{organizations}}" wx:key="id" class="row">
+      <text class="row-title">{{item.title}}</text>
+      <text class="row-detail">{{item.detail}}</text>
+    </view>
+    <text wx:if="{{organizations.length === 0}}" class="row-detail">暂无数据</text>
+  </view>
+
+  <view wx:if="{{!loading}}" class="card">
+    <text class="section-title">{{sectionMemberships}}</text>
+    <view wx:for="{{memberships}}" wx:key="id" class="row">
+      <text class="row-title">{{item.title}}</text>
+      <text class="row-detail">{{item.detail}}</text>
+    </view>
+    <text wx:if="{{memberships.length === 0}}" class="row-detail">暂无数据</text>
+  </view>
+
+  <button class="primary" bindtap="onSignOut">{{signOutText}}</button>
+</view>

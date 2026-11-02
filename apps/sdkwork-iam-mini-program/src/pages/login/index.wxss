@@ -1,0 +1,3 @@
+@import "../../styles/form.wxss";
+
+/* Page-specific: the brand block stands alone above the card. */

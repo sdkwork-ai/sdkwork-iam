@@ -28,7 +28,7 @@
     "complete": {
       "pc": 20,
       "h5": 10,
-      "miniProgram": 0,
+      "miniProgram": 4,
       "flutter": 0,
       "harmony": 0
     }
@@ -39,14 +39,16 @@
       "tier": "app",
       "capability": "auth",
       "api": "app-api",
-      "status": { "pc": "complete", "h5": "complete" },
+      "status": { "pc": "complete", "h5": "complete", "miniProgram": "complete" },
       "evidence": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react/src/pages/AuthPage.tsx",
-        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-auth/src/pages/AuthLoginScreen.tsx"
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-auth/src/pages/AuthLoginScreen.tsx",
+        "miniProgram": "apps/sdkwork-iam-mini-program/src/pages/login/index.js"
       },
       "tests": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react/tests/",
-        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-auth/tests/"
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-auth/tests/",
+        "miniProgram": "apps/sdkwork-iam-mini-program/tests/"
       }
     },
     {
@@ -54,14 +56,16 @@
       "tier": "app",
       "capability": "auth",
       "api": "app-api",
-      "status": { "pc": "complete", "h5": "complete" },
+      "status": { "pc": "complete", "h5": "complete", "miniProgram": "complete" },
       "evidence": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react/src/components/auth/RegisterFlow.tsx",
-        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-auth/src/pages/AuthLoginScreen.tsx"
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-auth/src/pages/AuthLoginScreen.tsx",
+        "miniProgram": "apps/sdkwork-iam-mini-program/src/pages/register/index.js"
       },
       "tests": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react/tests/",
-        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-auth/tests/"
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-auth/tests/",
+        "miniProgram": "apps/sdkwork-iam-mini-program/tests/"
       },
       "notes": "H5 mounts the shared sign-in screen at /auth/register with initialMode=\"register\"; the route is addressable and the mode switcher continues from there."
     },
@@ -70,14 +74,16 @@
       "tier": "app",
       "capability": "auth",
       "api": "app-api",
-      "status": { "pc": "complete", "h5": "complete" },
+      "status": { "pc": "complete", "h5": "complete", "miniProgram": "complete" },
       "evidence": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react/src/components/auth/ForgotPasswordFlow.tsx",
-        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-auth/src/pages/AuthLoginScreen.tsx"
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-auth/src/pages/AuthLoginScreen.tsx",
+        "miniProgram": "apps/sdkwork-iam-mini-program/src/pages/forgot-password/index.js"
       },
       "tests": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react/tests/",
-        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-auth/tests/"
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-auth/tests/",
+        "miniProgram": "apps/sdkwork-iam-mini-program/tests/"
       },
       "notes": "H5 mounts the shared sign-in screen at /auth/forgot-password with initialMode=\"forgot\"."
     },
@@ -170,14 +176,16 @@
       "tier": "app",
       "capability": "tenant",
       "api": "app-api",
-      "status": { "pc": "partial", "h5": "complete" },
+      "status": { "pc": "partial", "h5": "complete", "miniProgram": "complete" },
       "evidence": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-tenant/src/pages/TenantConsoleWorkspace.tsx",
-        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-tenant/src/pages/TenantOverviewScreen.tsx"
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-tenant/src/pages/TenantOverviewScreen.tsx",
+        "miniProgram": "apps/sdkwork-iam-mini-program/src/app-tenant/pages/overview/index.js"
       },
       "tests": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-tenant/tests/",
-        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-tenant/tests/tenant-h5.test.tsx"
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-tenant/tests/tenant-h5.test.tsx",
+        "miniProgram": "apps/sdkwork-iam-mini-program/tests/"
       }
     },
     {

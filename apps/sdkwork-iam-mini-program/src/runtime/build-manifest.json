@@ -1,0 +1,13 @@
+{
+  "appJson": {
+    "pages": 3,
+    "subPackages": 1
+  },
+  "appKey": "sdkwork-iam-mini-program",
+  "bundle": "src/runtime/iam-app.js",
+  "deploymentProfile": "standalone",
+  "environment": "development",
+  "platform": "MP_WEIXIN",
+  "profileId": "standalone.development",
+  "runtimeTarget": "mini-program"
+}

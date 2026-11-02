@@ -1,0 +1,137 @@
+/**
+ * Shared auth form styles.
+ *
+ * Imported by every auth page (`@import "../../styles/form.wxss";`) instead of
+ * being copied per page: three near-identical copies of a form is how a mini
+ * program ends up with three different input heights.
+ */
+
+.page {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  min-height: 100vh;
+  padding: 48rpx 32rpx;
+}
+
+.brand {
+  padding: 48rpx 8rpx 8rpx;
+}
+
+.brand-title {
+  color: #16191c;
+  font-size: 44rpx;
+  font-weight: 600;
+}
+
+.card {
+  background: #ffffff;
+  border: 1rpx solid #e3e6e8;
+  border-radius: 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  padding: 28rpx;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.label {
+  color: #5c6670;
+  font-size: 24rpx;
+}
+
+.input {
+  border: 1rpx solid #e3e6e8;
+  border-radius: 16rpx;
+  font-size: 30rpx;
+  min-height: 88rpx;
+  padding: 0 20rpx;
+}
+
+.code-row {
+  align-items: center;
+  display: flex;
+  gap: 16rpx;
+}
+
+.code-input {
+  flex: 1;
+}
+
+.code-button {
+  background: #f0f2f4;
+  border-radius: 16rpx;
+  color: #16191c;
+  font-size: 24rpx;
+  margin: 0;
+  padding: 0 20rpx;
+}
+
+.error {
+  color: #c02626;
+  font-size: 24rpx;
+}
+
+.notice {
+  color: #177245;
+  font-size: 24rpx;
+}
+
+.primary {
+  background: #1f6feb;
+  border-radius: 16rpx;
+  color: #ffffff;
+  font-size: 30rpx;
+  margin-top: 8rpx;
+}
+
+.primary[disabled] {
+  opacity: 0.5;
+}
+
+.links {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 8rpx;
+}
+
+.link {
+  color: #1f6feb;
+  font-size: 26rpx;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.row {
+  border-bottom: 1rpx solid #e3e6e8;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  padding: 16rpx 0;
+}
+
+.row-title {
+  color: #16191c;
+  font-size: 30rpx;
+}
+
+.row-detail {
+  color: #5c6670;
+  font-size: 24rpx;
+}
+
+.section-title {
+  color: #5c6670;
+  font-size: 26rpx;
+  font-weight: 600;
+}
