@@ -73,7 +73,7 @@ impl ApiKeyLookupService for IamApiKeyLookupService {
 
         let row = sqlx::query(
             "SELECT a.id, a.tenant_id, a.organization_id, a.user_id, a.app_id, a.environment, a.deployment_mode, \
-             a.permission_scope_json, a.status, a.expires_at \
+             a.permission_scope_json, a.status, a.expires_at, a.last_used_at \
              FROM iam_api_key a \
              JOIN iam_user u ON u.id = a.user_id AND u.tenant_id = a.tenant_id \
              LEFT JOIN iam_organization o ON o.tenant_id = a.tenant_id AND o.id = a.organization_id \
@@ -122,6 +122,23 @@ impl ApiKeyLookupService for IamApiKeyLookupService {
 
         let organization_id = normalize_organization_id(&organization_id);
         let permission_scope = parse_string_vec_json(&permission_scope_json);
+
+        let last_used_at: Option<String> = row.try_get(9).ok().flatten();
+        let last_used_is_stale = last_used_at
+            .as_deref()
+            .and_then(|value| chrono::DateTime::parse_from_rfc3339(value).ok())
+            .map(|last_used| {
+                now.signed_duration_since(last_used.with_timezone(&chrono::Utc))
+                    > chrono::Duration::minutes(5)
+            })
+            .unwrap_or(true);
+        if last_used_is_stale {
+            let _ = sqlx::query("UPDATE iam_api_key SET last_used_at = $2::timestamptz WHERE id = $1")
+                .bind(&api_key_id)
+                .bind(now.to_rfc3339())
+                .execute(self.pool.as_ref())
+                .await;
+        }
 
         Ok(ApiKeyPrincipalRecord {
             api_key_id,
