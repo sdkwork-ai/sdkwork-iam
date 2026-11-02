@@ -17,6 +17,10 @@ import {
   type IamH5SessionSnapshot,
   type IamH5SessionStore,
 } from "@sdkwork/iam-h5-core";
+import {
+  createIamH5AdminBackendAdminSdkClient,
+  createIamH5AdminService,
+} from "@sdkwork/iam-h5-admin-core";
 
 /**
  * Compose the runtime service for this page load.
@@ -24,6 +28,7 @@ import {
  * @returns the runtime triple plus a detach function for the subscription.
  */
 export function createIamH5BootstrapRuntime(sessionStore: IamH5SessionStore): {
+  adminService: ReturnType<typeof createIamH5AdminService>;
   detach: () => void;
   runtime: IamH5RuntimeService;
 } {
@@ -50,7 +55,21 @@ export function createIamH5BootstrapRuntime(sessionStore: IamH5SessionStore): {
   applySession(sessionStore.get());
   const unsubscribe = sessionStore.subscribe(applySession);
 
+  // The admin surface reads backend-api resources through the same IAM service, with
+  // the generated backend client attached. The credential is read at request time from
+  // the one session store, so the admin console cannot drift onto a different identity
+  // than the app tab it sits beside; the backend enforces the admin permission itself.
+  const backendClient = createIamH5AdminBackendAdminSdkClient({
+    baseUrl: env.backendApiBaseUrl || baseUrl,
+    getAccessToken: () => sessionStore.get()?.accessToken,
+  });
+  const adminService = createIamH5AdminService({
+    appbaseAppClient: runtime.client,
+    backendClient,
+  });
+
   return {
+    adminService,
     detach: unsubscribe,
     runtime,
   };

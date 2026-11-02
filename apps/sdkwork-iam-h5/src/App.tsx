@@ -29,6 +29,11 @@ import {
 } from "@sdkwork/iam-h5-auth";
 import { SdkworkIamH5EmptyState, SdkworkIamH5I18nProvider, SdkworkIamH5Screen } from "@sdkwork/iam-h5-commons";
 import {
+  createSdkworkIamH5AdminPermissionController,
+  IAM_H5_ADMIN_PERMISSION_I18N_CATALOG,
+  SdkworkIamH5AdminPermissionScreen,
+} from "@sdkwork/iam-h5-admin-permission";
+import {
   createSdkworkIamH5ConsoleAccountBindingController,
   IAM_H5_CONSOLE_ACCOUNT_BINDING_I18N_CATALOG,
   SdkworkIamH5ConsoleAccountBindingScreen,
@@ -122,6 +127,8 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     IAM_H5_CONSOLE_ACCOUNT_BINDING_I18N_CATALOG.resolveMessages(resolvedLocale);
   const consoleUserCenterMessages =
     IAM_H5_CONSOLE_USER_CENTER_I18N_CATALOG.resolveMessages(resolvedLocale);
+  const adminPermissionMessages =
+    IAM_H5_ADMIN_PERMISSION_I18N_CATALOG.resolveMessages(resolvedLocale);
 
   const authController = useMemo(
     () => createSdkworkIamH5AuthController(bootstrap.runtime.service),
@@ -163,6 +170,10 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     () => createSdkworkIamH5ConsoleUserCenterController(bootstrap.runtime.service),
     [bootstrap],
   );
+  const adminPermissionController = useMemo(
+    () => createSdkworkIamH5AdminPermissionController(bootstrap.adminService),
+    [bootstrap],
+  );
 
   const handleAuthenticated = useCallback(() => {
     // The service's commit bridge already wrote the session into the store; this
@@ -188,6 +199,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     const consoleOrganizationRoute = byId("console.iam.organization.directory");
     const consoleAccountBindingRoute = byId("console.iam.account-binding.list");
     const consoleUserCenterRoute = byId("console.iam.user-center.profile");
+    const adminPermissionRoute = byId("admin.iam.permission.permissions");
     const routes: SdkworkIamH5ShellRoute[] = [];
 
     if (loginRoute) {
@@ -381,6 +393,15 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
         title: consoleUserCenterMessages.profile.title,
       });
     }
+    if (adminPermissionRoute) {
+      routes.push({
+        access: "protected",
+        element: <SdkworkIamH5AdminPermissionScreen controller={adminPermissionController} />,
+        id: adminPermissionRoute.id,
+        path: adminPermissionRoute.path,
+        title: adminPermissionMessages.permissions.title,
+      });
+    }
     return routes;
   }, [
     accountBindingController,
@@ -396,6 +417,8 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     consoleAccountBindingMessages.list.title,
     consoleUserCenterController,
     consoleUserCenterMessages.profile.title,
+    adminPermissionController,
+    adminPermissionMessages.permissions.title,
     handleAuthenticated,
     navigate,
     oauthMessages.providers.title,

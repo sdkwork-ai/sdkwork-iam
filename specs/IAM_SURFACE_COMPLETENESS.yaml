@@ -200,7 +200,27 @@ clientSurfaces:
         after a sign-in call; it is a step in the login flow rather than a URL a
         user can land on. PC records the same shape as `partial`.
     scaffoldScreens:
-      - admin.iam.* (10)
+      - admin.iam.oauth.providers
+      - admin.iam.tenant.list
+      - admin.iam.organization.tree
+      - admin.iam.permission.roles
+      - admin.iam.permission.policies
+      - admin.iam.permission.authorizations
+      - admin.iam.account-binding.list
+      - admin.iam.user.list
+      - admin.iam.audit.events
+    adminNote: >
+      The admin tier has started. `h5-admin-core` now builds a real generated
+      backend-client boundary (`createIamH5AdminBackendAdminSdkClient`) instead of the
+      marker object that carried only a base URL, and `createIamH5AdminService`
+      aggregates it with the app client through the shared IAM service — which is why
+      backend-admin resources such as `iam.permissions` are readable at all.
+      `admin.iam.permission.permissions` is the first real admin screen: the tenant's
+      permission catalog, server-searched and server-paged, dropping records without an
+      identity. The remaining nine admin screens reuse the same controller shape.
+      The admin credential is the one session token read at request time; the backend
+      enforces the admin permission itself, and a separate backend-admin credential
+      issuance flow is still an open governance item.
     consoleNote: >
       The console tier is complete: the tenant workspace (identity, self-service policy,
       organizations), the tenant-wide organization list (server searched and paged,

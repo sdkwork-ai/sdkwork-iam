@@ -27,7 +27,7 @@
   "baseline": {
     "complete": {
       "pc": 20,
-      "h5": 14,
+      "h5": 15,
       "miniProgram": 8,
       "flutter": 8,
       "harmony": 0
@@ -361,12 +361,14 @@
       "tier": "admin",
       "capability": "permission",
       "api": "backend-api",
-      "status": { "pc": "complete" },
+      "status": { "pc": "complete", "h5": "complete" },
       "evidence": {
-        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-admin-permission/src/pages/PermissionAdminWorkspace.tsx"
+        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-admin-permission/src/pages/PermissionAdminWorkspace.tsx",
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-admin-permission/src/pages/PermissionAdminScreen.tsx"
       },
       "tests": {
-        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-admin-permission/tests/"
+        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-admin-permission/tests/",
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-admin-permission/tests/"
       }
     },
     {
