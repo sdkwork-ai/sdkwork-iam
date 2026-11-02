@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
+import 'package:sdkwork_iam_flutter_mobile_admin_audit/sdkwork_iam_flutter_mobile_admin_audit.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_permission/sdkwork_iam_flutter_mobile_admin_permission.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
 import 'package:sdkwork_iam_flutter_mobile_console_organization/sdkwork_iam_flutter_mobile_console_organization.dart';
@@ -208,6 +209,29 @@ const Map<String, String> _oauthMessages = <String, String>{
   'title': 'Third-party sign-in',
 };
 
+const Map<String, String> _adminAuditMessages = <String, String>{
+  'empty': 'No audit event was recorded yet.',
+  'emptySearch': 'Nothing matched that search.',
+  'loadError': 'Unable to load this view.',
+  'loadMore': 'Load more',
+  'retry': 'Retry',
+  'searchAction': 'Search',
+  'searchPlaceholder': 'Search by actor or action',
+  'subtitle': 'What happened in this tenant.',
+  'title': 'Audit events',
+};
+
+class _FakeAdminAuditDataSource implements IamFlutterMobileAdminAuditDataSource {
+  @override
+  Future<IamFlutterMobileAdminAuditPage> fetchPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  }) async {
+    return const IamFlutterMobileAdminAuditPage();
+  }
+}
+
 const Map<String, String> _adminPermissionMessages = <String, String>{
   'empty': 'This tenant has no permission yet.',
   'emptySearch': 'Nothing matched that search.',
@@ -391,6 +415,8 @@ Widget _shell(_FakeAuthDataSource source, {List<String>? openedUrls}) {
   return IamHomeShell(
     accountBindingDataSource: _FakeAccountBindingDataSource(),
     accountBindingMessages: _accountBindingMessages,
+    adminAuditDataSource: _FakeAdminAuditDataSource(),
+    adminAuditMessages: _adminAuditMessages,
     adminPermissionDataSource: _FakeAdminPermissionDataSource(),
     adminPermissionMessages: _adminPermissionMessages,
     authController: _auth(source),
@@ -474,6 +500,7 @@ void main() {
     expect(app.routes!.containsKey('/console/iam/user'), isTrue);
     expect(app.routes!.containsKey('/console/iam/account-binding'), isTrue);
     expect(app.routes!.containsKey('/admin/iam/permissions'), isTrue);
+    expect(app.routes!.containsKey('/admin/iam/audit'), isTrue);
 
     // The ids the shell registers must be the ones the capability packages
     // contribute; a mismatch would break deep links while the UI still looked

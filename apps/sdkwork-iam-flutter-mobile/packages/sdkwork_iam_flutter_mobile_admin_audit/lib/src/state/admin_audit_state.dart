@@ -1,38 +1,94 @@
-// SDKWORK-CLIENT-APP-SURFACES-GENERATED: do not edit by hand; regenerate with `node scripts/materialize-client-app-surfaces.mjs`.
+// SDKWORK-IAM-FLUTTER-ADMIN-AUDIT: authored state.
 /**
  * Immutable presentation state of `sdkwork_iam_flutter_mobile_admin_audit`.
  *
- * Section 3 asks each root to pick one primary presentation-state pattern; this
- * root uses controllers, so state objects stay immutable and controllers emit them.
+ * Section 3 asks each root to pick one primary presentation-state pattern; this root uses
+ * controllers, so state objects stay immutable and controllers emit them.
  */
+
+import '../services/admin_audit_service.dart';
+
+/// Lifecycle of the audit trail.
+enum IamFlutterMobileAdminAuditStatus {
+  /// Nothing requested yet.
+  idle,
+
+  /// The first page is in flight.
+  loading,
+
+  /// Rows are available.
+  ready,
+
+  /// The first page failed; [IamFlutterMobileAdminAuditState.errorMessage] says why.
+  error,
+}
 
 /// State of the `admin_audit` capability.
 class IamFlutterMobileAdminAuditState {
   const IamFlutterMobileAdminAuditState({
-    this.loading = false,
-    this.errorKey,
-    this.items = const <String>[],
+    this.status = IamFlutterMobileAdminAuditStatus.idle,
+    this.items = const <IamFlutterMobileAdminAuditEvent>[],
+    this.hasMore = false,
+    this.loadingMore = false,
+    this.errorMessage,
+    this.search = '',
   });
 
-  /// True while a request is in flight.
-  final bool loading;
+  /// Current lifecycle stage.
+  final IamFlutterMobileAdminAuditStatus status;
 
-  /// Locale key of the last user-safe failure, or null.
-  final String? errorKey;
+  /// Rows loaded so far.
+  final List<IamFlutterMobileAdminAuditEvent> items;
 
-  /// Identifiers of the records currently displayed.
-  final List<String> items;
+  /// Whether the server reported another page.
+  final bool hasMore;
 
-  /// Returns a copy with the named fields replaced.
+  /// True while a follow-up page is in flight.
+  final bool loadingMore;
+
+  /// User-safe failure text.
+  final String? errorMessage;
+
+  /// Current server-side search term.
+  final String search;
+
+  /// A copy that keeps every field.
   IamFlutterMobileAdminAuditState copyWith({
-    bool? loading,
-    String? errorKey,
-    List<String>? items,
+    IamFlutterMobileAdminAuditStatus? status,
+    List<IamFlutterMobileAdminAuditEvent>? items,
+    bool? hasMore,
+    bool? loadingMore,
+    String? errorMessage,
+    String? search,
   }) {
     return IamFlutterMobileAdminAuditState(
-      loading: loading ?? this.loading,
-      errorKey: errorKey ?? this.errorKey,
+      status: status ?? this.status,
       items: items ?? this.items,
+      hasMore: hasMore ?? this.hasMore,
+      loadingMore: loadingMore ?? this.loadingMore,
+      errorMessage: errorMessage ?? this.errorMessage,
+      search: search ?? this.search,
+    );
+  }
+
+  /// A copy for a fresh first-page load with the given term.
+  IamFlutterMobileAdminAuditState reloading(String term) {
+    return IamFlutterMobileAdminAuditState(
+      search: term,
+      status: IamFlutterMobileAdminAuditStatus.loading,
+    );
+  }
+
+  /// A copy that records a failure, keeping the rows already loaded.
+  IamFlutterMobileAdminAuditState failed(String message) {
+    return IamFlutterMobileAdminAuditState(
+      errorMessage: message,
+      hasMore: hasMore,
+      items: items,
+      search: search,
+      status: items.isEmpty
+          ? IamFlutterMobileAdminAuditStatus.error
+          : IamFlutterMobileAdminAuditStatus.ready,
     );
   }
 }

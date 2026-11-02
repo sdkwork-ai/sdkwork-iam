@@ -13,6 +13,7 @@ import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/material.dart';
 import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
+import 'package:sdkwork_iam_flutter_mobile_admin_audit/sdkwork_iam_flutter_mobile_admin_audit.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_permission/sdkwork_iam_flutter_mobile_admin_permission.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
 import 'package:sdkwork_iam_flutter_mobile_commons/sdkwork_iam_flutter_mobile_commons.dart';
@@ -27,6 +28,7 @@ import 'package:sdkwork_iam_flutter_mobile_tenant/sdkwork_iam_flutter_mobile_ten
 import 'package:sdkwork_iam_flutter_mobile_user_center/sdkwork_iam_flutter_mobile_user_center.dart';
 
 import 'account_binding_data_source.dart';
+import 'admin_audit_data_source.dart';
 import 'admin_permission_data_source.dart';
 import 'auth_data_source.dart';
 import 'console_account_binding_data_source.dart';
@@ -43,6 +45,8 @@ import '../bootstrap/url_opener.dart';
 class IamHomeShell extends StatefulWidget {
   const IamHomeShell({
     super.key,
+    this.adminAuditDataSource,
+    this.adminAuditMessages,
     this.adminPermissionDataSource,
     this.adminPermissionMessages,
     this.accountBindingDataSource,
@@ -74,6 +78,12 @@ class IamHomeShell extends StatefulWidget {
 
   /// Overrides the user-center copy.
   final Map<String, String>? userCenterMessages;
+
+  /// Overrides the backend-api admin audit data source.
+  final IamFlutterMobileAdminAuditDataSource? adminAuditDataSource;
+
+  /// Overrides the admin audit copy.
+  final Map<String, String>? adminAuditMessages;
 
   /// Overrides the backend-api admin permission data source.
   final IamFlutterMobileAdminPermissionDataSource? adminPermissionDataSource;
@@ -278,6 +288,16 @@ class _IamHomeShellState extends State<IamHomeShell> {
             messages: copy.consoleOrganization,
           ),
         );
+        final Widget adminAuditScreen = Builder(
+          builder: (BuildContext _) => IamFlutterMobileAdminAuditScreen(
+            controller: IamFlutterMobileAdminAuditController(
+              service: IamFlutterMobileAdminAuditService(
+                dataSource: widget.adminAuditDataSource ?? IamAdminAuditBackendSdkDataSource(),
+              ),
+            ),
+            messages: copy.adminAudit,
+          ),
+        );
         final Widget adminPermissionScreen = Builder(
           builder: (BuildContext _) => IamFlutterMobileAdminPermissionScreen(
             controller: IamFlutterMobileAdminPermissionController(
@@ -395,6 +415,11 @@ class _IamHomeShellState extends State<IamHomeShell> {
               path: '/admin/iam/permissions',
               routeId: IamFlutterMobileAdminPermissionRoutes.permissionsRouteId,
             ),
+            SdkworkRouteEntry(
+              builder: (_) => adminAuditScreen,
+              path: '/admin/iam/audit',
+              routeId: IamFlutterMobileAdminAuditRoutes.eventsRouteId,
+            ),
           ],
           title: copy.tenant['title'] ?? 'SDKWork IAM',
         );
@@ -456,10 +481,13 @@ class _IamHomeShellState extends State<IamHomeShell> {
           'console_organization',
           locale,
         );
+    final Map<String, String> adminAudit = widget.adminAuditMessages ??
+        await _loadFragment('sdkwork_iam_flutter_mobile_admin_audit', 'admin_audit', locale);
     final Map<String, String> adminPermission = widget.adminPermissionMessages ??
         await _loadFragment('sdkwork_iam_flutter_mobile_admin_permission', 'admin_permission', locale);
     return _IamShellCopy(
       accountBinding: accountBinding,
+      adminAudit: adminAudit,
       adminPermission: adminPermission,
       auth: auth,
       consoleAccountBinding: consoleAccountBinding,
@@ -510,6 +538,7 @@ class _IamHomeShellState extends State<IamHomeShell> {
 class _IamShellCopy {
   const _IamShellCopy({
     required this.accountBinding,
+    required this.adminAudit,
     required this.adminPermission,
     required this.auth,
     required this.consoleAccountBinding,
@@ -523,6 +552,7 @@ class _IamShellCopy {
   });
 
   final Map<String, String> accountBinding;
+  final Map<String, String> adminAudit;
   final Map<String, String> adminPermission;
   final Map<String, String> auth;
   final Map<String, String> consoleAccountBinding;

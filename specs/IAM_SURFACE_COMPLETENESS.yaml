@@ -313,8 +313,10 @@ clientSurfaces:
       (reusing `deepLinks` would have been wrong: that capability is for receiving links).
       The admin tier has started on Flutter too: the root already builds a generated
       `SdkworkBackendClient` per tier, so `admin.iam.permission.permissions` reads the
-      backend-api permission catalog through a port and never sees a transport. The
-      remaining nine admin screens reuse that shape.
+      backend-api permission catalog through a port and never sees a transport, and
+      `admin.iam.audit.events` reads the audit trail — the only screen that answers "who
+      changed this, and when", leading each row with the action and actor a ticket names.
+      The remaining eight admin screens reuse that shape.
   harmony:
     status: scaffold
     note: Route/page map exists; capability pages do not render real data yet.
