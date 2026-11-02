@@ -27,7 +27,7 @@
   "baseline": {
     "complete": {
       "pc": 20,
-      "h5": 12,
+      "h5": 13,
       "miniProgram": 8,
       "flutter": 8,
       "harmony": 0
@@ -279,12 +279,14 @@
       "tier": "console",
       "capability": "account-binding",
       "api": "app-api",
-      "status": { "pc": "complete" },
+      "status": { "pc": "complete", "h5": "complete" },
       "evidence": {
-        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-account-binding/src/pages/AccountBindingConsoleWorkspace.tsx"
+        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-account-binding/src/pages/AccountBindingConsoleWorkspace.tsx",
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-account-binding/src/pages/ConsoleAccountBindingScreen.tsx"
       },
       "tests": {
-        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-account-binding/tests/"
+        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-account-binding/tests/",
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-account-binding/tests/"
       }
     },
     {

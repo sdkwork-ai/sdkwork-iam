@@ -29,6 +29,11 @@ import {
 } from "@sdkwork/iam-h5-auth";
 import { SdkworkIamH5EmptyState, SdkworkIamH5I18nProvider, SdkworkIamH5Screen } from "@sdkwork/iam-h5-commons";
 import {
+  createSdkworkIamH5ConsoleAccountBindingController,
+  IAM_H5_CONSOLE_ACCOUNT_BINDING_I18N_CATALOG,
+  SdkworkIamH5ConsoleAccountBindingScreen,
+} from "@sdkwork/iam-h5-console-account-binding";
+import {
   createSdkworkIamH5ConsoleOrganizationController,
   IAM_H5_CONSOLE_ORGANIZATION_I18N_CATALOG,
   SdkworkIamH5ConsoleOrganizationDirectoryScreen,
@@ -108,6 +113,8 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
   const consoleTenantMessages = IAM_H5_CONSOLE_TENANT_I18N_CATALOG.resolveMessages(resolvedLocale);
   const consoleOrganizationMessages =
     IAM_H5_CONSOLE_ORGANIZATION_I18N_CATALOG.resolveMessages(resolvedLocale);
+  const consoleAccountBindingMessages =
+    IAM_H5_CONSOLE_ACCOUNT_BINDING_I18N_CATALOG.resolveMessages(resolvedLocale);
 
   const authController = useMemo(
     () => createSdkworkIamH5AuthController(bootstrap.runtime.service),
@@ -141,6 +148,10 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     () => createSdkworkIamH5ConsoleOrganizationController(bootstrap.runtime.service),
     [bootstrap],
   );
+  const consoleAccountBindingController = useMemo(
+    () => createSdkworkIamH5ConsoleAccountBindingController(bootstrap.runtime.service),
+    [bootstrap],
+  );
 
   const handleAuthenticated = useCallback(() => {
     // The service's commit bridge already wrote the session into the store; this
@@ -164,6 +175,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     const oauthProviderRoute = byId("app.iam.oauth.providers");
     const consoleTenantRoute = byId("console.iam.tenant.overview");
     const consoleOrganizationRoute = byId("console.iam.organization.directory");
+    const consoleAccountBindingRoute = byId("console.iam.account-binding.list");
     const routes: SdkworkIamH5ShellRoute[] = [];
 
     if (loginRoute) {
@@ -337,6 +349,17 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
         title: consoleOrganizationMessages.directory.title,
       });
     }
+    if (consoleAccountBindingRoute) {
+      routes.push({
+        access: "protected",
+        element: (
+          <SdkworkIamH5ConsoleAccountBindingScreen controller={consoleAccountBindingController} />
+        ),
+        id: consoleAccountBindingRoute.id,
+        path: consoleAccountBindingRoute.path,
+        title: consoleAccountBindingMessages.list.title,
+      });
+    }
     return routes;
   }, [
     accountBindingController,
@@ -348,6 +371,8 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     consoleTenantMessages.overview.title,
     consoleOrganizationController,
     consoleOrganizationMessages.directory.title,
+    consoleAccountBindingController,
+    consoleAccountBindingMessages.list.title,
     handleAuthenticated,
     navigate,
     oauthMessages.providers.title,
