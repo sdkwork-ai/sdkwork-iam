@@ -1,4 +1,4 @@
-// SDKWORK-CLIENT-APP-SURFACES-GENERATED: do not edit by hand; regenerate with `node scripts/materialize-client-app-surfaces.mjs`.
+// SDKWORK-IAM-FLUTTER-USER-CENTER: authored state.
 /**
  * Immutable presentation state of `sdkwork_iam_flutter_mobile_user_center`.
  *
@@ -6,33 +6,106 @@
  * root uses controllers, so state objects stay immutable and controllers emit them.
  */
 
+import '../services/user_center_service.dart';
+
+/// Lifecycle of the profile load.
+enum IamFlutterMobileUserCenterStatus {
+  /// Nothing requested yet.
+  idle,
+
+  /// The profile is in flight.
+  loading,
+
+  /// The profile is available.
+  ready,
+
+  /// The load failed; [IamFlutterMobileUserCenterState.errorMessage] says why.
+  error,
+}
+
 /// State of the `user_center` capability.
 class IamFlutterMobileUserCenterState {
   const IamFlutterMobileUserCenterState({
-    this.loading = false,
-    this.errorKey,
-    this.items = const <String>[],
+    this.status = IamFlutterMobileUserCenterStatus.idle,
+    this.profile,
+    this.errorMessage,
+    this.savingProfile = false,
+    this.savingPassword = false,
+    this.notice,
   });
 
-  /// True while a request is in flight.
-  final bool loading;
+  /// Current lifecycle stage.
+  final IamFlutterMobileUserCenterStatus status;
 
-  /// Locale key of the last user-safe failure, or null.
-  final String? errorKey;
+  /// Loaded profile, when [status] is ready.
+  final IamFlutterMobileUserProfile? profile;
 
-  /// Identifiers of the records currently displayed.
-  final List<String> items;
+  /// User-safe failure text.
+  final String? errorMessage;
 
-  /// Returns a copy with the named fields replaced.
+  /// True while a profile save is in flight.
+  final bool savingProfile;
+
+  /// True while a password change is in flight.
+  final bool savingPassword;
+
+  /// User-safe success text of the last completed action.
+  final String? notice;
+
+  /// A copy that keeps every field.
   IamFlutterMobileUserCenterState copyWith({
-    bool? loading,
-    String? errorKey,
-    List<String>? items,
+    IamFlutterMobileUserCenterStatus? status,
+    IamFlutterMobileUserProfile? profile,
+    String? errorMessage,
+    bool? savingProfile,
+    bool? savingPassword,
+    String? notice,
   }) {
     return IamFlutterMobileUserCenterState(
-      loading: loading ?? this.loading,
-      errorKey: errorKey ?? this.errorKey,
-      items: items ?? this.items,
+      status: status ?? this.status,
+      profile: profile ?? this.profile,
+      errorMessage: errorMessage ?? this.errorMessage,
+      savingProfile: savingProfile ?? this.savingProfile,
+      savingPassword: savingPassword ?? this.savingPassword,
+      notice: notice ?? this.notice,
+    );
+  }
+
+  /// A copy for a fresh load, clearing the error and the notice.
+  IamFlutterMobileUserCenterState asLoading() {
+    return const IamFlutterMobileUserCenterState(
+      status: IamFlutterMobileUserCenterStatus.loading,
+    );
+  }
+
+  /// A copy that records a loaded profile.
+  IamFlutterMobileUserCenterState loaded(IamFlutterMobileUserProfile value) {
+    return IamFlutterMobileUserCenterState(
+      profile: value,
+      status: IamFlutterMobileUserCenterStatus.ready,
+    );
+  }
+
+  /// A copy that records a failure, keeping the profile already shown.
+  IamFlutterMobileUserCenterState failed(String message) {
+    return copyWith(
+      errorMessage: message,
+      savingPassword: false,
+      savingProfile: false,
+      status: profile == null
+          ? IamFlutterMobileUserCenterStatus.error
+          : IamFlutterMobileUserCenterStatus.ready,
+    );
+  }
+
+  /// A copy that records a completed action.
+  IamFlutterMobileUserCenterState succeeded(String message) {
+    return copyWith(
+      errorMessage: null,
+      notice: message,
+      savingPassword: false,
+      savingProfile: false,
+      status: IamFlutterMobileUserCenterStatus.ready,
     );
   }
 }

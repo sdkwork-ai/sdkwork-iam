@@ -1,20 +1,76 @@
 {
   "@@locale": "zh",
-  "title": "SDKWork IAM Flutter Mobile User Center",
+  "title": "我的资料",
   "@title": {
-    "description": "Title of the capability screen."
+    "description": "Title of the profile screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile User Center 工作区",
+  "subtitle": "你自己的账号信息。",
   "@subtitle": {
-    "description": "Supporting line under the title."
+    "description": "Supporting line under the profile title."
+  },
+  "passwordTitle": "修改密码",
+  "@passwordTitle": {
+    "description": "Title of the password screen."
+  },
+  "passwordSubtitle": "至少 8 个字符。",
+  "@passwordSubtitle": {
+    "description": "Supporting line under the password title."
+  },
+  "displayNameLabel": "显示名称",
+  "@displayNameLabel": {
+    "description": "Label of the display name field."
+  },
+  "emailLabel": "邮箱",
+  "@emailLabel": {
+    "description": "Label of the email field."
+  },
+  "phoneLabel": "手机号",
+  "@phoneLabel": {
+    "description": "Label of the phone field."
+  },
+  "oldPasswordLabel": "当前密码",
+  "@oldPasswordLabel": {
+    "description": "Label of the current password field."
+  },
+  "newPasswordLabel": "新密码",
+  "@newPasswordLabel": {
+    "description": "Label of the new password field."
+  },
+  "confirmPasswordLabel": "再次输入新密码",
+  "@confirmPasswordLabel": {
+    "description": "Label of the confirmation field."
+  },
+  "saveAction": "保存",
+  "@saveAction": {
+    "description": "Label of the profile save action."
+  },
+  "changePasswordAction": "更新密码",
+  "@changePasswordAction": {
+    "description": "Label of the password submit action."
+  },
+  "profileSaved": "资料已保存。",
+  "@profileSaved": {
+    "description": "Shown after a successful profile save."
+  },
+  "passwordChanged": "密码已更新。",
+  "@passwordChanged": {
+    "description": "Shown after a successful password change."
+  },
+  "oldPasswordRequired": "请输入当前密码。",
+  "@oldPasswordRequired": {
+    "description": "Validation: the current password is empty."
+  },
+  "newPasswordTooShort": "新密码至少 8 个字符。",
+  "@newPasswordTooShort": {
+    "description": "Validation: the new password is too short."
+  },
+  "confirmMismatch": "两次输入的新密码不一致。",
+  "@confirmMismatch": {
+    "description": "Validation: the confirmation differs from the new password."
   },
   "loading": "加载中…",
   "@loading": {
-    "description": "Shown while the capability loads its first page."
-  },
-  "empty": "暂无内容。",
-  "@empty": {
-    "description": "Empty state shown when the capability has no records."
+    "description": "Shown while the profile loads."
   },
   "loadError": "无法加载此视图。",
   "@loadError": {

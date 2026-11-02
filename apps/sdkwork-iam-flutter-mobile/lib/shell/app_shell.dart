@@ -18,11 +18,13 @@ import 'package:sdkwork_iam_flutter_mobile_commons/sdkwork_iam_flutter_mobile_co
 import 'package:sdkwork_iam_flutter_mobile_organization/sdkwork_iam_flutter_mobile_organization.dart';
 import 'package:sdkwork_iam_flutter_mobile_shell/sdkwork_iam_flutter_mobile_shell.dart';
 import 'package:sdkwork_iam_flutter_mobile_tenant/sdkwork_iam_flutter_mobile_tenant.dart';
+import 'package:sdkwork_iam_flutter_mobile_user_center/sdkwork_iam_flutter_mobile_user_center.dart';
 
 import 'account_binding_data_source.dart';
 import 'auth_data_source.dart';
 import 'organization_data_source.dart';
 import 'tenant_data_source.dart';
+import 'user_center_data_source.dart';
 
 /// Shell the root mounts.
 class IamHomeShell extends StatefulWidget {
@@ -36,7 +38,15 @@ class IamHomeShell extends StatefulWidget {
     this.organizationMessages,
     this.tenantDataSource,
     this.tenantMessages,
+    this.userCenterDataSource,
+    this.userCenterMessages,
   });
+
+  /// Overrides the app-api user-center data source.
+  final IamFlutterMobileUserCenterDataSource? userCenterDataSource;
+
+  /// Overrides the user-center copy.
+  final Map<String, String>? userCenterMessages;
 
   /// Overrides the app-api account-binding data source.
   final IamFlutterMobileAccountBindingDataSource? accountBindingDataSource;
@@ -138,6 +148,27 @@ class _IamHomeShellState extends State<IamHomeShell> {
           ),
           messages: copy.accountBinding,
         );
+        final IamFlutterMobileUserCenterController profileController =
+            IamFlutterMobileUserCenterController(
+          service: IamFlutterMobileUserCenterService(
+            dataSource: widget.userCenterDataSource ?? IamUserCenterAppSdkDataSource(),
+          ),
+        );
+        final Widget profileScreen = Builder(
+          builder: (BuildContext screenContext) => IamFlutterMobileUserCenterScreen(
+            controller: profileController,
+            messages: copy.userCenter,
+            onOpenPassword: () => Navigator.of(screenContext).pushNamed('/user/password'),
+          ),
+        );
+        final Widget passwordScreen = IamFlutterMobileUserCenterPasswordScreen(
+          controller: IamFlutterMobileUserCenterController(
+            service: IamFlutterMobileUserCenterService(
+              dataSource: widget.userCenterDataSource ?? IamUserCenterAppSdkDataSource(),
+            ),
+          ),
+          messages: copy.userCenter,
+        );
 
         return IamFlutterMobileCoreShell(
           home: _authenticated ? tenantScreen : authScreen,
@@ -161,6 +192,16 @@ class _IamHomeShellState extends State<IamHomeShell> {
               builder: (_) => accountBindingScreen,
               path: '/user/account-binding',
               routeId: IamFlutterMobileAccountBindingRoutes.listRouteId,
+            ),
+            SdkworkRouteEntry(
+              builder: (_) => profileScreen,
+              path: '/user/profile',
+              routeId: IamFlutterMobileUserCenterRoutes.profileRouteId,
+            ),
+            SdkworkRouteEntry(
+              builder: (_) => passwordScreen,
+              path: '/user/password',
+              routeId: IamFlutterMobileUserCenterRoutes.passwordRouteId,
             ),
           ],
           title: copy.tenant['title'] ?? 'SDKWork IAM',
@@ -191,11 +232,18 @@ class _IamHomeShellState extends State<IamHomeShell> {
           'account_binding',
           locale,
         );
+    final Map<String, String> userCenter = widget.userCenterMessages ??
+        await _loadFragment(
+          'sdkwork_iam_flutter_mobile_user_center',
+          'user_center',
+          locale,
+        );
     return _IamShellCopy(
       accountBinding: accountBinding,
       auth: auth,
       organization: organization,
       tenant: tenant,
+      userCenter: userCenter,
     );
   }
 
@@ -221,10 +269,12 @@ class _IamShellCopy {
     required this.auth,
     required this.organization,
     required this.tenant,
+    required this.userCenter,
   });
 
   final Map<String, String> accountBinding;
   final Map<String, String> auth;
   final Map<String, String> organization;
   final Map<String, String> tenant;
+  final Map<String, String> userCenter;
 }

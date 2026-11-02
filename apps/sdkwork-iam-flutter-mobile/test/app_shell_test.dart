@@ -13,6 +13,7 @@ import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.
 import 'package:sdkwork_iam_flutter_mobile_core/sdkwork_iam_flutter_mobile_core.dart';
 import 'package:sdkwork_iam_flutter_mobile_organization/sdkwork_iam_flutter_mobile_organization.dart';
 import 'package:sdkwork_iam_flutter_mobile_tenant/sdkwork_iam_flutter_mobile_tenant.dart';
+import 'package:sdkwork_iam_flutter_mobile_user_center/sdkwork_iam_flutter_mobile_user_center.dart';
 
 import 'package:sdkwork_iam_flutter_mobile/shell/app_shell.dart';
 
@@ -146,6 +147,45 @@ class _FakeAccountBindingDataSource implements IamFlutterMobileAccountBindingDat
   Future<void> unlink(String accountLinkId) async {}
 }
 
+const Map<String, String> _userCenterMessages = <String, String>{
+  'changePasswordAction': 'Update password',
+  'confirmMismatch': 'The confirmation does not match.',
+  'confirmPasswordLabel': 'Repeat new password',
+  'displayNameLabel': 'Display name',
+  'emailLabel': 'Email',
+  'loadError': 'Unable to load this view.',
+  'newPasswordLabel': 'New password',
+  'newPasswordTooShort': 'The new password must be at least 8 characters.',
+  'oldPasswordLabel': 'Current password',
+  'oldPasswordRequired': 'Enter your current password.',
+  'passwordChanged': 'Password updated.',
+  'passwordSubtitle': 'Use at least 8 characters.',
+  'passwordTitle': 'Change password',
+  'phoneLabel': 'Phone',
+  'profileSaved': 'Profile saved.',
+  'retry': 'Retry',
+  'saveAction': 'Save',
+  'subtitle': 'Your own account details.',
+  'title': 'My profile',
+};
+
+class _FakeUserCenterDataSource implements IamFlutterMobileUserCenterDataSource {
+  @override
+  Future<void> changePassword(IamFlutterMobileUserPasswordDraft draft) async {}
+
+  @override
+  Future<IamFlutterMobileUserProfile> loadProfile() async {
+    return const IamFlutterMobileUserProfile(displayName: 'Ada', userId: 'user-1');
+  }
+
+  @override
+  Future<IamFlutterMobileUserProfile> updateProfile(
+    IamFlutterMobileUserProfileDraft draft,
+  ) async {
+    return IamFlutterMobileUserProfile(displayName: draft.displayName, userId: 'user-1');
+  }
+}
+
 IamFlutterMobileAuthController _auth(_FakeAuthDataSource source) {
   return IamFlutterMobileAuthController(
     service: IamFlutterMobileAuthService(dataSource: source),
@@ -162,6 +202,8 @@ Widget _shell(_FakeAuthDataSource source) {
     organizationMessages: _organizationMessages,
     tenantDataSource: _FakeTenantDataSource(),
     tenantMessages: _tenantMessages,
+    userCenterDataSource: _FakeUserCenterDataSource(),
+    userCenterMessages: _userCenterMessages,
   );
 }
 
@@ -210,6 +252,8 @@ void main() {
     expect(app.routes!.containsKey('/tenant'), isTrue);
     expect(app.routes!.containsKey('/organizations'), isTrue);
     expect(app.routes!.containsKey('/user/account-binding'), isTrue);
+    expect(app.routes!.containsKey('/user/profile'), isTrue);
+    expect(app.routes!.containsKey('/user/password'), isTrue);
 
     // The ids the shell registers must be the ones the capability packages
     // contribute; a mismatch would break deep links while the UI still looked
@@ -224,11 +268,15 @@ void main() {
       for (final RouteContribution contribution
           in iamFlutterMobileAccountBindingRouteContributions)
         '${contribution.id}:${contribution.path}',
+      for (final RouteContribution contribution in iamFlutterMobileUserCenterRouteContributions)
+        '${contribution.id}:${contribution.path}',
     };
     expect(contributed, contains('app.iam.auth.login:/auth/login'));
     expect(contributed, contains('app.iam.tenant.overview:/tenant'));
     expect(contributed, contains('app.iam.organization.directory:/organizations'));
     expect(contributed, contains('app.iam.account-binding.list:/user/account-binding'));
+    expect(contributed, contains('app.iam.user-center.profile:/user/profile'));
+    expect(contributed, contains('app.iam.user-center.password:/user/password'));
   });
 
   testWidgets('opens the organization directory from the tenant screen', (WidgetTester tester) async {

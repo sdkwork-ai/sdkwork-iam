@@ -1,20 +1,76 @@
 {
   "@@locale": "en",
-  "title": "SDKWork IAM Flutter Mobile User Center",
+  "title": "My profile",
   "@title": {
-    "description": "Title of the capability screen."
+    "description": "Title of the profile screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile User Center workspace",
+  "subtitle": "Your own account details.",
   "@subtitle": {
-    "description": "Supporting line under the title."
+    "description": "Supporting line under the profile title."
+  },
+  "passwordTitle": "Change password",
+  "@passwordTitle": {
+    "description": "Title of the password screen."
+  },
+  "passwordSubtitle": "Use at least 8 characters.",
+  "@passwordSubtitle": {
+    "description": "Supporting line under the password title."
+  },
+  "displayNameLabel": "Display name",
+  "@displayNameLabel": {
+    "description": "Label of the display name field."
+  },
+  "emailLabel": "Email",
+  "@emailLabel": {
+    "description": "Label of the email field."
+  },
+  "phoneLabel": "Phone",
+  "@phoneLabel": {
+    "description": "Label of the phone field."
+  },
+  "oldPasswordLabel": "Current password",
+  "@oldPasswordLabel": {
+    "description": "Label of the current password field."
+  },
+  "newPasswordLabel": "New password",
+  "@newPasswordLabel": {
+    "description": "Label of the new password field."
+  },
+  "confirmPasswordLabel": "Repeat new password",
+  "@confirmPasswordLabel": {
+    "description": "Label of the confirmation field."
+  },
+  "saveAction": "Save",
+  "@saveAction": {
+    "description": "Label of the profile save action."
+  },
+  "changePasswordAction": "Update password",
+  "@changePasswordAction": {
+    "description": "Label of the password submit action."
+  },
+  "profileSaved": "Profile saved.",
+  "@profileSaved": {
+    "description": "Shown after a successful profile save."
+  },
+  "passwordChanged": "Password updated.",
+  "@passwordChanged": {
+    "description": "Shown after a successful password change."
+  },
+  "oldPasswordRequired": "Enter your current password.",
+  "@oldPasswordRequired": {
+    "description": "Validation: the current password is empty."
+  },
+  "newPasswordTooShort": "The new password must be at least 8 characters.",
+  "@newPasswordTooShort": {
+    "description": "Validation: the new password is too short."
+  },
+  "confirmMismatch": "The confirmation does not match.",
+  "@confirmMismatch": {
+    "description": "Validation: the confirmation differs from the new password."
   },
   "loading": "Loading…",
   "@loading": {
-    "description": "Shown while the capability loads its first page."
-  },
-  "empty": "Nothing to show yet.",
-  "@empty": {
-    "description": "Empty state shown when the capability has no records."
+    "description": "Shown while the profile loads."
   },
   "loadError": "Unable to load this view.",
   "@loadError": {

@@ -1,4 +1,4 @@
-// SDKWORK-CLIENT-APP-SURFACES-GENERATED: do not edit by hand; regenerate with `node scripts/materialize-client-app-surfaces.mjs`.
+// SDKWORK-IAM-FLUTTER-USER-CENTER: authored controller.
 /**
  * Presentation logic of `sdkwork_iam_flutter_mobile_user_center`.
  *
@@ -16,9 +16,13 @@ class IamFlutterMobileUserCenterController {
       : _service = service ?? const IamFlutterMobileUserCenterService();
 
   final IamFlutterMobileUserCenterService _service;
-  final List<void Function(IamFlutterMobileUserCenterState)> _listeners = <void Function(IamFlutterMobileUserCenterState)>[];
+  final List<void Function(IamFlutterMobileUserCenterState)> _listeners =
+      <void Function(IamFlutterMobileUserCenterState)>[];
 
   IamFlutterMobileUserCenterState _state = const IamFlutterMobileUserCenterState();
+
+  /// Bumped per load so a slow answer cannot overwrite a newer one.
+  int _requestId = 0;
 
   /// Current state.
   IamFlutterMobileUserCenterState get state => _state;
@@ -37,20 +41,54 @@ class IamFlutterMobileUserCenterController {
     }
   }
 
-  /// Replaces the displayed records.
-  void setItems(List<String> items) {
-    _emit(_state.copyWith(items: items, loading: false, errorKey: null));
+  /// Loads the current profile.
+  Future<void> load() async {
+    final int requestId = _requestId + 1;
+    _requestId = requestId;
+    _emit(_state.asLoading());
+    try {
+      final IamFlutterMobileUserProfile profile = await _service.loadProfile();
+      if (requestId != _requestId) return;
+      _emit(_state.loaded(profile));
+    } catch (error) {
+      if (requestId != _requestId) return;
+      _emit(_state.failed(_describe(error)));
+    }
   }
 
-  /// Marks the capability as loading.
-  void setLoading() {
-    _emit(_state.copyWith(loading: true, errorKey: null));
+  /// Saves the editable profile fields.
+  ///
+  /// The failure is recorded in state rather than rethrown, so the form needs no
+  /// try/catch; the returned flag lets the screen keep the form open on failure.
+  Future<bool> saveProfile(IamFlutterMobileUserProfileDraft draft) async {
+    if (_state.savingProfile) return false;
+    _emit(_state.copyWith(errorMessage: null, notice: null, savingProfile: true));
+    try {
+      final IamFlutterMobileUserProfile profile = await _service.updateProfile(draft);
+      _emit(_state.loaded(profile).succeeded(''));
+      return true;
+    } catch (error) {
+      _emit(_state.failed(_describe(error)));
+      return false;
+    }
   }
 
-  /// Records a user-safe failure.
-  void setError(String errorKey) {
-    _emit(_state.copyWith(loading: false, errorKey: errorKey));
+  /// Changes the current password.
+  Future<bool> changePassword(IamFlutterMobileUserPasswordDraft draft) async {
+    if (_state.savingPassword) return false;
+    _emit(_state.copyWith(errorMessage: null, notice: null, savingPassword: true));
+    try {
+      await _service.changePassword(draft);
+      _emit(_state.succeeded(''));
+      return true;
+    } catch (error) {
+      _emit(_state.failed(_describe(error)));
+      return false;
+    }
   }
+
+  /// Renders a thrown value as user-safe text.
+  String _describe(Object error) => error is StateError ? error.message : '$error';
 
   /// Resolves the cross-client route id for a physical Flutter location.
   String? routeIdForPath(String path) => _service.routeIdForPath(path);
