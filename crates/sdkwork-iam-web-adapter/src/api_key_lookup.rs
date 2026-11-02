@@ -15,6 +15,7 @@ use crate::iam_session::hash_token;
 #[derive(Clone)]
 pub struct IamApiKeyLookupService {
     pool: Arc<PgPool>,
+    expected_environment: Option<String>,
 }
 
 /// Hashes a presented API key secret for storage/lookup. Machine-generated
@@ -26,7 +27,38 @@ pub fn hash_api_key_secret(secret: &str) -> String {
 
 impl IamApiKeyLookupService {
     pub fn new(pool: Arc<PgPool>) -> Self {
-        Self { pool }
+        Self {
+            pool,
+            expected_environment: configured_environment(),
+        }
+    }
+
+    pub fn with_expected_environment(
+        pool: Arc<PgPool>,
+        expected_environment: impl Into<String>,
+    ) -> Self {
+        Self {
+            pool,
+            expected_environment: Some(expected_environment.into()),
+        }
+    }
+}
+
+fn configured_environment() -> Option<String> {
+    ["SDKWORK_ENVIRONMENT", "SDKWORK_LIFECYCLE_ENVIRONMENT", "SDKWORK_IM_ENVIRONMENT"]
+        .iter()
+        .find_map(|key| std::env::var(key).ok())
+        .map(|value| value.trim().to_owned())
+        .filter(|value| !value.is_empty())
+}
+
+fn canonical_environment(value: &str) -> String {
+    let normalized = value.trim().to_ascii_lowercase();
+    match normalized.as_str() {
+        "development" | "local" => "dev".to_owned(),
+        "production" => "prod".to_owned(),
+        "testing" => "test".to_owned(),
+        other => other.to_owned(),
     }
 }
 
@@ -79,6 +111,14 @@ impl ApiKeyLookupService for IamApiKeyLookupService {
         validate_enabled_tenant_runtime_app(self.pool.as_ref(), &tenant_id, &app_id)
             .await
             .map_err(WebFrameworkError::invalid_credentials)?;
+
+        if let Some(expected_environment) = self.expected_environment.as_deref() {
+            if canonical_environment(&environment) != canonical_environment(expected_environment) {
+                return Err(WebFrameworkError::invalid_credentials(
+                    "IAM API key is not valid for this environment",
+                ));
+            }
+        }
 
         let organization_id = normalize_organization_id(&organization_id);
         let permission_scope = parse_string_vec_json(&permission_scope_json);
@@ -150,4 +190,19 @@ fn parse_string_vec_json(raw: &str) -> Vec<String> {
             _ => None,
         })
         .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::canonical_environment;
+
+    #[test]
+    fn canonicalizes_environment_aliases_for_api_key_binding() {
+        assert_eq!(canonical_environment("PROD"), "prod");
+        assert_eq!(canonical_environment("production"), "prod");
+        assert_eq!(canonical_environment("development"), "dev");
+        assert_eq!(canonical_environment("local"), "dev");
+        assert_eq!(canonical_environment(" testing "), "test");
+        assert_eq!(canonical_environment("staging"), "staging");
+    }
 }

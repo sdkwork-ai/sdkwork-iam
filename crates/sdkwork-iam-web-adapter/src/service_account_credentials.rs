@@ -245,6 +245,34 @@ pub async fn exchange_service_account_credential(
     let credential = load_active_credential(pg, &request.client_id).await?;
     verify_secret(&credential.secret_hash, &request.client_secret)?;
 
+    let tenant_active = sqlx::query(
+        "SELECT 1 FROM iam_tenant WHERE id = $1 AND status = 'active' LIMIT 1",
+    )
+    .bind(&credential.tenant_id)
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| format!("load tenant status failed: {error}"))?;
+    if tenant_active.is_none() {
+        return Err("tenant is not active".to_string());
+    }
+    if let Some(organization_id) = credential
+        .organization_id
+        .as_deref()
+        .filter(|value| !value.trim().is_empty() && *value != "0")
+    {
+        let organization_active = sqlx::query(
+            "SELECT 1 FROM iam_organization WHERE tenant_id = $1 AND id = $2 AND status = 'active' LIMIT 1",
+        )
+        .bind(&credential.tenant_id)
+        .bind(organization_id)
+        .fetch_optional(pg)
+        .await
+        .map_err(|error| format!("load organization status failed: {error}"))?;
+        if organization_active.is_none() {
+            return Err("organization is not active".to_string());
+        }
+    }
+
     let tenant_application = resolve_tenant_application(
         pg,
         &credential.tenant_id,
