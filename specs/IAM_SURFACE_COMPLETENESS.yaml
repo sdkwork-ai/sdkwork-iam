@@ -324,8 +324,11 @@ clientSurfaces:
       `admin.iam.permission.roles` and `admin.iam.permission.policies` share one generic paged
       controller and one shared list chrome, and a policy always states its effect as a word —
       an unreported effect reads as "not granted", because a denial that looks like an allow is
-      the most expensive misreading an authorization console can invite. The remaining four
-      admin screens reuse that shape.
+      the most expensive misreading an authorization console can invite.
+      `admin.iam.oauth.providers` reads `oauth/provider_catalog` and states each provider as
+      enabled, disabled or explicitly unreported — a missing badge would leave an operator
+      unable to tell a switched-off provider from an incompletely described one. The
+      remaining three admin screens reuse that shape.
   harmony:
     status: scaffold
     note: Route/page map exists; capability pages do not render real data yet.

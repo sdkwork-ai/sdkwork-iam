@@ -1,20 +1,48 @@
 {
   "@@locale": "en",
-  "title": "SDKWork IAM Flutter Mobile Admin Oauth",
+  "title": "Sign-in providers",
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile Admin Oauth workspace",
+  "subtitle": "What this deployment can offer at sign-in, over the backend-api.",
   "@subtitle": {
     "description": "Supporting line under the title."
+  },
+  "searchPlaceholder": "Search providers",
+  "@searchPlaceholder": {
+    "description": "Placeholder of the provider search field."
+  },
+  "searchAction": "Search",
+  "@searchAction": {
+    "description": "Label of the search action."
+  },
+  "stateEnabled": "Enabled",
+  "@stateEnabled": {
+    "description": "Provider state: enabled."
+  },
+  "stateDisabled": "Disabled",
+  "@stateDisabled": {
+    "description": "Provider state: disabled."
+  },
+  "stateUnknown": "State not reported",
+  "@stateUnknown": {
+    "description": "Provider state when the server did not report one."
+  },
+  "empty": "No provider is configured yet.",
+  "@empty": {
+    "description": "Empty state shown when the capability has no records."
+  },
+  "emptySearch": "Nothing matched that search.",
+  "@emptySearch": {
+    "description": "Shown when a search returns no rows."
+  },
+  "loadMore": "Load more",
+  "@loadMore": {
+    "description": "Label of the next-page action."
   },
   "loading": "Loading…",
   "@loading": {
     "description": "Shown while the capability loads its first page."
-  },
-  "empty": "Nothing to show yet.",
-  "@empty": {
-    "description": "Empty state shown when the capability has no records."
   },
   "loadError": "Unable to load this view.",
   "@loadError": {
