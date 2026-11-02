@@ -171,6 +171,8 @@ function parseAction(action) {
       return 'delete';
     case 'revoke':
       return 'revoke';
+    case 'rotate':
+      return 'rotate';
     case 'deactivate':
       return 'deactivate';
     default:
@@ -207,6 +209,8 @@ function permissionCode(resource, action) {
     case 'policies':
       return `iam.policies.${action === 'read' ? 'read' : action}`;
     case 'apiKeys':
+      if (action === 'create') return 'iam.api_keys.create';
+      if (action === 'rotate') return 'iam.api_keys.rotate';
       return action === 'revoke' || action === 'delete' ? 'iam.api_keys.revoke' : 'iam.api_keys.read';
     case 'securityEvents':
       return 'iam.security_events.read';

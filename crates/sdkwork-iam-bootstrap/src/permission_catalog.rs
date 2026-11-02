@@ -41,6 +41,18 @@ pub const IAM_STANDARD_PERMISSION_SEEDS: &[PermissionSeed] = &[
         action: "read",
     },
     PermissionSeed {
+        code: "iam.api_keys.create",
+        name: "Create API keys",
+        resource: "iam.api_keys",
+        action: "create",
+    },
+    PermissionSeed {
+        code: "iam.api_keys.rotate",
+        name: "Rotate API keys",
+        resource: "iam.api_keys",
+        action: "rotate",
+    },
+    PermissionSeed {
         code: "iam.api_keys.revoke",
         name: "Revoke API keys",
         resource: "iam.api_keys",

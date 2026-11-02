@@ -194,10 +194,17 @@ pub fn apply_management_routes(router: Router<BackendIamState>) -> Router<Backen
             "/backend/v3/api/iam/role_bindings/{roleBindingId}",
             delete(delete_role_binding),
         )
-        .route("/backend/v3/api/iam/api_keys", get(list_api_keys))
+        .route(
+            "/backend/v3/api/iam/api_keys",
+            get(list_api_keys).post(create_api_key),
+        )
         .route(
             "/backend/v3/api/iam/api_keys/{apiKeyId}/revoke",
             post(revoke_api_key),
+        )
+        .route(
+            "/backend/v3/api/iam/api_keys/{apiKeyId}/rotate",
+            post(rotate_api_key),
         )
         .route(
             "/backend/v3/api/iam/security_events",

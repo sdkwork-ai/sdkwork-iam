@@ -592,6 +592,12 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         "iam",
         "apiKeys.list",
     ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/api_keys",
+        "iam",
+        "apiKeys.create",
+    ),
     HttpRoute::bootstrap_body(
         HttpMethod::Post,
         "/backend/v3/api/iam/applications/register",
@@ -633,6 +639,12 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         "/backend/v3/api/iam/api_keys/{apiKeyId}/revoke",
         "iam",
         "apiKeys.revoke",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/api_keys/{apiKeyId}/rotate",
+        "iam",
+        "apiKeys.rotate",
     ),
     HttpRoute::dual_token(
         HttpMethod::Get,

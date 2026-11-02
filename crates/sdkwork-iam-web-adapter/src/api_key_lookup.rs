@@ -17,6 +17,13 @@ pub struct IamApiKeyLookupService {
     pool: Arc<PgPool>,
 }
 
+/// Hashes a presented API key secret for storage/lookup. Machine-generated
+/// SDKWork API keys carry at least 128 bits of CSPRNG entropy, so the approved
+/// fast hash is sufficient; comparison happens over the indexed hash.
+pub fn hash_api_key_secret(secret: &str) -> String {
+    crate::iam_session::hash_token(secret)
+}
+
 impl IamApiKeyLookupService {
     pub fn new(pool: Arc<PgPool>) -> Self {
         Self { pool }

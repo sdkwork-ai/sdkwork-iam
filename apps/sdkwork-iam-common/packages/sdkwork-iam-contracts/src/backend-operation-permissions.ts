@@ -78,7 +78,7 @@ type IamResource =
   | "auditEvents"
   | "accountBindingPolicy";
 
-type IamAction = "read" | "create" | "update" | "delete" | "revoke" | "deactivate";
+type IamAction = "read" | "create" | "update" | "delete" | "revoke" | "rotate" | "deactivate";
 
 function parseCoreOperation(operationId: string): { resource: IamResource; action: IamAction } | undefined {
   const parts = operationId.split(".");
@@ -151,6 +151,8 @@ function parseAction(action: string | undefined): IamAction | undefined {
       return "delete";
     case "revoke":
       return "revoke";
+    case "rotate":
+      return "rotate";
     case "deactivate":
       return "deactivate";
     default:
@@ -187,6 +189,8 @@ function permissionCode(resource: IamResource, action: IamAction): string {
     case "policies":
       return `iam.policies.${action === "read" ? "read" : action}`;
     case "apiKeys":
+      if (action === "create") return "iam.api_keys.create";
+      if (action === "rotate") return "iam.api_keys.rotate";
       return action === "revoke" || action === "delete" ? "iam.api_keys.revoke" : "iam.api_keys.read";
     case "securityEvents":
       return "iam.security_events.read";

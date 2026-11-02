@@ -2550,8 +2550,289 @@ async fn revoke_api_key(State(state): State<BackendIamState>, ctx: WebRequestCon
     }
 }
 
-const GROUP_MEMBER_PRINCIPAL_KINDS: &[&str] =
-    &["user", "service_account", "organization_membership"];
+fn permission_within_assigner_scope(permission: &str, granted: &[String]) -> bool {
+    granted.iter().any(|candidate| {
+        candidate == "*"
+            || candidate == permission
+            || candidate
+                .strip_suffix(".*")
+                .is_some_and(|prefix| permission.starts_with(&format!("{prefix}.")))
+    })
+}
+
+async fn create_api_key(
+    State(state): State<BackendIamState>,
+    ctx: WebRequestContext,
+    Json(body): Json<Value>,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state).err().expect("error response");
+    };
+    let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
+        return tenant_id_from_context(&ctx).err().expect("error response");
+    };
+    let Some(user_id) = actor_user_id_from_context(&ctx) else {
+        return appbase_error(
+            StatusCode::UNAUTHORIZED,
+            "iam_api_key_actor_required",
+            "API key creation requires an authenticated user",
+        );
+    };
+    let name = read_string_field(&body, &["name"]).unwrap_or_default();
+    let app_id = read_string_field(&body, &["appId", "app_id"]).unwrap_or_default();
+    let organization_id = read_string_field(&body, &["organizationId", "organization_id"])
+        .or_else(|| organization_id_from_context(&ctx))
+        .unwrap_or_else(|| "0".to_string());
+    if name.trim().is_empty() || app_id.trim().is_empty() {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_api_key_invalid",
+            "name and appId are required",
+        );
+    }
+    let permission_scope: Vec<String> = body
+        .get("permissionScope")
+        .or_else(|| body.get("permission_scope"))
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(str::to_owned)
+                .collect()
+        })
+        .unwrap_or_default();
+    if permission_scope.is_empty() {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_api_key_invalid",
+            "permissionScope must be a non-empty array",
+        );
+    }
+    let assigner_scope = match assigner_permission_scope(&ctx) {
+        Ok(scope) => scope,
+        Err(response) => return response,
+    };
+    if !permission_scope
+        .iter()
+        .all(|permission| permission_within_assigner_scope(permission, &assigner_scope))
+    {
+        return appbase_error(
+            StatusCode::FORBIDDEN,
+            "iam_api_key_scope_exceeds_assigner",
+            "permissionScope must not exceed the caller's permission scope",
+        );
+    }
+    if organization_id != "0" {
+        let organization_active = sqlx::query(
+            "SELECT 1 FROM iam_organization WHERE tenant_id = $1 AND id = $2 AND status = 'active' LIMIT 1",
+        )
+        .bind(&tenant_id)
+        .bind(&organization_id)
+        .fetch_optional(pg)
+        .await;
+        match organization_active {
+            Ok(Some(_)) => {}
+            Ok(None) => {
+                return appbase_error(
+                    StatusCode::NOT_FOUND,
+                    "iam_api_key_organization_not_found",
+                    "organization was not found or is inactive",
+                );
+            }
+            Err(error) => {
+                return appbase_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "iam_api_key_organization_lookup_failed",
+                    &error.to_string(),
+                );
+            }
+        }
+    }
+    if let Err(error) = sdkwork_iam_web_adapter::validate_enabled_tenant_runtime_app(
+        pg, &tenant_id, &app_id,
+    )
+    .await
+    {
+        return appbase_error(StatusCode::BAD_REQUEST, "iam_api_key_app_invalid", &error);
+    }
+    let user_active = sqlx::query(
+        "SELECT 1 FROM iam_user WHERE tenant_id = $1 AND id = $2 AND status = 'active' AND is_deleted = 0 LIMIT 1",
+    )
+    .bind(&tenant_id)
+    .bind(&user_id)
+    .fetch_optional(pg)
+    .await;
+    match user_active {
+        Ok(Some(_)) => {}
+        Ok(None) => {
+            return appbase_error(
+                StatusCode::NOT_FOUND,
+                "iam_api_key_user_not_found",
+                "API key subject user was not found or is inactive",
+            );
+        }
+        Err(error) => {
+            return appbase_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "iam_api_key_user_lookup_failed",
+                &error.to_string(),
+            );
+        }
+    }
+
+    let environment = read_string_field(&body, &["environment"]).unwrap_or_else(|| "prod".to_string());
+    let deployment_mode =
+        read_string_field(&body, &["deploymentMode", "deployment_mode"]).unwrap_or_else(|| "saas".to_string());
+    let expires_at = body
+        .get("expiresAt")
+        .or_else(|| body.get("expires_at"))
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_owned);
+    let api_key_id = format!("iamk-{}", Uuid::new_v4());
+    let raw_api_key = format!(
+        "sdkwork-ak-{}{}",
+        Uuid::new_v4().simple(),
+        Uuid::new_v4().simple()
+    );
+    let key_hash = sdkwork_iam_web_adapter::hash_api_key_secret(&raw_api_key);
+    let permission_scope_json =
+        serde_json::to_string(&permission_scope).unwrap_or_else(|_| "[]".to_string());
+    let now = Utc::now().to_rfc3339();
+    if let Err(error) = sqlx::query(
+        "INSERT INTO iam_api_key (id, tenant_id, organization_id, user_id, app_id, environment, \
+         deployment_mode, name, key_hash, permission_scope_json, status, expires_at, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'active', $11, $12, $12)",
+    )
+    .bind(&api_key_id)
+    .bind(&tenant_id)
+    .bind(&organization_id)
+    .bind(&user_id)
+    .bind(&app_id)
+    .bind(&environment)
+    .bind(&deployment_mode)
+    .bind(&name)
+    .bind(&key_hash)
+    .bind(&permission_scope_json)
+    .bind(&expires_at)
+    .bind(&now)
+    .execute(pg)
+    .await
+    {
+        return appbase_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "iam_api_key_create_failed",
+            &error.to_string(),
+        );
+    }
+
+    appbase_ok(json!({
+        "apiKeyId": api_key_id,
+        "apiKey": raw_api_key,
+        "name": name,
+        "tenantId": tenant_id,
+        "organizationId": organization_id,
+        "appId": app_id,
+        "environment": environment,
+        "expiresAt": expires_at,
+        "permissionScope": permission_scope,
+    }))
+}
+
+async fn rotate_api_key(
+    State(state): State<BackendIamState>,
+    ctx: WebRequestContext,
+    Path(api_key_id): Path<String>,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state).err().expect("error response");
+    };
+    let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
+        return tenant_id_from_context(&ctx).err().expect("error response");
+    };
+    let row = sqlx::query(
+        "SELECT status, organization_id FROM iam_api_key WHERE tenant_id = $1 AND id = $2 LIMIT 1",
+    )
+    .bind(&tenant_id)
+    .bind(&api_key_id)
+    .fetch_optional(pg)
+    .await;
+    let row = match row {
+        Ok(Some(row)) => row,
+        Ok(None) => {
+            return appbase_error(
+                StatusCode::NOT_FOUND,
+                "iam_api_key_not_found",
+                "api key not found",
+            );
+        }
+        Err(error) => {
+            return appbase_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "iam_api_key_lookup_failed",
+                &error.to_string(),
+            );
+        }
+    };
+    let status: String = row.get(0);
+    let key_organization_id: String = row.get(1);
+    if status != "active" {
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_api_key_not_active",
+            "only an active API key can be rotated",
+        );
+    }
+    if let Some(context_organization_id) = organization_id_from_context(&ctx) {
+        if context_organization_id != "0" && context_organization_id != key_organization_id {
+            return appbase_error(
+                StatusCode::NOT_FOUND,
+                "iam_api_key_not_found",
+                "api key not found in the caller's organization scope",
+            );
+        }
+    }
+    let raw_api_key = format!(
+        "sdkwork-ak-{}{}",
+        Uuid::new_v4().simple(),
+        Uuid::new_v4().simple()
+    );
+    let key_hash = sdkwork_iam_web_adapter::hash_api_key_secret(&raw_api_key);
+    let now = Utc::now().to_rfc3339();
+    match sqlx::query(
+        "UPDATE iam_api_key SET key_hash = $3, updated_at = $4 \
+         WHERE tenant_id = $1 AND id = $2 AND status = 'active' AND organization_id = $5",
+    )
+    .bind(&tenant_id)
+    .bind(&api_key_id)
+    .bind(&key_hash)
+    .bind(&now)
+    .bind(&key_organization_id)
+    .execute(pg)
+    .await
+    {
+        Ok(result) if result.rows_affected() == 1 => appbase_ok(json!({
+            "apiKeyId": api_key_id,
+            "apiKey": raw_api_key,
+            "organizationId": key_organization_id,
+            "rotatedAt": now,
+        })),
+        Ok(_) => appbase_error(
+            StatusCode::CONFLICT,
+            "iam_api_key_rotation_conflict",
+            "API key changed while it was being rotated",
+        ),
+        Err(error) => appbase_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "iam_api_key_rotate_failed",
+            &error.to_string(),
+        ),
+    }
+}
 
 async fn fetch_group_row<'e>(
     pg: &'e PgPool,
@@ -2594,6 +2875,9 @@ async fn fetch_service_account_row<'e>(
     .fetch_optional(pg)
     .await
 }
+
+const GROUP_MEMBER_PRINCIPAL_KINDS: &[&str] =
+    &["user", "service_account", "organization_membership"];
 
 fn group_member_principal_kind_allowed(kind: &str) -> bool {
     GROUP_MEMBER_PRINCIPAL_KINDS.contains(&kind)

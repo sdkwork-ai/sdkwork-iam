@@ -40,6 +40,7 @@ enum IamAction {
     Update,
     Delete,
     Revoke,
+    Rotate,
     Deactivate,
     Enable,
     Provision,
@@ -164,6 +165,7 @@ fn parse_action(action: &str) -> Option<IamAction> {
         "update" | "ban" | "unban" | "setDefault" => IamAction::Update,
         "delete" => IamAction::Delete,
         "revoke" => IamAction::Revoke,
+        "rotate" => IamAction::Rotate,
         "deactivate" => IamAction::Deactivate,
         "enable" => IamAction::Enable,
         "provision" => IamAction::Provision,
@@ -240,6 +242,8 @@ fn permission_code(resource: IamResource, action: IamAction) -> &'static str {
         (IamResource::Policies, IamAction::Update) => "iam.policies.update",
         (IamResource::Policies, IamAction::Delete) => "iam.policies.delete",
         (IamResource::ApiKeys, IamAction::Read) => "iam.api_keys.read",
+        (IamResource::ApiKeys, IamAction::Create) => "iam.api_keys.create",
+        (IamResource::ApiKeys, IamAction::Rotate) => "iam.api_keys.rotate",
         (IamResource::ApiKeys, IamAction::Revoke | IamAction::Delete) => "iam.api_keys.revoke",
         (IamResource::SecurityEvents, IamAction::Read) => "iam.security_events.read",
         (IamResource::AuditEvents, IamAction::Read) => "iam.audit_events.read",
@@ -286,6 +290,26 @@ mod tests {
         assert_eq!(
             iam_backend_permission_for_operation("users.unban"),
             Some("iam.users.update")
+        );
+    }
+
+    #[test]
+    fn maps_api_key_lifecycle_operations_to_dedicated_permissions() {
+        assert_eq!(
+            iam_backend_permission_for_operation("apiKeys.create"),
+            Some("iam.api_keys.create")
+        );
+        assert_eq!(
+            iam_backend_permission_for_operation("apiKeys.rotate"),
+            Some("iam.api_keys.rotate")
+        );
+        assert_eq!(
+            iam_backend_permission_for_operation("apiKeys.list"),
+            Some("iam.api_keys.read")
+        );
+        assert_eq!(
+            iam_backend_permission_for_operation("apiKeys.revoke"),
+            Some("iam.api_keys.revoke")
         );
     }
 

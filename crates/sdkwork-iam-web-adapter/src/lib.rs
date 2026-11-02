@@ -55,7 +55,7 @@ pub use account_binding_policy::{
     ContactBindingPolicy, OauthBindingActionKind, OauthBindingPolicy, OauthLoginPolicy,
     IAM_ACCOUNT_BINDING_POLICY_CODE,
 };
-pub use api_key_lookup::IamApiKeyLookupService;
+pub use api_key_lookup::{hash_api_key_secret, IamApiKeyLookupService};
 pub use app_manifest::{
     load_manifest_from_app_root, load_manifest_from_path, manifest_runtime_bindings,
     manifest_to_ensure_command, manifest_to_ensure_commands, normalize_bootstrap_environment,
