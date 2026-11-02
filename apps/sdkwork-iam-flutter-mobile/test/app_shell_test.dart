@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_audit/sdkwork_iam_flutter_mobile_admin_audit.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_permission/sdkwork_iam_flutter_mobile_admin_permission.dart';
+import 'package:sdkwork_iam_flutter_mobile_admin_tenant/sdkwork_iam_flutter_mobile_admin_tenant.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
 import 'package:sdkwork_iam_flutter_mobile_console_organization/sdkwork_iam_flutter_mobile_console_organization.dart';
 import 'package:sdkwork_iam_flutter_mobile_console_account_binding/sdkwork_iam_flutter_mobile_console_account_binding.dart';
@@ -232,6 +233,29 @@ class _FakeAdminAuditDataSource implements IamFlutterMobileAdminAuditDataSource 
   }
 }
 
+const Map<String, String> _adminTenantMessages = <String, String>{
+  'empty': 'No tenant exists yet.',
+  'emptySearch': 'Nothing matched that search.',
+  'loadError': 'Unable to load this view.',
+  'loadMore': 'Load more',
+  'retry': 'Retry',
+  'searchAction': 'Search',
+  'searchPlaceholder': 'Search tenants',
+  'subtitle': 'Every tenant this deployment serves.',
+  'title': 'Tenants',
+};
+
+class _FakeAdminTenantDataSource implements IamFlutterMobileAdminTenantDataSource {
+  @override
+  Future<IamFlutterMobileAdminTenantPage> fetchPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  }) async {
+    return const IamFlutterMobileAdminTenantPage();
+  }
+}
+
 const Map<String, String> _adminPermissionMessages = <String, String>{
   'empty': 'This tenant has no permission yet.',
   'emptySearch': 'Nothing matched that search.',
@@ -418,6 +442,8 @@ Widget _shell(_FakeAuthDataSource source, {List<String>? openedUrls}) {
     adminAuditDataSource: _FakeAdminAuditDataSource(),
     adminAuditMessages: _adminAuditMessages,
     adminPermissionDataSource: _FakeAdminPermissionDataSource(),
+    adminTenantDataSource: _FakeAdminTenantDataSource(),
+    adminTenantMessages: _adminTenantMessages,
     adminPermissionMessages: _adminPermissionMessages,
     authController: _auth(source),
     authMessages: _authMessages,
@@ -501,6 +527,7 @@ void main() {
     expect(app.routes!.containsKey('/console/iam/account-binding'), isTrue);
     expect(app.routes!.containsKey('/admin/iam/permissions'), isTrue);
     expect(app.routes!.containsKey('/admin/iam/audit'), isTrue);
+    expect(app.routes!.containsKey('/admin/iam/tenants'), isTrue);
 
     // The ids the shell registers must be the ones the capability packages
     // contribute; a mismatch would break deep links while the UI still looked
