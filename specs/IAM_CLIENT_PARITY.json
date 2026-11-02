@@ -29,7 +29,7 @@
       "pc": 20,
       "h5": 10,
       "miniProgram": 5,
-      "flutter": 7,
+      "flutter": 8,
       "harmony": 0
     }
   },
@@ -227,13 +227,15 @@
       "tier": "app",
       "capability": "oauth",
       "api": "app-api",
-      "status": { "pc": "partial", "h5": "complete" },
+      "status": { "pc": "partial", "h5": "complete", "flutter": "complete" },
       "evidence": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-admin-oauth/src/pages/OauthProviderConnectionsPage.tsx",
-        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-oauth/src/pages/OAuthProviderScreen.tsx"
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-oauth/src/pages/OAuthProviderScreen.tsx",
+        "flutter": "apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_oauth/lib/src/screens/oauth_screen.dart"
       },
       "tests": {
-        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-oauth/tests/"
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-oauth/tests/",
+        "flutter": "apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_oauth/test/"
       }
     },
     {

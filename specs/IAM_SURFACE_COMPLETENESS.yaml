@@ -248,13 +248,15 @@ clientSurfaces:
       `SdkworkAppClient` exposes flat `organizationsList` methods rather than the
       TypeScript namespaces. Both are generator-profile differences to reconcile
       before GA.
-      Remaining: 19 capability packages still hold the generated stub, and the
+      Remaining: 18 capability packages still hold the generated stub, and the
       registration screen is blocked: the generated Dart app SDK has no
       verification-code operation, so a Flutter sign-up form cannot request the code
       it must submit (the H5 form sidesteps this by taking an injected code client).
-      Six real capabilities now: tenant, organization, account-binding, user-center
-      (profile + password) and auth (sign-in + password reset, two steps on one
-      screen because the code field is meaningless without the request that fills it).
+      Seven real capabilities now: tenant, organization, account-binding, user-center
+      (profile + password), auth (sign-in + password reset) and oauth (provider list
+      plus a real authorization URL, handed to the host because opening a browser is
+      a platform action). The shell has no URL opener adapter yet, so the provider
+      screen reports that this build cannot open a browser instead of doing nothing.
   harmony:
     status: scaffold
     note: Route/page map exists; capability pages do not render real data yet.

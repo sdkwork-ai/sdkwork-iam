@@ -1,4 +1,4 @@
-// SDKWORK-IAM-FLUTTER: authored shell test.
+﻿// SDKWORK-IAM-FLUTTER: authored shell test.
 /**
  * The app root used to compile but render nothing, then mounted the tenant screen
  * behind no gate. These cases pin the wiring: signed out, the shell opens the
@@ -13,6 +13,7 @@ import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.
 import 'package:sdkwork_iam_flutter_mobile_core/sdkwork_iam_flutter_mobile_core.dart';
 import 'package:sdkwork_iam_flutter_mobile_organization/sdkwork_iam_flutter_mobile_organization.dart';
 import 'package:sdkwork_iam_flutter_mobile_tenant/sdkwork_iam_flutter_mobile_tenant.dart';
+import 'package:sdkwork_iam_flutter_mobile_oauth/sdkwork_iam_flutter_mobile_oauth.dart';
 import 'package:sdkwork_iam_flutter_mobile_user_center/sdkwork_iam_flutter_mobile_user_center.dart';
 
 import 'package:sdkwork_iam_flutter_mobile/shell/app_shell.dart';
@@ -192,6 +193,30 @@ class _FakeUserCenterDataSource implements IamFlutterMobileUserCenterDataSource 
   }
 }
 
+const Map<String, String> _oauthMessages = <String, String>{
+  'authorizeUnavailable': 'This build cannot open a browser.',
+  'connectAction': 'Connect',
+  'empty': 'No provider is available.',
+  'loadError': 'Unable to load this view.',
+  'retry': 'Retry',
+  'subtitle': 'Providers this tenant offers.',
+  'title': 'Third-party sign-in',
+};
+
+class _FakeOAuthDataSource implements IamFlutterMobileOAuthDataSource {
+  @override
+  Future<String> createAuthorizationUrl(String providerKey) async {
+    return 'https://idp.example.com/authorize?provider=$providerKey';
+  }
+
+  @override
+  Future<List<IamFlutterMobileOAuthProvider>> loadProviders() async {
+    return const <IamFlutterMobileOAuthProvider>[
+      IamFlutterMobileOAuthProvider(displayName: 'GitHub', providerKey: 'github'),
+    ];
+  }
+}
+
 IamFlutterMobileAuthController _auth(_FakeAuthDataSource source) {
   return IamFlutterMobileAuthController(
     service: IamFlutterMobileAuthService(dataSource: source),
@@ -206,6 +231,8 @@ Widget _shell(_FakeAuthDataSource source) {
     authMessages: _authMessages,
     organizationDataSource: _FakeOrganizationDataSource(),
     organizationMessages: _organizationMessages,
+    oauthDataSource: _FakeOAuthDataSource(),
+    oauthMessages: _oauthMessages,
     tenantDataSource: _FakeTenantDataSource(),
     tenantMessages: _tenantMessages,
     userCenterDataSource: _FakeUserCenterDataSource(),
@@ -261,6 +288,7 @@ void main() {
     expect(app.routes!.containsKey('/user/account-binding'), isTrue);
     expect(app.routes!.containsKey('/user/profile'), isTrue);
     expect(app.routes!.containsKey('/user/password'), isTrue);
+    expect(app.routes!.containsKey('/oauth/providers'), isTrue);
 
     // The ids the shell registers must be the ones the capability packages
     // contribute; a mismatch would break deep links while the UI still looked
@@ -277,6 +305,8 @@ void main() {
         '${contribution.id}:${contribution.path}',
       for (final RouteContribution contribution in iamFlutterMobileUserCenterRouteContributions)
         '${contribution.id}:${contribution.path}',
+      for (final RouteContribution contribution in iamFlutterMobileOauthRouteContributions)
+        '${contribution.id}:${contribution.path}',
     };
     expect(contributed, contains('app.iam.auth.login:/auth/login'));
     expect(contributed, contains('app.iam.auth.forgot-password:/auth/forgot-password'));
@@ -285,6 +315,7 @@ void main() {
     expect(contributed, contains('app.iam.account-binding.list:/user/account-binding'));
     expect(contributed, contains('app.iam.user-center.profile:/user/profile'));
     expect(contributed, contains('app.iam.user-center.password:/user/password'));
+    expect(contributed, contains('app.iam.oauth.providers:/oauth/providers'));
   });
 
   testWidgets('opens the organization directory from the tenant screen', (WidgetTester tester) async {

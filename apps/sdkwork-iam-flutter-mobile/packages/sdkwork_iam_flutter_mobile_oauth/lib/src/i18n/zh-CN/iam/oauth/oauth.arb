@@ -1,10 +1,10 @@
 {
   "@@locale": "zh",
-  "title": "SDKWork IAM Flutter Mobile Oauth",
+  "title": "第三方登录",
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile Oauth 工作区",
+  "subtitle": "该租户已开通的登录方式。",
   "@subtitle": {
     "description": "Supporting line under the title."
   },
@@ -12,7 +12,7 @@
   "@loading": {
     "description": "Shown while the capability loads its first page."
   },
-  "empty": "暂无内容。",
+  "empty": "暂无可用的登录方式。",
   "@empty": {
     "description": "Empty state shown when the capability has no records."
   },
@@ -23,5 +23,13 @@
   "retry": "重试",
   "@retry": {
     "description": "Label of the retry action."
+  },
+  "connectAction": "连接",
+  "@connectAction": {
+    "description": "Label of the per-provider action."
+  },
+  "authorizeUnavailable": "当前构建无法打开浏览器，暂时不能使用第三方登录。",
+  "@authorizeUnavailable": {
+    "description": "Shown when the host provided no URL opener."
   }
 }

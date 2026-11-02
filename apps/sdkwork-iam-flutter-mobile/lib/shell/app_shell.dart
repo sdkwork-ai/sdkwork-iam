@@ -1,4 +1,4 @@
-// SDKWORK-IAM-FLUTTER-SHELL: authored shell assembly.
+﻿// SDKWORK-IAM-FLUTTER-SHELL: authored shell assembly.
 /**
  * Shell the root mounts: it loads the copy the mounted screens need, decides
  * whether the session gate opens, and builds the MaterialApp with the route table.
@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
 import 'package:sdkwork_iam_flutter_mobile_commons/sdkwork_iam_flutter_mobile_commons.dart';
+import 'package:sdkwork_iam_flutter_mobile_oauth/sdkwork_iam_flutter_mobile_oauth.dart';
 import 'package:sdkwork_iam_flutter_mobile_organization/sdkwork_iam_flutter_mobile_organization.dart';
 import 'package:sdkwork_iam_flutter_mobile_shell/sdkwork_iam_flutter_mobile_shell.dart';
 import 'package:sdkwork_iam_flutter_mobile_tenant/sdkwork_iam_flutter_mobile_tenant.dart';
@@ -23,6 +24,7 @@ import 'package:sdkwork_iam_flutter_mobile_user_center/sdkwork_iam_flutter_mobil
 import 'account_binding_data_source.dart';
 import 'auth_data_source.dart';
 import 'organization_data_source.dart';
+import 'oauth_data_source.dart';
 import 'tenant_data_source.dart';
 import 'user_center_data_source.dart';
 
@@ -37,6 +39,8 @@ class IamHomeShell extends StatefulWidget {
     this.authMessages,
     this.organizationDataSource,
     this.organizationMessages,
+    this.oauthDataSource,
+    this.oauthMessages,
     this.tenantDataSource,
     this.tenantMessages,
     this.userCenterDataSource,
@@ -75,6 +79,12 @@ class IamHomeShell extends StatefulWidget {
 
   /// Overrides the organization copy.
   final Map<String, String>? organizationMessages;
+
+  /// Overrides the app-api OAuth data source.
+  final IamFlutterMobileOAuthDataSource? oauthDataSource;
+
+  /// Overrides the OAuth copy.
+  final Map<String, String>? oauthMessages;
 
   @override
   State<IamHomeShell> createState() => _IamHomeShellState();
@@ -176,6 +186,14 @@ class _IamHomeShellState extends State<IamHomeShell> {
             dataSource: widget.userCenterDataSource ?? IamUserCenterAppSdkDataSource(),
           ),
         );
+        final Widget oauthScreen = IamFlutterMobileOauthScreen(
+          controller: IamFlutterMobileOauthController(
+            service: IamFlutterMobileOAuthService(
+              dataSource: widget.oauthDataSource ?? IamOAuthAppSdkDataSource(),
+            ),
+          ),
+          messages: copy.oauth,
+        );
         final Widget profileScreen = Builder(
           builder: (BuildContext screenContext) => IamFlutterMobileUserCenterScreen(
             controller: profileController,
@@ -230,6 +248,11 @@ class _IamHomeShellState extends State<IamHomeShell> {
               path: '/user/password',
               routeId: IamFlutterMobileUserCenterRoutes.passwordRouteId,
             ),
+            SdkworkRouteEntry(
+              builder: (_) => oauthScreen,
+              path: '/oauth/providers',
+              routeId: IamFlutterMobileOauthRoutes.providersRouteId,
+            ),
           ],
           title: copy.tenant['title'] ?? 'SDKWork IAM',
         );
@@ -265,9 +288,12 @@ class _IamHomeShellState extends State<IamHomeShell> {
           'user_center',
           locale,
         );
+    final Map<String, String> oauth = widget.oauthMessages ??
+        await _loadFragment('sdkwork_iam_flutter_mobile_oauth', 'oauth', locale);
     return _IamShellCopy(
       accountBinding: accountBinding,
       auth: auth,
+      oauth: oauth,
       organization: organization,
       tenant: tenant,
       userCenter: userCenter,
@@ -294,6 +320,7 @@ class _IamShellCopy {
   const _IamShellCopy({
     required this.accountBinding,
     required this.auth,
+    required this.oauth,
     required this.organization,
     required this.tenant,
     required this.userCenter,
@@ -301,6 +328,7 @@ class _IamShellCopy {
 
   final Map<String, String> accountBinding;
   final Map<String, String> auth;
+  final Map<String, String> oauth;
   final Map<String, String> organization;
   final Map<String, String> tenant;
   final Map<String, String> userCenter;
