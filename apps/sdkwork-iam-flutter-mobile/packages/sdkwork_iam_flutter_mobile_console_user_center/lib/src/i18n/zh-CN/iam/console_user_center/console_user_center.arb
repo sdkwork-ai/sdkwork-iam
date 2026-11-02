@@ -1,20 +1,64 @@
 {
   "@@locale": "zh",
-  "title": "SDKWork IAM Flutter Mobile Console User Center",
+  "title": "用户中心",
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile Console User Center 工作区",
+  "subtitle": "当前登录用户自身的账号信息（控制台视角）。",
   "@subtitle": {
     "description": "Supporting line under the title."
+  },
+  "accountSection": "账号",
+  "@accountSection": {
+    "description": "Heading of the account region."
+  },
+  "verificationSection": "验证策略",
+  "@verificationSection": {
+    "description": "Heading of the verification region."
+  },
+  "userId": "用户",
+  "@userId": {
+    "description": "Label of the user id row."
+  },
+  "displayName": "显示名称",
+  "@displayName": {
+    "description": "Label of the display name row."
+  },
+  "email": "邮箱",
+  "@email": {
+    "description": "Label of the email row."
+  },
+  "phone": "手机号",
+  "@phone": {
+    "description": "Label of the phone row."
+  },
+  "verificationContact": "联系方式验证",
+  "@verificationContact": {
+    "description": "Verification row: contact."
+  },
+  "verificationEmail": "邮箱验证",
+  "@verificationEmail": {
+    "description": "Verification row: email."
+  },
+  "verificationOauth": "第三方登录",
+  "@verificationOauth": {
+    "description": "Verification row: third-party sign-in."
+  },
+  "required": "必需",
+  "@required": {
+    "description": "Verification value: required."
+  },
+  "optional": "可选",
+  "@optional": {
+    "description": "Verification value: optional."
+  },
+  "notReported": "未提供",
+  "@notReported": {
+    "description": "Shown for a field the server did not report."
   },
   "loading": "加载中…",
   "@loading": {
     "description": "Shown while the capability loads its first page."
-  },
-  "empty": "暂无内容。",
-  "@empty": {
-    "description": "Empty state shown when the capability has no records."
   },
   "loadError": "无法加载此视图。",
   "@loadError": {

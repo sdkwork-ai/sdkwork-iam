@@ -1,20 +1,64 @@
 {
   "@@locale": "en",
-  "title": "SDKWork IAM Flutter Mobile Console User Center",
+  "title": "User center",
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile Console User Center workspace",
+  "subtitle": "The signed-in user's own record, as the console sees it.",
   "@subtitle": {
     "description": "Supporting line under the title."
+  },
+  "accountSection": "Account",
+  "@accountSection": {
+    "description": "Heading of the account region."
+  },
+  "verificationSection": "Verification policy",
+  "@verificationSection": {
+    "description": "Heading of the verification region."
+  },
+  "userId": "User",
+  "@userId": {
+    "description": "Label of the user id row."
+  },
+  "displayName": "Display name",
+  "@displayName": {
+    "description": "Label of the display name row."
+  },
+  "email": "Email",
+  "@email": {
+    "description": "Label of the email row."
+  },
+  "phone": "Phone",
+  "@phone": {
+    "description": "Label of the phone row."
+  },
+  "verificationContact": "Contact verification",
+  "@verificationContact": {
+    "description": "Verification row: contact."
+  },
+  "verificationEmail": "Email verification",
+  "@verificationEmail": {
+    "description": "Verification row: email."
+  },
+  "verificationOauth": "Third-party sign-in",
+  "@verificationOauth": {
+    "description": "Verification row: third-party sign-in."
+  },
+  "required": "Required",
+  "@required": {
+    "description": "Verification value: required."
+  },
+  "optional": "Optional",
+  "@optional": {
+    "description": "Verification value: optional."
+  },
+  "notReported": "Not reported",
+  "@notReported": {
+    "description": "Shown for a field the server did not report."
   },
   "loading": "Loading…",
   "@loading": {
     "description": "Shown while the capability loads its first page."
-  },
-  "empty": "Nothing to show yet.",
-  "@empty": {
-    "description": "Empty state shown when the capability has no records."
   },
   "loadError": "Unable to load this view.",
   "@loadError": {

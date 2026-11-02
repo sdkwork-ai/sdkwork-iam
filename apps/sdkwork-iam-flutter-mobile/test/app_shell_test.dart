@@ -1,4 +1,4 @@
-// SDKWORK-IAM-FLUTTER: authored shell test.
+﻿// SDKWORK-IAM-FLUTTER: authored shell test.
 /**
  * The app root used to compile but render nothing, then mounted the tenant screen
  * behind no gate. These cases pin the wiring: signed out, the shell opens the
@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
 import 'package:sdkwork_iam_flutter_mobile_console_organization/sdkwork_iam_flutter_mobile_console_organization.dart';
+import 'package:sdkwork_iam_flutter_mobile_console_user_center/sdkwork_iam_flutter_mobile_console_user_center.dart';
 import 'package:sdkwork_iam_flutter_mobile_console_tenant/sdkwork_iam_flutter_mobile_console_tenant.dart';
 import 'package:sdkwork_iam_flutter_mobile_core/sdkwork_iam_flutter_mobile_core.dart';
 import 'package:sdkwork_iam_flutter_mobile_organization/sdkwork_iam_flutter_mobile_organization.dart';
@@ -205,6 +206,38 @@ const Map<String, String> _oauthMessages = <String, String>{
   'title': 'Third-party sign-in',
 };
 
+const Map<String, String> _consoleUserCenterMessages = <String, String>{
+  'accountSection': 'Account',
+  'displayName': 'Display name',
+  'email': 'Email',
+  'loadError': 'Unable to load this view.',
+  'notReported': 'Not reported',
+  'optional': 'Optional',
+  'phone': 'Phone',
+  'required': 'Required',
+  'retry': 'Retry',
+  'subtitle': "The signed-in user's own record, as the console sees it.",
+  'title': 'User center',
+  'userId': 'User',
+  'verificationContact': 'Contact verification',
+  'verificationEmail': 'Email verification',
+  'verificationOauth': 'Third-party sign-in',
+  'verificationSection': 'Verification policy',
+};
+
+class _FakeConsoleUserCenterDataSource
+    implements IamFlutterMobileConsoleUserCenterDataSource {
+  @override
+  Future<IamFlutterMobileConsoleUserAccount> loadAccount() async {
+    return const IamFlutterMobileConsoleUserAccount(userId: 'user-1');
+  }
+
+  @override
+  Future<IamFlutterMobileConsoleUserVerificationPolicy> loadVerificationPolicy() async {
+    return const IamFlutterMobileConsoleUserVerificationPolicy();
+  }
+}
+
 const Map<String, String> _consoleOrganizationMessages = <String, String>{
   'empty': 'This tenant has no organizations yet.',
   'emptySearch': 'Nothing matched that search.',
@@ -299,6 +332,8 @@ Widget _shell(_FakeAuthDataSource source, {List<String>? openedUrls}) {
     authMessages: _authMessages,
     consoleOrganizationDataSource: _FakeConsoleOrganizationDataSource(),
     consoleOrganizationMessages: _consoleOrganizationMessages,
+    consoleUserCenterDataSource: _FakeConsoleUserCenterDataSource(),
+    consoleUserCenterMessages: _consoleUserCenterMessages,
     consoleTenantDataSource: _FakeConsoleTenantDataSource(),
     consoleTenantMessages: _consoleTenantMessages,
     organizationDataSource: _FakeOrganizationDataSource(),
@@ -369,6 +404,7 @@ void main() {
     expect(app.routes!.containsKey('/oauth/providers'), isTrue);
     expect(app.routes!.containsKey('/console/iam/tenant'), isTrue);
     expect(app.routes!.containsKey('/console/iam/organizations'), isTrue);
+    expect(app.routes!.containsKey('/console/iam/user'), isTrue);
 
     // The ids the shell registers must be the ones the capability packages
     // contribute; a mismatch would break deep links while the UI still looked
@@ -392,6 +428,8 @@ void main() {
       for (final contribution in iamFlutterMobileConsoleTenantRouteContributions)
         '${contribution.id}:${contribution.path}',
       for (final contribution in iamFlutterMobileConsoleOrganizationRouteContributions)
+        '${contribution.id}:${contribution.path}',
+      for (final contribution in iamFlutterMobileConsoleUserCenterRouteContributions)
         '${contribution.id}:${contribution.path}',
     };
     expect(contributed, contains('app.iam.auth.login:/auth/login'));

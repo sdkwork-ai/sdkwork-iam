@@ -17,6 +17,7 @@ import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.
 import 'package:sdkwork_iam_flutter_mobile_commons/sdkwork_iam_flutter_mobile_commons.dart';
 import 'package:sdkwork_iam_flutter_mobile_console_organization/sdkwork_iam_flutter_mobile_console_organization.dart';
 import 'package:sdkwork_iam_flutter_mobile_console_tenant/sdkwork_iam_flutter_mobile_console_tenant.dart';
+import 'package:sdkwork_iam_flutter_mobile_console_user_center/sdkwork_iam_flutter_mobile_console_user_center.dart';
 import 'package:sdkwork_iam_flutter_mobile_oauth/sdkwork_iam_flutter_mobile_oauth.dart';
 import 'package:sdkwork_iam_flutter_mobile_organization/sdkwork_iam_flutter_mobile_organization.dart';
 import 'package:sdkwork_iam_flutter_mobile_shell/sdkwork_iam_flutter_mobile_shell.dart';
@@ -27,6 +28,7 @@ import 'account_binding_data_source.dart';
 import 'auth_data_source.dart';
 import 'console_organization_data_source.dart';
 import 'console_tenant_data_source.dart';
+import 'console_user_center_data_source.dart';
 import 'organization_data_source.dart';
 import 'oauth_data_source.dart';
 import 'tenant_data_source.dart';
@@ -44,6 +46,8 @@ class IamHomeShell extends StatefulWidget {
     this.authMessages,
     this.consoleOrganizationDataSource,
     this.consoleOrganizationMessages,
+    this.consoleUserCenterDataSource,
+    this.consoleUserCenterMessages,
     this.consoleTenantDataSource,
     this.consoleTenantMessages,
     this.organizationDataSource,
@@ -83,6 +87,12 @@ class IamHomeShell extends StatefulWidget {
 
   /// Overrides the console-tenant copy.
   final Map<String, String>? consoleTenantMessages;
+
+  /// Overrides the app-api console-user-center data source.
+  final IamFlutterMobileConsoleUserCenterDataSource? consoleUserCenterDataSource;
+
+  /// Overrides the console-user-center copy.
+  final Map<String, String>? consoleUserCenterMessages;
 
   /// Overrides the app-api console-organization data source.
   final IamFlutterMobileConsoleOrganizationDataSource? consoleOrganizationDataSource;
@@ -248,6 +258,17 @@ class _IamHomeShellState extends State<IamHomeShell> {
             messages: copy.consoleOrganization,
           ),
         );
+        final Widget consoleUserCenterScreen = Builder(
+          builder: (BuildContext _) => IamFlutterMobileConsoleUserCenterScreen(
+            controller: IamFlutterMobileConsoleUserCenterController(
+              service: IamFlutterMobileConsoleUserCenterService(
+                dataSource:
+                    widget.consoleUserCenterDataSource ?? IamConsoleUserCenterAppSdkDataSource(),
+              ),
+            ),
+            messages: copy.consoleUserCenter,
+          ),
+        );
         final Widget profileScreen = Builder(
           builder: (BuildContext screenContext) => IamFlutterMobileUserCenterScreen(
             controller: profileController,
@@ -317,6 +338,11 @@ class _IamHomeShellState extends State<IamHomeShell> {
               path: '/console/iam/organizations',
               routeId: IamFlutterMobileConsoleOrganizationRoutes.directoryRouteId,
             ),
+            SdkworkRouteEntry(
+              builder: (_) => consoleUserCenterScreen,
+              path: '/console/iam/user',
+              routeId: IamFlutterMobileConsoleUserCenterRoutes.profileRouteId,
+            ),
           ],
           title: copy.tenant['title'] ?? 'SDKWork IAM',
         );
@@ -360,6 +386,12 @@ class _IamHomeShellState extends State<IamHomeShell> {
           'console_tenant',
           locale,
         );
+    final Map<String, String> consoleUserCenter = widget.consoleUserCenterMessages ??
+        await _loadFragment(
+          'sdkwork_iam_flutter_mobile_console_user_center',
+          'console_user_center',
+          locale,
+        );
     final Map<String, String> consoleOrganization = widget.consoleOrganizationMessages ??
         await _loadFragment(
           'sdkwork_iam_flutter_mobile_console_organization',
@@ -370,6 +402,7 @@ class _IamHomeShellState extends State<IamHomeShell> {
       accountBinding: accountBinding,
       auth: auth,
       consoleOrganization: consoleOrganization,
+      consoleUserCenter: consoleUserCenter,
       consoleTenant: consoleTenant,
       oauth: oauth,
       organization: organization,
@@ -417,6 +450,7 @@ class _IamShellCopy {
     required this.accountBinding,
     required this.auth,
     required this.consoleOrganization,
+    required this.consoleUserCenter,
     required this.consoleTenant,
     required this.oauth,
     required this.organization,
@@ -427,6 +461,7 @@ class _IamShellCopy {
   final Map<String, String> accountBinding;
   final Map<String, String> auth;
   final Map<String, String> consoleOrganization;
+  final Map<String, String> consoleUserCenter;
   final Map<String, String> consoleTenant;
   final Map<String, String> oauth;
   final Map<String, String> organization;
