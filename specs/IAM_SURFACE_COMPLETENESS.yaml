@@ -345,12 +345,17 @@ clientSurfaces:
       `admin.iam.oauth.providers` reads `oauth/provider_catalog` and states each provider as
       enabled, disabled or explicitly unreported — a missing badge would leave an operator
       unable to tell a switched-off provider from an incompletely described one.
-      `admin.iam.account-binding.list` on Flutter lists the tenant's linked identities
-      (provider identity plus the local user), which is recorded as **partial**, not complete:
-      the PC page is a policy settings editor with toggles, and policy writes are not
-      implemented on this surface yet. The list is what an operator needs to answer "which
-      account is this login attached to?", so it stays; the gap is stated rather than papered
-      over. Three admin screens remain.
+      `admin.iam.account-binding.list` on Flutter is now a real policy editor as well as a
+      list: four toggles bound to a local draft, a save action that stays disabled until the
+      draft differs from the saved policy, and a write that replaces the displayed policy only
+      after the server accepts. A policy the server never reported renders as an explicit "not
+      loaded" row rather than as everything switched off, and saving an all-off policy is
+      refused unless the caller says that is intended — clearing every binding capability in
+      one tap is almost always a mistake, and the server would accept it silently. The tenant's
+      linked identities remain below the editor.
+      Flutter therefore reaches **20 complete, the same count as H5**; six admin screens and the
+      oauth loop remain scaffolded, with `admin.iam.user.list` blocked on the missing app-api
+      directory read.
   harmony:
     status: scaffold
     note: Route/page map exists; capability pages do not render real data yet.

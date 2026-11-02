@@ -4,9 +4,41 @@
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "Every third-party identity linked by a user in this tenant.",
+  "subtitle": "The tenant binding policy and every identity a user has linked.",
   "@subtitle": {
     "description": "Supporting line under the title."
+  },
+  "policySection": "Self-service policy",
+  "@policySection": {
+    "description": "Heading of the policy editor."
+  },
+  "policyContact": "Contact binding",
+  "@policyContact": {
+    "description": "Policy toggle: contact binding."
+  },
+  "policyEmail": "Email binding",
+  "@policyEmail": {
+    "description": "Policy toggle: email binding."
+  },
+  "policyOauth": "Third-party sign-in",
+  "@policyOauth": {
+    "description": "Policy toggle: third-party sign-in."
+  },
+  "policyUnlink": "Self-service unlink",
+  "@policyUnlink": {
+    "description": "Policy toggle: self-service unlink."
+  },
+  "policyNotLoaded": "The tenant policy is not loaded yet.",
+  "@policyNotLoaded": {
+    "description": "Shown instead of the toggles when the policy read failed."
+  },
+  "savePolicy": "Save policy",
+  "@savePolicy": {
+    "description": "Label of the policy save action."
+  },
+  "policySaved": "Policy saved.",
+  "@policySaved": {
+    "description": "Confirmation after a policy write is accepted."
   },
   "searchPlaceholder": "Search by provider or user",
   "@searchPlaceholder": {

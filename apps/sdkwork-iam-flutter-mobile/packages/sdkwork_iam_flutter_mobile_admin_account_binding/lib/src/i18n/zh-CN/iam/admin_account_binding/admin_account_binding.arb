@@ -4,9 +4,41 @@
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "该租户内所有用户绑定的第三方身份。",
+  "subtitle": "租户的绑定策略，以及所有用户已绑定的身份。",
   "@subtitle": {
     "description": "Supporting line under the title."
+  },
+  "policySection": "自助服务策略",
+  "@policySection": {
+    "description": "Heading of the policy editor."
+  },
+  "policyContact": "联系方式绑定",
+  "@policyContact": {
+    "description": "Policy toggle: contact binding."
+  },
+  "policyEmail": "邮箱绑定",
+  "@policyEmail": {
+    "description": "Policy toggle: email binding."
+  },
+  "policyOauth": "第三方登录",
+  "@policyOauth": {
+    "description": "Policy toggle: third-party sign-in."
+  },
+  "policyUnlink": "自助解除绑定",
+  "@policyUnlink": {
+    "description": "Policy toggle: self-service unlink."
+  },
+  "policyNotLoaded": "租户策略尚未加载。",
+  "@policyNotLoaded": {
+    "description": "Shown instead of the toggles when the policy read failed."
+  },
+  "savePolicy": "保存策略",
+  "@savePolicy": {
+    "description": "Label of the policy save action."
+  },
+  "policySaved": "策略已保存。",
+  "@policySaved": {
+    "description": "Confirmation after a policy write is accepted."
   },
   "searchPlaceholder": "按提供方或用户搜索",
   "@searchPlaceholder": {

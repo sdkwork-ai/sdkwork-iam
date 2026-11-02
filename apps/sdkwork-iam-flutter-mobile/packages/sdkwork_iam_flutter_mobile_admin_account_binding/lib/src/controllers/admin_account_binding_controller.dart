@@ -48,6 +48,37 @@ class IamFlutterMobileAdminAccountBindingController {
     }
   }
 
+  /// Loads the tenant policy independently of the link list.
+  ///
+  /// The policy is the region an operator must trust: it decides whether users can do
+  /// anything themselves. A failed policy read leaves the last one on screen and reports why,
+  /// rather than silently showing "everything off".
+  Future<void> loadPolicy() async {
+    try {
+      final IamFlutterMobileAdminAccountBindingPolicy policy = await _service.loadPolicy();
+      _emit(_state.copyWith(policy: policy));
+    } catch (error) {
+      _emit(_state.copyWith(errorMessage: _describe(error)));
+    }
+  }
+
+  /// Writes the tenant policy, replacing the displayed one only after the server accepts.
+  Future<bool> savePolicy(
+    IamFlutterMobileAdminAccountBindingPolicy policy, {
+    bool allowAllDisabled = false,
+  }) async {
+    if (_state.savingPolicy) return false;
+    _emit(_state.copyWith(errorMessage: null, policySaved: false, savingPolicy: true));
+    try {
+      await _service.savePolicy(policy, allowAllDisabled: allowAllDisabled);
+      _emit(_state.copyWith(policy: policy, policySaved: true, savingPolicy: false));
+      return true;
+    } catch (error) {
+      _emit(_state.copyWith(errorMessage: _describe(error), savingPolicy: false));
+      return false;
+    }
+  }
+
   /// Loads the first page for [search], replacing whatever is displayed.
   Future<void> load({String search = ''}) async {
     final int requestId = _requestId + 1;

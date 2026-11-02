@@ -29,7 +29,7 @@
       "pc": 20,
       "h5": 20,
       "miniProgram": 11,
-      "flutter": 19,
+      "flutter": 20,
       "harmony": 0
     }
   },
@@ -437,7 +437,7 @@
       "tier": "admin",
       "capability": "account-binding",
       "api": "backend-api",
-      "status": { "pc": "complete", "flutter": "partial" },
+      "status": { "pc": "complete", "flutter": "complete" },
       "evidence": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-admin-account-binding/src/pages/AccountBindingAdminSettings.tsx",
         "flutter": "apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_admin_account_binding/lib/src/screens/admin_account_binding_screen.dart"

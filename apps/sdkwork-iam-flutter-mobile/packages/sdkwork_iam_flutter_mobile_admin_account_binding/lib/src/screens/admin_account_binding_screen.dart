@@ -60,10 +60,21 @@ class _IamFlutterMobileAdminAccountBindingScreenState
     });
     if (_state.status == IamFlutterMobileAdminAccountBindingStatus.idle) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _controller.load();
+        if (!mounted) return;
+        _controller.load();
+        _controller.loadPolicy();
       });
     }
   }
+
+  /// The policy being edited.
+  ///
+  /// Kept as a local draft so a half-toggled policy is never mistaken for the saved one: the
+  /// server value stays in the controller state until a write is accepted.
+  IamFlutterMobileAdminAccountBindingPolicy _draft =
+      const IamFlutterMobileAdminAccountBindingPolicy();
+
+  bool _draftReady = false;
 
   @override
   void dispose() {
@@ -109,9 +120,10 @@ class _IamFlutterMobileAdminAccountBindingScreenState
   }
 
   Widget _buildBody() {
-    if (_state.status == IamFlutterMobileAdminAccountBindingStatus.loading ||
-        _state.status == IamFlutterMobileAdminAccountBindingStatus.idle) {
-      return const SdkworkLoadingView();
+    // Adopt the server policy into the draft once it arrives, and again after a save lands.
+    if (!_draftReady && _state.policy != null) {
+      _draft = _state.policy!;
+      _draftReady = true;
     }
     if (_state.status == IamFlutterMobileAdminAccountBindingStatus.error) {
       return SdkworkErrorView(
@@ -120,50 +132,133 @@ class _IamFlutterMobileAdminAccountBindingScreenState
         retryLabel: _message('retry'),
       );
     }
-    if (_state.items.isEmpty) {
-      return Center(
-        child: Text(_state.search.isEmpty ? _message('empty') : _message('emptySearch')),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ListView(
       children: <Widget>[
-        if (_state.errorMessage != null)
+        _policySection(),
+        const SizedBox(height: SdkworkDesignTokens.spaceMd),
+        if (_state.status == IamFlutterMobileAdminAccountBindingStatus.loading ||
+            _state.status == IamFlutterMobileAdminAccountBindingStatus.idle)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: SdkworkDesignTokens.spaceMd),
+            child: LinearProgressIndicator(),
+          )
+        else ...<Widget>[
+          if (_state.items.isEmpty)
+            Text(_state.search.isEmpty ? _message('empty') : _message('emptySearch'))
+          else
+            for (final IamFlutterMobileAdminAccountLinkRow row in _state.items)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                key: ValueKey<String>(row.accountLinkId),
+                // The provider identity and the local user are both required to answer the
+                // question this list exists for; whichever half is missing reads as absent.
+                subtitle: Text(row.userId ?? row.accountLinkId),
+                title: Text(
+                  row.providerUserId == null
+                      ? (row.provider ?? row.accountLinkId)
+                      : '${row.provider ?? row.accountLinkId} · ${row.providerUserId}',
+                ),
+              ),
+          if (_state.hasMore)
+            FilledButton.tonal(
+              onPressed: _state.loadingMore ? null : _controller.loadMore,
+              child: _state.loadingMore
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(_message('loadMore')),
+            ),
+        ],
+        if (_state.errorMessage != null) ...<Widget>[
+          const SizedBox(height: SdkworkDesignTokens.spaceSm),
           Text(
             _state.errorMessage!,
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
-        Expanded(
-          child: ListView.builder(
-            itemCount: _state.items.length,
-            itemBuilder: (BuildContext context, int index) {
-              final IamFlutterMobileAdminAccountLinkRow row = _state.items[index];
-              // The provider identity and the local user are both required to answer the
-              // question this list exists for; whichever half is missing reads as absent.
-              final String title = row.providerUserId == null
-                  ? (row.provider ?? row.accountLinkId)
-                  : '${row.provider ?? row.accountLinkId} · ${row.providerUserId}';
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                key: ValueKey<String>(row.accountLinkId),
-                subtitle: Text(row.userId ?? row.accountLinkId),
-                title: Text(title),
-              );
-            },
+        ],
+      ],
+    );
+  }
+
+  /// The tenant policy editor.
+  ///
+  /// A policy the server has not reported is never rendered as "everything off": that would
+  /// be a claim about the tenant the console cannot make.
+  Widget _policySection() {
+    if (_state.policy == null) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(SdkworkDesignTokens.spaceMd),
+          child: Row(
+            children: <Widget>[
+              Expanded(child: Text(_message('policyNotLoaded'))),
+              TextButton(
+                onPressed: _controller.loadPolicy,
+                child: Text(_message('retry')),
+              ),
+            ],
           ),
         ),
-        if (_state.hasMore)
-          FilledButton.tonal(
-            onPressed: _state.loadingMore ? null : _controller.loadMore,
-            child: _state.loadingMore
-                ? const SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(_message('loadMore')),
-          ),
-      ],
+      );
+    }
+    final bool dirty = _draft != _state.policy;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(SdkworkDesignTokens.spaceMd),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(_message('policySection'), style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: SdkworkDesignTokens.spaceSm),
+            _toggle('policyContact', _draft.contactEnabled,
+                (bool value) => setState(() => _draft = _draft.copyWith(contactEnabled: value))),
+            _toggle('policyEmail', _draft.emailEnabled,
+                (bool value) => setState(() => _draft = _draft.copyWith(emailEnabled: value))),
+            _toggle('policyOauth', _draft.oauthEnabled,
+                (bool value) => setState(() => _draft = _draft.copyWith(oauthEnabled: value))),
+            _toggle('policyUnlink', _draft.selfServiceUnlinkEnabled,
+                (bool value) =>
+                    setState(() => _draft = _draft.copyWith(selfServiceUnlinkEnabled: value))),
+            const SizedBox(height: SdkworkDesignTokens.spaceSm),
+            Row(
+              children: <Widget>[
+                FilledButton(
+                  onPressed: dirty && !_state.savingPolicy
+                      ? () async {
+                          final bool saved = await _controller.savePolicy(_draft);
+                          if (saved && mounted) setState(() => _draftReady = true);
+                        }
+                      : null,
+                  child: _state.savingPolicy
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(_message('savePolicy')),
+                ),
+                const SizedBox(width: SdkworkDesignTokens.spaceSm),
+                if (_state.policySaved && !dirty)
+                  Text(
+                    _message('policySaved'),
+                    style: TextStyle(color: Theme.of(context).colorScheme.primary),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _toggle(String labelKey, bool value, void Function(bool) onChanged) {
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      onChanged: _state.savingPolicy ? null : onChanged,
+      title: Text(_message(labelKey)),
+      value: value,
     );
   }
 }

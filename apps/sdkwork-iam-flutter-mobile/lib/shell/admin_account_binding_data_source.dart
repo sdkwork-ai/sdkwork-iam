@@ -21,6 +21,45 @@ class IamAdminAccountBindingBackendSdkDataSource
   final SdkworkBackendClient _client;
 
   @override
+  Future<IamFlutterMobileAdminAccountBindingPolicy> loadPolicy() async {
+    final SdkWorkResourceResponse? response = await _client.iam.accountBindingPolicyRetrieve();
+    final Object? data = response?.data;
+    if (data is! Map) {
+      throw StateError('The account binding policy response carried no data object.');
+    }
+    final Object? item = data['item'];
+    final Map<String, dynamic> body =
+        Map<String, dynamic>.from(item is Map ? item : data);
+    final Map<String, dynamic> contact = _readMap(body['contactBinding']);
+    final Map<String, dynamic> oauth = _readMap(body['oauthBinding']);
+    return IamFlutterMobileAdminAccountBindingPolicy(
+      contactEnabled: contact['enabled'] == true,
+      emailEnabled: contact['emailEnabled'] == true,
+      oauthEnabled: oauth['enabled'] == true,
+      // Absent means "not granted": a policy that omitted the flag must not read as
+      // permission to remove a sign-in method.
+      selfServiceUnlinkEnabled: oauth['selfServiceLinkEnabled'] == true ||
+          oauth['selfServiceUnlinkEnabled'] == true,
+    );
+  }
+
+  @override
+  Future<void> savePolicy(IamFlutterMobileAdminAccountBindingPolicy policy) async {
+    // Send exactly the four flags the screen owns; a broader body would let a stale local
+    // field overwrite a setting this screen never displayed.
+    await _client.iam.accountBindingPolicyUpdate(<String, dynamic>{
+      'contactBinding': <String, dynamic>{
+        'emailEnabled': policy.emailEnabled,
+        'enabled': policy.contactEnabled,
+      },
+      'oauthBinding': <String, dynamic>{
+        'enabled': policy.oauthEnabled,
+        'selfServiceLinkEnabled': policy.selfServiceUnlinkEnabled,
+      },
+    });
+  }
+
+  @override
   Future<IamFlutterMobileAdminAccountLinkPage> fetchLinksPage({
     required int page,
     required int pageSize,
@@ -64,6 +103,10 @@ class IamAdminAccountBindingBackendSdkDataSource
       items: rows,
     );
   }
+}
+
+Map<String, dynamic> _readMap(Object? value) {
+  return value is Map ? Map<String, dynamic>.from(value) : <String, dynamic>{};
 }
 
 String? _readString(Object? value) {

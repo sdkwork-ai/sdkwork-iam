@@ -1,4 +1,4 @@
-﻿// SDKWORK-IAM-FLUTTER: authored shell test.
+// SDKWORK-IAM-FLUTTER: authored shell test.
 /**
  * The app root used to compile but render nothing, then mounted the tenant screen
  * behind no gate. These cases pin the wiring: signed out, the shell opens the
@@ -233,6 +233,14 @@ class _FakeAdminAccountBindingDataSource
   }) async {
     return const IamFlutterMobileAdminAccountLinkPage();
   }
+
+  @override
+  Future<IamFlutterMobileAdminAccountBindingPolicy> loadPolicy() async {
+    return const IamFlutterMobileAdminAccountBindingPolicy();
+  }
+
+  @override
+  Future<void> savePolicy(IamFlutterMobileAdminAccountBindingPolicy policy) async {}
 }
 
 const Map<String, String> _adminAuditMessages = <String, String>{

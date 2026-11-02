@@ -33,6 +33,9 @@ class IamFlutterMobileAdminAccountBindingState {
     this.loadingMore = false,
     this.errorMessage,
     this.search = '',
+    this.policy,
+    this.savingPolicy = false,
+    this.policySaved = false,
   });
 
   /// Current lifecycle stage.
@@ -53,6 +56,15 @@ class IamFlutterMobileAdminAccountBindingState {
   /// Current server-side search term.
   final String search;
 
+  /// The tenant binding policy as last read or successfully written.
+  final IamFlutterMobileAdminAccountBindingPolicy? policy;
+
+  /// True while a policy write is in flight.
+  final bool savingPolicy;
+
+  /// True after the last policy write was accepted.
+  final bool policySaved;
+
   /// A copy that keeps every field.
   IamFlutterMobileAdminAccountBindingState copyWith({
     IamFlutterMobileAdminAccountBindingStatus? status,
@@ -61,6 +73,9 @@ class IamFlutterMobileAdminAccountBindingState {
     bool? loadingMore,
     String? errorMessage,
     String? search,
+    IamFlutterMobileAdminAccountBindingPolicy? policy,
+    bool? savingPolicy,
+    bool? policySaved,
   }) {
     return IamFlutterMobileAdminAccountBindingState(
       status: status ?? this.status,
@@ -69,6 +84,9 @@ class IamFlutterMobileAdminAccountBindingState {
       loadingMore: loadingMore ?? this.loadingMore,
       errorMessage: errorMessage ?? this.errorMessage,
       search: search ?? this.search,
+      policy: policy ?? this.policy,
+      savingPolicy: savingPolicy ?? this.savingPolicy,
+      policySaved: policySaved ?? this.policySaved,
     );
   }
 
