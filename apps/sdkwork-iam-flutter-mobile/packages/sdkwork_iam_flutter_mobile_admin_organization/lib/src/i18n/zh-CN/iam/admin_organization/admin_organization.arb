@@ -1,20 +1,20 @@
 {
   "@@locale": "zh",
-  "title": "SDKWork IAM Flutter Mobile Admin Organization",
+  "title": "组织树",
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile Admin Organization 工作区",
+  "subtitle": "完整层级，按层级缩进（经由 backend-api）。",
   "@subtitle": {
     "description": "Supporting line under the title."
+  },
+  "empty": "该租户还没有组织。",
+  "@empty": {
+    "description": "Empty state shown when the capability has no records."
   },
   "loading": "加载中…",
   "@loading": {
     "description": "Shown while the capability loads its first page."
-  },
-  "empty": "暂无内容。",
-  "@empty": {
-    "description": "Empty state shown when the capability has no records."
   },
   "loadError": "无法加载此视图。",
   "@loadError": {

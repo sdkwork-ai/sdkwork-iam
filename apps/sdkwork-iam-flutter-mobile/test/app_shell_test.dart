@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_audit/sdkwork_iam_flutter_mobile_admin_audit.dart';
+import 'package:sdkwork_iam_flutter_mobile_admin_organization/sdkwork_iam_flutter_mobile_admin_organization.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_permission/sdkwork_iam_flutter_mobile_admin_permission.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_tenant/sdkwork_iam_flutter_mobile_admin_tenant.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
@@ -233,6 +234,21 @@ class _FakeAdminAuditDataSource implements IamFlutterMobileAdminAuditDataSource 
   }
 }
 
+const Map<String, String> _adminOrganizationMessages = <String, String>{
+  'empty': 'This tenant has no organization yet.',
+  'loadError': 'Unable to load this view.',
+  'retry': 'Retry',
+  'subtitle': 'The whole hierarchy.',
+  'title': 'Organization tree',
+};
+
+class _FakeAdminOrganizationDataSource implements IamFlutterMobileAdminOrganizationDataSource {
+  @override
+  Future<List<IamFlutterMobileAdminOrganizationNode>> loadTree() async {
+    return const <IamFlutterMobileAdminOrganizationNode>[];
+  }
+}
+
 const Map<String, String> _adminTenantMessages = <String, String>{
   'empty': 'No tenant exists yet.',
   'emptySearch': 'Nothing matched that search.',
@@ -441,6 +457,8 @@ Widget _shell(_FakeAuthDataSource source, {List<String>? openedUrls}) {
     accountBindingMessages: _accountBindingMessages,
     adminAuditDataSource: _FakeAdminAuditDataSource(),
     adminAuditMessages: _adminAuditMessages,
+    adminOrganizationDataSource: _FakeAdminOrganizationDataSource(),
+    adminOrganizationMessages: _adminOrganizationMessages,
     adminPermissionDataSource: _FakeAdminPermissionDataSource(),
     adminTenantDataSource: _FakeAdminTenantDataSource(),
     adminTenantMessages: _adminTenantMessages,
@@ -528,6 +546,7 @@ void main() {
     expect(app.routes!.containsKey('/admin/iam/permissions'), isTrue);
     expect(app.routes!.containsKey('/admin/iam/audit'), isTrue);
     expect(app.routes!.containsKey('/admin/iam/tenants'), isTrue);
+    expect(app.routes!.containsKey('/admin/iam/organizations'), isTrue);
 
     // The ids the shell registers must be the ones the capability packages
     // contribute; a mismatch would break deep links while the UI still looked

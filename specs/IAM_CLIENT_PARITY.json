@@ -29,7 +29,7 @@
       "pc": 20,
       "h5": 20,
       "miniProgram": 8,
-      "flutter": 15,
+      "flutter": 16,
       "harmony": 0
     }
   },
@@ -347,14 +347,16 @@
       "tier": "admin",
       "capability": "organization",
       "api": "backend-api",
-      "status": { "pc": "complete", "h5": "complete" },
+      "status": { "pc": "complete", "h5": "complete", "flutter": "complete" },
       "evidence": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-admin-organization/src/pages/OrganizationStructureWorkspace.tsx",
-        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-admin-organization/src/pages/OrganizationAdminTreeScreen.tsx"
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-admin-organization/src/pages/OrganizationAdminTreeScreen.tsx",
+        "flutter": "apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_admin_organization/lib/src/screens/admin_organization_screen.dart"
       },
       "tests": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-admin-organization/tests/",
-        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-admin-organization/tests/"
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-admin-organization/tests/",
+        "flutter": "apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_admin_organization/test/"
       }
     },
     {

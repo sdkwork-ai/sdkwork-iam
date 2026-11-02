@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_audit/sdkwork_iam_flutter_mobile_admin_audit.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_permission/sdkwork_iam_flutter_mobile_admin_permission.dart';
+import 'package:sdkwork_iam_flutter_mobile_admin_organization/sdkwork_iam_flutter_mobile_admin_organization.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_tenant/sdkwork_iam_flutter_mobile_admin_tenant.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
 import 'package:sdkwork_iam_flutter_mobile_commons/sdkwork_iam_flutter_mobile_commons.dart';
@@ -31,6 +32,7 @@ import 'package:sdkwork_iam_flutter_mobile_user_center/sdkwork_iam_flutter_mobil
 import 'account_binding_data_source.dart';
 import 'admin_audit_data_source.dart';
 import 'admin_permission_data_source.dart';
+import 'admin_organization_data_source.dart';
 import 'admin_tenant_data_source.dart';
 import 'auth_data_source.dart';
 import 'console_account_binding_data_source.dart';
@@ -49,6 +51,8 @@ class IamHomeShell extends StatefulWidget {
     super.key,
     this.adminAuditDataSource,
     this.adminAuditMessages,
+    this.adminOrganizationDataSource,
+    this.adminOrganizationMessages,
     this.adminPermissionDataSource,
     this.adminTenantDataSource,
     this.adminTenantMessages,
@@ -88,6 +92,12 @@ class IamHomeShell extends StatefulWidget {
 
   /// Overrides the admin audit copy.
   final Map<String, String>? adminAuditMessages;
+
+  /// Overrides the backend-api admin organization data source.
+  final IamFlutterMobileAdminOrganizationDataSource? adminOrganizationDataSource;
+
+  /// Overrides the admin organization copy.
+  final Map<String, String>? adminOrganizationMessages;
 
   /// Overrides the backend-api admin permission data source.
   final IamFlutterMobileAdminPermissionDataSource? adminPermissionDataSource;
@@ -308,6 +318,17 @@ class _IamHomeShellState extends State<IamHomeShell> {
             messages: copy.adminAudit,
           ),
         );
+        final Widget adminOrganizationScreen = Builder(
+          builder: (BuildContext _) => IamFlutterMobileAdminOrganizationScreen(
+            controller: IamFlutterMobileAdminOrganizationController(
+              service: IamFlutterMobileAdminOrganizationService(
+                dataSource: widget.adminOrganizationDataSource ??
+                    IamAdminOrganizationBackendSdkDataSource(),
+              ),
+            ),
+            messages: copy.adminOrganization,
+          ),
+        );
         final Widget adminTenantScreen = Builder(
           builder: (BuildContext _) => IamFlutterMobileAdminTenantScreen(
             controller: IamFlutterMobileAdminTenantController(
@@ -445,6 +466,11 @@ class _IamHomeShellState extends State<IamHomeShell> {
               path: '/admin/iam/tenants',
               routeId: IamFlutterMobileAdminTenantRoutes.listRouteId,
             ),
+            SdkworkRouteEntry(
+              builder: (_) => adminOrganizationScreen,
+              path: '/admin/iam/organizations',
+              routeId: IamFlutterMobileAdminOrganizationRoutes.treeRouteId,
+            ),
           ],
           title: copy.tenant['title'] ?? 'SDKWork IAM',
         );
@@ -508,6 +534,12 @@ class _IamHomeShellState extends State<IamHomeShell> {
         );
     final Map<String, String> adminAudit = widget.adminAuditMessages ??
         await _loadFragment('sdkwork_iam_flutter_mobile_admin_audit', 'admin_audit', locale);
+    final Map<String, String> adminOrganization = widget.adminOrganizationMessages ??
+        await _loadFragment(
+          'sdkwork_iam_flutter_mobile_admin_organization',
+          'admin_organization',
+          locale,
+        );
     final Map<String, String> adminTenant = widget.adminTenantMessages ??
         await _loadFragment('sdkwork_iam_flutter_mobile_admin_tenant', 'admin_tenant', locale);
     final Map<String, String> adminPermission = widget.adminPermissionMessages ??
@@ -515,6 +547,7 @@ class _IamHomeShellState extends State<IamHomeShell> {
     return _IamShellCopy(
       accountBinding: accountBinding,
       adminAudit: adminAudit,
+      adminOrganization: adminOrganization,
       adminPermission: adminPermission,
       adminTenant: adminTenant,
       auth: auth,
@@ -567,6 +600,7 @@ class _IamShellCopy {
   const _IamShellCopy({
     required this.accountBinding,
     required this.adminAudit,
+    required this.adminOrganization,
     required this.adminPermission,
     required this.adminTenant,
     required this.auth,
@@ -582,6 +616,7 @@ class _IamShellCopy {
 
   final Map<String, String> accountBinding;
   final Map<String, String> adminAudit;
+  final Map<String, String> adminOrganization;
   final Map<String, String> adminPermission;
   final Map<String, String> adminTenant;
   final Map<String, String> auth;

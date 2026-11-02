@@ -317,7 +317,10 @@ clientSurfaces:
       `admin.iam.audit.events` reads the audit trail — the only screen that answers "who
       changed this, and when", leading each row with the action and actor a ticket names —
       and `admin.iam.tenant.list` matches a ticket against the name an operator recognises
-      and the id it was filed with. The remaining seven admin screens reuse that shape.
+      and the id it was filed with. `admin.iam.organization.tree` flattens the hierarchy into
+      depth-first rows because a phone cannot host nested scroll views; the flattening keeps
+      orphans visible, keeps server sibling order, and cuts parent cycles so a malformed
+      answer cannot hang the screen. The remaining six admin screens reuse that shape.
   harmony:
     status: scaffold
     note: Route/page map exists; capability pages do not render real data yet.

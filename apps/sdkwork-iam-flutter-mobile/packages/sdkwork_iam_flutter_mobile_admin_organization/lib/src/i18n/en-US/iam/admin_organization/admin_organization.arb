@@ -1,20 +1,20 @@
 {
   "@@locale": "en",
-  "title": "SDKWork IAM Flutter Mobile Admin Organization",
+  "title": "Organization tree",
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile Admin Organization workspace",
+  "subtitle": "The whole hierarchy, indented by level, over the backend-api.",
   "@subtitle": {
     "description": "Supporting line under the title."
+  },
+  "empty": "This tenant has no organization yet.",
+  "@empty": {
+    "description": "Empty state shown when the capability has no records."
   },
   "loading": "Loading…",
   "@loading": {
     "description": "Shown while the capability loads its first page."
-  },
-  "empty": "Nothing to show yet.",
-  "@empty": {
-    "description": "Empty state shown when the capability has no records."
   },
   "loadError": "Unable to load this view.",
   "@loadError": {
