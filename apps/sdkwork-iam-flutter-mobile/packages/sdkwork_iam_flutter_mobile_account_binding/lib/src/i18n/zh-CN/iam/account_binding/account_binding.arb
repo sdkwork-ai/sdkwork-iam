@@ -1,10 +1,10 @@
 {
   "@@locale": "zh",
-  "title": "SDKWork IAM Flutter Mobile Account Binding",
+  "title": "账号绑定",
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile Account Binding 工作区",
+  "subtitle": "可用于登录的已绑定身份。",
   "@subtitle": {
     "description": "Supporting line under the title."
   },
@@ -12,7 +12,7 @@
   "@loading": {
     "description": "Shown while the capability loads its first page."
   },
-  "empty": "暂无内容。",
+  "empty": "暂无已绑定身份。",
   "@empty": {
     "description": "Empty state shown when the capability has no records."
   },
@@ -23,5 +23,53 @@
   "retry": "重试",
   "@retry": {
     "description": "Label of the retry action."
+  },
+  "policySection": "你可管理的项",
+  "@policySection": {
+    "description": "Heading of the policy region."
+  },
+  "policyContact": "联系方式绑定",
+  "@policyContact": {
+    "description": "Policy row: contact binding."
+  },
+  "policyEmail": "邮箱绑定",
+  "@policyEmail": {
+    "description": "Policy row: email binding."
+  },
+  "policyOauth": "第三方登录",
+  "@policyOauth": {
+    "description": "Policy row: third-party sign-in."
+  },
+  "policyUnlink": "自行解除绑定",
+  "@policyUnlink": {
+    "description": "Policy row: self-service unlink."
+  },
+  "enabled": "允许",
+  "@enabled": {
+    "description": "Policy value: allowed."
+  },
+  "disabled": "不允许",
+  "@disabled": {
+    "description": "Policy value: not allowed."
+  },
+  "linksSection": "已绑定身份",
+  "@linksSection": {
+    "description": "Heading of the links region."
+  },
+  "unlink": "解除",
+  "@unlink": {
+    "description": "Label of the unlink action."
+  },
+  "unlinkConfirm": "确定解除该登录方式？",
+  "@unlinkConfirm": {
+    "description": "Confirmation shown before unlinking."
+  },
+  "cancel": "取消",
+  "@cancel": {
+    "description": "Label of the cancel action."
+  },
+  "loadMore": "加载更多",
+  "@loadMore": {
+    "description": "Label of the next-page action."
   }
 }

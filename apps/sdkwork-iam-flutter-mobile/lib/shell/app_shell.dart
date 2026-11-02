@@ -12,12 +12,14 @@
 import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/material.dart';
+import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
 import 'package:sdkwork_iam_flutter_mobile_commons/sdkwork_iam_flutter_mobile_commons.dart';
 import 'package:sdkwork_iam_flutter_mobile_organization/sdkwork_iam_flutter_mobile_organization.dart';
 import 'package:sdkwork_iam_flutter_mobile_shell/sdkwork_iam_flutter_mobile_shell.dart';
 import 'package:sdkwork_iam_flutter_mobile_tenant/sdkwork_iam_flutter_mobile_tenant.dart';
 
+import 'account_binding_data_source.dart';
 import 'auth_data_source.dart';
 import 'organization_data_source.dart';
 import 'tenant_data_source.dart';
@@ -26,6 +28,8 @@ import 'tenant_data_source.dart';
 class IamHomeShell extends StatefulWidget {
   const IamHomeShell({
     super.key,
+    this.accountBindingDataSource,
+    this.accountBindingMessages,
     this.authController,
     this.authMessages,
     this.organizationDataSource,
@@ -33,6 +37,12 @@ class IamHomeShell extends StatefulWidget {
     this.tenantDataSource,
     this.tenantMessages,
   });
+
+  /// Overrides the app-api account-binding data source.
+  final IamFlutterMobileAccountBindingDataSource? accountBindingDataSource;
+
+  /// Overrides the account-binding copy.
+  final Map<String, String>? accountBindingMessages;
 
   /// Overrides the auth controller; a widget test injects a signed-in double.
   final IamFlutterMobileAuthController? authController;
@@ -120,6 +130,14 @@ class _IamHomeShellState extends State<IamHomeShell> {
           ),
           messages: copy.organization,
         );
+        final Widget accountBindingScreen = IamFlutterMobileAccountBindingScreen(
+          controller: IamFlutterMobileAccountBindingController(
+            service: IamFlutterMobileAccountBindingService(
+              dataSource: widget.accountBindingDataSource ?? IamAccountBindingAppSdkDataSource(),
+            ),
+          ),
+          messages: copy.accountBinding,
+        );
 
         return IamFlutterMobileCoreShell(
           home: _authenticated ? tenantScreen : authScreen,
@@ -138,6 +156,11 @@ class _IamHomeShellState extends State<IamHomeShell> {
               builder: (_) => organizationScreen,
               path: '/organizations',
               routeId: IamFlutterMobileOrganizationRoutes.directoryRouteId,
+            ),
+            SdkworkRouteEntry(
+              builder: (_) => accountBindingScreen,
+              path: '/user/account-binding',
+              routeId: IamFlutterMobileAccountBindingRoutes.listRouteId,
             ),
           ],
           title: copy.tenant['title'] ?? 'SDKWork IAM',
@@ -162,7 +185,18 @@ class _IamHomeShellState extends State<IamHomeShell> {
           'organization',
           locale,
         );
-    return _IamShellCopy(auth: auth, organization: organization, tenant: tenant);
+    final Map<String, String> accountBinding = widget.accountBindingMessages ??
+        await _loadFragment(
+          'sdkwork_iam_flutter_mobile_account_binding',
+          'account_binding',
+          locale,
+        );
+    return _IamShellCopy(
+      accountBinding: accountBinding,
+      auth: auth,
+      organization: organization,
+      tenant: tenant,
+    );
   }
 
   Future<Map<String, String>> _loadFragment(String package, String capability, String locale) {
@@ -180,14 +214,16 @@ class _IamHomeShellState extends State<IamHomeShell> {
   }
 }
 
-/// The three fragments the shell mounts.
+/// The fragments the shell mounts.
 class _IamShellCopy {
   const _IamShellCopy({
+    required this.accountBinding,
     required this.auth,
     required this.organization,
     required this.tenant,
   });
 
+  final Map<String, String> accountBinding;
   final Map<String, String> auth;
   final Map<String, String> organization;
   final Map<String, String> tenant;

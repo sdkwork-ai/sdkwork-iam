@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
 import 'package:sdkwork_iam_flutter_mobile_core/sdkwork_iam_flutter_mobile_core.dart';
 import 'package:sdkwork_iam_flutter_mobile_organization/sdkwork_iam_flutter_mobile_organization.dart';
@@ -100,6 +101,51 @@ const Map<String, String> _organizationMessages = <String, String>{
   'title': 'Organizations',
 };
 
+const Map<String, String> _accountBindingMessages = <String, String>{
+  'cancel': 'Cancel',
+  'disabled': 'Not allowed',
+  'empty': 'No linked identities.',
+  'enabled': 'Allowed',
+  'linksSection': 'Linked identities',
+  'loadError': 'Unable to load this view.',
+  'loadMore': 'Load more',
+  'policyContact': 'Contact binding',
+  'policyEmail': 'Email binding',
+  'policyOauth': 'Third-party sign-in',
+  'policySection': 'What you can manage',
+  'policyUnlink': 'Remove a binding yourself',
+  'retry': 'Retry',
+  'subtitle': 'Linked identities you can sign in with.',
+  'title': 'Account binding',
+  'unlink': 'Remove',
+  'unlinkConfirm': 'Remove this sign-in method?',
+};
+
+class _FakeAccountBindingDataSource implements IamFlutterMobileAccountBindingDataSource {
+  @override
+  Future<IamFlutterMobileAccountBindingPolicy> loadPolicy() async {
+    return const IamFlutterMobileAccountBindingPolicy(
+      oauthEnabled: true,
+      selfServiceUnlinkEnabled: true,
+    );
+  }
+
+  @override
+  Future<IamFlutterMobileAccountLinkPage> fetchLinksPage({
+    required int page,
+    required int pageSize,
+  }) async {
+    return const IamFlutterMobileAccountLinkPage(
+      items: <IamFlutterMobileAccountLink>[
+        IamFlutterMobileAccountLink(accountLinkId: 'link-1', provider: 'github'),
+      ],
+    );
+  }
+
+  @override
+  Future<void> unlink(String accountLinkId) async {}
+}
+
 IamFlutterMobileAuthController _auth(_FakeAuthDataSource source) {
   return IamFlutterMobileAuthController(
     service: IamFlutterMobileAuthService(dataSource: source),
@@ -108,6 +154,8 @@ IamFlutterMobileAuthController _auth(_FakeAuthDataSource source) {
 
 Widget _shell(_FakeAuthDataSource source) {
   return IamHomeShell(
+    accountBindingDataSource: _FakeAccountBindingDataSource(),
+    accountBindingMessages: _accountBindingMessages,
     authController: _auth(source),
     authMessages: _authMessages,
     organizationDataSource: _FakeOrganizationDataSource(),
@@ -161,6 +209,7 @@ void main() {
     expect(app.routes!.containsKey('/auth/login'), isTrue);
     expect(app.routes!.containsKey('/tenant'), isTrue);
     expect(app.routes!.containsKey('/organizations'), isTrue);
+    expect(app.routes!.containsKey('/user/account-binding'), isTrue);
 
     // The ids the shell registers must be the ones the capability packages
     // contribute; a mismatch would break deep links while the UI still looked
@@ -172,10 +221,14 @@ void main() {
         '${contribution.id}:${contribution.path}',
       for (final RouteContribution contribution in iamFlutterMobileOrganizationRouteContributions)
         '${contribution.id}:${contribution.path}',
+      for (final RouteContribution contribution
+          in iamFlutterMobileAccountBindingRouteContributions)
+        '${contribution.id}:${contribution.path}',
     };
     expect(contributed, contains('app.iam.auth.login:/auth/login'));
     expect(contributed, contains('app.iam.tenant.overview:/tenant'));
     expect(contributed, contains('app.iam.organization.directory:/organizations'));
+    expect(contributed, contains('app.iam.account-binding.list:/user/account-binding'));
   });
 
   testWidgets('opens the organization directory from the tenant screen', (WidgetTester tester) async {
