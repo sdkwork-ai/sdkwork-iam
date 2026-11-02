@@ -264,8 +264,15 @@ clientSurfaces:
       unlink, and a row disappears only after the server accepts the removal.
       21 node tests cover the registry, the manifest/files invariant and the runtime
       ports.
-      Remaining: 18 declared routes still need pages — provider list, oauth-callback
-      and context-selection first, then the console and admin tiers.
+      The console tier has started: `console.iam.organization.directory` renders the
+      tenant-wide organization list at `console-organization/pages/directory`. Reaching
+      it needed a real fix — `composeIamMpAppJson` projected only the app-tier registry,
+      so a console route could never appear in `app.json` however complete its page was;
+      the manifest is now projected from the union of the app and console registries, and
+      the registry test runs against that union.
+      Remaining: 17 declared routes still need pages — provider list, oauth-callback
+      and context-selection first, then the three remaining console pages and the admin
+      tier.
   flutter:
     status: partial
     note: >

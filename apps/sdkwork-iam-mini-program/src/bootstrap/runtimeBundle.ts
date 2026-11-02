@@ -22,13 +22,27 @@ import {
   type IamMpSessionSnapshot,
   type IamMpSessionStore,
 } from "@sdkwork/iam-mp-core";
+import { IAMMPCONSOLE_ROUTE_CONTRIBUTIONS } from "@sdkwork/iam-mp-console-core";
 
 /** Route registry, re-exported so the build-contract test can assert against the
  * same ids the manifest projection uses. */
-export { IAMMP_ROUTE_CONTRIBUTIONS };
+export { IAMMP_ROUTE_CONTRIBUTIONS, IAMMPCONSOLE_ROUTE_CONTRIBUTIONS };
+
+/**
+ * Every route contribution the manifest may project: app tier first, then console.
+ *
+ * The console tier is registered in its own tier registry; without folding it in here a
+ * console page could never be shipped however complete it was, because `app.json` is
+ * projected from this list.
+ */
+const ALL_ROUTE_CONTRIBUTIONS = [
+  ...IAMMP_ROUTE_CONTRIBUTIONS,
+  ...IAMMPCONSOLE_ROUTE_CONTRIBUTIONS,
+];
 
 /** Physical page paths this build ships. */
 export const IAM_MP_PAGE_PATHS = {
+  consoleOrganizationDirectory: "console-organization/pages/directory/index",
   contextSelection: "pages/context-selection/index",
   forgotPassword: "pages/forgot-password/index",
   login: "pages/login/index",
@@ -60,6 +74,7 @@ export const IAM_MP_IMPLEMENTED_ROUTE_IDS: readonly string[] = [
   "app.iam.user-center.profile",
   "app.iam.user-center.password",
   "app.iam.account-binding.list",
+  "console.iam.organization.directory",
 ];
 
 /** Message dictionary, kept intentionally small: only shipped pages read it. */
@@ -125,6 +140,19 @@ const MESSAGES: Record<string, { "en-US": string; "zh-CN": string }> = {
   "organization.search": { "en-US": "Search", "zh-CN": "搜索" },
   "organization.loading": { "en-US": "Loading…", "zh-CN": "加载中…" },
   "organization.failed": { "en-US": "Could not load organizations.", "zh-CN": "组织加载失败。" },
+  "consoleOrganization.title": { "en-US": "Organization management", "zh-CN": "组织管理" },
+  "consoleOrganization.subtitle": {
+    "en-US": "Every organization of the tenant you are acting in.",
+    "zh-CN": "当前操作的租户下的全部组织。",
+  },
+  "consoleOrganization.searchPlaceholder": { "en-US": "Search organizations", "zh-CN": "搜索组织" },
+  "consoleOrganization.search": { "en-US": "Search", "zh-CN": "搜索" },
+  "consoleOrganization.empty": { "en-US": "This tenant has no organizations yet.", "zh-CN": "该租户还没有组织。" },
+  "consoleOrganization.emptySearch": { "en-US": "Nothing matched that search.", "zh-CN": "没有匹配的结果。" },
+  "consoleOrganization.loadMore": { "en-US": "Load more", "zh-CN": "加载更多" },
+  "consoleOrganization.loading": { "en-US": "Loading…", "zh-CN": "加载中…" },
+  "consoleOrganization.loadFailed": { "en-US": "Could not load organizations.", "zh-CN": "组织加载失败。" },
+  "consoleOrganization.toApp": { "en-US": "Back to my workspace", "zh-CN": "返回我的工作台" },
   "profile.title": { "en-US": "My profile", "zh-CN": "我的资料" },
   "profile.displayName": { "en-US": "Display name", "zh-CN": "显示名称" },
   "profile.email": { "en-US": "Email", "zh-CN": "邮箱" },
@@ -359,7 +387,7 @@ export function composeIamMpAppJson(): {
   const implemented = new Set(IAM_MP_IMPLEMENTED_ROUTE_IDS);
   const pages: string[] = [];
   const subPackages = new Map<string, string[]>();
-  for (const route of IAMMP_ROUTE_CONTRIBUTIONS) {
+  for (const route of ALL_ROUTE_CONTRIBUTIONS) {
     const placement = route.miniProgram;
     if (!placement || !implemented.has(route.id)) continue;
     if (!placement.subpackage) {

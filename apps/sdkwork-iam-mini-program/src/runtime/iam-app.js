@@ -22,6 +22,7 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
 // src/bootstrap/runtimeBundle.ts
 var runtimeBundle_exports = {};
 __export(runtimeBundle_exports, {
+  IAMMPCONSOLE_ROUTE_CONTRIBUTIONS: () => IAMMPCONSOLE_ROUTE_CONTRIBUTIONS,
   IAMMP_ROUTE_CONTRIBUTIONS: () => IAMMP_ROUTE_CONTRIBUTIONS,
   IAM_MP_IMPLEMENTED_ROUTE_IDS: () => IAM_MP_IMPLEMENTED_ROUTE_IDS,
   IAM_MP_PAGE_PATHS: () => IAM_MP_PAGE_PATHS,
@@ -6810,8 +6811,69 @@ function createIamMpRuntimeService(input) {
   };
 }
 
+// packages/sdkwork-iam-mp-console-core/src/modules/index.ts
+var IAMMPCONSOLE_ROUTE_CONTRIBUTIONS = [
+  {
+    id: "console.iam.tenant.overview",
+    surface: "console",
+    domain: "iam",
+    capability: "tenant",
+    screen: "overview",
+    path: "/console/iam/tenant",
+    titleKey: "iam.console.tenant.overview.title",
+    auth: "required",
+    permissionHint: "iam.tenant_console",
+    presentation: { miniProgram: "subpackagePage" },
+    miniProgram: { subpackage: "console-tenant", pagePath: "pages/overview/index" }
+  },
+  {
+    id: "console.iam.organization.directory",
+    surface: "console",
+    domain: "iam",
+    capability: "organization",
+    screen: "directory",
+    path: "/console/iam/organizations",
+    titleKey: "iam.console.organization.directory.title",
+    auth: "required",
+    permissionHint: "iam.organization_console",
+    presentation: { miniProgram: "subpackagePage" },
+    miniProgram: { subpackage: "console-organization", pagePath: "pages/directory/index" }
+  },
+  {
+    id: "console.iam.account-binding.list",
+    surface: "console",
+    domain: "iam",
+    capability: "account-binding",
+    screen: "list",
+    path: "/console/iam/account-binding",
+    titleKey: "iam.console.accountBinding.list.title",
+    auth: "required",
+    permissionHint: "iam.account_binding_console",
+    presentation: { miniProgram: "subpackagePage" },
+    miniProgram: { subpackage: "console-account-binding", pagePath: "pages/list/index" }
+  },
+  {
+    id: "console.iam.user-center.profile",
+    surface: "console",
+    domain: "iam",
+    capability: "user-center",
+    screen: "profile",
+    path: "/console/iam/user",
+    titleKey: "iam.console.userCenter.profile.title",
+    auth: "required",
+    permissionHint: "iam.user_console",
+    presentation: { miniProgram: "subpackagePage" },
+    miniProgram: { subpackage: "console-user-center", pagePath: "pages/profile/index" }
+  }
+];
+
 // src/bootstrap/runtimeBundle.ts
+var ALL_ROUTE_CONTRIBUTIONS = [
+  ...IAMMP_ROUTE_CONTRIBUTIONS,
+  ...IAMMPCONSOLE_ROUTE_CONTRIBUTIONS
+];
 var IAM_MP_PAGE_PATHS = {
+  consoleOrganizationDirectory: "console-organization/pages/directory/index",
   contextSelection: "pages/context-selection/index",
   forgotPassword: "pages/forgot-password/index",
   login: "pages/login/index",
@@ -6831,7 +6893,8 @@ var IAM_MP_IMPLEMENTED_ROUTE_IDS = [
   "app.iam.organization.directory",
   "app.iam.user-center.profile",
   "app.iam.user-center.password",
-  "app.iam.account-binding.list"
+  "app.iam.account-binding.list",
+  "console.iam.organization.directory"
 ];
 var MESSAGES = {
   "common.loading": { "en-US": "Loading", "zh-CN": "\u52A0\u8F7D\u4E2D" },
@@ -6895,6 +6958,19 @@ var MESSAGES = {
   "organization.search": { "en-US": "Search", "zh-CN": "\u641C\u7D22" },
   "organization.loading": { "en-US": "Loading\u2026", "zh-CN": "\u52A0\u8F7D\u4E2D\u2026" },
   "organization.failed": { "en-US": "Could not load organizations.", "zh-CN": "\u7EC4\u7EC7\u52A0\u8F7D\u5931\u8D25\u3002" },
+  "consoleOrganization.title": { "en-US": "Organization management", "zh-CN": "\u7EC4\u7EC7\u7BA1\u7406" },
+  "consoleOrganization.subtitle": {
+    "en-US": "Every organization of the tenant you are acting in.",
+    "zh-CN": "\u5F53\u524D\u64CD\u4F5C\u7684\u79DF\u6237\u4E0B\u7684\u5168\u90E8\u7EC4\u7EC7\u3002"
+  },
+  "consoleOrganization.searchPlaceholder": { "en-US": "Search organizations", "zh-CN": "\u641C\u7D22\u7EC4\u7EC7" },
+  "consoleOrganization.search": { "en-US": "Search", "zh-CN": "\u641C\u7D22" },
+  "consoleOrganization.empty": { "en-US": "This tenant has no organizations yet.", "zh-CN": "\u8BE5\u79DF\u6237\u8FD8\u6CA1\u6709\u7EC4\u7EC7\u3002" },
+  "consoleOrganization.emptySearch": { "en-US": "Nothing matched that search.", "zh-CN": "\u6CA1\u6709\u5339\u914D\u7684\u7ED3\u679C\u3002" },
+  "consoleOrganization.loadMore": { "en-US": "Load more", "zh-CN": "\u52A0\u8F7D\u66F4\u591A" },
+  "consoleOrganization.loading": { "en-US": "Loading\u2026", "zh-CN": "\u52A0\u8F7D\u4E2D\u2026" },
+  "consoleOrganization.loadFailed": { "en-US": "Could not load organizations.", "zh-CN": "\u7EC4\u7EC7\u52A0\u8F7D\u5931\u8D25\u3002" },
+  "consoleOrganization.toApp": { "en-US": "Back to my workspace", "zh-CN": "\u8FD4\u56DE\u6211\u7684\u5DE5\u4F5C\u53F0" },
   "profile.title": { "en-US": "My profile", "zh-CN": "\u6211\u7684\u8D44\u6599" },
   "profile.displayName": { "en-US": "Display name", "zh-CN": "\u663E\u793A\u540D\u79F0" },
   "profile.email": { "en-US": "Email", "zh-CN": "\u90AE\u7BB1" },
@@ -6978,7 +7054,7 @@ function composeIamMpAppJson() {
   const implemented = new Set(IAM_MP_IMPLEMENTED_ROUTE_IDS);
   const pages = [];
   const subPackages = /* @__PURE__ */ new Map();
-  for (const route of IAMMP_ROUTE_CONTRIBUTIONS) {
+  for (const route of ALL_ROUTE_CONTRIBUTIONS) {
     const placement = route.miniProgram;
     if (!placement || !implemented.has(route.id)) continue;
     if (!placement.subpackage) {

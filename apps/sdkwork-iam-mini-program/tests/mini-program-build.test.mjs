@@ -83,7 +83,13 @@ test('the manifest matches the projection exactly', () => {
 
 test('every implemented route id is a real route of the registry', () => {
   const bundle = loadBundle();
-  const registry = new Set(bundle.IAMMP_ROUTE_CONTRIBUTIONS.map((route) => route.id));
+  // Both tiers register routes; a console page is as real as an app page, so the check runs
+  // against the union rather than the app tier alone.
+  const registry = new Set(
+    [...bundle.IAMMP_ROUTE_CONTRIBUTIONS, ...bundle.IAMMPCONSOLE_ROUTE_CONTRIBUTIONS].map(
+      (route) => route.id,
+    ),
+  );
   const unknown = bundle.IAM_MP_IMPLEMENTED_ROUTE_IDS.filter((id) => !registry.has(id));
   assert.deepEqual(unknown, [], `implemented route ids not in the registry: ${unknown.join(', ')}`);
 

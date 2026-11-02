@@ -29,6 +29,12 @@
         "pages/directory/index"
       ],
       "root": "app-organization"
+    },
+    {
+      "pages": [
+        "pages/directory/index"
+      ],
+      "root": "console-organization"
     }
   ],
   "window": {

@@ -1,0 +1,39 @@
+<view class="page">
+  <view class="brand">
+    <text class="brand-title">{{title}}</text>
+    <text class="brand-subtitle">{{subtitle}}</text>
+  </view>
+
+  <view class="card">
+    <view class="code-row">
+      <input
+        class="input code-input"
+        placeholder="{{searchPlaceholder}}"
+        value="{{q}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearch"
+      />
+      <button class="code-button" bindtap="onSearch">{{searchText}}</button>
+    </view>
+  </view>
+
+  <text wx:if="{{loading}}" class="section-title">{{loadingText}}</text>
+  <text wx:if="{{errorText}}" class="error">{{errorText}}</text>
+
+  <view wx:if="{{!loading}}" class="card">
+    <view wx:for="{{items}}" wx:key="id" class="row">
+      <text class="row-title">{{item.title}}</text>
+      <text class="row-detail">{{item.detail}}</text>
+    </view>
+    <text wx:if="{{items.length === 0}}" class="row-detail">
+      {{q ? emptySearchText : emptyText}}
+    </text>
+    <button wx:if="{{hasMore}}" class="primary" loading="{{loadingMore}}" bindtap="onLoadMore">
+      {{loadMoreText}}
+    </button>
+  </view>
+
+  <view class="links">
+    <text class="link" bindtap="onBackToApp">{{toAppText}}</text>
+  </view>
+</view>
