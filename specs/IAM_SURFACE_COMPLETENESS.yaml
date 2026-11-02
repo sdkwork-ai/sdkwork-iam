@@ -299,12 +299,13 @@ clientSurfaces:
       it must submit (the H5 form sidesteps this by taking an injected code client).
       Eight real capabilities now: tenant, organization, account-binding, user-center
       (profile + password), auth (sign-in + password reset), oauth (provider list, a real
-      authorization URL, and the browser hand-off) and three console workspaces — tenant,
-      organization and user-center. The console tenant workspace reads the same resources as
-      the app tenant screen plus the binding policy the app screen never shows; the console
-      organization directory lists every organization of the tenant, keeping the parent id;
-      the console user-center profile pairs the operator's record with the tenant
-      verification policy, showing every policy row as required or optional. The root also
+      authorization URL, and the browser hand-off) and the whole console tier — tenant,
+      organization, account-binding and user-center. The console tenant workspace reads the
+      same resources as the app tenant screen plus the binding policy the app screen never
+      shows; the console organization directory lists every organization of the tenant,
+      keeping the parent id; the console account-binding workspace reports a not-allowed
+      policy instead of hiding the removal button; the console user-center profile pairs the
+      operator's record with the tenant verification policy. The root also
       gained its second platform adapter — `IamUrlOpenerAdapter` over `url_launcher` — so the
       provider screen opens a browser instead of reporting that it cannot, and a failed open
       is reported rather than swallowed. `SdkworkHostCapability` has no constant for "open an

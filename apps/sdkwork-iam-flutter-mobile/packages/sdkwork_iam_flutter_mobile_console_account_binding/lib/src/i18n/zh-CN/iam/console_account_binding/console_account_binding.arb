@@ -1,20 +1,64 @@
 {
   "@@locale": "zh",
-  "title": "SDKWork IAM Flutter Mobile Console Account Binding",
+  "title": "账号绑定管理",
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile Console Account Binding 工作区",
+  "subtitle": "已绑定身份，以及决定能否解除的租户策略。",
   "@subtitle": {
     "description": "Supporting line under the title."
+  },
+  "policySection": "自助服务策略",
+  "@policySection": {
+    "description": "Heading of the policy region."
+  },
+  "linksSection": "已绑定身份",
+  "@linksSection": {
+    "description": "Heading of the links region."
+  },
+  "policyContact": "联系方式绑定",
+  "@policyContact": {
+    "description": "Policy row: contact binding."
+  },
+  "policyEmail": "邮箱绑定",
+  "@policyEmail": {
+    "description": "Policy row: email binding."
+  },
+  "policyOauth": "第三方登录",
+  "@policyOauth": {
+    "description": "Policy row: third-party sign-in."
+  },
+  "policyUnlink": "自助解除绑定",
+  "@policyUnlink": {
+    "description": "Policy row: self-service unlink."
+  },
+  "allowed": "允许",
+  "@allowed": {
+    "description": "Policy value: allowed."
+  },
+  "denied": "不允许",
+  "@denied": {
+    "description": "Policy value: not allowed."
+  },
+  "unlink": "解除",
+  "@unlink": {
+    "description": "Label of the removal action."
+  },
+  "unlinkConfirm": "确定为该用户解除此登录方式？",
+  "@unlinkConfirm": {
+    "description": "Confirmation shown before unlinking."
+  },
+  "cancel": "取消",
+  "@cancel": {
+    "description": "Label of the cancel action."
+  },
+  "emptyLinks": "该用户暂无已绑定身份。",
+  "@emptyLinks": {
+    "description": "Empty state of the links region."
   },
   "loading": "加载中…",
   "@loading": {
     "description": "Shown while the capability loads its first page."
-  },
-  "empty": "暂无内容。",
-  "@empty": {
-    "description": "Empty state shown when the capability has no records."
   },
   "loadError": "无法加载此视图。",
   "@loadError": {

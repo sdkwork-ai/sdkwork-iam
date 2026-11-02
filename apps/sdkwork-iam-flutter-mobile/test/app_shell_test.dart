@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
 import 'package:sdkwork_iam_flutter_mobile_console_organization/sdkwork_iam_flutter_mobile_console_organization.dart';
+import 'package:sdkwork_iam_flutter_mobile_console_account_binding/sdkwork_iam_flutter_mobile_console_account_binding.dart';
 import 'package:sdkwork_iam_flutter_mobile_console_user_center/sdkwork_iam_flutter_mobile_console_user_center.dart';
 import 'package:sdkwork_iam_flutter_mobile_console_tenant/sdkwork_iam_flutter_mobile_console_tenant.dart';
 import 'package:sdkwork_iam_flutter_mobile_core/sdkwork_iam_flutter_mobile_core.dart';
@@ -206,6 +207,44 @@ const Map<String, String> _oauthMessages = <String, String>{
   'title': 'Third-party sign-in',
 };
 
+const Map<String, String> _consoleAccountBindingMessages = <String, String>{
+  'allowed': 'Allowed',
+  'cancel': 'Cancel',
+  'denied': 'Not allowed',
+  'emptyLinks': 'This user has no linked identities.',
+  'linksSection': 'Linked identities',
+  'loadError': 'Unable to load this view.',
+  'policyContact': 'Contact binding',
+  'policyEmail': 'Email binding',
+  'policyOauth': 'Third-party sign-in',
+  'policySection': 'Self-service policy',
+  'policyUnlink': 'Self-service unlink',
+  'retry': 'Retry',
+  'subtitle': 'Linked identities and the tenant policy that gates removal.',
+  'title': 'Account binding management',
+  'unlink': 'Remove',
+  'unlinkConfirm': 'Remove this sign-in method for the user?',
+};
+
+class _FakeConsoleAccountBindingDataSource
+    implements IamFlutterMobileConsoleAccountBindingDataSource {
+  @override
+  Future<IamFlutterMobileConsoleAccountLinkPage> fetchLinksPage({
+    required int page,
+    required int pageSize,
+  }) async {
+    return const IamFlutterMobileConsoleAccountLinkPage();
+  }
+
+  @override
+  Future<IamFlutterMobileConsoleAccountBindingPolicy> loadPolicy() async {
+    return const IamFlutterMobileConsoleAccountBindingPolicy();
+  }
+
+  @override
+  Future<void> unlink(String accountLinkId) async {}
+}
+
 const Map<String, String> _consoleUserCenterMessages = <String, String>{
   'accountSection': 'Account',
   'displayName': 'Display name',
@@ -332,6 +371,8 @@ Widget _shell(_FakeAuthDataSource source, {List<String>? openedUrls}) {
     authMessages: _authMessages,
     consoleOrganizationDataSource: _FakeConsoleOrganizationDataSource(),
     consoleOrganizationMessages: _consoleOrganizationMessages,
+    consoleAccountBindingDataSource: _FakeConsoleAccountBindingDataSource(),
+    consoleAccountBindingMessages: _consoleAccountBindingMessages,
     consoleUserCenterDataSource: _FakeConsoleUserCenterDataSource(),
     consoleUserCenterMessages: _consoleUserCenterMessages,
     consoleTenantDataSource: _FakeConsoleTenantDataSource(),
@@ -405,6 +446,7 @@ void main() {
     expect(app.routes!.containsKey('/console/iam/tenant'), isTrue);
     expect(app.routes!.containsKey('/console/iam/organizations'), isTrue);
     expect(app.routes!.containsKey('/console/iam/user'), isTrue);
+    expect(app.routes!.containsKey('/console/iam/account-binding'), isTrue);
 
     // The ids the shell registers must be the ones the capability packages
     // contribute; a mismatch would break deep links while the UI still looked
@@ -428,6 +470,8 @@ void main() {
       for (final contribution in iamFlutterMobileConsoleTenantRouteContributions)
         '${contribution.id}:${contribution.path}',
       for (final contribution in iamFlutterMobileConsoleOrganizationRouteContributions)
+        '${contribution.id}:${contribution.path}',
+      for (final contribution in iamFlutterMobileConsoleAccountBindingRouteContributions)
         '${contribution.id}:${contribution.path}',
       for (final contribution in iamFlutterMobileConsoleUserCenterRouteContributions)
         '${contribution.id}:${contribution.path}',
