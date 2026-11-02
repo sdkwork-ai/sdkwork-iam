@@ -62,6 +62,11 @@ export {
   type SdkworkIamH5SelectProps,
 } from "./components/primitives";
 export {
+  SdkworkIamH5PagedListSection,
+  type SdkworkIamH5PagedListSectionMessages,
+  type SdkworkIamH5PagedListSectionProps,
+} from "./components/list-section";
+export {
   SdkworkIamH5EmptyState,
   SdkworkIamH5ErrorState,
   SdkworkIamH5List,

@@ -80,8 +80,13 @@ capabilities:
     pc-app: partial
     pc-admin: complete
     pc-console: complete
-    h5-app: missing
+    h5-app: complete
     flutter-app: missing
+    notes: >
+      H5 ships the `app.iam.organization.directory` screen (/organizations) over
+      the app-api `organizations.list` read port, with server-side search and
+      paging. The app tier is read-only by design: create/update/delete stay on
+      the PC admin surface because they are backend-api resources.
 
   - id: permission
     database: complete
@@ -139,7 +144,11 @@ capabilities:
     pc-console: complete
     h5-app: partial
     flutter-app: partial
-    notes: Profile, password, and verification policy on H5/Flutter/PC console; local preferences remain PC app-only
+    notes: >
+      H5 now ships both self-service screens as addressable routes
+      (`/user/profile`, `/user/password`) over the app-api current-user ports,
+      with edit, verification-policy hinting, localized copy and tests. Avatar
+      upload and local preferences remain PC app-only.
 
 clientSurfaces:
   parityAuthority: scripts/lib/client-app-surfaces/model.mjs (ROUTES — 26 capability screens across the app, console and admin tiers)
@@ -163,17 +172,17 @@ clientSurfaces:
       bearer token onto the client on sign-in and clears it on sign-out.
     implementedScreens:
       - app.iam.auth.login
+      - app.iam.auth.oauth-callback
       - app.iam.tenant.overview
+      - app.iam.organization.directory
+      - app.iam.user-center.profile
+      - app.iam.user-center.password
     scaffoldScreens:
       - app.iam.auth.register
       - app.iam.auth.forgot-password
-      - app.iam.auth.oauth-callback
       - app.iam.auth.context-selection
-      - app.iam.user-center.profile
-      - app.iam.user-center.password
       - app.iam.account-binding.list
       - app.iam.user.list
-      - app.iam.organization.directory
       - app.iam.oauth.providers
       - console.iam.* (4)
       - admin.iam.* (10)

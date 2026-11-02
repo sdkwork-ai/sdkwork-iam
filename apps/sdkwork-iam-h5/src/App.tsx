@@ -18,16 +18,28 @@ import { useCallback, useEffect, useMemo, useState, type ReactElement } from "re
 
 import {
   createSdkworkIamH5AuthController,
+  SdkworkIamH5AuthCallbackSurface,
   SdkworkIamH5AuthLoginSurface,
 } from "@sdkwork/iam-h5-auth";
 import { SdkworkIamH5EmptyState, SdkworkIamH5I18nProvider, SdkworkIamH5Screen } from "@sdkwork/iam-h5-commons";
 import { createIamH5SessionStore, type IamH5RouteContribution, type IamH5SessionStore } from "@sdkwork/iam-h5-core";
 import { SdkworkIamH5AppShell, type SdkworkIamH5ShellRoute } from "@sdkwork/iam-h5-shell";
 import {
+  createSdkworkIamH5OrganizationController,
+  IAM_H5_ORGANIZATION_I18N_CATALOG,
+  SdkworkIamH5OrganizationDirectoryScreen,
+} from "@sdkwork/iam-h5-organization";
+import {
   createSdkworkIamH5TenantController,
   IAM_H5_TENANT_I18N_CATALOG,
   SdkworkIamH5TenantOverviewScreen,
 } from "@sdkwork/iam-h5-tenant";
+import {
+  createSdkworkIamH5UserCenterController,
+  IAM_H5_USER_CENTER_I18N_CATALOG,
+  SdkworkIamH5UserCenterPasswordScreen,
+  SdkworkIamH5UserCenterProfileScreen,
+} from "@sdkwork/iam-h5-user-center";
 
 import { useIamH5HistoryRoute } from "./bootstrap/history-router";
 import { createIamH5BootstrapRuntime } from "./bootstrap/iamService";
@@ -67,6 +79,8 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
   const resolvedLocale = locale ?? (typeof navigator === "undefined" ? undefined : navigator.language);
   const shellMessages = IAM_H5_SHELL_I18N_CATALOG.resolveMessages(resolvedLocale);
   const tenantMessages = IAM_H5_TENANT_I18N_CATALOG.resolveMessages(resolvedLocale);
+  const userCenterMessages = IAM_H5_USER_CENTER_I18N_CATALOG.resolveMessages(resolvedLocale);
+  const organizationMessages = IAM_H5_ORGANIZATION_I18N_CATALOG.resolveMessages(resolvedLocale);
 
   const authController = useMemo(
     () => createSdkworkIamH5AuthController(bootstrap.runtime.service),
@@ -74,6 +88,14 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
   );
   const tenantController = useMemo(
     () => createSdkworkIamH5TenantController(bootstrap.runtime.service),
+    [bootstrap],
+  );
+  const userCenterController = useMemo(
+    () => createSdkworkIamH5UserCenterController(bootstrap.runtime.service),
+    [bootstrap],
+  );
+  const organizationController = useMemo(
+    () => createSdkworkIamH5OrganizationController(bootstrap.runtime.service),
     [bootstrap],
   );
 
@@ -88,7 +110,11 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
   const registeredRoutes = useMemo<SdkworkIamH5ShellRoute[]>(() => {
     const byId = (id: string) => routeContributions.find((entry) => entry.id === id);
     const loginRoute = byId("app.iam.auth.login");
+    const callbackRoute = byId("app.iam.auth.oauth-callback");
     const tenantRoute = byId("app.iam.tenant.overview");
+    const organizationRoute = byId("app.iam.organization.directory");
+    const profileRoute = byId("app.iam.user-center.profile");
+    const passwordRoute = byId("app.iam.user-center.password");
     const routes: SdkworkIamH5ShellRoute[] = [];
 
     if (loginRoute) {
@@ -106,6 +132,22 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
         title: shellMessages.loginTitle,
       });
     }
+    if (callbackRoute) {
+      routes.push({
+        access: "public",
+        element: (
+          <SdkworkIamH5AuthCallbackSurface
+            controller={authController}
+            locale={resolvedLocale}
+            onAuthenticated={handleAuthenticated}
+            onScanLoginCompleted={handleAuthenticated}
+          />
+        ),
+        id: callbackRoute.id,
+        path: callbackRoute.path,
+        title: shellMessages.loginTitle,
+      });
+    }
     if (tenantRoute) {
       routes.push({
         access: "protected",
@@ -116,22 +158,73 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
         title: tenantMessages.overview.title,
       });
     }
+    if (organizationRoute) {
+      routes.push({
+        access: "protected",
+        element: <SdkworkIamH5OrganizationDirectoryScreen controller={organizationController} />,
+        id: organizationRoute.id,
+        path: organizationRoute.path,
+        tab: { id: "organizations", label: organizationMessages.directory.title, order: 20 },
+        title: organizationMessages.directory.title,
+      });
+    }
+    if (profileRoute) {
+      routes.push({
+        access: "protected",
+        element: (
+          <SdkworkIamH5UserCenterProfileScreen
+            controller={userCenterController}
+            onOpenPassword={passwordRoute ? () => navigate(passwordRoute.path) : undefined}
+          />
+        ),
+        id: profileRoute.id,
+        path: profileRoute.path,
+        tab: { id: "profile", label: userCenterMessages.profile.title, order: 30 },
+        title: userCenterMessages.profile.title,
+      });
+    }
+    if (passwordRoute) {
+      routes.push({
+        access: "protected",
+        element: (
+          <SdkworkIamH5UserCenterPasswordScreen
+            controller={userCenterController}
+            onBack={() => replace(profileRoute?.path ?? FALLBACK_PATH)}
+          />
+        ),
+        id: passwordRoute.id,
+        path: passwordRoute.path,
+        title: userCenterMessages.password.title,
+      });
+    }
     return routes;
   }, [
     authController,
     handleAuthenticated,
+    navigate,
+    organizationController,
+    organizationMessages.directory.title,
+    replace,
     resolvedLocale,
     routeContributions,
     shellMessages.loginTitle,
     tenantController,
     tenantMessages.overview.title,
+    userCenterController,
+    userCenterMessages.password.title,
+    userCenterMessages.profile.title,
   ]);
 
   const activeRoute = registeredRoutes.find((entry) => entry.path === path);
 
   return (
     <SdkworkIamH5I18nProvider
-      catalogs={[IAM_H5_SHELL_I18N_CATALOG, IAM_H5_TENANT_I18N_CATALOG]}
+      catalogs={[
+        IAM_H5_SHELL_I18N_CATALOG,
+        IAM_H5_TENANT_I18N_CATALOG,
+        IAM_H5_USER_CENTER_I18N_CATALOG,
+        IAM_H5_ORGANIZATION_I18N_CATALOG,
+      ]}
       locale={resolvedLocale}
     >
       <SdkworkIamH5AppShell

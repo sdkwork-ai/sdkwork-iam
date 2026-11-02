@@ -44,6 +44,8 @@ export { SdkworkIamH5AuthLoginScreen } from "./pages/AuthLoginScreen";
 export type { SdkworkIamH5AuthLoginScreenProps } from "./pages/AuthLoginScreen";
 export { SdkworkIamH5AuthLoginSurface } from "./pages/AuthLoginSurface";
 export type { SdkworkIamH5AuthLoginSurfaceProps } from "./pages/AuthLoginSurface";
+export { SdkworkIamH5AuthCallbackSurface } from "./pages/AuthCallbackSurface";
+export type { SdkworkIamH5AuthCallbackSurfaceProps } from "./pages/AuthCallbackSurface";
 export { SdkworkIamH5AuthOAuthCallbackScreen } from "./pages/AuthOAuthCallbackScreen";
 export { SdkworkIamH5AuthRoutes } from "./pages/AuthH5Routes";
 export type { SdkworkIamH5AuthRoutesProps } from "./pages/AuthH5Routes";
