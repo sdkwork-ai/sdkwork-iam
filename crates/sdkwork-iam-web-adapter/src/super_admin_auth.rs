@@ -357,6 +357,7 @@ async fn authenticate_super_admin_password(
          FROM iam_user u \
          JOIN iam_credential c ON c.user_id = u.id AND c.credential_type = 'password' AND c.status = 'active' \
          JOIN iam_tenant_member m ON m.tenant_id = u.tenant_id AND m.user_id = u.id AND m.status = 'active' \
+         JOIN iam_tenant t ON t.id = u.tenant_id AND t.status = 'active' \
          WHERE (LOWER(u.username) = $1 OR LOWER(u.email) = $1 OR u.phone = $1) \
            AND u.status = 'active' AND u.is_deleted = 0 \
          LIMIT $2",
@@ -395,6 +396,7 @@ async fn load_bootstrap_owner_account(pg: &PgPool) -> Result<String, String> {
          FROM iam_user u \
          JOIN iam_organization_membership m \
            ON m.tenant_id = u.tenant_id AND m.user_id = u.id AND m.status = 'active' \
+         JOIN iam_tenant t ON t.id = u.tenant_id AND t.status = 'active' \
          WHERE u.status = 'active' AND u.is_deleted = 0 AND m.membership_kind = 'owner' \
          ORDER BY m.sort_order ASC, u.created_at ASC \
          LIMIT 1",
