@@ -29,7 +29,7 @@
       "pc": 20,
       "h5": 20,
       "miniProgram": 8,
-      "flutter": 9,
+      "flutter": 10,
       "harmony": 0
     }
   },
@@ -266,14 +266,16 @@
       "tier": "console",
       "capability": "organization",
       "api": "app-api",
-      "status": { "pc": "complete", "h5": "complete" },
+      "status": { "pc": "complete", "h5": "complete", "flutter": "complete" },
       "evidence": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-organization/src/pages/OrganizationConsoleWorkspace.tsx",
-        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-organization/src/pages/ConsoleOrganizationDirectoryScreen.tsx"
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-organization/src/pages/ConsoleOrganizationDirectoryScreen.tsx",
+        "flutter": "apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_console_organization/lib/src/screens/console_organization_screen.dart"
       },
       "tests": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-organization/tests/",
-        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-organization/tests/"
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-organization/tests/",
+        "flutter": "apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_console_organization/test/"
       }
     },
     {

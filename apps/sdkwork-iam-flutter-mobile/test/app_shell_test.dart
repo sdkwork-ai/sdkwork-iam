@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
+import 'package:sdkwork_iam_flutter_mobile_console_organization/sdkwork_iam_flutter_mobile_console_organization.dart';
 import 'package:sdkwork_iam_flutter_mobile_console_tenant/sdkwork_iam_flutter_mobile_console_tenant.dart';
 import 'package:sdkwork_iam_flutter_mobile_core/sdkwork_iam_flutter_mobile_core.dart';
 import 'package:sdkwork_iam_flutter_mobile_organization/sdkwork_iam_flutter_mobile_organization.dart';
@@ -204,6 +205,29 @@ const Map<String, String> _oauthMessages = <String, String>{
   'title': 'Third-party sign-in',
 };
 
+const Map<String, String> _consoleOrganizationMessages = <String, String>{
+  'empty': 'This tenant has no organizations yet.',
+  'emptySearch': 'Nothing matched that search.',
+  'loadError': 'Unable to load this view.',
+  'loadMore': 'Load more',
+  'retry': 'Retry',
+  'searchAction': 'Search',
+  'searchPlaceholder': 'Search organizations',
+  'subtitle': 'Every organization of the tenant you are acting in.',
+  'title': 'Organization management',
+};
+
+class _FakeConsoleOrganizationDataSource implements IamFlutterMobileConsoleOrganizationDataSource {
+  @override
+  Future<IamFlutterMobileConsoleOrganizationPage> fetchPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  }) async {
+    return const IamFlutterMobileConsoleOrganizationPage();
+  }
+}
+
 const Map<String, String> _consoleTenantMessages = <String, String>{
   'allowed': 'Allowed',
   'denied': 'Not allowed',
@@ -273,6 +297,8 @@ Widget _shell(_FakeAuthDataSource source, {List<String>? openedUrls}) {
     accountBindingMessages: _accountBindingMessages,
     authController: _auth(source),
     authMessages: _authMessages,
+    consoleOrganizationDataSource: _FakeConsoleOrganizationDataSource(),
+    consoleOrganizationMessages: _consoleOrganizationMessages,
     consoleTenantDataSource: _FakeConsoleTenantDataSource(),
     consoleTenantMessages: _consoleTenantMessages,
     organizationDataSource: _FakeOrganizationDataSource(),
@@ -342,6 +368,7 @@ void main() {
     expect(app.routes!.containsKey('/user/password'), isTrue);
     expect(app.routes!.containsKey('/oauth/providers'), isTrue);
     expect(app.routes!.containsKey('/console/iam/tenant'), isTrue);
+    expect(app.routes!.containsKey('/console/iam/organizations'), isTrue);
 
     // The ids the shell registers must be the ones the capability packages
     // contribute; a mismatch would break deep links while the UI still looked
@@ -364,6 +391,8 @@ void main() {
       // this loop infers rather than naming the app-core type.
       for (final contribution in iamFlutterMobileConsoleTenantRouteContributions)
         '${contribution.id}:${contribution.path}',
+      for (final contribution in iamFlutterMobileConsoleOrganizationRouteContributions)
+        '${contribution.id}:${contribution.path}',
     };
     expect(contributed, contains('app.iam.auth.login:/auth/login'));
     expect(contributed, contains('app.iam.auth.forgot-password:/auth/forgot-password'));
@@ -374,6 +403,10 @@ void main() {
     expect(contributed, contains('app.iam.user-center.password:/user/password'));
     expect(contributed, contains('app.iam.oauth.providers:/oauth/providers'));
     expect(contributed, contains('console.iam.tenant.overview:/console/iam/tenant'));
+    expect(
+      contributed,
+      contains('console.iam.organization.directory:/console/iam/organizations'),
+    );
   });
 
   testWidgets('opens the organization directory from the tenant screen', (WidgetTester tester) async {
