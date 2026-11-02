@@ -36,7 +36,9 @@
     <button class="primary" loading="{{pending}}" bindtap="onSave">{{saveText}}</button>
   </view>
 
-  <view class="links">
+  <view wx:if="{{!loading}}" class="links">
+    <text class="link" bindtap="onOpenPassword">{{passwordText}}</text>
+    <text class="link" bindtap="onOpenBindings">{{bindingText}}</text>
     <text class="link" bindtap="onBackToTenant">{{toTenantText}}</text>
   </view>
 </view>

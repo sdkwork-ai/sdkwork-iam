@@ -1,0 +1,31 @@
+<view class="page">
+  <view class="brand">
+    <text class="brand-title">{{title}}</text>
+  </view>
+
+  <text wx:if="{{loading}}" class="section-title">…</text>
+  <text wx:if="{{errorText}}" class="error">{{errorText}}</text>
+
+  <view wx:if="{{!loading}}" class="card">
+    <text class="section-title">{{policyTitle}}</text>
+    <view wx:for="{{policy}}" wx:key="key" class="row">
+      <text class="row-title">{{item.label}}</text>
+      <text class="row-detail">{{item.value}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{!loading}}" class="card">
+    <text class="section-title">{{linksTitle}}</text>
+    <view wx:for="{{links}}" wx:key="accountLinkId" class="row">
+      <text class="row-title">{{item.provider}}</text>
+      <text class="row-detail">{{item.providerUserId}}</text>
+      <text
+        wx:if="{{canUnlink}}"
+        class="link"
+        data-id="{{item.accountLinkId}}"
+        bindtap="onUnlink"
+      >{{unlinkText}}</text>
+    </view>
+    <text wx:if="{{links.length === 0}}" class="row-detail">{{emptyText}}</text>
+  </view>
+</view>

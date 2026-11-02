@@ -34,6 +34,8 @@ export const IAM_MP_PAGE_PATHS = {
   login: "pages/login/index",
   oauthCallback: "pages/oauth-callback/index",
   organizationDirectory: "app-organization/pages/directory/index",
+  accountBinding: "app-account-binding/pages/list/index",
+  password: "app-user-center/pages/password/index",
   profile: "app-user-center/pages/profile/index",
   register: "pages/register/index",
   tenantOverview: "app-tenant/pages/overview/index",
@@ -56,6 +58,8 @@ export const IAM_MP_IMPLEMENTED_ROUTE_IDS: readonly string[] = [
   "app.iam.tenant.overview",
   "app.iam.organization.directory",
   "app.iam.user-center.profile",
+  "app.iam.user-center.password",
+  "app.iam.account-binding.list",
 ];
 
 /** Message dictionary, kept intentionally small: only shipped pages read it. */
@@ -130,6 +134,30 @@ const MESSAGES: Record<string, { "en-US": string; "zh-CN": string }> = {
   "profile.empty": { "en-US": "Nothing to save yet.", "zh-CN": "还没有可保存的内容。" },
   "profile.loadError": { "en-US": "Could not load your profile.", "zh-CN": "资料加载失败。" },
   "profile.saveError": { "en-US": "Could not save your profile.", "zh-CN": "资料保存失败。" },
+  "password.title": { "en-US": "Change password", "zh-CN": "修改密码" },
+  "password.old": { "en-US": "Current password", "zh-CN": "当前密码" },
+  "password.new": { "en-US": "New password", "zh-CN": "新密码" },
+  "password.confirm": { "en-US": "Repeat new password", "zh-CN": "再次输入新密码" },
+  "password.action": { "en-US": "Update password", "zh-CN": "更新密码" },
+  "password.done": { "en-US": "Password updated.", "zh-CN": "密码已更新。" },
+  "password.oldRequired": { "en-US": "Enter your current password.", "zh-CN": "请输入当前密码。" },
+  "password.tooShort": { "en-US": "Use at least 8 characters.", "zh-CN": "至少 8 个字符。" },
+  "password.mismatch": { "en-US": "The two passwords do not match.", "zh-CN": "两次输入的密码不一致。" },
+  "password.failed": { "en-US": "Could not change the password.", "zh-CN": "修改密码失败。" },
+  "binding.title": { "en-US": "Account binding", "zh-CN": "账号绑定" },
+  "binding.policy": { "en-US": "What you can manage", "zh-CN": "可管理的项" },
+  "binding.links": { "en-US": "Linked identities", "zh-CN": "已绑定身份" },
+  "binding.empty": { "en-US": "No linked identities.", "zh-CN": "暂无已绑定身份。" },
+  "binding.unlink": { "en-US": "Remove", "zh-CN": "解除" },
+  "binding.unlinkConfirm": { "en-US": "Remove this sign-in method?", "zh-CN": "确定解除该登录方式？" },
+  "binding.allowed": { "en-US": "Allowed", "zh-CN": "允许" },
+  "binding.denied": { "en-US": "Not allowed", "zh-CN": "不允许" },
+  "binding.contact": { "en-US": "Contact binding", "zh-CN": "联系方式绑定" },
+  "binding.email": { "en-US": "Email binding", "zh-CN": "邮箱绑定" },
+  "binding.oauth": { "en-US": "Third-party sign-in", "zh-CN": "第三方登录" },
+  "binding.selfService": { "en-US": "Remove a binding yourself", "zh-CN": "自行解除绑定" },
+  "binding.loadError": { "en-US": "Could not load your bindings.", "zh-CN": "绑定信息加载失败。" },
+  "binding.unlinkError": { "en-US": "Could not remove that binding.", "zh-CN": "解除绑定失败。" },
 };
 
 /**
@@ -215,12 +243,43 @@ export interface IamMpProfileDraft {
 
 /** Profile port. */
 export interface IamMpProfilePort {
+  changePassword(draft: IamMpPasswordDraft): Promise<void>;
   loadProfile(): Promise<IamMpProfile>;
   saveProfile(draft: IamMpProfileDraft): Promise<IamMpProfile>;
 }
 
+/** The three fields of a password change. */
+export interface IamMpPasswordDraft {
+  confirmPassword: string;
+  newPassword: string;
+  oldPassword: string;
+}
+
+/** Tenant policy that decides what a user may change about their own bindings. */
+export interface IamMpAccountBindingPolicy {
+  contactEnabled: boolean;
+  emailEnabled: boolean;
+  oauthEnabled: boolean;
+  selfServiceUnlinkEnabled: boolean;
+}
+
+/** One linked third-party identity. */
+export interface IamMpAccountLink {
+  accountLinkId: string;
+  provider: string;
+  providerUserId: string;
+}
+
+/** Account binding port. */
+export interface IamMpAccountBindingPort {
+  fetchLinks(): Promise<IamMpAccountLink[]>;
+  loadPolicy(): Promise<IamMpAccountBindingPolicy>;
+  unlink(accountLinkId: string): Promise<void>;
+}
+
 /** The singleton the pages read. */
 export interface IamMpRuntime {
+  readonly accountBinding: IamMpAccountBindingPort;
   readonly auth: IamMpAuthPort;
   readonly environment: IamMpRuntimeEnv;
   readonly locale: string;
@@ -261,6 +320,7 @@ export async function bootstrapIamMpApp(input: { runtimeEnv: IamMpRuntimeEnv }):
 
   const locale = resolveLocale();
   runtime = {
+    accountBinding: createAccountBindingPort(service),
     auth: createAuthPort(service, session),
     environment: runtimeEnv,
     locale,
@@ -444,6 +504,13 @@ function createOrganizationPort(service: IamMpRuntimeService): IamMpOrganization
 function createProfilePort(service: IamMpRuntimeService): IamMpProfilePort {
   const current = service.service.iam.users.current;
   return {
+    async changePassword(draft: IamMpPasswordDraft): Promise<void> {
+      await current.password.update({
+        confirmPassword: draft.confirmPassword,
+        newPassword: draft.newPassword,
+        oldPassword: draft.oldPassword,
+      });
+    },
     async loadProfile(): Promise<IamMpProfile> {
       return toProfile(await current.retrieve());
     },
@@ -469,6 +536,45 @@ function toProfile(value: unknown): IamMpProfile {
     email: readString(source.email) ?? "",
     phone: readString(source.phone) ?? "",
     userId: readString(source.userId) ?? readString(source.user_id) ?? readString(source.id) ?? "",
+  };
+}
+
+function createAccountBindingPort(service: IamMpRuntimeService): IamMpAccountBindingPort {
+  return {
+    async fetchLinks(): Promise<IamMpAccountLink[]> {
+      const answer = await service.service.oauth.accountLinks.list({ page: 0, page_size: 50 });
+      return listItems(answer).flatMap((item) => {
+        const record = toRecord(item);
+        const accountLinkId =
+          readString(record.accountLinkId) ?? readString(record.account_link_id) ?? readString(record.id);
+        if (!accountLinkId) return [];
+        return [
+          {
+            accountLinkId,
+            provider: readString(record.provider) ?? readString(record.providerKey) ?? accountLinkId,
+            providerUserId:
+              readString(record.providerUserId) ?? readString(record.provider_user_id) ?? "",
+          },
+        ];
+      });
+    },
+    async loadPolicy(): Promise<IamMpAccountBindingPolicy> {
+      const record = toRecord(await service.service.system.iam.accountBindingPolicy.retrieve());
+      const contact = toRecord(record.contactBinding);
+      const oauth = toRecord(record.oauthBinding);
+      return {
+        contactEnabled: contact.enabled === true,
+        emailEnabled: contact.emailEnabled === true,
+        oauthEnabled: oauth.enabled === true,
+        // Absent means "not granted": a policy that forgot the flag must not be read
+        // as permission to remove a sign-in method.
+        selfServiceUnlinkEnabled:
+          oauth.selfServiceLinkEnabled === true || oauth.selfServiceUnlinkEnabled === true,
+      };
+    },
+    async unlink(accountLinkId: string): Promise<void> {
+      await service.service.oauth.accountLinks.delete(accountLinkId);
+    },
   };
 }
 

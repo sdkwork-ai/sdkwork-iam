@@ -6,12 +6,14 @@
  */
 
 const {
+  IAM_MP_PAGE_PATHS,
   getIamMpRuntime,
   resolveIamMpMessage,
 } = require("../../../runtime/iam-app");
 
 Page({
   data: {
+    bindingText: "",
     displayName: "",
     displayNameLabel: "",
     email: "",
@@ -19,6 +21,7 @@ Page({
     errorText: "",
     loading: true,
     noticeText: "",
+    passwordText: "",
     pending: false,
     phone: "",
     phoneLabel: "",
@@ -32,8 +35,10 @@ Page({
     const t = (key) => resolveIamMpMessage(this.locale(), key);
     wx.setNavigationBarTitle({ title: t("profile.title") });
     this.setData({
+      bindingText: t("binding.title"),
       displayNameLabel: t("profile.displayName"),
       emailLabel: t("profile.email"),
+      passwordText: t("password.title"),
       phoneLabel: t("profile.phone"),
       saveText: t("profile.save"),
       title: t("profile.title"),
@@ -109,5 +114,13 @@ Page({
 
   onBackToTenant() {
     wx.navigateBack({ delta: 1 });
+  },
+
+  onOpenPassword() {
+    getIamMpRuntime().navigation.navigateTo(IAM_MP_PAGE_PATHS.password);
+  },
+
+  onOpenBindings() {
+    getIamMpRuntime().navigation.navigateTo(IAM_MP_PAGE_PATHS.accountBinding);
   },
 });

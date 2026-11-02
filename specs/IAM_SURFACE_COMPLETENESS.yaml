@@ -216,14 +216,19 @@ clientSurfaces:
       through the runtime's auth port), the `app-tenant` subpackage tenant overview
       (session context, organizations, memberships), the `app-organization`
       subpackage directory (server-searched, append-on-load-more, stale-response
-      guard), and the `app-user-center` subpackage profile page — it reads
-      `iam/users/current` and saves only the fields the user edited, because an
-      untouched empty field would clear a value the backend holds, and it refuses an
-      all-empty save rather than sending a request the server can only reject. 21 node
-      tests cover the registry, the manifest/files invariant and the runtime ports.
-      Remaining: 20 declared routes still need pages — password change, account
-      binding, provider list, oauth-callback and context-selection first, then the
-      console and admin tiers.
+      guard), and the `app-user-center` subpackage — profile and password. The profile
+      page reads `iam/users/current` and saves only the fields the user edited, because
+      an untouched empty field would clear a value the backend holds, and it refuses an
+      all-empty save rather than sending a request the server can only reject. The
+      password page applies the same rules and order as the H5 and PC forms before the
+      request and clears all three fields on success.
+      The `app-account-binding` subpackage lists linked identities and the tenant
+      policy; the removal action exists only when the tenant grants self-service
+      unlink, and a row disappears only after the server accepts the removal.
+      21 node tests cover the registry, the manifest/files invariant and the runtime
+      ports.
+      Remaining: 18 declared routes still need pages — provider list, oauth-callback
+      and context-selection first, then the console and admin tiers.
   flutter:
     status: partial
     note: >

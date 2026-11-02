@@ -6817,6 +6817,8 @@ var IAM_MP_PAGE_PATHS = {
   login: "pages/login/index",
   oauthCallback: "pages/oauth-callback/index",
   organizationDirectory: "app-organization/pages/directory/index",
+  accountBinding: "app-account-binding/pages/list/index",
+  password: "app-user-center/pages/password/index",
   profile: "app-user-center/pages/profile/index",
   register: "pages/register/index",
   tenantOverview: "app-tenant/pages/overview/index"
@@ -6827,7 +6829,9 @@ var IAM_MP_IMPLEMENTED_ROUTE_IDS = [
   "app.iam.auth.forgot-password",
   "app.iam.tenant.overview",
   "app.iam.organization.directory",
-  "app.iam.user-center.profile"
+  "app.iam.user-center.profile",
+  "app.iam.user-center.password",
+  "app.iam.account-binding.list"
 ];
 var MESSAGES = {
   "common.loading": { "en-US": "Loading", "zh-CN": "\u52A0\u8F7D\u4E2D" },
@@ -6899,7 +6903,31 @@ var MESSAGES = {
   "profile.saved": { "en-US": "Profile saved.", "zh-CN": "\u8D44\u6599\u5DF2\u4FDD\u5B58\u3002" },
   "profile.empty": { "en-US": "Nothing to save yet.", "zh-CN": "\u8FD8\u6CA1\u6709\u53EF\u4FDD\u5B58\u7684\u5185\u5BB9\u3002" },
   "profile.loadError": { "en-US": "Could not load your profile.", "zh-CN": "\u8D44\u6599\u52A0\u8F7D\u5931\u8D25\u3002" },
-  "profile.saveError": { "en-US": "Could not save your profile.", "zh-CN": "\u8D44\u6599\u4FDD\u5B58\u5931\u8D25\u3002" }
+  "profile.saveError": { "en-US": "Could not save your profile.", "zh-CN": "\u8D44\u6599\u4FDD\u5B58\u5931\u8D25\u3002" },
+  "password.title": { "en-US": "Change password", "zh-CN": "\u4FEE\u6539\u5BC6\u7801" },
+  "password.old": { "en-US": "Current password", "zh-CN": "\u5F53\u524D\u5BC6\u7801" },
+  "password.new": { "en-US": "New password", "zh-CN": "\u65B0\u5BC6\u7801" },
+  "password.confirm": { "en-US": "Repeat new password", "zh-CN": "\u518D\u6B21\u8F93\u5165\u65B0\u5BC6\u7801" },
+  "password.action": { "en-US": "Update password", "zh-CN": "\u66F4\u65B0\u5BC6\u7801" },
+  "password.done": { "en-US": "Password updated.", "zh-CN": "\u5BC6\u7801\u5DF2\u66F4\u65B0\u3002" },
+  "password.oldRequired": { "en-US": "Enter your current password.", "zh-CN": "\u8BF7\u8F93\u5165\u5F53\u524D\u5BC6\u7801\u3002" },
+  "password.tooShort": { "en-US": "Use at least 8 characters.", "zh-CN": "\u81F3\u5C11 8 \u4E2A\u5B57\u7B26\u3002" },
+  "password.mismatch": { "en-US": "The two passwords do not match.", "zh-CN": "\u4E24\u6B21\u8F93\u5165\u7684\u5BC6\u7801\u4E0D\u4E00\u81F4\u3002" },
+  "password.failed": { "en-US": "Could not change the password.", "zh-CN": "\u4FEE\u6539\u5BC6\u7801\u5931\u8D25\u3002" },
+  "binding.title": { "en-US": "Account binding", "zh-CN": "\u8D26\u53F7\u7ED1\u5B9A" },
+  "binding.policy": { "en-US": "What you can manage", "zh-CN": "\u53EF\u7BA1\u7406\u7684\u9879" },
+  "binding.links": { "en-US": "Linked identities", "zh-CN": "\u5DF2\u7ED1\u5B9A\u8EAB\u4EFD" },
+  "binding.empty": { "en-US": "No linked identities.", "zh-CN": "\u6682\u65E0\u5DF2\u7ED1\u5B9A\u8EAB\u4EFD\u3002" },
+  "binding.unlink": { "en-US": "Remove", "zh-CN": "\u89E3\u9664" },
+  "binding.unlinkConfirm": { "en-US": "Remove this sign-in method?", "zh-CN": "\u786E\u5B9A\u89E3\u9664\u8BE5\u767B\u5F55\u65B9\u5F0F\uFF1F" },
+  "binding.allowed": { "en-US": "Allowed", "zh-CN": "\u5141\u8BB8" },
+  "binding.denied": { "en-US": "Not allowed", "zh-CN": "\u4E0D\u5141\u8BB8" },
+  "binding.contact": { "en-US": "Contact binding", "zh-CN": "\u8054\u7CFB\u65B9\u5F0F\u7ED1\u5B9A" },
+  "binding.email": { "en-US": "Email binding", "zh-CN": "\u90AE\u7BB1\u7ED1\u5B9A" },
+  "binding.oauth": { "en-US": "Third-party sign-in", "zh-CN": "\u7B2C\u4E09\u65B9\u767B\u5F55" },
+  "binding.selfService": { "en-US": "Remove a binding yourself", "zh-CN": "\u81EA\u884C\u89E3\u9664\u7ED1\u5B9A" },
+  "binding.loadError": { "en-US": "Could not load your bindings.", "zh-CN": "\u7ED1\u5B9A\u4FE1\u606F\u52A0\u8F7D\u5931\u8D25\u3002" },
+  "binding.unlinkError": { "en-US": "Could not remove that binding.", "zh-CN": "\u89E3\u9664\u7ED1\u5B9A\u5931\u8D25\u3002" }
 };
 function resolveIamMpMessage(locale, key) {
   const entry = MESSAGES[key];
@@ -6926,6 +6954,7 @@ async function bootstrapIamMpApp(input) {
   session.subscribe(applySession);
   const locale = resolveLocale();
   runtime = {
+    accountBinding: createAccountBindingPort(service),
     auth: createAuthPort(service, session),
     environment: runtimeEnv,
     locale,
@@ -7085,6 +7114,13 @@ function createOrganizationPort(service) {
 function createProfilePort(service) {
   const current = service.service.iam.users.current;
   return {
+    async changePassword(draft) {
+      await current.password.update({
+        confirmPassword: draft.confirmPassword,
+        newPassword: draft.newPassword,
+        oldPassword: draft.oldPassword
+      });
+    },
     async loadProfile() {
       return toProfile(await current.retrieve());
     },
@@ -7106,6 +7142,41 @@ function toProfile(value) {
     email: readString(source.email) ?? "",
     phone: readString(source.phone) ?? "",
     userId: readString(source.userId) ?? readString(source.user_id) ?? readString(source.id) ?? ""
+  };
+}
+function createAccountBindingPort(service) {
+  return {
+    async fetchLinks() {
+      const answer = await service.service.oauth.accountLinks.list({ page: 0, page_size: 50 });
+      return listItems(answer).flatMap((item) => {
+        const record = toRecord(item);
+        const accountLinkId = readString(record.accountLinkId) ?? readString(record.account_link_id) ?? readString(record.id);
+        if (!accountLinkId) return [];
+        return [
+          {
+            accountLinkId,
+            provider: readString(record.provider) ?? readString(record.providerKey) ?? accountLinkId,
+            providerUserId: readString(record.providerUserId) ?? readString(record.provider_user_id) ?? ""
+          }
+        ];
+      });
+    },
+    async loadPolicy() {
+      const record = toRecord(await service.service.system.iam.accountBindingPolicy.retrieve());
+      const contact = toRecord(record.contactBinding);
+      const oauth = toRecord(record.oauthBinding);
+      return {
+        contactEnabled: contact.enabled === true,
+        emailEnabled: contact.emailEnabled === true,
+        oauthEnabled: oauth.enabled === true,
+        // Absent means "not granted": a policy that forgot the flag must not be read
+        // as permission to remove a sign-in method.
+        selfServiceUnlinkEnabled: oauth.selfServiceLinkEnabled === true || oauth.selfServiceUnlinkEnabled === true
+      };
+    },
+    async unlink(accountLinkId) {
+      await service.service.oauth.accountLinks.delete(accountLinkId);
+    }
   };
 }
 function createNavigationPort() {

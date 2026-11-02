@@ -7,9 +7,16 @@
   "subPackages": [
     {
       "pages": [
-        "pages/profile/index"
+        "pages/profile/index",
+        "pages/password/index"
       ],
       "root": "app-user-center"
+    },
+    {
+      "pages": [
+        "pages/list/index"
+      ],
+      "root": "app-account-binding"
     },
     {
       "pages": [

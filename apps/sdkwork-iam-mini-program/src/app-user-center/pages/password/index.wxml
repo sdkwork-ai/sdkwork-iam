@@ -1,0 +1,24 @@
+<view class="page">
+  <view class="brand">
+    <text class="brand-title">{{title}}</text>
+  </view>
+
+  <text wx:if="{{noticeText}}" class="notice">{{noticeText}}</text>
+  <text wx:if="{{errorText}}" class="error">{{errorText}}</text>
+
+  <view class="card">
+    <view class="field">
+      <text class="label">{{oldLabel}}</text>
+      <input class="input" password value="{{oldPassword}}" bindinput="onOldInput" />
+    </view>
+    <view class="field">
+      <text class="label">{{newLabel}}</text>
+      <input class="input" password value="{{newPassword}}" bindinput="onNewInput" />
+    </view>
+    <view class="field">
+      <text class="label">{{confirmLabel}}</text>
+      <input class="input" password value="{{confirm}}" bindinput="onConfirmInput" />
+    </view>
+    <button class="primary" loading="{{pending}}" bindtap="onSubmit">{{submitText}}</button>
+  </view>
+</view>
