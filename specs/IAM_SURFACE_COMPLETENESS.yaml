@@ -190,14 +190,26 @@ clientSurfaces:
       - app.iam.user-center.profile
       - app.iam.user-center.password
       - app.iam.oauth.providers
+      - console.iam.tenant.overview
     partialScreens:
       app.iam.auth.context-selection: >
         The screen exists and is driven by a login challenge, which only exists
         after a sign-in call; it is a step in the login flow rather than a URL a
         user can land on. PC records the same shape as `partial`.
     scaffoldScreens:
-      - console.iam.* (4)
+      - console.iam.organization.directory
+      - console.iam.account-binding.list
+      - console.iam.user-center.profile
       - admin.iam.* (10)
+    consoleNote: >
+      The console tier has started: `console.iam.tenant.overview` is a real workspace
+      (`/console/iam/tenant`) that reads the tenant identity, the self-service binding
+      policy an operator needs when answering a ticket, and the tenant's organizations
+      with server paging. It answers "what is this tenant's" where the app screen
+      answers "what is mine", which is why it reads the policy resource the app screen
+      never shows. The remaining three console screens reuse the same controller shape
+      and are the next increment; the admin tier additionally needs the backend client
+      wired into `sdkwork-iam-h5-admin-core`.
     blockedScreens:
       app.iam.user.list: >
         app-api publishes no user-directory read operation; the only directory list
