@@ -1,1 +1,15 @@
+analyzer:
+  exclude:
+    - build/**
+# Same rule set as the Flutter root (flutter_lints ^5.0.0), declared as a
+# dev dependency of this package so the include actually resolves.
 include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Every file in this package opens with a `/** ... */` block comment that
+    # documents the file as a whole, and the generated capability packages use the
+    # same shape. Demanding `///` (and a `library` directive to attach it to) would
+    # mean rewriting every package's header for no behavioural gain.
+    dangling_library_doc_comments: false
+    slash_for_doc_comments: false

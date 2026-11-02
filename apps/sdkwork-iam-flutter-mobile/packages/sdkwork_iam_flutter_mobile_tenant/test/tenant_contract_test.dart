@@ -1,4 +1,4 @@
-// SDKWORK-CLIENT-APP-SURFACES-GENERATED: do not edit by hand; regenerate with `node scripts/materialize-client-app-surfaces.mjs`.
+// SDKWORK-IAM-FLUTTER-TENANT: authored contract test.
 /**
  * Route contribution test of `sdkwork_iam_flutter_mobile_tenant`.
  *
@@ -8,6 +8,7 @@
  */
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sdkwork_iam_flutter_mobile_core/sdkwork_iam_flutter_mobile_core.dart';
 import 'package:sdkwork_iam_flutter_mobile_tenant/sdkwork_iam_flutter_mobile_tenant.dart';
 
 void main() {
@@ -26,5 +27,11 @@ void main() {
       expect(contribution.titleKey, isNotEmpty, reason: contribution.id);
       expect(contribution.presentation, isNotEmpty, reason: contribution.id);
     }
+  });
+
+  test('the physical path resolves back to its route id', () {
+    const IamFlutterMobileTenantService service = IamFlutterMobileTenantService();
+    expect(service.routeIdForPath('/tenant'), 'app.iam.tenant.overview');
+    expect(service.routeIdForPath('/unknown'), isNull);
   });
 }

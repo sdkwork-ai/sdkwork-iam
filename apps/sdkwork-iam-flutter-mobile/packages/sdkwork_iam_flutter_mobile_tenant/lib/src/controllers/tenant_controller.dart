@@ -1,4 +1,4 @@
-// SDKWORK-CLIENT-APP-SURFACES-GENERATED: do not edit by hand; regenerate with `node scripts/materialize-client-app-surfaces.mjs`.
+// SDKWORK-IAM-FLUTTER-TENANT: authored controller.
 /**
  * Presentation logic of `sdkwork_iam_flutter_mobile_tenant`.
  *
@@ -16,9 +16,13 @@ class IamFlutterMobileTenantController {
       : _service = service ?? const IamFlutterMobileTenantService();
 
   final IamFlutterMobileTenantService _service;
-  final List<void Function(IamFlutterMobileTenantState)> _listeners = <void Function(IamFlutterMobileTenantState)>[];
+  final List<void Function(IamFlutterMobileTenantState)> _listeners =
+      <void Function(IamFlutterMobileTenantState)>[];
 
   IamFlutterMobileTenantState _state = const IamFlutterMobileTenantState();
+
+  /// Bumped per load so a slow first answer cannot overwrite a newer one.
+  int _requestId = 0;
 
   /// Current state.
   IamFlutterMobileTenantState get state => _state;
@@ -37,19 +41,23 @@ class IamFlutterMobileTenantController {
     }
   }
 
-  /// Replaces the displayed records.
-  void setItems(List<String> items) {
-    _emit(_state.copyWith(items: items, loading: false, errorKey: null));
-  }
-
-  /// Marks the capability as loading.
-  void setLoading() {
-    _emit(_state.copyWith(loading: true, errorKey: null));
-  }
-
-  /// Records a user-safe failure.
-  void setError(String errorKey) {
-    _emit(_state.copyWith(loading: false, errorKey: errorKey));
+  /// Loads the overview and emits loading, ready or error.
+  ///
+  /// The failure is *not* rethrown: the screen renders [IamFlutterMobileTenantState.errorMessage],
+  /// and a caller that awaits this method should never need a try/catch around a
+  /// render-triggered load.
+  Future<void> load() async {
+    final int requestId = _requestId + 1;
+    _requestId = requestId;
+    _emit(_state.asLoading());
+    try {
+      final IamFlutterMobileTenantOverview overview = await _service.loadOverview();
+      if (requestId != _requestId) return;
+      _emit(_state.loaded(overview));
+    } catch (error) {
+      if (requestId != _requestId) return;
+      _emit(_state.failed(error is StateError ? error.message : '$error'));
+    }
   }
 
   /// Resolves the cross-client route id for a physical Flutter location.

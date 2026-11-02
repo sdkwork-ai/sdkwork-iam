@@ -222,8 +222,17 @@ clientSurfaces:
       context-selection in the main package first, then the rest of the capability
       subpackages.
   flutter:
-    status: scaffold
-    note: Every capability package ships a generated single-screen list stub; no production screen.
+    status: partial
+    note: >
+      One capability is now real: `sdkwork_iam_flutter_mobile_tenant` ships a data
+      port (`IamFlutterMobileTenantDataSource`), a controller that loads through it,
+      a screen rendering loading/ready/error/empty with copy supplied as a decoded
+      `.arb` map, and 7 tests (`dart analyze` clean, `flutter test` green). The other
+      twenty-six packages still hold the generated single-screen list stub, and the
+      app shell (`IamHomeShell`) still renders `SizedBox.shrink()`, so no Flutter
+      route is addressable yet — the tenant screen is `partial` for that reason.
+      Toolchain note: the root had never been resolved; `flutter pub get --offline`
+      now succeeds and `pubspec.lock` files remain untracked by design.
   harmony:
     status: scaffold
     note: Route/page map exists; capability pages do not render real data yet.
