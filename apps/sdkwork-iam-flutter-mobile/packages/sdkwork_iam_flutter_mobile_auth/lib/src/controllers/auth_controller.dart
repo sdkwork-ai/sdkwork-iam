@@ -1,4 +1,4 @@
-// SDKWORK-CLIENT-APP-SURFACES-GENERATED: do not edit by hand; regenerate with `node scripts/materialize-client-app-surfaces.mjs`.
+// SDKWORK-IAM-FLUTTER-AUTH: authored controller.
 /**
  * Presentation logic of `sdkwork_iam_flutter_mobile_auth`.
  *
@@ -13,10 +13,18 @@ import '../state/auth_state.dart';
 /// Presentation controller of the `auth` capability.
 class IamFlutterMobileAuthController {
   IamFlutterMobileAuthController({IamFlutterMobileAuthService? service})
-      : _service = service ?? const IamFlutterMobileAuthService();
+      : _service = service ?? const IamFlutterMobileAuthService() {
+    if (_service.isAuthenticated) {
+      final IamFlutterMobileAuthSession? session = _service.currentSession;
+      if (session != null) {
+        _state = _state.signedIn(session);
+      }
+    }
+  }
 
   final IamFlutterMobileAuthService _service;
-  final List<void Function(IamFlutterMobileAuthState)> _listeners = <void Function(IamFlutterMobileAuthState)>[];
+  final List<void Function(IamFlutterMobileAuthState)> _listeners =
+      <void Function(IamFlutterMobileAuthState)>[];
 
   IamFlutterMobileAuthState _state = const IamFlutterMobileAuthState();
 
@@ -37,19 +45,27 @@ class IamFlutterMobileAuthController {
     }
   }
 
-  /// Replaces the displayed records.
-  void setItems(List<String> items) {
-    _emit(_state.copyWith(items: items, loading: false, errorKey: null));
+  /// Signs in with a username and password.
+  ///
+  /// The failure is recorded in state rather than rethrown: the screen renders
+  /// [IamFlutterMobileAuthState.errorMessage], so a form submit needs no try/catch.
+  Future<bool> signIn({required String password, required String username}) async {
+    _emit(_state.asSubmitting());
+    try {
+      final IamFlutterMobileAuthSession session =
+          await _service.signInWithPassword(password: password, username: username);
+      _emit(_state.signedIn(session));
+      return true;
+    } catch (error) {
+      _emit(_state.failed('$error'));
+      return false;
+    }
   }
 
-  /// Marks the capability as loading.
-  void setLoading() {
-    _emit(_state.copyWith(loading: true, errorKey: null));
-  }
-
-  /// Records a user-safe failure.
-  void setError(String errorKey) {
-    _emit(_state.copyWith(loading: false, errorKey: errorKey));
+  /// Signs out and returns to the signed-out state.
+  Future<void> signOut() async {
+    await _service.signOut();
+    _emit(const IamFlutterMobileAuthState());
   }
 
   /// Resolves the cross-client route id for a physical Flutter location.

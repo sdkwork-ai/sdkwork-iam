@@ -1,10 +1,10 @@
 {
   "@@locale": "zh",
-  "title": "SDKWork IAM Flutter Mobile Auth",
+  "title": "登录",
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile Auth 工作区",
+  "subtitle": "登录后可管理租户、组织与账号。",
   "@subtitle": {
     "description": "Supporting line under the title."
   },
@@ -23,5 +23,17 @@
   "retry": "重试",
   "@retry": {
     "description": "Label of the retry action."
+  },
+  "accountLabel": "手机号或邮箱",
+  "@accountLabel": {
+    "description": "Label of the account field."
+  },
+  "passwordLabel": "密码",
+  "@passwordLabel": {
+    "description": "Label of the password field."
+  },
+  "submitLabel": "登录",
+  "@submitLabel": {
+    "description": "Label of the sign-in action."
   }
 }

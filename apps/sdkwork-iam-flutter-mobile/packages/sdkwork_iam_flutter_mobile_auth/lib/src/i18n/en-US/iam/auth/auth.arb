@@ -1,10 +1,10 @@
 {
   "@@locale": "en",
-  "title": "SDKWork IAM Flutter Mobile Auth",
+  "title": "Sign in",
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile Auth workspace",
+  "subtitle": "Sign in to manage your tenant, organizations and account.",
   "@subtitle": {
     "description": "Supporting line under the title."
   },
@@ -23,5 +23,17 @@
   "retry": "Retry",
   "@retry": {
     "description": "Label of the retry action."
+  },
+  "accountLabel": "Phone or email",
+  "@accountLabel": {
+    "description": "Label of the account field."
+  },
+  "passwordLabel": "Password",
+  "@passwordLabel": {
+    "description": "Label of the password field."
+  },
+  "submitLabel": "Sign in",
+  "@submitLabel": {
+    "description": "Label of the sign-in action."
   }
 }

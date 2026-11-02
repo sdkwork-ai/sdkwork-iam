@@ -237,9 +237,18 @@ clientSurfaces:
       port, controller, screen with loading/ready/error/empty) plus the app-api
       adapter `IamTenantAppSdkDataSource`. 8 app tests + 7 package tests pass;
       `dart analyze lib test` reports no errors.
-      Remaining: 25 capability packages still hold the generated stub, and no auth
-      screen is mounted yet, so an unauthenticated launch shows the tenant screen's
-      error state.
+      Auth is now the gate: `sdkwork_iam_flutter_mobile_auth` has a data port, a
+      controller that records the session, and a sign-in screen; the shell shows it
+      whenever no session exists and swaps to the tenant screen once one does.
+      `IamAuthAppSdkDataSource` performs the sign-in through the generated client and
+      writes the token manager (so every tier client picks the token up) and clears
+      the session on sign-out.
+      Known drift: the generated Dart `AppbaseSessionCreateCommand` carries no
+      `grantType` (the TypeScript client sends an explicit one), and the Dart
+      `SdkworkAppClient` exposes flat `organizationsList` methods rather than the
+      TypeScript namespaces. Both are generator-profile differences to reconcile
+      before GA.
+      Remaining: 24 capability packages still hold the generated stub.
   harmony:
     status: scaffold
     note: Route/page map exists; capability pages do not render real data yet.
