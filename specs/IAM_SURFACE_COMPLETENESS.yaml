@@ -201,7 +201,6 @@ clientSurfaces:
         user can land on. PC records the same shape as `partial`.
     scaffoldScreens:
       - admin.iam.oauth.providers
-      - admin.iam.tenant.list
       - admin.iam.organization.tree
       - admin.iam.permission.authorizations
       - admin.iam.account-binding.list
@@ -218,9 +217,11 @@ clientSurfaces:
       code when it has no display name; a policy shows its allow/deny effect on the row,
       because the two are otherwise indistinguishable) and by the audit trail, which leads
       each row with the action and actor a ticket names and keeps the resource and time as
-      the way to narrow a search. The remaining five admin screens reuse the same
-      controller shape; `permission.authorizations` and `user.list` stay blocked because the
-      IAM service exposes no list operation for either.
+      the way to narrow a search. The tenant list completes the deployment view: every
+      tenant with its status on the row, so a suspended tenant cannot look active. The
+      remaining four admin screens reuse the same controller shape;
+      `permission.authorizations` and `user.list` stay blocked because the IAM service
+      exposes no list operation for either.
       The admin credential is the one session token read at request time; the backend
       enforces the admin permission itself, and a separate backend-admin credential
       issuance flow is still an open governance item.

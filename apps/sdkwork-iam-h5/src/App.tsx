@@ -34,6 +34,11 @@ import {
   SdkworkIamH5AdminAuditScreen,
 } from "@sdkwork/iam-h5-admin-audit";
 import {
+  createSdkworkIamH5AdminTenantController,
+  IAM_H5_ADMIN_TENANT_I18N_CATALOG,
+  SdkworkIamH5AdminTenantScreen,
+} from "@sdkwork/iam-h5-admin-tenant";
+import {
   createSdkworkIamH5AdminPermissionController,
   createSdkworkIamH5AdminPolicyController,
   createSdkworkIamH5AdminRoleController,
@@ -139,6 +144,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
   const adminPermissionMessages =
     IAM_H5_ADMIN_PERMISSION_I18N_CATALOG.resolveMessages(resolvedLocale);
   const adminAuditMessages = IAM_H5_ADMIN_AUDIT_I18N_CATALOG.resolveMessages(resolvedLocale);
+  const adminTenantMessages = IAM_H5_ADMIN_TENANT_I18N_CATALOG.resolveMessages(resolvedLocale);
 
   const authController = useMemo(
     () => createSdkworkIamH5AuthController(bootstrap.runtime.service),
@@ -196,6 +202,10 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     () => createSdkworkIamH5AdminAuditController(bootstrap.adminService),
     [bootstrap],
   );
+  const adminTenantController = useMemo(
+    () => createSdkworkIamH5AdminTenantController(bootstrap.adminService),
+    [bootstrap],
+  );
 
   const handleAuthenticated = useCallback(() => {
     // The service's commit bridge already wrote the session into the store; this
@@ -225,6 +235,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     const adminRoleRoute = byId("admin.iam.permission.roles");
     const adminPolicyRoute = byId("admin.iam.permission.policies");
     const adminAuditRoute = byId("admin.iam.audit.events");
+    const adminTenantRoute = byId("admin.iam.tenant.list");
     const routes: SdkworkIamH5ShellRoute[] = [];
 
     if (loginRoute) {
@@ -454,6 +465,15 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
         title: adminAuditMessages.events.title,
       });
     }
+    if (adminTenantRoute) {
+      routes.push({
+        access: "protected",
+        element: <SdkworkIamH5AdminTenantScreen controller={adminTenantController} />,
+        id: adminTenantRoute.id,
+        path: adminTenantRoute.path,
+        title: adminTenantMessages.list.title,
+      });
+    }
     return routes;
   }, [
     accountBindingController,
@@ -477,6 +497,8 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     adminPolicyController,
     adminAuditController,
     adminAuditMessages.events.title,
+    adminTenantController,
+    adminTenantMessages.list.title,
     handleAuthenticated,
     navigate,
     oauthMessages.providers.title,
