@@ -1100,10 +1100,26 @@ export function createSdkworkIamOauthAdminController(
     },
     loadRelyingPartyConfig(tenantId, tenantApplicationId) {
       setState({ status: "saving", lastError: undefined });
-      return service.iam.tenantApplications.retrieve(tenantApplicationId.trim())
-        .then((detail) => {
-          const draft = parseRelyingPartyDraftFromTenantApplication(detail, tenantId, tenantApplicationId);
-          if (draft.tenantId && tenantId.trim() && draft.tenantId !== tenantId.trim()) {
+      const normalizedTenantId = tenantId.trim();
+      const normalizedApplicationId = tenantApplicationId.trim();
+      // The tenant-scoped management list is the authenticated read surface:
+      // it carries the hash-free `oauthRelyingParty` summary for every row, so
+      // an admin session needs no bootstrap-operator credential to load it.
+      return service.iam.tenantApplications.list(normalizedTenantId, { page: 1, page_size: 200 })
+        .then((page) => {
+          const draft = normalizeList(page)
+            .map((item) => parseRelyingPartyDraftFromTenantApplication(
+              item,
+              normalizedTenantId,
+              normalizedApplicationId,
+            ))
+            .find((candidate) => candidate.tenantApplicationId === normalizedApplicationId);
+          if (draft === undefined) {
+            throw new Error(
+              `Tenant application ${normalizedApplicationId} is not visible in tenant ${normalizedTenantId}`,
+            );
+          }
+          if (draft.tenantId && normalizedTenantId && draft.tenantId !== normalizedTenantId) {
             throw new Error("Loaded tenant application does not match the requested tenant scope");
           }
           setState({ status: "ready" });
@@ -1126,17 +1142,25 @@ export function createSdkworkIamOauthAdminController(
             allowedScopes: splitMultilineList(body.allowedScopesText),
             confidential: body.confidential,
           };
-          if (body.confidential && body.clientSecretHash.trim()) {
-            relyingParty.clientSecretHash = body.clientSecretHash.trim();
+          const clientId = body.clientId.trim();
+          // A blank field clears a brand-level override and lets the backend
+          // fall back to the tenant application app_id.
+          relyingParty.clientId = clientId || null;
+          const secret = body.clientSecretHash.trim();
+          if (body.confidential && secret) {
+            // A PHC string is already hashed; anything else is the plaintext
+            // secret, which the backend hashes before it reaches storage.
+            if (secret.startsWith("$argon2")) {
+              relyingParty.clientSecretHash = secret;
+            } else {
+              relyingParty.clientSecret = secret;
+            }
           }
-          return service.iam.tenantApplications.update(body.tenantApplicationId.trim(), {
-            tenantId: body.tenantId.trim(),
-            runtimeConfig: {
-              oauth: {
-                relyingParty,
-              },
-            },
-          });
+          return service.iam.tenantApplications.management.update(
+            body.tenantId.trim(),
+            body.tenantApplicationId.trim(),
+            { runtimeConfig: { oauth: { relyingParty } } },
+          );
         },
         "Failed to update relying party OAuth configuration",
         false,

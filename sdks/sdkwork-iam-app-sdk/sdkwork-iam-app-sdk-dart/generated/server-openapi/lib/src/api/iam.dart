@@ -93,6 +93,15 @@ class IamApi {
     })();
   }
 
+  /// Persona Catalog retrieve.
+  Future<IamPersonaCatalogResponse?> personaCatalogRetrieve() async {
+    final response = await _client.get(ApiPaths.appPath('/iam/persona_catalog'));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamPersonaCatalogResponse.fromJson(map);
+    })();
+  }
+
   /// Position Assignments list.
   Future<SdkWorkListResponse?> positionAssignmentsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
@@ -126,13 +135,18 @@ class IamApi {
   }
 
   /// Role Bindings list.
-  Future<SdkWorkListResponse?> roleBindingsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> roleBindingsList([int? page, int? pageSize, String? cursor, String? sort, String? q, String? roleId, String? principalKind, String? principalId, String? scopeKind, String? scopeId]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
       QueryParameterSpec('cursor', cursor, 'form', true, false, null),
       QueryParameterSpec('sort', sort, 'form', true, false, null),
-      QueryParameterSpec('q', q, 'form', true, false, null)
+      QueryParameterSpec('q', q, 'form', true, false, null),
+      QueryParameterSpec('roleId', roleId, 'form', true, false, null),
+      QueryParameterSpec('principalKind', principalKind, 'form', true, false, null),
+      QueryParameterSpec('principalId', principalId, 'form', true, false, null),
+      QueryParameterSpec('scopeKind', scopeKind, 'form', true, false, null),
+      QueryParameterSpec('scopeId', scopeId, 'form', true, false, null)
     ]);
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.appPath('/iam/role_bindings'), query));
     return (() {
@@ -182,6 +196,30 @@ class IamApi {
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Users current persona delete.
+  Future<void> usersCurrentPersonaDelete() async {
+    await _client.delete(ApiPaths.appPath('/iam/users/current/persona'));
+  }
+
+  /// Users current persona retrieve.
+  Future<IamUserPersonaResponse?> usersCurrentPersonaRetrieve() async {
+    final response = await _client.get(ApiPaths.appPath('/iam/users/current/persona'));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamUserPersonaResponse.fromJson(map);
+    })();
+  }
+
+  /// Users current persona update.
+  Future<IamUserPersonaResponse?> usersCurrentPersonaUpdate(IamUserPersonaUpdateCommand body) async {
+    final payload = body.toJson();
+    final response = await _client.put(ApiPaths.appPath('/iam/users/current/persona'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamUserPersonaResponse.fromJson(map);
     })();
   }
 

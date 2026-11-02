@@ -485,6 +485,11 @@ class IamOauthApi {
     })();
   }
 
+  /// Iam oauth resource Accounts delete.
+  Future<void> resourceAccountsDelete(String resourceAccountId) async {
+    await _client.delete(ApiPaths.backendPath('/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, const PathParameterSpec('resourceAccountId', 'simple', false))}'));
+  }
+
   /// Iam oauth resource Accounts update.
   Future<SdkWorkResourceResponse?> resourceAccountsUpdate(String resourceAccountId, [Map<String, dynamic>? body]) async {
     final payload = body;

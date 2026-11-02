@@ -155,6 +155,9 @@ export function createSdkworkIamH5AuthController(
         const verifyType = resolveSdkworkIamH5VerifyType(input.account);
         const response = await service.auth.registrations.create({
           channel: verifyType,
+          // The server compares this with `password` and refuses the request when
+          // the two differ or when the field is absent.
+          confirmPassword: input.confirmPassword,
           password: input.password,
           username: input.account.trim(),
           verificationCode: input.code.trim(),

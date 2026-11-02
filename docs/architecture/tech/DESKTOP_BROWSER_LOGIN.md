@@ -250,7 +250,7 @@ replacing it with a generic `40002 Malformed request`.
 
 ## Registration requirements for a desktop client
 
-1. Tenant application `app_id` with `runtimeConfig.oauth.relyingParty = { enabled: true, confidential: false, redirectUris: ["<scheme>://auth/callback"], allowedScopes: ["openid", "profile", "offline_access"] }` — register through backend-api `applications.register`.
+1. Tenant application `app_id` with `runtimeConfig.oauth.relyingParty = { enabled: true, clientId: "<brand client id>", confidential: false, redirectUris: ["<scheme>://auth/callback"], allowedScopes: ["openid", "profile", "offline_access"] }` — register through the PC admin relying-party surface (`iam.tenantApplications.management.update`) or declare `oauth.relyingParty` in `agent.app.config.json` so the embedded bootstrap registers it when the auto-registration policy allows the lifecycle. `clientId` may be omitted; it then equals `app_id`.
 2. OS-level protocol registration for the scheme: Electron `setAsDefaultProtocolClient` (inside `createSdkworkElectronDeepLinkBridge`); Tauri deep-link plugin `desktop.schemes` config.
 3. The scheme must derive from the app key (lowercase letters, digits, `-`); `normalize_deep_link_scheme` in `sdkwork-iam-tauri-host` and `deriveSdkworkDesktopRedirectUri` in `@sdkwork/iam-desktop-auth` enforce the same rules on both sides.
 

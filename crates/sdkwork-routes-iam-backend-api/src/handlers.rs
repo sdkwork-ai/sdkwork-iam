@@ -22,7 +22,8 @@ use sdkwork_iam_web_adapter::{
     provision_tenant_application, register_application_template,
     registered_application_template_to_json, resolve_bootstrap_actor, resolve_tenant_application,
     save_account_binding_policy, tenant_application_to_json, update_tenant_application,
-    AccountBindingPolicyDocument, IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
+    oauth_relying_party_summary, AccountBindingPolicyDocument,
+    IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
     IAM_APPLICATIONS_REGISTER_PERMISSION, IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION,
     IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION, IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION,
 };
@@ -739,7 +740,7 @@ async fn list_tenant_applications_handler(
         "SELECT id, app_id, tenant_id, organization_id, template_id, template_version, \
                 instance_key, display_name, environment, status, primary_domain, \
                 access_permissions_json, created_at::text, updated_at::text, \
-                application_type, COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
+                application_type, runtime_config_json, COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
          FROM iam_tenant_application \
          WHERE tenant_id = $1 \
            AND ($4::text IS NULL OR LOWER(display_name) LIKE $4 OR LOWER(app_id) LIKE $4 \
@@ -982,6 +983,10 @@ fn tenant_application_list_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
         .try_get::<SqlJson<Vec<String>>, _>(11)
         .map(|value| value.0)
         .unwrap_or_default();
+    let runtime_config = row
+        .try_get::<SqlJson<Value>, _>(15)
+        .map(|value| value.0)
+        .unwrap_or_else(|_| json!({}));
     json!({
         "accessPermissions": access_permissions,
         "appId": row.get::<String, _>(1),
@@ -990,6 +995,7 @@ fn tenant_application_list_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
         "displayName": row.get::<String, _>(7),
         "environment": row.get::<String, _>(8),
         "instanceKey": row.get::<String, _>(6),
+        "oauthRelyingParty": oauth_relying_party_summary(&runtime_config),
         "organizationId": row.get::<String, _>(3),
         "primaryDomain": row.get::<Option<String>, _>(10),
         "status": row.get::<String, _>(9),

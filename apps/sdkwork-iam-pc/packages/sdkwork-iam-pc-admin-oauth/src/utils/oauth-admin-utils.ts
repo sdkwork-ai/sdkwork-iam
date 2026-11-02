@@ -287,9 +287,12 @@ export function canSubmitRelyingParty(draft: SdkworkIamOauthRelyingPartyDraft): 
   const secretOk = !draft.confidential
     || Boolean(draft.clientSecretHash.trim())
     || draft.hasExistingSecret;
+  const clientIdOk = !draft.clientId.trim()
+    || /^[a-z0-9][a-z0-9._-]{0,63}$/.test(draft.clientId.trim());
   return Boolean(
     draft.tenantApplicationId.trim()
     && draft.tenantId.trim()
+    && clientIdOk
     && hasRedirectUris
     && hasScopes
     && secretOk,
@@ -304,18 +307,25 @@ export function parseRelyingPartyDraftFromTenantApplication(
   const record = toRecord(unwrapApiData(detail));
   const runtimeConfig = toRecord(record.runtimeConfig ?? record.runtime_config);
   const oauth = toRecord(runtimeConfig.oauth);
-  const relyingParty = toRecord(oauth.relyingParty ?? oauth.relying_party);
+  const runtimeRelyingParty = toRecord(oauth.relyingParty ?? oauth.relying_party);
+  // The backend exposes a hash-free summary on list and single-resource
+  // responses; prefer it over the redacted runtime config.
+  const summary = toRecord(record.oauthRelyingParty ?? record.oauth_relying_party);
+  const relyingParty = Object.keys(summary).length > 0 ? summary : runtimeRelyingParty;
   const redirectUris = readStringList(relyingParty.redirectUris ?? relyingParty.redirect_uris);
   const allowedScopes = readStringList(relyingParty.allowedScopes ?? relyingParty.allowed_scopes);
   const storedSecret = readString(relyingParty.clientSecretHash ?? relyingParty.client_secret_hash);
-  const hasExistingSecret = storedSecret === "[redacted]" || Boolean(storedSecret);
+  const appId = readString(record.appId ?? record.app_id);
   return {
     allowedScopesText: allowedScopes.join("\n"),
-    clientIdHint: readString(record.appId ?? record.app_id),
+    clientId: readString(relyingParty.clientId ?? relyingParty.client_id) || appId,
+    clientIdHint: appId,
     clientSecretHash: "",
     confidential: readBoolean(relyingParty.confidential, false),
     enabled: readBoolean(relyingParty.enabled, true),
-    hasExistingSecret,
+    hasExistingSecret: readBoolean(relyingParty.hasClientSecret ?? relyingParty.has_client_secret, false)
+      || storedSecret === "[redacted]"
+      || Boolean(storedSecret),
     redirectUrisText: redirectUris.join("\n"),
     tenantApplicationId: readString(record.tenantApplicationId ?? record.tenant_application_id) || tenantApplicationId.trim(),
     tenantId: readString(record.tenantId ?? record.tenant_id) || tenantId.trim(),

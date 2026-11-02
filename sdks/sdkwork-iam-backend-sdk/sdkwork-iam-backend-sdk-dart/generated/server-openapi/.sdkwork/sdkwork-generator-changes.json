@@ -9,10 +9,11 @@
     "protocol": "http",
     "packageName": "sdkwork_iam_backend_sdk"
   },
-  "changeFingerprint": "69f7e2d7ab5c383f8d1e3a22e2bc3892e377b95b7a64295d7d9429b4798c5d46",
+  "changeFingerprint": "2ff2808ffdde5f237a3f274a16c704e3930120dbd0c03ea050808307a0b03816",
   "changes": {
     "createdGeneratedFiles": [],
     "updatedGeneratedFiles": [
+      "lib/src/api/iam_oauth.dart",
       "lib/src/api/iam.dart"
     ],
     "unchangedGeneratedFiles": [
@@ -24,7 +25,6 @@
       "lib/backend_client.dart",
       "lib/sdkwork_iam_backend_sdk.dart",
       "lib/src/api/api.dart",
-      "lib/src/api/iam_oauth.dart",
       "lib/src/api/paths.dart",
       "lib/src/api/response_helpers.dart",
       "lib/src/http/client.dart",
@@ -51,6 +51,7 @@
       {
         "area": "api-surface",
         "paths": [
+          "lib/src/api/iam_oauth.dart",
           "lib/src/api/iam.dart"
         ]
       }

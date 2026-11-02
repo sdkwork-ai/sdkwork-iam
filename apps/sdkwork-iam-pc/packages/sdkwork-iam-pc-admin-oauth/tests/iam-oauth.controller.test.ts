@@ -157,7 +157,8 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
 
     await controller.updateRelyingParty({
       allowedScopesText: "openid, profile",
-      clientIdHint: "",
+      clientId: "iam-app-1",
+      clientIdHint: "iam-app-1",
       clientSecretHash: "$argon2id$v=19$hash",
       confidential: true,
       enabled: true,
@@ -166,12 +167,12 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
       tenantApplicationId: "iamta-1",
       tenantId: "iamt-1",
     });
-    expect(service.iam.tenantApplications.update).toHaveBeenCalledWith("iamta-1", {
-      tenantId: "iamt-1",
+    expect(service.iam.tenantApplications.management.update).toHaveBeenCalledWith("iamt-1", "iamta-1", {
       runtimeConfig: {
         oauth: {
           relyingParty: {
             enabled: true,
+            clientId: "iam-app-1",
             redirectUris: ["https://forum.example.com/callback"],
             allowedScopes: ["openid", "profile"],
             confidential: true,
@@ -274,14 +275,15 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
     expect(service.iam.oauth.providerCatalog.update).toHaveBeenCalledWith("iamopc-2", { status: "inactive" });
   });
 
-  it("loads relying party runtime config through tenantApplications.retrieve", async () => {
+  it("loads relying party config through the tenant-scoped management list", async () => {
     const service = createOauthServiceMock();
     const controller = createSdkworkIamOauthAdminController({ service: service as never });
 
     const draft = await controller.loadRelyingPartyConfig("iamt-1", "iamta-1");
-    expect(service.iam.tenantApplications.retrieve).toHaveBeenCalledWith("iamta-1");
+    expect(service.iam.tenantApplications.list).toHaveBeenCalledWith("iamt-1", { page: 1, page_size: 200 });
     expect(draft.tenantId).toBe("iamt-1");
     expect(draft.tenantApplicationId).toBe("iamta-1");
+    expect(draft.clientId).toBe("iam-app-1");
     expect(draft.clientIdHint).toBe("iam-app-1");
     expect(draft.hasExistingSecret).toBe(true);
     expect(draft.redirectUrisText).toBe("https://forum.example.com/callback");

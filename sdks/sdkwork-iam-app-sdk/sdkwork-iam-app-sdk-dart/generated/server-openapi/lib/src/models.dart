@@ -369,6 +369,303 @@ class SdkWorkCommandResponse {
   }
 }
 
+class IamPersonaRole {
+  final String? code;
+  final String? iamRoleCode;
+  final int? sortOrder;
+  final Map<String, String>? labels;
+  final Map<String, String>? descriptions;
+
+  IamPersonaRole({
+    this.code,
+    this.iamRoleCode,
+    this.sortOrder,
+    this.labels,
+    this.descriptions
+  });
+
+  factory IamPersonaRole.fromJson(Map<String, dynamic> json) {
+    return IamPersonaRole(
+      code: json['code']?.toString(),
+      iamRoleCode: json['iamRoleCode']?.toString(),
+      sortOrder: json['sortOrder'] is int ? json['sortOrder'] : null,
+      labels: (() {
+        final map = _sdkworkAsMap(json['labels']);
+        if (map == null) {
+          return null;
+        }
+        final result = <String, String>{};
+        map.forEach((key, item) {
+          final deserialized = item?.toString();
+          if (deserialized is String) {
+            result[key] = deserialized;
+          }
+        });
+        return result;
+      })(),
+      descriptions: (() {
+        final map = _sdkworkAsMap(json['descriptions']);
+        if (map == null) {
+          return null;
+        }
+        final result = <String, String>{};
+        map.forEach((key, item) {
+          final deserialized = item?.toString();
+          if (deserialized is String) {
+            result[key] = deserialized;
+          }
+        });
+        return result;
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'iamRoleCode': iamRoleCode,
+      'sortOrder': sortOrder,
+      'labels': labels?.map((key, item) => MapEntry(key, item)),
+      'descriptions': descriptions?.map((key, item) => MapEntry(key, item)),
+    };
+  }
+}
+
+class IamPersonaInterest {
+  final String? code;
+  final int? sortOrder;
+  final Map<String, String>? labels;
+
+  IamPersonaInterest({
+    this.code,
+    this.sortOrder,
+    this.labels
+  });
+
+  factory IamPersonaInterest.fromJson(Map<String, dynamic> json) {
+    return IamPersonaInterest(
+      code: json['code']?.toString(),
+      sortOrder: json['sortOrder'] is int ? json['sortOrder'] : null,
+      labels: (() {
+        final map = _sdkworkAsMap(json['labels']);
+        if (map == null) {
+          return null;
+        }
+        final result = <String, String>{};
+        map.forEach((key, item) {
+          final deserialized = item?.toString();
+          if (deserialized is String) {
+            result[key] = deserialized;
+          }
+        });
+        return result;
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'sortOrder': sortOrder,
+      'labels': labels?.map((key, item) => MapEntry(key, item)),
+    };
+  }
+}
+
+class IamPersonaCatalog {
+  final String? version;
+  final List<IamPersonaRole>? roles;
+  final List<IamPersonaInterest>? interests;
+
+  IamPersonaCatalog({
+    this.version,
+    this.roles,
+    this.interests
+  });
+
+  factory IamPersonaCatalog.fromJson(Map<String, dynamic> json) {
+    return IamPersonaCatalog(
+      version: json['version']?.toString(),
+      roles: (() {
+        final list = _sdkworkAsList(json['roles']);
+        if (list == null) {
+          return null;
+        }
+        return list
+            .map((item) => (() {
+        final map = _sdkworkAsMap(item);
+        return map == null ? null : IamPersonaRole.fromJson(map);
+      })())
+            .whereType<IamPersonaRole>()
+            .toList();
+      })(),
+      interests: (() {
+        final list = _sdkworkAsList(json['interests']);
+        if (list == null) {
+          return null;
+        }
+        return list
+            .map((item) => (() {
+        final map = _sdkworkAsMap(item);
+        return map == null ? null : IamPersonaInterest.fromJson(map);
+      })())
+            .whereType<IamPersonaInterest>()
+            .toList();
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'version': version,
+      'roles': roles?.map((item) => item.toJson()).toList(),
+      'interests': interests?.map((item) => item.toJson()).toList(),
+    };
+  }
+}
+
+class IamUserPersona {
+  final String? role;
+  final List<String>? interests;
+  final bool? promptDismissed;
+  final bool? hasSelection;
+  final String? catalogVersion;
+  final String? updatedAt;
+
+  IamUserPersona({
+    this.role,
+    this.interests,
+    this.promptDismissed,
+    this.hasSelection,
+    this.catalogVersion,
+    this.updatedAt
+  });
+
+  factory IamUserPersona.fromJson(Map<String, dynamic> json) {
+    return IamUserPersona(
+      role: json['role']?.toString(),
+      interests: (() {
+        final list = _sdkworkAsList(json['interests']);
+        if (list == null) {
+          return null;
+        }
+        return list
+            .map((item) => item?.toString())
+            .whereType<String>()
+            .toList();
+      })(),
+      promptDismissed: json['promptDismissed'] is bool ? json['promptDismissed'] : null,
+      hasSelection: json['hasSelection'] is bool ? json['hasSelection'] : null,
+      catalogVersion: json['catalogVersion']?.toString(),
+      updatedAt: json['updatedAt']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'role': role,
+      'interests': interests?.map((item) => item).toList(),
+      'promptDismissed': promptDismissed,
+      'hasSelection': hasSelection,
+      'catalogVersion': catalogVersion,
+      'updatedAt': updatedAt,
+    };
+  }
+}
+
+class IamPersonaCatalogResponse {
+  final int? code;
+  final dynamic data;
+  final String? traceId;
+
+  IamPersonaCatalogResponse({
+    this.code,
+    this.data,
+    this.traceId
+  });
+
+  factory IamPersonaCatalogResponse.fromJson(Map<String, dynamic> json) {
+    return IamPersonaCatalogResponse(
+      code: json['code'] is int ? json['code'] : null,
+      data: _sdkworkAsMap(json['data']),
+      traceId: json['traceId']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'data': data,
+      'traceId': traceId,
+    };
+  }
+}
+
+class IamUserPersonaResponse {
+  final int? code;
+  final dynamic data;
+  final String? traceId;
+
+  IamUserPersonaResponse({
+    this.code,
+    this.data,
+    this.traceId
+  });
+
+  factory IamUserPersonaResponse.fromJson(Map<String, dynamic> json) {
+    return IamUserPersonaResponse(
+      code: json['code'] is int ? json['code'] : null,
+      data: _sdkworkAsMap(json['data']),
+      traceId: json['traceId']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'data': data,
+      'traceId': traceId,
+    };
+  }
+}
+
+class IamUserPersonaUpdateCommand {
+  final String? role;
+  final List<String>? interests;
+  final bool? promptDismissed;
+
+  IamUserPersonaUpdateCommand({
+    this.role,
+    this.interests,
+    this.promptDismissed
+  });
+
+  factory IamUserPersonaUpdateCommand.fromJson(Map<String, dynamic> json) {
+    return IamUserPersonaUpdateCommand(
+      role: json['role']?.toString(),
+      interests: (() {
+        final list = _sdkworkAsList(json['interests']);
+        if (list == null) {
+          return null;
+        }
+        return list
+            .map((item) => item?.toString())
+            .whereType<String>()
+            .toList();
+      })(),
+      promptDismissed: json['promptDismissed'] is bool ? json['promptDismissed'] : null
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'role': role,
+      'interests': interests?.map((item) => item).toList(),
+      'promptDismissed': promptDismissed,
+    };
+  }
+}
+
 class WechatMiniProgramSessionCreateCommand {
   final String? jsCode;
   final String? providerCode;
@@ -398,6 +695,8 @@ class WechatMiniProgramSessionCreateCommand {
 }
 
 class AppbaseSessionCreateCommand {
+  final String? grantType;
+  final String? account;
   final String? email;
   final String? username;
   final String? phone;
@@ -408,6 +707,8 @@ class AppbaseSessionCreateCommand {
   final String? organizationId;
 
   AppbaseSessionCreateCommand({
+    this.grantType,
+    this.account,
     this.email,
     this.username,
     this.phone,
@@ -420,6 +721,8 @@ class AppbaseSessionCreateCommand {
 
   factory AppbaseSessionCreateCommand.fromJson(Map<String, dynamic> json) {
     return AppbaseSessionCreateCommand(
+      grantType: json['grantType']?.toString(),
+      account: json['account']?.toString(),
       email: json['email']?.toString(),
       username: json['username']?.toString(),
       phone: json['phone']?.toString(),
@@ -433,6 +736,8 @@ class AppbaseSessionCreateCommand {
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
+      'grantType': grantType,
+      'account': account,
       'email': email,
       'username': username,
       'phone': phone,
@@ -441,6 +746,112 @@ class AppbaseSessionCreateCommand {
       'providerKey': providerKey,
       'tenantId': tenantId,
       'organizationId': organizationId,
+    };
+  }
+}
+
+class AuthorizationsCompletionsCreateRequest {
+
+
+  AuthorizationsCompletionsCreateRequest();
+
+  factory AuthorizationsCompletionsCreateRequest.fromJson(Map<String, dynamic> json) {
+    return AuthorizationsCompletionsCreateRequest();
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{};
+  }
+}
+
+class AuthorizationsCompletionsCreateResponse {
+  final int? code;
+  final String? traceId;
+  final Map<String, dynamic>? data;
+
+  AuthorizationsCompletionsCreateResponse({
+    this.code,
+    this.traceId,
+    this.data
+  });
+
+  factory AuthorizationsCompletionsCreateResponse.fromJson(Map<String, dynamic> json) {
+    return AuthorizationsCompletionsCreateResponse(
+      code: json['code'] is int ? json['code'] : null,
+      traceId: json['traceId']?.toString(),
+      data: _sdkworkAsMap(json['data'])
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'traceId': traceId,
+      'data': data,
+    };
+  }
+}
+
+class DesktopSessionsCreateRequest {
+  final String? clientId;
+  final String? authorizationCode;
+  final String? codeVerifier;
+  final String? redirectUri;
+  final String? clientSecret;
+
+  DesktopSessionsCreateRequest({
+    this.clientId,
+    this.authorizationCode,
+    this.codeVerifier,
+    this.redirectUri,
+    this.clientSecret
+  });
+
+  factory DesktopSessionsCreateRequest.fromJson(Map<String, dynamic> json) {
+    return DesktopSessionsCreateRequest(
+      clientId: json['clientId']?.toString(),
+      authorizationCode: json['authorizationCode']?.toString(),
+      codeVerifier: json['codeVerifier']?.toString(),
+      redirectUri: json['redirectUri']?.toString(),
+      clientSecret: json['clientSecret']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'clientId': clientId,
+      'authorizationCode': authorizationCode,
+      'codeVerifier': codeVerifier,
+      'redirectUri': redirectUri,
+      'clientSecret': clientSecret,
+    };
+  }
+}
+
+class DesktopSessionsCreateResponse {
+  final int? code;
+  final String? traceId;
+  final Map<String, dynamic>? data;
+
+  DesktopSessionsCreateResponse({
+    this.code,
+    this.traceId,
+    this.data
+  });
+
+  factory DesktopSessionsCreateResponse.fromJson(Map<String, dynamic> json) {
+    return DesktopSessionsCreateResponse(
+      code: json['code'] is int ? json['code'] : null,
+      traceId: json['traceId']?.toString(),
+      data: _sdkworkAsMap(json['data'])
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'traceId': traceId,
+      'data': data,
     };
   }
 }

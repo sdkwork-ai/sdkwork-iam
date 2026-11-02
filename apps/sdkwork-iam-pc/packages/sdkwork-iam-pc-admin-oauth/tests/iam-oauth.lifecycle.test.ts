@@ -252,8 +252,10 @@ function createStatefulOauthBackend() {
           tenantBindings: { list: async () => ({ items: [] }), create: async () => ({}), update: async () => ({}) },
         },
         tenantApplications: {
-          retrieve: async () => ({ runtimeConfig: {} }),
-          update: async () => ({}),
+          list: async () => ({ items: [] }),
+          management: {
+            update: async () => ({}),
+          },
         },
       },
     },

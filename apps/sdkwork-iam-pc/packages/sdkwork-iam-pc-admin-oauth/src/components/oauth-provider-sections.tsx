@@ -24,6 +24,7 @@ import type { SdkworkIamOauthAdminSectionProps } from "../types/oauth-admin-type
 
 const EMPTY_RELYING_PARTY_DRAFT = (): SdkworkIamOauthRelyingPartyDraft => ({
   allowedScopesText: "openid\nprofile\nemail",
+  clientId: "",
   clientIdHint: "",
   clientSecretHash: "",
   confidential: true,
@@ -79,6 +80,12 @@ export function OauthRelyingPartySection({
             {messages.relyingParty.loadButton}
           </Button>
         </div>
+        <OauthAdminField
+          label={messages.relyingParty.fields.clientId}
+          onChange={(clientId) => setDraft((current) => ({ ...current, clientId }))}
+          placeholder={messages.relyingParty.fields.clientIdPlaceholder}
+          value={draft.clientId}
+        />
         <OauthAdminSelectField
           label={messages.relyingParty.enabledLabel}
           onChange={(enabled) => setDraft((current) => ({ ...current, enabled: enabled === "true" }))}

@@ -44,11 +44,11 @@
     },
     {
       "path": "lib/src/api/iam_oauth.dart",
-      "sha256": "2bfa8e508ffa3237270c9a8d398ec5bbe84a1d2f8254cf5e5a1c1a7ca1958085"
+      "sha256": "979b4c35c4730900aa7dff511fc0f434bc91b7491d5a046aae08a9c8b2e1d39c"
     },
     {
       "path": "lib/src/api/iam.dart",
-      "sha256": "6927cf1c02aa7677a9835f4374818bc843caa1174d2e96a98c6036d598848b25"
+      "sha256": "c9a49fbb87024bdb42d816c653fdca476220a7e17ce37e4bc610d76a9ceb4110"
     },
     {
       "path": "lib/src/api/paths.dart",

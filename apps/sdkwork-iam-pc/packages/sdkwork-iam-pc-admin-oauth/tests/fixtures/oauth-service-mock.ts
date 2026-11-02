@@ -3,7 +3,7 @@ import { vi } from "vitest";
 /**
  * Shared IAM oauth backend service mock for controller and page tests.
  * Mirrors the `SdkworkIamService.iam.oauth.*` and
- * `tenantApplications.retrieve/update` port surface used by the admin
+ * `tenantApplications.list/management` port surface used by the admin
  * controller; individual tests override resolved values per case.
  */
 export function createOauthServiceMock() {
@@ -92,23 +92,26 @@ export function createOauthServiceMock() {
         callbackEvents: { list: vi.fn().mockResolvedValue({ items: [] }) },
       },
       tenantApplications: {
-        retrieve: vi.fn().mockResolvedValue({
-          tenantApplicationId: "iamta-1",
-          tenantId: "iamt-1",
-          appId: "iam-app-1",
-          runtimeConfig: {
-            oauth: {
-              relyingParty: {
+        list: vi.fn().mockResolvedValue({
+          items: [
+            {
+              tenantApplicationId: "iamta-1",
+              tenantId: "iamt-1",
+              appId: "iam-app-1",
+              oauthRelyingParty: {
                 enabled: true,
+                clientId: "iam-app-1",
                 redirectUris: ["https://forum.example.com/callback"],
                 allowedScopes: ["openid", "profile"],
                 confidential: true,
-                clientSecretHash: "[redacted]",
+                hasClientSecret: true,
               },
             },
-          },
+          ],
         }),
-        update: vi.fn().mockResolvedValue({}),
+        management: {
+          update: vi.fn().mockResolvedValue({}),
+        },
       },
     },
   };

@@ -26,6 +26,11 @@ const OAUTH_REFRESH_TOKEN_TTL_SECONDS: i64 = 60 * 60 * 24 * 30;
 pub struct RelyingPartyConfig {
     #[serde(default)]
     pub enabled: bool,
+    /// Explicit OAuth client id. Defaults to the tenant application `app_id`
+    /// when absent, which is what every registration written before the
+    /// override existed already means (`IAM_OAUTH_SPEC.md` section 4.2).
+    #[serde(default)]
+    pub client_id: Option<String>,
     #[serde(default)]
     pub redirect_uris: Vec<String>,
     #[serde(default)]
@@ -40,6 +45,9 @@ pub struct RelyingPartyConfig {
 pub struct ResolvedRelyingParty {
     pub tenant_id: String,
     pub app_id: String,
+    /// OAuth client id this registration answers to: the declared
+    /// `clientId`, or `app_id` when none is declared.
+    pub client_id: String,
     pub config: RelyingPartyConfig,
 }
 
@@ -116,11 +124,23 @@ pub async fn resolve_relying_party_client(
     client_id: &str,
     tenant_hint: Option<&str>,
 ) -> Result<ResolvedRelyingParty, String> {
+    // A registration may declare a brand-level `clientId` that differs from the
+    // tenant application `app_id` (`birdcoder` for `sdkwork-birdcoder`). When
+    // it does, `app_id` is no longer a valid OAuth client id for that row, so
+    // both arms are evaluated against the same row set here instead of
+    // accepting either spelling for one registration.
     let rows = if let Some(tenant_id) = tenant_hint.filter(|value| !value.is_empty()) {
         sqlx::query(
             "SELECT tenant_id, app_id, runtime_config_json \
              FROM iam_tenant_application \
-             WHERE app_id = $1 AND tenant_id = $2 AND status = 'enabled' \
+             WHERE tenant_id = $2 AND status = 'enabled' \
+               AND ( \
+                 (runtime_config_json #>> '{oauth,relyingParty,clientId}') = $1 \
+                 OR ( \
+                   COALESCE(runtime_config_json #>> '{oauth,relyingParty,clientId}', '') = '' \
+                   AND app_id = $1 \
+                 ) \
+               ) \
              LIMIT 1",
         )
         .bind(client_id)
@@ -131,7 +151,14 @@ pub async fn resolve_relying_party_client(
         sqlx::query(
             "SELECT tenant_id, app_id, runtime_config_json \
              FROM iam_tenant_application \
-             WHERE app_id = $1 AND status = 'enabled' \
+             WHERE status = 'enabled' \
+               AND ( \
+                 (runtime_config_json #>> '{oauth,relyingParty,clientId}') = $1 \
+                 OR ( \
+                   COALESCE(runtime_config_json #>> '{oauth,relyingParty,clientId}', '') = '' \
+                   AND app_id = $1 \
+                 ) \
+               ) \
              LIMIT $2",
         )
         .bind(client_id)
@@ -159,9 +186,18 @@ pub async fn resolve_relying_party_client(
         return Err("OAuth relying party is disabled for this application".to_string());
     }
 
+    let resolved_client_id = config
+        .client_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or(app_id.as_str())
+        .to_owned();
+
     Ok(ResolvedRelyingParty {
         tenant_id,
         app_id,
+        client_id: resolved_client_id,
         config,
     })
 }
@@ -242,13 +278,13 @@ pub async fn create_pending_authorization_state(
     .bind(&state_id)
     .bind(uuid::Uuid::now_v7().to_string())
     .bind(&client.tenant_id)
-    .bind(&client.app_id)
+    .bind(&client.client_id)
     .bind(SDKWORK_OAUTH_PROVIDER_CODE)
     .bind(format!(
         "integration:{}:{}",
         client.tenant_id, SDKWORK_OAUTH_PROVIDER_CODE
     ))
-    .bind(&client.app_id)
+    .bind(&client.client_id)
     .bind(classify_redirect_surface_kind(&request.redirect_uri))
     .bind(request.state.as_deref().map(hash_value).unwrap_or_default())
     .bind(request.code_challenge.as_deref().unwrap_or(""))
@@ -584,7 +620,7 @@ pub async fn exchange_authorization_code(
         );
     };
 
-    let access_token = sign_oauth_access_token(pg, &context, &client.app_id).await?;
+    let access_token = sign_oauth_access_token(pg, &context, &client.client_id).await?;
     let refresh_token = generate_opaque_token("oauth_refresh");
     let refresh_hash = hash_value(&refresh_token);
     let access_hash = hash_value(&access_token);
@@ -675,7 +711,7 @@ pub async fn exchange_refresh_token(
         revoke_oauth_grants_for_user(pg, &tenant_id, &user_id).await;
         return Err("OAuth refresh token reuse detected".to_string());
     }
-    if oauth_client_id != client.app_id {
+    if oauth_client_id != client.client_id {
         tx.rollback()
             .await
             .map_err(|error| format!("rollback oauth refresh client mismatch failed: {error}"))?;
@@ -713,7 +749,7 @@ pub async fn exchange_refresh_token(
     })?;
 
     let context = iam_context_from_session_row(&session_row)?;
-    let access_token = sign_oauth_access_token(pg, &context, &client.app_id).await?;
+    let access_token = sign_oauth_access_token(pg, &context, &client.client_id).await?;
     let next_refresh_token = generate_opaque_token("oauth_refresh");
     let access_hash = hash_value(&access_token);
     let next_refresh_hash = hash_value(&next_refresh_token);
@@ -891,7 +927,7 @@ pub async fn introspect_oauth_token(
         if client.config.confidential {
             verify_client_secret(&client, client_secret)?;
         }
-        Some(client.app_id)
+        Some(client.client_id)
     } else {
         None
     };
@@ -1405,8 +1441,10 @@ mod tests {
         let client = ResolvedRelyingParty {
             tenant_id: "100001".to_string(),
             app_id: "app_forum".to_string(),
+            client_id: "app_forum".to_string(),
             config: RelyingPartyConfig {
                 enabled: true,
+                client_id: None,
                 redirect_uris: vec!["https://forum.example.com/callback".to_string()],
                 allowed_scopes: vec!["openid".to_string(), "profile".to_string()],
                 confidential: false,
@@ -1495,8 +1533,10 @@ mod tests {
         let client = ResolvedRelyingParty {
             tenant_id: "100001".to_string(),
             app_id: "app_forum".to_string(),
+            client_id: "app_forum".to_string(),
             config: RelyingPartyConfig {
                 enabled: true,
+                client_id: None,
                 redirect_uris: vec!["https://forum.example.com/callback".to_string()],
                 allowed_scopes: vec!["openid".to_string(), "profile".to_string()],
                 confidential: true,
@@ -1511,8 +1551,10 @@ mod tests {
         ResolvedRelyingParty {
             tenant_id: "100001".to_string(),
             app_id: "app_forum".to_string(),
+            client_id: "app_forum".to_string(),
             config: RelyingPartyConfig {
                 enabled: true,
+                client_id: None,
                 redirect_uris: vec!["https://forum.example.com/callback".to_string()],
                 allowed_scopes: vec!["openid".to_string(), "profile".to_string()],
                 confidential: false,
@@ -1541,8 +1583,10 @@ mod tests {
         ResolvedRelyingParty {
             tenant_id: "100001".to_string(),
             app_id: "sdkwork-iam".to_string(),
+            client_id: "sdkwork-iam".to_string(),
             config: RelyingPartyConfig {
                 enabled: true,
+                client_id: None,
                 redirect_uris: vec![
                     "sdkwork-iam://auth/callback".to_string(),
                     "http://127.0.0.1:41017/auth/desktop/callback".to_string(),

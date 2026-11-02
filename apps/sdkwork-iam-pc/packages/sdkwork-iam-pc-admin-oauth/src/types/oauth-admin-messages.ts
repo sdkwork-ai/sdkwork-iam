@@ -654,6 +654,8 @@ export interface SdkworkIamOauthAdminMessages {
     fields: {
       allowedScopes: string;
       allowedScopesPlaceholder: string;
+      clientId: string;
+      clientIdPlaceholder: string;
       clientSecretHash: string;
       redirectUris: string;
       redirectUrisPlaceholder: string;

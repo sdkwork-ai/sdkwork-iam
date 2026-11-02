@@ -632,6 +632,15 @@ class IamApi {
     })();
   }
 
+  /// Provider Accounts credentials reveal.
+  Future<SdkWorkResourceResponse?> providerAccountsCredentialsReveal(String providerAccountId) async {
+    final response = await _client.get(ApiPaths.backendPath('/iam/provider_accounts/${serializePathParameter(providerAccountId, const PathParameterSpec('providerAccountId', 'simple', false))}/credentials/reveal'));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
   /// Provider Accounts set Default.
   Future<SdkWorkResourceResponse?> providerAccountsSetDefault(String providerAccountId, Map<String, dynamic> body) async {
     final payload = body;

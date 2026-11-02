@@ -43,12 +43,12 @@ class OauthApi {
   }
 
   /// Authorizations completions create.
-  Future<SdkWorkResourceResponse?> authorizationsCompletionsCreate(String authorizationStateId, Map<String, dynamic> body) async {
-    final payload = body;
+  Future<AuthorizationsCompletionsCreateResponse?> authorizationsCompletionsCreate(String authorizationStateId, AuthorizationsCompletionsCreateRequest body) async {
+    final payload = body.toJson();
     final response = await _client.post(ApiPaths.appPath('/oauth/authorizations/${serializePathParameter(authorizationStateId, const PathParameterSpec('authorizationStateId', 'simple', false))}/completions'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+      return map == null ? null : AuthorizationsCompletionsCreateResponse.fromJson(map);
     })();
   }
 
@@ -68,6 +68,16 @@ class OauthApi {
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Desktop Sessions create.
+  Future<DesktopSessionsCreateResponse?> desktopSessionsCreate(DesktopSessionsCreateRequest body) async {
+    final payload = body.toJson();
+    final response = await _client.request('POST', ApiPaths.appPath('/oauth/desktop_sessions'), body: payload, contentType: 'application/json', skipAuth: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : DesktopSessionsCreateResponse.fromJson(map);
     })();
   }
 
@@ -104,6 +114,16 @@ class OauthApi {
   Future<SdkWorkResourceResponse?> deviceAuthorizationsScansCreate(String deviceAuthorizationId, Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.request('POST', ApiPaths.appPath('/oauth/device_authorizations/${serializePathParameter(deviceAuthorizationId, const PathParameterSpec('deviceAuthorizationId', 'simple', false))}/scans'), body: payload, contentType: 'application/json', accessTokenOnly: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Device Authorizations session Completions create.
+  Future<SdkWorkResourceResponse?> deviceAuthorizationsSessionCompletionsCreate(String deviceAuthorizationId, Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.request('POST', ApiPaths.appPath('/oauth/device_authorizations/${serializePathParameter(deviceAuthorizationId, const PathParameterSpec('deviceAuthorizationId', 'simple', false))}/session_completions'), body: payload, contentType: 'application/json', accessTokenOnly: true);
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkResourceResponse.fromJson(map);
@@ -167,10 +187,47 @@ class OauthApi {
     })();
   }
 
+  /// Scan Login Modes list.
+  Future<SdkWorkListResponse?> scanLoginModesList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+    final query = buildQueryString([
+      QueryParameterSpec('page', page, 'form', true, false, null),
+      QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
+      QueryParameterSpec('cursor', cursor, 'form', true, false, null),
+      QueryParameterSpec('sort', sort, 'form', true, false, null),
+      QueryParameterSpec('q', q, 'form', true, false, null)
+    ]);
+    final response = await _client.request('GET', ApiPaths.appendQueryString(ApiPaths.appPath('/oauth/scan_login_modes'), query), accessTokenOnly: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
+    })();
+  }
+
   /// Sessions create.
   Future<SdkWorkResourceResponse?> sessionsCreate(AppbaseSessionCreateCommand body) async {
     final payload = body.toJson();
     final response = await _client.request('POST', ApiPaths.appPath('/oauth/sessions'), body: payload, contentType: 'application/json', accessTokenOnly: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Wechat Payment Oauth callback.
+  Future<SdkWorkResourceResponse?> wechatPaymentOauthCallback() async {
+    final response = await _client.request('GET', ApiPaths.appPath('/oauth/wechat/payment/callback'), skipAuth: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Wechat Payment Oauth start.
+  Future<SdkWorkResourceResponse?> wechatPaymentOauthStart(String redirect) async {
+    final query = buildQueryString([
+      QueryParameterSpec('redirect', redirect, 'form', true, false, null)
+    ]);
+    final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.appPath('/oauth/wechat/payment/start'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkResourceResponse.fromJson(map);

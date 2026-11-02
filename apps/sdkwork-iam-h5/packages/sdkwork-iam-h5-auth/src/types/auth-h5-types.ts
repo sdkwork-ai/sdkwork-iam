@@ -132,6 +132,15 @@ export interface SdkworkIamH5RegisterInput {
   account: string;
   code: string;
   password: string;
+  /**
+   * Repetition of `password`.
+   *
+   * `POST /app/v3/api/auth/registrations` rejects a request without it with
+   * `iam_password_confirmation_required` (400), so a form that collected only one
+   * password could never complete. It stays in the input type rather than being
+   * derived in the controller because only the user can confirm the value.
+   */
+  confirmPassword: string;
 }
 
 /** Password-recovery credentials collected by the forgot mode (找回密码). */

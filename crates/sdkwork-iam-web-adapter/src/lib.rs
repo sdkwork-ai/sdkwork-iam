@@ -20,6 +20,7 @@ mod oauth_login_local;
 mod oauth_provider_callback;
 mod oauth_provider_catalog;
 mod oauth_redirect;
+mod oauth_relying_party_registration;
 mod oauth_token_lookup;
 mod production_runtime;
 mod resolver;
@@ -145,6 +146,13 @@ pub use oauth_integration_exchange::{
     seed_builtin_oauth_provider_catalog, OAuthIntegrationExchangeContext,
 };
 pub use oauth_login_local::{LocalOAuthAuthority, LocalOAuthProviderProfile};
+pub use oauth_relying_party_registration::{
+    auto_registration_enabled, hash_oauth_client_secret, merge_relying_party_registration,
+    normalize_relying_party_registration, oauth_relying_party_summary,
+    parse_relying_party_registration, validate_oauth_client_id, validate_redirect_uri,
+    RelyingPartyRegistration, OAUTH_AUTO_REGISTRATION_ENABLED_ENV, OAUTH_AUTO_REGISTRATION_ENV,
+    OAUTH_SUPPORTED_SCOPES,
+};
 pub use oauth_provider_callback::{
     handle_provider_callback_get, handle_provider_callback_post, ProviderCallbackHttpResponse,
     ProviderCallbackRequestMeta,

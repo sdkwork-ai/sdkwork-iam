@@ -48,7 +48,12 @@ IFS=',' read -r -a language_array <<< "${LANGUAGES}"
 for language in "${language_array[@]}"; do
   language="$(echo "${language}" | xargs)"
   [[ -z "${language}" ]] && continue
-  output_path="${FAMILY_ROOT}/${SDK_NAME}-${language}"
+  # The generator writes the package directly into `-o`; it does not append a
+  # layout suffix. The PowerShell entrypoint (the one Windows runs) targets
+  # `<language workspace>/generated/server-openapi`, so the shell entrypoint must
+  # use the same path or a Linux/CI run would generate the package into the
+  # language workspace root and leave `generated/server-openapi` stale.
+  output_path="${FAMILY_ROOT}/${SDK_NAME}-${language}/generated/server-openapi"
   # bash 3.2 has no mapfile (macOS /usr/bin/bash): read the lines into the
   # same indexed array so SDK regeneration also works off Linux.
   ns_args=()

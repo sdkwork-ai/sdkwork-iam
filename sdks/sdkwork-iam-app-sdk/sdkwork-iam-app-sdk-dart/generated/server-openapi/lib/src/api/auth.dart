@@ -103,4 +103,14 @@ class AuthApi {
       return map == null ? null : SdkWorkCommandResponse.fromJson(map);
     })();
   }
+
+  /// Verification Code Requests create.
+  Future<SdkWorkResourceResponse?> verificationCodeRequestsCreate(Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.request('POST', ApiPaths.appPath('/auth/verification_code_requests'), body: payload, contentType: 'application/json', accessTokenOnly: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
 }

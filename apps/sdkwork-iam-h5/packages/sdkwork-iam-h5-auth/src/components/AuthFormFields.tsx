@@ -7,10 +7,12 @@ export interface SdkworkIamH5AuthFormFieldsProps {
   mode: SdkworkIamH5AuthMode;
   account: string;
   code: string;
+  confirmPassword: string;
   countdown: number;
   password: string;
   setAccount: (value: string) => void;
   setCode: (value: string) => void;
+  setConfirmPassword: (value: string) => void;
   setPassword: (value: string) => void;
   setShowPwd: (value: boolean) => void;
   showPwd: boolean;
@@ -21,10 +23,12 @@ export function SdkworkIamH5AuthFormFields({
   mode,
   account,
   code,
+  confirmPassword,
   countdown,
   password,
   setAccount,
   setCode,
+  setConfirmPassword,
   setPassword,
   setShowPwd,
   showPwd,
@@ -32,6 +36,7 @@ export function SdkworkIamH5AuthFormFields({
 }: SdkworkIamH5AuthFormFieldsProps) {
   const messages = useSdkworkIamH5AuthMessages();
   const showPasswordRow = mode === "login-pwd" || mode === "register" || mode === "forgot";
+  const showConfirmPasswordRow = mode === "register";
   const showCodeRow = mode === "login-code" || mode === "register" || mode === "forgot";
 
   return (
@@ -70,6 +75,23 @@ export function SdkworkIamH5AuthFormFields({
           >
             {showPwd ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
           </div>
+        </div>
+      ) : null}
+
+      {/*
+        Confirmation of the password, register mode only. The server compares the
+        two values and refuses a registration that omits this field, so the form
+        has to collect it rather than let the user discover the rule from a 400.
+      */}
+      {showConfirmPasswordRow ? (
+        <div className="flex items-center border-b border-[var(--iam-h5-auth-border)] py-3 transition-colors focus-within:border-[var(--iam-h5-auth-green)]">
+          <input
+            type="password"
+            placeholder={messages.common.confirmPasswordPlaceholder}
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            className="flex-1 bg-transparent text-[16px] outline-none"
+          />
         </div>
       ) : null}
 

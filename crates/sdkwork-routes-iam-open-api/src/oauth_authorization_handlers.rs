@@ -654,6 +654,7 @@ mod tests {
         let client = ResolvedRelyingParty {
             tenant_id: "100001".to_string(),
             app_id: "birdcoder".to_string(),
+            client_id: "birdcoder".to_string(),
             config: RelyingPartyConfig {
                 enabled: true,
                 redirect_uris: vec!["birdcoder://auth/callback".to_string()],

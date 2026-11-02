@@ -42,6 +42,10 @@ pub struct TenantApplicationProvisionCommand {
     pub organization_id: String,
     pub template_id: Option<String>,
     pub app_key: Option<String>,
+    /// Explicit runtime `app_id` (the OAuth client id by default). When absent a
+    /// generated id is used, which leaves the instance unreachable as an OAuth
+    /// client until an admin sets one.
+    pub app_id: Option<String>,
     pub instance_key: String,
     pub display_name: String,
     pub environment: String,
@@ -81,6 +85,10 @@ pub struct RegisteredApplicationTemplate {
     pub app_type: String,
     pub version: String,
     pub default_access_permissions: Vec<String>,
+    /// Template-level runtime config. A tenant application provisioned without
+    /// its own `runtimeConfig` inherits this document, which is how a relying
+    /// party registered with the template reaches the tenant instance.
+    pub runtime_config: Value,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -298,6 +306,7 @@ pub fn parse_tenant_application_provision_command(
     let environment = read_required_string(body, &["environment", "env"])?;
     let application_type = read_optional_string(body, &["applicationType", "application_type"]);
     let primary_domain = read_optional_string(body, &["primaryDomain", "primary_domain", "domain"]);
+    let app_id = read_optional_string(body, &["appId", "app_id", "runtimeAppId", "runtime_app_id"]);
     let access_permissions = read_string_array(
         body,
         &[
@@ -320,6 +329,7 @@ pub fn parse_tenant_application_provision_command(
         organization_id,
         template_id,
         app_key,
+        app_id,
         instance_key,
         display_name,
         environment,
@@ -502,10 +512,77 @@ pub async fn provision_tenant_application(
         .unwrap_or_else(|| {
             tenant_application_row_id(&command.tenant_id, &command.organization_id, &template.id)
         });
-    let runtime_app_id = existing
+    let runtime_app_id = match existing.as_ref() {
+        Some(app) => app.app_id.clone(),
+        None => match command
+            .app_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+        {
+            Some(app_id) => {
+                crate::oauth_relying_party_registration::validate_oauth_client_id(app_id)
+                    .map_err(|error| format!("invalid tenant application appId: {error}"))?;
+                app_id.to_owned()
+            }
+            None => format!("app_{}", uuid::Uuid::now_v7()),
+        },
+    };
+    if let (Some(app), Some(requested)) = (
+        existing.as_ref(),
+        command
+            .app_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty()),
+    ) {
+        if app.app_id != requested {
+            return Err(format!(
+                "tenant application appId {} is immutable and cannot be re-provisioned as {requested}",
+                app.app_id
+            ));
+        }
+    }
+    let existing_relying_party = existing
         .as_ref()
-        .map(|app| app.app_id.clone())
-        .unwrap_or_else(|| format!("app_{}", uuid::Uuid::now_v7()));
+        .and_then(|app| app.runtime_config.pointer("/oauth/relyingParty"));
+
+    // An explicit request runtime config wins; a template that registered OAuth
+    // metadata passes it down to the tenant instance; otherwise the instance
+    // inherits nothing. Re-provisioning an existing instance merges over its
+    // stored config so unrelated admin edits survive. Normalization then
+    // validates and hashes the OAuth relying party before it reaches storage.
+    let requested_runtime_config = if command
+        .runtime_config
+        .as_object()
+        .is_some_and(|object| !object.is_empty())
+    {
+        command.runtime_config.clone()
+    } else if template
+        .runtime_config
+        .as_object()
+        .is_some_and(|object| !object.is_empty())
+    {
+        template.runtime_config.clone()
+    } else {
+        json!({})
+    };
+    let merged_runtime_config = existing
+        .as_ref()
+        .map(|app| merge_runtime_config_patch(&app.runtime_config, &requested_runtime_config))
+        .unwrap_or(requested_runtime_config);
+    let runtime_config = normalize_runtime_config_oauth(
+        &merged_runtime_config,
+        &runtime_app_id,
+        existing_relying_party,
+    )?;
+    ensure_relying_party_client_id_available(
+        pg,
+        &tenant_application_id,
+        &runtime_app_id,
+        &runtime_config,
+    )
+    .await?;
 
     if existing.is_some() {
         sqlx::query(
@@ -524,7 +601,7 @@ pub async fn provision_tenant_application(
         .bind(&application_type)
         .bind(&command.primary_domain)
         .bind(Json(&access_permissions))
-        .bind(Json(&command.runtime_config))
+        .bind(Json(&runtime_config))
         .bind(now)
         .bind(now)
         .execute(pg)
@@ -550,7 +627,7 @@ pub async fn provision_tenant_application(
         .bind(&application_type)
         .bind(&command.primary_domain)
         .bind(Json(&access_permissions))
-        .bind(Json(&command.runtime_config))
+        .bind(Json(&runtime_config))
         .bind(now)
         .bind(now)
         .bind(now)
@@ -592,8 +669,23 @@ pub async fn update_tenant_application(
         .unwrap_or(existing.access_permissions.clone());
     let domain_config = command.domain_config.clone().unwrap_or_else(|| json!({}));
     let runtime_config = command.runtime_config.clone().unwrap_or_else(|| json!({}));
-    let merged_runtime_config =
+    // Merge first so a partial relying-party patch (for example only
+    // `enabled`) inherits the stored redirect URIs and scopes instead of
+    // failing validation, then canonicalize the result.
+    let candidate_runtime_config =
         merge_runtime_config_patch(&existing.runtime_config, &runtime_config);
+    let merged_runtime_config = normalize_runtime_config_oauth(
+        &candidate_runtime_config,
+        &existing.app_id,
+        existing.runtime_config.pointer("/oauth/relyingParty"),
+    )?;
+    ensure_relying_party_client_id_available(
+        pg,
+        &existing.id,
+        &existing.app_id,
+        &merged_runtime_config,
+    )
+    .await?;
     let now = chrono::Utc::now();
 
     sqlx::query(
@@ -634,6 +726,9 @@ pub struct EnsureTenantApplicationCommand {
     pub environment: String,
     pub primary_domain: String,
     pub runtime_app_id: String,
+    /// `oauth.relyingParty` declared by the application manifest. Applied only
+    /// when the auto-registration policy allows it for this lifecycle.
+    pub oauth_relying_party: Option<Value>,
 }
 
 pub fn tenant_application_template_id(app_key: &str) -> String {
@@ -979,12 +1074,31 @@ async fn upsert_tenant_application_row(
     let now = chrono::Utc::now();
     let application_type = map_template_app_type_to_application_type(&command.app_type);
 
+    // Manifest-driven OAuth registration lands here. The patch is merged over
+    // whatever an admin already configured so a restart never drops an edited
+    // redirect URI or a stored secret hash.
+    let existing_runtime_config =
+        load_tenant_application_runtime_config(pg, &tenant_application_id).await?;
+    let runtime_config_patch = bootstrap_oauth_runtime_config_patch(
+        command,
+        existing_runtime_config.pointer("/oauth/relyingParty"),
+    )?;
+    let runtime_config =
+        merge_runtime_config_patch(&existing_runtime_config, &runtime_config_patch);
+    ensure_relying_party_client_id_available(
+        pg,
+        &tenant_application_id,
+        &command.runtime_app_id,
+        &runtime_config,
+    )
+    .await?;
+
     sqlx::query(
         "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, template_id, \
          template_version, instance_key, display_name, environment, application_type, status, \
          primary_domain, domain_config_json, access_permissions_json, runtime_config_json, \
          provisioned_at, last_synced_at, created_at, updated_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending_config', $11, '{}'::jsonb, $12, '{}'::jsonb, $13, $14, $15, $16) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending_config', $11, '{}'::jsonb, $12, $13, $14, $15, $16, $17) \
          ON CONFLICT (id) DO UPDATE SET \
            app_id = EXCLUDED.app_id, \
            tenant_id = EXCLUDED.tenant_id, \
@@ -997,6 +1111,7 @@ async fn upsert_tenant_application_row(
            application_type = EXCLUDED.application_type, \
            primary_domain = EXCLUDED.primary_domain, \
            access_permissions_json = EXCLUDED.access_permissions_json, \
+           runtime_config_json = EXCLUDED.runtime_config_json, \
            last_synced_at = EXCLUDED.last_synced_at, \
            updated_at = EXCLUDED.updated_at",
     )
@@ -1012,6 +1127,7 @@ async fn upsert_tenant_application_row(
     .bind(&application_type)
     .bind(&primary_domain)
     .bind(Json(&command.default_access_permissions))
+    .bind(Json(&runtime_config))
     .bind(now)
     .bind(now)
     .bind(now)
@@ -1288,6 +1404,9 @@ pub fn tenant_application_to_json(app: &TenantApplication) -> Value {
         "status": app.status,
         "primaryDomain": app.primary_domain,
         "accessPermissions": app.access_permissions,
+        "oauthRelyingParty": crate::oauth_relying_party_registration::oauth_relying_party_summary(
+            &app.runtime_config
+        ),
         "runtimeConfig": redact_runtime_config_for_response(&app.runtime_config),
     })
 }
@@ -1296,7 +1415,11 @@ pub fn redact_runtime_config_for_response(runtime_config: &Value) -> Value {
     let mut redacted = runtime_config.clone();
     if let Some(relying_party) = redacted.pointer_mut("/oauth/relyingParty") {
         if let Some(object) = relying_party.as_object_mut() {
-            if object.contains_key("clientSecretHash") {
+            let has_secret = object
+                .get("clientSecretHash")
+                .and_then(Value::as_str)
+                .is_some_and(|value| !value.trim().is_empty());
+            if has_secret {
                 object.insert("clientSecretHash".to_string(), json!("[redacted]"));
             }
         }
@@ -1311,7 +1434,7 @@ async fn resolve_template_reference(
 ) -> Result<Option<RegisteredApplicationTemplate>, String> {
     if let Some(template_id) = template_id.filter(|value| !crate::is_blank(Some(value))) {
         let row = sqlx::query(
-            "SELECT id, app_key, name, package_name, app_type, version, default_access_permissions_json \
+            "SELECT id, app_key, name, package_name, app_type, version, default_access_permissions_json, runtime_config_json \
              FROM iam_application_template WHERE id = $1 AND status = 'active' LIMIT 1",
         )
         .bind(template_id)
@@ -1333,7 +1456,7 @@ async fn find_template_by_app_key(
     app_key: &str,
 ) -> Result<Option<RegisteredApplicationTemplate>, String> {
     let row = sqlx::query(
-        "SELECT id, app_key, name, package_name, app_type, version, default_access_permissions_json \
+        "SELECT id, app_key, name, package_name, app_type, version, default_access_permissions_json, runtime_config_json \
          FROM iam_application_template WHERE app_key = $1 AND status = 'active' LIMIT 1",
     )
     .bind(app_key)
@@ -1348,7 +1471,7 @@ async fn find_template_by_app_key_any_status(
     app_key: &str,
 ) -> Result<Option<RegisteredApplicationTemplate>, String> {
     let row = sqlx::query(
-        "SELECT id, app_key, name, package_name, app_type, version, default_access_permissions_json \
+        "SELECT id, app_key, name, package_name, app_type, version, default_access_permissions_json, runtime_config_json \
          FROM iam_application_template WHERE app_key = $1 LIMIT 1",
     )
     .bind(app_key)
@@ -1433,6 +1556,20 @@ async fn upsert_application_template_with_id(
         .as_ref()
         .map(|template| template.id.clone())
         .unwrap_or_else(|| template_id.to_owned());
+    // A bootstrap pass registers the template with an empty runtime config; keep
+    // whatever an admin already registered on it instead of wiping it.
+    let runtime_config = if command
+        .runtime_config
+        .as_object()
+        .is_some_and(|object| object.is_empty())
+    {
+        existing
+            .as_ref()
+            .map(|template| template.runtime_config.clone())
+            .unwrap_or_else(|| json!({}))
+    } else {
+        command.runtime_config.clone()
+    };
 
     if existing.is_some() {
         sqlx::query(
@@ -1454,7 +1591,7 @@ async fn upsert_application_template_with_id(
         .bind(&command.desktop_app_id)
         .bind(&command.version)
         .bind(&command.channel)
-        .bind(Json(&command.runtime_config))
+        .bind(Json(&runtime_config))
         .bind(Json(&command.artifacts_config))
         .bind(Json(&command.default_access_permissions))
         .bind(&command.manifest_hash)
@@ -1589,6 +1726,50 @@ async fn replace_template_packages(
     Ok(())
 }
 
+/// Loads one tenant application runtime config, treating a missing row as `{}`.
+async fn load_tenant_application_runtime_config(
+    pg: &PgPool,
+    tenant_application_id: &str,
+) -> Result<Value, String> {
+    let row = sqlx::query("SELECT runtime_config_json FROM iam_tenant_application WHERE id = $1")
+        .bind(tenant_application_id)
+        .fetch_optional(pg)
+        .await
+        .map_err(|error| format!("load tenant application runtime config failed: {error}"))?;
+    Ok(row
+        .map(|row| json_value_from_row(&row, 0))
+        .unwrap_or_else(|| json!({})))
+}
+
+/// Builds the runtime-config patch an application manifest contributes.
+///
+/// Auto-registration is policy-controlled and fails closed: outside the
+/// lifecycles where `SDKWORK_IAM_OAUTH_AUTO_REGISTRATION` permits it, the patch
+/// is empty and the persisted registration is left untouched. A manifest that
+/// declares a registration is validated exactly like an admin registration.
+fn bootstrap_oauth_runtime_config_patch(
+    command: &EnsureTenantApplicationCommand,
+    existing_relying_party: Option<&Value>,
+) -> Result<Value, String> {
+    let Some(relying_party) = command.oauth_relying_party.as_ref() else {
+        return Ok(json!({}));
+    };
+    if !crate::oauth_relying_party_registration::auto_registration_enabled(&command.environment) {
+        return Ok(json!({}));
+    }
+    if !relying_party.is_object() {
+        return Err("oauth.relyingParty in the application manifest must be an object".to_string());
+    }
+    let registration =
+        crate::oauth_relying_party_registration::parse_relying_party_registration(relying_party)?;
+    let normalized = crate::oauth_relying_party_registration::normalize_relying_party_registration(
+        &registration,
+        &command.runtime_app_id,
+        existing_relying_party,
+    )?;
+    Ok(json!({ "oauth": { "relyingParty": normalized } }))
+}
+
 fn map_template_row(row: sqlx::postgres::PgRow) -> RegisteredApplicationTemplate {
     RegisteredApplicationTemplate {
         id: row.get(0),
@@ -1598,6 +1779,7 @@ fn map_template_row(row: sqlx::postgres::PgRow) -> RegisteredApplicationTemplate
         app_type: row.get(4),
         version: row.get(5),
         default_access_permissions: json_string_vec_from_row(&row, 6),
+        runtime_config: json_value_from_row(&row, 7),
     }
 }
 
@@ -1706,6 +1888,80 @@ fn read_string_array(body: &Value, keys: &[&str]) -> Option<Vec<String>> {
         })
 }
 
+/// Validates and canonicalizes a `runtimeConfig.oauth.relyingParty` document.
+///
+/// The registration is normalized against the owning runtime `app_id` before it
+/// is persisted, so every entry point (bootstrap, admin provisioning, admin
+/// update) stores the same shape and a plaintext client secret never reaches
+/// storage. A config without an `oauth.relyingParty` object is returned as-is.
+fn normalize_runtime_config_oauth(
+    runtime_config: &Value,
+    app_id: &str,
+    existing_relying_party: Option<&Value>,
+) -> Result<Value, String> {
+    let Some(relying_party) = runtime_config.pointer("/oauth/relyingParty") else {
+        return Ok(runtime_config.clone());
+    };
+    if !relying_party.is_object() {
+        return Err("runtimeConfig.oauth.relyingParty must be an object".to_string());
+    }
+    let registration =
+        crate::oauth_relying_party_registration::parse_relying_party_registration(relying_party)?;
+    let normalized = crate::oauth_relying_party_registration::normalize_relying_party_registration(
+        &registration,
+        app_id,
+        existing_relying_party,
+    )?;
+    Ok(
+        crate::oauth_relying_party_registration::merge_relying_party_registration(
+            runtime_config,
+            &normalized,
+        ),
+    )
+}
+
+/// Rejects an OAuth client id already claimed by another tenant application.
+///
+/// `iam_tenant_application.app_id` carries a unique constraint, but a declared
+/// `oauth.relyingParty.clientId` does not, and the authorization endpoint
+/// resolves a client without a tenant hint when the id is globally unique.
+/// Checking both columns keeps that resolution deterministic.
+async fn ensure_relying_party_client_id_available(
+    pg: &PgPool,
+    tenant_application_id: &str,
+    app_id: &str,
+    runtime_config: &Value,
+) -> Result<(), String> {
+    let Some(relying_party) = runtime_config.pointer("/oauth/relyingParty") else {
+        return Ok(());
+    };
+    let client_id = relying_party
+        .get("clientId")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or(app_id);
+    let conflicts: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*)::BIGINT FROM iam_tenant_application \
+         WHERE id <> $1 \
+           AND ( \
+             app_id = $2 \
+             OR COALESCE(runtime_config_json #>> '{oauth,relyingParty,clientId}', '') = $2 \
+           )",
+    )
+    .bind(tenant_application_id)
+    .bind(client_id)
+    .fetch_one(pg)
+    .await
+    .map_err(|error| format!("check OAuth clientId availability failed: {error}"))?;
+    if conflicts > 0 {
+        return Err(format!(
+            "OAuth clientId {client_id} is already registered by another tenant application"
+        ));
+    }
+    Ok(())
+}
+
 /// Deep-merge runtime config patches so partial updates (e.g. `oauth.relyingParty`) do not
 /// replace sibling keys such as `auth.*` or wipe `clientSecretHash` when omitted.
 pub(crate) fn merge_runtime_config_patch(existing: &Value, patch: &Value) -> Value {
@@ -1794,8 +2050,25 @@ fn merge_relying_party_config(existing: &Value, patch: &Value) -> Value {
 
     for (key, patch_value) in patch_obj {
         if key == "clientSecretHash" {
+            if patch_value.is_null() {
+                // A registration that becomes public removes the stored hash.
+                merged_obj.remove(key);
+                continue;
+            }
             let patch_text = patch_value.as_str().unwrap_or("").trim();
             if patch_text.is_empty() {
+                continue;
+            }
+        }
+        if key == "clientId" {
+            // An explicit null / blank clears a brand-level override so the
+            // registration falls back to the tenant application app_id.
+            let cleared = patch_value.is_null()
+                || patch_value
+                    .as_str()
+                    .is_some_and(|value| value.trim().is_empty());
+            if cleared {
+                merged_obj.remove(key);
                 continue;
             }
         }
@@ -1913,6 +2186,143 @@ mod tests {
             json!("[redacted]")
         );
         assert_eq!(redacted["oauth"]["relyingParty"]["enabled"], json!(true));
+    }
+
+    #[test]
+    fn normalize_runtime_config_oauth_defaults_client_id_and_hashes_the_secret() {
+        let runtime_config = json!({
+            "auth": { "supportsLocalCredentials": true },
+            "oauth": {
+                "relyingParty": {
+                    "enabled": true,
+                    "redirectUris": ["birdcoder://auth/callback"],
+                    "allowedScopes": ["openid", "profile"],
+                    "confidential": true,
+                    "clientSecret": "correct horse battery staple"
+                }
+            }
+        });
+        let normalized =
+            normalize_runtime_config_oauth(&runtime_config, "sdkwork-birdcoder", None)
+                .expect("normalize runtime config");
+        assert_eq!(
+            normalized["oauth"]["relyingParty"]["clientId"],
+            json!("sdkwork-birdcoder")
+        );
+        let hash = normalized["oauth"]["relyingParty"]["clientSecretHash"]
+            .as_str()
+            .expect("hashed secret");
+        assert!(hash.starts_with("$argon2"));
+        assert!(!hash.contains("correct horse"));
+        assert_eq!(
+            normalized["auth"]["supportsLocalCredentials"],
+            json!(true),
+            "sibling runtime config must survive normalization"
+        );
+    }
+
+    #[test]
+    fn normalize_runtime_config_oauth_preserves_a_stored_secret_when_omitted() {
+        let existing = json!({
+            "enabled": true,
+            "clientId": "sdkwork-birdcoder",
+            "redirectUris": ["birdcoder://auth/callback"],
+            "allowedScopes": ["openid"],
+            "confidential": true,
+            "clientSecretHash": "$argon2id$v=19$m=19456,t=2,p=1$c2FsdHNhbHQ$Zm9vYmFyYmF6cXV4"
+        });
+        let runtime_config = json!({
+            "oauth": {
+                "relyingParty": {
+                    "enabled": true,
+                    "redirectUris": ["birdcoder://auth/callback"],
+                    "allowedScopes": ["openid"],
+                    "confidential": true
+                }
+            }
+        });
+        let normalized =
+            normalize_runtime_config_oauth(&runtime_config, "sdkwork-birdcoder", Some(&existing))
+                .expect("normalize runtime config");
+        assert_eq!(
+            normalized["oauth"]["relyingParty"]["clientSecretHash"],
+            existing["clientSecretHash"]
+        );
+    }
+
+    #[test]
+    fn normalize_runtime_config_oauth_rejects_an_invalid_redirect_uri() {
+        let runtime_config = json!({
+            "oauth": {
+                "relyingParty": {
+                    "enabled": true,
+                    "redirectUris": ["https://*.example.com/callback"],
+                    "allowedScopes": ["openid"]
+                }
+            }
+        });
+        let error = normalize_runtime_config_oauth(&runtime_config, "sdkwork-forum", None)
+            .expect_err("wildcard redirect must be rejected");
+        assert!(error.contains("wildcard"), "{error}");
+    }
+
+    #[test]
+    fn runtime_config_without_a_relying_party_is_left_unchanged() {
+        let runtime_config = json!({ "auth": { "supportsSessionExchange": true } });
+        let normalized = normalize_runtime_config_oauth(&runtime_config, "sdkwork-forum", None)
+            .expect("normalize runtime config");
+        assert_eq!(normalized, runtime_config);
+    }
+
+    #[test]
+    fn bootstrap_oauth_patch_is_policy_controlled_per_lifecycle() {
+        for key in [
+            crate::oauth_relying_party_registration::OAUTH_AUTO_REGISTRATION_ENV,
+            crate::oauth_relying_party_registration::OAUTH_AUTO_REGISTRATION_ENABLED_ENV,
+        ] {
+            std::env::remove_var(key);
+        }
+        let relying_party = json!({
+            "enabled": true,
+            "clientId": "birdcoder",
+            "redirectUris": ["birdcoder://auth/callback"],
+            "allowedScopes": ["openid", "profile"],
+            "confidential": false
+        });
+        let mut command = EnsureTenantApplicationCommand {
+            owner_tenant_id: "0".to_owned(),
+            app_key: "sdkwork-birdcoder".to_owned(),
+            name: "SDKWork Birdcoder".to_owned(),
+            display_name: "SDKWork Birdcoder".to_owned(),
+            app_type: "APP_REACT".to_owned(),
+            version: "1.0.0".to_owned(),
+            channel: "stable".to_owned(),
+            default_access_permissions: vec!["iam.self".to_owned()],
+            tenant_id: "100001".to_owned(),
+            organization_id: "0".to_owned(),
+            instance_key: "sdkwork_birdcoder_dev".to_owned(),
+            environment: "production".to_owned(),
+            primary_domain: "localhost".to_owned(),
+            runtime_app_id: "sdkwork-birdcoder".to_owned(),
+            oauth_relying_party: Some(relying_party.clone()),
+        };
+
+        assert_eq!(
+            bootstrap_oauth_runtime_config_patch(&command, None).expect("production patch"),
+            json!({}),
+            "production must fail closed without an explicit policy opt-in"
+        );
+
+        command.environment = "development".to_owned();
+        let patch = bootstrap_oauth_runtime_config_patch(&command, None).expect("development patch");
+        assert_eq!(
+            patch["oauth"]["relyingParty"]["clientId"],
+            json!("birdcoder")
+        );
+        assert_eq!(
+            patch["oauth"]["relyingParty"]["enabled"],
+            json!(true)
+        );
     }
 
     #[test]

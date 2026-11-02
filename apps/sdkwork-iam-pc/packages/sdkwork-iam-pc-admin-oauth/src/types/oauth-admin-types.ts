@@ -141,7 +141,14 @@ export interface SdkworkIamOauthResourceAuthorizationDraft {
 
 export interface SdkworkIamOauthRelyingPartyDraft {
   allowedScopesText: string;
+  /** OAuth client id; defaults to the tenant application app id when blank. */
+  clientId: string;
+  /** Read-only hint showing the owning tenant application app id. */
   clientIdHint: string;
+  /**
+   * Operator-supplied client secret. A plaintext value is hashed by the server;
+   * an Argon2id PHC string is stored verbatim. Blank preserves the stored hash.
+   */
   clientSecretHash: string;
   confidential: boolean;
   enabled: boolean;
@@ -278,7 +285,7 @@ export type SdkworkIamOauthAdminServicePort = {
     oauth: SdkworkIamService["iam"]["oauth"];
     tenantApplications: Pick<
       SdkworkIamService["iam"]["tenantApplications"],
-      "retrieve" | "update"
+      "list" | "management"
     >;
   };
 };

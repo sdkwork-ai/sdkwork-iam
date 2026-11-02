@@ -8,6 +8,7 @@ use std::path::Path;
 
 use sdkwork_iam_bootstrap::{DEFAULT_IAM_ORGANIZATION_ID, DEFAULT_IAM_TENANT_ID};
 use serde::Deserialize;
+use serde_json::Value;
 
 use crate::application_registry::{
     tenant_application_instance_key, EnsureTenantApplicationCommand,
@@ -42,6 +43,13 @@ pub struct SdkworkAppManifest {
     pub backend: ManifestBackendSection,
     #[serde(default)]
     pub release: ManifestReleaseSection,
+    /// OAuth relying-party registration declared by the application.
+    ///
+    /// Accepts either `{ "relyingParty": { ... } }` or the relying-party
+    /// document itself. Applied by the embedded bootstrap only when the
+    /// auto-registration policy allows it for the lifecycle.
+    #[serde(default)]
+    pub oauth: Option<Value>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -274,7 +282,22 @@ pub fn manifest_to_ensure_command(
         environment,
         primary_domain,
         runtime_app_id,
+        oauth_relying_party: manifest_oauth_relying_party(manifest),
     })
+}
+
+/// Extracts the relying-party document a manifest declares, if any.
+///
+/// `oauth.relyingParty` is the canonical shape; a manifest that writes the
+/// relying party directly under `oauth` is accepted as long as it carries the
+/// identifying `redirectUris` field, so one obvious typo does not silently
+/// leave the application unregistered.
+fn manifest_oauth_relying_party(manifest: &SdkworkAppManifest) -> Option<Value> {
+    let oauth = manifest.oauth.as_ref()?;
+    if let Some(relying_party) = oauth.get("relyingParty") {
+        return relying_party.is_object().then(|| relying_party.clone());
+    }
+    oauth.is_object().then(|| oauth.clone())
 }
 
 fn backend_runtime_app_id(manifest: &SdkworkAppManifest) -> Option<&str> {
@@ -366,6 +389,69 @@ pub fn normalize_bootstrap_environment(environment: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn manifest_maps_the_oauth_relying_party_registration() {
+        let manifest: SdkworkAppManifest = serde_json::from_value(json!({
+            "app": {
+                "key": "sdkwork-birdcoder",
+                "name": "SDKWork Birdcoder",
+                "appType": "APP_REACT"
+            },
+            "backend": {
+                "appId": "sdkwork-birdcoder",
+                "tenantId": "100001",
+                "accessTokenPermissionScope": ["iam.users.read"]
+            },
+            "oauth": {
+                "relyingParty": {
+                    "enabled": true,
+                    "clientId": "birdcoder",
+                    "redirectUris": ["birdcoder://auth/callback"],
+                    "allowedScopes": ["openid", "profile", "offline_access"],
+                    "confidential": false
+                }
+            }
+        }))
+        .expect("parse manifest");
+
+        let command = manifest_to_ensure_command(
+            &manifest,
+            &EmbeddedApplicationBootstrapOptions {
+                environment: "development".to_owned(),
+                ..EmbeddedApplicationBootstrapOptions::default()
+            },
+            None,
+        )
+        .expect("command");
+
+        assert_eq!(command.runtime_app_id, "sdkwork-birdcoder");
+        let relying_party = command
+            .oauth_relying_party
+            .expect("manifest oauth registration");
+        assert_eq!(relying_party["clientId"], json!("birdcoder"));
+        assert_eq!(
+            relying_party["redirectUris"],
+            json!(["birdcoder://auth/callback"])
+        );
+    }
+
+    #[test]
+    fn manifest_without_oauth_maps_no_registration() {
+        let manifest: SdkworkAppManifest = serde_json::from_value(json!({
+            "app": { "key": "sdkwork-forum", "name": "SDKWork Forum", "appType": "APP_HTML" },
+            "backend": { "accessTokenPermissionScope": ["iam.self"] }
+        }))
+        .expect("parse manifest");
+        let command = manifest_to_ensure_command(
+            &manifest,
+            &EmbeddedApplicationBootstrapOptions::default(),
+            None,
+        )
+        .expect("command");
+        assert!(command.oauth_relying_party.is_none());
+    }
 
     #[test]
     fn manifest_mapping_uses_runtime_app_id_for_instance_key() {
@@ -383,6 +469,7 @@ mod tests {
                 ..ManifestBackendSection::default()
             },
             release: ManifestReleaseSection::default(),
+            oauth: None,
         };
         let command = manifest_to_ensure_command(
             &manifest,
@@ -418,6 +505,7 @@ mod tests {
                 ..ManifestBackendSection::default()
             },
             release: ManifestReleaseSection::default(),
+            oauth: None,
         };
         let command = manifest_to_ensure_command(
             &manifest,
@@ -448,6 +536,7 @@ mod tests {
                 ..ManifestBackendSection::default()
             },
             release: ManifestReleaseSection::default(),
+            oauth: None,
         };
 
         let app_ids = resolve_manifest_runtime_app_bindings(&manifest)
@@ -473,6 +562,7 @@ mod tests {
                 ..ManifestBackendSection::default()
             },
             release: ManifestReleaseSection::default(),
+            oauth: None,
         };
         let primary = EmbeddedApplicationRuntimeBinding {
             runtime_app_id: "sdkwork-im-pc".to_owned(),
@@ -537,6 +627,7 @@ mod tests {
                 ..ManifestBackendSection::default()
             },
             release: ManifestReleaseSection::default(),
+            oauth: None,
         };
         let primary = EmbeddedApplicationRuntimeBinding {
             runtime_app_id: "sdkwork-im-pc".to_owned(),
