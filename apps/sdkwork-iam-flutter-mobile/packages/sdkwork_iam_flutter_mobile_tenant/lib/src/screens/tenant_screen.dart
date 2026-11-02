@@ -23,6 +23,7 @@ class IamFlutterMobileTenantScreen extends StatefulWidget {
     super.key,
     required this.messages,
     this.controller,
+    this.onOpenOrganizations,
   });
 
   /// Decoded locale fragment of this capability.
@@ -30,6 +31,9 @@ class IamFlutterMobileTenantScreen extends StatefulWidget {
 
   /// Injected controller; a default one is built when omitted.
   final IamFlutterMobileTenantController? controller;
+
+  /// Opens the organization directory; the action is rendered only when provided.
+  final VoidCallback? onOpenOrganizations;
 
   /// Locale key of this screen's title.
   static const String titleKey = 'iam.tenant.overview.title';
@@ -112,6 +116,13 @@ class _IamFlutterMobileTenantScreenState extends State<IamFlutterMobileTenantScr
           rows: overview.memberships,
           title: _message('membershipsSection'),
         ),
+        if (widget.onOpenOrganizations != null) ...<Widget>[
+          const SizedBox(height: SdkworkDesignTokens.spaceMd),
+          FilledButton.tonal(
+            onPressed: widget.onOpenOrganizations,
+            child: Text(_message('organizationsSection')),
+          ),
+        ],
       ],
     );
   }

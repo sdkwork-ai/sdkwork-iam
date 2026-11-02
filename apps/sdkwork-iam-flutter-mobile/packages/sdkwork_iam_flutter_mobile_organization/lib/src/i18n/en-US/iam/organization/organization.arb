@@ -1,10 +1,10 @@
 {
   "@@locale": "en",
-  "title": "SDKWork IAM Flutter Mobile Organization",
+  "title": "Organizations",
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile Organization workspace",
+  "subtitle": "Organizations you can see in this tenant.",
   "@subtitle": {
     "description": "Supporting line under the title."
   },
@@ -12,7 +12,7 @@
   "@loading": {
     "description": "Shown while the capability loads its first page."
   },
-  "empty": "Nothing to show yet.",
+  "empty": "No organizations.",
   "@empty": {
     "description": "Empty state shown when the capability has no records."
   },
@@ -23,5 +23,21 @@
   "retry": "Retry",
   "@retry": {
     "description": "Label of the retry action."
+  },
+  "searchPlaceholder": "Search organizations",
+  "@searchPlaceholder": {
+    "description": "Placeholder of the directory search field."
+  },
+  "searchAction": "Search",
+  "@searchAction": {
+    "description": "Label of the search action."
+  },
+  "loadMore": "Load more",
+  "@loadMore": {
+    "description": "Label of the next-page action."
+  },
+  "emptySearch": "Nothing matched that search.",
+  "@emptySearch": {
+    "description": "Shown when a search returns no rows."
   }
 }

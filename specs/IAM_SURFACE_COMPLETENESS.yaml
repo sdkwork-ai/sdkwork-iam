@@ -248,7 +248,9 @@ clientSurfaces:
       `SdkworkAppClient` exposes flat `organizationsList` methods rather than the
       TypeScript namespaces. Both are generator-profile differences to reconcile
       before GA.
-      Remaining: 24 capability packages still hold the generated stub.
+      Remaining: 23 capability packages still hold the generated stub. Two real
+      capabilities now: tenant and organization (server-searched, append-on-load-more
+      directory reachable from the tenant screen).
   harmony:
     status: scaffold
     note: Route/page map exists; capability pages do not render real data yet.

@@ -1,10 +1,10 @@
 {
   "@@locale": "zh",
-  "title": "SDKWork IAM Flutter Mobile Organization",
+  "title": "组织",
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile Organization 工作区",
+  "subtitle": "你在该租户下可见的组织。",
   "@subtitle": {
     "description": "Supporting line under the title."
   },
@@ -12,7 +12,7 @@
   "@loading": {
     "description": "Shown while the capability loads its first page."
   },
-  "empty": "暂无内容。",
+  "empty": "暂无组织。",
   "@empty": {
     "description": "Empty state shown when the capability has no records."
   },
@@ -23,5 +23,21 @@
   "retry": "重试",
   "@retry": {
     "description": "Label of the retry action."
+  },
+  "searchPlaceholder": "搜索组织",
+  "@searchPlaceholder": {
+    "description": "Placeholder of the directory search field."
+  },
+  "searchAction": "搜索",
+  "@searchAction": {
+    "description": "Label of the search action."
+  },
+  "loadMore": "加载更多",
+  "@loadMore": {
+    "description": "Label of the next-page action."
+  },
+  "emptySearch": "没有匹配的结果。",
+  "@emptySearch": {
+    "description": "Shown when a search returns no rows."
   }
 }

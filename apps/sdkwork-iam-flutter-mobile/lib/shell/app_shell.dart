@@ -14,10 +14,12 @@ import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
 import 'package:sdkwork_iam_flutter_mobile_commons/sdkwork_iam_flutter_mobile_commons.dart';
+import 'package:sdkwork_iam_flutter_mobile_organization/sdkwork_iam_flutter_mobile_organization.dart';
 import 'package:sdkwork_iam_flutter_mobile_shell/sdkwork_iam_flutter_mobile_shell.dart';
 import 'package:sdkwork_iam_flutter_mobile_tenant/sdkwork_iam_flutter_mobile_tenant.dart';
 
 import 'auth_data_source.dart';
+import 'organization_data_source.dart';
 import 'tenant_data_source.dart';
 
 /// Shell the root mounts.
@@ -26,6 +28,8 @@ class IamHomeShell extends StatefulWidget {
     super.key,
     this.authController,
     this.authMessages,
+    this.organizationDataSource,
+    this.organizationMessages,
     this.tenantDataSource,
     this.tenantMessages,
   });
@@ -41,6 +45,12 @@ class IamHomeShell extends StatefulWidget {
 
   /// Overrides the tenant copy.
   final Map<String, String>? tenantMessages;
+
+  /// Overrides the app-api organization data source.
+  final IamFlutterMobileOrganizationDataSource? organizationDataSource;
+
+  /// Overrides the organization copy.
+  final Map<String, String>? organizationMessages;
 
   @override
   State<IamHomeShell> createState() => _IamHomeShellState();
@@ -91,13 +101,24 @@ class _IamHomeShellState extends State<IamHomeShell> {
           controller: _auth,
           messages: copy.auth,
         );
-        final Widget tenantScreen = IamFlutterMobileTenantScreen(
-          controller: IamFlutterMobileTenantController(
-            service: IamFlutterMobileTenantService(
-              dataSource: widget.tenantDataSource ?? IamTenantAppSdkDataSource(),
+        final Widget tenantScreen = Builder(
+          builder: (BuildContext screenContext) => IamFlutterMobileTenantScreen(
+            controller: IamFlutterMobileTenantController(
+              service: IamFlutterMobileTenantService(
+                dataSource: widget.tenantDataSource ?? IamTenantAppSdkDataSource(),
+              ),
+            ),
+            messages: copy.tenant,
+            onOpenOrganizations: () => Navigator.of(screenContext).pushNamed('/organizations'),
+          ),
+        );
+        final Widget organizationScreen = IamFlutterMobileOrganizationScreen(
+          controller: IamFlutterMobileOrganizationController(
+            service: IamFlutterMobileOrganizationService(
+              dataSource: widget.organizationDataSource ?? IamOrganizationAppSdkDataSource(),
             ),
           ),
-          messages: copy.tenant,
+          messages: copy.organization,
         );
 
         return IamFlutterMobileCoreShell(
@@ -112,6 +133,11 @@ class _IamHomeShellState extends State<IamHomeShell> {
               builder: (_) => tenantScreen,
               path: '/tenant',
               routeId: IamFlutterMobileTenantRoutes.overviewRouteId,
+            ),
+            SdkworkRouteEntry(
+              builder: (_) => organizationScreen,
+              path: '/organizations',
+              routeId: IamFlutterMobileOrganizationRoutes.directoryRouteId,
             ),
           ],
           title: copy.tenant['title'] ?? 'SDKWork IAM',
@@ -130,7 +156,13 @@ class _IamHomeShellState extends State<IamHomeShell> {
         widget.authMessages ?? await _loadFragment('sdkwork_iam_flutter_mobile_auth', 'auth', locale);
     final Map<String, String> tenant = widget.tenantMessages ??
         await _loadFragment('sdkwork_iam_flutter_mobile_tenant', 'tenant', locale);
-    return _IamShellCopy(auth: auth, tenant: tenant);
+    final Map<String, String> organization = widget.organizationMessages ??
+        await _loadFragment(
+          'sdkwork_iam_flutter_mobile_organization',
+          'organization',
+          locale,
+        );
+    return _IamShellCopy(auth: auth, organization: organization, tenant: tenant);
   }
 
   Future<Map<String, String>> _loadFragment(String package, String capability, String locale) {
@@ -148,10 +180,15 @@ class _IamHomeShellState extends State<IamHomeShell> {
   }
 }
 
-/// The two fragments the shell mounts.
+/// The three fragments the shell mounts.
 class _IamShellCopy {
-  const _IamShellCopy({required this.auth, required this.tenant});
+  const _IamShellCopy({
+    required this.auth,
+    required this.organization,
+    required this.tenant,
+  });
 
   final Map<String, String> auth;
+  final Map<String, String> organization;
   final Map<String, String> tenant;
 }
