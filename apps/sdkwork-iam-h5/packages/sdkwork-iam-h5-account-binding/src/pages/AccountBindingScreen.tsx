@@ -1,138 +1,243 @@
-import { useEffect, useState } from "react";
+/**
+ * Account-binding screen (`app.iam.account-binding.list`, `/user/account-binding`).
+ *
+ * Three regions, each gated by the tenant policy the screen just loaded: what the
+ * tenant allows, the email binding the caller can add or remove, and the linked
+ * third-party identities. Unlinking is a two-step action *in place* rather than a
+ * `window.confirm`: a native dialog is untestable, unstyleable and disappears on
+ * some Android webviews.
+ */
 
-import type { SdkworkIamH5AccountBindingScreenProps } from "../types/account-binding-h5-types";
+import { useCallback, useState, type ReactElement } from "react";
 
+import {
+  SdkworkIamH5Badge,
+  SdkworkIamH5Button,
+  SdkworkIamH5Card,
+  SdkworkIamH5ErrorState,
+  SdkworkIamH5Field,
+  SdkworkIamH5KeyValueList,
+  SdkworkIamH5LoadingState,
+  SdkworkIamH5Notice,
+  SdkworkIamH5PagedListSection,
+  SdkworkIamH5Screen,
+  describeSdkworkIamH5Error,
+  useSdkworkIamH5PagedList,
+  useSdkworkIamH5Resource,
+  type SdkworkIamH5ListQuery,
+} from "@sdkwork/iam-h5-commons";
+
+import { useIamH5AccountBindingMessages } from "../i18n/index.js";
+import type {
+  SdkworkIamH5AccountBindingController,
+  SdkworkIamH5AccountBindingScreenProps,
+  SdkworkIamH5OAuthAccountLink,
+} from "../types/account-binding-h5-types.js";
+
+/** The account-binding screen. */
 export function SdkworkIamH5AccountBindingScreen({
   controller,
-  title = "Account binding",
-}: SdkworkIamH5AccountBindingScreenProps) {
-  const [policy, setPolicy] = useState(controller.getState().policy);
-  const [accountLinks, setAccountLinks] = useState(controller.getState().accountLinks);
-  const [listPageInfo, setListPageInfo] = useState(controller.getState().listPageInfo);
+  onBack,
+  title,
+}: SdkworkIamH5AccountBindingScreenProps): ReactElement {
+  const messages = useIamH5AccountBindingMessages();
+  const policy = useSdkworkIamH5Resource(useCallback(() => controller.loadPolicy(), [controller]));
+  const links = useSdkworkIamH5PagedList<SdkworkIamH5OAuthAccountLink>(
+    useCallback((query: SdkworkIamH5ListQuery) => controller.fetchAccountLinksPage(query), [controller]),
+  );
+
   const [email, setEmail] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [unbindPassword, setUnbindPassword] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | undefined>();
+  const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState<"bind" | "unbind" | undefined>();
+  const [pendingUnlink, setPendingUnlink] = useState<string | undefined>();
   const [notice, setNotice] = useState<string | undefined>();
+  const [actionError, setActionError] = useState<string | undefined>();
 
-  useEffect(() => {
-    void Promise.all([
-      controller.loadPolicy(),
-      controller.listAccountLinks(),
-    ]).then(([nextPolicy, links]) => {
-      setPolicy(nextPolicy);
-      setAccountLinks(links);
-      setListPageInfo(controller.getState().listPageInfo);
-    }).catch((loadError) => {
-      setError(loadError instanceof Error ? loadError.message : "Failed to load account binding settings");
-    });
-  }, [controller]);
+  const contact = policy.data?.contactBinding;
+  const oauth = policy.data?.oauthBinding;
+  const canBindEmail = Boolean(contact?.enabled && contact.emailEnabled);
+  const canUnbindEmail = Boolean(canBindEmail && contact?.emailChangeEnabled);
+  const canUnlink = Boolean(oauth?.enabled && oauth.selfServiceUnlinkEnabled);
 
-  const runAction = async (action: () => Promise<void>, successMessage: string) => {
-    setBusy(true);
-    setError(undefined);
+  const run = (kind: "bind" | "unbind", action: () => Promise<unknown>, success: string) => {
+    setBusy(kind);
     setNotice(undefined);
-    try {
-      await action();
-      setNotice(successMessage);
-    } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : "Operation failed");
-    } finally {
-      setBusy(false);
-    }
+    setActionError(undefined);
+    action()
+      .then(() => {
+        setNotice(success);
+        return links.refresh();
+      })
+      .catch((error: unknown) => {
+        setActionError(describeSdkworkIamH5Error(error, messages.errors[kind]).message);
+      })
+      .finally(() => setBusy(undefined));
   };
 
-  const emailBindingEnabled = policy?.contactBinding.enabled && policy.contactBinding.emailEnabled;
-  const canLoadMore = Boolean(listPageInfo?.hasMore);
+  const unlink = (link: SdkworkIamH5OAuthAccountLink) => {
+    setNotice(undefined);
+    setActionError(undefined);
+    controller
+      .unlinkAccountLink(link.accountLinkId)
+      .then(() => {
+        setPendingUnlink(undefined);
+        setNotice(messages.binding.links.unlinked);
+        return links.refresh();
+      })
+      .catch((error: unknown) => {
+        setActionError(describeSdkworkIamH5Error(error, messages.errors.unlink).message);
+      });
+  };
 
   return (
-    <section className="mx-auto flex w-full max-w-md flex-col gap-4 p-4">
-      <h1 className="text-lg font-semibold">{title}</h1>
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      {notice ? <p className="text-sm text-green-700">{notice}</p> : null}
-      {policy ? (
-        <ul className="space-y-2 text-sm">
-          <li>Contact binding: {policy.contactBinding.enabled ? "enabled" : "disabled"}</li>
-          <li>Email binding: {policy.contactBinding.emailEnabled ? "enabled" : "disabled"}</li>
-          <li>Phone binding: {policy.contactBinding.phoneEnabled ? "enabled" : "disabled"}</li>
-          <li>OAuth self-service link: {policy.oauthBinding.selfServiceLinkEnabled ? "enabled" : "disabled"}</li>
-        </ul>
-      ) : null}
+    <SdkworkIamH5Screen onBack={onBack} title={title ?? messages.binding.title}>
+      {actionError ? <SdkworkIamH5Notice tone="danger">{actionError}</SdkworkIamH5Notice> : null}
+      {notice ? <SdkworkIamH5Notice tone="success">{notice}</SdkworkIamH5Notice> : null}
 
-      {emailBindingEnabled ? (
-        <div className="space-y-3 rounded-xl border border-neutral-200 p-3">
-          <h2 className="text-sm font-medium">Email binding</h2>
-          <label className="block space-y-1 text-sm">
-            <span>Email</span>
-            <input className="w-full rounded-lg border border-neutral-300 px-3 py-2" onChange={(event) => setEmail(event.target.value)} type="email" value={email} />
-          </label>
-          <label className="block space-y-1 text-sm">
-            <span>Verification code</span>
-            <input className="w-full rounded-lg border border-neutral-300 px-3 py-2" onChange={(event) => setVerificationCode(event.target.value)} value={verificationCode} />
-          </label>
-          <button
-            className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50"
-            disabled={busy || !email.trim() || !verificationCode.trim()}
-            onClick={() => void runAction(async () => {
-              await controller.bindEmail({ email: email.trim(), verificationCode: verificationCode.trim() });
-              setEmail("");
-              setVerificationCode("");
-              const links = await controller.listAccountLinks();
-              setAccountLinks(links);
-              setListPageInfo(controller.getState().listPageInfo);
-            }, "Email bound")}
-            type="button"
-          >
-            Bind email
-          </button>
-          {policy.contactBinding.emailChangeEnabled ? (
-            <>
-              <label className="block space-y-1 text-sm">
-                <span>Password (unbind)</span>
-                <input className="w-full rounded-lg border border-neutral-300 px-3 py-2" onChange={(event) => setUnbindPassword(event.target.value)} type="password" value={unbindPassword} />
-              </label>
-              <button
-                className="rounded-lg border border-neutral-300 px-4 py-2 text-sm disabled:opacity-50"
-                disabled={busy || !unbindPassword.trim()}
-                onClick={() => void runAction(async () => {
-                  await controller.unbindEmail({ password: unbindPassword.trim() });
-                  setUnbindPassword("");
-                  const links = await controller.listAccountLinks();
-                  setAccountLinks(links);
-                  setListPageInfo(controller.getState().listPageInfo);
-                }, "Email unbound")}
-                type="button"
+      <SdkworkIamH5Card title={messages.binding.policySection}>
+        {policy.status === "loading" && !policy.data ? (
+          <SdkworkIamH5LoadingState label={messages.states.loading} />
+        ) : policy.status === "error" && policy.error ? (
+          <SdkworkIamH5ErrorState
+            error={{ message: `${messages.errors.policy} ${policy.error.message}`.trim() }}
+            onRetry={() => void policy.reload()}
+            retryLabel={messages.states.retry}
+            title={messages.states.errorTitle}
+          />
+        ) : (
+          <SdkworkIamH5KeyValueList
+            items={[
+              {
+                label: messages.binding.policy.contact,
+                value: <Flag enabled={Boolean(contact?.enabled)} messages={messages} />,
+              },
+              {
+                label: messages.binding.policy.email,
+                value: <Flag enabled={Boolean(contact?.emailEnabled)} messages={messages} />,
+              },
+              {
+                label: messages.binding.policy.phone,
+                value: <Flag enabled={Boolean(contact?.phoneEnabled)} messages={messages} />,
+              },
+              {
+                label: messages.binding.policy.selfServiceLink,
+                value: <Flag enabled={Boolean(oauth?.selfServiceLinkEnabled)} messages={messages} />,
+              },
+              {
+                label: messages.binding.policy.selfServiceUnlink,
+                value: <Flag enabled={Boolean(oauth?.selfServiceUnlinkEnabled)} messages={messages} />,
+              },
+            ]}
+          />
+        )}
+      </SdkworkIamH5Card>
+
+      {canBindEmail ? (
+        <div style={{ marginBlockStart: "var(--sdkwork-iam-h5-space-md)" }}>
+          <SdkworkIamH5Card caption={messages.binding.email.hint} title={messages.binding.emailSection}>
+            <SdkworkIamH5Field
+              inputMode="email"
+              label={messages.binding.email.address}
+              onChange={setEmail}
+              value={email}
+            />
+            <SdkworkIamH5Field
+              inputMode="numeric"
+              label={messages.binding.email.code}
+              onChange={setCode}
+              value={code}
+            />
+            <div style={{ marginBlockStart: "var(--sdkwork-iam-h5-space-md)" }}>
+              <SdkworkIamH5Button
+                block
+                disabled={busy !== undefined || email.trim() === "" || code.trim() === ""}
+                onClick={() => run("bind", () => controller.bindEmail({ email, verificationCode: code }), messages.binding.email.bound)}
               >
-                Unbind email
-              </button>
-            </>
-          ) : null}
+                {busy === "bind" ? messages.binding.email.binding : messages.binding.email.bind}
+              </SdkworkIamH5Button>
+            </div>
+            {canUnbindEmail ? (
+              <>
+                <SdkworkIamH5Field
+                  label={messages.binding.email.unbindPassword}
+                  onChange={setPassword}
+                  secret
+                  value={password}
+                />
+                <div style={{ marginBlockStart: "var(--sdkwork-iam-h5-space-sm)" }}>
+                  <SdkworkIamH5Button
+                    block
+                    disabled={busy !== undefined || password.trim() === ""}
+                    onClick={() => run("unbind", () => controller.unbindEmail({ password }), messages.binding.email.unbound)}
+                    variant="secondary"
+                  >
+                    {busy === "unbind" ? messages.binding.email.unbinding : messages.binding.email.unbind}
+                  </SdkworkIamH5Button>
+                </div>
+              </>
+            ) : null}
+          </SdkworkIamH5Card>
         </div>
       ) : null}
 
-      <div>
-        <h2 className="mb-2 text-sm font-medium">Linked OAuth accounts ({accountLinks.length})</h2>
-        <ul className="space-y-2 text-sm">
-          {accountLinks.map((link) => (
-            <li key={link.id}>{link.provider || "provider"} — {link.providerUserId || link.accountLinkId}</li>
-          ))}
-        </ul>
-        {canLoadMore ? (
-          <button
-            className="mt-3 rounded-lg border border-neutral-300 px-4 py-2 text-sm disabled:opacity-50"
-            disabled={busy}
-            onClick={() => void runAction(async () => {
-              const links = await controller.loadMoreAccountLinks();
-              setAccountLinks(links);
-              setListPageInfo(controller.getState().listPageInfo);
-            }, "Loaded more")}
-            type="button"
-          >
-            Load more
-          </button>
-        ) : null}
+      <div style={{ marginBlockStart: "var(--sdkwork-iam-h5-space-md)" }}>
+        <SdkworkIamH5PagedListSection
+          buildRow={(link) => ({
+            accessory: canUnlink ? (
+              pendingUnlink === link.accountLinkId ? (
+                <span style={{ display: "flex", gap: "var(--sdkwork-iam-h5-space-xs)" }}>
+                  <SdkworkIamH5Button onClick={() => unlink(link)} variant="danger">
+                    {messages.binding.links.confirmUnlink}
+                  </SdkworkIamH5Button>
+                  <SdkworkIamH5Button onClick={() => setPendingUnlink(undefined)} variant="secondary">
+                    {messages.binding.links.cancel}
+                  </SdkworkIamH5Button>
+                </span>
+              ) : (
+                <SdkworkIamH5Button onClick={() => setPendingUnlink(link.accountLinkId)} variant="secondary">
+                  {messages.binding.links.unlink}
+                </SdkworkIamH5Button>
+              )
+            ) : undefined,
+            id: link.accountLinkId,
+            primary: link.provider ?? messages.binding.links.provider,
+            secondary: link.providerUserId ?? link.accountLinkId,
+          })}
+          list={links}
+          messages={{
+            emptyDetail: messages.binding.links.emptyDetail,
+            emptySearch: messages.states.emptySearch,
+            emptyTitle: messages.binding.links.emptyTitle,
+            errorMessage: messages.errors.links,
+            errorTitle: messages.states.errorTitle,
+            loading: messages.states.loading,
+            loadMore: messages.states.loadMore,
+            loadMoreErrorMessage: messages.errors.more,
+            retry: messages.states.retry,
+          }}
+          searchLabel={messages.binding.links.searchLabel}
+          title={messages.binding.linksSection}
+        />
       </div>
-    </section>
+      {pendingUnlink ? (
+        <p className="sdkwork-iam-h5-card__caption" style={{ marginBlockStart: "var(--sdkwork-iam-h5-space-sm)" }}>
+          {messages.binding.links.confirmHint}
+        </p>
+      ) : null}
+    </SdkworkIamH5Screen>
+  );
+}
+
+interface FlagProps {
+  enabled: boolean;
+  messages: ReturnType<typeof useIamH5AccountBindingMessages>;
+}
+
+function Flag({ enabled, messages }: FlagProps): ReactElement {
+  return (
+    <SdkworkIamH5Badge tone={enabled ? "success" : "neutral"}>
+      {enabled ? messages.binding.state.enabled : messages.binding.state.disabled}
+    </SdkworkIamH5Badge>
   );
 }

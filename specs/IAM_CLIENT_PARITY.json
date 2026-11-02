@@ -27,7 +27,7 @@
   "baseline": {
     "complete": {
       "pc": 20,
-      "h5": 6,
+      "h5": 7,
       "miniProgram": 0,
       "flutter": 0,
       "harmony": 0
@@ -141,9 +141,13 @@
       "tier": "app",
       "capability": "account-binding",
       "api": "app-api",
-      "status": { "pc": "partial" },
+      "status": { "pc": "partial", "h5": "complete" },
       "evidence": {
-        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-account-binding/src/pages/AccountBindingConsoleWorkspace.tsx"
+        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-account-binding/src/pages/AccountBindingConsoleWorkspace.tsx",
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-account-binding/src/pages/AccountBindingScreen.tsx"
+      },
+      "tests": {
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-account-binding/tests/"
       }
     },
     {
@@ -151,9 +155,12 @@
       "tier": "app",
       "capability": "user",
       "api": "app-api",
-      "status": { "pc": "partial" },
+      "status": { "pc": "partial", "h5": "missing" },
       "evidence": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-user/src/pages/UserConsoleWorkspace.tsx"
+      },
+      "blockedBy": {
+        "h5": "app-api exposes no directory listing: SdkworkIamService.iam.users.list resolves through the backend client only, and APP_MOBILE_REACT_UI_SPEC section 1 forbids a mobile app surface from consuming backend-api. Unblock by publishing a scoped app-api user-directory read operation."
       }
     },
     {

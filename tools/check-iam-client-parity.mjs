@@ -176,11 +176,23 @@ async function main(argv) {
 
     const evidence = screen.evidence ?? {};
     const tests = screen.tests ?? {};
+    const blockedBy = screen.blockedBy ?? {};
     for (const platform of platforms) {
       const status = screen.status?.[platform] ?? matrix.defaultStatus;
       if (!STATUSES.has(status)) {
         fail(`${id}/${platform}: unknown status "${status}"`);
         continue;
+      }
+      if (blockedBy[platform] !== undefined) {
+        // A blocked cell records *why* a platform cannot implement a screen yet.
+        // It must describe a cell that is genuinely not implemented, otherwise it
+        // would be a note attached to finished work.
+        if (typeof blockedBy[platform] !== 'string' || blockedBy[platform].trim() === '') {
+          fail(`${id}/${platform}: blockedBy must be a non-empty explanation`);
+        }
+        if (status === 'complete' || status === 'partial') {
+          fail(`${id}/${platform}: blockedBy is only valid on a missing/scaffold cell, found "${status}"`);
+        }
       }
       if (status === 'scaffold' || status === 'missing') continue;
 
@@ -222,13 +234,14 @@ async function main(argv) {
 
   // Counts per platform, and the regression comparison.
   const counts = Object.fromEntries(
-    platforms.map((platform) => [platform, { complete: 0, missing: 0, partial: 0, scaffold: 0 }]),
+    platforms.map((platform) => [platform, { blocked: 0, complete: 0, missing: 0, partial: 0, scaffold: 0 }]),
   );
   for (const screen of screens) {
     if (!expectedById.has(screen?.id)) continue;
     for (const platform of platforms) {
       const status = screen.status?.[platform] ?? matrix.defaultStatus;
       if (counts[platform] && STATUSES.has(status)) counts[platform][status] += 1;
+      if (counts[platform] && screen.blockedBy?.[platform]) counts[platform].blocked += 1;
     }
   }
 
@@ -278,7 +291,8 @@ async function main(argv) {
         `  ${platform.padEnd(12)} complete=${String(row.complete).padStart(2)} ` +
           `partial=${String(row.partial).padStart(2)} ` +
           `scaffold=${String(row.scaffold).padStart(2)} ` +
-          `missing=${String(row.missing).padStart(2)}\n`,
+          `missing=${String(row.missing).padStart(2)} ` +
+          `blocked=${String(row.blocked).padStart(2)}\n`,
       );
     }
     if (violations.length > 0) {

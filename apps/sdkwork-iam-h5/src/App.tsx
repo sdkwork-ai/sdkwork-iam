@@ -17,6 +17,11 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
 
 import {
+  createSdkworkIamH5AccountBindingController,
+  IAM_H5_ACCOUNT_BINDING_I18N_CATALOG,
+  SdkworkIamH5AccountBindingScreen,
+} from "@sdkwork/iam-h5-account-binding";
+import {
   createSdkworkIamH5AuthController,
   SdkworkIamH5AuthCallbackSurface,
   SdkworkIamH5AuthLoginSurface,
@@ -81,6 +86,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
   const tenantMessages = IAM_H5_TENANT_I18N_CATALOG.resolveMessages(resolvedLocale);
   const userCenterMessages = IAM_H5_USER_CENTER_I18N_CATALOG.resolveMessages(resolvedLocale);
   const organizationMessages = IAM_H5_ORGANIZATION_I18N_CATALOG.resolveMessages(resolvedLocale);
+  const accountBindingMessages = IAM_H5_ACCOUNT_BINDING_I18N_CATALOG.resolveMessages(resolvedLocale);
 
   const authController = useMemo(
     () => createSdkworkIamH5AuthController(bootstrap.runtime.service),
@@ -96,6 +102,10 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
   );
   const organizationController = useMemo(
     () => createSdkworkIamH5OrganizationController(bootstrap.runtime.service),
+    [bootstrap],
+  );
+  const accountBindingController = useMemo(
+    () => createSdkworkIamH5AccountBindingController(bootstrap.runtime.service),
     [bootstrap],
   );
 
@@ -115,6 +125,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     const organizationRoute = byId("app.iam.organization.directory");
     const profileRoute = byId("app.iam.user-center.profile");
     const passwordRoute = byId("app.iam.user-center.password");
+    const accountBindingRoute = byId("app.iam.account-binding.list");
     const routes: SdkworkIamH5ShellRoute[] = [];
 
     if (loginRoute) {
@@ -197,8 +208,25 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
         title: userCenterMessages.password.title,
       });
     }
+    if (accountBindingRoute) {
+      routes.push({
+        access: "protected",
+        element: (
+          <SdkworkIamH5AccountBindingScreen
+            controller={accountBindingController}
+            onBack={() => replace(profileRoute?.path ?? FALLBACK_PATH)}
+          />
+        ),
+        id: accountBindingRoute.id,
+        path: accountBindingRoute.path,
+        tab: { id: "bindings", label: accountBindingMessages.binding.title, order: 25 },
+        title: accountBindingMessages.binding.title,
+      });
+    }
     return routes;
   }, [
+    accountBindingController,
+    accountBindingMessages.binding.title,
     authController,
     handleAuthenticated,
     navigate,
@@ -224,6 +252,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
         IAM_H5_TENANT_I18N_CATALOG,
         IAM_H5_USER_CENTER_I18N_CATALOG,
         IAM_H5_ORGANIZATION_I18N_CATALOG,
+        IAM_H5_ACCOUNT_BINDING_I18N_CATALOG,
       ]}
       locale={resolvedLocale}
     >

@@ -132,8 +132,13 @@ capabilities:
     pc-app: partial
     pc-admin: complete
     pc-console: complete
-    h5-app: partial
+    h5-app: complete
     flutter-app: partial
+    notes: >
+      H5 ships `/user/account-binding`: the tenant policy is rendered as the first
+      region and gates the rest of the screen, email bind/unbind goes through the
+      app-api current-user bindings, and linked third-party identities can be
+      unlinked after an in-place confirmation. Phone binding stays PC-console only.
 
   - id: user-center
     database: complete
@@ -175,17 +180,21 @@ clientSurfaces:
       - app.iam.auth.oauth-callback
       - app.iam.tenant.overview
       - app.iam.organization.directory
+      - app.iam.account-binding.list
       - app.iam.user-center.profile
       - app.iam.user-center.password
     scaffoldScreens:
       - app.iam.auth.register
       - app.iam.auth.forgot-password
       - app.iam.auth.context-selection
-      - app.iam.account-binding.list
-      - app.iam.user.list
       - app.iam.oauth.providers
       - console.iam.* (4)
       - admin.iam.* (10)
+    blockedScreens:
+      app.iam.user.list: >
+        app-api publishes no user-directory read operation; the only directory list
+        is a backend-api resource, which a mobile app surface may not consume.
+        Recorded in specs/IAM_CLIENT_PARITY.json as `blockedBy`.
   miniProgram:
     status: scaffold
     note: Route registry and services exist; no page renders yet.

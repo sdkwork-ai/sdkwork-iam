@@ -990,6 +990,9 @@ importers:
       '@sdkwork/iam-contracts':
         specifier: workspace:*
         version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-contracts
+      '@sdkwork/iam-h5-commons':
+        specifier: workspace:*
+        version: link:../sdkwork-iam-h5-commons
       '@sdkwork/iam-h5-core':
         specifier: workspace:*
         version: link:../sdkwork-iam-h5-core
