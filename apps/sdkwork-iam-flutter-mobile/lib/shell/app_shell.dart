@@ -1,4 +1,4 @@
-﻿// SDKWORK-IAM-FLUTTER-SHELL: authored shell assembly.
+// SDKWORK-IAM-FLUTTER-SHELL: authored shell assembly.
 /**
  * Shell the root mounts: it loads the copy the mounted screens need, decides
  * whether the session gate opens, and builds the MaterialApp with the route table.
@@ -27,6 +27,7 @@ import 'organization_data_source.dart';
 import 'oauth_data_source.dart';
 import 'tenant_data_source.dart';
 import 'user_center_data_source.dart';
+import '../bootstrap/url_opener.dart';
 
 /// Shell the root mounts.
 class IamHomeShell extends StatefulWidget {
@@ -43,6 +44,7 @@ class IamHomeShell extends StatefulWidget {
     this.oauthMessages,
     this.tenantDataSource,
     this.tenantMessages,
+    this.urlOpener,
     this.userCenterDataSource,
     this.userCenterMessages,
   });
@@ -85,6 +87,11 @@ class IamHomeShell extends StatefulWidget {
 
   /// Overrides the OAuth copy.
   final Map<String, String>? oauthMessages;
+
+  /// Opens an external URL; defaults to the platform browser through the adapter.
+  ///
+  /// Injectable so a widget test can assert the URL without a platform channel.
+  final Future<bool> Function(String url)? urlOpener;
 
   @override
   State<IamHomeShell> createState() => _IamHomeShellState();
@@ -186,13 +193,16 @@ class _IamHomeShellState extends State<IamHomeShell> {
             dataSource: widget.userCenterDataSource ?? IamUserCenterAppSdkDataSource(),
           ),
         );
-        final Widget oauthScreen = IamFlutterMobileOauthScreen(
-          controller: IamFlutterMobileOauthController(
-            service: IamFlutterMobileOAuthService(
-              dataSource: widget.oauthDataSource ?? IamOAuthAppSdkDataSource(),
+        final Widget oauthScreen = Builder(
+          builder: (BuildContext screenContext) => IamFlutterMobileOauthScreen(
+            controller: IamFlutterMobileOauthController(
+              service: IamFlutterMobileOAuthService(
+                dataSource: widget.oauthDataSource ?? IamOAuthAppSdkDataSource(),
+              ),
             ),
+            messages: copy.oauth,
+            onAuthorize: (String url) => _openAuthorizationUrl(screenContext, copy.oauth, url),
           ),
-          messages: copy.oauth,
         );
         final Widget profileScreen = Builder(
           builder: (BuildContext screenContext) => IamFlutterMobileUserCenterScreen(
@@ -306,6 +316,24 @@ class _IamHomeShellState extends State<IamHomeShell> {
           'packages/$package/lib/src/i18n/$requested/iam/$capability/$capability.arb',
     );
     return bundle.messages(locale);
+  }
+
+  /// Opens an authorization URL in the platform browser.
+  ///
+  /// A failure is reported to the user rather than swallowed: a provider that never
+  /// opened must not look like one that was cancelled.
+  Future<void> _openAuthorizationUrl(
+    BuildContext context,
+    Map<String, String> copy,
+    String url,
+  ) async {
+    final Future<bool> Function(String url) opener =
+        widget.urlOpener ?? (String target) => const IamUrlOpenerAdapter().open(target);
+    final bool opened = await opener(url);
+    if (opened || !context.mounted) return;
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(content: Text(copy['authorizeUnavailable'] ?? 'Unable to open the provider.')),
+    );
   }
 
   /// Maps the platform locale onto one of the two fragments this build ships.

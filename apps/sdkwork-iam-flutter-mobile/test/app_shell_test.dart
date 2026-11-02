@@ -1,4 +1,4 @@
-﻿// SDKWORK-IAM-FLUTTER: authored shell test.
+// SDKWORK-IAM-FLUTTER: authored shell test.
 /**
  * The app root used to compile but render nothing, then mounted the tenant screen
  * behind no gate. These cases pin the wiring: signed out, the shell opens the
@@ -223,7 +223,7 @@ IamFlutterMobileAuthController _auth(_FakeAuthDataSource source) {
   );
 }
 
-Widget _shell(_FakeAuthDataSource source) {
+Widget _shell(_FakeAuthDataSource source, {List<String>? openedUrls}) {
   return IamHomeShell(
     accountBindingDataSource: _FakeAccountBindingDataSource(),
     accountBindingMessages: _accountBindingMessages,
@@ -235,6 +235,12 @@ Widget _shell(_FakeAuthDataSource source) {
     oauthMessages: _oauthMessages,
     tenantDataSource: _FakeTenantDataSource(),
     tenantMessages: _tenantMessages,
+    urlOpener: openedUrls == null
+        ? null
+        : (String url) async {
+            openedUrls.add(url);
+            return true;
+          },
     userCenterDataSource: _FakeUserCenterDataSource(),
     userCenterMessages: _userCenterMessages,
   );
@@ -328,5 +334,25 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Directory Acme'), findsOneWidget);
+  });
+
+  testWidgets('opens the OAuth authorization URL through the host opener',
+      (WidgetTester tester) async {
+    final _FakeAuthDataSource source =
+        _FakeAuthDataSource(session: const IamFlutterMobileAuthSession(accessToken: 'token-1'));
+    final List<String> opened = <String>[];
+    await tester.pumpWidget(_shell(source, openedUrls: opened));
+    await tester.pumpAndSettle();
+
+    final NavigatorState navigator = tester.state<NavigatorState>(find.byType(Navigator).first);
+    navigator.pushNamed('/oauth/providers');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Connect'));
+    await tester.pumpAndSettle();
+
+    // The shell, not the capability package, opens the URL: this is the seam that
+    // keeps platform plugins out of capability code.
+    expect(opened, <String>['https://idp.example.com/authorize?provider=github']);
   });
 }

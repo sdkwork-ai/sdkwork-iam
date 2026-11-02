@@ -2,6 +2,8 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sdkwork_iam_flutter_mobile_core/sdkwork_iam_flutter_mobile_core.dart';
 
+import 'url_opener.dart';
+
 /// Secure-storage adapter over the platform keystore.
 ///
 /// Section 7: only the bootstrap registers implementations, and an adapter exposes
@@ -38,6 +40,7 @@ final Map<String, SdkworkHostAdapter> _adapters = <String, SdkworkHostAdapter>{}
 Future<void> registerHostAdapters() async {
   _adapters.clear();
   _adapters[SdkworkHostCapability.secureStorage] = SdkworkSecureStorageAdapter();
+  _adapters[iamUrlOpenerCapability] = const IamUrlOpenerAdapter();
 }
 
 /// The adapter for [capability], or null when this platform lacks it.

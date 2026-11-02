@@ -13,6 +13,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   flutter_secure_storage: ^9.2.4
+  url_launcher: ^6.3.3
   sdkwork_iam_app_sdk:
     path: ../../sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-dart/generated/server-openapi
   sdkwork_iam_backend_sdk:
