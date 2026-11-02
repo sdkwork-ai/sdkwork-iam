@@ -32,6 +32,12 @@
     },
     {
       "pages": [
+        "pages/overview/index"
+      ],
+      "root": "console-tenant"
+    },
+    {
+      "pages": [
         "pages/directory/index"
       ],
       "root": "console-organization"

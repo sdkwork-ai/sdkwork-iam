@@ -272,13 +272,17 @@ clientSurfaces:
       the registry test runs against that union.
       Remaining: 15 declared routes still need pages — provider list, oauth-callback
       and context-selection first, then the console tenant page and the admin tier.
-      The console tier now ships three of its four pages: `console-organization` (the
+      The console tier now ships all four of its pages: `console-tenant` (session context,
+      self-service policy rows and the tenant's organizations), `console-organization` (the
       tenant-wide directory), `console-account-binding` (policy rows plus linked identities,
       removal offered only when the tenant grants self-service unlink and a row disappearing
       only after the server accepts) and `console-user-center` (the operator's own record).
+      The tenant page's organization list comes from the tenant overview the runtime already
+      loaded — a slice rather than a paged walk; paging lives on the console organization page.
       The user-center page is recorded as **partial**: the runtime exposes no verification
       policy port, so the policy region the PC and H5 console screens show is missing here,
-      and the gap is stated rather than papered over.
+      and the gap is stated rather than papered over. The app account-binding page's cancel
+      button was also localized instead of hardcoding the Chinese word.
   flutter:
     status: partial
     note: >

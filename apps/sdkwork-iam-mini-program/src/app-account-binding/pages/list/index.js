@@ -82,7 +82,7 @@ Page({
     if (!accountLinkId || this.data.unlinkingId) return;
     const t = (key) => resolveIamMpMessage(this.locale(), key);
     wx.showModal({
-      cancelText: "取消",
+      cancelText: t("binding.cancel"),
       confirmText: t("binding.unlink"),
       content: t("binding.unlinkConfirm"),
       success: (result) => {

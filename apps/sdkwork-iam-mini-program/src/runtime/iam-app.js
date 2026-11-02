@@ -6876,6 +6876,7 @@ var IAM_MP_PAGE_PATHS = {
   consoleAccountBinding: "console-account-binding/pages/list/index",
   consoleOrganizationDirectory: "console-organization/pages/directory/index",
   consoleUserCenter: "console-user-center/pages/profile/index",
+  consoleTenant: "console-tenant/pages/overview/index",
   contextSelection: "pages/context-selection/index",
   forgotPassword: "pages/forgot-password/index",
   login: "pages/login/index",
@@ -6898,7 +6899,8 @@ var IAM_MP_IMPLEMENTED_ROUTE_IDS = [
   "app.iam.account-binding.list",
   "console.iam.organization.directory",
   "console.iam.account-binding.list",
-  "console.iam.user-center.profile"
+  "console.iam.user-center.profile",
+  "console.iam.tenant.overview"
 ];
 var MESSAGES = {
   "common.loading": { "en-US": "Loading", "zh-CN": "\u52A0\u8F7D\u4E2D" },
@@ -7021,6 +7023,31 @@ var MESSAGES = {
   "consoleUserCenter.loading": { "en-US": "Loading\u2026", "zh-CN": "\u52A0\u8F7D\u4E2D\u2026" },
   "consoleUserCenter.loadFailed": { "en-US": "Could not load this view.", "zh-CN": "\u89C6\u56FE\u52A0\u8F7D\u5931\u8D25\u3002" },
   "consoleUserCenter.toApp": { "en-US": "Back to my workspace", "zh-CN": "\u8FD4\u56DE\u6211\u7684\u5DE5\u4F5C\u53F0" },
+  "consoleTenant.title": { "en-US": "Tenant management", "zh-CN": "\u79DF\u6237\u7BA1\u7406" },
+  "consoleTenant.subtitle": {
+    "en-US": "The tenant you are acting in, its policy and its organizations.",
+    "zh-CN": "\u5F53\u524D\u64CD\u4F5C\u7684\u79DF\u6237\u3001\u5176\u7B56\u7565\u4E0E\u7EC4\u7EC7\u3002"
+  },
+  "consoleTenant.sessionSection": { "en-US": "Session", "zh-CN": "\u5F53\u524D\u4F1A\u8BDD" },
+  "consoleTenant.environment": { "en-US": "Environment", "zh-CN": "\u73AF\u5883" },
+  "consoleTenant.tenant": { "en-US": "Tenant", "zh-CN": "\u79DF\u6237" },
+  "consoleTenant.user": { "en-US": "Operator", "zh-CN": "\u64CD\u4F5C\u4EBA" },
+  "consoleTenant.policySection": { "en-US": "Self-service policy", "zh-CN": "\u81EA\u52A9\u670D\u52A1\u7B56\u7565" },
+  "consoleTenant.policyContact": { "en-US": "Contact binding", "zh-CN": "\u8054\u7CFB\u65B9\u5F0F\u7ED1\u5B9A" },
+  "consoleTenant.policyEmail": { "en-US": "Email binding", "zh-CN": "\u90AE\u7BB1\u7ED1\u5B9A" },
+  "consoleTenant.policyOauth": { "en-US": "Third-party sign-in", "zh-CN": "\u7B2C\u4E09\u65B9\u767B\u5F55" },
+  "consoleTenant.policyUnlink": { "en-US": "Self-service unlink", "zh-CN": "\u81EA\u52A9\u89E3\u9664\u7ED1\u5B9A" },
+  "consoleTenant.allowed": { "en-US": "Allowed", "zh-CN": "\u5141\u8BB8" },
+  "consoleTenant.denied": { "en-US": "Not allowed", "zh-CN": "\u4E0D\u5141\u8BB8" },
+  "consoleTenant.organizationsSection": { "en-US": "Organizations", "zh-CN": "\u7EC4\u7EC7" },
+  "consoleTenant.emptyOrganizations": {
+    "en-US": "This tenant has no organizations yet.",
+    "zh-CN": "\u8BE5\u79DF\u6237\u8FD8\u6CA1\u6709\u7EC4\u7EC7\u3002"
+  },
+  "consoleTenant.loading": { "en-US": "Loading\u2026", "zh-CN": "\u52A0\u8F7D\u4E2D\u2026" },
+  "consoleTenant.loadFailed": { "en-US": "Could not load this workspace.", "zh-CN": "\u5DE5\u4F5C\u53F0\u52A0\u8F7D\u5931\u8D25\u3002" },
+  "consoleTenant.toApp": { "en-US": "Back to my workspace", "zh-CN": "\u8FD4\u56DE\u6211\u7684\u5DE5\u4F5C\u53F0" },
+  "binding.cancel": { "en-US": "Cancel", "zh-CN": "\u53D6\u6D88" },
   "profile.title": { "en-US": "My profile", "zh-CN": "\u6211\u7684\u8D44\u6599" },
   "profile.displayName": { "en-US": "Display name", "zh-CN": "\u663E\u793A\u540D\u79F0" },
   "profile.email": { "en-US": "Email", "zh-CN": "\u90AE\u7BB1" },

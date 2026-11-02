@@ -1,7 +1,7 @@
 {
   "appJson": {
     "pages": 3,
-    "subPackages": 7
+    "subPackages": 8
   },
   "appKey": "sdkwork-iam-mini-program",
   "bundle": "src/runtime/iam-app.js",

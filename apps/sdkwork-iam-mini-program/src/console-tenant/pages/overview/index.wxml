@@ -1,0 +1,38 @@
+<view class="page">
+  <view class="brand">
+    <text class="brand-title">{{title}}</text>
+    <text class="brand-subtitle">{{subtitle}}</text>
+  </view>
+
+  <text wx:if="{{loading}}" class="section-title">{{loadingText}}</text>
+  <text wx:if="{{errorText}}" class="error">{{errorText}}</text>
+
+  <view wx:if="{{!loading}}" class="card">
+    <text class="section-title">{{sessionSection}}</text>
+    <view wx:for="{{runRows}}" wx:key="key" class="row">
+      <text class="row-title">{{item.label}}</text>
+      <text class="row-detail">{{item.value}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{!loading}}" class="card">
+    <text class="section-title">{{policySection}}</text>
+    <view wx:for="{{policyRows}}" wx:key="key" class="row">
+      <text class="row-title">{{item.label}}</text>
+      <text class="row-detail">{{item.value}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{!loading}}" class="card">
+    <text class="section-title">{{organizationsSection}}</text>
+    <view wx:for="{{organizations}}" wx:key="id" class="row">
+      <text class="row-title">{{item.title}}</text>
+      <text class="row-detail">{{item.detail}}</text>
+    </view>
+    <text wx:if="{{organizations.length === 0}}" class="row-detail">{{emptyOrganizationsText}}</text>
+  </view>
+
+  <view class="links">
+    <text class="link" bindtap="onBackToApp">{{toAppText}}</text>
+  </view>
+</view>
