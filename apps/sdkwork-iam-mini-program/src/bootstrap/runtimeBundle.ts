@@ -33,6 +33,7 @@ export const IAM_MP_PAGE_PATHS = {
   forgotPassword: "pages/forgot-password/index",
   login: "pages/login/index",
   oauthCallback: "pages/oauth-callback/index",
+  organizationDirectory: "app-organization/pages/directory/index",
   register: "pages/register/index",
   tenantOverview: "app-tenant/pages/overview/index",
 } as const;
@@ -52,6 +53,7 @@ export const IAM_MP_IMPLEMENTED_ROUTE_IDS: readonly string[] = [
   "app.iam.auth.register",
   "app.iam.auth.forgot-password",
   "app.iam.tenant.overview",
+  "app.iam.organization.directory",
 ];
 
 /** Message dictionary, kept intentionally small: only shipped pages read it. */
@@ -109,6 +111,14 @@ const MESSAGES: Record<string, { "en-US": string; "zh-CN": string }> = {
   "tenant.notReported": { "en-US": "Not reported", "zh-CN": "未提供" },
   "tenant.loadFailed": { "en-US": "Could not load the tenant overview.", "zh-CN": "租户概览加载失败。" },
   "tenant.signOut": { "en-US": "Sign out", "zh-CN": "退出登录" },
+  "organization.title": { "en-US": "Organizations", "zh-CN": "组织" },
+  "organization.searchPlaceholder": { "en-US": "Search organizations", "zh-CN": "搜索组织" },
+  "organization.empty": { "en-US": "No organizations", "zh-CN": "暂无组织" },
+  "organization.loadMore": { "en-US": "Load more", "zh-CN": "加载更多" },
+  "organization.loadFailed": { "en-US": "Could not load organizations.", "zh-CN": "组织加载失败。" },
+  "organization.search": { "en-US": "Search", "zh-CN": "搜索" },
+  "organization.loading": { "en-US": "Loading…", "zh-CN": "加载中…" },
+  "organization.failed": { "en-US": "Could not load organizations.", "zh-CN": "组织加载失败。" },
 };
 
 /**
@@ -158,12 +168,32 @@ export interface IamMpTenantPort {
   loadOverview(): Promise<IamMpTenantOverview>;
 }
 
+/** One organization row, flattened for the page. */
+export interface IamMpOrganizationRow {
+  detail: string;
+  id: string;
+  title: string;
+}
+
+/** One page of organizations. */
+export interface IamMpOrganizationPage {
+  /** Whether the server reported another page. */
+  hasMore: boolean;
+  items: IamMpOrganizationRow[];
+}
+
+/** Organization directory port. */
+export interface IamMpOrganizationPort {
+  fetchPage(input: { page: number; pageSize: number; q?: string }): Promise<IamMpOrganizationPage>;
+}
+
 /** The singleton the pages read. */
 export interface IamMpRuntime {
   readonly auth: IamMpAuthPort;
   readonly environment: IamMpRuntimeEnv;
   readonly locale: string;
   readonly navigation: IamMpNavigationPort;
+  readonly organization: IamMpOrganizationPort;
   readonly service: IamMpRuntimeService;
   readonly session: IamMpSessionStore;
   readonly tenant: IamMpTenantPort;
@@ -203,6 +233,7 @@ export async function bootstrapIamMpApp(input: { runtimeEnv: IamMpRuntimeEnv }):
     locale,
     message: (key) => resolveIamMpMessage(locale, key),
     navigation: createNavigationPort(),
+    organization: createOrganizationPort(service),
     service,
     session,
     tenant: createTenantPort(service),
@@ -341,6 +372,37 @@ function createTenantPort(service: IamMpRuntimeService): IamMpTenantPort {
           userId: readString(runtimeRecord.userId) ?? readString(runtimeRecord.user_id) ?? "",
         },
       };
+    },
+  };
+}
+
+function createOrganizationPort(service: IamMpRuntimeService): IamMpOrganizationPort {
+  return {
+    async fetchPage(input): Promise<IamMpOrganizationPage> {
+      const q = input.q?.trim();
+      const answer = toRecord(
+        await service.service.iam.organizations.list({
+          page: input.page,
+          page_size: input.pageSize,
+          ...(q ? { q } : {}),
+        }),
+      );
+      const pageInfo = toRecord(answer.pageInfo);
+      const items = listItems(answer).flatMap((item) => {
+        const record = toRecord(item);
+        const organizationId =
+          readString(record.organizationId) ?? readString(record.organization_id) ?? readString(record.id);
+        if (!organizationId) return [];
+        const parentId = readString(record.parentId) ?? readString(record.parent_id);
+        return [
+          {
+            detail: parentId ? `${organizationId} · ${parentId}` : organizationId,
+            id: readString(record.id) ?? organizationId,
+            title: readString(record.name) ?? organizationId,
+          },
+        ];
+      });
+      return { hasMore: pageInfo.hasMore === true, items };
     },
   };
 }

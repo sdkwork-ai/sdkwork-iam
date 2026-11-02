@@ -6816,6 +6816,7 @@ var IAM_MP_PAGE_PATHS = {
   forgotPassword: "pages/forgot-password/index",
   login: "pages/login/index",
   oauthCallback: "pages/oauth-callback/index",
+  organizationDirectory: "app-organization/pages/directory/index",
   register: "pages/register/index",
   tenantOverview: "app-tenant/pages/overview/index"
 };
@@ -6823,7 +6824,8 @@ var IAM_MP_IMPLEMENTED_ROUTE_IDS = [
   "app.iam.auth.login",
   "app.iam.auth.register",
   "app.iam.auth.forgot-password",
-  "app.iam.tenant.overview"
+  "app.iam.tenant.overview",
+  "app.iam.organization.directory"
 ];
 var MESSAGES = {
   "common.loading": { "en-US": "Loading", "zh-CN": "\u52A0\u8F7D\u4E2D" },
@@ -6878,7 +6880,15 @@ var MESSAGES = {
   "tenant.empty": { "en-US": "Nothing to show", "zh-CN": "\u6682\u65E0\u6570\u636E" },
   "tenant.notReported": { "en-US": "Not reported", "zh-CN": "\u672A\u63D0\u4F9B" },
   "tenant.loadFailed": { "en-US": "Could not load the tenant overview.", "zh-CN": "\u79DF\u6237\u6982\u89C8\u52A0\u8F7D\u5931\u8D25\u3002" },
-  "tenant.signOut": { "en-US": "Sign out", "zh-CN": "\u9000\u51FA\u767B\u5F55" }
+  "tenant.signOut": { "en-US": "Sign out", "zh-CN": "\u9000\u51FA\u767B\u5F55" },
+  "organization.title": { "en-US": "Organizations", "zh-CN": "\u7EC4\u7EC7" },
+  "organization.searchPlaceholder": { "en-US": "Search organizations", "zh-CN": "\u641C\u7D22\u7EC4\u7EC7" },
+  "organization.empty": { "en-US": "No organizations", "zh-CN": "\u6682\u65E0\u7EC4\u7EC7" },
+  "organization.loadMore": { "en-US": "Load more", "zh-CN": "\u52A0\u8F7D\u66F4\u591A" },
+  "organization.loadFailed": { "en-US": "Could not load organizations.", "zh-CN": "\u7EC4\u7EC7\u52A0\u8F7D\u5931\u8D25\u3002" },
+  "organization.search": { "en-US": "Search", "zh-CN": "\u641C\u7D22" },
+  "organization.loading": { "en-US": "Loading\u2026", "zh-CN": "\u52A0\u8F7D\u4E2D\u2026" },
+  "organization.failed": { "en-US": "Could not load organizations.", "zh-CN": "\u7EC4\u7EC7\u52A0\u8F7D\u5931\u8D25\u3002" }
 };
 function resolveIamMpMessage(locale, key) {
   const entry = MESSAGES[key];
@@ -6910,6 +6920,7 @@ async function bootstrapIamMpApp(input) {
     locale,
     message: (key) => resolveIamMpMessage(locale, key),
     navigation: createNavigationPort(),
+    organization: createOrganizationPort(service),
     service,
     session,
     tenant: createTenantPort(service)
@@ -7027,6 +7038,35 @@ function createTenantPort(service) {
           userId: readString(runtimeRecord.userId) ?? readString(runtimeRecord.user_id) ?? ""
         }
       };
+    }
+  };
+}
+function createOrganizationPort(service) {
+  return {
+    async fetchPage(input) {
+      const q = input.q?.trim();
+      const answer = toRecord(
+        await service.service.iam.organizations.list({
+          page: input.page,
+          page_size: input.pageSize,
+          ...q ? { q } : {}
+        })
+      );
+      const pageInfo = toRecord(answer.pageInfo);
+      const items = listItems(answer).flatMap((item) => {
+        const record = toRecord(item);
+        const organizationId = readString(record.organizationId) ?? readString(record.organization_id) ?? readString(record.id);
+        if (!organizationId) return [];
+        const parentId = readString(record.parentId) ?? readString(record.parent_id);
+        return [
+          {
+            detail: parentId ? `${organizationId} \xB7 ${parentId}` : organizationId,
+            id: readString(record.id) ?? organizationId,
+            title: readString(record.name) ?? organizationId
+          }
+        ];
+      });
+      return { hasMore: pageInfo.hasMore === true, items };
     }
   };
 }

@@ -10,6 +10,12 @@
         "pages/overview/index"
       ],
       "root": "app-tenant"
+    },
+    {
+      "pages": [
+        "pages/directory/index"
+      ],
+      "root": "app-organization"
     }
   ],
   "window": {

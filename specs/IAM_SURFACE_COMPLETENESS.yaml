@@ -213,11 +213,14 @@ clientSurfaces:
       projected page has no files. The manifest previously declared 26 pages and
       shipped none; it now declares exactly the pages that exist.
       Shipped pages: login (password sign-in), register, forgot-password (all three
-      through the runtime's auth port), and the `app-tenant` subpackage tenant
-      overview (session context, organizations, memberships). 21 node tests cover
-      the registry, the manifest/files invariant and the runtime message port.
-      Remaining: 22 declared routes still need pages — oauth-callback and
-      context-selection in the main package first, then the capability subpackages.
+      through the runtime's auth port), the `app-tenant` subpackage tenant overview
+      (session context, organizations, memberships), and the `app-organization`
+      subpackage directory (server-searched, append-on-load-more, stale-response
+      guard). 21 node tests cover the registry, the manifest/files invariant and the
+      runtime message port.
+      Remaining: 21 declared routes still need pages — oauth-callback and
+      context-selection in the main package first, then the rest of the capability
+      subpackages.
   flutter:
     status: scaffold
     note: Every capability package ships a generated single-screen list stub; no production screen.

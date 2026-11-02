@@ -72,6 +72,10 @@ Page({
     }
   },
 
+  onOpenOrganizations() {
+    getIamMpRuntime().navigation.navigateTo(IAM_MP_PAGE_PATHS.organizationDirectory);
+  },
+
   onSignOut() {
     const runtime = getIamMpRuntime();
     runtime.auth.signOut();

@@ -40,5 +40,6 @@
     <text wx:if="{{memberships.length === 0}}" class="row-detail">暂无数据</text>
   </view>
 
+  <button wx:if="{{!loading}}" class="primary" bindtap="onOpenOrganizations">{{sectionOrganizations}}</button>
   <button class="primary" bindtap="onSignOut">{{signOutText}}</button>
 </view>
