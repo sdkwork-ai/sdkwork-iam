@@ -329,7 +329,44 @@ class _IamHomeShellState extends State<IamHomeShell> {
             messages: copy.adminOrganization,
           ),
         );
-        final Widget adminTenantScreen = Builder(
+        final Widget adminRolesScreen = Builder(
+          builder: (BuildContext _) {
+            final IamFlutterMobileAdminPermissionDataSource source =
+                widget.adminPermissionDataSource ?? IamAdminPermissionBackendSdkDataSource();
+            return IamFlutterMobileAdminRolesScreen(
+              controller: IamFlutterMobileAdminPagedController<IamFlutterMobileAdminRoleRow>(
+                fetch: ({required int page, required int pageSize, String? q}) async {
+                  final IamFlutterMobileAdminRolePage data =
+                      await source.fetchRolesPage(page: page, pageSize: pageSize, q: q);
+                  return IamFlutterMobileAdminPagedPage<IamFlutterMobileAdminRoleRow>(
+                    hasMore: data.hasMore,
+                    items: data.items,
+                  );
+                },
+              ),
+              messages: copy.adminPermission,
+            );
+          },
+        );
+        final Widget adminPoliciesScreen = Builder(
+          builder: (BuildContext _) {
+            final IamFlutterMobileAdminPermissionDataSource source =
+                widget.adminPermissionDataSource ?? IamAdminPermissionBackendSdkDataSource();
+            return IamFlutterMobileAdminPoliciesScreen(
+              controller: IamFlutterMobileAdminPagedController<IamFlutterMobileAdminPolicyRow>(
+                fetch: ({required int page, required int pageSize, String? q}) async {
+                  final IamFlutterMobileAdminPolicyPage data =
+                      await source.fetchPoliciesPage(page: page, pageSize: pageSize, q: q);
+                  return IamFlutterMobileAdminPagedPage<IamFlutterMobileAdminPolicyRow>(
+                    hasMore: data.hasMore,
+                    items: data.items,
+                  );
+                },
+              ),
+              messages: copy.adminPermission,
+            );
+          },
+        );        final Widget adminTenantScreen = Builder(
           builder: (BuildContext _) => IamFlutterMobileAdminTenantScreen(
             controller: IamFlutterMobileAdminTenantController(
               service: IamFlutterMobileAdminTenantService(
@@ -462,6 +499,15 @@ class _IamHomeShellState extends State<IamHomeShell> {
               routeId: IamFlutterMobileAdminAuditRoutes.eventsRouteId,
             ),
             SdkworkRouteEntry(
+              builder: (_) => adminRolesScreen,
+              path: '/admin/iam/roles',
+              routeId: IamFlutterMobileAdminPermissionRoutes.rolesRouteId,
+            ),
+            SdkworkRouteEntry(
+              builder: (_) => adminPoliciesScreen,
+              path: '/admin/iam/policies',
+              routeId: IamFlutterMobileAdminPermissionRoutes.policiesRouteId,
+            ),            SdkworkRouteEntry(
               builder: (_) => adminTenantScreen,
               path: '/admin/iam/tenants',
               routeId: IamFlutterMobileAdminTenantRoutes.listRouteId,

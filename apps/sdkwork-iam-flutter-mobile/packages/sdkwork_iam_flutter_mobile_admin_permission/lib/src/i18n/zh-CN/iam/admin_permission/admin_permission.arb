@@ -2,15 +2,39 @@
   "@@locale": "zh",
   "title": "权限",
   "@title": {
-    "description": "Title of the capability screen."
+    "description": "Title of the permission catalog screen."
+  },
+  "rolesTitle": "角色",
+  "@rolesTitle": {
+    "description": "Title of the role catalog screen."
+  },
+  "policiesTitle": "策略",
+  "@policiesTitle": {
+    "description": "Title of the policy catalog screen."
   },
   "subtitle": "该租户的权限目录（经由 backend-api）。",
   "@subtitle": {
     "description": "Supporting line under the title."
   },
+  "rolesSubtitle": "该租户可分配的角色。",
+  "@rolesSubtitle": {
+    "description": "Supporting line of the role catalog."
+  },
+  "policiesSubtitle": "该租户配置的全部授权与拒绝。",
+  "@policiesSubtitle": {
+    "description": "Supporting line of the policy catalog."
+  },
   "searchPlaceholder": "搜索权限",
   "@searchPlaceholder": {
     "description": "Placeholder of the catalog search field."
+  },
+  "rolesSearchPlaceholder": "搜索角色",
+  "@rolesSearchPlaceholder": {
+    "description": "Placeholder of the role search field."
+  },
+  "policiesSearchPlaceholder": "搜索策略",
+  "@policiesSearchPlaceholder": {
+    "description": "Placeholder of the policy search field."
   },
   "searchAction": "搜索",
   "@searchAction": {
@@ -18,11 +42,31 @@
   },
   "empty": "该租户还没有权限。",
   "@empty": {
-    "description": "Empty state shown when the capability has no records."
+    "description": "Empty state of the permission catalog."
+  },
+  "rolesEmpty": "该租户还没有角色。",
+  "@rolesEmpty": {
+    "description": "Empty state of the role catalog."
+  },
+  "policiesEmpty": "该租户还没有策略。",
+  "@policiesEmpty": {
+    "description": "Empty state of the policy catalog."
   },
   "emptySearch": "没有匹配的结果。",
   "@emptySearch": {
     "description": "Shown when a search returns no rows."
+  },
+  "effectAllow": "允许",
+  "@effectAllow": {
+    "description": "Policy effect: allow."
+  },
+  "effectDeny": "拒绝",
+  "@effectDeny": {
+    "description": "Policy effect: deny."
+  },
+  "effectUnknown": "未授权",
+  "@effectUnknown": {
+    "description": "Policy effect when the server did not report one."
   },
   "loadMore": "加载更多",
   "@loadMore": {

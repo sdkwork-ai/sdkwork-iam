@@ -30,6 +30,24 @@ class _FakeDataSource implements IamFlutterMobileAdminPermissionDataSource {
   final List<String?> queries = <String?>[];
 
   @override
+  Future<IamFlutterMobileAdminPolicyPage> fetchPoliciesPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  }) async {
+    return const IamFlutterMobileAdminPolicyPage();
+  }
+
+  @override
+  Future<IamFlutterMobileAdminRolePage> fetchRolesPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  }) async {
+    return const IamFlutterMobileAdminRolePage();
+  }
+
+  @override
   Future<IamFlutterMobileAdminPermissionPage> fetchPage({
     required int page,
     required int pageSize,

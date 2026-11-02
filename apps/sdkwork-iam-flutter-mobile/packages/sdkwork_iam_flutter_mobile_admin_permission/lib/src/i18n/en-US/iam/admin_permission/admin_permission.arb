@@ -2,15 +2,39 @@
   "@@locale": "en",
   "title": "Permissions",
   "@title": {
-    "description": "Title of the capability screen."
+    "description": "Title of the permission catalog screen."
+  },
+  "rolesTitle": "Roles",
+  "@rolesTitle": {
+    "description": "Title of the role catalog screen."
+  },
+  "policiesTitle": "Policies",
+  "@policiesTitle": {
+    "description": "Title of the policy catalog screen."
   },
   "subtitle": "The tenant's permission catalog, over the backend-api.",
   "@subtitle": {
     "description": "Supporting line under the title."
   },
+  "rolesSubtitle": "The roles this tenant can assign.",
+  "@rolesSubtitle": {
+    "description": "Supporting line of the role catalog."
+  },
+  "policiesSubtitle": "Every grant and denial this tenant has configured.",
+  "@policiesSubtitle": {
+    "description": "Supporting line of the policy catalog."
+  },
   "searchPlaceholder": "Search permissions",
   "@searchPlaceholder": {
     "description": "Placeholder of the catalog search field."
+  },
+  "rolesSearchPlaceholder": "Search roles",
+  "@rolesSearchPlaceholder": {
+    "description": "Placeholder of the role search field."
+  },
+  "policiesSearchPlaceholder": "Search policies",
+  "@policiesSearchPlaceholder": {
+    "description": "Placeholder of the policy search field."
   },
   "searchAction": "Search",
   "@searchAction": {
@@ -18,11 +42,31 @@
   },
   "empty": "This tenant has no permission yet.",
   "@empty": {
-    "description": "Empty state shown when the capability has no records."
+    "description": "Empty state of the permission catalog."
+  },
+  "rolesEmpty": "This tenant has no role yet.",
+  "@rolesEmpty": {
+    "description": "Empty state of the role catalog."
+  },
+  "policiesEmpty": "This tenant has no policy yet.",
+  "@policiesEmpty": {
+    "description": "Empty state of the policy catalog."
   },
   "emptySearch": "Nothing matched that search.",
   "@emptySearch": {
     "description": "Shown when a search returns no rows."
+  },
+  "effectAllow": "Allow",
+  "@effectAllow": {
+    "description": "Policy effect: allow."
+  },
+  "effectDeny": "Deny",
+  "@effectDeny": {
+    "description": "Policy effect: deny."
+  },
+  "effectUnknown": "Not granted",
+  "@effectUnknown": {
+    "description": "Policy effect when the server did not report one."
   },
   "loadMore": "Load more",
   "@loadMore": {

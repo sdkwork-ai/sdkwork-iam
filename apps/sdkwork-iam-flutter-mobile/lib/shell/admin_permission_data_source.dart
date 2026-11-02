@@ -65,6 +65,83 @@ class IamAdminPermissionBackendSdkDataSource
       items: rows,
     );
   }
+
+  @override
+  Future<IamFlutterMobileAdminRolePage> fetchRolesPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  }) async {
+    final SdkWorkListResponse? response =
+        await _client.iam.rolesList(page, pageSize, null, null, q);
+    final Map<String, dynamic> body = _listBody(response, 'role');
+    final List<IamFlutterMobileAdminRoleRow> rows = <IamFlutterMobileAdminRoleRow>[];
+    for (final Object? item in body['items'] as List<Object?>) {
+      if (item is! Map) continue;
+      final Map<String, dynamic> record = Map<String, dynamic>.from(item);
+      final String? id = _readString(record['roleId']) ??
+          _readString(record['role_id']) ??
+          _readString(record['id']);
+      if (id == null) continue;
+      rows.add(
+        IamFlutterMobileAdminRoleRow(
+          code: _readString(record['code']),
+          id: id,
+          name: _readString(record['name']) ?? _readString(record['displayName']),
+          scope: _readString(record['scope']),
+        ),
+      );
+    }
+    return IamFlutterMobileAdminRolePage(hasMore: _hasMore(body), items: rows);
+  }
+
+  @override
+  Future<IamFlutterMobileAdminPolicyPage> fetchPoliciesPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  }) async {
+    final SdkWorkListResponse? response =
+        await _client.iam.policiesList(page, pageSize, null, null, q);
+    final Map<String, dynamic> body = _listBody(response, 'policy');
+    final List<IamFlutterMobileAdminPolicyRow> rows = <IamFlutterMobileAdminPolicyRow>[];
+    for (final Object? item in body['items'] as List<Object?>) {
+      if (item is! Map) continue;
+      final Map<String, dynamic> record = Map<String, dynamic>.from(item);
+      final String? id = _readString(record['policyId']) ??
+          _readString(record['policy_id']) ??
+          _readString(record['id']);
+      if (id == null) continue;
+      rows.add(
+        IamFlutterMobileAdminPolicyRow(
+          action: _readString(record['action']),
+          effect: _readString(record['effect'])?.toLowerCase(),
+          id: id,
+          resource: _readString(record['resource']),
+          subject: _readString(record['subject']) ?? _readString(record['roleId']),
+        ),
+      );
+    }
+    return IamFlutterMobileAdminPolicyPage(hasMore: _hasMore(body), items: rows);
+  }
+}
+
+/// Unwraps a list response and insists on an items array.
+Map<String, dynamic> _listBody(SdkWorkListResponse? response, String what) {
+  final Object? data = response?.data;
+  if (data is! Map) {
+    throw StateError('The $what list response carried no data object.');
+  }
+  final Map<String, dynamic> body = Map<String, dynamic>.from(data);
+  if (body['items'] is! List) {
+    throw StateError('The $what list response carried no items array.');
+  }
+  return body;
+}
+
+bool _hasMore(Map<String, dynamic> body) {
+  final Object? pageInfo = body['pageInfo'];
+  return pageInfo is Map && pageInfo['hasMore'] == true;
 }
 
 String? _readString(Object? value) {

@@ -46,10 +46,100 @@ class IamFlutterMobileAdminPermissionPage {
   final bool hasMore;
 }
 
+/// One role row.
+class IamFlutterMobileAdminRoleRow {
+  const IamFlutterMobileAdminRoleRow({
+    required this.id,
+    this.code,
+    this.name,
+    this.scope,
+  });
+
+  /// Stable identity.
+  final String id;
+
+  /// Role code, e.g. `tenant-admin`.
+  final String? code;
+
+  /// Display name.
+  final String? name;
+
+  /// Scope the role applies to, when reported.
+  final String? scope;
+}
+
+/// One policy row.
+class IamFlutterMobileAdminPolicyRow {
+  const IamFlutterMobileAdminPolicyRow({
+    required this.id,
+    this.action,
+    this.effect,
+    this.resource,
+    this.subject,
+  });
+
+  /// Stable identity.
+  final String id;
+
+  /// Action the policy covers.
+  final String? action;
+
+  /// `allow` or `deny`, as the server reported it.
+  final String? effect;
+
+  /// Resource the policy covers.
+  final String? resource;
+
+  /// Who the policy applies to.
+  final String? subject;
+}
+
+/// One page of roles.
+class IamFlutterMobileAdminRolePage {
+  const IamFlutterMobileAdminRolePage({
+    this.items = const <IamFlutterMobileAdminRoleRow>[],
+    this.hasMore = false,
+  });
+
+  /// Records of this page.
+  final List<IamFlutterMobileAdminRoleRow> items;
+
+  /// Whether the server reported another page.
+  final bool hasMore;
+}
+
+/// One page of policies.
+class IamFlutterMobileAdminPolicyPage {
+  const IamFlutterMobileAdminPolicyPage({
+    this.items = const <IamFlutterMobileAdminPolicyRow>[],
+    this.hasMore = false,
+  });
+
+  /// Records of this page.
+  final List<IamFlutterMobileAdminPolicyRow> items;
+
+  /// Whether the server reported another page.
+  final bool hasMore;
+}
+
 /// The data port the capability depends on.
 abstract class IamFlutterMobileAdminPermissionDataSource {
-  /// Fetches one page, server-searched by [q].
+  /// Fetches one page of policies, server-searched by [q].
+  Future<IamFlutterMobileAdminPolicyPage> fetchPoliciesPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  });
+
+  /// Fetches one page of permissions, server-searched by [q].
   Future<IamFlutterMobileAdminPermissionPage> fetchPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  });
+
+  /// Fetches one page of roles, server-searched by [q].
+  Future<IamFlutterMobileAdminRolePage> fetchRolesPage({
     required int page,
     required int pageSize,
     String? q,
@@ -79,6 +169,24 @@ class IamFlutterMobileAdminPermissionService {
     String? q,
   }) {
     return _requireDataSource().fetchPage(page: page, pageSize: pageSize, q: q);
+  }
+
+  /// Fetches one page of roles.
+  Future<IamFlutterMobileAdminRolePage> fetchRolesPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  }) {
+    return _requireDataSource().fetchRolesPage(page: page, pageSize: pageSize, q: q);
+  }
+
+  /// Fetches one page of policies.
+  Future<IamFlutterMobileAdminPolicyPage> fetchPoliciesPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  }) {
+    return _requireDataSource().fetchPoliciesPage(page: page, pageSize: pageSize, q: q);
   }
 
   /// Maps a physical Flutter location back to its cross-client route id.

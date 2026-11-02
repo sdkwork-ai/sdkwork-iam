@@ -286,12 +286,30 @@ const Map<String, String> _adminPermissionMessages = <String, String>{
 
 class _FakeAdminPermissionDataSource implements IamFlutterMobileAdminPermissionDataSource {
   @override
+  Future<IamFlutterMobileAdminPolicyPage> fetchPoliciesPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  }) async {
+    return const IamFlutterMobileAdminPolicyPage();
+  }
+
+  @override
   Future<IamFlutterMobileAdminPermissionPage> fetchPage({
     required int page,
     required int pageSize,
     String? q,
   }) async {
     return const IamFlutterMobileAdminPermissionPage();
+  }
+
+  @override
+  Future<IamFlutterMobileAdminRolePage> fetchRolesPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  }) async {
+    return const IamFlutterMobileAdminRolePage();
   }
 }
 
@@ -544,6 +562,8 @@ void main() {
     expect(app.routes!.containsKey('/console/iam/user'), isTrue);
     expect(app.routes!.containsKey('/console/iam/account-binding'), isTrue);
     expect(app.routes!.containsKey('/admin/iam/permissions'), isTrue);
+    expect(app.routes!.containsKey('/admin/iam/roles'), isTrue);
+    expect(app.routes!.containsKey('/admin/iam/policies'), isTrue);
     expect(app.routes!.containsKey('/admin/iam/audit'), isTrue);
     expect(app.routes!.containsKey('/admin/iam/tenants'), isTrue);
     expect(app.routes!.containsKey('/admin/iam/organizations'), isTrue);

@@ -320,7 +320,12 @@ clientSurfaces:
       and the id it was filed with. `admin.iam.organization.tree` flattens the hierarchy into
       depth-first rows because a phone cannot host nested scroll views; the flattening keeps
       orphans visible, keeps server sibling order, and cuts parent cycles so a malformed
-      answer cannot hang the screen. The remaining six admin screens reuse that shape.
+      answer cannot hang the screen. The permission family is complete on Flutter:
+      `admin.iam.permission.roles` and `admin.iam.permission.policies` share one generic paged
+      controller and one shared list chrome, and a policy always states its effect as a word —
+      an unreported effect reads as "not granted", because a denial that looks like an allow is
+      the most expensive misreading an authorization console can invite. The remaining four
+      admin screens reuse that shape.
   harmony:
     status: scaffold
     note: Route/page map exists; capability pages do not render real data yet.
