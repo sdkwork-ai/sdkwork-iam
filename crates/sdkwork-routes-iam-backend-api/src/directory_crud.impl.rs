@@ -2590,6 +2590,15 @@ async fn create_api_key(
             "name and appId are required",
         );
     }
+    if let Some(context_organization_id) = organization_id_from_context(&ctx) {
+        if context_organization_id != "0" && context_organization_id != organization_id {
+            return appbase_error(
+                StatusCode::FORBIDDEN,
+                "iam_api_key_organization_scope_denied",
+                "API key organization must match the caller's organization scope",
+            );
+        }
+    }
     let permission_scope: Vec<String> = body
         .get("permissionScope")
         .or_else(|| body.get("permission_scope"))
