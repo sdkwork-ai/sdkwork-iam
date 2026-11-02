@@ -349,9 +349,12 @@ CREATE TABLE IF NOT EXISTS iam_api_key (
   deployment_mode TEXT NOT NULL DEFAULT 'saas',
   name TEXT NOT NULL,
   key_hash TEXT NOT NULL,
+  key_prefix TEXT NOT NULL DEFAULT '',
   permission_scope_json TEXT NOT NULL,
   status TEXT NOT NULL,
   expires_at TEXT,
+  revoked_at TEXT,
+  last_used_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );

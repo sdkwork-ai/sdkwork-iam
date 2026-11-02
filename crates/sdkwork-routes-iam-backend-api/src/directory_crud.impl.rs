@@ -2526,6 +2526,8 @@ async fn revoke_api_key(State(state): State<BackendIamState>, ctx: WebRequestCon
     let now = Utc::now().to_rfc3339();
     let tenant_id_update = tenant_id.clone();
     let api_key_id_update = api_key_id.clone();
+    let scope_organization_id =
+        organization_id_from_context(&ctx).unwrap_or_else(|| "0".to_string());
     match execute_conditional_mutation_with_audit(
         pg,
         &ctx,
@@ -2534,10 +2536,13 @@ async fn revoke_api_key(State(state): State<BackendIamState>, ctx: WebRequestCon
         api_key_id.clone(),
         json!({}),
         |tx| Box::pin(async move {
-            sqlx::query("UPDATE iam_api_key SET status = 'revoked', updated_at = $3 WHERE tenant_id = $1 AND id = $2 AND status <> 'revoked'")
+            sqlx::query("UPDATE iam_api_key SET status = 'revoked', revoked_at = $3, updated_at = $3 \
+                         WHERE tenant_id = $1 AND id = $2 AND status <> 'revoked' \
+                           AND ($4 = '0' OR organization_id = $4)")
                 .bind(tenant_id_update)
                 .bind(api_key_id_update)
                 .bind(now)
+                .bind(scope_organization_id)
                 .execute(&mut **tx)
                 .await
                 .map(|result| result.rows_affected())
@@ -2709,13 +2714,14 @@ async fn create_api_key(
         Uuid::new_v4().simple()
     );
     let key_hash = sdkwork_iam_web_adapter::hash_api_key_secret(&raw_api_key);
+    let key_prefix: String = raw_api_key.chars().take(18).collect();
     let permission_scope_json =
         serde_json::to_string(&permission_scope).unwrap_or_else(|_| "[]".to_string());
     let now = Utc::now().to_rfc3339();
     if let Err(error) = sqlx::query(
         "INSERT INTO iam_api_key (id, tenant_id, organization_id, user_id, app_id, environment, \
-         deployment_mode, name, key_hash, permission_scope_json, status, expires_at, created_at, updated_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'active', $11, $12, $12)",
+         deployment_mode, name, key_hash, key_prefix, permission_scope_json, status, expires_at, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active', $12, $13, $13)",
     )
     .bind(&api_key_id)
     .bind(&tenant_id)
@@ -2726,6 +2732,7 @@ async fn create_api_key(
     .bind(&deployment_mode)
     .bind(&name)
     .bind(&key_hash)
+    .bind(&key_prefix)
     .bind(&permission_scope_json)
     .bind(&expires_at)
     .bind(&now)
@@ -2742,6 +2749,7 @@ async fn create_api_key(
     appbase_ok(json!({
         "apiKeyId": api_key_id,
         "apiKey": raw_api_key,
+        "keyPrefix": key_prefix,
         "name": name,
         "tenantId": tenant_id,
         "organizationId": organization_id,
@@ -2811,14 +2819,16 @@ async fn rotate_api_key(
         Uuid::new_v4().simple()
     );
     let key_hash = sdkwork_iam_web_adapter::hash_api_key_secret(&raw_api_key);
+    let key_prefix: String = raw_api_key.chars().take(18).collect();
     let now = Utc::now().to_rfc3339();
     match sqlx::query(
-        "UPDATE iam_api_key SET key_hash = $3, updated_at = $4 \
-         WHERE tenant_id = $1 AND id = $2 AND status = 'active' AND organization_id = $5",
+        "UPDATE iam_api_key SET key_hash = $3, key_prefix = $4, updated_at = $5 \
+         WHERE tenant_id = $1 AND id = $2 AND status = 'active' AND organization_id = $6",
     )
     .bind(&tenant_id)
     .bind(&api_key_id)
     .bind(&key_hash)
+    .bind(&key_prefix)
     .bind(&now)
     .bind(&key_organization_id)
     .execute(pg)
@@ -2827,6 +2837,7 @@ async fn rotate_api_key(
         Ok(result) if result.rows_affected() == 1 => appbase_ok(json!({
             "apiKeyId": api_key_id,
             "apiKey": raw_api_key,
+            "keyPrefix": key_prefix,
             "organizationId": key_organization_id,
             "rotatedAt": now,
         })),

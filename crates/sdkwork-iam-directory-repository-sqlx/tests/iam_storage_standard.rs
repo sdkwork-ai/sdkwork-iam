@@ -430,6 +430,18 @@ fn database_baseline_declares_organization_context_for_sensitive_iam_tables() {
 }
 
 #[test]
+fn database_baseline_declares_api_key_lifecycle_columns() {
+    let sql = iam_database_baseline_sql();
+    let api_key_table = table_definition(sql, "iam_api_key").expect("iam_api_key table");
+    for column in ["key_prefix", "revoked_at", "last_used_at"] {
+        assert!(
+            api_key_table.contains(column),
+            "iam_api_key must declare the {column} lifecycle column",
+        );
+    }
+}
+
+#[test]
 fn database_baseline_enforces_unique_api_key_hash_lookup() {
     let sql = iam_database_baseline_sql();
     assert!(

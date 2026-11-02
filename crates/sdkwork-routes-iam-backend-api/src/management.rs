@@ -1120,6 +1120,7 @@ async fn list_api_keys(
     let search_pattern = list_search_pattern(&query);
     let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
         "SELECT id, tenant_id, organization_id, user_id, name, status, expires_at, \
+                key_prefix, revoked_at, \
                 COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
          FROM iam_api_key \
          WHERE tenant_id = $1 \
@@ -1572,8 +1573,10 @@ fn api_key_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
         "apiKeyId": row.get::<String, _>(0),
         "expiresAt": row.get::<Option<String>, _>(6),
         "id": row.get::<String, _>(0),
+        "keyPrefix": row.get::<String, _>(7),
         "name": row.get::<String, _>(4),
         "organizationId": row.get::<String, _>(2),
+        "revokedAt": row.get::<Option<String>, _>(8),
         "status": row.get::<String, _>(5),
         "tenantId": row.get::<String, _>(1),
         "userId": row.get::<String, _>(3),
