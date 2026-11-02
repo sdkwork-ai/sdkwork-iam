@@ -53,6 +53,11 @@ import {
   SdkworkIamH5AdminRoleScreen,
 } from "@sdkwork/iam-h5-admin-permission";
 import {
+  createSdkworkIamH5AdminAccountBindingController,
+  IAM_H5_ADMIN_ACCOUNT_BINDING_I18N_CATALOG,
+  SdkworkIamH5AdminAccountBindingScreen,
+} from "@sdkwork/iam-h5-admin-account-binding";
+import {
   createSdkworkIamH5ConsoleAccountBindingController,
   IAM_H5_CONSOLE_ACCOUNT_BINDING_I18N_CATALOG,
   SdkworkIamH5ConsoleAccountBindingScreen,
@@ -152,6 +157,8 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
   const adminTenantMessages = IAM_H5_ADMIN_TENANT_I18N_CATALOG.resolveMessages(resolvedLocale);
   const adminOrganizationMessages =
     IAM_H5_ADMIN_ORGANIZATION_I18N_CATALOG.resolveMessages(resolvedLocale);
+  const adminAccountBindingMessages =
+    IAM_H5_ADMIN_ACCOUNT_BINDING_I18N_CATALOG.resolveMessages(resolvedLocale);
 
   const authController = useMemo(
     () => createSdkworkIamH5AuthController(bootstrap.runtime.service),
@@ -195,6 +202,10 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
   );
   const adminPermissionController = useMemo(
     () => createSdkworkIamH5AdminPermissionController(bootstrap.adminService),
+    [bootstrap],
+  );
+  const adminAccountBindingController = useMemo(
+    () => createSdkworkIamH5AdminAccountBindingController(bootstrap.adminService),
     [bootstrap],
   );
   const adminRoleController = useMemo(
@@ -243,6 +254,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     const consoleAccountBindingRoute = byId("console.iam.account-binding.list");
     const consoleUserCenterRoute = byId("console.iam.user-center.profile");
     const adminPermissionRoute = byId("admin.iam.permission.permissions");
+    const adminAccountBindingRoute = byId("admin.iam.account-binding.list");
     const adminRoleRoute = byId("admin.iam.permission.roles");
     const adminPolicyRoute = byId("admin.iam.permission.policies");
     const adminAuditRoute = byId("admin.iam.audit.events");
@@ -448,6 +460,15 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
         id: adminPermissionRoute.id,
         path: adminPermissionRoute.path,
         title: adminPermissionMessages.permissions.title,
+      });
+    }
+    if (adminAccountBindingRoute) {
+      routes.push({
+        access: "protected",
+        element: <SdkworkIamH5AdminAccountBindingScreen controller={adminAccountBindingController} />,
+        id: adminAccountBindingRoute.id,
+        path: adminAccountBindingRoute.path,
+        title: adminAccountBindingMessages.screen.title,
       });
     }
     if (adminRoleRoute) {

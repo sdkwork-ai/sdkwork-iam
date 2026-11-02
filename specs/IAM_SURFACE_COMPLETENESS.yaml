@@ -220,9 +220,14 @@ clientSurfaces:
       tenant with its status on the row, so a suspended tenant cannot look active. The
       organization tree flattens the hierarchy with a depth, so indentation is the nesting
       and a node without an identity takes its subtree with it rather than promoting
-      children to roots. H5 now matches the PC count. The remaining four admin screens
-      reuse the same controller shape; `permission.authorizations` and `user.list` stay
-      blocked because the IAM service exposes no list operation for either.
+      children to roots. H5 now matches the PC count, and `admin.iam.account-binding.list`
+      takes H5 past it: the tenant binding policy with four switches bound to a local draft,
+      a save that stays disabled until the draft differs from the saved policy, a write that
+      replaces the displayed policy only after the server accepts, an explicit "not loaded"
+      row instead of four switches reading off when the policy read failed, and a refusal to
+      clear every capability in one action. Two admin screens remain;
+      `permission.authorizations` and `user.list` stay blocked because the IAM service
+      exposes no list operation for either.
       The admin credential is the one session token read at request time; the backend
       enforces the admin permission itself, and a separate backend-admin credential
       issuance flow is still an open governance item.
