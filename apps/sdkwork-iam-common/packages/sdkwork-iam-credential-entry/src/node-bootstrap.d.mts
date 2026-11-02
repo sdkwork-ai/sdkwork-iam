@@ -25,6 +25,16 @@ export interface WriteRepoBootstrapAccessTokenOptions {
   issuedAt?: string;
   expiresAt?: string;
   source?: string;
+  /**
+   * Home directory holding the user-private credential store.
+   *
+   * `writeCredentialBundle` resolves the bundle under
+   * `~/.sdkwork/<application-code>/credentials/<profile-id>.json`; tests and
+   * sandboxed runners point this at a temporary directory so a run never touches
+   * the developer's real store. The implementation already read it, but the
+   * declaration omitted it, so any caller passing it failed typecheck.
+   */
+  homeDir?: string;
 }
 
 export function readApplicationManifest(manifestPath: string): unknown;
@@ -81,6 +91,8 @@ export function mergeRepoBootstrapAccessTokenEnv(options: {
   refresh?: boolean;
   backendBaseUrl?: string;
   warn?: (line: string) => void;
+  /** Home directory holding the user-private credential store. */
+  homeDir?: string;
 } & CreateDevBootstrapAccessTokenOptions): Record<string, string | undefined>;
 export function mergeRepoDevBootstrapAccessTokenEnv(options: {
   repoRoot: string;
@@ -90,4 +102,6 @@ export function mergeRepoDevBootstrapAccessTokenEnv(options: {
   refresh?: boolean;
   backendBaseUrl?: string;
   warn?: (line: string) => void;
+  /** Home directory holding the user-private credential store. */
+  homeDir?: string;
 } & CreateDevBootstrapAccessTokenOptions): Record<string, string | undefined>;

@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "shell package for the sdkwork-iam-h5 client root.",
+  "description": "IAM H5 application shell: route guard presentation, bottom tab assembly and layout over router-agnostic screen inputs.",
   "exports": {
     ".": "./src/index.ts"
   },
@@ -15,10 +15,23 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@sdkwork/iam-h5-commons": "workspace:*",
     "@sdkwork/iam-h5-core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "react": ">=18.2.0 <20.0.0",
+    "react-dom": ">=18.2.0 <20.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "sdkwork": {
     "architecture": "h5",
@@ -26,6 +39,6 @@
     "domain": "iam",
     "capability": "shell",
     "packageType": "feature",
-    "status": "standardizing"
+    "status": "standard"
   }
 }

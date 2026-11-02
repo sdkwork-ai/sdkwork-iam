@@ -1,8 +1,11 @@
-// SDKWORK-CLIENT-APP-SURFACES-GENERATED: do not edit by hand; regenerate with `node scripts/materialize-client-app-surfaces.mjs`.
-import type { IamH5RouteContribution } from '@sdkwork/iam-h5-core';
+// SDKWORK-IAM-H5-SHELL: authored barrel (route-group helper retained from the generator).
+import type { IamH5RouteContribution } from "@sdkwork/iam-h5-core";
+
+export * from "./components/AppShell.js";
+export * from "./types/shell-types.js";
 
 export interface iamH5ShellRouteGroup {
-  surface: 'app';
+  surface: "app";
   routes: readonly IamH5RouteContribution[];
 }
 
@@ -14,7 +17,7 @@ export function groupIamH5ShellRoutes(
   routes: readonly IamH5RouteContribution[],
 ): iamH5ShellRouteGroup {
   return {
-    surface: 'app',
+    surface: "app",
     routes,
   };
 }

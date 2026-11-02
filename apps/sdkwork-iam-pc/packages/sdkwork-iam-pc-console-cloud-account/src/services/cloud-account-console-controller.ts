@@ -313,7 +313,17 @@ export function createSdkworkIamConsoleCloudAccountController(
      */
     revealCredential: async (providerAccountId) => {
       const accountId = requireId(providerAccountId, "providerAccountId");
-      const record = await service.iam.providerAccounts.credentials.reveal(accountId);
+      // `credentials.reveal` is optional in the SDK port contract, so a backend
+      // that does not publish it still has the account row. Answering
+      // `undefined` there would seed the edit form with empty fields, and the
+      // next save would overwrite a stored secret with blanks. "This deployment
+      // cannot show it" is a refusal, not "nothing stored", so it rejects.
+      const credentials = service.iam.providerAccounts.credentials;
+      const reveal = credentials.reveal;
+      if (typeof reveal !== "function") {
+        throw new Error("The cloud account center does not expose credential reveal");
+      }
+      const record = await reveal.call(credentials, accountId);
       if (!record || typeof record !== "object") {
         return undefined;
       }

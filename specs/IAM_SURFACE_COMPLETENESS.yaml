@@ -64,8 +64,14 @@ capabilities:
     pc-app: partial
     pc-admin: complete
     pc-console: complete
-    h5-app: missing
+    h5-app: partial
     flutter-app: missing
+    notes: >
+      H5 ships the `app.iam.tenant.overview` screen (/tenant) over the app-api
+      read ports — session context, organizations and memberships, each with
+      server-side search and paging, zh-CN/en-US copy and a screen test. Tenant
+      administration (create/update/members) stays PC-admin only because
+      `iam.tenants.*` is a backend-api resource.
 
   - id: organization
     database: complete
@@ -134,6 +140,52 @@ capabilities:
     h5-app: partial
     flutter-app: partial
     notes: Profile, password, and verification policy on H5/Flutter/PC console; local preferences remain PC app-only
+
+clientSurfaces:
+  parityAuthority: scripts/lib/client-app-surfaces/model.mjs (ROUTES — 26 capability screens across the app, console and admin tiers)
+  nativeDelivery:
+    ios: >
+      Delivered by apps/sdkwork-iam-flutter-mobile (publishPlatforms: APP_IOS,
+      bundleName com.sdkwork.iam.mobile). The repository has no separate Swift
+      application root, and the workspace has no sibling iOS app root.
+    android: >
+      Delivered by apps/sdkwork-iam-flutter-mobile (publishPlatforms: APP_ANDROID,
+      packageName com.sdkwork.iam.mobile).
+    harmony: apps/sdkwork-iam-harmony-mobile (native ArkTS, APP_HARMONY)
+  h5:
+    status: partial
+    shell: >
+      Implemented: history router, route table, guard presentation, bottom tab bar,
+      not-found state, application-chrome catalog (zh-CN/en-US).
+    runtime: >
+      Implemented: generated app SDK client -> SdkworkIamService composition in
+      @sdkwork/iam-h5-core, with a session store subscription that pushes the
+      bearer token onto the client on sign-in and clears it on sign-out.
+    implementedScreens:
+      - app.iam.auth.login
+      - app.iam.tenant.overview
+    scaffoldScreens:
+      - app.iam.auth.register
+      - app.iam.auth.forgot-password
+      - app.iam.auth.oauth-callback
+      - app.iam.auth.context-selection
+      - app.iam.user-center.profile
+      - app.iam.user-center.password
+      - app.iam.account-binding.list
+      - app.iam.user.list
+      - app.iam.organization.directory
+      - app.iam.oauth.providers
+      - console.iam.* (4)
+      - admin.iam.* (10)
+  miniProgram:
+    status: scaffold
+    note: Route registry and services exist; no page renders yet.
+  flutter:
+    status: scaffold
+    note: Every capability package ships a generated single-screen list stub; no production screen.
+  harmony:
+    status: scaffold
+    note: Route/page map exists; capability pages do not render real data yet.
 
 priorityBacklog:
   p0: []

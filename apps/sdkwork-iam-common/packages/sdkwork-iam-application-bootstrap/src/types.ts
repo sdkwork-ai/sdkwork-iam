@@ -94,6 +94,22 @@ export interface SdkworkAppManifest {
     };
   };
   backend?: {
+    /**
+     * Registered backend application id.
+     *
+     * `agent.app.config.json` carries it (`"appId": "sdkwork-iam"`) and the
+     * credential bundle persists it, so the bootstrap reads it to stamp the
+     * token's owning application. It was missing from this projection, which
+     * made `manifest.backend.appId` a type error at the one call site that
+     * needs it.
+     */
+    appId?: string;
+    /** Backend service that serves this application; manifest metadata only. */
+    serviceId?: string;
+    /** Loopback bind address the dev runner uses; manifest metadata only. */
+    defaultBind?: string;
+    /** Operator profile the bootstrap authenticates as; manifest metadata only. */
+    profileKey?: string;
     accessTokenPermissionScope?: string[];
     domain?: string;
     organizationId?: string;

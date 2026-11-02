@@ -100,6 +100,7 @@ describe("SDKWork IAM OAuth scan login sections", () => {
           ]}
           busy={false}
           controller={controller}
+          onAddAccount={() => undefined}
           onChanged={() => undefined}
           onError={() => undefined}
           onPreview={() => undefined}
@@ -136,12 +137,14 @@ describe("SDKWork IAM OAuth scan login sections", () => {
       setResourceAccountQrLogin: vi.fn(),
       generateScanLoginPreview: vi.fn(),
     } as unknown as SdkworkIamOauthAdminController;
+    const onAddAccount = vi.fn();
     const { unmount } = render(
       <SdkworkI18nProvider locale="zh-CN">
         <OauthOfficialAccountScanLoginSection
           accounts={[]}
           busy={false}
           controller={controller}
+          onAddAccount={onAddAccount}
           onChanged={() => undefined}
           onError={() => undefined}
           onPreview={() => undefined}
@@ -149,8 +152,11 @@ describe("SDKWork IAM OAuth scan login sections", () => {
       </SdkworkI18nProvider>,
     );
     expect(screen.getByText("暂无已配置的服务号账号")).toBeTruthy();
-    const addButton = screen.getByText("添加服务号");
-    expect(addButton).toBeTruthy();
+    // The empty state's only route forward is the add action, so it has to be
+    // wired rather than merely rendered: an unwired button leaves the operator
+    // with no way to create the first service account.
+    fireEvent.click(screen.getByText("添加服务号"));
+    expect(onAddAccount).toHaveBeenCalledTimes(1);
     unmount();
   });
 

@@ -1,9 +1,9 @@
 import { createSdkWorkPagedListSession, type SdkWorkPageInfo } from "@sdkwork/iam-contracts";
-import type { SdkworkIamService } from "@sdkwork/iam-service";
 import { isBlank, trim } from "@sdkwork/utils";
 
 import type {
   CreateSdkworkIamOauthAdminControllerInput,
+  SdkworkIamOauthAdminServicePort,
   SdkworkIamOauthAccountFollowQrCode,
   SdkworkIamOauthAccountKind,
   SdkworkIamOauthAccountSetupDraft,
@@ -104,7 +104,7 @@ function cloneListPageInfo(
 
 type OauthResourceKey = keyof SdkworkIamOauthAdminResourceSnapshot;
 
-function createOauthResourceSessions(service: SdkworkIamService) {
+function createOauthResourceSessions(service: SdkworkIamOauthAdminServicePort) {
   const mapItem = (value: unknown) => value;
   return {
     accountLinks: createSdkWorkPagedListSession({ fetchPage: (query) => service.iam.oauth.accountLinks.list(query), mapItem }),
@@ -177,7 +177,7 @@ function cloneSnapshot(snapshot: SdkworkIamOauthAdminResourceSnapshot): SdkworkI
 }
 
 export function createSdkworkIamOauthAdminController(
-  input: SdkworkIamService | CreateSdkworkIamOauthAdminControllerInput,
+  input: SdkworkIamOauthAdminServicePort | CreateSdkworkIamOauthAdminControllerInput,
 ): SdkworkIamOauthAdminController {
   const service = "service" in input ? input.service : input;
   let resourceSessions = createOauthResourceSessions(service);

@@ -177,10 +177,13 @@ const EMPTY_STATE = {
   webhookConfigs: [],
 };
 
+// These doubles implement only the members the rendered read paths reach, so the
+// compiler has no provable overlap with the controller interface and each cast
+// goes through `unknown`.
 const controller = {
   getState: () => EMPTY_STATE,
   load: () => Promise.resolve(EMPTY_STATE),
-} as SdkworkIamOauthAdminController;
+} as unknown as SdkworkIamOauthAdminController;
 
 describe("SDKWork IAM OAuth quick setup pages", () => {
   it("shows only added platforms as rows and offers an add action", () => {
@@ -210,7 +213,7 @@ describe("SDKWork IAM OAuth quick setup pages", () => {
     const configuredController = {
       getState: () => configuredState,
       load: () => Promise.resolve(configuredState),
-    } as SdkworkIamOauthAdminController;
+    } as unknown as SdkworkIamOauthAdminController;
     const html = renderToStaticMarkup(
       <SdkworkI18nProvider locale="zh-CN">
         <SdkworkIamOauthProviderConnectionsPage controller={configuredController} />
@@ -414,7 +417,7 @@ describe("SDKWork IAM OAuth quick setup pages", () => {
       runResourceAccountVerification: () => Promise.resolve({}),
       setResourceAccountEnabled: () => Promise.resolve({}),
       listPageResource: () => Promise.resolve([]),
-    } as SdkworkIamOauthAdminController;
+    } as unknown as SdkworkIamOauthAdminController;
     const { unmount } = render(
       <SdkworkI18nProvider locale="zh-CN">
         <SdkworkIamOauthMiniProgramAccountsPage controller={configuredController} />
@@ -512,7 +515,7 @@ describe("SDKWork IAM OAuth quick setup pages", () => {
       setResourceAccountEnabled: () => Promise.resolve({}),
       deleteResourceAccount: () => Promise.resolve({}),
       listPageResource: () => Promise.resolve([]),
-    } as SdkworkIamOauthAdminController;
+    } as unknown as SdkworkIamOauthAdminController;
     const { unmount } = render(
       <SdkworkI18nProvider locale="zh-CN">
         <SdkworkIamOauthOfficialAccountsPage controller={configuredController} />

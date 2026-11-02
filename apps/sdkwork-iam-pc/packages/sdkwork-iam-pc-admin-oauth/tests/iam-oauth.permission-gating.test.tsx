@@ -7,10 +7,13 @@ import { OauthUrlScanLoginSection } from "../src/components/oauth-scan-login-sec
 import type { SdkworkIamOauthAdminController, SdkworkIamOauthScanLoginSettings } from "../src/types/oauth-admin-types";
 
 function controllerWithState(state: Record<string, unknown>): SdkworkIamOauthAdminController {
+  // The gating tests only exercise read paths, so the double carries the two
+  // members those paths reach. `unknown` in between because a two-member object
+  // and the controller interface have no provable overlap.
   return {
     getState: () => state,
     load: () => Promise.resolve(state),
-  } as SdkworkIamOauthAdminController;
+  } as unknown as SdkworkIamOauthAdminController;
 }
 
 const CONFIGURED_INTEGRATION_STATE = {
@@ -86,6 +89,7 @@ describe("SDKWork IAM OAuth page permission gating (REQ-2026-0107)", () => {
     render(
       <SdkworkI18nProvider locale="zh-CN">
         <OauthUrlScanLoginSection
+          busy={false}
           canCreate={false}
           canUpdate={false}
           controller={controllerWithState({})}
@@ -105,6 +109,7 @@ describe("SDKWork IAM OAuth page permission gating (REQ-2026-0107)", () => {
     render(
       <SdkworkI18nProvider locale="zh-CN">
         <OauthUrlScanLoginSection
+          busy={false}
           controller={controllerWithState({})}
           onChanged={() => undefined}
           onError={() => undefined}

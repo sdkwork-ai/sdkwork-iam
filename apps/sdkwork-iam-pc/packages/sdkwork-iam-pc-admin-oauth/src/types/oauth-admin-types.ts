@@ -261,8 +261,30 @@ export interface SdkworkIamOauthAdminState extends SdkworkIamOauthAdminResourceS
   };
 }
 
+/**
+ * Structural port the OAuth administration capability actually reaches.
+ *
+ * Every call in `oauth-admin-controller.ts` goes through `service.iam.oauth.*`
+ * or `service.iam.tenantApplications.*`; the other IAM resource groups and the
+ * sibling `auth`, `oauth` and `system` port groups belong to different
+ * capabilities and are never touched here. Declaring the whole
+ * `SdkworkIamService` forced every embedding host and every test double to
+ * fabricate twenty-plus resource groups the capability cannot observe, so the
+ * requirement is narrowed to what it uses. A complete `SdkworkIamService` stays
+ * assignable to this port.
+ */
+export type SdkworkIamOauthAdminServicePort = {
+  iam: {
+    oauth: SdkworkIamService["iam"]["oauth"];
+    tenantApplications: Pick<
+      SdkworkIamService["iam"]["tenantApplications"],
+      "retrieve" | "update"
+    >;
+  };
+};
+
 export interface CreateSdkworkIamOauthAdminControllerInput {
-  service: SdkworkIamService;
+  service: SdkworkIamOauthAdminServicePort;
 }
 
 export type SdkworkIamOauthAdminTab = "inbound" | "provider" | "extended" | "audit";

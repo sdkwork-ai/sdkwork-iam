@@ -29,9 +29,12 @@ const EMPTY_STATE = {
   webhookConfigs: [],
 };
 
+// Only `getState` is reachable from the markup path this file renders, so the
+// double is deliberately not a whole controller. The cast goes through `unknown`
+// because the two shapes share no members the compiler can prove overlap on.
 const controller = {
   getState: () => EMPTY_STATE,
-} as SdkworkIamOauthAdminController;
+} as unknown as SdkworkIamOauthAdminController;
 
 describe("SDKWork IAM OAuth admin i18n contract", () => {
   it("exports a complete IAM OAuth admin namespace catalog", () => {

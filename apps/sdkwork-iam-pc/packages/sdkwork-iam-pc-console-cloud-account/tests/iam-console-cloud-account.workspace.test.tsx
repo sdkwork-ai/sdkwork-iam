@@ -127,7 +127,9 @@ function controllerStub(accounts: readonly SdkworkIamConsoleCloudAccountRecord[]
      * submit path was never executed by any test — the form could not be reached in
      * a browser either, and neither gap was visible from the other.
      */
-    createCredential: vi.fn(async () => undefined),
+    createCredential: vi.fn(
+      async (): Promise<SdkworkIamConsoleCloudAccountCredentialRecord | undefined> => undefined,
+    ),
     deleteAccount: vi.fn(async () => undefined),
     listCredentials: vi.fn(async () => [...credentialRows]),
     listScopeAccounts: vi.fn(async () => [...rows]),
@@ -138,7 +140,9 @@ function controllerStub(accounts: readonly SdkworkIamConsoleCloudAccountRecord[]
      * credential was never stored, and an echo that returned material by default
      * would make every edit test assert against a phantom stored value.
      */
-    revealCredential: vi.fn(async () => undefined),
+    revealCredential: vi.fn(
+      async (): Promise<SdkworkIamConsoleCloudAccountCredentialMaterial | undefined> => undefined,
+    ),
     revokeCredential: vi.fn(async () => undefined),
     setDefaultAccount: vi.fn(async () => rows[0]),
     updateAccount: vi.fn(async () => rows[0]),

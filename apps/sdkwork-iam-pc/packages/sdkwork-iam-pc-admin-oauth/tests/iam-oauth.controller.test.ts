@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createSdkworkIamOauthAdminController } from "../src/services/oauth-admin-controller";
+import type { SdkworkIamOauthAccountConfig } from "../src/types/oauth-admin-types";
 import { createOauthServiceMock } from "./fixtures/oauth-service-mock";
 
 
@@ -340,7 +341,11 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
         content: "wx-verification-content",
         fileName: "MP_verify_abc123.txt",
       },
-    } as const;
+      // `satisfies` rather than `as const`: the assertion still proves this draft
+      // is a valid account config, while the expression keeps its mutable array
+      // type — the controller's input is the config the form edits, and a frozen
+      // literal would only be assignable through a cast.
+    } satisfies SdkworkIamOauthAccountConfig;
 
     // State must expose the account so its login integration can be kept in sync.
     const serviceWithAccount = createOauthServiceMock();

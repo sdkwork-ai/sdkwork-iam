@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "commons package for the sdkwork-iam-h5 client root.",
+  "description": "Domain-neutral mobile UI kit for the sdkwork-iam-h5 client root: tokens, page frame, lists, states, load hooks, locale bundle mechanism.",
   "exports": {
     ".": "./src/index.ts"
   },
@@ -20,12 +20,24 @@
   "devDependencies": {
     "typescript": "catalog:"
   },
+  "peerDependencies": {
+    "react": ">=18.2.0 <20.0.0",
+    "react-dom": ">=18.2.0 <20.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
   "sdkwork": {
     "architecture": "h5",
     "surface": "app",
     "domain": "iam",
     "capability": "commons",
     "packageType": "feature",
-    "status": "standardizing"
+    "status": "standard"
   }
 }

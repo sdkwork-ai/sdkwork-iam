@@ -18,4 +18,5 @@ export * from './modules/index.js';
 export * from './sdk/index.js';
 export * from './host/index.js';
 export * from './session/index.js';
+export * from './runtime/iam-service.js';
 export * from './composition/surface-composition.js';

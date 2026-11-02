@@ -22,7 +22,11 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     pool: "forks",
-    poolOptions: { forks: { singleFork: true } },
+    // Vitest 4 removed `test.poolOptions` (and with it `forks.singleFork`), so
+    // the single-worker intent is expressed with the surviving knob: this
+    // package runs one parity test, and a second worker on a Windows checkout
+    // only competes for the same jsdom fixture.
+    fileParallelism: false,
     setupFiles: ["./vitest.min.setup.ts"],
   },
 });

@@ -75,6 +75,11 @@ export function createOauthServiceMock() {
           },
         },
         resourceAuthorizations: { list: vi.fn().mockResolvedValue({ items: [] }), create: vi.fn(), update: vi.fn() },
+        scanLoginPreviews: { create: vi.fn() },
+        scanLoginSettings: {
+          retrieve: vi.fn().mockResolvedValue({ mode: "url", urlLogin: { enabled: false } }),
+          update: vi.fn().mockResolvedValue({}),
+        },
         operationalResources: {
           list: vi.fn().mockResolvedValue({ items: [] }),
           create: vi.fn(),

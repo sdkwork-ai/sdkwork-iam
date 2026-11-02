@@ -3,6 +3,25 @@ import { describe, expect, it } from "vitest";
 import { createSdkworkIamOauthAdminController } from "../src/services/oauth-admin-controller";
 
 /**
+ * One `resourceAccounts` row, narrowed for assertion.
+ *
+ * The admin snapshot is resource-generic, so every list is typed `unknown[]` and
+ * a column assertion is a type error rather than a runtime surprise. Narrowing
+ * once here keeps each test reading like the operator's view instead of a wall
+ * of casts, and a row that is not an object fails with the index that broke.
+ */
+function resourceAccountRow(
+  controller: ReturnType<typeof createSdkworkIamOauthAdminController>,
+  index = 0,
+): Record<string, unknown> {
+  const row: unknown = controller.getState().resourceAccounts[index];
+  if (typeof row !== "object" || row === null) {
+    throw new Error(`resourceAccounts[${index}] is not an object`);
+  }
+  return row as Record<string, unknown>;
+}
+
+/**
  * Stateful in-memory IAM OAuth backend that mirrors the real backend's
  * observable behaviour for the quick-setup surface:
  * - `integrations.create` provisions a client + secret (echoed back as
@@ -265,7 +284,7 @@ describe("SDKWork IAM OAuth account lifecycle (create -> list -> edit -> save)",
     // 2. The list row echoes the complete record — the edit drawer reads
     //    exactly this row, so every field is visible when editing.
     await controller.load(["resourceAccounts"]);
-    const row = controller.getState().resourceAccounts[0];
+    const row = resourceAccountRow(controller);
     expect(row).toMatchObject({
       displayName: "My subscription account",
       enabled: true,
@@ -301,7 +320,7 @@ describe("SDKWork IAM OAuth account lifecycle (create -> list -> edit -> save)",
     await controller.updateAccountCredentials("iamora-1", { appSecret: "oa-secret-2" });
     expect(backend.secretsByIntegration.get("iamoi-1")).toBe("oa-secret-2");
     await controller.load(["resourceAccounts"]);
-    expect(controller.getState().resourceAccounts[0].providerClientSecret).toBe("oa-secret-2");
+    expect(resourceAccountRow(controller).providerClientSecret).toBe("oa-secret-2");
 
     // 5. Clearing the original id persists (the explicit empty value wins).
     await controller.updateAccountProfile("iamora-1", "iamoi-1", {
@@ -310,7 +329,7 @@ describe("SDKWork IAM OAuth account lifecycle (create -> list -> edit -> save)",
       originalId: "",
     });
     await controller.load(["resourceAccounts"]);
-    expect(controller.getState().resourceAccounts[0].providerAccountOriginalId).toBeUndefined();
+    expect(resourceAccountRow(controller).providerAccountOriginalId).toBeUndefined();
   });
 
   it("round-trips the complete mini program record without a callback URL", async () => {
@@ -336,7 +355,7 @@ describe("SDKWork IAM OAuth account lifecycle (create -> list -> edit -> save)",
 
     // 2. The complete record is visible on the list row (edit source).
     await controller.load(["resourceAccounts"]);
-    const row = controller.getState().resourceAccounts[0];
+    const row = resourceAccountRow(controller);
     expect(row).toMatchObject({
       displayName: "My mini program",
       enabled: true,
@@ -367,7 +386,7 @@ describe("SDKWork IAM OAuth account lifecycle (create -> list -> edit -> save)",
     // 4. Rotating the mini program secret echoes back on the next read.
     await controller.updateAccountCredentials("iamora-1", { appSecret: "mini-secret-2" });
     await controller.load(["resourceAccounts"]);
-    expect(controller.getState().resourceAccounts[0].providerClientSecret).toBe("mini-secret-2");
+    expect(resourceAccountRow(controller).providerClientSecret).toBe("mini-secret-2");
   });
 
   it("round-trips a provider connection record through create -> list -> edit", async () => {
