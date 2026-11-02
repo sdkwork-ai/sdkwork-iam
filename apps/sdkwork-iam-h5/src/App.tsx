@@ -39,6 +39,11 @@ import {
   SdkworkIamH5ConsoleOrganizationDirectoryScreen,
 } from "@sdkwork/iam-h5-console-organization";
 import {
+  createSdkworkIamH5ConsoleUserCenterController,
+  IAM_H5_CONSOLE_USER_CENTER_I18N_CATALOG,
+  SdkworkIamH5ConsoleUserCenterProfileScreen,
+} from "@sdkwork/iam-h5-console-user-center";
+import {
   createSdkworkIamH5ConsoleTenantController,
   IAM_H5_CONSOLE_TENANT_I18N_CATALOG,
   SdkworkIamH5ConsoleTenantOverviewScreen,
@@ -115,6 +120,8 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     IAM_H5_CONSOLE_ORGANIZATION_I18N_CATALOG.resolveMessages(resolvedLocale);
   const consoleAccountBindingMessages =
     IAM_H5_CONSOLE_ACCOUNT_BINDING_I18N_CATALOG.resolveMessages(resolvedLocale);
+  const consoleUserCenterMessages =
+    IAM_H5_CONSOLE_USER_CENTER_I18N_CATALOG.resolveMessages(resolvedLocale);
 
   const authController = useMemo(
     () => createSdkworkIamH5AuthController(bootstrap.runtime.service),
@@ -152,6 +159,10 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     () => createSdkworkIamH5ConsoleAccountBindingController(bootstrap.runtime.service),
     [bootstrap],
   );
+  const consoleUserCenterController = useMemo(
+    () => createSdkworkIamH5ConsoleUserCenterController(bootstrap.runtime.service),
+    [bootstrap],
+  );
 
   const handleAuthenticated = useCallback(() => {
     // The service's commit bridge already wrote the session into the store; this
@@ -176,6 +187,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     const consoleTenantRoute = byId("console.iam.tenant.overview");
     const consoleOrganizationRoute = byId("console.iam.organization.directory");
     const consoleAccountBindingRoute = byId("console.iam.account-binding.list");
+    const consoleUserCenterRoute = byId("console.iam.user-center.profile");
     const routes: SdkworkIamH5ShellRoute[] = [];
 
     if (loginRoute) {
@@ -360,6 +372,15 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
         title: consoleAccountBindingMessages.list.title,
       });
     }
+    if (consoleUserCenterRoute) {
+      routes.push({
+        access: "protected",
+        element: <SdkworkIamH5ConsoleUserCenterProfileScreen controller={consoleUserCenterController} />,
+        id: consoleUserCenterRoute.id,
+        path: consoleUserCenterRoute.path,
+        title: consoleUserCenterMessages.profile.title,
+      });
+    }
     return routes;
   }, [
     accountBindingController,
@@ -373,6 +394,8 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     consoleOrganizationMessages.directory.title,
     consoleAccountBindingController,
     consoleAccountBindingMessages.list.title,
+    consoleUserCenterController,
+    consoleUserCenterMessages.profile.title,
     handleAuthenticated,
     navigate,
     oauthMessages.providers.title,

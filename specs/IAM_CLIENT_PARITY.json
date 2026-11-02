@@ -27,7 +27,7 @@
   "baseline": {
     "complete": {
       "pc": 20,
-      "h5": 13,
+      "h5": 14,
       "miniProgram": 8,
       "flutter": 8,
       "harmony": 0
@@ -294,12 +294,14 @@
       "tier": "console",
       "capability": "user-center",
       "api": "app-api",
-      "status": { "pc": "complete" },
+      "status": { "pc": "complete", "h5": "complete" },
       "evidence": {
-        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-user/src/pages/UserConsoleWorkspace.tsx"
+        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-user/src/pages/UserConsoleWorkspace.tsx",
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-user-center/src/pages/ConsoleUserCenterProfileScreen.tsx"
       },
       "tests": {
-        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-user/tests/"
+        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-user/tests/",
+        "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-user-center/tests/"
       }
     },
     {

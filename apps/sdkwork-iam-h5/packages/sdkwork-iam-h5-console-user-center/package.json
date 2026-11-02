@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "capability package for the sdkwork-iam-h5 client root.",
+  "description": "IAM H5 console user-center profile: the operator's own record plus the tenant verification policy, over the app-api.",
   "exports": {
     ".": "./src/index.ts"
   },
@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@sdkwork/iam-h5-commons": "workspace:*",
     "@sdkwork/iam-h5-console-core": "workspace:*",
     "@sdkwork/iam-service": "workspace:*",
     "@sdkwork/iam-contracts": "workspace:*"
@@ -22,12 +23,24 @@
   "devDependencies": {
     "typescript": "catalog:"
   },
+  "peerDependencies": {
+    "react": ">=18.2.0 <20.0.0",
+    "react-dom": ">=18.2.0 <20.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
   "sdkwork": {
     "architecture": "h5",
     "surface": "console",
     "domain": "iam",
     "capability": "user-center",
     "packageType": "feature",
-    "status": "standardizing"
+    "status": "standard"
   }
 }
