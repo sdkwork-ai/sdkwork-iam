@@ -1,6 +1,11 @@
 library sdkwork_iam_flutter_mobile_auth;
 
-export 'src/auth_route_manifest.dart';
+// The stray `src/auth_route_manifest.dart` declared a second
+// `IamFlutterMobileAuthRoutes` class (moduleId + loginPath) next to the one in
+// `src/models/auth_view_model.dart` (the full route-id set). Exporting both made
+// the package fail to compile with an ambiguous export, so only the canonical
+// view-model manifest is exported; the physical path constants live in
+// `src/routes/route_manifest.dart`.
 export 'src/auth_session_controller.dart';
 export 'src/login_context.dart';
 export 'src/routes/route_manifest.dart';

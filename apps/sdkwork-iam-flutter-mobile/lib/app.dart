@@ -1,18 +1,17 @@
-// SDKWORK-CLIENT-APP-SURFACES-GENERATED: do not edit by hand; regenerate with `node scripts/materialize-client-app-surfaces.mjs`.
+// SDKWORK-IAM-FLUTTER: authored application root.
 import 'package:flutter/material.dart';
-import 'package:sdkwork_iam_flutter_mobile_shell/sdkwork_iam_flutter_mobile_shell.dart';
 
 import 'shell/app_shell.dart';
 
 /// SDKWork IAM Flutter mobile application.
+///
+/// The shell owns the `MaterialApp` (it is the only place that knows the route
+/// table), so the root hands it the home widget and nothing else.
 class IamApp extends StatelessWidget {
   const IamApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return IamFlutterMobileShell(
-      title: 'SDKWork IAM',
-      home: const IamHomeShell(),
-    );
+    return const IamHomeShell();
   }
 }

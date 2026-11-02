@@ -224,15 +224,22 @@ clientSurfaces:
   flutter:
     status: partial
     note: >
-      One capability is now real: `sdkwork_iam_flutter_mobile_tenant` ships a data
-      port (`IamFlutterMobileTenantDataSource`), a controller that loads through it,
-      a screen rendering loading/ready/error/empty with copy supplied as a decoded
-      `.arb` map, and 7 tests (`dart analyze` clean, `flutter test` green). The other
-      twenty-six packages still hold the generated single-screen list stub, and the
-      app shell (`IamHomeShell`) still renders `SizedBox.shrink()`, so no Flutter
-      route is addressable yet — the tenant screen is `partial` for that reason.
-      Toolchain note: the root had never been resolved; `flutter pub get --offline`
-      now succeeds and `pubspec.lock` files remain untracked by design.
+      The root now compiles and renders. Repaired this round: `app.dart` and the
+      shell referenced a non-existent `IamFlutterMobileShell`; `bootstrap/runtime.dart`
+      called a top-level `createIamRuntime` that does not exist; `IamSdkClientFactory`
+      lacked the `clientClass` getter its three interfaces require; the auth package
+      emitted three invalid Dart identifiers from hyphenated route screens
+      (`forgot-passwordRouteId`, …); and two barrels exported a class twice, which is
+      a compile error. The shell now loads the tenant `.arb` fragment through
+      `packages/<package>/…`, mounts the tenant screen as home and registers `/tenant`
+      in its route table.
+      One capability is real end to end: `sdkwork_iam_flutter_mobile_tenant` (data
+      port, controller, screen with loading/ready/error/empty) plus the app-api
+      adapter `IamTenantAppSdkDataSource`. 8 app tests + 7 package tests pass;
+      `dart analyze lib test` reports no errors.
+      Remaining: 25 capability packages still hold the generated stub, and no auth
+      screen is mounted yet, so an unauthenticated launch shows the tenant screen's
+      error state.
   harmony:
     status: scaffold
     note: Route/page map exists; capability pages do not render real data yet.

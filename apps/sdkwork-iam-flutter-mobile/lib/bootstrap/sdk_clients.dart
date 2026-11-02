@@ -15,6 +15,14 @@ class IamSdkClientFactory<TClient>
 
   final TClient Function(SdkworkRuntimeEnv env, SdkworkTokenManager tokenManager) _build;
 
+  /// Class name the tier contracts require an injected factory to return.
+  ///
+  /// Declared explicitly because all three factory interfaces expose it as an
+  /// abstract getter; without it the class is not concrete and the root does not
+  /// compile.
+  @override
+  String get clientClass => 'SdkworkAppClient';
+
   @override
   TClient create({
     required SdkworkRuntimeEnv env,

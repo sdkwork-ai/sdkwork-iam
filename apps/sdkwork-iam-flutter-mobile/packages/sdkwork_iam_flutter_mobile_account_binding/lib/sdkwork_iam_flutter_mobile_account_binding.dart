@@ -1,6 +1,9 @@
 library sdkwork_iam_flutter_mobile_account_binding;
 
-export 'src/account_binding_controller.dart';
+// `src/account_binding_controller.dart` and `src/controllers/account_binding_controller.dart`
+// both declare `IamFlutterMobileAccountBindingController`; exporting both was an
+// ambiguous export that stopped the root from compiling. The layered
+// `src/controllers/` file is the canonical one.
 export 'src/account_binding_route_manifest.dart';
 export 'src/routes/route_manifest.dart';
 export 'src/controllers/account_binding_controller.dart';
