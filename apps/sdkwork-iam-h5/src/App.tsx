@@ -23,6 +23,7 @@ import {
 } from "@sdkwork/iam-h5-account-binding";
 import {
   createSdkworkIamH5AuthController,
+  SDKWORK_IAM_H5_AUTH_I18N_CATALOG,
   SdkworkIamH5AuthCallbackSurface,
   SdkworkIamH5AuthLoginSurface,
 } from "@sdkwork/iam-h5-auth";
@@ -93,6 +94,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
   const organizationMessages = IAM_H5_ORGANIZATION_I18N_CATALOG.resolveMessages(resolvedLocale);
   const accountBindingMessages = IAM_H5_ACCOUNT_BINDING_I18N_CATALOG.resolveMessages(resolvedLocale);
   const oauthMessages = IAM_H5_OAUTH_I18N_CATALOG.resolveMessages(resolvedLocale);
+  const authMessages = SDKWORK_IAM_H5_AUTH_I18N_CATALOG.resolveMessages(resolvedLocale);
 
   const authController = useMemo(
     () => createSdkworkIamH5AuthController(bootstrap.runtime.service),
@@ -130,6 +132,8 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
   const registeredRoutes = useMemo<SdkworkIamH5ShellRoute[]>(() => {
     const byId = (id: string) => routeContributions.find((entry) => entry.id === id);
     const loginRoute = byId("app.iam.auth.login");
+    const registerRoute = byId("app.iam.auth.register");
+    const forgotRoute = byId("app.iam.auth.forgot-password");
     const callbackRoute = byId("app.iam.auth.oauth-callback");
     const tenantRoute = byId("app.iam.tenant.overview");
     const organizationRoute = byId("app.iam.organization.directory");
@@ -152,6 +156,38 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
         id: loginRoute.id,
         path: loginRoute.path,
         title: shellMessages.loginTitle,
+      });
+    }
+    if (registerRoute) {
+      routes.push({
+        access: "public",
+        element: (
+          <SdkworkIamH5AuthLoginSurface
+            controller={authController}
+            initialMode="register"
+            locale={resolvedLocale}
+            onAuthenticated={handleAuthenticated}
+          />
+        ),
+        id: registerRoute.id,
+        path: registerRoute.path,
+        title: authMessages.modes.register,
+      });
+    }
+    if (forgotRoute) {
+      routes.push({
+        access: "public",
+        element: (
+          <SdkworkIamH5AuthLoginSurface
+            controller={authController}
+            initialMode="forgot"
+            locale={resolvedLocale}
+            onAuthenticated={handleAuthenticated}
+          />
+        ),
+        id: forgotRoute.id,
+        path: forgotRoute.path,
+        title: authMessages.modes.forgot,
       });
     }
     if (callbackRoute) {
@@ -261,6 +297,8 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     accountBindingController,
     accountBindingMessages.binding.title,
     authController,
+    authMessages.modes.forgot,
+    authMessages.modes.register,
     handleAuthenticated,
     navigate,
     oauthMessages.providers.title,

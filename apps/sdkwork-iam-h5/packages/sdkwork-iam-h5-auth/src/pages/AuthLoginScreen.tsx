@@ -43,12 +43,17 @@ const CODE_COUNTDOWN_SECONDS = 60;
  */
 export function SdkworkIamH5AuthLoginScreen({
   controller,
+  initialMode,
   onAuthenticated,
   onScanLoginCompleted,
   onThirdPartyLogin,
 }: SdkworkIamH5AuthLoginScreenProps) {
   const messages = useSdkworkIamH5AuthMessages();
-  const [mode, setMode] = useState<SdkworkIamH5AuthMode>("login-pwd");
+  // A mode is both a UI state and a route: `/auth/register` and
+  // `/auth/forgot-password` mount this screen with the matching `initialMode`, so
+  // the three flows stay one implementation while each stays addressable and
+  // deep-linkable. The mode switcher then continues from that entry point.
+  const [mode, setMode] = useState<SdkworkIamH5AuthMode>(initialMode ?? "login-pwd");
 
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
@@ -440,6 +445,14 @@ function isWechatBrowser(): boolean {
 
 export interface SdkworkIamH5AuthLoginScreenProps {
   controller: SdkworkIamH5AuthController;
+  /**
+   * Mode the screen opens in.
+   *
+   * This is how `/auth/login`, `/auth/register` and `/auth/forgot-password` stay
+   * separate addressable routes while sharing one implementation. Defaults to
+   * password sign-in.
+   */
+  initialMode?: SdkworkIamH5AuthMode;
   onAuthenticated?: (session: SdkworkIamH5AuthSession) => void;
   /** Invoked when a scan-login QR session was completed on this device. */
   onScanLoginCompleted?: () => void;

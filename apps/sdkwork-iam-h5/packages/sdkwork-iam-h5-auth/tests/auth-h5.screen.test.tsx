@@ -93,6 +93,28 @@ describe("@sdkwork/iam-h5-auth login screen (design)", () => {
     expect(screen.getByText("返回登录")).toBeTruthy();
   });
 
+  it("opens directly in the mode a route asks for", () => {
+    // `/auth/register` and `/auth/forgot-password` are separate routes that mount
+    // this one screen; the mode must be the entry point, not something the user
+    // has to click through to after a deep link.
+    const register = render(
+      <SdkworkI18nProvider catalogs={[SDKWORK_IAM_H5_AUTH_I18N_CATALOG]} locale="zh-CN">
+        <SdkworkIamH5AuthLoginScreen controller={createFakeController()} initialMode="register" />
+      </SdkworkI18nProvider>,
+    );
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("手机号注册");
+    expect(screen.getByPlaceholderText("请输入验证码")).toBeTruthy();
+    register.unmount();
+
+    render(
+      <SdkworkI18nProvider catalogs={[SDKWORK_IAM_H5_AUTH_I18N_CATALOG]} locale="zh-CN">
+        <SdkworkIamH5AuthLoginScreen controller={createFakeController()} initialMode="forgot" />
+      </SdkworkI18nProvider>,
+    );
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("找回密码");
+    expect(screen.getByPlaceholderText("设置新密码")).toBeTruthy();
+  });
+
   it("requires agreeing to the terms before submitting", async () => {
     const controller = createFakeController();
     renderLogin(controller);

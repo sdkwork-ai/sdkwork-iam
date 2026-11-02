@@ -181,6 +181,8 @@ clientSurfaces:
       bearer token onto the client on sign-in and clears it on sign-out.
     implementedScreens:
       - app.iam.auth.login
+      - app.iam.auth.register
+      - app.iam.auth.forgot-password
       - app.iam.auth.oauth-callback
       - app.iam.tenant.overview
       - app.iam.organization.directory
@@ -188,10 +190,12 @@ clientSurfaces:
       - app.iam.user-center.profile
       - app.iam.user-center.password
       - app.iam.oauth.providers
+    partialScreens:
+      app.iam.auth.context-selection: >
+        The screen exists and is driven by a login challenge, which only exists
+        after a sign-in call; it is a step in the login flow rather than a URL a
+        user can land on. PC records the same shape as `partial`.
     scaffoldScreens:
-      - app.iam.auth.register
-      - app.iam.auth.forgot-password
-      - app.iam.auth.context-selection
       - console.iam.* (4)
       - admin.iam.* (10)
     blockedScreens:
@@ -201,7 +205,15 @@ clientSurfaces:
         Recorded in specs/IAM_CLIENT_PARITY.json as `blockedBy`.
   miniProgram:
     status: scaffold
-    note: Route registry and services exist; no page renders yet.
+    note: >
+      The root declares 26 pages in `src/app.json` (5 main + 21 subpackage) and
+      ships **no page files at all**, so the project cannot compile in WeChat
+      DevTools as it stands. Its `_sdkwork:build` script also points at
+      `build-browser-client.mjs`, which builds a browser bundle rather than a
+      mini-program package. Both findings are recorded here rather than papered
+      over: the sequence is (1) a TS-to-miniprogram build target, (2) real pages
+      for the declared routes, (3) trimming `app.json` to the pages that exist so
+      the manifest never claims a page the build cannot produce.
   flutter:
     status: scaffold
     note: Every capability package ships a generated single-screen list stub; no production screen.
