@@ -29,6 +29,11 @@ import {
 } from "@sdkwork/iam-h5-auth";
 import { SdkworkIamH5EmptyState, SdkworkIamH5I18nProvider, SdkworkIamH5Screen } from "@sdkwork/iam-h5-commons";
 import {
+  createSdkworkIamH5AdminAuditController,
+  IAM_H5_ADMIN_AUDIT_I18N_CATALOG,
+  SdkworkIamH5AdminAuditScreen,
+} from "@sdkwork/iam-h5-admin-audit";
+import {
   createSdkworkIamH5AdminPermissionController,
   createSdkworkIamH5AdminPolicyController,
   createSdkworkIamH5AdminRoleController,
@@ -133,6 +138,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     IAM_H5_CONSOLE_USER_CENTER_I18N_CATALOG.resolveMessages(resolvedLocale);
   const adminPermissionMessages =
     IAM_H5_ADMIN_PERMISSION_I18N_CATALOG.resolveMessages(resolvedLocale);
+  const adminAuditMessages = IAM_H5_ADMIN_AUDIT_I18N_CATALOG.resolveMessages(resolvedLocale);
 
   const authController = useMemo(
     () => createSdkworkIamH5AuthController(bootstrap.runtime.service),
@@ -186,6 +192,10 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     () => createSdkworkIamH5AdminPolicyController(bootstrap.adminService),
     [bootstrap],
   );
+  const adminAuditController = useMemo(
+    () => createSdkworkIamH5AdminAuditController(bootstrap.adminService),
+    [bootstrap],
+  );
 
   const handleAuthenticated = useCallback(() => {
     // The service's commit bridge already wrote the session into the store; this
@@ -214,6 +224,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     const adminPermissionRoute = byId("admin.iam.permission.permissions");
     const adminRoleRoute = byId("admin.iam.permission.roles");
     const adminPolicyRoute = byId("admin.iam.permission.policies");
+    const adminAuditRoute = byId("admin.iam.audit.events");
     const routes: SdkworkIamH5ShellRoute[] = [];
 
     if (loginRoute) {
@@ -434,6 +445,15 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
         title: adminPermissionMessages.policies.title,
       });
     }
+    if (adminAuditRoute) {
+      routes.push({
+        access: "protected",
+        element: <SdkworkIamH5AdminAuditScreen controller={adminAuditController} />,
+        id: adminAuditRoute.id,
+        path: adminAuditRoute.path,
+        title: adminAuditMessages.events.title,
+      });
+    }
     return routes;
   }, [
     accountBindingController,
@@ -455,6 +475,8 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     adminPermissionMessages.policies.title,
     adminRoleController,
     adminPolicyController,
+    adminAuditController,
+    adminAuditMessages.events.title,
     handleAuthenticated,
     navigate,
     oauthMessages.providers.title,

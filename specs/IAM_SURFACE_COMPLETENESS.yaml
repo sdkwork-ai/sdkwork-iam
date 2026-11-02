@@ -206,7 +206,6 @@ clientSurfaces:
       - admin.iam.permission.authorizations
       - admin.iam.account-binding.list
       - admin.iam.user.list
-      - admin.iam.audit.events
     adminNote: >
       The admin tier has started. `h5-admin-core` now builds a real generated
       backend-client boundary (`createIamH5AdminBackendAdminSdkClient`) instead of the
@@ -215,7 +214,13 @@ clientSurfaces:
       backend-admin resources such as `iam.permissions` are readable at all.
       `admin.iam.permission.permissions` is the first real admin screen: the tenant's
       permission catalog, server-searched and server-paged, dropping records without an
-      identity. The remaining nine admin screens reuse the same controller shape.
+      identity. It is joined by the role and policy catalogs (a role falls back to its
+      code when it has no display name; a policy shows its allow/deny effect on the row,
+      because the two are otherwise indistinguishable) and by the audit trail, which leads
+      each row with the action and actor a ticket names and keeps the resource and time as
+      the way to narrow a search. The remaining five admin screens reuse the same
+      controller shape; `permission.authorizations` and `user.list` stay blocked because the
+      IAM service exposes no list operation for either.
       The admin credential is the one session token read at request time; the backend
       enforces the admin permission itself, and a separate backend-admin credential
       issuance flow is still an open governance item.
