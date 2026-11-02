@@ -230,6 +230,15 @@ priorityBacklog:
   p1:
     - PC app-side naming migration (sdkwork-iam-pc-auth, sdkwork-iam-pc-user-center targets)
     - Wire sendVerifyCode through iam-service when app-api verification endpoints are materialized
+    - >
+      Route model gap: PC ships a cloud-account console page
+      (`sdkwork-iam-pc-console-cloud-account`) and every client root carries
+      cloud-account packages, but `scripts/lib/client-app-surfaces/model.mjs`
+      declares no cloud-account route. Two mini-program capability specs claimed
+      `admin.iam.cloud-account.list` / `console.iam.cloud-account.list`, which the
+      registry does not contain, so the ids were removed to keep the contract
+      honest. Decide the model change (add the capability) before re-declaring
+      them; declaring a route first is what produced the mismatch.
   p2:
     - Multi-language SDK materialization
     - Dedicated iam_account_binding tables vs iam_policy composition
