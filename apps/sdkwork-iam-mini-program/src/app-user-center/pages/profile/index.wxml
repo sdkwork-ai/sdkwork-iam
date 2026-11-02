@@ -1,0 +1,42 @@
+<view class="page">
+  <view class="brand">
+    <text class="brand-title">{{title}}</text>
+  </view>
+
+  <text wx:if="{{loading}}" class="section-title">…</text>
+  <text wx:if="{{errorText}}" class="error">{{errorText}}</text>
+  <text wx:if="{{noticeText}}" class="notice">{{noticeText}}</text>
+
+  <view wx:if="{{!loading}}" class="card">
+    <view class="field">
+      <text class="label">{{displayNameLabel}}</text>
+      <input
+        class="input"
+        value="{{displayName}}"
+        bindinput="onDisplayNameInput"
+      />
+    </view>
+    <view class="field">
+      <text class="label">{{emailLabel}}</text>
+      <input
+        class="input"
+        value="{{email}}"
+        bindinput="onEmailInput"
+      />
+    </view>
+    <view class="field">
+      <text class="label">{{phoneLabel}}</text>
+      <input
+        class="input"
+        type="number"
+        value="{{phone}}"
+        bindinput="onPhoneInput"
+      />
+    </view>
+    <button class="primary" loading="{{pending}}" bindtap="onSave">{{saveText}}</button>
+  </view>
+
+  <view class="links">
+    <text class="link" bindtap="onBackToTenant">{{toTenantText}}</text>
+  </view>
+</view>

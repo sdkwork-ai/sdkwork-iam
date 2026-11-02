@@ -214,13 +214,16 @@ clientSurfaces:
       shipped none; it now declares exactly the pages that exist.
       Shipped pages: login (password sign-in), register, forgot-password (all three
       through the runtime's auth port), the `app-tenant` subpackage tenant overview
-      (session context, organizations, memberships), and the `app-organization`
+      (session context, organizations, memberships), the `app-organization`
       subpackage directory (server-searched, append-on-load-more, stale-response
-      guard). 21 node tests cover the registry, the manifest/files invariant and the
-      runtime message port.
-      Remaining: 21 declared routes still need pages — oauth-callback and
-      context-selection in the main package first, then the rest of the capability
-      subpackages.
+      guard), and the `app-user-center` subpackage profile page — it reads
+      `iam/users/current` and saves only the fields the user edited, because an
+      untouched empty field would clear a value the backend holds, and it refuses an
+      all-empty save rather than sending a request the server can only reject. 21 node
+      tests cover the registry, the manifest/files invariant and the runtime ports.
+      Remaining: 20 declared routes still need pages — password change, account
+      binding, provider list, oauth-callback and context-selection first, then the
+      console and admin tiers.
   flutter:
     status: partial
     note: >

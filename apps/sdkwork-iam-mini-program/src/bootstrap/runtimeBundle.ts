@@ -34,6 +34,7 @@ export const IAM_MP_PAGE_PATHS = {
   login: "pages/login/index",
   oauthCallback: "pages/oauth-callback/index",
   organizationDirectory: "app-organization/pages/directory/index",
+  profile: "app-user-center/pages/profile/index",
   register: "pages/register/index",
   tenantOverview: "app-tenant/pages/overview/index",
 } as const;
@@ -54,6 +55,7 @@ export const IAM_MP_IMPLEMENTED_ROUTE_IDS: readonly string[] = [
   "app.iam.auth.forgot-password",
   "app.iam.tenant.overview",
   "app.iam.organization.directory",
+  "app.iam.user-center.profile",
 ];
 
 /** Message dictionary, kept intentionally small: only shipped pages read it. */
@@ -119,6 +121,15 @@ const MESSAGES: Record<string, { "en-US": string; "zh-CN": string }> = {
   "organization.search": { "en-US": "Search", "zh-CN": "搜索" },
   "organization.loading": { "en-US": "Loading…", "zh-CN": "加载中…" },
   "organization.failed": { "en-US": "Could not load organizations.", "zh-CN": "组织加载失败。" },
+  "profile.title": { "en-US": "My profile", "zh-CN": "我的资料" },
+  "profile.displayName": { "en-US": "Display name", "zh-CN": "显示名称" },
+  "profile.email": { "en-US": "Email", "zh-CN": "邮箱" },
+  "profile.phone": { "en-US": "Phone", "zh-CN": "手机号" },
+  "profile.save": { "en-US": "Save", "zh-CN": "保存" },
+  "profile.saved": { "en-US": "Profile saved.", "zh-CN": "资料已保存。" },
+  "profile.empty": { "en-US": "Nothing to save yet.", "zh-CN": "还没有可保存的内容。" },
+  "profile.loadError": { "en-US": "Could not load your profile.", "zh-CN": "资料加载失败。" },
+  "profile.saveError": { "en-US": "Could not save your profile.", "zh-CN": "资料保存失败。" },
 };
 
 /**
@@ -187,6 +198,27 @@ export interface IamMpOrganizationPort {
   fetchPage(input: { page: number; pageSize: number; q?: string }): Promise<IamMpOrganizationPage>;
 }
 
+/** The signed-in user's own record, flattened for the page. */
+export interface IamMpProfile {
+  displayName: string;
+  email: string;
+  phone: string;
+  userId: string;
+}
+
+/** What the profile page may change. */
+export interface IamMpProfileDraft {
+  displayName?: string;
+  email?: string;
+  phone?: string;
+}
+
+/** Profile port. */
+export interface IamMpProfilePort {
+  loadProfile(): Promise<IamMpProfile>;
+  saveProfile(draft: IamMpProfileDraft): Promise<IamMpProfile>;
+}
+
 /** The singleton the pages read. */
 export interface IamMpRuntime {
   readonly auth: IamMpAuthPort;
@@ -194,6 +226,7 @@ export interface IamMpRuntime {
   readonly locale: string;
   readonly navigation: IamMpNavigationPort;
   readonly organization: IamMpOrganizationPort;
+  readonly profile: IamMpProfilePort;
   readonly service: IamMpRuntimeService;
   readonly session: IamMpSessionStore;
   readonly tenant: IamMpTenantPort;
@@ -234,6 +267,7 @@ export async function bootstrapIamMpApp(input: { runtimeEnv: IamMpRuntimeEnv }):
     message: (key) => resolveIamMpMessage(locale, key),
     navigation: createNavigationPort(),
     organization: createOrganizationPort(service),
+    profile: createProfilePort(service),
     service,
     session,
     tenant: createTenantPort(service),
@@ -404,6 +438,37 @@ function createOrganizationPort(service: IamMpRuntimeService): IamMpOrganization
       });
       return { hasMore: pageInfo.hasMore === true, items };
     },
+  };
+}
+
+function createProfilePort(service: IamMpRuntimeService): IamMpProfilePort {
+  const current = service.service.iam.users.current;
+  return {
+    async loadProfile(): Promise<IamMpProfile> {
+      return toProfile(await current.retrieve());
+    },
+    async saveProfile(draft: IamMpProfileDraft): Promise<IamMpProfile> {
+      // Only the fields the page actually changed travel: an unnecessary empty
+      // field would clear a value the backend already holds.
+      const body: Record<string, unknown> = {};
+      if (draft.displayName !== undefined) body.displayName = draft.displayName;
+      if (draft.email !== undefined) body.email = draft.email;
+      if (draft.phone !== undefined) body.phone = draft.phone;
+      return toProfile(await current.update(body));
+    },
+  };
+}
+
+/** Flatten one user record into the page's shape. */
+function toProfile(value: unknown): IamMpProfile {
+  const record = toRecord(value);
+  const item = toRecord(record.item);
+  const source = Object.keys(item).length > 0 ? item : record;
+  return {
+    displayName: readString(source.displayName) ?? readString(source.display_name) ?? "",
+    email: readString(source.email) ?? "",
+    phone: readString(source.phone) ?? "",
+    userId: readString(source.userId) ?? readString(source.user_id) ?? readString(source.id) ?? "",
   };
 }
 

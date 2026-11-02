@@ -41,5 +41,6 @@
   </view>
 
   <button wx:if="{{!loading}}" class="primary" bindtap="onOpenOrganizations">{{sectionOrganizations}}</button>
+  <button wx:if="{{!loading}}" class="primary" bindtap="onOpenProfile">{{profileText}}</button>
   <button class="primary" bindtap="onSignOut">{{signOutText}}</button>
 </view>

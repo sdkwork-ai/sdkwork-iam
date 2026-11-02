@@ -6817,6 +6817,7 @@ var IAM_MP_PAGE_PATHS = {
   login: "pages/login/index",
   oauthCallback: "pages/oauth-callback/index",
   organizationDirectory: "app-organization/pages/directory/index",
+  profile: "app-user-center/pages/profile/index",
   register: "pages/register/index",
   tenantOverview: "app-tenant/pages/overview/index"
 };
@@ -6825,7 +6826,8 @@ var IAM_MP_IMPLEMENTED_ROUTE_IDS = [
   "app.iam.auth.register",
   "app.iam.auth.forgot-password",
   "app.iam.tenant.overview",
-  "app.iam.organization.directory"
+  "app.iam.organization.directory",
+  "app.iam.user-center.profile"
 ];
 var MESSAGES = {
   "common.loading": { "en-US": "Loading", "zh-CN": "\u52A0\u8F7D\u4E2D" },
@@ -6888,7 +6890,16 @@ var MESSAGES = {
   "organization.loadFailed": { "en-US": "Could not load organizations.", "zh-CN": "\u7EC4\u7EC7\u52A0\u8F7D\u5931\u8D25\u3002" },
   "organization.search": { "en-US": "Search", "zh-CN": "\u641C\u7D22" },
   "organization.loading": { "en-US": "Loading\u2026", "zh-CN": "\u52A0\u8F7D\u4E2D\u2026" },
-  "organization.failed": { "en-US": "Could not load organizations.", "zh-CN": "\u7EC4\u7EC7\u52A0\u8F7D\u5931\u8D25\u3002" }
+  "organization.failed": { "en-US": "Could not load organizations.", "zh-CN": "\u7EC4\u7EC7\u52A0\u8F7D\u5931\u8D25\u3002" },
+  "profile.title": { "en-US": "My profile", "zh-CN": "\u6211\u7684\u8D44\u6599" },
+  "profile.displayName": { "en-US": "Display name", "zh-CN": "\u663E\u793A\u540D\u79F0" },
+  "profile.email": { "en-US": "Email", "zh-CN": "\u90AE\u7BB1" },
+  "profile.phone": { "en-US": "Phone", "zh-CN": "\u624B\u673A\u53F7" },
+  "profile.save": { "en-US": "Save", "zh-CN": "\u4FDD\u5B58" },
+  "profile.saved": { "en-US": "Profile saved.", "zh-CN": "\u8D44\u6599\u5DF2\u4FDD\u5B58\u3002" },
+  "profile.empty": { "en-US": "Nothing to save yet.", "zh-CN": "\u8FD8\u6CA1\u6709\u53EF\u4FDD\u5B58\u7684\u5185\u5BB9\u3002" },
+  "profile.loadError": { "en-US": "Could not load your profile.", "zh-CN": "\u8D44\u6599\u52A0\u8F7D\u5931\u8D25\u3002" },
+  "profile.saveError": { "en-US": "Could not save your profile.", "zh-CN": "\u8D44\u6599\u4FDD\u5B58\u5931\u8D25\u3002" }
 };
 function resolveIamMpMessage(locale, key) {
   const entry = MESSAGES[key];
@@ -6921,6 +6932,7 @@ async function bootstrapIamMpApp(input) {
     message: (key) => resolveIamMpMessage(locale, key),
     navigation: createNavigationPort(),
     organization: createOrganizationPort(service),
+    profile: createProfilePort(service),
     service,
     session,
     tenant: createTenantPort(service)
@@ -7068,6 +7080,32 @@ function createOrganizationPort(service) {
       });
       return { hasMore: pageInfo.hasMore === true, items };
     }
+  };
+}
+function createProfilePort(service) {
+  const current = service.service.iam.users.current;
+  return {
+    async loadProfile() {
+      return toProfile(await current.retrieve());
+    },
+    async saveProfile(draft) {
+      const body = {};
+      if (draft.displayName !== void 0) body.displayName = draft.displayName;
+      if (draft.email !== void 0) body.email = draft.email;
+      if (draft.phone !== void 0) body.phone = draft.phone;
+      return toProfile(await current.update(body));
+    }
+  };
+}
+function toProfile(value) {
+  const record = toRecord(value);
+  const item = toRecord(record.item);
+  const source = Object.keys(item).length > 0 ? item : record;
+  return {
+    displayName: readString(source.displayName) ?? readString(source.display_name) ?? "",
+    email: readString(source.email) ?? "",
+    phone: readString(source.phone) ?? "",
+    userId: readString(source.userId) ?? readString(source.user_id) ?? readString(source.id) ?? ""
   };
 }
 function createNavigationPort() {

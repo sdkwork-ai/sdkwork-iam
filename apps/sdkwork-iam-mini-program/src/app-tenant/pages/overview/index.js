@@ -24,6 +24,7 @@ Page({
     sectionOrganizations: "",
     sectionSession: "",
     signOutText: "",
+    profileText: "",
     tenantId: "",
     title: "",
     userId: "",
@@ -37,6 +38,7 @@ Page({
       sectionOrganizations: t("tenant.organizations"),
       sectionSession: t("tenant.session"),
       signOutText: t("tenant.signOut"),
+      profileText: t("profile.title"),
       title: t("tenant.title"),
     });
     this.load();
@@ -74,6 +76,10 @@ Page({
 
   onOpenOrganizations() {
     getIamMpRuntime().navigation.navigateTo(IAM_MP_PAGE_PATHS.organizationDirectory);
+  },
+
+  onOpenProfile() {
+    getIamMpRuntime().navigation.navigateTo(IAM_MP_PAGE_PATHS.profile);
   },
 
   onSignOut() {

@@ -7,6 +7,12 @@
   "subPackages": [
     {
       "pages": [
+        "pages/profile/index"
+      ],
+      "root": "app-user-center"
+    },
+    {
+      "pages": [
         "pages/overview/index"
       ],
       "root": "app-tenant"
