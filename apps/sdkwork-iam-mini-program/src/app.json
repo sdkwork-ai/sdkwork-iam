@@ -35,6 +35,18 @@
         "pages/directory/index"
       ],
       "root": "console-organization"
+    },
+    {
+      "pages": [
+        "pages/list/index"
+      ],
+      "root": "console-account-binding"
+    },
+    {
+      "pages": [
+        "pages/profile/index"
+      ],
+      "root": "console-user-center"
     }
   ],
   "window": {

@@ -28,7 +28,7 @@
     "complete": {
       "pc": 20,
       "h5": 20,
-      "miniProgram": 9,
+      "miniProgram": 10,
       "flutter": 19,
       "harmony": 0
     }
@@ -285,16 +285,18 @@
       "tier": "console",
       "capability": "account-binding",
       "api": "app-api",
-      "status": { "pc": "complete", "h5": "complete", "flutter": "complete" },
+      "status": { "pc": "complete", "h5": "complete", "flutter": "complete", "miniProgram": "complete" },
       "evidence": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-account-binding/src/pages/AccountBindingConsoleWorkspace.tsx",
         "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-account-binding/src/pages/ConsoleAccountBindingScreen.tsx",
-        "flutter": "apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_console_account_binding/lib/src/screens/console_account_binding_screen.dart"
+        "flutter": "apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_console_account_binding/lib/src/screens/console_account_binding_screen.dart",
+        "miniProgram": "apps/sdkwork-iam-mini-program/src/console-account-binding/pages/list/index.wxml"
       },
       "tests": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-account-binding/tests/",
         "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-account-binding/tests/",
-        "flutter": "apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_console_account_binding/test/"
+        "flutter": "apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_console_account_binding/test/",
+        "miniProgram": "apps/sdkwork-iam-mini-program/tests/"
       }
     },
     {
@@ -302,11 +304,12 @@
       "tier": "console",
       "capability": "user-center",
       "api": "app-api",
-      "status": { "pc": "complete", "h5": "complete", "flutter": "complete" },
+      "status": { "pc": "complete", "h5": "complete", "flutter": "complete", "miniProgram": "partial" },
       "evidence": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-user/src/pages/UserConsoleWorkspace.tsx",
         "h5": "apps/sdkwork-iam-h5/packages/sdkwork-iam-h5-console-user-center/src/pages/ConsoleUserCenterProfileScreen.tsx",
-        "flutter": "apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_console_user_center/lib/src/screens/console_user_center_screen.dart"
+        "flutter": "apps/sdkwork-iam-flutter-mobile/packages/sdkwork_iam_flutter_mobile_console_user_center/lib/src/screens/console_user_center_screen.dart",
+        "miniProgram": "apps/sdkwork-iam-mini-program/src/console-user-center/pages/profile/index.wxml"
       },
       "tests": {
         "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-console-user/tests/",

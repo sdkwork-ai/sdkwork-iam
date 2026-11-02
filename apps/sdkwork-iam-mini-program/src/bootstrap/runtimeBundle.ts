@@ -42,7 +42,9 @@ const ALL_ROUTE_CONTRIBUTIONS = [
 
 /** Physical page paths this build ships. */
 export const IAM_MP_PAGE_PATHS = {
+  consoleAccountBinding: "console-account-binding/pages/list/index",
   consoleOrganizationDirectory: "console-organization/pages/directory/index",
+  consoleUserCenter: "console-user-center/pages/profile/index",
   contextSelection: "pages/context-selection/index",
   forgotPassword: "pages/forgot-password/index",
   login: "pages/login/index",
@@ -75,6 +77,8 @@ export const IAM_MP_IMPLEMENTED_ROUTE_IDS: readonly string[] = [
   "app.iam.user-center.password",
   "app.iam.account-binding.list",
   "console.iam.organization.directory",
+  "console.iam.account-binding.list",
+  "console.iam.user-center.profile",
 ];
 
 /** Message dictionary, kept intentionally small: only shipped pages read it. */
@@ -153,6 +157,52 @@ const MESSAGES: Record<string, { "en-US": string; "zh-CN": string }> = {
   "consoleOrganization.loading": { "en-US": "Loading…", "zh-CN": "加载中…" },
   "consoleOrganization.loadFailed": { "en-US": "Could not load organizations.", "zh-CN": "组织加载失败。" },
   "consoleOrganization.toApp": { "en-US": "Back to my workspace", "zh-CN": "返回我的工作台" },
+  "consoleAccountBinding.title": { "en-US": "Account binding management", "zh-CN": "账号绑定管理" },
+  "consoleAccountBinding.subtitle": {
+    "en-US": "Linked identities and the tenant policy that gates removal.",
+    "zh-CN": "已绑定身份，以及决定能否解除的租户策略。",
+  },
+  "consoleAccountBinding.policySection": { "en-US": "Self-service policy", "zh-CN": "自助服务策略" },
+  "consoleAccountBinding.linksSection": { "en-US": "Linked identities", "zh-CN": "已绑定身份" },
+  "consoleAccountBinding.policyContact": { "en-US": "Contact binding", "zh-CN": "联系方式绑定" },
+  "consoleAccountBinding.policyEmail": { "en-US": "Email binding", "zh-CN": "邮箱绑定" },
+  "consoleAccountBinding.policyOauth": { "en-US": "Third-party sign-in", "zh-CN": "第三方登录" },
+  "consoleAccountBinding.policyUnlink": { "en-US": "Self-service unlink", "zh-CN": "自助解除绑定" },
+  "consoleAccountBinding.allowed": { "en-US": "Allowed", "zh-CN": "允许" },
+  "consoleAccountBinding.denied": { "en-US": "Not allowed", "zh-CN": "不允许" },
+  "consoleAccountBinding.unlink": { "en-US": "Remove", "zh-CN": "解除" },
+  "consoleAccountBinding.unlinkConfirm": {
+    "en-US": "Remove this sign-in method for the user?",
+    "zh-CN": "确定为该用户解除此登录方式？",
+  },
+  "consoleAccountBinding.unlinkError": {
+    "en-US": "Could not remove this sign-in method.",
+    "zh-CN": "解除该登录方式失败。",
+  },
+  "consoleAccountBinding.cancel": { "en-US": "Cancel", "zh-CN": "取消" },
+  "consoleAccountBinding.emptyLinks": {
+    "en-US": "No identity is linked yet.",
+    "zh-CN": "还没有绑定任何身份。",
+  },
+  "consoleAccountBinding.loading": { "en-US": "Loading…", "zh-CN": "加载中…" },
+  "consoleAccountBinding.loadFailed": {
+    "en-US": "Could not load this workspace.",
+    "zh-CN": "工作台加载失败。",
+  },
+  "consoleAccountBinding.toApp": { "en-US": "Back to my workspace", "zh-CN": "返回我的工作台" },
+  "consoleUserCenter.title": { "en-US": "User center", "zh-CN": "用户中心" },
+  "consoleUserCenter.subtitle": {
+    "en-US": "The signed-in user's own record, as the console sees it.",
+    "zh-CN": "当前登录用户自身的账号信息（控制台视角）。",
+  },
+  "consoleUserCenter.userId": { "en-US": "User", "zh-CN": "用户" },
+  "consoleUserCenter.displayName": { "en-US": "Display name", "zh-CN": "显示名称" },
+  "consoleUserCenter.email": { "en-US": "Email", "zh-CN": "邮箱" },
+  "consoleUserCenter.phone": { "en-US": "Phone", "zh-CN": "手机号" },
+  "consoleUserCenter.notReported": { "en-US": "Not reported", "zh-CN": "未提供" },
+  "consoleUserCenter.loading": { "en-US": "Loading…", "zh-CN": "加载中…" },
+  "consoleUserCenter.loadFailed": { "en-US": "Could not load this view.", "zh-CN": "视图加载失败。" },
+  "consoleUserCenter.toApp": { "en-US": "Back to my workspace", "zh-CN": "返回我的工作台" },
   "profile.title": { "en-US": "My profile", "zh-CN": "我的资料" },
   "profile.displayName": { "en-US": "Display name", "zh-CN": "显示名称" },
   "profile.email": { "en-US": "Email", "zh-CN": "邮箱" },

@@ -6873,7 +6873,9 @@ var ALL_ROUTE_CONTRIBUTIONS = [
   ...IAMMPCONSOLE_ROUTE_CONTRIBUTIONS
 ];
 var IAM_MP_PAGE_PATHS = {
+  consoleAccountBinding: "console-account-binding/pages/list/index",
   consoleOrganizationDirectory: "console-organization/pages/directory/index",
+  consoleUserCenter: "console-user-center/pages/profile/index",
   contextSelection: "pages/context-selection/index",
   forgotPassword: "pages/forgot-password/index",
   login: "pages/login/index",
@@ -6894,7 +6896,9 @@ var IAM_MP_IMPLEMENTED_ROUTE_IDS = [
   "app.iam.user-center.profile",
   "app.iam.user-center.password",
   "app.iam.account-binding.list",
-  "console.iam.organization.directory"
+  "console.iam.organization.directory",
+  "console.iam.account-binding.list",
+  "console.iam.user-center.profile"
 ];
 var MESSAGES = {
   "common.loading": { "en-US": "Loading", "zh-CN": "\u52A0\u8F7D\u4E2D" },
@@ -6971,6 +6975,52 @@ var MESSAGES = {
   "consoleOrganization.loading": { "en-US": "Loading\u2026", "zh-CN": "\u52A0\u8F7D\u4E2D\u2026" },
   "consoleOrganization.loadFailed": { "en-US": "Could not load organizations.", "zh-CN": "\u7EC4\u7EC7\u52A0\u8F7D\u5931\u8D25\u3002" },
   "consoleOrganization.toApp": { "en-US": "Back to my workspace", "zh-CN": "\u8FD4\u56DE\u6211\u7684\u5DE5\u4F5C\u53F0" },
+  "consoleAccountBinding.title": { "en-US": "Account binding management", "zh-CN": "\u8D26\u53F7\u7ED1\u5B9A\u7BA1\u7406" },
+  "consoleAccountBinding.subtitle": {
+    "en-US": "Linked identities and the tenant policy that gates removal.",
+    "zh-CN": "\u5DF2\u7ED1\u5B9A\u8EAB\u4EFD\uFF0C\u4EE5\u53CA\u51B3\u5B9A\u80FD\u5426\u89E3\u9664\u7684\u79DF\u6237\u7B56\u7565\u3002"
+  },
+  "consoleAccountBinding.policySection": { "en-US": "Self-service policy", "zh-CN": "\u81EA\u52A9\u670D\u52A1\u7B56\u7565" },
+  "consoleAccountBinding.linksSection": { "en-US": "Linked identities", "zh-CN": "\u5DF2\u7ED1\u5B9A\u8EAB\u4EFD" },
+  "consoleAccountBinding.policyContact": { "en-US": "Contact binding", "zh-CN": "\u8054\u7CFB\u65B9\u5F0F\u7ED1\u5B9A" },
+  "consoleAccountBinding.policyEmail": { "en-US": "Email binding", "zh-CN": "\u90AE\u7BB1\u7ED1\u5B9A" },
+  "consoleAccountBinding.policyOauth": { "en-US": "Third-party sign-in", "zh-CN": "\u7B2C\u4E09\u65B9\u767B\u5F55" },
+  "consoleAccountBinding.policyUnlink": { "en-US": "Self-service unlink", "zh-CN": "\u81EA\u52A9\u89E3\u9664\u7ED1\u5B9A" },
+  "consoleAccountBinding.allowed": { "en-US": "Allowed", "zh-CN": "\u5141\u8BB8" },
+  "consoleAccountBinding.denied": { "en-US": "Not allowed", "zh-CN": "\u4E0D\u5141\u8BB8" },
+  "consoleAccountBinding.unlink": { "en-US": "Remove", "zh-CN": "\u89E3\u9664" },
+  "consoleAccountBinding.unlinkConfirm": {
+    "en-US": "Remove this sign-in method for the user?",
+    "zh-CN": "\u786E\u5B9A\u4E3A\u8BE5\u7528\u6237\u89E3\u9664\u6B64\u767B\u5F55\u65B9\u5F0F\uFF1F"
+  },
+  "consoleAccountBinding.unlinkError": {
+    "en-US": "Could not remove this sign-in method.",
+    "zh-CN": "\u89E3\u9664\u8BE5\u767B\u5F55\u65B9\u5F0F\u5931\u8D25\u3002"
+  },
+  "consoleAccountBinding.cancel": { "en-US": "Cancel", "zh-CN": "\u53D6\u6D88" },
+  "consoleAccountBinding.emptyLinks": {
+    "en-US": "No identity is linked yet.",
+    "zh-CN": "\u8FD8\u6CA1\u6709\u7ED1\u5B9A\u4EFB\u4F55\u8EAB\u4EFD\u3002"
+  },
+  "consoleAccountBinding.loading": { "en-US": "Loading\u2026", "zh-CN": "\u52A0\u8F7D\u4E2D\u2026" },
+  "consoleAccountBinding.loadFailed": {
+    "en-US": "Could not load this workspace.",
+    "zh-CN": "\u5DE5\u4F5C\u53F0\u52A0\u8F7D\u5931\u8D25\u3002"
+  },
+  "consoleAccountBinding.toApp": { "en-US": "Back to my workspace", "zh-CN": "\u8FD4\u56DE\u6211\u7684\u5DE5\u4F5C\u53F0" },
+  "consoleUserCenter.title": { "en-US": "User center", "zh-CN": "\u7528\u6237\u4E2D\u5FC3" },
+  "consoleUserCenter.subtitle": {
+    "en-US": "The signed-in user's own record, as the console sees it.",
+    "zh-CN": "\u5F53\u524D\u767B\u5F55\u7528\u6237\u81EA\u8EAB\u7684\u8D26\u53F7\u4FE1\u606F\uFF08\u63A7\u5236\u53F0\u89C6\u89D2\uFF09\u3002"
+  },
+  "consoleUserCenter.userId": { "en-US": "User", "zh-CN": "\u7528\u6237" },
+  "consoleUserCenter.displayName": { "en-US": "Display name", "zh-CN": "\u663E\u793A\u540D\u79F0" },
+  "consoleUserCenter.email": { "en-US": "Email", "zh-CN": "\u90AE\u7BB1" },
+  "consoleUserCenter.phone": { "en-US": "Phone", "zh-CN": "\u624B\u673A\u53F7" },
+  "consoleUserCenter.notReported": { "en-US": "Not reported", "zh-CN": "\u672A\u63D0\u4F9B" },
+  "consoleUserCenter.loading": { "en-US": "Loading\u2026", "zh-CN": "\u52A0\u8F7D\u4E2D\u2026" },
+  "consoleUserCenter.loadFailed": { "en-US": "Could not load this view.", "zh-CN": "\u89C6\u56FE\u52A0\u8F7D\u5931\u8D25\u3002" },
+  "consoleUserCenter.toApp": { "en-US": "Back to my workspace", "zh-CN": "\u8FD4\u56DE\u6211\u7684\u5DE5\u4F5C\u53F0" },
   "profile.title": { "en-US": "My profile", "zh-CN": "\u6211\u7684\u8D44\u6599" },
   "profile.displayName": { "en-US": "Display name", "zh-CN": "\u663E\u793A\u540D\u79F0" },
   "profile.email": { "en-US": "Email", "zh-CN": "\u90AE\u7BB1" },

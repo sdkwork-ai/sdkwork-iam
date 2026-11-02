@@ -270,9 +270,15 @@ clientSurfaces:
       so a console route could never appear in `app.json` however complete its page was;
       the manifest is now projected from the union of the app and console registries, and
       the registry test runs against that union.
-      Remaining: 17 declared routes still need pages — provider list, oauth-callback
-      and context-selection first, then the three remaining console pages and the admin
-      tier.
+      Remaining: 15 declared routes still need pages — provider list, oauth-callback
+      and context-selection first, then the console tenant page and the admin tier.
+      The console tier now ships three of its four pages: `console-organization` (the
+      tenant-wide directory), `console-account-binding` (policy rows plus linked identities,
+      removal offered only when the tenant grants self-service unlink and a row disappearing
+      only after the server accepts) and `console-user-center` (the operator's own record).
+      The user-center page is recorded as **partial**: the runtime exposes no verification
+      policy port, so the policy region the PC and H5 console screens show is missing here,
+      and the gap is stated rather than papered over.
   flutter:
     status: partial
     note: >

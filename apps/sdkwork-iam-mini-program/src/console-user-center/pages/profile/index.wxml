@@ -1,0 +1,20 @@
+<view class="page">
+  <view class="brand">
+    <text class="brand-title">{{title}}</text>
+    <text class="brand-subtitle">{{subtitle}}</text>
+  </view>
+
+  <text wx:if="{{loading}}" class="section-title">{{loadingText}}</text>
+  <text wx:if="{{errorText}}" class="error">{{errorText}}</text>
+
+  <view wx:if="{{!loading}}" class="card">
+    <view wx:for="{{rows}}" wx:key="key" class="row">
+      <text class="row-title">{{item.label}}</text>
+      <text class="row-detail">{{item.value}}</text>
+    </view>
+  </view>
+
+  <view class="links">
+    <text class="link" bindtap="onBackToApp">{{toAppText}}</text>
+  </view>
+</view>
