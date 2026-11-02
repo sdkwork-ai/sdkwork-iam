@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
+import 'package:sdkwork_iam_flutter_mobile_admin_account_binding/sdkwork_iam_flutter_mobile_admin_account_binding.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_audit/sdkwork_iam_flutter_mobile_admin_audit.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_oauth/sdkwork_iam_flutter_mobile_admin_oauth.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_organization/sdkwork_iam_flutter_mobile_admin_organization.dart';
@@ -211,6 +212,28 @@ const Map<String, String> _oauthMessages = <String, String>{
   'subtitle': 'Providers this tenant offers.',
   'title': 'Third-party sign-in',
 };
+
+const Map<String, String> _adminAccountBindingMessages = <String, String>{
+  'empty': 'No user has linked an identity yet.',
+  'loadError': 'Unable to load this view.',
+  'retry': 'Retry',
+  'searchAction': 'Search',
+  'searchPlaceholder': 'Search by provider or user',
+  'subtitle': 'Every third-party identity linked by a user in this tenant.',
+  'title': 'Account bindings',
+};
+
+class _FakeAdminAccountBindingDataSource
+    implements IamFlutterMobileAdminAccountBindingDataSource {
+  @override
+  Future<IamFlutterMobileAdminAccountLinkPage> fetchLinksPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  }) async {
+    return const IamFlutterMobileAdminAccountLinkPage();
+  }
+}
 
 const Map<String, String> _adminAuditMessages = <String, String>{
   'empty': 'No audit event was recorded yet.',
@@ -498,6 +521,8 @@ Widget _shell(_FakeAuthDataSource source, {List<String>? openedUrls}) {
   return IamHomeShell(
     accountBindingDataSource: _FakeAccountBindingDataSource(),
     accountBindingMessages: _accountBindingMessages,
+    adminAccountBindingDataSource: _FakeAdminAccountBindingDataSource(),
+    adminAccountBindingMessages: _adminAccountBindingMessages,
     adminAuditDataSource: _FakeAdminAuditDataSource(),
     adminAuditMessages: _adminAuditMessages,
     adminOAuthDataSource: _FakeAdminOAuthDataSource(),
@@ -592,6 +617,7 @@ void main() {
     expect(app.routes!.containsKey('/admin/iam/roles'), isTrue);
     expect(app.routes!.containsKey('/admin/iam/policies'), isTrue);
     expect(app.routes!.containsKey('/admin/iam/oauth-providers'), isTrue);
+    expect(app.routes!.containsKey('/admin/iam/account-bindings'), isTrue);
     expect(app.routes!.containsKey('/admin/iam/audit'), isTrue);
     expect(app.routes!.containsKey('/admin/iam/tenants'), isTrue);
     expect(app.routes!.containsKey('/admin/iam/organizations'), isTrue);

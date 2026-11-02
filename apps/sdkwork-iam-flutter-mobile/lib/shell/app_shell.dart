@@ -1,4 +1,4 @@
-﻿// SDKWORK-IAM-FLUTTER-SHELL: authored shell assembly.
+// SDKWORK-IAM-FLUTTER-SHELL: authored shell assembly.
 /**
  * Shell the root mounts: it loads the copy the mounted screens need, decides
  * whether the session gate opens, and builds the MaterialApp with the route table.
@@ -13,6 +13,7 @@ import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/material.dart';
 import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
+import 'package:sdkwork_iam_flutter_mobile_admin_account_binding/sdkwork_iam_flutter_mobile_admin_account_binding.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_audit/sdkwork_iam_flutter_mobile_admin_audit.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_oauth/sdkwork_iam_flutter_mobile_admin_oauth.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_permission/sdkwork_iam_flutter_mobile_admin_permission.dart';
@@ -31,6 +32,7 @@ import 'package:sdkwork_iam_flutter_mobile_tenant/sdkwork_iam_flutter_mobile_ten
 import 'package:sdkwork_iam_flutter_mobile_user_center/sdkwork_iam_flutter_mobile_user_center.dart';
 
 import 'account_binding_data_source.dart';
+import 'admin_account_binding_data_source.dart';
 import 'admin_audit_data_source.dart';
 import 'admin_oauth_data_source.dart';
 import 'admin_permission_data_source.dart';
@@ -51,6 +53,8 @@ import '../bootstrap/url_opener.dart';
 class IamHomeShell extends StatefulWidget {
   const IamHomeShell({
     super.key,
+    this.adminAccountBindingDataSource,
+    this.adminAccountBindingMessages,
     this.adminAuditDataSource,
     this.adminAuditMessages,
     this.adminOAuthDataSource,
@@ -96,6 +100,12 @@ class IamHomeShell extends StatefulWidget {
 
   /// Overrides the admin audit copy.
   final Map<String, String>? adminAuditMessages;
+
+  /// Overrides the backend-api admin account-binding data source.
+  final IamFlutterMobileAdminAccountBindingDataSource? adminAccountBindingDataSource;
+
+  /// Overrides the admin account-binding copy.
+  final Map<String, String>? adminAccountBindingMessages;
 
   /// Overrides the backend-api admin OAuth data source.
   final IamFlutterMobileAdminOAuthDataSource? adminOAuthDataSource;
@@ -318,6 +328,17 @@ class _IamHomeShellState extends State<IamHomeShell> {
             messages: copy.consoleOrganization,
           ),
         );
+        final Widget adminAccountBindingScreen = Builder(
+          builder: (BuildContext _) => IamFlutterMobileAdminAccountBindingScreen(
+            controller: IamFlutterMobileAdminAccountBindingController(
+              service: IamFlutterMobileAdminAccountBindingService(
+                dataSource: widget.adminAccountBindingDataSource ??
+                    IamAdminAccountBindingBackendSdkDataSource(),
+              ),
+            ),
+            messages: copy.adminAccountBinding,
+          ),
+        );
         final Widget adminAuditScreen = Builder(
           builder: (BuildContext _) => IamFlutterMobileAdminAuditScreen(
             controller: IamFlutterMobileAdminAuditController(
@@ -519,6 +540,11 @@ class _IamHomeShellState extends State<IamHomeShell> {
               routeId: IamFlutterMobileAdminAuditRoutes.eventsRouteId,
             ),
             SdkworkRouteEntry(
+              builder: (_) => adminAccountBindingScreen,
+              path: '/admin/iam/account-bindings',
+              routeId: IamFlutterMobileAdminAccountBindingRoutes.listRouteId,
+            ),
+            SdkworkRouteEntry(
               builder: (_) => adminOAuthScreen,
               path: '/admin/iam/oauth-providers',
               routeId: IamFlutterMobileAdminOauthRoutes.providersRouteId,
@@ -605,6 +631,12 @@ class _IamHomeShellState extends State<IamHomeShell> {
         );
     final Map<String, String> adminAudit = widget.adminAuditMessages ??
         await _loadFragment('sdkwork_iam_flutter_mobile_admin_audit', 'admin_audit', locale);
+    final Map<String, String> adminAccountBinding = widget.adminAccountBindingMessages ??
+        await _loadFragment(
+          'sdkwork_iam_flutter_mobile_admin_account_binding',
+          'admin_account_binding',
+          locale,
+        );
     final Map<String, String> adminOAuth = widget.adminOAuthMessages ??
         await _loadFragment('sdkwork_iam_flutter_mobile_admin_oauth', 'admin_oauth', locale);
     final Map<String, String> adminOrganization = widget.adminOrganizationMessages ??
@@ -619,6 +651,7 @@ class _IamHomeShellState extends State<IamHomeShell> {
         await _loadFragment('sdkwork_iam_flutter_mobile_admin_permission', 'admin_permission', locale);
     return _IamShellCopy(
       accountBinding: accountBinding,
+      adminAccountBinding: adminAccountBinding,
       adminAudit: adminAudit,
       adminOAuth: adminOAuth,
       adminOrganization: adminOrganization,
@@ -673,6 +706,7 @@ class _IamHomeShellState extends State<IamHomeShell> {
 class _IamShellCopy {
   const _IamShellCopy({
     required this.accountBinding,
+    required this.adminAccountBinding,
     required this.adminAudit,
     required this.adminOAuth,
     required this.adminOrganization,
@@ -690,6 +724,7 @@ class _IamShellCopy {
   });
 
   final Map<String, String> accountBinding;
+  final Map<String, String> adminAccountBinding;
   final Map<String, String> adminAudit;
   final Map<String, String> adminOAuth;
   final Map<String, String> adminOrganization;

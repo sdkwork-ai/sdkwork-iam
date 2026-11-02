@@ -327,8 +327,13 @@ clientSurfaces:
       the most expensive misreading an authorization console can invite.
       `admin.iam.oauth.providers` reads `oauth/provider_catalog` and states each provider as
       enabled, disabled or explicitly unreported — a missing badge would leave an operator
-      unable to tell a switched-off provider from an incompletely described one. The
-      remaining three admin screens reuse that shape.
+      unable to tell a switched-off provider from an incompletely described one.
+      `admin.iam.account-binding.list` on Flutter lists the tenant's linked identities
+      (provider identity plus the local user), which is recorded as **partial**, not complete:
+      the PC page is a policy settings editor with toggles, and policy writes are not
+      implemented on this surface yet. The list is what an operator needs to answer "which
+      account is this login attached to?", so it stays; the gap is stated rather than papered
+      over. Three admin screens remain.
   harmony:
     status: scaffold
     note: Route/page map exists; capability pages do not render real data yet.
