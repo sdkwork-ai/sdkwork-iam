@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
 import 'package:sdkwork_iam_flutter_mobile_commons/sdkwork_iam_flutter_mobile_commons.dart';
+import 'package:sdkwork_iam_flutter_mobile_console_tenant/sdkwork_iam_flutter_mobile_console_tenant.dart';
 import 'package:sdkwork_iam_flutter_mobile_oauth/sdkwork_iam_flutter_mobile_oauth.dart';
 import 'package:sdkwork_iam_flutter_mobile_organization/sdkwork_iam_flutter_mobile_organization.dart';
 import 'package:sdkwork_iam_flutter_mobile_shell/sdkwork_iam_flutter_mobile_shell.dart';
@@ -23,6 +24,7 @@ import 'package:sdkwork_iam_flutter_mobile_user_center/sdkwork_iam_flutter_mobil
 
 import 'account_binding_data_source.dart';
 import 'auth_data_source.dart';
+import 'console_tenant_data_source.dart';
 import 'organization_data_source.dart';
 import 'oauth_data_source.dart';
 import 'tenant_data_source.dart';
@@ -38,6 +40,8 @@ class IamHomeShell extends StatefulWidget {
     this.authController,
     this.authDataSource,
     this.authMessages,
+    this.consoleTenantDataSource,
+    this.consoleTenantMessages,
     this.organizationDataSource,
     this.organizationMessages,
     this.oauthDataSource,
@@ -69,6 +73,12 @@ class IamHomeShell extends StatefulWidget {
 
   /// Overrides the auth copy.
   final Map<String, String>? authMessages;
+
+  /// Overrides the app-api console-tenant data source.
+  final IamFlutterMobileConsoleTenantDataSource? consoleTenantDataSource;
+
+  /// Overrides the console-tenant copy.
+  final Map<String, String>? consoleTenantMessages;
 
   /// Overrides the app-api tenant data source.
   final IamFlutterMobileTenantDataSource? tenantDataSource;
@@ -204,6 +214,19 @@ class _IamHomeShellState extends State<IamHomeShell> {
             onAuthorize: (String url) => _openAuthorizationUrl(screenContext, copy.oauth, url),
           ),
         );
+        // Built inside the route builder: the console workspace needs the app-api client,
+        // and constructing it eagerly would make every launch (including the sign-in
+        // screen) depend on a client it never uses.
+        final Widget consoleTenantScreen = Builder(
+          builder: (BuildContext _) => IamFlutterMobileConsoleTenantScreen(
+            controller: IamFlutterMobileConsoleTenantController(
+              service: IamFlutterMobileConsoleTenantService(
+                dataSource: widget.consoleTenantDataSource ?? IamConsoleTenantAppSdkDataSource(),
+              ),
+            ),
+            messages: copy.consoleTenant,
+          ),
+        );
         final Widget profileScreen = Builder(
           builder: (BuildContext screenContext) => IamFlutterMobileUserCenterScreen(
             controller: profileController,
@@ -263,6 +286,11 @@ class _IamHomeShellState extends State<IamHomeShell> {
               path: '/oauth/providers',
               routeId: IamFlutterMobileOauthRoutes.providersRouteId,
             ),
+            SdkworkRouteEntry(
+              builder: (_) => consoleTenantScreen,
+              path: '/console/iam/tenant',
+              routeId: IamFlutterMobileConsoleTenantRoutes.overviewRouteId,
+            ),
           ],
           title: copy.tenant['title'] ?? 'SDKWork IAM',
         );
@@ -300,9 +328,16 @@ class _IamHomeShellState extends State<IamHomeShell> {
         );
     final Map<String, String> oauth = widget.oauthMessages ??
         await _loadFragment('sdkwork_iam_flutter_mobile_oauth', 'oauth', locale);
+    final Map<String, String> consoleTenant = widget.consoleTenantMessages ??
+        await _loadFragment(
+          'sdkwork_iam_flutter_mobile_console_tenant',
+          'console_tenant',
+          locale,
+        );
     return _IamShellCopy(
       accountBinding: accountBinding,
       auth: auth,
+      consoleTenant: consoleTenant,
       oauth: oauth,
       organization: organization,
       tenant: tenant,
@@ -348,6 +383,7 @@ class _IamShellCopy {
   const _IamShellCopy({
     required this.accountBinding,
     required this.auth,
+    required this.consoleTenant,
     required this.oauth,
     required this.organization,
     required this.tenant,
@@ -356,6 +392,7 @@ class _IamShellCopy {
 
   final Map<String, String> accountBinding;
   final Map<String, String> auth;
+  final Map<String, String> consoleTenant;
   final Map<String, String> oauth;
   final Map<String, String> organization;
   final Map<String, String> tenant;

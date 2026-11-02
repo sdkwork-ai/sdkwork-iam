@@ -1,20 +1,76 @@
 {
   "@@locale": "zh",
-  "title": "SDKWork IAM Flutter Mobile Console Tenant",
+  "title": "租户管理",
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile Console Tenant 工作区",
+  "subtitle": "当前操作的租户、其策略与组织。",
   "@subtitle": {
     "description": "Supporting line under the title."
+  },
+  "sessionSection": "当前会话",
+  "@sessionSection": {
+    "description": "Heading of the session region."
+  },
+  "policySection": "自助服务策略",
+  "@policySection": {
+    "description": "Heading of the policy region."
+  },
+  "organizationsSection": "组织",
+  "@organizationsSection": {
+    "description": "Heading of the organization region."
+  },
+  "environment": "环境",
+  "@environment": {
+    "description": "Label of the environment row."
+  },
+  "tenant": "租户",
+  "@tenant": {
+    "description": "Label of the tenant row."
+  },
+  "user": "操作人",
+  "@user": {
+    "description": "Label of the operator row."
+  },
+  "policyContact": "联系方式绑定",
+  "@policyContact": {
+    "description": "Policy row: contact binding."
+  },
+  "policyEmail": "邮箱绑定",
+  "@policyEmail": {
+    "description": "Policy row: email binding."
+  },
+  "policyOauth": "第三方登录",
+  "@policyOauth": {
+    "description": "Policy row: third-party sign-in."
+  },
+  "policyUnlink": "自助解除绑定",
+  "@policyUnlink": {
+    "description": "Policy row: self-service unlink."
+  },
+  "allowed": "允许",
+  "@allowed": {
+    "description": "Policy value: allowed."
+  },
+  "denied": "不允许",
+  "@denied": {
+    "description": "Policy value: not allowed."
+  },
+  "notReported": "未提供",
+  "@notReported": {
+    "description": "Shown for a field the server did not report."
+  },
+  "emptyOrganizations": "该租户还没有组织。",
+  "@emptyOrganizations": {
+    "description": "Empty state of the organization region."
+  },
+  "loadMore": "加载更多",
+  "@loadMore": {
+    "description": "Label of the next-page action."
   },
   "loading": "加载中…",
   "@loading": {
     "description": "Shown while the capability loads its first page."
-  },
-  "empty": "暂无内容。",
-  "@empty": {
-    "description": "Empty state shown when the capability has no records."
   },
   "loadError": "无法加载此视图。",
   "@loadError": {

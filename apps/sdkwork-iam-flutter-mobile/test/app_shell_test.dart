@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
+import 'package:sdkwork_iam_flutter_mobile_console_tenant/sdkwork_iam_flutter_mobile_console_tenant.dart';
 import 'package:sdkwork_iam_flutter_mobile_core/sdkwork_iam_flutter_mobile_core.dart';
 import 'package:sdkwork_iam_flutter_mobile_organization/sdkwork_iam_flutter_mobile_organization.dart';
 import 'package:sdkwork_iam_flutter_mobile_tenant/sdkwork_iam_flutter_mobile_tenant.dart';
@@ -203,6 +204,49 @@ const Map<String, String> _oauthMessages = <String, String>{
   'title': 'Third-party sign-in',
 };
 
+const Map<String, String> _consoleTenantMessages = <String, String>{
+  'allowed': 'Allowed',
+  'denied': 'Not allowed',
+  'emptyOrganizations': 'This tenant has no organizations yet.',
+  'environment': 'Environment',
+  'loadError': 'Unable to load this view.',
+  'loadMore': 'Load more',
+  'notReported': 'Not reported',
+  'organizationsSection': 'Organizations',
+  'policyContact': 'Contact binding',
+  'policyEmail': 'Email binding',
+  'policyOauth': 'Third-party sign-in',
+  'policySection': 'Self-service policy',
+  'policyUnlink': 'Self-service unlink',
+  'retry': 'Retry',
+  'sessionSection': 'Session',
+  'subtitle': 'The tenant you are acting in, its policy and its organizations.',
+  'tenant': 'Tenant',
+  'title': 'Tenant management',
+  'user': 'Operator',
+};
+
+class _FakeConsoleTenantDataSource implements IamFlutterMobileConsoleTenantDataSource {
+  @override
+  Future<IamFlutterMobileConsoleTenantOrganizationPage> fetchOrganizationsPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  }) async {
+    return const IamFlutterMobileConsoleTenantOrganizationPage();
+  }
+
+  @override
+  Future<IamFlutterMobileConsoleTenantPolicy> loadPolicy() async {
+    return const IamFlutterMobileConsoleTenantPolicy();
+  }
+
+  @override
+  Future<IamFlutterMobileConsoleTenantRuntime> loadRuntime() async {
+    return const IamFlutterMobileConsoleTenantRuntime(tenantId: 'tenant-1');
+  }
+}
+
 class _FakeOAuthDataSource implements IamFlutterMobileOAuthDataSource {
   @override
   Future<String> createAuthorizationUrl(String providerKey) async {
@@ -229,6 +273,8 @@ Widget _shell(_FakeAuthDataSource source, {List<String>? openedUrls}) {
     accountBindingMessages: _accountBindingMessages,
     authController: _auth(source),
     authMessages: _authMessages,
+    consoleTenantDataSource: _FakeConsoleTenantDataSource(),
+    consoleTenantMessages: _consoleTenantMessages,
     organizationDataSource: _FakeOrganizationDataSource(),
     organizationMessages: _organizationMessages,
     oauthDataSource: _FakeOAuthDataSource(),
@@ -295,6 +341,7 @@ void main() {
     expect(app.routes!.containsKey('/user/profile'), isTrue);
     expect(app.routes!.containsKey('/user/password'), isTrue);
     expect(app.routes!.containsKey('/oauth/providers'), isTrue);
+    expect(app.routes!.containsKey('/console/iam/tenant'), isTrue);
 
     // The ids the shell registers must be the ones the capability packages
     // contribute; a mismatch would break deep links while the UI still looked
@@ -313,6 +360,10 @@ void main() {
         '${contribution.id}:${contribution.path}',
       for (final RouteContribution contribution in iamFlutterMobileOauthRouteContributions)
         '${contribution.id}:${contribution.path}',
+      // The console tier owns its own RouteContribution type (console-core registry), so
+      // this loop infers rather than naming the app-core type.
+      for (final contribution in iamFlutterMobileConsoleTenantRouteContributions)
+        '${contribution.id}:${contribution.path}',
     };
     expect(contributed, contains('app.iam.auth.login:/auth/login'));
     expect(contributed, contains('app.iam.auth.forgot-password:/auth/forgot-password'));
@@ -322,6 +373,7 @@ void main() {
     expect(contributed, contains('app.iam.user-center.profile:/user/profile'));
     expect(contributed, contains('app.iam.user-center.password:/user/password'));
     expect(contributed, contains('app.iam.oauth.providers:/oauth/providers'));
+    expect(contributed, contains('console.iam.tenant.overview:/console/iam/tenant'));
   });
 
   testWidgets('opens the organization directory from the tenant screen', (WidgetTester tester) async {

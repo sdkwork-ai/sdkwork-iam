@@ -1,20 +1,76 @@
 {
   "@@locale": "en",
-  "title": "SDKWork IAM Flutter Mobile Console Tenant",
+  "title": "Tenant management",
   "@title": {
     "description": "Title of the capability screen."
   },
-  "subtitle": "SDKWork IAM Flutter Mobile Console Tenant workspace",
+  "subtitle": "The tenant you are acting in, its policy and its organizations.",
   "@subtitle": {
     "description": "Supporting line under the title."
+  },
+  "sessionSection": "Session",
+  "@sessionSection": {
+    "description": "Heading of the session region."
+  },
+  "policySection": "Self-service policy",
+  "@policySection": {
+    "description": "Heading of the policy region."
+  },
+  "organizationsSection": "Organizations",
+  "@organizationsSection": {
+    "description": "Heading of the organization region."
+  },
+  "environment": "Environment",
+  "@environment": {
+    "description": "Label of the environment row."
+  },
+  "tenant": "Tenant",
+  "@tenant": {
+    "description": "Label of the tenant row."
+  },
+  "user": "Operator",
+  "@user": {
+    "description": "Label of the operator row."
+  },
+  "policyContact": "Contact binding",
+  "@policyContact": {
+    "description": "Policy row: contact binding."
+  },
+  "policyEmail": "Email binding",
+  "@policyEmail": {
+    "description": "Policy row: email binding."
+  },
+  "policyOauth": "Third-party sign-in",
+  "@policyOauth": {
+    "description": "Policy row: third-party sign-in."
+  },
+  "policyUnlink": "Self-service unlink",
+  "@policyUnlink": {
+    "description": "Policy row: self-service unlink."
+  },
+  "allowed": "Allowed",
+  "@allowed": {
+    "description": "Policy value: allowed."
+  },
+  "denied": "Not allowed",
+  "@denied": {
+    "description": "Policy value: not allowed."
+  },
+  "notReported": "Not reported",
+  "@notReported": {
+    "description": "Shown for a field the server did not report."
+  },
+  "emptyOrganizations": "This tenant has no organizations yet.",
+  "@emptyOrganizations": {
+    "description": "Empty state of the organization region."
+  },
+  "loadMore": "Load more",
+  "@loadMore": {
+    "description": "Label of the next-page action."
   },
   "loading": "Loading…",
   "@loading": {
     "description": "Shown while the capability loads its first page."
-  },
-  "empty": "Nothing to show yet.",
-  "@empty": {
-    "description": "Empty state shown when the capability has no records."
   },
   "loadError": "Unable to load this view.",
   "@loadError": {

@@ -1,10 +1,9 @@
-// SDKWORK-CLIENT-APP-SURFACES-GENERATED: do not edit by hand; regenerate with `node scripts/materialize-client-app-surfaces.mjs`.
+// SDKWORK-IAM-FLUTTER-CONSOLE-TENANT: authored controller.
 /**
  * Presentation logic of `sdkwork_iam_flutter_mobile_console_tenant`.
  *
- * Controllers call services and emit immutable state. They never construct SDK
- * clients, never read runtime configuration and never call platform plugins
- * (section 5).
+ * Controllers call services and emit immutable state. They never construct SDK clients,
+ * never read runtime configuration and never call platform plugins (section 5).
  */
 
 import '../services/console_tenant_service.dart';
@@ -16,9 +15,19 @@ class IamFlutterMobileConsoleTenantController {
       : _service = service ?? const IamFlutterMobileConsoleTenantService();
 
   final IamFlutterMobileConsoleTenantService _service;
-  final List<void Function(IamFlutterMobileConsoleTenantState)> _listeners = <void Function(IamFlutterMobileConsoleTenantState)>[];
+  final List<void Function(IamFlutterMobileConsoleTenantState)> _listeners =
+      <void Function(IamFlutterMobileConsoleTenantState)>[];
 
   IamFlutterMobileConsoleTenantState _state = const IamFlutterMobileConsoleTenantState();
+
+  /// Page size of one organization request.
+  static const int pageSize = 20;
+
+  /// Index of the next organization page.
+  int _nextPage = 0;
+
+  /// Bumped per load so a slow answer cannot overwrite a newer one.
+  int _requestId = 0;
 
   /// Current state.
   IamFlutterMobileConsoleTenantState get state => _state;
@@ -37,20 +46,60 @@ class IamFlutterMobileConsoleTenantController {
     }
   }
 
-  /// Replaces the displayed records.
-  void setItems(List<String> items) {
-    _emit(_state.copyWith(items: items, loading: false, errorKey: null));
+  /// Loads the identity, the policy and the first organization page.
+  ///
+  /// All three are read together: the identity and the policy are what the operator came
+  /// for, and a workspace that showed one without the others would invite a conclusion
+  /// from half the facts.
+  Future<void> load() async {
+    final int requestId = _requestId + 1;
+    _requestId = requestId;
+    _nextPage = 0;
+    _emit(_state.asLoading());
+    try {
+      final IamFlutterMobileConsoleTenantRuntime runtime = await _service.loadRuntime();
+      final IamFlutterMobileConsoleTenantPolicy policy = await _service.loadPolicy();
+      final IamFlutterMobileConsoleTenantOrganizationPage page =
+          await _service.fetchOrganizationsPage(page: 0, pageSize: pageSize);
+      if (requestId != _requestId) return;
+      _nextPage = 1;
+      _emit(_state.loaded(nextPolicy: policy, nextRuntime: runtime, page: page));
+    } catch (error) {
+      if (requestId != _requestId) return;
+      _emit(_state.failed(_describe(error)));
+    }
   }
 
-  /// Marks the capability as loading.
-  void setLoading() {
-    _emit(_state.copyWith(loading: true, errorKey: null));
+  /// Appends the next organization page.
+  Future<void> loadMore() async {
+    if (!_state.hasMore || _state.loadingMore) return;
+    final int requestId = _requestId;
+    _emit(_state.copyWith(loadingMore: true, errorMessage: null));
+    try {
+      final IamFlutterMobileConsoleTenantOrganizationPage page =
+          await _service.fetchOrganizationsPage(page: _nextPage, pageSize: pageSize);
+      if (requestId != _requestId) return;
+      _nextPage += 1;
+      _emit(
+        _state.copyWith(
+          hasMore: page.hasMore,
+          loadingMore: false,
+          organizations: <IamFlutterMobileConsoleTenantOrganization>[
+            ..._state.organizations,
+            ...page.items,
+          ],
+          status: IamFlutterMobileConsoleTenantStatus.ready,
+        ),
+      );
+    } catch (error) {
+      if (requestId != _requestId) return;
+      // A failed next page keeps the organizations already on screen.
+      _emit(_state.copyWith(loadingMore: false).failed(_describe(error)));
+    }
   }
 
-  /// Records a user-safe failure.
-  void setError(String errorKey) {
-    _emit(_state.copyWith(loading: false, errorKey: errorKey));
-  }
+  /// Renders a thrown value as user-safe text.
+  String _describe(Object error) => error is StateError ? error.message : '$error';
 
   /// Resolves the cross-client route id for a physical Flutter location.
   String? routeIdForPath(String path) => _service.routeIdForPath(path);
