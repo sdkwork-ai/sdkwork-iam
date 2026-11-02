@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sdkwork_iam_flutter_mobile_account_binding/sdkwork_iam_flutter_mobile_account_binding.dart';
+import 'package:sdkwork_iam_flutter_mobile_admin_permission/sdkwork_iam_flutter_mobile_admin_permission.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
 import 'package:sdkwork_iam_flutter_mobile_console_organization/sdkwork_iam_flutter_mobile_console_organization.dart';
 import 'package:sdkwork_iam_flutter_mobile_console_account_binding/sdkwork_iam_flutter_mobile_console_account_binding.dart';
@@ -207,6 +208,29 @@ const Map<String, String> _oauthMessages = <String, String>{
   'title': 'Third-party sign-in',
 };
 
+const Map<String, String> _adminPermissionMessages = <String, String>{
+  'empty': 'This tenant has no permission yet.',
+  'emptySearch': 'Nothing matched that search.',
+  'loadError': 'Unable to load this view.',
+  'loadMore': 'Load more',
+  'retry': 'Retry',
+  'searchAction': 'Search',
+  'searchPlaceholder': 'Search permissions',
+  'subtitle': 'The permission catalog.',
+  'title': 'Permissions',
+};
+
+class _FakeAdminPermissionDataSource implements IamFlutterMobileAdminPermissionDataSource {
+  @override
+  Future<IamFlutterMobileAdminPermissionPage> fetchPage({
+    required int page,
+    required int pageSize,
+    String? q,
+  }) async {
+    return const IamFlutterMobileAdminPermissionPage();
+  }
+}
+
 const Map<String, String> _consoleAccountBindingMessages = <String, String>{
   'allowed': 'Allowed',
   'cancel': 'Cancel',
@@ -367,6 +391,8 @@ Widget _shell(_FakeAuthDataSource source, {List<String>? openedUrls}) {
   return IamHomeShell(
     accountBindingDataSource: _FakeAccountBindingDataSource(),
     accountBindingMessages: _accountBindingMessages,
+    adminPermissionDataSource: _FakeAdminPermissionDataSource(),
+    adminPermissionMessages: _adminPermissionMessages,
     authController: _auth(source),
     authMessages: _authMessages,
     consoleOrganizationDataSource: _FakeConsoleOrganizationDataSource(),
@@ -447,6 +473,7 @@ void main() {
     expect(app.routes!.containsKey('/console/iam/organizations'), isTrue);
     expect(app.routes!.containsKey('/console/iam/user'), isTrue);
     expect(app.routes!.containsKey('/console/iam/account-binding'), isTrue);
+    expect(app.routes!.containsKey('/admin/iam/permissions'), isTrue);
 
     // The ids the shell registers must be the ones the capability packages
     // contribute; a mismatch would break deep links while the UI still looked

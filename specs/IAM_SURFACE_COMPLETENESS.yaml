@@ -311,6 +311,10 @@ clientSurfaces:
       is reported rather than swallowed. `SdkworkHostCapability` has no constant for "open an
       external URL", so the key lives in the adapter and is recorded here as a core gap
       (reusing `deepLinks` would have been wrong: that capability is for receiving links).
+      The admin tier has started on Flutter too: the root already builds a generated
+      `SdkworkBackendClient` per tier, so `admin.iam.permission.permissions` reads the
+      backend-api permission catalog through a port and never sees a transport. The
+      remaining nine admin screens reuse that shape.
   harmony:
     status: scaffold
     note: Route/page map exists; capability pages do not render real data yet.
