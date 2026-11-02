@@ -106,14 +106,18 @@ capabilities:
     pc-app: complete
     pc-admin: complete
     pc-console: missing-by-design
-    h5-app: partial
+    h5-app: complete
     flutter-app: partial
 
     notes: >
       WeChat mini-program login now has a dedicated jscode2session exchange and
       typed command, but H5/Flutter consumers and live provider credentials still
       require release acceptance. WeChat official-account XML/AES callbacks are
-      implemented at the open-api adapter boundary.
+      implemented at the open-api adapter boundary. H5 also ships
+      `/oauth/providers`: the provider catalog is paged and searched on the
+      server, and starting a flow mints the authorization URL through the
+      controller and hands it to the host, which owns navigation and the
+      in-app-browser/deep-link decision.
 
   - id: user-directory
     database: complete
@@ -183,11 +187,11 @@ clientSurfaces:
       - app.iam.account-binding.list
       - app.iam.user-center.profile
       - app.iam.user-center.password
+      - app.iam.oauth.providers
     scaffoldScreens:
       - app.iam.auth.register
       - app.iam.auth.forgot-password
       - app.iam.auth.context-selection
-      - app.iam.oauth.providers
       - console.iam.* (4)
       - admin.iam.* (10)
     blockedScreens:

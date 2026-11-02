@@ -23,6 +23,7 @@ export const iamH5UserCenterMessages: IamH5UserCenterMessages = {
     saved: "资料已保存",
     verificationRequired: "该租户下变更绑定信息需要验证。",
     openPassword: "修改密码",
+    openOAuthProviders: "第三方登录",
   },
   password: {
     title: "修改密码",

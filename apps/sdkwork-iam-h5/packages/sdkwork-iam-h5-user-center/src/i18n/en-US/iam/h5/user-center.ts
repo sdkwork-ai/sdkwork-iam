@@ -24,6 +24,7 @@ export const iamH5UserCenterMessages = {
     saved: "Profile saved",
     verificationRequired: "Binding changes require verification in this tenant.",
     openPassword: "Change password",
+    openOAuthProviders: "Third-party sign-in",
   },
   password: {
     title: "Change password",

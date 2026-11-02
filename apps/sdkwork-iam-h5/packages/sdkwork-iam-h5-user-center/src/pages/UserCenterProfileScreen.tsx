@@ -29,6 +29,8 @@ import type { SdkworkIamH5UserCenterController } from "../types/user-center-h5-t
 export interface SdkworkIamH5UserCenterProfileScreenProps {
   controller: SdkworkIamH5UserCenterController;
   onBack?: () => void;
+  /** Opens the third-party sign-in screen; rendered only when provided. */
+  onOpenOAuthProviders?: () => void;
   /** Opens the password screen; the link is only rendered when provided. */
   onOpenPassword?: () => void;
   title?: string;
@@ -38,6 +40,7 @@ export interface SdkworkIamH5UserCenterProfileScreenProps {
 export function SdkworkIamH5UserCenterProfileScreen({
   controller,
   onBack,
+  onOpenOAuthProviders,
   onOpenPassword,
   title,
 }: SdkworkIamH5UserCenterProfileScreenProps): ReactElement {
@@ -136,6 +139,13 @@ export function SdkworkIamH5UserCenterProfileScreen({
             <div style={{ marginBlockStart: "var(--sdkwork-iam-h5-space-md)" }}>
               <SdkworkIamH5Button block onClick={onOpenPassword} variant="secondary">
                 {messages.profile.openPassword}
+              </SdkworkIamH5Button>
+            </div>
+          ) : null}
+          {onOpenOAuthProviders ? (
+            <div style={{ marginBlockStart: "var(--sdkwork-iam-h5-space-sm)" }}>
+              <SdkworkIamH5Button block onClick={onOpenOAuthProviders} variant="secondary">
+                {messages.profile.openOAuthProviders}
               </SdkworkIamH5Button>
             </div>
           ) : null}

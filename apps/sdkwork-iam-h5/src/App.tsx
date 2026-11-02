@@ -30,6 +30,11 @@ import { SdkworkIamH5EmptyState, SdkworkIamH5I18nProvider, SdkworkIamH5Screen } 
 import { createIamH5SessionStore, type IamH5RouteContribution, type IamH5SessionStore } from "@sdkwork/iam-h5-core";
 import { SdkworkIamH5AppShell, type SdkworkIamH5ShellRoute } from "@sdkwork/iam-h5-shell";
 import {
+  createSdkworkIamH5OAuthProviderController,
+  IAM_H5_OAUTH_I18N_CATALOG,
+  SdkworkIamH5OAuthProviderScreen,
+} from "@sdkwork/iam-h5-oauth";
+import {
   createSdkworkIamH5OrganizationController,
   IAM_H5_ORGANIZATION_I18N_CATALOG,
   SdkworkIamH5OrganizationDirectoryScreen,
@@ -87,6 +92,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
   const userCenterMessages = IAM_H5_USER_CENTER_I18N_CATALOG.resolveMessages(resolvedLocale);
   const organizationMessages = IAM_H5_ORGANIZATION_I18N_CATALOG.resolveMessages(resolvedLocale);
   const accountBindingMessages = IAM_H5_ACCOUNT_BINDING_I18N_CATALOG.resolveMessages(resolvedLocale);
+  const oauthMessages = IAM_H5_OAUTH_I18N_CATALOG.resolveMessages(resolvedLocale);
 
   const authController = useMemo(
     () => createSdkworkIamH5AuthController(bootstrap.runtime.service),
@@ -108,6 +114,10 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     () => createSdkworkIamH5AccountBindingController(bootstrap.runtime.service),
     [bootstrap],
   );
+  const oauthProviderController = useMemo(
+    () => createSdkworkIamH5OAuthProviderController(bootstrap.runtime.service),
+    [bootstrap],
+  );
 
   const handleAuthenticated = useCallback(() => {
     // The service's commit bridge already wrote the session into the store; this
@@ -126,6 +136,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     const profileRoute = byId("app.iam.user-center.profile");
     const passwordRoute = byId("app.iam.user-center.password");
     const accountBindingRoute = byId("app.iam.account-binding.list");
+    const oauthProviderRoute = byId("app.iam.oauth.providers");
     const routes: SdkworkIamH5ShellRoute[] = [];
 
     if (loginRoute) {
@@ -185,6 +196,9 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
         element: (
           <SdkworkIamH5UserCenterProfileScreen
             controller={userCenterController}
+            onOpenOAuthProviders={
+              oauthProviderRoute ? () => navigate(oauthProviderRoute.path) : undefined
+            }
             onOpenPassword={passwordRoute ? () => navigate(passwordRoute.path) : undefined}
           />
         ),
@@ -223,6 +237,25 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
         title: accountBindingMessages.binding.title,
       });
     }
+    if (oauthProviderRoute) {
+      routes.push({
+        access: "protected",
+        element: (
+          <SdkworkIamH5OAuthProviderScreen
+            controller={oauthProviderController}
+            onAuthorize={(url) => {
+              // The host owns navigation: this root is the browser build, so the
+              // only thing to decide is that it leaves the current document.
+              if (typeof window !== "undefined") window.location.assign(url);
+            }}
+            onBack={() => replace(profileRoute?.path ?? FALLBACK_PATH)}
+          />
+        ),
+        id: oauthProviderRoute.id,
+        path: oauthProviderRoute.path,
+        title: oauthMessages.providers.title,
+      });
+    }
     return routes;
   }, [
     accountBindingController,
@@ -230,6 +263,8 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     authController,
     handleAuthenticated,
     navigate,
+    oauthMessages.providers.title,
+    oauthProviderController,
     organizationController,
     organizationMessages.directory.title,
     replace,
@@ -253,6 +288,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
         IAM_H5_USER_CENTER_I18N_CATALOG,
         IAM_H5_ORGANIZATION_I18N_CATALOG,
         IAM_H5_ACCOUNT_BINDING_I18N_CATALOG,
+        IAM_H5_OAUTH_I18N_CATALOG,
       ]}
       locale={resolvedLocale}
     >
