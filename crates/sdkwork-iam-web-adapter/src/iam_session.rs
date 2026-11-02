@@ -28,7 +28,8 @@ pub(crate) const IAM_SESSION_CONTEXT_SELECT: &str =
      u.email_verified AS user_email_verified, \
      s.principal_kind, COALESCE(s.principal_id, s.user_id) AS principal_id";
 
-const IAM_SESSION_CONTEXT_JOINS: &str = "LEFT JOIN iam_user u ON s.principal_kind = 'user' \
+const IAM_SESSION_CONTEXT_JOINS: &str = "JOIN iam_tenant t ON t.id = s.tenant_id AND t.status = 'active' \
+       LEFT JOIN iam_user u ON s.principal_kind = 'user' \
        AND u.id = COALESCE(s.principal_id, s.user_id) AND u.tenant_id = s.tenant_id \
      LEFT JOIN iam_service_account sa ON s.principal_kind = 'service_account' \
        AND sa.id = s.principal_id AND sa.tenant_id = s.tenant_id \
@@ -441,9 +442,10 @@ async fn verify_oauth_access_token_claims_for_database(
 
 async fn oauth_access_token_grant_is_active(pg: &PgPool, access_token_hash: &str) -> bool {
     sqlx::query_scalar::<_, i32>(
-        "SELECT 1 FROM iam_oauth_grant \
-         WHERE access_token_hash = $1 AND status = 'active' \
-           AND token_expires_at::timestamptz > $2::timestamptz \
+        "SELECT 1 FROM iam_oauth_grant g \
+         JOIN iam_tenant t ON t.id = g.tenant_id AND t.status = 'active' \
+         WHERE g.access_token_hash = $1 AND g.status = 'active' \
+           AND g.token_expires_at::timestamptz > $2::timestamptz \
          LIMIT 1",
     )
     .bind(access_token_hash)

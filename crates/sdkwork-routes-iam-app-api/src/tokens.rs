@@ -107,6 +107,30 @@ pub(crate) async fn create_session_record(
     )
     .await?;
 
+    if let Some(scoped_organization_id) = organization_id
+        .as_deref()
+        .filter(|value| !crate::is_blank(Some(value)) && *value != "0")
+    {
+        let membership = sqlx::query(
+            "SELECT 1 FROM iam_organization_membership m \
+             JOIN iam_organization o ON o.tenant_id = m.tenant_id AND o.id = m.organization_id \
+             WHERE m.tenant_id = $1 AND m.organization_id = $2 AND m.user_id = $3 \
+               AND m.status = 'active' AND o.status = 'active' \
+             LIMIT 1",
+        )
+        .bind(&user.tenant_id)
+        .bind(scoped_organization_id)
+        .bind(&user.id)
+        .fetch_optional(pg)
+        .await
+        .map_err(|e| format!("validate organization membership failed: {e}"))?;
+        if membership.is_none() {
+            return Err(format!(
+                "organization {scoped_organization_id} is not an active membership of the authenticated user"
+            ));
+        }
+    }
+
     revoke_active_sessions_for_user(pg, &user.tenant_id, &user.id).await?;
 
     let app_id = runtime_app_id.trim().to_string();

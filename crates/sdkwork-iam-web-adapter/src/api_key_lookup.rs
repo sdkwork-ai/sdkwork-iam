@@ -37,9 +37,12 @@ impl ApiKeyLookupService for IamApiKeyLookupService {
              a.permission_scope_json, a.status, a.expires_at \
              FROM iam_api_key a \
              JOIN iam_user u ON u.id = a.user_id AND u.tenant_id = a.tenant_id \
+             LEFT JOIN iam_organization o ON o.tenant_id = a.tenant_id AND o.id = a.organization_id \
              WHERE a.key_hash = $1 AND a.status = 'active' \
            AND (a.expires_at IS NULL OR a.expires_at::timestamptz > $2::timestamptz) \
              AND u.status = 'active' AND u.is_deleted = 0 \
+             AND (a.organization_id = '0' OR (o.id IS NOT NULL AND o.status = 'active')) \
+             ORDER BY a.created_at DESC, a.id \
              LIMIT 1",
         )
         .bind(&key_hash)
@@ -111,10 +114,12 @@ fn parse_deployment_mode(value: &str) -> WebDeploymentMode {
 }
 
 fn normalize_organization_id(organization_id: &str) -> Option<String> {
-    if crate::is_blank(Some(organization_id)) {
-        None
+    let trimmed = organization_id.trim();
+    if crate::is_blank(Some(trimmed)) {
+        // The platform sentinel for tenant-level scope, never an absent scope.
+        Some("0".to_owned())
     } else {
-        Some(organization_id.trim().to_owned())
+        Some(trimmed.to_owned())
     }
 }
 

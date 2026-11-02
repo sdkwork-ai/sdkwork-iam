@@ -47,7 +47,10 @@ fn exposes_complete_iam_table_catalog() {
     assert!(tables.contains(&"iam_oauth_scan_login_config"));
     assert!(tables.contains(&"iam_provider_account"));
     assert!(tables.contains(&"iam_provider_credential"));
-    assert_eq!(61, tables.len(), "IAM catalog must own 61 canonical tables");
+    assert!(tables.contains(&"iam_persona_role"));
+    assert!(tables.contains(&"iam_persona_interest"));
+    assert!(tables.contains(&"iam_user_persona"));
+    assert_eq!(64, tables.len(), "IAM catalog must own 64 canonical tables");
     assert!(!tables.contains(&"iam_user_role"));
 
     for table in tables {
@@ -424,6 +427,16 @@ fn database_baseline_declares_organization_context_for_sensitive_iam_tables() {
             "{table_name} must declare organization_id for SDKWork AppContext isolation",
         );
     }
+}
+
+#[test]
+fn database_baseline_enforces_unique_api_key_hash_lookup() {
+    let sql = iam_database_baseline_sql();
+    assert!(
+        sql.contains("CREATE UNIQUE INDEX IF NOT EXISTS uk_iam_api_key_key_hash"),
+        "iam_api_key.key_hash must be globally unique so open-api lookup never selects \
+         an arbitrary tenant for duplicate secrets",
+    );
 }
 
 #[test]

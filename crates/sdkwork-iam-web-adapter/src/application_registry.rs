@@ -119,8 +119,10 @@ pub async fn validate_enabled_tenant_runtime_app(
     }
 
     let row = sqlx::query(
-        "SELECT status FROM iam_tenant_application \
-         WHERE tenant_id = $1 AND app_id = $2 \
+        "SELECT a.status, t.status \
+         FROM iam_tenant_application a \
+         LEFT JOIN iam_tenant t ON t.id = a.tenant_id \
+         WHERE a.tenant_id = $1 AND a.app_id = $2 \
          LIMIT 1",
     )
     .bind(tenant_id)
@@ -135,10 +137,19 @@ pub async fn validate_enabled_tenant_runtime_app(
         ));
     };
 
-    let status: String = row.get(0);
-    if status != "enabled" {
+    let app_status: String = row.get(0);
+    let tenant_status: Option<String> = row.get(1);
+    let Some(tenant_status) = tenant_status else {
+        return Err(format!("tenant {tenant_id} was not found"));
+    };
+    if tenant_status != "active" {
         return Err(format!(
-            "tenant application {runtime_app_id} must be enabled before use (status={status})"
+            "tenant {tenant_id} is not active (status={tenant_status})"
+        ));
+    }
+    if app_status != "enabled" {
+        return Err(format!(
+            "tenant application {runtime_app_id} must be enabled before use (status={app_status})"
         ));
     }
 

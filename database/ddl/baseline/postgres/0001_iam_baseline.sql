@@ -1126,6 +1126,9 @@ CREATE INDEX IF NOT EXISTS idx_iam_api_key_tenant_organization_user_status
 CREATE INDEX IF NOT EXISTS idx_iam_api_key_tenant_app_status
   ON iam_api_key (tenant_id, app_id, status);
 
+CREATE UNIQUE INDEX IF NOT EXISTS uk_iam_api_key_key_hash
+  ON iam_api_key (key_hash);
+
 CREATE INDEX IF NOT EXISTS idx_iam_security_event_tenant_organization_created_at
   ON iam_security_event (tenant_id, organization_id, created_at, severity);
 
