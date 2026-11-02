@@ -248,12 +248,13 @@ clientSurfaces:
       `SdkworkAppClient` exposes flat `organizationsList` methods rather than the
       TypeScript namespaces. Both are generator-profile differences to reconcile
       before GA.
-      Remaining: 20 capability packages still hold the generated stub. Five real
-      capabilities now: tenant, organization (server-searched, append-on-load-more),
-      account-binding (tenant policy gates the unlink action; a row is dropped only
-      after the server accepts) and user-center (profile with a save that sends only
-      the typed fields, and a password change validated locally with the same rules
-      as H5/PC, clearing the fields on success).
+      Remaining: 19 capability packages still hold the generated stub, and the
+      registration screen is blocked: the generated Dart app SDK has no
+      verification-code operation, so a Flutter sign-up form cannot request the code
+      it must submit (the H5 form sidesteps this by taking an injected code client).
+      Six real capabilities now: tenant, organization, account-binding, user-center
+      (profile + password) and auth (sign-in + password reset, two steps on one
+      screen because the code field is meaningless without the request that fills it).
   harmony:
     status: scaffold
     note: Route/page map exists; capability pages do not render real data yet.

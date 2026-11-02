@@ -33,6 +33,7 @@ class IamHomeShell extends StatefulWidget {
     this.accountBindingDataSource,
     this.accountBindingMessages,
     this.authController,
+    this.authDataSource,
     this.authMessages,
     this.organizationDataSource,
     this.organizationMessages,
@@ -56,6 +57,9 @@ class IamHomeShell extends StatefulWidget {
 
   /// Overrides the auth controller; a widget test injects a signed-in double.
   final IamFlutterMobileAuthController? authController;
+
+  /// Overrides the app-api auth data source (used by the reset screen).
+  final IamFlutterMobileAuthDataSource? authDataSource;
 
   /// Overrides the auth copy.
   final Map<String, String>? authMessages;
@@ -117,9 +121,27 @@ class _IamHomeShellState extends State<IamHomeShell> {
           );
         }
 
-        final Widget authScreen = IamFlutterMobileAuthScreen(
-          controller: _auth,
-          messages: copy.auth,
+        final Widget authScreen = Builder(
+          builder: (BuildContext screenContext) => IamFlutterMobileAuthScreen(
+            controller: _auth,
+            messages: copy.auth,
+            onOpenForgotPassword: () =>
+                Navigator.of(screenContext).pushNamed('/auth/forgot-password'),
+          ),
+        );
+        final Widget forgotPasswordScreen = Builder(
+          builder: (BuildContext screenContext) => IamFlutterMobileAuthForgotPasswordScreen(
+            // Built inside the route builder: the reset controller needs the app-api
+            // client, and constructing it eagerly would make every launch (including
+            // the sign-in screen) depend on a client it never uses.
+            controller: IamFlutterMobileAuthController(
+              service: IamFlutterMobileAuthService(
+                dataSource: widget.authDataSource ?? IamAuthAppSdkDataSource(),
+              ),
+            ),
+            messages: copy.auth,
+            onReset: () => Navigator.of(screenContext).pop(),
+          ),
         );
         final Widget tenantScreen = Builder(
           builder: (BuildContext screenContext) => IamFlutterMobileTenantScreen(
@@ -177,6 +199,11 @@ class _IamHomeShellState extends State<IamHomeShell> {
               builder: (_) => authScreen,
               path: '/auth/login',
               routeId: IamFlutterMobileAuthRoutes.loginRouteId,
+            ),
+            SdkworkRouteEntry(
+              builder: (_) => forgotPasswordScreen,
+              path: '/auth/forgot-password',
+              routeId: IamFlutterMobileAuthRoutes.forgotPasswordRouteId,
             ),
             SdkworkRouteEntry(
               builder: (_) => tenantScreen,

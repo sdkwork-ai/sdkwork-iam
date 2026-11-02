@@ -34,8 +34,89 @@ abstract class IamFlutterMobileAuthDataSource {
     required String username,
   });
 
+  /// Asks the server to send a password-reset code to [account].
+  Future<void> requestPasswordResetCode(String account);
+
+  /// Sets a new password with a code the user received.
+  Future<void> resetPassword(IamFlutterMobileAuthResetDraft draft);
+
   /// Clears the session everywhere it is stored.
   Future<void> signOut();
+}
+
+/// The fields of a password reset.
+class IamFlutterMobileAuthResetDraft {
+  const IamFlutterMobileAuthResetDraft({
+    this.account = '',
+    this.code = '',
+    this.confirmPassword = '',
+    this.newPassword = '',
+  });
+
+  /// Account that received the code.
+  final String account;
+
+  /// The code the user received.
+  final String code;
+
+  /// New password.
+  final String newPassword;
+
+  /// Repetition of the new password.
+  final String confirmPassword;
+}
+
+/// Minimum password length, matched to the H5 and PC validators.
+const int iamFlutterMobileAuthMinPasswordLength = 8;
+
+/// Why a reset draft cannot be submitted.
+enum IamFlutterMobileAuthResetProblem {
+  /// The account is empty.
+  accountRequired,
+
+  /// The code is empty.
+  codeRequired,
+
+  /// The new password is too short.
+  newPasswordTooShort,
+
+  /// The confirmation does not match.
+  confirmMismatch,
+}
+
+/// Validates a reset draft before it reaches the network.
+///
+/// The order follows the form: the account and the code are what the user obtains
+/// first, so a missing code is reported before the password rules.
+IamFlutterMobileAuthResetProblem? validateIamFlutterMobileAuthResetDraft(
+  IamFlutterMobileAuthResetDraft draft,
+) {
+  if (draft.account.trim().isEmpty) return IamFlutterMobileAuthResetProblem.accountRequired;
+  if (draft.code.trim().isEmpty) return IamFlutterMobileAuthResetProblem.codeRequired;
+  if (draft.newPassword.length < iamFlutterMobileAuthMinPasswordLength) {
+    return IamFlutterMobileAuthResetProblem.newPasswordTooShort;
+  }
+  if (draft.newPassword != draft.confirmPassword) {
+    return IamFlutterMobileAuthResetProblem.confirmMismatch;
+  }
+  return null;
+}
+
+/// Renders a reset problem as user-safe text.
+///
+/// Exported so the screen and the service report the same sentence: two copies of
+/// the same rule drift apart the first time one of them is edited.
+String describeIamFlutterMobileAuthResetProblem(IamFlutterMobileAuthResetProblem problem) {
+  switch (problem) {
+    case IamFlutterMobileAuthResetProblem.accountRequired:
+      return 'The account is required.';
+    case IamFlutterMobileAuthResetProblem.codeRequired:
+      return 'The verification code is required.';
+    case IamFlutterMobileAuthResetProblem.newPasswordTooShort:
+      return 'The new password must be at least $iamFlutterMobileAuthMinPasswordLength characters.';
+    case IamFlutterMobileAuthResetProblem.confirmMismatch:
+      return 'The confirmation does not match the new password.';
+  }
 }
 
 /// Physical paths this package's routes resolve to on Flutter.
@@ -70,6 +151,28 @@ class IamFlutterMobileAuthService {
 
   /// Signs out.
   Future<void> signOut() => _requireDataSource().signOut();
+
+  /// Asks the server to send a password-reset code to [account].
+  Future<void> requestPasswordResetCode(String account) {
+    final String target = account.trim();
+    if (target.isEmpty) {
+      throw StateError('An account is required to send a reset code.');
+    }
+    return _requireDataSource().requestPasswordResetCode(target);
+  }
+
+  /// Sets a new password with a code the user received.
+  ///
+  /// The draft is validated here as well as on the screen, so a caller that skipped
+  /// the form cannot send a request the server would only reject.
+  Future<void> resetPassword(IamFlutterMobileAuthResetDraft draft) {
+    final IamFlutterMobileAuthResetProblem? problem =
+        validateIamFlutterMobileAuthResetDraft(draft);
+    if (problem != null) {
+      throw StateError(describeIamFlutterMobileAuthResetProblem(problem));
+    }
+    return _requireDataSource().resetPassword(draft);
+  }
 
   /// Maps a physical Flutter location back to its cross-client route id.
   ///

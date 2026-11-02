@@ -35,5 +35,61 @@
   "submitLabel": "登录",
   "@submitLabel": {
     "description": "Label of the sign-in action."
+  },
+  "forgotPasswordAction": "忘记密码？",
+  "@forgotPasswordAction": {
+    "description": "Link from the sign-in form to the reset screen."
+  },
+  "forgotTitle": "重置密码",
+  "@forgotTitle": {
+    "description": "Title of the password reset screen."
+  },
+  "forgotSubtitle": "先获取验证码，再设置新密码。",
+  "@forgotSubtitle": {
+    "description": "Supporting line under the reset title."
+  },
+  "sendCodeAction": "发送验证码",
+  "@sendCodeAction": {
+    "description": "Label of the send-code action."
+  },
+  "codeLabel": "验证码",
+  "@codeLabel": {
+    "description": "Label of the verification code field."
+  },
+  "newPasswordLabel": "新密码",
+  "@newPasswordLabel": {
+    "description": "Label of the new password field."
+  },
+  "confirmPasswordLabel": "再次输入新密码",
+  "@confirmPasswordLabel": {
+    "description": "Label of the confirmation field."
+  },
+  "submitAction": "设置新密码",
+  "@submitAction": {
+    "description": "Label of the reset submit action."
+  },
+  "codeSent": "验证码已发送。",
+  "@codeSent": {
+    "description": "Shown after a code was requested."
+  },
+  "passwordReset": "密码已更新，可以登录了。",
+  "@passwordReset": {
+    "description": "Shown after a successful reset."
+  },
+  "accountRequired": "请输入需要重置的账号。",
+  "@accountRequired": {
+    "description": "Validation: the account is empty."
+  },
+  "codeRequired": "请输入验证码。",
+  "@codeRequired": {
+    "description": "Validation: the code is empty."
+  },
+  "newPasswordTooShort": "新密码至少 8 个字符。",
+  "@newPasswordTooShort": {
+    "description": "Validation: the new password is too short."
+  },
+  "confirmMismatch": "两次输入的新密码不一致。",
+  "@confirmMismatch": {
+    "description": "Validation: the confirmation differs from the new password."
   }
 }

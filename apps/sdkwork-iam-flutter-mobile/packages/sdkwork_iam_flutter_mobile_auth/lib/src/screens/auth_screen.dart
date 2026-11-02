@@ -22,6 +22,7 @@ class IamFlutterMobileAuthScreen extends StatefulWidget {
     required this.messages,
     this.controller,
     this.onSignedIn,
+    this.onOpenForgotPassword,
   });
 
   /// Decoded locale fragment of this capability.
@@ -32,6 +33,9 @@ class IamFlutterMobileAuthScreen extends StatefulWidget {
 
   /// Invoked once a session exists, so the shell can swap to the signed-in tree.
   final VoidCallback? onSignedIn;
+
+  /// Opens the password reset screen; the action is rendered only when provided.
+  final VoidCallback? onOpenForgotPassword;
 
   /// Locale key of this screen's title.
   static const String titleKey = 'iam.auth.login.title';
@@ -123,6 +127,11 @@ class _IamFlutterMobileAuthScreenState extends State<IamFlutterMobileAuthScreen>
                   )
                 : Text(_message('submitLabel')),
           ),
+          if (widget.onOpenForgotPassword != null)
+            TextButton(
+              onPressed: widget.onOpenForgotPassword,
+              child: Text(_message('forgotPasswordAction')),
+            ),
         ],
       ),
     );

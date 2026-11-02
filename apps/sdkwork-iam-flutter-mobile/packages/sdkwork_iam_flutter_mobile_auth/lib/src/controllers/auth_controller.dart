@@ -68,6 +68,38 @@ class IamFlutterMobileAuthController {
     _emit(const IamFlutterMobileAuthState());
   }
 
+  /// Asks for a password-reset code.
+  ///
+  /// The failure is recorded in state rather than rethrown, so the form needs no
+  /// try/catch; the returned flag lets the screen keep the code field enabled.
+  Future<bool> requestResetCode(String account) async {
+    _emit(_state.asSendingCode());
+    try {
+      await _service.requestPasswordResetCode(account);
+      _emit(_state.succeeded('code-sent'));
+      return true;
+    } catch (error) {
+      _emit(_state.failed(_describe(error)));
+      return false;
+    }
+  }
+
+  /// Sets a new password with a code the user received.
+  Future<bool> resetPassword(IamFlutterMobileAuthResetDraft draft) async {
+    _emit(_state.asResetting());
+    try {
+      await _service.resetPassword(draft);
+      _emit(_state.succeeded('password-reset'));
+      return true;
+    } catch (error) {
+      _emit(_state.failed(_describe(error)));
+      return false;
+    }
+  }
+
+  /// Renders a thrown value as user-safe text.
+  String _describe(Object error) => error is StateError ? error.message : '$error';
+
   /// Resolves the cross-client route id for a physical Flutter location.
   String? routeIdForPath(String path) => _service.routeIdForPath(path);
 }

@@ -35,5 +35,61 @@
   "submitLabel": "Sign in",
   "@submitLabel": {
     "description": "Label of the sign-in action."
+  },
+  "forgotPasswordAction": "Forgot your password?",
+  "@forgotPasswordAction": {
+    "description": "Link from the sign-in form to the reset screen."
+  },
+  "forgotTitle": "Reset password",
+  "@forgotTitle": {
+    "description": "Title of the password reset screen."
+  },
+  "forgotSubtitle": "Get a code, then choose a new password.",
+  "@forgotSubtitle": {
+    "description": "Supporting line under the reset title."
+  },
+  "sendCodeAction": "Send code",
+  "@sendCodeAction": {
+    "description": "Label of the send-code action."
+  },
+  "codeLabel": "Verification code",
+  "@codeLabel": {
+    "description": "Label of the verification code field."
+  },
+  "newPasswordLabel": "New password",
+  "@newPasswordLabel": {
+    "description": "Label of the new password field."
+  },
+  "confirmPasswordLabel": "Repeat new password",
+  "@confirmPasswordLabel": {
+    "description": "Label of the confirmation field."
+  },
+  "submitAction": "Set new password",
+  "@submitAction": {
+    "description": "Label of the reset submit action."
+  },
+  "codeSent": "Code sent.",
+  "@codeSent": {
+    "description": "Shown after a code was requested."
+  },
+  "passwordReset": "Password updated. You can sign in now.",
+  "@passwordReset": {
+    "description": "Shown after a successful reset."
+  },
+  "accountRequired": "Enter the account that needs a reset.",
+  "@accountRequired": {
+    "description": "Validation: the account is empty."
+  },
+  "codeRequired": "Enter the verification code.",
+  "@codeRequired": {
+    "description": "Validation: the code is empty."
+  },
+  "newPasswordTooShort": "The new password must be at least 8 characters.",
+  "@newPasswordTooShort": {
+    "description": "Validation: the new password is too short."
+  },
+  "confirmMismatch": "The confirmation does not match.",
+  "@confirmMismatch": {
+    "description": "Validation: the confirmation differs from the new password."
   }
 }

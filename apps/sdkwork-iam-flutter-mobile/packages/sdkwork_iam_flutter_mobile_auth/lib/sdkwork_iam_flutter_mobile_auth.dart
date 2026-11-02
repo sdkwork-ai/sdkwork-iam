@@ -14,4 +14,5 @@ export 'src/services/auth_service.dart';
 export 'src/state/auth_state.dart';
 export 'src/models/auth_view_model.dart';
 export 'src/screens/auth_screen.dart';
+export 'src/screens/auth_forgot_password_screen.dart';
 export 'src/i18n/manifest.dart';

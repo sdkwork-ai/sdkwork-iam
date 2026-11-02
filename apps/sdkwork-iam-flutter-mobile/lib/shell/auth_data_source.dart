@@ -62,6 +62,23 @@ class IamAuthAppSdkDataSource implements IamFlutterMobileAuthDataSource {
   }
 
   @override
+  Future<void> requestPasswordResetCode(String account) async {
+    // The server sends the code; the response body carries no token the client
+    // needs, so only a transport failure can end this call badly.
+    await _client.auth.passwordResetRequestsCreate(<String, dynamic>{'account': account});
+  }
+
+  @override
+  Future<void> resetPassword(IamFlutterMobileAuthResetDraft draft) async {
+    await _client.auth.passwordResetsCreate(<String, dynamic>{
+      'account': draft.account.trim(),
+      'code': draft.code.trim(),
+      'confirmPassword': draft.confirmPassword,
+      'newPassword': draft.newPassword,
+    });
+  }
+
+  @override
   Future<void> signOut() async {
     try {
       await _client.auth.sessionsCurrentDelete();

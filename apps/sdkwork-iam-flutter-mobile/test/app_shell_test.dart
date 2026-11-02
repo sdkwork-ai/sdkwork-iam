@@ -57,6 +57,12 @@ class _FakeAuthDataSource implements IamFlutterMobileAuthDataSource {
   }
 
   @override
+  Future<void> requestPasswordResetCode(String account) async {}
+
+  @override
+  Future<void> resetPassword(IamFlutterMobileAuthResetDraft draft) async {}
+
+  @override
   Future<void> signOut() async {
     session = null;
   }
@@ -249,6 +255,7 @@ void main() {
     final MaterialApp app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.routes, isNotNull);
     expect(app.routes!.containsKey('/auth/login'), isTrue);
+    expect(app.routes!.containsKey('/auth/forgot-password'), isTrue);
     expect(app.routes!.containsKey('/tenant'), isTrue);
     expect(app.routes!.containsKey('/organizations'), isTrue);
     expect(app.routes!.containsKey('/user/account-binding'), isTrue);
@@ -272,6 +279,7 @@ void main() {
         '${contribution.id}:${contribution.path}',
     };
     expect(contributed, contains('app.iam.auth.login:/auth/login'));
+    expect(contributed, contains('app.iam.auth.forgot-password:/auth/forgot-password'));
     expect(contributed, contains('app.iam.tenant.overview:/tenant'));
     expect(contributed, contains('app.iam.organization.directory:/organizations'));
     expect(contributed, contains('app.iam.account-binding.list:/user/account-binding'));

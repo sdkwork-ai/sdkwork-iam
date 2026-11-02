@@ -8,6 +8,7 @@
  */
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sdkwork_iam_flutter_mobile_core/sdkwork_iam_flutter_mobile_core.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
 
 void main() {
