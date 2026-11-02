@@ -43,8 +43,7 @@ pub const OAUTH_SUPPORTED_SCOPES: &[&str] = &[
 pub const OAUTH_AUTO_REGISTRATION_ENV: &str = "SDKWORK_IAM_OAUTH_AUTO_REGISTRATION";
 
 /// Alias kept for deployments that already spell the switch as a boolean.
-pub const OAUTH_AUTO_REGISTRATION_ENABLED_ENV: &str =
-    "SDKWORK_IAM_OAUTH_AUTO_REGISTRATION_ENABLED";
+pub const OAUTH_AUTO_REGISTRATION_ENABLED_ENV: &str = "SDKWORK_IAM_OAUTH_AUTO_REGISTRATION_ENABLED";
 
 const MAX_CLIENT_ID_LEN: usize = 64;
 const MAX_REDIRECT_URI_LEN: usize = 2048;
@@ -90,10 +89,7 @@ pub fn parse_relying_party_registration(value: &Value) -> Result<RelyingPartyReg
     let client_secret_hash =
         read_optional_text(object, &["clientSecretHash", "client_secret_hash"])?;
     let redirect_uris = read_text_list(object, &["redirectUris", "redirect_uris"])?;
-    let allowed_scopes = read_text_list(
-        object,
-        &["allowedScopes", "allowed_scopes", "scopes"],
-    )?;
+    let allowed_scopes = read_text_list(object, &["allowedScopes", "allowed_scopes", "scopes"])?;
 
     Ok(RelyingPartyRegistration {
         enabled,
@@ -137,8 +133,7 @@ pub fn normalize_relying_party_registration(
     let redirect_uris = normalize_redirect_uris(&registration.redirect_uris)?;
     let allowed_scopes = normalize_allowed_scopes(&registration.allowed_scopes)?;
 
-    let client_secret_hash =
-        resolve_client_secret_hash(registration, confidential, existing)?;
+    let client_secret_hash = resolve_client_secret_hash(registration, confidential, existing)?;
 
     let mut document = json!({
         "enabled": enabled,
@@ -207,7 +202,10 @@ pub fn oauth_relying_party_summary(runtime_config: &Value) -> Option<Value> {
 /// @returns `true` when a manifest may register its relying party.
 #[must_use]
 pub fn auto_registration_enabled(environment: &str) -> bool {
-    for key in [OAUTH_AUTO_REGISTRATION_ENV, OAUTH_AUTO_REGISTRATION_ENABLED_ENV] {
+    for key in [
+        OAUTH_AUTO_REGISTRATION_ENV,
+        OAUTH_AUTO_REGISTRATION_ENABLED_ENV,
+    ] {
         let Ok(raw) = std::env::var(key) else {
             continue;
         };
@@ -271,14 +269,11 @@ pub fn validate_oauth_client_id(client_id: &str) -> Result<(), String> {
         return Err("OAuth clientId must not be empty".to_string());
     };
     if !first.is_ascii_lowercase() && !first.is_ascii_digit() {
-        return Err(
-            "OAuth clientId must start with a lowercase letter or digit".to_string(),
-        );
+        return Err("OAuth clientId must start with a lowercase letter or digit".to_string());
     }
-    if !client_id
-        .chars()
-        .all(|value| value.is_ascii_lowercase() || value.is_ascii_digit() || matches!(value, '-' | '_' | '.'))
-    {
+    if !client_id.chars().all(|value| {
+        value.is_ascii_lowercase() || value.is_ascii_digit() || matches!(value, '-' | '_' | '.')
+    }) {
         return Err(
             "OAuth clientId may only contain lowercase letters, digits, '-', '_', and '.'"
                 .to_string(),
@@ -309,7 +304,9 @@ pub fn validate_redirect_uri(redirect_uri: &str) -> Result<(), String> {
         .chars()
         .any(|value| value.is_whitespace() || value.is_control())
     {
-        return Err(format!("OAuth redirect URI {uri} must not contain whitespace"));
+        return Err(format!(
+            "OAuth redirect URI {uri} must not contain whitespace"
+        ));
     }
     if uri.contains('#') {
         return Err(format!(
@@ -337,28 +334,27 @@ pub fn validate_redirect_uri(redirect_uri: &str) -> Result<(), String> {
         return Err(format!("OAuth redirect URI {uri} has an invalid scheme"));
     }
     let normalized_scheme = scheme.to_ascii_lowercase();
-    if !normalized_scheme
-        .chars()
-        .enumerate()
-        .all(|(index, value)| {
-            if index == 0 {
-                value.is_ascii_lowercase()
-            } else {
-                value.is_ascii_lowercase()
-                    || value.is_ascii_digit()
-                    || matches!(value, '+' | '-' | '.')
-            }
-        })
-    {
+    if !normalized_scheme.chars().enumerate().all(|(index, value)| {
+        if index == 0 {
+            value.is_ascii_lowercase()
+        } else {
+            value.is_ascii_lowercase() || value.is_ascii_digit() || matches!(value, '+' | '-' | '.')
+        }
+    }) {
         return Err(format!("OAuth redirect URI {uri} has an invalid scheme"));
     }
     if matches!(
         normalized_scheme.as_str(),
-        "javascript" | "data" | "file" | "about" | "blob" | "vbscript" | "chrome" | "chrome-extension"
+        "javascript"
+            | "data"
+            | "file"
+            | "about"
+            | "blob"
+            | "vbscript"
+            | "chrome"
+            | "chrome-extension"
     ) {
-        return Err(format!(
-            "OAuth redirect URI {uri} uses a forbidden scheme"
-        ));
+        return Err(format!("OAuth redirect URI {uri} uses a forbidden scheme"));
     }
     if rest.is_empty() {
         return Err(format!(
@@ -381,17 +377,13 @@ pub fn validate_redirect_uri(redirect_uri: &str) -> Result<(), String> {
             return Err(format!("OAuth redirect URI {uri} must include a host"));
         }
         if authority.contains('@') {
-            return Err(format!(
-                "OAuth redirect URI {uri} must not embed userinfo"
-            ));
+            return Err(format!("OAuth redirect URI {uri} must not embed userinfo"));
         }
         let (host, port) = if let Some(stripped) = authority.strip_prefix('[') {
             // IPv6 literal: the colons inside the brackets are not a port
             // separator, so the port (if any) follows the closing bracket.
             let Some(end) = stripped.find(']') else {
-                return Err(format!(
-                    "OAuth redirect URI {uri} has an invalid IPv6 host"
-                ));
+                return Err(format!("OAuth redirect URI {uri} has an invalid IPv6 host"));
             };
             let host = &stripped[..end];
             let suffix = &stripped[end + 1..];
@@ -418,9 +410,7 @@ pub fn validate_redirect_uri(redirect_uri: &str) -> Result<(), String> {
                 && (!port.chars().all(|value| value.is_ascii_digit())
                     || port.parse::<u16>().is_err())
             {
-                return Err(format!(
-                    "OAuth redirect URI {uri} has an invalid port"
-                ));
+                return Err(format!("OAuth redirect URI {uri} has an invalid port"));
             }
         }
     }
@@ -443,9 +433,7 @@ fn resolve_client_secret_hash(
                 .as_deref()
                 .is_some_and(|value| !value.trim().is_empty())
         {
-            return Err(
-                "OAuth public relying party must not declare a client secret".to_string(),
-            );
+            return Err("OAuth public relying party must not declare a client secret".to_string());
         }
         return Ok(None);
     }
@@ -475,8 +463,9 @@ fn resolve_client_secret_hash(
         .map(str::trim)
         .filter(|value| !value.is_empty());
     if let Some(hash) = preserved {
-        PasswordHash::new(hash)
-            .map_err(|_| "stored OAuth clientSecretHash is not a valid password hash".to_string())?;
+        PasswordHash::new(hash).map_err(|_| {
+            "stored OAuth clientSecretHash is not a valid password hash".to_string()
+        })?;
         return Ok(Some(hash.to_owned()));
     }
 
@@ -643,13 +632,22 @@ mod tests {
             normalize_relying_party_registration(&registration(value), "sdkwork-birdcoder", None)
                 .expect("normalize");
         assert_eq!(normalized["clientId"], json!("birdcoder"));
-        assert_eq!(normalized["redirectUris"], json!(["birdcoder://auth/callback"]));
+        assert_eq!(
+            normalized["redirectUris"],
+            json!(["birdcoder://auth/callback"])
+        );
     }
 
     #[test]
     fn invalid_client_ids_are_rejected() {
         let long_client_id = "a".repeat(65);
-        for client_id in ["", "Birdcoder", "bird coder", "a/b", long_client_id.as_str()] {
+        for client_id in [
+            "",
+            "Birdcoder",
+            "bird coder",
+            "a/b",
+            long_client_id.as_str(),
+        ] {
             assert!(
                 validate_oauth_client_id(client_id).is_err(),
                 "client id {client_id:?} must be rejected"
@@ -685,7 +683,10 @@ mod tests {
             "https:///callback",
             "http://[::1/callback",
         ] {
-            assert!(validate_redirect_uri(uri).is_err(), "{uri} must be rejected");
+            assert!(
+                validate_redirect_uri(uri).is_err(),
+                "{uri} must be rejected"
+            );
         }
     }
 
@@ -748,13 +749,13 @@ mod tests {
             "allowedScopes": ["openid"],
             "confidential": true
         });
-        let normalized =
-            normalize_relying_party_registration(&registration(value), "sdkwork-forum", Some(&stored))
-                .expect("normalize");
-        assert_eq!(
-            normalized["clientSecretHash"],
-            stored["clientSecretHash"]
-        );
+        let normalized = normalize_relying_party_registration(
+            &registration(value),
+            "sdkwork-forum",
+            Some(&stored),
+        )
+        .expect("normalize");
+        assert_eq!(normalized["clientSecretHash"], stored["clientSecretHash"]);
     }
 
     #[test]
@@ -786,9 +787,12 @@ mod tests {
             "allowedScopes": ["openid"],
             "confidential": false
         });
-        let normalized =
-            normalize_relying_party_registration(&registration(value), "sdkwork-forum", Some(&stored))
-                .expect("normalize");
+        let normalized = normalize_relying_party_registration(
+            &registration(value),
+            "sdkwork-forum",
+            Some(&stored),
+        )
+        .expect("normalize");
         assert!(normalized["clientSecretHash"].is_null());
     }
 
@@ -816,9 +820,14 @@ mod tests {
             "clientSecretHash": Value::Null
         });
         let merged = merge_relying_party_registration(&runtime_config, &normalized);
-        assert_eq!(merged["oauth"]["relyingParty"]["confidential"], json!(false));
+        assert_eq!(
+            merged["oauth"]["relyingParty"]["confidential"],
+            json!(false)
+        );
         assert!(
-            merged["oauth"]["relyingParty"].get("clientSecretHash").is_none(),
+            merged["oauth"]["relyingParty"]
+                .get("clientSecretHash")
+                .is_none(),
             "a public registration must not keep a stored hash: {merged}"
         );
         assert_eq!(
@@ -878,7 +887,10 @@ mod tests {
 
     #[test]
     fn auto_registration_policy_fails_closed_outside_development() {
-        for key in [OAUTH_AUTO_REGISTRATION_ENV, OAUTH_AUTO_REGISTRATION_ENABLED_ENV] {
+        for key in [
+            OAUTH_AUTO_REGISTRATION_ENV,
+            OAUTH_AUTO_REGISTRATION_ENABLED_ENV,
+        ] {
             std::env::remove_var(key);
         }
         assert!(auto_registration_enabled("development"));

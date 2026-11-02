@@ -28,7 +28,8 @@ pub(crate) const IAM_SESSION_CONTEXT_SELECT: &str =
      u.email_verified AS user_email_verified, \
      s.principal_kind, COALESCE(s.principal_id, s.user_id) AS principal_id";
 
-const IAM_SESSION_CONTEXT_JOINS: &str = "JOIN iam_tenant t ON t.id = s.tenant_id AND t.status = 'active' \
+const IAM_SESSION_CONTEXT_JOINS: &str =
+    "JOIN iam_tenant t ON t.id = s.tenant_id AND t.status = 'active' \
        LEFT JOIN iam_user u ON s.principal_kind = 'user' \
        AND u.id = COALESCE(s.principal_id, s.user_id) AND u.tenant_id = s.tenant_id \
      LEFT JOIN iam_service_account sa ON s.principal_kind = 'service_account' \

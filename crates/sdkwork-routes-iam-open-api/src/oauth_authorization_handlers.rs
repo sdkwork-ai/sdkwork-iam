@@ -104,7 +104,8 @@ pub async fn handle_oauth_authorize(
                 );
             }
         };
-    let error_redirect = sdkwork_iam_web_adapter::authorize_error_redirect_target(&request, &client);
+    let error_redirect =
+        sdkwork_iam_web_adapter::authorize_error_redirect_target(&request, &client);
 
     let scopes = match validate_authorize_request(&request, &client) {
         Ok(scopes) => scopes,
@@ -492,7 +493,11 @@ fn base64_decode(input: &str) -> Result<String, String> {
 /// unregistered client reports `invalid_client` instead of "Malformed
 /// request".
 /// Build the problem-shaped body that also carries RFC 6749 fields.
-fn oauth_error_payload(status: StatusCode, code: &str, message: &str) -> (OAuthProtocolErrorBody, Value) {
+fn oauth_error_payload(
+    status: StatusCode,
+    code: &str,
+    message: &str,
+) -> (OAuthProtocolErrorBody, Value) {
     let oauth = OAuthProtocolErrorBody::from_iam_oauth_code(code, message);
     let problem_code = match status.as_u16() {
         400 => 40002,

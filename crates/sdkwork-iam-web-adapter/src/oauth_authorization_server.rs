@@ -1151,9 +1151,9 @@ fn validate_pkce(code_verifier: Option<&str>, challenge: &str, method: &str) -> 
 /// RFC 7636 section 4.1 code_verifier syntax.
 fn is_valid_pkce_verifier(verifier: &str) -> bool {
     (43..=128).contains(&verifier.len())
-        && verifier.bytes().all(|byte| {
-            byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~')
-        })
+        && verifier
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~'))
 }
 
 fn parse_grant_id_from_return_path(return_path: &str) -> Option<String> {
@@ -1495,7 +1495,11 @@ mod tests {
             let digest = Sha256::digest(verifier.as_bytes());
             URL_SAFE_NO_PAD.encode(digest)
         };
-        for malformed in ["short", "challenge", "with space-abcdefghijklmnopqrstuvwxyz0123456789"] {
+        for malformed in [
+            "short",
+            "challenge",
+            "with space-abcdefghijklmnopqrstuvwxyz0123456789",
+        ] {
             let err = validate_pkce(Some(malformed), &challenge, "S256")
                 .expect_err("malformed verifier must be rejected");
             assert!(

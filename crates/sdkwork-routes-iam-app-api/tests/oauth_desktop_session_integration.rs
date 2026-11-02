@@ -425,8 +425,8 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
         serde_json::to_string(&current_body).unwrap_or_default()
     );
 
-    let completion = complete_authorization_over_http(&app, &authorization_state_id, &login_session)
-        .await;
+    let completion =
+        complete_authorization_over_http(&app, &authorization_state_id, &login_session).await;
     let authorization_code = completion["authorizationCode"]
         .as_str()
         .filter(|value| !value.is_empty())
@@ -447,8 +447,13 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
     );
 
     // 4. The desktop app redeems the deep-link code for a dual-token session.
-    let (status, body) =
-        redeem_desktop_session(&app, &authorization_code, &code_verifier, DESKTOP_E2E_REDIRECT_URI).await;
+    let (status, body) = redeem_desktop_session(
+        &app,
+        &authorization_code,
+        &code_verifier,
+        DESKTOP_E2E_REDIRECT_URI,
+    )
+    .await;
     assert_eq!(
         status,
         StatusCode::OK,
@@ -496,8 +501,13 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
 
     // 6. The authorization code is single-use: a replay with the correct
     //    verifier is rejected.
-    let (replay_status, replay_body) =
-        redeem_desktop_session(&app, &authorization_code, &code_verifier, DESKTOP_E2E_REDIRECT_URI).await;
+    let (replay_status, replay_body) = redeem_desktop_session(
+        &app,
+        &authorization_code,
+        &code_verifier,
+        DESKTOP_E2E_REDIRECT_URI,
+    )
+    .await;
     assert_eq!(
         replay_status,
         StatusCode::BAD_REQUEST,
@@ -523,8 +533,13 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
         .expect("complete second desktop e2e authorization state");
     let second_code = second_completion.authorization_code;
     let wrong_verifier = format!("{}wrong", verifier);
-    let (pkce_status, pkce_body) =
-        redeem_desktop_session(&app, &second_code, &wrong_verifier, DESKTOP_E2E_REDIRECT_URI).await;
+    let (pkce_status, pkce_body) = redeem_desktop_session(
+        &app,
+        &second_code,
+        &wrong_verifier,
+        DESKTOP_E2E_REDIRECT_URI,
+    )
+    .await;
     assert_eq!(
         pkce_status,
         StatusCode::BAD_REQUEST,
@@ -615,8 +630,8 @@ async fn desktop_session_exchange_rejects_a_web_surface_code() {
         code_challenge_method: Some("S256".to_string()),
         tenant_id: Some(DESKTOP_E2E_TENANT_ID.to_string()),
     };
-    let scopes = validate_authorize_request(&web_request, &client)
-        .expect("authorize web redirect request");
+    let scopes =
+        validate_authorize_request(&web_request, &client).expect("authorize web redirect request");
     let (web_state_id, _) = create_pending_authorization_state(&pg, &client, &web_request, &scopes)
         .await
         .expect("create web-surface authorization state");

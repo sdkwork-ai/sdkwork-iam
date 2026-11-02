@@ -630,7 +630,9 @@ async fn oauth_authorize_errors_follow_rfc6749_redirect_semantics() {
     let body = read_json(response).await;
     assert_eq!(body["error"], json!("invalid_request"), "{body}");
     assert!(
-        body["error_description"].as_str().is_some_and(|value| !value.is_empty()),
+        body["error_description"]
+            .as_str()
+            .is_some_and(|value| !value.is_empty()),
         "{body}"
     );
     assert_eq!(body["code"], json!(40002), "{body}");
@@ -676,9 +678,8 @@ async fn oauth_authorize_redirects_into_the_configured_hosted_login() {
 
     assert_eq!(status, StatusCode::TEMPORARY_REDIRECT);
     assert!(
-        location.starts_with(
-            "https://platform.birdcoder.com/auth/login?oauthAuthorizationStateId="
-        ),
+        location
+            .starts_with("https://platform.birdcoder.com/auth/login?oauthAuthorizationStateId="),
         "authorize must enter the configured hosted login: {location}"
     );
 

@@ -2213,9 +2213,8 @@ mod tests {
                 }
             }
         });
-        let normalized =
-            normalize_runtime_config_oauth(&runtime_config, "sdkwork-birdcoder", None)
-                .expect("normalize runtime config");
+        let normalized = normalize_runtime_config_oauth(&runtime_config, "sdkwork-birdcoder", None)
+            .expect("normalize runtime config");
         assert_eq!(
             normalized["oauth"]["relyingParty"]["clientId"],
             json!("sdkwork-birdcoder")
@@ -2325,15 +2324,13 @@ mod tests {
         );
 
         command.environment = "development".to_owned();
-        let patch = bootstrap_oauth_runtime_config_patch(&command, None).expect("development patch");
+        let patch =
+            bootstrap_oauth_runtime_config_patch(&command, None).expect("development patch");
         assert_eq!(
             patch["oauth"]["relyingParty"]["clientId"],
             json!("birdcoder")
         );
-        assert_eq!(
-            patch["oauth"]["relyingParty"]["enabled"],
-            json!(true)
-        );
+        assert_eq!(patch["oauth"]["relyingParty"]["enabled"], json!(true));
     }
 
     #[test]

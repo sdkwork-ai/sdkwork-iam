@@ -426,8 +426,7 @@ async fn create_session(
     // password grant: the platform's hosted login posts `email` + `password`
     // without it, and requiring the field would reject a valid sign-in before
     // the credentials are even read. Unknown explicit values still fail closed.
-    let grant_type = resolve_login_grant_type(&body)
-        .unwrap_or_else(|| "password".to_string());
+    let grant_type = resolve_login_grant_type(&body).unwrap_or_else(|| "password".to_string());
     match grant_type.as_str() {
         "password" => create_password_login_session(&state, &ctx, &body, &tenant_id).await,
         "phone_code" | "email_code" => {

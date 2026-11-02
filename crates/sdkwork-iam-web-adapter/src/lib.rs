@@ -124,15 +124,14 @@ pub use messaging_verification::{
     MESSAGING_VERIFICATION_SCENE_LOGIN, MESSAGING_VERIFICATION_SCENE_RESET_PASSWORD,
 };
 pub use oauth_authorization_server::{
-    build_oauth_jwks_document, build_openid_configuration_document, build_userinfo_claims,
-    authorize_error_redirect_target,
-    classify_redirect_surface_kind, complete_authorization_state,
-    create_pending_authorization_state, exchange_authorization_code, exchange_refresh_token,
-    introspect_oauth_token, load_oauth_bearer_scopes, oauth_issuer_base_url, oauth_login_base_url,
-    parse_relying_party_config, redeem_authorization_code_session_context,
-    resolve_relying_party_client, revoke_oauth_token, validate_authorize_request,
-    AuthorizationCompletion, AuthorizeRequest, RedeemedAuthorizationContext, RelyingPartyConfig,
-    ResolvedRelyingParty,
+    authorize_error_redirect_target, build_oauth_jwks_document,
+    build_openid_configuration_document, build_userinfo_claims, classify_redirect_surface_kind,
+    complete_authorization_state, create_pending_authorization_state, exchange_authorization_code,
+    exchange_refresh_token, introspect_oauth_token, load_oauth_bearer_scopes,
+    oauth_issuer_base_url, oauth_login_base_url, parse_relying_party_config,
+    redeem_authorization_code_session_context, resolve_relying_party_client, revoke_oauth_token,
+    validate_authorize_request, AuthorizationCompletion, AuthorizeRequest,
+    RedeemedAuthorizationContext, RelyingPartyConfig, ResolvedRelyingParty,
 };
 pub use oauth_integration_exchange::{
     builtin_authorization_endpoint, builtin_default_scopes, builtin_token_endpoint,
@@ -146,13 +145,6 @@ pub use oauth_integration_exchange::{
     seed_builtin_oauth_provider_catalog, OAuthIntegrationExchangeContext,
 };
 pub use oauth_login_local::{LocalOAuthAuthority, LocalOAuthProviderProfile};
-pub use oauth_relying_party_registration::{
-    auto_registration_enabled, hash_oauth_client_secret, merge_relying_party_registration,
-    normalize_relying_party_registration, oauth_relying_party_summary,
-    parse_relying_party_registration, validate_oauth_client_id, validate_redirect_uri,
-    RelyingPartyRegistration, OAUTH_AUTO_REGISTRATION_ENABLED_ENV, OAUTH_AUTO_REGISTRATION_ENV,
-    OAUTH_SUPPORTED_SCOPES,
-};
 pub use oauth_provider_callback::{
     handle_provider_callback_get, handle_provider_callback_post, ProviderCallbackHttpResponse,
     ProviderCallbackRequestMeta,
@@ -165,6 +157,13 @@ pub use oauth_provider_catalog::{
 pub use oauth_redirect::{
     load_oauth_redirect_policy, validate_oauth_redirect_uri,
     validate_oauth_redirect_uri_for_provider,
+};
+pub use oauth_relying_party_registration::{
+    auto_registration_enabled, hash_oauth_client_secret, merge_relying_party_registration,
+    normalize_relying_party_registration, oauth_relying_party_summary,
+    parse_relying_party_registration, validate_oauth_client_id, validate_redirect_uri,
+    RelyingPartyRegistration, OAUTH_AUTO_REGISTRATION_ENABLED_ENV, OAUTH_AUTO_REGISTRATION_ENV,
+    OAUTH_SUPPORTED_SCOPES,
 };
 pub use oauth_token_lookup::IamOAuthTokenLookupService;
 pub use production_runtime::{
