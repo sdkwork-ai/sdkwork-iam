@@ -16,8 +16,16 @@ export const iamH5AdminPermissionMessages = {
     resource: "Resource",
     action: "Action",
   },
-  roles: { title: "Roles" },
-  policies: { title: "Policies" },
+  roles: {
+    title: "Roles",
+    searchRoles: "Search roles",
+    rolesSection: "Role catalog",
+  },
+  policies: {
+    title: "Policies",
+    searchPolicies: "Search policies",
+    policiesSection: "Policy catalog",
+  },
   authorizations: { title: "Authorizations" },
   states: {
     loading: "Loading…",
@@ -25,11 +33,17 @@ export const iamH5AdminPermissionMessages = {
     retry: "Retry",
     emptyPermissions: "This tenant has no permission yet.",
     emptyPermissionsDetail: "Create one from the PC admin console, or import a catalog.",
+    emptyRoles: "This tenant has no role yet.",
+    emptyRolesDetail: "Create one from the PC admin console.",
+    emptyPolicies: "This tenant has no policy yet.",
+    emptyPoliciesDetail: "Create one from the PC admin console.",
     emptySearch: "Nothing matched that search.",
     errorTitle: "Something went wrong",
   },
   errors: {
     permissions: "Could not load the permission catalog.",
+    roles: "Could not load the role catalog.",
+    policies: "Could not load the policy catalog.",
     more: "Unable to load more.",
   },
 };

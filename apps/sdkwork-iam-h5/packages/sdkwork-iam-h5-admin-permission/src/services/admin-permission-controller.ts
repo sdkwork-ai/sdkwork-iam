@@ -1,10 +1,10 @@
-// SDKWORK-IAM-H5-ADMIN-PERMISSION: authored controller.
+// SDKWORK-IAM-H5-ADMIN-PERMISSION: authored controllers.
 /**
- * Admin permission catalog controller over the injected IAM service.
+ * Admin permission controllers over the injected IAM service.
  *
- * One query: the permission page from the backend-api. The list is server-searched and
- * server-paged because a tenant's catalog can be thousands of rows and an operator
- * filters it to find one.
+ * Three catalog queries (permissions, roles, policies), each server-searched and
+ * server-paged for the same reason: a tenant's authorization catalog is large and the
+ * operator is looking for one entry, not browsing a download.
  */
 
 import { readSdkworkIamH5Page, type SdkworkIamH5ListQuery } from "@sdkwork/iam-h5-commons";
@@ -14,6 +14,10 @@ import type {
   SdkworkIamH5AdminPermission,
   SdkworkIamH5AdminPermissionController,
   SdkworkIamH5AdminPermissionServicePort,
+  SdkworkIamH5AdminPolicy,
+  SdkworkIamH5AdminPolicyController,
+  SdkworkIamH5AdminRole,
+  SdkworkIamH5AdminRoleController,
 } from "../types/admin-permission-types.js";
 
 /**
@@ -36,6 +40,56 @@ export function createSdkworkIamH5AdminPermissionController(
         items: page.items.flatMap((item) => {
           const permission = toPermission(item);
           return permission ? [permission] : [];
+        }),
+      };
+    },
+  };
+}
+
+/**
+ * Build the admin roles controller.
+ * @param input - the injected service port, or the bare port for convenience.
+ * @returns the controller the roles screen binds to.
+ */
+export function createSdkworkIamH5AdminRoleController(
+  input: SdkworkIamH5AdminPermissionServicePort | CreateSdkworkIamH5AdminPermissionControllerInput,
+): SdkworkIamH5AdminRoleController {
+  const service = "service" in input ? input.service : input;
+
+  return {
+    async fetchRolesPage(query) {
+      const page = readSdkworkIamH5Page<unknown>(await service.iam.roles.list(toListParams(query)));
+      return {
+        ...page,
+        items: page.items.flatMap((item) => {
+          const role = toRole(item);
+          return role ? [role] : [];
+        }),
+      };
+    },
+  };
+}
+
+/**
+ * Build the admin policies controller.
+ * @param input - the injected service port, or the bare port for convenience.
+ * @returns the controller the policies screen binds to.
+ */
+export function createSdkworkIamH5AdminPolicyController(
+  input: SdkworkIamH5AdminPermissionServicePort | CreateSdkworkIamH5AdminPermissionControllerInput,
+): SdkworkIamH5AdminPolicyController {
+  const service = "service" in input ? input.service : input;
+
+  return {
+    async fetchPoliciesPage(query) {
+      const page = readSdkworkIamH5Page<unknown>(
+        await service.iam.policies.list(toListParams(query)),
+      );
+      return {
+        ...page,
+        items: page.items.flatMap((item) => {
+          const policy = toPolicy(item);
+          return policy ? [policy] : [];
         }),
       };
     },
@@ -76,5 +130,29 @@ function toPermission(value: unknown): SdkworkIamH5AdminPermission | undefined {
     code: readString(record.code) ?? readString(record.name) ?? id,
     ...(resource === undefined ? {} : { resource }),
     ...(action === undefined ? {} : { action }),
+  };
+}
+
+function toRole(value: unknown): SdkworkIamH5AdminRole | undefined {
+  const record = toRecord(value);
+  const id = readString(record.roleId) ?? readString(record.role_id) ?? readString(record.id);
+  if (!id) return undefined;
+  const name = readString(record.name) ?? readString(record.displayName);
+  return {
+    id,
+    code: readString(record.code) ?? readString(record.roleCode) ?? id,
+    ...(name === undefined ? {} : { name }),
+  };
+}
+
+function toPolicy(value: unknown): SdkworkIamH5AdminPolicy | undefined {
+  const record = toRecord(value);
+  const id = readString(record.policyId) ?? readString(record.policy_id) ?? readString(record.id);
+  if (!id) return undefined;
+  const effect = readString(record.effect) ?? readString(record.effectType);
+  return {
+    id,
+    code: readString(record.code) ?? readString(record.name) ?? id,
+    ...(effect === undefined ? {} : { effect }),
   };
 }

@@ -30,8 +30,12 @@ import {
 import { SdkworkIamH5EmptyState, SdkworkIamH5I18nProvider, SdkworkIamH5Screen } from "@sdkwork/iam-h5-commons";
 import {
   createSdkworkIamH5AdminPermissionController,
+  createSdkworkIamH5AdminPolicyController,
+  createSdkworkIamH5AdminRoleController,
   IAM_H5_ADMIN_PERMISSION_I18N_CATALOG,
   SdkworkIamH5AdminPermissionScreen,
+  SdkworkIamH5AdminPolicyScreen,
+  SdkworkIamH5AdminRoleScreen,
 } from "@sdkwork/iam-h5-admin-permission";
 import {
   createSdkworkIamH5ConsoleAccountBindingController,
@@ -174,6 +178,14 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     () => createSdkworkIamH5AdminPermissionController(bootstrap.adminService),
     [bootstrap],
   );
+  const adminRoleController = useMemo(
+    () => createSdkworkIamH5AdminRoleController(bootstrap.adminService),
+    [bootstrap],
+  );
+  const adminPolicyController = useMemo(
+    () => createSdkworkIamH5AdminPolicyController(bootstrap.adminService),
+    [bootstrap],
+  );
 
   const handleAuthenticated = useCallback(() => {
     // The service's commit bridge already wrote the session into the store; this
@@ -200,6 +212,8 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     const consoleAccountBindingRoute = byId("console.iam.account-binding.list");
     const consoleUserCenterRoute = byId("console.iam.user-center.profile");
     const adminPermissionRoute = byId("admin.iam.permission.permissions");
+    const adminRoleRoute = byId("admin.iam.permission.roles");
+    const adminPolicyRoute = byId("admin.iam.permission.policies");
     const routes: SdkworkIamH5ShellRoute[] = [];
 
     if (loginRoute) {
@@ -402,6 +416,24 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
         title: adminPermissionMessages.permissions.title,
       });
     }
+    if (adminRoleRoute) {
+      routes.push({
+        access: "protected",
+        element: <SdkworkIamH5AdminRoleScreen controller={adminRoleController} />,
+        id: adminRoleRoute.id,
+        path: adminRoleRoute.path,
+        title: adminPermissionMessages.roles.title,
+      });
+    }
+    if (adminPolicyRoute) {
+      routes.push({
+        access: "protected",
+        element: <SdkworkIamH5AdminPolicyScreen controller={adminPolicyController} />,
+        id: adminPolicyRoute.id,
+        path: adminPolicyRoute.path,
+        title: adminPermissionMessages.policies.title,
+      });
+    }
     return routes;
   }, [
     accountBindingController,
@@ -419,6 +451,10 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     consoleUserCenterMessages.profile.title,
     adminPermissionController,
     adminPermissionMessages.permissions.title,
+    adminPermissionMessages.roles.title,
+    adminPermissionMessages.policies.title,
+    adminRoleController,
+    adminPolicyController,
     handleAuthenticated,
     navigate,
     oauthMessages.providers.title,

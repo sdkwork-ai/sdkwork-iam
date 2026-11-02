@@ -203,8 +203,6 @@ clientSurfaces:
       - admin.iam.oauth.providers
       - admin.iam.tenant.list
       - admin.iam.organization.tree
-      - admin.iam.permission.roles
-      - admin.iam.permission.policies
       - admin.iam.permission.authorizations
       - admin.iam.account-binding.list
       - admin.iam.user.list

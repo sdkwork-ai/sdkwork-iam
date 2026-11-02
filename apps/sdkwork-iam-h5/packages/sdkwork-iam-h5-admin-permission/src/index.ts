@@ -5,3 +5,5 @@ export * from './services/admin-permission-controller.js';
 export * from './types/admin-permission-types.js';
 export * from './i18n/index.js';
 export * from './pages/PermissionAdminScreen.js';
+export * from './pages/RoleAdminScreen.js';
+export * from './pages/PolicyAdminScreen.js';
