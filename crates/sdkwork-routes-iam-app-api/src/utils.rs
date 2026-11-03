@@ -179,6 +179,27 @@ pub(crate) fn login_scope_from_string(value: &str) -> sdkwork_iam_context_servic
     }
 }
 
+/// Reconciles a persisted organization scope with its `login_scope`.
+///
+/// `API_SPEC.md` §10.4 derives the resolved scope from those two facts only: a
+/// `TENANT` scope is the platform sentinel `0`, and an `ORGANIZATION` scope is a
+/// positive non-zero id. A serialized context that pairs them the other way is
+/// contradictory and `MUST` fail closed rather than degrade to tenant-level rows
+/// or quietly restore organization membership.
+pub(crate) fn resolve_login_organization_scope(
+    organization_id: Option<&str>,
+    login_scope: &sdkwork_iam_context_service::LoginScope,
+) -> Option<String> {
+    let scope =
+        sdkwork_iam_context_service::normalize_resolved_organization_scope(organization_id);
+    let tenant_level = sdkwork_iam_context_service::is_platform_organization_id(&scope);
+    let consistent = match login_scope {
+        sdkwork_iam_context_service::LoginScope::Tenant => tenant_level,
+        sdkwork_iam_context_service::LoginScope::Organization => !tenant_level,
+    };
+    consistent.then_some(scope)
+}
+
 pub(crate) fn new_iam_user_id() -> String {
     sdkwork_iam_bootstrap::new_iam_user_id()
 }

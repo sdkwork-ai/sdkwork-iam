@@ -267,6 +267,16 @@ async fn create_session(
         user_surface,
         standard_role_codes,
     );
+    // The session row stores the resolved scope, never an absent organization:
+    // `iam_session.organization_id` is NOT NULL with the platform sentinel
+    // (`DATABASE_SPEC.md` §6.10), and the paired `login_scope` derives from it
+    // (`API_SPEC.md` §10.4). Binding `None` wrote NULL for tenant-level logins.
+    let organization_id = context.organization_scope();
+    let login_scope = if sdkwork_iam_context_service::is_platform_organization_id(&organization_id) {
+        "TENANT"
+    } else {
+        "ORGANIZATION"
+    };
     let signing_key = ensure_signing_key(sqlite, &user.tenant_id).await?;
     let access_token = sign_local_session_token(&signing_key, "access", &context);
     let auth_token = sign_local_session_token(&signing_key, "auth", &context);
@@ -283,7 +293,7 @@ async fn create_session(
     .bind(&session_id)
     .bind(&user.tenant_id)
     .bind(&organization_id)
-    .bind(if organization_id.is_some() { "ORGANIZATION" } else { "TENANT" })
+    .bind(login_scope)
     .bind(&user.id)
     .bind(runtime_app_id)
     .bind(&config.environment)

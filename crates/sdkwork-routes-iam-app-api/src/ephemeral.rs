@@ -489,7 +489,14 @@ fn session_from_json(value: &Value) -> Option<LocalSession> {
         .iter()
         .filter_map(|entry| entry.as_str().map(str::to_string))
         .collect();
-    let organization_id = optional_string(context.get("organizationId"));
+    let login_scope = login_scope_from_string(
+        &optional_string(context.get("loginScope")).unwrap_or_else(|| "TENANT".to_string()),
+    );
+    let organization_id = resolve_login_organization_scope(
+        optional_string(context.get("organizationId")).as_deref(),
+        &login_scope,
+    )?;
+    let organization_member = login_scope == sdkwork_iam_context_service::LoginScope::Organization;
     Some(LocalSession {
         access_token,
         auth_token,
@@ -501,10 +508,8 @@ fn session_from_json(value: &Value) -> Option<LocalSession> {
             environment: environment_from_config(
                 &optional_string(context.get("environment")).unwrap_or_else(|| "local".to_string()),
             ),
-            login_scope: login_scope_from_string(
-                &optional_string(context.get("loginScope")).unwrap_or_else(|| "TENANT".to_string()),
-            ),
-            organization_id: organization_id.clone(),
+            login_scope,
+            organization_id: Some(organization_id),
             permission_scope,
             session_id: optional_string(context.get("sessionId"))
                 .unwrap_or_else(|| session_id.clone()),
@@ -514,7 +519,7 @@ fn session_from_json(value: &Value) -> Option<LocalSession> {
             principal_id: optional_string(context.get("userId")).unwrap_or_else(|| user.id.clone()),
             user_surface: IamUserSurface {
                 app: true,
-                organization_member: organization_id.is_some(),
+                organization_member,
             },
             standard_role_codes: Vec::new(),
             display_name: user.display_name.clone(),

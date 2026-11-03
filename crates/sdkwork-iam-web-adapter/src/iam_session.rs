@@ -156,9 +156,9 @@ async fn resolve_sqlite_iam_app_context_from_dual_tokens(
     if !session_token_claims_match(&auth_claims, &access_claims) {
         return None;
     }
-    let row = sqlx::query(&sqlite_session_context_query(
+    let row = sqlx::query(sqlx::AssertSqlSafe(sqlite_session_context_query(
         "s.auth_token_hash = ? AND s.access_token_hash = ?",
-    ))
+    )))
     .bind(hash_token(&auth_token))
     .bind(hash_token(&access_token))
     .bind(current_timestamp_utc().to_rfc3339())
@@ -185,7 +185,9 @@ async fn resolve_sqlite_iam_app_context_from_access_token(
     let signing_key = load_sqlite_signing_key_by_kid(sqlite, &kid).await?;
     let now_unix = (current_millis() / 1000) as i64;
     let claims = verify_local_session_token(&signing_key, &access_token, "access", now_unix)?;
-    let row = sqlx::query(&sqlite_session_context_query("s.access_token_hash = ?"))
+    let row = sqlx::query(sqlx::AssertSqlSafe(
+        sqlite_session_context_query("s.access_token_hash = ?"),
+    ))
         .bind(hash_token(&access_token))
         .bind(current_timestamp_utc().to_rfc3339())
         .fetch_optional(sqlite)
@@ -217,12 +219,15 @@ fn sqlite_session_context_query(token_predicate: &str) -> String {
 
 #[cfg(feature = "sqlite")]
 fn iam_context_from_sqlite_session_row(row: &sqlx::sqlite::SqliteRow) -> Option<IamAppContext> {
-    let organization_id: Option<String> = row.try_get(2).ok()?;
+    let organization_id: String = row.try_get(2).ok()?;
+    let login_scope = login_scope_from_string(&row.try_get::<String, _>(3).ok()?);
+    let organization_id = resolve_context_organization_scope(Some(&organization_id), &login_scope)?;
+    let organization_member = login_scope == LoginScope::Organization;
     let principal_id: String = row.try_get(4).ok()?;
     Some(IamAppContext {
         tenant_id: row.try_get(1).ok()?,
-        organization_id: organization_id.clone(),
-        login_scope: login_scope_from_string(&row.try_get::<String, _>(3).ok()?),
+        organization_id: Some(organization_id),
+        login_scope,
         user_id: principal_id.clone(),
         principal_kind: IamPrincipalKind::User,
         principal_id,
@@ -244,7 +249,7 @@ fn iam_context_from_sqlite_session_row(row: &sqlx::sqlite::SqliteRow) -> Option<
         permission_scope: sqlite_json_string_vec(row, 10),
         user_surface: IamUserSurface {
             app: true,
-            organization_member: organization_id.is_some(),
+            organization_member,
         },
         standard_role_codes: Vec::new(),
         display_name: row.try_get(11).unwrap_or_default(),
@@ -595,17 +600,13 @@ fn iam_context_from_token_claims(claims: &Value) -> Option<IamAppContext> {
     // without doing so must be treated as having no scope at all.
     let data_scope = Vec::new();
     let permission_scope = Vec::new();
-    let normalized_organization_id = organization_id.and_then(|value| {
-        if crate::is_blank(Some(value.as_str())) {
-            None
-        } else {
-            Some(value.trim().to_owned())
-        }
-    });
+    let normalized_organization_id =
+        resolve_context_organization_scope(organization_id.as_deref(), &login_scope)?;
+    let organization_member = login_scope == LoginScope::Organization;
 
     Some(IamAppContext {
         tenant_id,
-        organization_id: normalized_organization_id.clone(),
+        organization_id: Some(normalized_organization_id),
         login_scope,
         user_id: user_id.clone(),
         principal_kind: IamPrincipalKind::User,
@@ -619,7 +620,7 @@ fn iam_context_from_token_claims(claims: &Value) -> Option<IamAppContext> {
         permission_scope,
         user_surface: IamUserSurface {
             app: true,
-            organization_member: normalized_organization_id.is_some(),
+            organization_member,
         },
         standard_role_codes: Vec::new(),
         display_name: claim_string_value(claims, &["display_name", "displayName", "name"])
@@ -697,7 +698,7 @@ struct TenantSigningKey {
 fn iam_context_from_session_row(row: &sqlx::postgres::PgRow) -> Option<IamAppContext> {
     let session_id: String = row.get(0);
     let tenant_id: String = row.get(1);
-    let organization_id: Option<String> = row.get(2);
+    let organization_id: String = row.get(2);
     let login_scope: String = row.get(3);
     let user_id: Option<String> = row.get(4);
     let app_id: String = row.get(5);
@@ -706,7 +707,14 @@ fn iam_context_from_session_row(row: &sqlx::postgres::PgRow) -> Option<IamAppCon
     let auth_level: String = row.get(8);
     let data_scope = json_string_vec_from_row(row, 9);
     let permission_scope = json_string_vec_from_row(row, 10);
-    let organization_member = organization_id.is_some();
+    let login_scope = login_scope_from_string(&login_scope);
+    // `iam_session.organization_id` is NOT NULL DEFAULT '0' and carries the
+    // resolved scope. Reconcile it with `login_scope` exactly once here so the
+    // projected context never pairs a tenant-level scope with organization
+    // membership (which previously made `organization_member` true for `'0'`),
+    // and never pairs `ORGANIZATION` with the sentinel.
+    let organization_id = resolve_context_organization_scope(Some(&organization_id), &login_scope)?;
+    let organization_member = login_scope == LoginScope::Organization;
 
     let (display_name, email, email_verified) = user_profile_from_session_row(row);
 
@@ -714,7 +722,7 @@ fn iam_context_from_session_row(row: &sqlx::postgres::PgRow) -> Option<IamAppCon
     let principal_id: String = row.get(15);
     Some(IamAppContext {
         tenant_id,
-        organization_id,
+        organization_id: Some(organization_id),
         user_id: user_id.unwrap_or_else(|| principal_id.clone()),
         principal_kind: if principal_kind == "service_account" {
             IamPrincipalKind::ServiceAccount
@@ -736,7 +744,7 @@ fn iam_context_from_session_row(row: &sqlx::postgres::PgRow) -> Option<IamAppCon
             "system" => AuthLevel::System,
             _ => AuthLevel::Anonymous,
         },
-        login_scope: login_scope_from_string(&login_scope),
+        login_scope,
         data_scope,
         permission_scope,
         user_surface: IamUserSurface {
@@ -907,30 +915,42 @@ fn session_token_claims_match(auth_claims: &Value, access_claims: &Value) -> boo
         &["tenant_id"][..],
         &["user_id"][..],
         &["session_id"][..],
-        &["organization_id"][..],
-        &["login_scope"][..],
         &["app_id"][..],
     ] {
         if claim_string_value(auth_claims, keys) != claim_string_value(access_claims, keys) {
             return false;
         }
     }
-    true
+    // Overlapping tenancy claims are compared after normalization
+    // (`API_SPEC.md` §10.2): an absent `organization_id` and `"0"` are the same
+    // tenant-level scope, and `login_scope` is case-insensitive on the wire.
+    let auth_scope = sdkwork_iam_context_service::normalize_resolved_organization_scope(
+        claim_string_value(auth_claims, &["organization_id"]).as_deref(),
+    );
+    let access_scope = sdkwork_iam_context_service::normalize_resolved_organization_scope(
+        claim_string_value(access_claims, &["organization_id"]).as_deref(),
+    );
+    if auth_scope != access_scope {
+        return false;
+    }
+    let auth_scope_claim = claim_string_value(auth_claims, &["login_scope"])
+        .map(|value| value.trim().to_ascii_uppercase());
+    let access_scope_claim = claim_string_value(access_claims, &["login_scope"])
+        .map(|value| value.trim().to_ascii_uppercase());
+    auth_scope_claim == access_scope_claim
 }
 
 fn session_claims_match_context(claims: &Value, context: &IamAppContext) -> bool {
-    let organization_id = context
-        .organization_id
-        .as_deref()
-        .filter(|value| !crate::is_blank(Some(value)))
-        .unwrap_or("0");
+    let claim_scope = sdkwork_iam_context_service::normalize_resolved_organization_scope(
+        claim_string_value(claims, &["organization_id"]).as_deref(),
+    );
     claim_string_value(claims, &["tenant_id"]) == Some(context.tenant_id.clone())
         && claim_string_value(claims, &["user_id"]) == Some(context.user_id.clone())
         && claim_string_value(claims, &["session_id"]) == Some(context.session_id.clone())
         && claim_string_value(claims, &["app_id"]) == Some(context.app_id.clone())
         && claim_string_value(claims, &["login_scope"])
             == Some(login_scope_to_string(&context.login_scope).to_string())
-        && claim_string_value(claims, &["organization_id"]) == Some(organization_id.to_string())
+        && claim_scope == context.organization_scope()
 }
 
 fn login_scope_to_string(login_scope: &LoginScope) -> &'static str {
@@ -944,6 +964,26 @@ fn login_scope_from_string(value: &str) -> LoginScope {
     match value.trim().to_ascii_uppercase().as_str() {
         "ORGANIZATION" => LoginScope::Organization,
         _ => LoginScope::Tenant,
+    }
+}
+
+/// Reconciles a persisted/claimed organization scope with its `login_scope`.
+///
+/// `API_SPEC.md` §10.4 derives the resolved scope from those two facts only. A
+/// `TENANT` scope must be the sentinel `0`; an `ORGANIZATION` scope must be a
+/// non-zero id. Anything else is a contradictory credential and MUST fail closed
+/// (`40103`) instead of degrading to tenant-level data or guessing an
+/// organization, so this returns `None` for the caller to reject.
+fn resolve_context_organization_scope(
+    organization_id: Option<&str>,
+    login_scope: &LoginScope,
+) -> Option<String> {
+    let scope =
+        sdkwork_iam_context_service::normalize_resolved_organization_scope(organization_id);
+    let tenant_level = sdkwork_iam_context_service::is_platform_organization_id(&scope);
+    match (login_scope, tenant_level) {
+        (LoginScope::Tenant, true) | (LoginScope::Organization, false) => Some(scope),
+        _ => None,
     }
 }
 
@@ -1085,5 +1125,102 @@ mod tests {
         let tampered_claims = verify_local_session_token(&key, &tampered_token, "auth", now_unix)
             .expect("tampered token signature should still verify");
         assert!(!session_claims_match_context(&tampered_claims, &context));
+    }
+
+    #[test]
+    fn tenant_level_session_scope_is_the_sentinel_and_not_organization_membership() {
+        // `iam_session.organization_id` is NOT NULL DEFAULT '0', so a tenant-level
+        // row stores '0'. Projecting that as `Some("0")` must NOT make the
+        // principal an organization member (API_SPEC §10.4, DATABASE_SPEC §6.10).
+        let scope = resolve_context_organization_scope(Some("0"), &LoginScope::Tenant)
+            .expect("tenant-level scope");
+        assert_eq!("0", scope);
+        assert!(sdkwork_iam_context_service::is_platform_organization_id(&scope));
+    }
+
+    #[test]
+    fn organization_scope_rejects_the_sentinel_and_contradictions() {
+        // ORGANIZATION requires a positive non-zero organization id.
+        assert_eq!(
+            None,
+            resolve_context_organization_scope(Some("0"), &LoginScope::Organization)
+        );
+        assert_eq!(
+            None,
+            resolve_context_organization_scope(None, &LoginScope::Organization)
+        );
+        // TENANT requires the sentinel; a non-zero organization contradicts it.
+        assert_eq!(
+            None,
+            resolve_context_organization_scope(Some("100002"), &LoginScope::Tenant)
+        );
+        assert_eq!(
+            Some("100002".to_owned()),
+            resolve_context_organization_scope(Some("100002"), &LoginScope::Organization)
+        );
+    }
+
+    #[test]
+    fn token_claims_project_absent_organization_as_the_sentinel() {
+        let claims = json!({
+            "app_id": "sdkwork-cloudrouter",
+            "auth_level": "password",
+            "deployment_mode": "private",
+            "environment": "prod",
+            "login_scope": "TENANT",
+            "session_id": "session-1",
+            "tenant_id": "100001",
+            "token_type": "access",
+            "token_version": 1,
+            "user_id": "user-1",
+        });
+        let context = iam_context_from_token_claims(&claims).expect("tenant-level claims");
+        assert_eq!(Some("0".to_owned()), context.organization_id);
+        assert_eq!("0", context.organization_scope());
+        assert_eq!(LoginScope::Tenant, context.login_scope);
+        assert!(!context.user_surface.organization_member);
+    }
+
+    #[test]
+    fn token_claims_reject_organization_scope_contradictions() {
+        let mut claims = json!({
+            "app_id": "sdkwork-cloudrouter",
+            "login_scope": "TENANT",
+            "organization_id": "100002",
+            "session_id": "session-1",
+            "tenant_id": "100001",
+            "token_type": "access",
+            "user_id": "user-1",
+        });
+        assert!(iam_context_from_token_claims(&claims).is_none());
+        claims["login_scope"] = json!("ORGANIZATION");
+        claims["organization_id"] = json!("0");
+        assert!(iam_context_from_token_claims(&claims).is_none());
+    }
+
+    #[test]
+    fn dual_token_claims_match_after_organization_normalization() {
+        // An absent `organization_id` and `"0"` are the same tenant-level scope;
+        // comparing the raw claim strings rejected a legitimate pair.
+        let auth = json!({
+            "tenant_id": "100001",
+            "user_id": "user-1",
+            "session_id": "session-1",
+            "app_id": "sdkwork-cloudrouter",
+            "login_scope": "TENANT",
+        });
+        let access = json!({
+            "tenant_id": "100001",
+            "user_id": "user-1",
+            "session_id": "session-1",
+            "app_id": "sdkwork-cloudrouter",
+            "login_scope": "TENANT",
+            "organization_id": "0",
+        });
+        assert!(session_token_claims_match(&auth, &access));
+
+        let mut mismatched = access.clone();
+        mismatched["organization_id"] = json!("100002");
+        assert!(!session_token_claims_match(&auth, &mismatched));
     }
 }

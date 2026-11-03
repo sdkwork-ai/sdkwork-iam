@@ -83,7 +83,11 @@ fn treats_empty_organization_as_tenant_login_scope() {
             vec![],
         );
 
-        assert_eq!(context.organization_id, None);
+        // Tenant-level scope resolves to the platform sentinel, never an
+        // absent value (API_SPEC.md §10.4).
+        assert_eq!(context.organization_id.as_deref(), Some("0"));
+        assert_eq!(context.organization_scope(), "0");
+        assert!(context.is_tenant_level());
         assert_eq!(context.login_scope, LoginScope::Tenant);
         assert_eq!(
             IamShardingContext::from_app_context(&context),
@@ -113,7 +117,8 @@ fn treats_root_organization_id_zero_as_personal_login_scope() {
         vec![],
     );
 
-    assert_eq!(context.organization_id, None);
+    assert_eq!(context.organization_id.as_deref(), Some("0"));
+    assert!(context.is_tenant_level());
     assert_eq!(context.login_scope, LoginScope::Tenant);
     assert_eq!(
         IamShardingContext::from_app_context(&context),

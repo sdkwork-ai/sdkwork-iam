@@ -77,7 +77,7 @@ impl ApiKeyLookupService for IamApiKeyLookupService {
              FROM iam_api_key a \
              JOIN iam_user u ON u.id = a.user_id AND u.tenant_id = a.tenant_id \
              LEFT JOIN iam_organization o ON o.tenant_id = a.tenant_id AND o.id = a.organization_id \
-             WHERE a.key_hash = $1 AND a.status = 'active' \
+             WHERE a.key_hash = $1 AND a.status = 'active' AND a.revoked_at IS NULL \
            AND (a.expires_at IS NULL OR a.expires_at::timestamptz > $2::timestamptz) \
              AND u.status = 'active' AND u.is_deleted = 0 \
              AND (a.organization_id = '0' OR (o.id IS NOT NULL AND o.status = 'active')) \
@@ -178,13 +178,15 @@ fn parse_deployment_mode(value: &str) -> WebDeploymentMode {
 }
 
 fn normalize_organization_id(organization_id: &str) -> Option<String> {
-    let trimmed = organization_id.trim();
-    if crate::is_blank(Some(trimmed)) {
-        // The platform sentinel for tenant-level scope, never an absent scope.
-        Some("0".to_owned())
-    } else {
-        Some(trimmed.to_owned())
-    }
+    // `iam_api_key.organization_id` is NOT NULL DEFAULT '0' (`IAM_SPEC.md`
+    // §5.3.1). The record supplies the resolved scope directly: `'0'` is the
+    // tenant-level sentinel, any other value is organization-level. It is never
+    // an absent scope and never inferred from the request.
+    Some(
+        sdkwork_iam_context_service::normalize_resolved_organization_scope(Some(
+            organization_id,
+        )),
+    )
 }
 
 fn parse_string_vec_json(raw: &str) -> Vec<String> {

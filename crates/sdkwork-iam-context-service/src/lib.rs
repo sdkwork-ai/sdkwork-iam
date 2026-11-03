@@ -23,6 +23,24 @@ pub fn normalize_login_organization_id(organization_id: Option<&str>) -> Option<
     normalize_organization_id(organization_id)
 }
 
+/// Normalizes a resolved organization scope to its single runtime representation
+/// (`API_SPEC.md` §10.4, `DATABASE_SPEC.md` §6.10).
+///
+/// A resolved scope is never absent: a tenant-level session carries the platform
+/// sentinel `"0"`, and an organization-level session carries the organization id.
+/// `None`, a blank value, and `"0"` therefore all resolve to the sentinel. Use
+/// this for context projection, SQL binding, cache/audit keys, and database
+/// initialization; use [`normalize_login_organization_id`] for raw login input
+/// where "no organization selected" is still a distinct request fact.
+pub fn normalize_resolved_organization_scope(organization_id: Option<&str>) -> String {
+    match organization_id.map(str::trim) {
+        Some(value) if !is_blank(Some(value)) && !is_platform_organization_id(value) => {
+            value.to_owned()
+        }
+        _ => PLATFORM_ORGANIZATION_ID.to_owned(),
+    }
+}
+
 /// Serializes organization id for API responses and JWT claims.
 pub fn serialize_session_organization_id(
     organization_id: Option<&str>,
@@ -133,16 +151,20 @@ impl IamAppContext {
         data_scope: Vec<String>,
         permission_scope: Vec<String>,
     ) -> Self {
-        let organization_id = normalize_organization_id(organization_id);
-        let login_scope = if organization_id.is_some() {
-            LoginScope::Organization
-        } else {
+        let organization_scope = normalize_resolved_organization_scope(organization_id);
+        let login_scope = if is_platform_organization_id(&organization_scope) {
             LoginScope::Tenant
+        } else {
+            LoginScope::Organization
         };
+        // The resolved scope is always present. Storing the sentinel keeps every
+        // downstream projection, SQL predicate, cache key, and seed on one
+        // representation instead of interpreting `None` as "no organization".
+        let organization_id = Some(organization_scope);
 
         let user_surface = IamUserSurface {
             app: true,
-            organization_member: organization_id.is_some(),
+            organization_member: login_scope == LoginScope::Organization,
         };
 
         let user_id = user_id.into();
@@ -175,9 +197,24 @@ impl IamAppContext {
         self.principal_id = service_account_id;
         self.user_surface = IamUserSurface {
             app: false,
-            organization_member: self.organization_id.is_some(),
+            organization_member: self.login_scope == LoginScope::Organization,
         };
         self
+    }
+
+    /// The resolved organization scope with the tenant-level sentinel applied.
+    ///
+    /// Every `organization_id` read, write, cache key, audit row, and seed for
+    /// this context `MUST` bind this value: `"0"` for a tenant-level session and
+    /// the organization id for an organization-level session
+    /// (`API_SPEC.md` §10.4, `DATABASE_SPEC.md` §16).
+    pub fn organization_scope(&self) -> String {
+        normalize_resolved_organization_scope(self.organization_id.as_deref())
+    }
+
+    /// True when this context is tenant-level (organization scope `0`).
+    pub fn is_tenant_level(&self) -> bool {
+        is_platform_organization_id(&self.organization_scope())
     }
 
     pub fn apply_user_profile(
@@ -198,11 +235,11 @@ impl IamAppContext {
     /// Backend API surface access.
     ///
     /// Organization sessions still require an active organization
-    /// membership. Tenant sessions (`organization_id` empty or `"0"`) are
+    /// membership. Tenant sessions (resolved organization scope `"0"`) are
     /// accepted when the principal is an active tenant member: the backend
     /// query layers scope tenant sessions to tenant-level rows
-    /// (`organization_id IS NULL` / `'0'`), so rejecting them would make
-    /// every default tenant login unable to reach backend surfaces at all.
+    /// (`organization_id = '0'`), so rejecting them would make every default
+    /// tenant login unable to reach backend surfaces at all.
     pub fn can_access_backend_api(&self) -> bool {
         match self.login_scope {
             LoginScope::Organization => self.user_surface.organization_member,
@@ -215,7 +252,11 @@ impl IamShardingContext {
     pub fn from_app_context(context: &IamAppContext) -> Self {
         if context.login_scope == LoginScope::Organization {
             if let Some(organization_id) = context.organization_id.as_ref() {
-                if !is_blank(Some(organization_id)) {
+                // `"0"` is the tenant-level sentinel, not an organization key;
+                // sharding on it would collapse every tenant session onto one
+                // partition named after the sentinel.
+                if !is_blank(Some(organization_id)) && !is_platform_organization_id(organization_id)
+                {
                     return Self {
                         sharding_key: organization_id.clone(),
                         sharding_strategy: IamShardingStrategy::Organization,
@@ -342,6 +383,39 @@ mod tests {
     fn platform_organization_id_normalizes_to_tenant_scope() {
         let context = base_context(Some("0"));
         assert_eq!(context.login_scope, LoginScope::Tenant);
-        assert_eq!(context.organization_id, None);
+        // Tenant-level scope is the sentinel, never an absent value
+        // (`API_SPEC.md` §10.4).
+        assert_eq!(context.organization_id, Some("0".to_owned()));
+        assert_eq!(context.organization_scope(), "0");
+        assert!(context.is_tenant_level());
+        assert!(!context.user_surface.organization_member);
+    }
+
+    #[test]
+    fn missing_organization_id_normalizes_to_tenant_scope_sentinel() {
+        let context = base_context(None);
+        assert_eq!(context.login_scope, LoginScope::Tenant);
+        assert_eq!(context.organization_scope(), "0");
+        assert!(!context.user_surface.organization_member);
+    }
+
+    #[test]
+    fn organization_context_projects_the_claim_value_as_scope() {
+        let context = base_context(Some("100002"));
+        assert_eq!(context.login_scope, LoginScope::Organization);
+        assert_eq!(context.organization_scope(), "100002");
+        assert!(!context.is_tenant_level());
+        assert_eq!(
+            IamShardingStrategy::Organization,
+            IamShardingContext::from_app_context(&context).sharding_strategy
+        );
+    }
+
+    #[test]
+    fn tenant_level_context_shards_by_tenant_not_by_sentinel() {
+        let context = base_context(None);
+        let sharding = IamShardingContext::from_app_context(&context);
+        assert_eq!(IamShardingStrategy::Tenant, sharding.sharding_strategy);
+        assert_eq!("100001", sharding.sharding_key);
     }
 }

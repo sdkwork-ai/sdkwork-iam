@@ -1009,6 +1009,7 @@ mod tests {
         assert_eq!(bootstrap_credential_id("1"), "iamc_bootstrap_1");
     }
 
+    #[cfg(feature = "sqlite")]
     #[tokio::test]
     async fn sqlite_bootstrap_root_membership_is_primary_and_idempotent() {
         let pool = SqlitePool::connect("sqlite::memory:")
