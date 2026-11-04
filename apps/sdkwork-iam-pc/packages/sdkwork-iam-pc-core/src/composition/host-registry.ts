@@ -15,6 +15,7 @@ export function createSdkworkIamPcHostRegistry() {
       auth: "@sdkwork/auth-pc-react",
       authRuntime: "@sdkwork/auth-runtime-pc-react",
       core: "@sdkwork/iam-core-pc-react",
+      oauth: "@sdkwork/iam-pc-oauth",
       react: "@sdkwork/iam-react",
       user: "@sdkwork/user-pc-react",
       userCenter: "@sdkwork/user-center-pc-react",

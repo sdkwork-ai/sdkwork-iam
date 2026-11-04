@@ -381,6 +381,12 @@
       "lifecycle_status": "active"
     },
     {
+      "table_name": "iam_user_official_account",
+      "owner": "sdkwork-iam",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
       "table_name": "iam_user_persona",
       "owner": "sdkwork-iam",
       "compliance_level": "L2",

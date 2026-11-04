@@ -260,6 +260,7 @@ fn build_sdkwork_iam_app_api_core_router(state: LocalIamState) -> Router {
         )
         .route("/app/v3/api/iam/role_bindings", get(list_role_bindings))
         .merge(crate::persona::persona_routes())
+        .merge(crate::official_accounts::official_account_routes())
         .route("/app/v3/api/system/iam/runtime", get(retrieve_runtime))
         .route(
             "/app/v3/api/system/iam/verification_policy",

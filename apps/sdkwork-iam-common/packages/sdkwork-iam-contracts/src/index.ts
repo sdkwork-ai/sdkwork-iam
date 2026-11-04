@@ -160,6 +160,7 @@ export const SDKWORK_IAM_TABLES = {
   tenant: "iam_tenant",
   user: "iam_user",
   userIdentity: "iam_user_identity",
+  userOfficialAccount: "iam_user_official_account",
   userPersona: "iam_user_persona",
   personaRole: "iam_persona_role",
   personaInterest: "iam_persona_interest",

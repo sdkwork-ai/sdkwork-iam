@@ -262,6 +262,45 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
         "users.current.persona.delete",
     )
     .with_required_permission("iam.profile.update"),
+    // Per-user official (service) account configuration. The rows are the
+    // caller's own channel configuration, scoped by tenant and user, and never
+    // participate in login; the backend-admin `iam.oauth.resourceAccounts.*`
+    // resource is a different, tenant-level surface.
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/iam/oauth/official_accounts",
+        "iam",
+        "iam.oauth.officialAccounts.list",
+    )
+    .with_required_permission("iam:self"),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/iam/oauth/official_accounts",
+        "iam",
+        "iam.oauth.officialAccounts.create",
+    )
+    .with_required_permission("iam.profile.update"),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}",
+        "iam",
+        "iam.oauth.officialAccounts.retrieve",
+    )
+    .with_required_permission("iam:self"),
+    HttpRoute::dual_token(
+        HttpMethod::Patch,
+        "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}",
+        "iam",
+        "iam.oauth.officialAccounts.update",
+    )
+    .with_required_permission("iam.profile.update"),
+    HttpRoute::dual_token(
+        HttpMethod::Delete,
+        "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}",
+        "iam",
+        "iam.oauth.officialAccounts.delete",
+    )
+    .with_required_permission("iam.profile.update"),
     HttpRoute::dual_token(
         HttpMethod::Patch,
         "/app/v3/api/iam/users/current/password",

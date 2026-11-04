@@ -12,7 +12,7 @@
   "mode": "apply",
   "hasChanges": true,
   "hasDestructiveChanges": true,
-  "changeFingerprint": "6202b4d21fd489e28b2066b73a766d37034b1968f5dc0664c7279ad915f8656b",
+  "changeFingerprint": "238817d7ec161c4c7d5ee1f650353928133e9591fdc9b1957ea020d928960bd4",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
@@ -23,19 +23,27 @@
       {
         "area": "api-surface",
         "paths": [
+          "src/api/auth.d.ts",
+          "src/api/base.d.ts",
           "src/api/iam.d.ts",
           "src/api/iam.ts",
-          "src/api/oauth.d.ts"
+          "src/api/index.d.ts",
+          "src/api/oauth.d.ts",
+          "src/api/paths.d.ts",
+          "src/api/system.d.ts"
         ]
       },
       {
         "area": "models",
         "paths": [
+          "src/types/appbase-operation-command.d.ts",
           "src/types/appbase-session-create-command.d.ts",
           "src/types/authorizations-completions-create-request.d.ts",
           "src/types/authorizations-completions-create-response.d.ts",
+          "src/types/common.d.ts",
           "src/types/desktop-sessions-create-request.d.ts",
           "src/types/desktop-sessions-create-response.d.ts",
+          "src/types/field-error.d.ts",
           "src/types/iam-persona-catalog-response.d.ts",
           "src/types/iam-persona-catalog.d.ts",
           "src/types/iam-persona-interest.d.ts",
@@ -44,7 +52,18 @@
           "src/types/iam-user-persona-response.d.ts",
           "src/types/iam-user-persona-update-command.d.ts",
           "src/types/iam-user-persona.d.ts",
-          "src/types/index.d.ts"
+          "src/types/index.d.ts",
+          "src/types/page-info.d.ts",
+          "src/types/problem-detail.d.ts",
+          "src/types/sdk-work-api-response.d.ts",
+          "src/types/sdk-work-command-data.d.ts",
+          "src/types/sdk-work-command-response.d.ts",
+          "src/types/sdk-work-list-response.d.ts",
+          "src/types/sdk-work-page-data.d.ts",
+          "src/types/sdk-work-platform-error-code.d.ts",
+          "src/types/sdk-work-resource-data.d.ts",
+          "src/types/sdk-work-resource-response.d.ts",
+          "src/types/wechat-mini-program-session-create-command.d.ts"
         ]
       }
     ],
@@ -176,9 +195,9 @@
     "writtenFiles": 1,
     "skippedScaffoldFiles": 2,
     "skippedUnchangedGeneratedFiles": 50,
-    "deletedGeneratedFiles": 16,
+    "deletedGeneratedFiles": 35,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "6202b4d21fd489e28b2066b73a766d37034b1968f5dc0664c7279ad915f8656b",
+    "changeFingerprint": "238817d7ec161c4c7d5ee1f650353928133e9591fdc9b1957ea020d928960bd4",
     "changes": {
       "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [
@@ -237,13 +256,21 @@
         "tsconfig.json"
       ],
       "deletedGeneratedFiles": [
+        "src/api/auth.d.ts",
+        "src/api/base.d.ts",
         "src/api/iam.d.ts",
+        "src/api/index.d.ts",
         "src/api/oauth.d.ts",
+        "src/api/paths.d.ts",
+        "src/api/system.d.ts",
+        "src/types/appbase-operation-command.d.ts",
         "src/types/appbase-session-create-command.d.ts",
         "src/types/authorizations-completions-create-request.d.ts",
         "src/types/authorizations-completions-create-response.d.ts",
+        "src/types/common.d.ts",
         "src/types/desktop-sessions-create-request.d.ts",
         "src/types/desktop-sessions-create-response.d.ts",
+        "src/types/field-error.d.ts",
         "src/types/iam-persona-catalog-response.d.ts",
         "src/types/iam-persona-catalog.d.ts",
         "src/types/iam-persona-interest.d.ts",
@@ -252,7 +279,18 @@
         "src/types/iam-user-persona-response.d.ts",
         "src/types/iam-user-persona-update-command.d.ts",
         "src/types/iam-user-persona.d.ts",
-        "src/types/index.d.ts"
+        "src/types/index.d.ts",
+        "src/types/page-info.d.ts",
+        "src/types/problem-detail.d.ts",
+        "src/types/sdk-work-api-response.d.ts",
+        "src/types/sdk-work-command-data.d.ts",
+        "src/types/sdk-work-command-response.d.ts",
+        "src/types/sdk-work-list-response.d.ts",
+        "src/types/sdk-work-page-data.d.ts",
+        "src/types/sdk-work-platform-error-code.d.ts",
+        "src/types/sdk-work-resource-data.d.ts",
+        "src/types/sdk-work-resource-response.d.ts",
+        "src/types/wechat-mini-program-session-create-command.d.ts"
       ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
@@ -260,13 +298,21 @@
         "custom/README.md"
       ],
       "backedUpFiles": [
+        "src/api/auth.d.ts",
+        "src/api/base.d.ts",
         "src/api/iam.d.ts",
+        "src/api/index.d.ts",
         "src/api/oauth.d.ts",
+        "src/api/paths.d.ts",
+        "src/api/system.d.ts",
+        "src/types/appbase-operation-command.d.ts",
         "src/types/appbase-session-create-command.d.ts",
         "src/types/authorizations-completions-create-request.d.ts",
         "src/types/authorizations-completions-create-response.d.ts",
+        "src/types/common.d.ts",
         "src/types/desktop-sessions-create-request.d.ts",
         "src/types/desktop-sessions-create-response.d.ts",
+        "src/types/field-error.d.ts",
         "src/types/iam-persona-catalog-response.d.ts",
         "src/types/iam-persona-catalog.d.ts",
         "src/types/iam-persona-interest.d.ts",
@@ -275,7 +321,18 @@
         "src/types/iam-user-persona-response.d.ts",
         "src/types/iam-user-persona-update-command.d.ts",
         "src/types/iam-user-persona.d.ts",
-        "src/types/index.d.ts"
+        "src/types/index.d.ts",
+        "src/types/page-info.d.ts",
+        "src/types/problem-detail.d.ts",
+        "src/types/sdk-work-api-response.d.ts",
+        "src/types/sdk-work-command-data.d.ts",
+        "src/types/sdk-work-command-response.d.ts",
+        "src/types/sdk-work-list-response.d.ts",
+        "src/types/sdk-work-page-data.d.ts",
+        "src/types/sdk-work-platform-error-code.d.ts",
+        "src/types/sdk-work-resource-data.d.ts",
+        "src/types/sdk-work-resource-response.d.ts",
+        "src/types/wechat-mini-program-session-create-command.d.ts"
       ]
     },
     "impact": {
@@ -288,19 +345,27 @@
         {
           "area": "api-surface",
           "paths": [
+            "src/api/auth.d.ts",
+            "src/api/base.d.ts",
             "src/api/iam.d.ts",
             "src/api/iam.ts",
-            "src/api/oauth.d.ts"
+            "src/api/index.d.ts",
+            "src/api/oauth.d.ts",
+            "src/api/paths.d.ts",
+            "src/api/system.d.ts"
           ]
         },
         {
           "area": "models",
           "paths": [
+            "src/types/appbase-operation-command.d.ts",
             "src/types/appbase-session-create-command.d.ts",
             "src/types/authorizations-completions-create-request.d.ts",
             "src/types/authorizations-completions-create-response.d.ts",
+            "src/types/common.d.ts",
             "src/types/desktop-sessions-create-request.d.ts",
             "src/types/desktop-sessions-create-response.d.ts",
+            "src/types/field-error.d.ts",
             "src/types/iam-persona-catalog-response.d.ts",
             "src/types/iam-persona-catalog.d.ts",
             "src/types/iam-persona-interest.d.ts",
@@ -309,7 +374,18 @@
             "src/types/iam-user-persona-response.d.ts",
             "src/types/iam-user-persona-update-command.d.ts",
             "src/types/iam-user-persona.d.ts",
-            "src/types/index.d.ts"
+            "src/types/index.d.ts",
+            "src/types/page-info.d.ts",
+            "src/types/problem-detail.d.ts",
+            "src/types/sdk-work-api-response.d.ts",
+            "src/types/sdk-work-command-data.d.ts",
+            "src/types/sdk-work-command-response.d.ts",
+            "src/types/sdk-work-list-response.d.ts",
+            "src/types/sdk-work-page-data.d.ts",
+            "src/types/sdk-work-platform-error-code.d.ts",
+            "src/types/sdk-work-resource-data.d.ts",
+            "src/types/sdk-work-resource-response.d.ts",
+            "src/types/wechat-mini-program-session-create-command.d.ts"
           ]
         }
       ],
@@ -374,13 +450,21 @@
       ]
     },
     "backedUpFiles": [
+      "src/api/auth.d.ts",
+      "src/api/base.d.ts",
       "src/api/iam.d.ts",
+      "src/api/index.d.ts",
       "src/api/oauth.d.ts",
+      "src/api/paths.d.ts",
+      "src/api/system.d.ts",
+      "src/types/appbase-operation-command.d.ts",
       "src/types/appbase-session-create-command.d.ts",
       "src/types/authorizations-completions-create-request.d.ts",
       "src/types/authorizations-completions-create-response.d.ts",
+      "src/types/common.d.ts",
       "src/types/desktop-sessions-create-request.d.ts",
       "src/types/desktop-sessions-create-response.d.ts",
+      "src/types/field-error.d.ts",
       "src/types/iam-persona-catalog-response.d.ts",
       "src/types/iam-persona-catalog.d.ts",
       "src/types/iam-persona-interest.d.ts",
@@ -389,7 +473,18 @@
       "src/types/iam-user-persona-response.d.ts",
       "src/types/iam-user-persona-update-command.d.ts",
       "src/types/iam-user-persona.d.ts",
-      "src/types/index.d.ts"
+      "src/types/index.d.ts",
+      "src/types/page-info.d.ts",
+      "src/types/problem-detail.d.ts",
+      "src/types/sdk-work-api-response.d.ts",
+      "src/types/sdk-work-command-data.d.ts",
+      "src/types/sdk-work-command-response.d.ts",
+      "src/types/sdk-work-list-response.d.ts",
+      "src/types/sdk-work-page-data.d.ts",
+      "src/types/sdk-work-platform-error-code.d.ts",
+      "src/types/sdk-work-resource-data.d.ts",
+      "src/types/sdk-work-resource-response.d.ts",
+      "src/types/wechat-mini-program-session-create-command.d.ts"
     ],
     "preservedLegacyFiles": false
   }

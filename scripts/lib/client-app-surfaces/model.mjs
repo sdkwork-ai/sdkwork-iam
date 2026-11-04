@@ -676,6 +676,25 @@ export const ROUTES = [
       harmonyNative: 'page',
     },
   },
+  {
+    // The signed-in account's own official (service) account configuration.
+    // App-api scoped by tenant and user; it never feeds tenant login, which is
+    // the backend-admin resource-account surface.
+    surface: 'app',
+    capability: 'oauth',
+    screen: 'official-accounts',
+    path: '/oauth/official-accounts',
+    titleKey: 'iam.oauth.officialAccounts.title',
+    auth: 'required',
+    permissionHint: 'iam:self',
+    presentation: {
+      pc: 'page',
+      h5Mobile: 'stack',
+      flutterMobile: 'route',
+      miniProgram: 'subpackagePage',
+      harmonyNative: 'page',
+    },
+  },
 
   // ---- console surface (app-api, user-facing management) ----
   {

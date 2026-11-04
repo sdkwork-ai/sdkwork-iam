@@ -15,6 +15,7 @@ impl IamTables {
     pub const POSITION_ASSIGNMENT: &'static str = "iam_position_assignment";
     pub const USER: &'static str = "iam_user";
     pub const USER_IDENTITY: &'static str = "iam_user_identity";
+    pub const USER_OFFICIAL_ACCOUNT: &'static str = "iam_user_official_account";
     pub const USER_PERSONA: &'static str = "iam_user_persona";
     pub const PERSONA_ROLE: &'static str = "iam_persona_role";
     pub const PERSONA_INTEREST: &'static str = "iam_persona_interest";
