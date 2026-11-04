@@ -57,6 +57,7 @@ export function SdkworkIamH5AuthLoginScreen({
 
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [code, setCode] = useState("");
   const [agreed, setAgreed] = useState(true);
   const [showPwd, setShowPwd] = useState(false);
@@ -247,7 +248,15 @@ export function SdkworkIamH5AuthLoginScreen({
           showError(messages.toasts.enterCode);
           return;
         }
-        const result = await controller.register({ account, code, password });
+        if (!confirmPassword) {
+          showError(messages.toasts.enterPassword);
+          return;
+        }
+        if (confirmPassword !== password) {
+          showError(messages.toasts.passwordMismatch);
+          return;
+        }
+        const result = await controller.register({ account, code, password, confirmPassword });
         if (result.kind === "loginContextSelectionRequired") {
           setChallenge(result.challenge);
           return;
@@ -371,6 +380,8 @@ export function SdkworkIamH5AuthLoginScreen({
             setPassword={setPassword}
             code={code}
             setCode={setCode}
+            confirmPassword={confirmPassword}
+            setConfirmPassword={setConfirmPassword}
             showPwd={showPwd}
             setShowPwd={setShowPwd}
             countdown={countdown}

@@ -7,6 +7,7 @@ export const toastsMessages = {
   enterPassword: "请输入密码",
   enterValidAccount: "请输入正确的账号",
   operationFailed: "操作失败",
+  passwordMismatch: "两次输入的密码不一致",
   passwordResetSuccess: "密码重置成功，请重新登录",
   verificationUnavailable: "验证码服务暂不可用，请使用密码登录",
   loggingIn: "登录...",
