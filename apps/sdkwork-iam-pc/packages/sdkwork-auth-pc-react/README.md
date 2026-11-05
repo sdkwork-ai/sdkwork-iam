@@ -4,6 +4,8 @@
 
 Shared authentication surface for login, registration, password recovery, OAuth callback, QR login, and upstream session-bridge login.
 
+The IAM runtime auth service refreshes the stored session one minute before the access token's `exp`, reschedules the refresh after every successful commit, and clears the local session when the refresh token is rejected. A transient refresh failure (network error, 429, or 5xx) is retried with capped exponential backoff instead of forcing a sign-out; a 4xx rejection still clears the session. Refreshes are serialized across tabs with the Web Locks API; a tab that loses the race adopts the tokens the winner committed instead of rotating the refresh token a second time and signing itself out. An explicit sign-out broadcasts through `BroadcastChannel`, so every other tab clears its session and resets its controller immediately; a failed refresh is intentionally not broadcast, because a transient network error must not sign every tab out. A rejected refresh also resets the runtime controller to the signed-out state, so the UI does not keep showing a session that can no longer call the API. This keeps long-lived desktop and browser sessions usable across access-token expiry instead of failing every API call after the one-hour token lifetime.
+
 This package is the standard auth UI layer for appbase-based desktop apps. Host applications should mount it directly and customize through the exported root-package contracts instead of maintaining app-specific login pages.
 
 ## Placement
@@ -22,9 +24,12 @@ This package is the standard auth UI layer for appbase-based desktop apps. Host 
 - `SdkworkAuthOAuthCallbackPage` handles OAuth callback completion with the same visual standard, including completing a pending desktop/first-party authorization threaded through the provider round-trip.
 - `SdkworkAuthDesktopLaunchPage` is the hosted login-success hand-off page
   (`/auth/desktop/launch`): after a desktop-originated authorization
-  completes, it fires the deep-link back into the desktop app and offers a
-  manual open button plus guidance. It is exempt from the authenticated-user
-  bounce in `resolveAuthAccess`.
+  completes, it receives the deep link through the same-origin
+  `storeSdkworkDesktopLaunchRedirect` transfer (the older `redirectUrl` query
+  form is still read for already-issued links and stripped from the visible
+  URL), fires the deep-link back into the desktop app, and offers a manual
+  open button plus guidance. It is exempt from the authenticated-user bounce
+  in `resolveAuthAccess`.
 - `SdkworkAuthPageShell` is the reusable shell abstraction aligned to the current `sdkwork-studio` baseline.
 - `appearance` is the single customization contract. It supports:
   - `theme`: token-level theme overrides

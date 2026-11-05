@@ -120,6 +120,7 @@ export interface SdkworkIamRuntimeAuthRuntimeLike {
         create(body: Record<string, unknown>): Promise<SdkworkIamRuntimeAuthSessionLike>;
         current: {
           delete(): Promise<void>;
+          logout?(body: { refreshToken: string }): Promise<void>;
           retrieve(): Promise<SdkworkIamRuntimeAuthSessionLike>;
           update?(body?: Record<string, unknown>): Promise<SdkworkIamRuntimeAuthSessionLike>;
         };
@@ -212,6 +213,12 @@ export interface CreateSdkworkIamRuntimeAuthControllerOptions
     | Promise<SdkworkIamRuntimeAuthRuntimeLike>
     | SdkworkIamRuntimeAuthRuntimeLike;
   methodUnavailableMessage?: string;
+  /**
+   * Called after the pre-expiry refresh fails and the local session is
+   * cleared, so a host can react (the runtime controller resets itself to
+   * anonymous).
+   */
+  onSessionExpired?: () => void;
 }
 
 const DEFAULT_METHOD_UNAVAILABLE_MESSAGE =
@@ -219,14 +226,233 @@ const DEFAULT_METHOD_UNAVAILABLE_MESSAGE =
 const SESSION_BRIDGE_TOKEN_REQUIRED_MESSAGE = "Session bridge token is required.";
 const VERIFICATION_CODE_REJECTED_MESSAGE = "Failed to verify code.";
 const PASSWORDS_DO_NOT_MATCH_MESSAGE = "Passwords do not match.";
+/** Refresh this long before the access token expires (clock-skew allowance). */
+const ACCESS_TOKEN_REFRESH_THRESHOLD_MS = 60_000;
+
+let tokenRefreshTimer: ReturnType<typeof setTimeout> | undefined;
+let sessionExpiredHandler: (() => void) | undefined;
+
+function clearTokenRefreshTimer(): void {
+  if (tokenRefreshTimer !== undefined) {
+    clearTimeout(tokenRefreshTimer);
+    tokenRefreshTimer = undefined;
+  }
+}
+
+function decodeJwtPayload(token: string): Record<string, unknown> | undefined {
+  const payload = token.split(".")[1];
+  if (!payload) {
+    return undefined;
+  }
+  try {
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
+    return typeof parsed === "object" && parsed !== null
+      ? parsed as Record<string, unknown>
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function accessTokenExpiryMs(token: string | undefined): number | undefined {
+  if (!token) {
+    return undefined;
+  }
+  const exp = decodeJwtPayload(token)?.exp;
+  return typeof exp === "number" && Number.isFinite(exp) ? exp * 1000 : undefined;
+}
+
+interface AuthRefreshLockManager {
+  request<T>(name: string, callback: () => Promise<T>): Promise<T>;
+}
+
+/**
+ * Serialize refresh across tabs when the Web Locks API is available.
+ *
+ * Every tab schedules its own pre-expiry refresh. Without a lock, two tabs
+ * present the same refresh token at the same time; the rotation lets only one
+ * win and signs the other tab out. The lock is a no-op in environments without
+ * `navigator.locks` (the tests and older webviews).
+ */
+function withAuthRefreshLock<T>(callback: () => Promise<T>): Promise<T> {
+  const locks = (globalThis.navigator as Navigator & { locks?: AuthRefreshLockManager })?.locks;
+  if (locks?.request) {
+    return locks.request("sdkwork.auth.refresh", callback);
+  }
+  return callback();
+}
+
+const AUTH_SESSION_CHANNEL_NAME = "sdkwork.auth.session.v1";
+
+interface AuthSessionChannel {
+  onmessage: ((event: MessageEvent) => void) | null;
+  postMessage(message: unknown): void;
+  close?(): void;
+  unref?(): void;
+}
+
+/**
+ * Notify the other tabs of this origin after an explicit sign-out.
+ *
+ * Tokens live in shared `localStorage`, so the other tab's next request fails,
+ * but its controller would keep rendering the signed-in shell until that
+ * happens. The channel lets each tab clear its copy and reset its controller
+ * immediately. It is intentionally not used for a failed refresh (a transient
+ * network error must not sign every tab out).
+ */
+function openAuthSessionChannel(onSignedOut: () => void): AuthSessionChannel | undefined {
+  if (typeof BroadcastChannel === "undefined") {
+    return undefined;
+  }
+  const channel = new BroadcastChannel(AUTH_SESSION_CHANNEL_NAME) as AuthSessionChannel;
+  channel.onmessage = (event) => {
+    const data = event.data as { type?: unknown } | null;
+    if (data?.type === "signed-out") {
+      onSignedOut();
+    }
+  };
+  channel.unref?.();
+  return channel;
+}
+
+/**
+ * Refresh the stored session shortly before its access token expires.
+ *
+ * Without this, every API call starts failing after the one-hour access token
+ * lifetime even though a valid 30-day refresh token is stored. The timer is
+ * cleared on sign-out/session clear and rescheduled after every commit.
+ */
+function scheduleTokenRefresh(
+  runtime: SdkworkIamRuntimeAuthRuntimeLike,
+  session: SdkworkIamRuntimeAuthStoredSessionLike,
+): void {
+  clearTokenRefreshTimer();
+  const expiry = accessTokenExpiryMs(
+    typeof session.accessToken === "string" ? session.accessToken : undefined,
+  );
+  if (expiry === undefined || !normalizeOptionalScalar(session.refreshToken)) {
+    return;
+  }
+  const delay = Math.max(0, expiry - Date.now() - ACCESS_TOKEN_REFRESH_THRESHOLD_MS);
+  if (delay > 2_147_483_647) {
+    return;
+  }
+  tokenRefreshTimer = setTimeout(() => {
+    tokenRefreshTimer = undefined;
+    void runScheduledRefresh(runtime, session, 0);
+  }, delay);
+  const timer = tokenRefreshTimer as { unref?: () => void };
+  timer.unref?.();
+}
+
+/**
+ * A refresh failure is transient when the server was unreachable or reported a
+ * retryable status. Clearing the session for these turns a brief network blip
+ * into a forced re-login; the 30-day refresh token is still valid.
+ */
+function isTransientRefreshError(error: unknown): boolean {
+  if (error === null || typeof error !== "object") {
+    return false;
+  }
+  const candidate = error as {
+    message?: unknown;
+    status?: unknown;
+    statusCode?: unknown;
+  };
+  const status = candidate.status ?? candidate.statusCode;
+  if (typeof status === "number" && (status === 429 || status >= 500)) {
+    return true;
+  }
+  const message = typeof candidate.message === "string" ? candidate.message : "";
+  return /failed to fetch|fetch failed|network\s*error|networkerror|timeout|timed out|econnreset|econnrefused|etimedout/i.test(
+    message,
+  );
+}
+
+function scheduleRefreshRetry(
+  runtime: SdkworkIamRuntimeAuthRuntimeLike,
+  session: SdkworkIamRuntimeAuthStoredSessionLike,
+  attempt: number,
+): void {
+  clearTokenRefreshTimer();
+  const delay = Math.min(5_000 * 2 ** Math.min(attempt, 4), 60_000);
+  tokenRefreshTimer = setTimeout(() => {
+    tokenRefreshTimer = undefined;
+    void runScheduledRefresh(runtime, session, attempt + 1);
+  }, delay);
+  const timer = tokenRefreshTimer as { unref?: () => void };
+  timer.unref?.();
+}
+
+async function runScheduledRefresh(
+  runtime: SdkworkIamRuntimeAuthRuntimeLike,
+  session: SdkworkIamRuntimeAuthStoredSessionLike,
+  attempt: number,
+): Promise<void> {
+  try {
+    await withAuthRefreshLock(async () => {
+      const latest = await readStoredSession(runtime);
+      if (
+        typeof latest.accessToken === "string"
+        && latest.accessToken !== ""
+        && latest.accessToken !== session.accessToken
+      ) {
+        // Another tab refreshed while this timer waited for the lock:
+        // adopt its tokens instead of rotating the refresh token again.
+        await runtime.tokenStore?.set?.(latest);
+        scheduleTokenRefresh(runtime, latest);
+        return;
+      }
+      await refreshStoredSession(runtime, {}, DEFAULT_METHOD_UNAVAILABLE_MESSAGE);
+    });
+  } catch (error) {
+    if (isTransientRefreshError(error)) {
+      // Keep the session: retry with capped exponential backoff. A revoked or
+      // expired refresh token produces a 4xx and still falls through to the
+      // signed-out path.
+      scheduleRefreshRetry(runtime, session, attempt);
+      return;
+    }
+    // The refresh token is gone or rejected: drop the local session so the
+    // next bootstrap/API call surfaces a signed-out state.
+    await clearStoredSession(runtime);
+    sessionExpiredHandler?.();
+  }
+}
+
+/**
+ * Schedule the pre-expiry refresh for a session committed outside the auth
+ * service (the desktop browser-login exchange commits the redeemed session
+ * directly). Keeping this export beside the scheduler prevents every host from
+ * reimplementing JWT-expiry parsing.
+ */
+export function scheduleSdkworkAuthSessionRefresh(
+  runtime: SdkworkIamRuntimeAuthRuntimeLike,
+  session: SdkworkIamRuntimeAuthStoredSessionLike,
+): void {
+  scheduleTokenRefresh(runtime, session);
+}
 
 export function createSdkworkIamRuntimeAuthController(
   options: CreateSdkworkIamRuntimeAuthControllerOptions,
 ): SdkworkAuthController {
-  return createSdkworkAuthController({
-    initialState: options.initialState,
-    service: createSdkworkIamRuntimeAuthService(options),
+  let controller: SdkworkAuthController;
+  const service = createSdkworkIamRuntimeAuthService({
+    ...options,
+    onSessionExpired: () => {
+      options.onSessionExpired?.();
+      controller.handleSessionExpired();
+    },
   });
+  controller = createSdkworkAuthController({
+    initialState: options.initialState,
+    service,
+  });
+  return controller;
 }
 
 export function createSdkworkIamRuntimeAuthService(
@@ -234,7 +460,18 @@ export function createSdkworkIamRuntimeAuthService(
 ): SdkworkAuthService {
   const methodUnavailableMessage =
     options.methodUnavailableMessage ?? DEFAULT_METHOD_UNAVAILABLE_MESSAGE;
+  sessionExpiredHandler = options.onSessionExpired;
   const readRuntime = () => Promise.resolve(options.getRuntime());
+  const sessionChannel = openAuthSessionChannel(() => {
+    void (async () => {
+      try {
+        const runtime = await readRuntime();
+        await clearStoredSession(runtime);
+      } finally {
+        options.onSessionExpired?.();
+      }
+    })();
+  });
 
   async function getCurrentSession(): Promise<SdkworkAuthSession | null> {
     const runtime = await readRuntime();
@@ -512,16 +749,7 @@ export function createSdkworkIamRuntimeAuthService(
     input: SdkworkAuthRefreshSessionInput = {},
   ): Promise<SdkworkAuthSession> {
     const runtime = await readRuntime();
-    if (!runtime.service.auth.sessions.refresh) {
-      throw new Error(methodUnavailableMessage);
-    }
-    const storedSession = await readStoredSession(runtime);
-    const refreshToken = normalizeOptionalScalar(input.refreshToken)
-      || normalizeOptionalScalar(storedSession.refreshToken);
-    const session = toAuthSession(await runtime.service.auth.sessions.refresh(
-      refreshToken ? { refreshToken } : {},
-    ));
-    return commitStoredSession(runtime, session, { preserveRefreshToken: true });
+    return refreshStoredSession(runtime, input, methodUnavailableMessage);
   }
 
   async function selectLoginContext(
@@ -624,9 +852,23 @@ export function createSdkworkIamRuntimeAuthService(
   async function signOut(): Promise<void> {
     const runtime = await readRuntime();
     try {
+      // Prefer the refresh-token revocation path: it still revokes the server
+      // session after the short-lived access token expired. Fall back to the
+      // dual-token delete for sessions without a refresh token (or an SDK
+      // generated before the logout operation existed).
+      const stored = await readStoredSession(runtime);
+      const refreshToken = typeof stored.refreshToken === "string"
+        ? stored.refreshToken.trim()
+        : "";
+      const logout = runtime.service.auth.sessions.current.logout;
+      if (refreshToken !== "" && typeof logout === "function") {
+        await logout({ refreshToken });
+        return;
+      }
       await runtime.service.auth.sessions.current.delete();
     } finally {
       await clearStoredSession(runtime);
+      sessionChannel?.postMessage({ type: "signed-out" });
     }
   }
 
@@ -877,16 +1119,41 @@ async function commitStoredSession(
     ...(session.user ? { user: session.user } : {}),
   };
   await runtime.tokenStore?.set?.(committedSession);
+  scheduleTokenRefresh(runtime, committedSession);
   return committedSession;
 }
 
 async function clearStoredSession(
   runtime: SdkworkIamRuntimeAuthRuntimeLike,
 ): Promise<void> {
+  clearTokenRefreshTimer();
   await Promise.all([
     runtime.tokenStore?.clear?.(),
     runtime.contextStore?.clear?.(),
   ]);
+}
+
+/**
+ * Refresh the stored session through the runtime's `sessions.refresh` call.
+ *
+ * Shared by the user-triggered refresh and the pre-expiry timer so both paths
+ * commit the new tokens and reschedule the next refresh identically.
+ */
+async function refreshStoredSession(
+  runtime: SdkworkIamRuntimeAuthRuntimeLike,
+  input: SdkworkAuthRefreshSessionInput = {},
+  methodUnavailableMessage: string = DEFAULT_METHOD_UNAVAILABLE_MESSAGE,
+): Promise<SdkworkAuthSession> {
+  if (!runtime.service.auth.sessions.refresh) {
+    throw new Error(methodUnavailableMessage);
+  }
+  const storedSession = await readStoredSession(runtime);
+  const refreshToken = normalizeOptionalScalar(input.refreshToken)
+    || normalizeOptionalScalar(storedSession.refreshToken);
+  const session = toAuthSession(await runtime.service.auth.sessions.refresh(
+    refreshToken ? { refreshToken } : {},
+  ));
+  return commitStoredSession(runtime, session, { preserveRefreshToken: true });
 }
 
 function hasStoredSession(session: SdkworkIamRuntimeAuthStoredSessionLike): boolean {

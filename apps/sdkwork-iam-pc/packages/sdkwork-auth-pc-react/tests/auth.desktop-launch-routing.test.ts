@@ -1,8 +1,9 @@
 /**
  * Desktop hand-off routing without a renderer: the decision that turns a
  * completed desktop authorization into the hosted login-success page, and the
- * route the page lives on. `AuthPage` calls both helpers after login, so this
- * suite pins the "auto-open the deep link" contract without jsdom/react.
+ * route the page lives on. `AuthPage` classifies the redirect, stores the deep
+ * link with `storeSdkworkDesktopLaunchRedirect`, and navigates to the launch
+ * path; this suite pins that routing contract without jsdom/react.
  */
 import { describe, expect, it } from "vitest";
 import {

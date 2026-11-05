@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SdkworkI18nProvider } from "@sdkwork/i18n-pc-react";
@@ -8,10 +8,16 @@ import {
 import {
   buildSdkworkAuthDesktopLaunchLocation,
   buildSdkworkAuthDesktopLaunchPath,
+  buildSdkworkDesktopAuthErrorRedirect,
   createAuthRouteCatalog,
   isSdkworkDesktopDeepLinkRedirect,
   resolveAuthAccess,
 } from "../src/auth.ts";
+import {
+  clearSdkworkDesktopLaunchRedirect,
+  readSdkworkDesktopLaunchRedirect,
+  storeSdkworkDesktopLaunchRedirect,
+} from "../src/desktop-launch-handoff.ts";
 import { SdkworkAuthDesktopLaunchPage } from "../src/pages/AuthDesktopLaunchPage.tsx";
 import { SdkworkAuthPage } from "../src/pages/AuthPage.tsx";
 import { SdkworkAuthOAuthCallbackPage } from "../src/pages/AuthOAuthCallbackPage.tsx";
@@ -39,6 +45,53 @@ describe("desktop deep-link redirect helpers", () => {
     );
     expect(location).toContain("/auth/desktop/launch?redirectUrl=");
     expect(location).not.toContain(" ");
+  });
+
+  it("reports a failed completion through the registered app callback", () => {
+    expect(
+      buildSdkworkDesktopAuthErrorRedirect({
+        clientId: "birdcoder",
+        error: "server_error",
+        errorDescription: "Try again",
+        redirectUri: "birdcoder://auth/callback",
+        state: "state-token",
+      }),
+    ).toBe("birdcoder://auth/callback?error=server_error&error_description=Try+again&state=state-token");
+  });
+
+  it("refuses an error callback that is not the client's derived deep link", () => {
+    expect(
+      buildSdkworkDesktopAuthErrorRedirect({
+        clientId: "birdcoder",
+        error: "server_error",
+        redirectUri: "evil://auth/callback",
+        state: "state-token",
+      }),
+    ).toBeUndefined();
+    expect(
+      buildSdkworkDesktopAuthErrorRedirect({
+        clientId: "birdcoder",
+        error: "server_error",
+        redirectUri: "https://evil.example.com/callback",
+        state: "state-token",
+      }),
+    ).toBeUndefined();
+    expect(
+      buildSdkworkDesktopAuthErrorRedirect({
+        clientId: "Birdcoder",
+        error: "server_error",
+        redirectUri: "birdcoder://auth/callback",
+        state: "state-token",
+      }),
+    ).toBeUndefined();
+    expect(
+      buildSdkworkDesktopAuthErrorRedirect({
+        clientId: "birdcoder",
+        error: "server_error",
+        redirectUri: "birdcoder://auth/callback",
+        state: "",
+      }),
+    ).toBeUndefined();
   });
 });
 
@@ -81,6 +134,7 @@ describe("auth access for the desktop hand-off page", () => {
 
 describe("sdkwork desktop launch page", () => {
   afterEach(() => {
+    cleanup();
     vi.unstubAllGlobals();
     vi.useRealTimers();
   });
@@ -120,6 +174,34 @@ describe("sdkwork desktop launch page", () => {
 
     fireEvent.click(screen.getByTestId("sdkwork-desktop-launch-open-app"));
     expect(onLaunch).toHaveBeenCalledTimes(2);
+  });
+
+  it("stores, reads, and clears the launch redirect without touching the URL", () => {
+    const redirect = "birdcoder://auth/callback?code=abc&state=xyz";
+    expect(storeSdkworkDesktopLaunchRedirect(redirect)).toBe(true);
+    expect(readSdkworkDesktopLaunchRedirect()).toBe(redirect);
+    clearSdkworkDesktopLaunchRedirect();
+    expect(readSdkworkDesktopLaunchRedirect()).toBeUndefined();
+    expect(storeSdkworkDesktopLaunchRedirect("")).toBe(false);
+  });
+
+  it("auto-launches a redirect transferred through session storage", () => {
+    vi.useFakeTimers();
+    try {
+      const redirect = "birdcoder://auth/callback?code=transfer&state=xyz";
+      storeSdkworkDesktopLaunchRedirect(redirect);
+      const onLaunch = vi.fn();
+      renderLaunchPage("/auth/desktop/launch", { onLaunch });
+
+      expect(screen.getByTestId("sdkwork-desktop-launch-description")).toBeInTheDocument();
+      vi.advanceTimersByTime(500);
+      expect(onLaunch).toHaveBeenCalledWith(redirect);
+      // The launch page consumes the transfer immediately.
+      expect(readSdkworkDesktopLaunchRedirect()).toBeUndefined();
+    } finally {
+      clearSdkworkDesktopLaunchRedirect();
+      vi.useRealTimers();
+    }
   });
 
   it("renders a user-activatable fallback link that carries the deep link", () => {

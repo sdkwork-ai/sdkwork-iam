@@ -4,6 +4,7 @@ import {
   type SdkworkAppCapabilityManifest,
 } from "@sdkwork/appbase-pc-react";
 import { isBlank, trim } from "@sdkwork/utils";
+import { isSafeSdkworkDesktopLaunchUrl } from "./auth-redirect.ts";
 import {
   isSdkworkAuthRoutePath,
   normalizeSdkworkAuthBasePath,
@@ -821,8 +822,13 @@ export function buildSdkworkAuthDesktopLaunchPath(
 
 /**
  * Builds the login-success page location carrying the desktop deep-link
- * redirect URL. The URL contains a single-use authorization code; it is only
- * transported through this in-app navigation, never logged or rendered.
+ * redirect URL in its query string.
+ *
+ * @deprecated The URL contains a single-use authorization code, so the hosted
+ * flow stores the deep link with `storeSdkworkDesktopLaunchRedirect` and
+ * navigates to `buildSdkworkAuthDesktopLaunchPath` instead. This helper
+ * remains for already-issued links and compatibility tests; it is not used by
+ * the current auth pages.
  */
 export function buildSdkworkAuthDesktopLaunchLocation(
   redirectUrl: string,
@@ -848,6 +854,53 @@ export function isSdkworkDesktopDeepLinkRedirect(redirectUrl: string | null | un
     return false;
   }
   return scheme !== "http" && scheme !== "https";
+}
+
+const SDKWORK_DESKTOP_CLIENT_ID_PATTERN = /^[a-z][a-z0-9-]*$/u;
+
+/**
+ * Builds the deep-link callback that reports a hosted authorization failure
+ * back to the desktop application.
+ *
+ * The browser page reaches this helper after the IAM has already validated the
+ * authorization request, but the completion can still fail (expired state,
+ * revoked browser session, server error). Without a callback the desktop app
+ * waits until its flow deadline, so the error is handed back through the same
+ * registered deep link the success callback uses.
+ *
+ * The query string is attacker-influenced, so this only accepts the callback
+ * shape the SDKWork desktop SDK derives from the client id
+ * (`<clientId>://auth/callback`); an arbitrary `redirect_uri` can never become
+ * an open redirect.
+ * @param input - client id, redirect uri, state, and the OAuth error to report.
+ * @returns the deep-link URL, or undefined when the request cannot be trusted.
+ */
+export function buildSdkworkDesktopAuthErrorRedirect(input: {
+  clientId?: string | null;
+  redirectUri?: string | null;
+  state?: string | null;
+  error: string;
+  errorDescription?: string;
+}): string | undefined {
+  const clientId = input.clientId?.trim() ?? "";
+  const redirectUri = input.redirectUri?.trim() ?? "";
+  const state = input.state?.trim() ?? "";
+  if (!SDKWORK_DESKTOP_CLIENT_ID_PATTERN.test(clientId) || state === "") {
+    return undefined;
+  }
+  if (redirectUri !== `${clientId}://auth/callback`) {
+    return undefined;
+  }
+  if (!isSafeSdkworkDesktopLaunchUrl(redirectUri)) {
+    return undefined;
+  }
+  const url = new URL(redirectUri);
+  url.searchParams.set("error", input.error);
+  if (input.errorDescription) {
+    url.searchParams.set("error_description", input.errorDescription);
+  }
+  url.searchParams.set("state", state);
+  return url.toString();
 }
 
 export function createAuthWorkspaceManifest({

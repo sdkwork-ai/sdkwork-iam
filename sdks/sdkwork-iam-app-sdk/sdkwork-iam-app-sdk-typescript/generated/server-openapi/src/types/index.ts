@@ -21,6 +21,9 @@ export type { IamUserPersonaUpdateCommand } from './iam-user-persona-update-comm
 export type { AppbaseOperationCommand } from './appbase-operation-command';
 export type { WechatMiniProgramSessionCreateCommand } from './wechat-mini-program-session-create-command';
 export type { AppbaseSessionCreateCommand } from './appbase-session-create-command';
+export type { SessionsCurrentLogoutRequest } from './sessions-current-logout-request';
+export type { AuthorizationsCreateRequest } from './authorizations-create-request';
+export type { AuthorizationsCreateResponse } from './authorizations-create-response';
 export type { AuthorizationsCompletionsCreateRequest } from './authorizations-completions-create-request';
 export type { AuthorizationsCompletionsCreateResponse } from './authorizations-completions-create-response';
 export type { DesktopSessionsCreateRequest } from './desktop-sessions-create-request';

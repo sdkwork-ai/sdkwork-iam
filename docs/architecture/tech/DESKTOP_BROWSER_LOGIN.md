@@ -11,7 +11,7 @@ A desktop application (Electron or Tauri shell) must never render its own login 
 ```text
 ┌────────────┐ 1. open system browser                        ┌──────────────────────┐
 │ Desktop app │ ───────────────────────────────────────────▶ │ IAM hosted login page │
-│ (login UI)  │  GET /iam/v3/oauth/authorize                 │ /auth/login           │
+│ (login UI)  │  GET /iam/oauth/authorize                 │ /auth/login           │
 └─────┬──────┘    response_type=code                         │ login / register /    │
       │                                 client_id=<app_id>   │ forgot password       │
       │                                 redirect_uri=        └──────────┬───────────┘
@@ -193,9 +193,13 @@ bridge) and pass it to the runtime. Bridge method names follow
    `oauthAuthorizationStateId` rides along the provider round-trip; after the
    provider callback creates the browser session, the callback page completes
    the pending authorization and still hands off to the desktop app.
-4. **Cold start.** The browser finished while the desktop app was launching:
-   the OS starts the app with the deep link; `completePendingCallbackFromLaunch()`
-   during bootstrap redeems it without user interaction.
+4. **Cold start / app relaunch.** The browser finished while the desktop app
+   was not running (or was launching): the pending PKCE flow is persisted in
+   renderer storage (verifier plus state only), so the OS relaunches the app
+   with the deep link and `completePendingCallbackFromLaunch()` during
+   bootstrap redeems it without user interaction. A callback with no flow
+   (expired, already redeemed, or started before persistence shipped) is
+   ignored rather than reported as a failed login.
 5. **Cancel.** The waiting card on the desktop login page offers "Cancel
    browser sign-in" — the pending flow is dropped and the entry returns; the
    controller stays usable.
@@ -204,6 +208,40 @@ bridge) and pass it to the runtime. Bridge method names follow
    (10 minutes), and exchange failure (single-use code) all surface typed
    errors; every terminal failure resets the waiting state so a fresh login
    is one click away. Tokens never appear in any URL or log.
+   - The pending-flow deadline is enforced while the browser is open: when
+     it elapses the controller leaves the waiting state, clears the flow, and
+     reports `flow-expired` through `onFlowExpired` (the runtime forwards it
+     to `onError`), so the host UI never waits forever.
+   - A failed hosted authorization completion is handed back through the same
+     registered deep link as `error` + `error_description` + `state` (only
+     when the redirect is the `<clientId>://auth/callback` shape derived from
+     the request's client id). The desktop validates `state` before clearing
+     the pending flow; a forged error callback cannot cancel a real login.
+   - A new session replaces only the previous session of the same
+     application on the same device. The redeem carries a stable per-install
+     device id, so signing in on the desktop leaves the browser session that
+     completed the authorization, the user's sessions in other applications,
+     and another device's session intact; credential changes still revoke all
+     sessions for the user.
+   - Sign-out posts the stored refresh token to
+     `/app/v3/api/auth/sessions/current/logout`. That public operation revokes
+     the server session even after the short-lived access token expired;
+     `sessions.current.delete` remains the fallback when no refresh token is
+     stored. Local storage and the durable host copy are cleared in a
+     `finally` block, so a network failure still signs the client out
+     locally.
+   - The runtime auth service refreshes the session one minute before the
+     access token's `exp` and reschedules after every commit. Transient
+     refresh failures (network/429/5xx) retry with capped backoff instead of
+     forcing a sign-out; a 4xx rejection clears the session. Refreshes are
+     serialized across tabs with the Web Locks API, so two tabs presenting the
+     same rotating refresh token do not sign each other out; the loser adopts
+     the winner's tokens. An explicit sign-out broadcasts through
+     `BroadcastChannel` so the other tabs clear and reset immediately; a failed
+     refresh is not broadcast. A rejected refresh token clears the local
+     session and resets the controller to the signed-out state, so a
+     long-running desktop session does not start failing every API call after
+     the one-hour token lifetime.
 
 ## Auth-surface semantics
 
@@ -237,9 +275,11 @@ public IAM origin, because the discovery document advertises
 A platform gateway composes the IAM open-api under `/iam/v3/api` (its
 `dependency_surfaces` open prefix), so the hosted entry on the platform origin
 forwards the browser to `/iam/v3/api/oauth/authorize`; that route is declared
-`public` by the IAM open manifest. The versionless `/iam/v3/oauth/authorize`
-stays the address the application opens on the platform (and what discovery
-advertises), not a gateway route.
+`public` by the IAM open manifest. The versionless `/iam/oauth/authorize` is
+the address the application opens on the platform (the platform also answers
+the legacy `/iam/v3/oauth/authorize` spelling), and it stays a platform entry
+rather than a gateway route; discovery keeps advertising the versioned IAM
+open-api path for server-to-server deployments.
 
 Authorization errors follow RFC 6749 section 4.1.2.1: once the client and its
 redirect URI are trusted, the error returns to that URI with `error` and the

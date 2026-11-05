@@ -15,7 +15,7 @@ session exchange.
 desktop app (Electron/Tauri)
   1. beginLogin()
        PKCE pair + state -> open system browser at
-       GET /iam/v3/oauth/authorize?...code_challenge_method=S256
+       GET /iam/oauth/authorize?...code_challenge_method=S256
   2. user completes login / registration / forgot-password on the hosted
      web surface (identical flow no matter where it started)
   3. browser completes the authorization and lands on the hosted
@@ -32,6 +32,13 @@ deep-link dispatch for the lifetime of the runtime and creates its controller
 with `dispatchHostDeepLinks: false`; a controller that subscribed as well (the
 standalone default) would redeem the single-use code twice, and the second
 redemption would report a failed login after a successful one.
+
+The pending flow (PKCE verifier plus state, never tokens) defaults to the
+renderer's `localStorage`. Closing the app while the system browser is still
+signing in therefore does not abandon the login: the deep link relaunches the
+app, bootstrap calls `completePendingCallbackFromLaunch()`, and the new process
+redeems the code with the verifier the previous one stored. Pass `flowStore` to
+back the same contract with host secure storage instead.
 
 ## Usage
 

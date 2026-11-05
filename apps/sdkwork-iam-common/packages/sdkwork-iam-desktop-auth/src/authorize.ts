@@ -5,7 +5,15 @@ import {
   type SdkworkDesktopPendingFlow,
 } from "./types.ts";
 
-export const SDKWORK_OAUTH_AUTHORIZE_PATH = "/iam/v3/oauth/authorize";
+/**
+ * Hosted sign-in entry the desktop app opens on the platform origin.
+ *
+ * Versionless by design: the hosted entry is a platform route, not a versioned
+ * open-api endpoint, so the browser URL users see stays `/iam/oauth/authorize`.
+ * The platform also answers the legacy `/iam/v3/oauth/authorize` spelling for
+ * installed clients built before this path became canonical.
+ */
+export const SDKWORK_OAUTH_AUTHORIZE_PATH = "/iam/oauth/authorize";
 
 export interface SdkworkDesktopAuthorizeInput {
   codeChallenge: string;

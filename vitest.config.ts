@@ -170,7 +170,10 @@ export default defineConfig({
       "apps/sdkwork-iam-mini-program/packages/**/*.test.tsx",
       "sdks/**/*.test.ts",
     ],
-    setupFiles: [path.join(workspaceRoot, "vitest.setup.ts")],
+    setupFiles: [
+      path.join(workspaceRoot, "vitest.react-single.setup.ts"),
+      path.join(workspaceRoot, "vitest.setup.ts"),
+    ],
   },
   server: {
     fs: {

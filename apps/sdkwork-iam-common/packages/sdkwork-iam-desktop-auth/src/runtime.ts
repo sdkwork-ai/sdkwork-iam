@@ -2,10 +2,12 @@ import { SdkworkDesktopAuthError } from "./errors.ts";
 import {
   bindSdkworkDesktopSessionExchange,
   type SdkworkDesktopAuthController,
+  type SdkworkDesktopAuthFlowStore,
   type SdkworkDesktopAuthHostPort,
   type SdkworkDesktopAuthSession,
   type SdkworkDesktopBrowserLoginDescriptor,
 } from "./types.ts";
+import { createBrowserSdkworkDesktopAuthFlowStore } from "./flow-store.ts";
 import { createSdkworkIamDesktopAuthController } from "./controller.ts";
 
 const SCHEME_PATTERN = /^[a-z][a-z0-9-]*$/u;
@@ -57,9 +59,21 @@ export interface SdkworkIamDesktopAuthRuntimeOptions {
   onSession: (session: SdkworkDesktopAuthSession) => void | Promise<void>;
   /** Optional callback for flow errors (surfaced to the host UI). */
   onError?: (error: SdkworkDesktopAuthError) => void;
+  /**
+   * Stable opaque per-install device identity. The desktop session exchange
+   * sends it so a new login replaces only this device's previous session for
+   * the same application; another device keeps its session.
+   */
+  deviceId?: string;
   /** Explicit redirect URI; wins over the derived one. */
   redirectUri?: string;
   scopes?: readonly string[];
+  /**
+   * Pending-flow persistence. Defaults to the renderer's `localStorage`, so a
+   * browser login survives the app exiting while the system browser is still
+   * on the hosted login page; pass a custom store to use secure storage.
+   */
+  flowStore?: SdkworkDesktopAuthFlowStore;
   flowTtlMs?: number;
   now?: () => number;
 }
@@ -106,7 +120,15 @@ export function createSdkworkIamDesktopAuthRuntime(
     // single-use authorization code would fail the second redemption.
     dispatchHostDeepLinks: false,
     exchangeDesktopSession: bindSdkworkDesktopSessionExchange(options.appSdkClient),
+    // Default to durable storage: the user may close the app while the system
+    // browser is still signing in, and the deep link then relaunches the app
+    // as a fresh process that must still find the PKCE verifier.
+    flowStore: options.flowStore ?? createBrowserSdkworkDesktopAuthFlowStore(),
     host: options.host,
+    ...(options.deviceId ? { deviceId: options.deviceId } : {}),
+    onFlowExpired: (error) => {
+      options.onError?.(error);
+    },
     ...(options.flowTtlMs !== undefined ? { flowTtlMs: options.flowTtlMs } : {}),
     ...(options.now ? { now: options.now } : {}),
   });

@@ -1,6 +1,10 @@
 //! End-to-end coverage for the desktop browser-login redeem leg:
 //! `POST /app/v3/api/oauth/desktop_sessions` (`oauth.desktopSessions.create`).
 //!
+//! Run with `--test-threads=1`: every test owns the shared IAM env mutex and
+//! the same database; parallel execution blocks the runtime while one test
+//! waits for the env and makes the suite appear to hang.
+//!
 //! Flow under test (mirrors an Electron/Tauri system-browser login):
 //! credential-entry password login -> OAuth authorize (public client + PKCE
 //! S256, deep-link redirect) -> authorization completion -> the desktop app
@@ -19,9 +23,9 @@ use http_body_util::BodyExt;
 use sdkwork_iam_context_service::{AuthLevel, DeploymentMode, Environment, IamAppContext};
 use sdkwork_iam_web_adapter::{
     complete_authorization_state, create_pending_authorization_state,
-    ensure_platform_tenant_application, parse_relying_party_config,
-    platform_runtime_app_id_for_tenant, resolve_relying_party_client, validate_authorize_request,
-    AuthorizeRequest,
+    default_account_binding_policy, ensure_platform_tenant_application, exchange_authorization_code,
+    introspect_oauth_token, parse_relying_party_config, platform_runtime_app_id_for_tenant,
+    resolve_relying_party_client, revoke_oauth_token, validate_authorize_request, AuthorizeRequest,
 };
 use sdkwork_web_core::bootstrap_access_token_jwt;
 use serde_json::{json, Value};
@@ -291,7 +295,17 @@ async fn redeem_desktop_session(
     authorization_code: &str,
     code_verifier: &str,
     redirect_uri: &str,
+    device_id: Option<&str>,
 ) -> (StatusCode, Value) {
+    let mut command = json!({
+        "clientId": DESKTOP_E2E_CLIENT_APP_ID,
+        "authorizationCode": authorization_code,
+        "codeVerifier": code_verifier,
+        "redirectUri": redirect_uri
+    });
+    if let Some(device_id) = device_id {
+        command["deviceId"] = Value::String(device_id.to_string());
+    }
     let response = app
         .clone()
         .oneshot(
@@ -299,15 +313,7 @@ async fn redeem_desktop_session(
                 .method(Method::POST)
                 .uri("/app/v3/api/oauth/desktop_sessions")
                 .header("content-type", "application/json")
-                .body(Body::from(
-                    json!({
-                        "clientId": DESKTOP_E2E_CLIENT_APP_ID,
-                        "authorizationCode": authorization_code,
-                        "codeVerifier": code_verifier,
-                        "redirectUri": redirect_uri
-                    })
-                    .to_string(),
-                ))
+                .body(Body::from(command.to_string()))
                 .unwrap(),
         )
         .await
@@ -354,6 +360,1250 @@ async fn complete_authorization_over_http(
         serde_json::to_string(&body).unwrap_or_default()
     );
     body["data"].clone()
+}
+
+/// Issues one desktop authorization code through the hosted-login completion
+/// path, exactly as the browser page does after sign-in.
+async fn issue_desktop_code(
+    app: &Router,
+    pg: &PgPool,
+    client: &sdkwork_iam_web_adapter::ResolvedRelyingParty,
+    login_session: &Value,
+    state: &str,
+    verifier_seed: &str,
+) -> (String, String) {
+    let (code_verifier, code_challenge) = pkce_pair(verifier_seed);
+    let request = AuthorizeRequest {
+        client_id: DESKTOP_E2E_CLIENT_APP_ID.to_string(),
+        redirect_uri: DESKTOP_E2E_REDIRECT_URI.to_string(),
+        response_type: "code".to_string(),
+        scope: "openid profile email".to_string(),
+        state: Some(state.to_string()),
+        code_challenge: Some(code_challenge),
+        code_challenge_method: Some("S256".to_string()),
+        tenant_id: Some(DESKTOP_E2E_TENANT_ID.to_string()),
+    };
+    let scopes = validate_authorize_request(&request, client).expect("authorize device e2e request");
+    let (authorization_state_id, _) =
+        create_pending_authorization_state(pg, client, &request, &scopes)
+            .await
+            .expect("create device e2e pending authorization state");
+    let completion =
+        complete_authorization_over_http(app, &authorization_state_id, login_session).await;
+    let authorization_code = completion["authorizationCode"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .expect("device e2e authorization code")
+        .to_owned();
+    (authorization_code, code_verifier)
+}
+
+/// Active desktop sessions of the e2e user as `(session id, device id)`.
+async fn active_desktop_sessions(pg: &PgPool, user_id: &str) -> Vec<(String, Option<String>)> {
+    sqlx::query_as(
+        "SELECT id, device_id FROM iam_session \
+         WHERE tenant_id = $1 AND user_id = $2 AND app_id = $3 AND revoked_at IS NULL \
+         ORDER BY created_at",
+    )
+    .bind(DESKTOP_E2E_TENANT_ID)
+    .bind(user_id)
+    .bind(DESKTOP_E2E_CLIENT_APP_ID)
+    .fetch_all(pg)
+    .await
+    .expect("list active desktop sessions")
+}
+
+#[tokio::test]
+async fn desktop_sessions_are_scoped_to_the_device() {
+    let _env_guard = lock_local_iam_env();
+    configure_desktop_e2e_env();
+
+    let app = build_desktop_e2e_app().await;
+    let pg = postgres_pool_for_tests().await;
+    let user_id = seed_desktop_e2e_fixtures(&pg).await;
+
+    let (login_session, _) = login_desktop_e2e_session(&app).await;
+    let client =
+        resolve_relying_party_client(&pg, DESKTOP_E2E_CLIENT_APP_ID, Some(DESKTOP_E2E_TENANT_ID))
+            .await
+            .expect("resolve desktop e2e relying party client");
+
+    // First device.
+    let (code_a1, verifier_a1) = issue_desktop_code(
+        &app,
+        &pg,
+        &client,
+        &login_session,
+        "device-state-a1",
+        "device-verifier-a1-with-sufficient-length-for-pkce",
+    )
+    .await;
+    let (status, body) = redeem_desktop_session(
+        &app,
+        &code_a1,
+        &verifier_a1,
+        DESKTOP_E2E_REDIRECT_URI,
+        Some("device-a"),
+    )
+    .await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "device a redeem failed: {}",
+        serde_json::to_string(&body).unwrap_or_default()
+    );
+    let first_session_id = body["data"]["sessionId"]
+        .as_str()
+        .expect("device a session id")
+        .to_owned();
+
+    // Second device: the two sessions must coexist.
+    let (code_b1, verifier_b1) = issue_desktop_code(
+        &app,
+        &pg,
+        &client,
+        &login_session,
+        "device-state-b1",
+        "device-verifier-b1-with-sufficient-length-for-pkce",
+    )
+    .await;
+    let (status, body) = redeem_desktop_session(
+        &app,
+        &code_b1,
+        &verifier_b1,
+        DESKTOP_E2E_REDIRECT_URI,
+        Some("device-b"),
+    )
+    .await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "device b redeem failed: {}",
+        serde_json::to_string(&body).unwrap_or_default()
+    );
+    let second_session_id = body["data"]["sessionId"]
+        .as_str()
+        .expect("device b session id")
+        .to_owned();
+
+    let active = active_desktop_sessions(&pg, &user_id).await;
+    assert_eq!(active.len(), 2, "both devices must keep an active session: {active:?}");
+
+    // The same device logs in again: only its previous session is replaced.
+    let (code_a2, verifier_a2) = issue_desktop_code(
+        &app,
+        &pg,
+        &client,
+        &login_session,
+        "device-state-a2",
+        "device-verifier-a2-with-sufficient-length-for-pkce",
+    )
+    .await;
+    let (status, body) = redeem_desktop_session(
+        &app,
+        &code_a2,
+        &verifier_a2,
+        DESKTOP_E2E_REDIRECT_URI,
+        Some("device-a"),
+    )
+    .await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "device a re-login failed: {}",
+        serde_json::to_string(&body).unwrap_or_default()
+    );
+    let third_session_id = body["data"]["sessionId"]
+        .as_str()
+        .expect("device a re-login session id")
+        .to_owned();
+
+    let active = active_desktop_sessions(&pg, &user_id).await;
+    assert_eq!(
+        active.len(),
+        2,
+        "device a re-login must replace only device a: {active:?}"
+    );
+    assert!(
+        !active.iter().any(|(session_id, _)| session_id == &first_session_id),
+        "device a's previous session must be revoked"
+    );
+    assert!(
+        active.iter().any(|(session_id, _)| session_id == &second_session_id),
+        "device b's session must remain active"
+    );
+    assert!(
+        active.iter().any(|(session_id, _)| session_id == &third_session_id),
+        "device a's new session must be active"
+    );
+
+    // The browser session that completed the authorizations is untouched.
+    let access_token = login_session["accessToken"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .expect("login access token");
+    let auth_token = login_session["authToken"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .expect("login auth token");
+    let current = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri("/app/v3/api/auth/sessions/current")
+                .header("authorization", format!("Bearer {auth_token}"))
+                .header("access-token", access_token)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("browser session request after device logins");
+    assert_eq!(
+        current.status(),
+        StatusCode::OK,
+        "device logins must not revoke the browser session"
+    );
+}
+
+#[tokio::test]
+async fn logout_revokes_the_session_with_only_the_refresh_token() {
+    let _env_guard = lock_local_iam_env();
+    configure_desktop_e2e_env();
+
+    let app = build_desktop_e2e_app().await;
+    let pg = postgres_pool_for_tests().await;
+    seed_desktop_e2e_fixtures(&pg).await;
+    let (login_session, _) = login_desktop_e2e_session(&app).await;
+    let refresh_token = login_session["refreshToken"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .expect("login refresh token")
+        .to_owned();
+    let access_token = login_session["accessToken"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .expect("login access token")
+        .to_owned();
+    let auth_token = login_session["authToken"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .expect("login auth token")
+        .to_owned();
+
+    // The session is valid before logout.
+    let before = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri("/app/v3/api/auth/sessions/current")
+                .header("authorization", format!("Bearer {auth_token}"))
+                .header("access-token", access_token.clone())
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("current session before logout");
+    assert_eq!(before.status(), StatusCode::OK);
+
+    // Logout accepts the refresh token without an access token, which is what
+    // lets a client revoke the server session after the access token expired.
+    let logout = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/app/v3/api/auth/sessions/current/logout")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({ "refreshToken": refresh_token }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .expect("logout request");
+    assert_eq!(logout.status(), StatusCode::NO_CONTENT);
+
+    // The session's tokens no longer authenticate.
+    let after = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri("/app/v3/api/auth/sessions/current")
+                .header("authorization", format!("Bearer {auth_token}"))
+                .header("access-token", access_token)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("current session after logout");
+    assert_eq!(after.status(), StatusCode::UNAUTHORIZED);
+
+    // Logout is idempotent.
+    let replay = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/app/v3/api/auth/sessions/current/logout")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({ "refreshToken": refresh_token }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .expect("replayed logout request");
+    assert_eq!(replay.status(), StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
+async fn refresh_retry_within_grace_keeps_the_rotated_session_alive() {
+    let _env_guard = lock_local_iam_env();
+    configure_desktop_e2e_env();
+
+    let app = build_desktop_e2e_app().await;
+    let pg = postgres_pool_for_tests().await;
+    seed_desktop_e2e_fixtures(&pg).await;
+    let (login_session, _) = login_desktop_e2e_session(&app).await;
+    let old_refresh_token = login_session["refreshToken"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .expect("login refresh token")
+        .to_owned();
+
+    // The first refresh rotates the session and revokes the old row.
+    let refreshed = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/app/v3/api/auth/sessions/refresh")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({ "refreshToken": old_refresh_token }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .expect("refresh request");
+    let refreshed_status = refreshed.status();
+    let refreshed_body = read_json(refreshed).await;
+    assert_eq!(
+        refreshed_status,
+        StatusCode::OK,
+        "refresh failed: {}",
+        serde_json::to_string(&refreshed_body).unwrap_or_default()
+    );
+    let new_auth_token = refreshed_body["data"]["authToken"]
+        .as_str()
+        .expect("rotated auth token")
+        .to_owned();
+    let new_access_token = refreshed_body["data"]["accessToken"]
+        .as_str()
+        .expect("rotated access token")
+        .to_owned();
+
+    // A client that timed out after the server committed the rotation retries
+    // the old token. It must be rejected, but it must not be treated as theft:
+    // the rotated session has to stay usable.
+    let retry = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/app/v3/api/auth/sessions/refresh")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({ "refreshToken": old_refresh_token }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .expect("refresh retry request");
+    assert_eq!(retry.status(), StatusCode::UNAUTHORIZED);
+
+    let active_sessions: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM iam_session s \
+         JOIN iam_user u ON u.id = s.user_id AND u.tenant_id = s.tenant_id \
+         WHERE u.email = $1 AND s.revoked_at IS NULL",
+    )
+    .bind(DESKTOP_E2E_USERNAME)
+    .fetch_one(&pg)
+    .await
+    .expect("count active sessions");
+    assert!(
+        active_sessions >= 1,
+        "the rotated session must survive a retried refresh"
+    );
+
+    let current = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri("/app/v3/api/auth/sessions/current")
+                .header("authorization", format!("Bearer {new_auth_token}"))
+                .header("access-token", new_access_token)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("current session after refresh retry");
+    assert_eq!(
+        current.status(),
+        StatusCode::OK,
+        "a retried refresh must not revoke the rotated session"
+    );
+}
+
+#[tokio::test]
+async fn refresh_reuse_outside_the_grace_window_still_revokes_the_user_sessions() {
+    let _env_guard = lock_local_iam_env();
+    configure_desktop_e2e_env();
+    // SAFETY: test setup runs single-threaded under the IAM env mutex.
+    unsafe {
+        std::env::set_var("SDKWORK_IAM_REFRESH_REUSE_GRACE_SECONDS", "0");
+    }
+
+    let app = build_desktop_e2e_app().await;
+    let pg = postgres_pool_for_tests().await;
+    seed_desktop_e2e_fixtures(&pg).await;
+    let (login_session, _) = login_desktop_e2e_session(&app).await;
+    let old_refresh_token = login_session["refreshToken"]
+        .as_str()
+        .expect("login refresh token")
+        .to_owned();
+
+    let refreshed = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/app/v3/api/auth/sessions/refresh")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({ "refreshToken": old_refresh_token }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .expect("refresh request");
+    assert_eq!(refreshed.status(), StatusCode::OK);
+
+    let retry = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/app/v3/api/auth/sessions/refresh")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({ "refreshToken": old_refresh_token }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .expect("refresh retry request");
+    assert_eq!(retry.status(), StatusCode::UNAUTHORIZED);
+
+    let active_sessions: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM iam_session s \
+         JOIN iam_user u ON u.id = s.user_id AND u.tenant_id = s.tenant_id \
+         WHERE u.email = $1 AND s.revoked_at IS NULL",
+    )
+    .bind(DESKTOP_E2E_USERNAME)
+    .fetch_one(&pg)
+    .await
+    .expect("count active sessions");
+    assert_eq!(
+        active_sessions, 0,
+        "reuse outside the grace window must revoke the user's sessions"
+    );
+
+    unsafe {
+        std::env::remove_var("SDKWORK_IAM_REFRESH_REUSE_GRACE_SECONDS");
+    }
+}
+
+#[tokio::test]
+async fn admin_provider_catalog_entries_appear_on_the_login_surface() {
+    let _env_guard = lock_local_iam_env();
+    configure_desktop_e2e_env();
+
+    let app = build_desktop_e2e_app().await;
+    let pg = postgres_pool_for_tests().await;
+    seed_desktop_e2e_fixtures(&pg).await;
+
+    let tenant_id = DESKTOP_E2E_TENANT_ID;
+    let runtime_app_id = platform_runtime_app_id_for_tenant(tenant_id);
+    let provider_code = "custom_e2e_provider";
+    let catalog_id = "cat_custom_e2e_provider";
+    let integration_id = "int_custom_e2e_provider";
+    let now = chrono::Utc::now().to_rfc3339();
+
+    // The login provider list is policy-gated; enable OAuth login for this
+    // tenant while the test runs, restoring the previous policy afterwards.
+    let previous_policy: Option<String> = sqlx::query_scalar(
+        "SELECT policy_json FROM iam_policy \
+         WHERE tenant_id = $1 AND code = 'iam.account_binding' LIMIT 1",
+    )
+    .bind(tenant_id)
+    .fetch_optional(&pg)
+    .await
+    .expect("read previous account binding policy");
+    let mut policy = default_account_binding_policy();
+    policy.oauth_login.enabled = true;
+    let policy_json = serde_json::to_string(&policy).expect("serialize account binding policy");
+    sqlx::query(
+        "INSERT INTO iam_policy (id, tenant_id, code, name, policy_json, status, created_at, updated_at) \
+         VALUES ('pol_desktop_e2e_account_binding', $1, 'iam.account_binding', 'Desktop E2E', $2, 'active', $3, $3) \
+         ON CONFLICT (tenant_id, code) DO UPDATE SET policy_json = EXCLUDED.policy_json, updated_at = EXCLUDED.updated_at",
+    )
+    .bind(tenant_id)
+    .bind(&policy_json)
+    .bind(&now)
+    .execute(&pg)
+    .await
+    .expect("enable OAuth login policy");
+
+    sqlx::query("DELETE FROM iam_oauth_integration WHERE id = $1")
+        .bind(integration_id)
+        .execute(&pg)
+        .await
+        .expect("cleanup custom provider integration");
+    sqlx::query("DELETE FROM iam_oauth_provider_catalog WHERE id = $1")
+        .bind(catalog_id)
+        .execute(&pg)
+        .await
+        .expect("cleanup custom provider catalog");
+
+    sqlx::query(
+        "INSERT INTO iam_oauth_provider_catalog (\
+            id, uuid, owner_tenant_id, provider_code, provider_family, provider_name, \
+            provider_display_name, region_group, protocol_family, \
+            supported_capabilities_json, supported_surface_kinds_json, supported_flow_kinds_json, \
+            status, sort_order, created_at, updated_at\
+         ) VALUES ($1, $2, $3, $4, 'oauth2', 'Custom E2E', 'Custom E2E', 'global', 'oauth2', \
+                   '[\"login\"]', '[\"web\"]', '[\"authorization_code\"]', 'active', 5, $5, $5)",
+    )
+    .bind(catalog_id)
+    .bind("uuid_custom_e2e_provider")
+    .bind(tenant_id)
+    .bind(provider_code)
+    .bind(&now)
+    .execute(&pg)
+    .await
+    .expect("insert custom provider catalog");
+
+    sqlx::query(
+        "INSERT INTO iam_oauth_integration (\
+            id, uuid, tenant_id, organization_id, app_id, environment, deployment_mode, \
+            provider_code, provider_catalog_id, integration_code, display_name, \
+            region_group, protocol_family, enabled, health_status, status, created_at, updated_at\
+         ) VALUES ($1, $2, $3, '0', $4, 'test', 'saas', $5, $6, 'custom-e2e-provider', \
+                   'Custom E2E', 'global', 'oauth2', 1, 'healthy', 'active', $7, $7)",
+    )
+    .bind(integration_id)
+    .bind("uuid_custom_e2e_integration")
+    .bind(tenant_id)
+    .bind("0")
+    .bind(provider_code)
+    .bind(catalog_id)
+    .bind(&now)
+    .execute(&pg)
+    .await
+    .expect("insert custom provider integration");
+
+    let access_token = bootstrap_access_token_jwt(tenant_id, &runtime_app_id);
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri("/app/v3/api/system/iam/runtime")
+                .header("access-token", access_token)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("runtime metadata request");
+    let status = response.status();
+    let body = read_json(response).await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "runtime metadata failed: {}",
+        serde_json::to_string(&body).unwrap_or_default()
+    );
+    let providers = body["data"]["auth"]["oauthProviders"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+    assert!(
+        providers.iter().any(|code| code.as_str() == Some(provider_code)),
+        "admin-configured provider must appear on the login surface: {providers:?}"
+    );
+
+    // Restricting the admin allow-list must hide a provider even though its
+    // catalog/integration rows stay enabled.
+    let mut restricted_policy = policy.clone();
+    restricted_policy.oauth_login.allowed_providers = vec!["github".to_string()];
+    let restricted_policy_json =
+        serde_json::to_string(&restricted_policy).expect("serialize restricted policy");
+    sqlx::query(
+        "UPDATE iam_policy SET policy_json = $2, updated_at = $3 \
+         WHERE tenant_id = $1 AND code = 'iam.account_binding'",
+    )
+    .bind(tenant_id)
+    .bind(&restricted_policy_json)
+    .bind(&now)
+    .execute(&pg)
+    .await
+    .expect("restrict OAuth login providers");
+
+    let restricted_response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri("/app/v3/api/system/iam/runtime")
+                .header("access-token", bootstrap_access_token_jwt(tenant_id, &runtime_app_id))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("restricted runtime metadata request");
+    let restricted_status = restricted_response.status();
+    let restricted_body = read_json(restricted_response).await;
+    assert_eq!(restricted_status, StatusCode::OK);
+    let restricted_providers = restricted_body["data"]["auth"]["oauthProviders"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+    assert!(
+        !restricted_providers
+            .iter()
+            .any(|code| code.as_str() == Some(provider_code)),
+        "allowedProviders must hide a provider from the login surface: {restricted_providers:?}"
+    );
+
+    // Disabling the provider integration in Admin must also hide it, even when
+    // the policy allows it again.
+    sqlx::query(
+        "UPDATE iam_policy SET policy_json = $2, updated_at = $3 \
+         WHERE tenant_id = $1 AND code = 'iam.account_binding'",
+    )
+    .bind(tenant_id)
+    .bind(&policy_json)
+    .bind(&now)
+    .execute(&pg)
+    .await
+    .expect("restore account binding allow-list");
+    sqlx::query("UPDATE iam_oauth_integration SET enabled = 0, updated_at = $2 WHERE id = $1")
+        .bind(integration_id)
+        .bind(&now)
+        .execute(&pg)
+        .await
+        .expect("disable custom provider integration");
+
+    let disabled_response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri("/app/v3/api/system/iam/runtime")
+                .header("access-token", bootstrap_access_token_jwt(tenant_id, &runtime_app_id))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("disabled provider runtime metadata request");
+    let disabled_status = disabled_response.status();
+    let disabled_body = read_json(disabled_response).await;
+    assert_eq!(disabled_status, StatusCode::OK);
+    let disabled_providers = disabled_body["data"]["auth"]["oauthProviders"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+    assert!(
+        !disabled_providers
+            .iter()
+            .any(|code| code.as_str() == Some(provider_code)),
+        "a disabled provider integration must not appear on the login surface: {disabled_providers:?}"
+    );
+
+    // The master OAuth-login switch must hide every provider at once.
+    let mut oauth_disabled_policy = policy.clone();
+    oauth_disabled_policy.oauth_login.enabled = false;
+    let oauth_disabled_policy_json =
+        serde_json::to_string(&oauth_disabled_policy).expect("serialize disabled OAuth policy");
+    sqlx::query(
+        "UPDATE iam_policy SET policy_json = $2, updated_at = $3 \
+         WHERE tenant_id = $1 AND code = 'iam.account_binding'",
+    )
+    .bind(tenant_id)
+    .bind(&oauth_disabled_policy_json)
+    .bind(&now)
+    .execute(&pg)
+    .await
+    .expect("disable OAuth login policy");
+
+    let oauth_disabled_response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri("/app/v3/api/system/iam/runtime")
+                .header("access-token", bootstrap_access_token_jwt(tenant_id, &runtime_app_id))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("OAuth-disabled runtime metadata request");
+    let oauth_disabled_status = oauth_disabled_response.status();
+    let oauth_disabled_body = read_json(oauth_disabled_response).await;
+    assert_eq!(oauth_disabled_status, StatusCode::OK);
+    let oauth_disabled_providers = oauth_disabled_body["data"]["auth"]["oauthProviders"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+    assert!(
+        oauth_disabled_providers.is_empty(),
+        "oauth_login.enabled=false must hide every provider: {oauth_disabled_providers:?}"
+    );
+
+    // Restore the enabled policy for the cleanup assertions.
+    sqlx::query(
+        "UPDATE iam_policy SET policy_json = $2, updated_at = $3 \
+         WHERE tenant_id = $1 AND code = 'iam.account_binding'",
+    )
+    .bind(tenant_id)
+    .bind(&policy_json)
+    .bind(&now)
+    .execute(&pg)
+    .await
+    .expect("restore enabled OAuth policy");
+
+    sqlx::query("DELETE FROM iam_oauth_integration WHERE id = $1")
+        .bind(integration_id)
+        .execute(&pg)
+        .await
+        .expect("cleanup custom provider integration");
+    sqlx::query("DELETE FROM iam_oauth_provider_catalog WHERE id = $1")
+        .bind(catalog_id)
+        .execute(&pg)
+        .await
+        .expect("cleanup custom provider catalog");
+
+    match previous_policy {
+        Some(previous_policy) => {
+            sqlx::query(
+                "UPDATE iam_policy SET policy_json = $2, updated_at = $3 \
+                 WHERE tenant_id = $1 AND code = 'iam.account_binding'",
+            )
+            .bind(tenant_id)
+            .bind(previous_policy)
+            .bind(&now)
+            .execute(&pg)
+            .await
+            .expect("restore account binding policy");
+        }
+        None => {
+            sqlx::query(
+                "DELETE FROM iam_policy \
+                 WHERE tenant_id = $1 AND code = 'iam.account_binding'",
+            )
+            .bind(tenant_id)
+            .execute(&pg)
+            .await
+            .expect("delete temporary account binding policy");
+        }
+    }
+}
+
+#[tokio::test]
+async fn concurrent_authorization_completions_approve_only_one_state() {
+    let _env_guard = lock_local_iam_env();
+    configure_desktop_e2e_env();
+
+    let app = build_desktop_e2e_app().await;
+    let pg = postgres_pool_for_tests().await;
+    seed_desktop_e2e_fixtures(&pg).await;
+    let (_, login_context) = login_desktop_e2e_session(&app).await;
+
+    let client =
+        resolve_relying_party_client(&pg, DESKTOP_E2E_CLIENT_APP_ID, Some(DESKTOP_E2E_TENANT_ID))
+            .await
+            .expect("resolve desktop e2e relying party client");
+    sqlx::query("DELETE FROM iam_oauth_grant WHERE tenant_id = $1 AND oauth_client_id = $2")
+        .bind(DESKTOP_E2E_TENANT_ID)
+        .bind(&client.client_id)
+        .execute(&pg)
+        .await
+        .expect("clear prior oauth grants");
+    let (_verifier, code_challenge) =
+        pkce_pair("desktop-concurrent-completion-verifier-sufficient-length");
+    let authorize_request = AuthorizeRequest {
+        client_id: DESKTOP_E2E_CLIENT_APP_ID.to_string(),
+        redirect_uri: DESKTOP_E2E_REDIRECT_URI.to_string(),
+        response_type: "code".to_string(),
+        scope: "openid profile email".to_string(),
+        state: Some("desktop-concurrent-completion-state".to_string()),
+        code_challenge: Some(code_challenge),
+        code_challenge_method: Some("S256".to_string()),
+        tenant_id: Some(DESKTOP_E2E_TENANT_ID.to_string()),
+    };
+    let scopes =
+        validate_authorize_request(&authorize_request, &client).expect("authorize request");
+    let (state_id, _) = create_pending_authorization_state(&pg, &client, &authorize_request, &scopes)
+        .await
+        .expect("create concurrent-completion state");
+
+    let (first, second) = tokio::join!(
+        complete_authorization_state(&pg, &state_id, &login_context),
+        complete_authorization_state(&pg, &state_id, &login_context),
+    );
+    assert!(
+        first.is_ok() ^ second.is_ok(),
+        "exactly one concurrent completion may approve the state"
+    );
+
+    let grant_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM iam_oauth_grant \
+         WHERE tenant_id = $1 AND oauth_client_id = $2 AND provider_code = 'sdkwork'",
+    )
+    .bind(DESKTOP_E2E_TENANT_ID)
+    .bind(&client.client_id)
+    .fetch_one(&pg)
+    .await
+    .expect("count grants");
+    assert_eq!(
+        grant_count, 1,
+        "a losing completion must not leave an orphan grant"
+    );
+}
+
+#[tokio::test]
+async fn desktop_exchange_rejects_an_expired_authorization_code() {
+    let _env_guard = lock_local_iam_env();
+    configure_desktop_e2e_env();
+
+    let app = build_desktop_e2e_app().await;
+    let pg = postgres_pool_for_tests().await;
+    seed_desktop_e2e_fixtures(&pg).await;
+    let (_, login_context) = login_desktop_e2e_session(&app).await;
+
+    let client =
+        resolve_relying_party_client(&pg, DESKTOP_E2E_CLIENT_APP_ID, Some(DESKTOP_E2E_TENANT_ID))
+            .await
+            .expect("resolve desktop e2e relying party client");
+    let (code_verifier, code_challenge) = pkce_pair("desktop-expired-code-verifier-sufficient-length");
+    let authorize_request = AuthorizeRequest {
+        client_id: DESKTOP_E2E_CLIENT_APP_ID.to_string(),
+        redirect_uri: DESKTOP_E2E_REDIRECT_URI.to_string(),
+        response_type: "code".to_string(),
+        scope: "openid profile email".to_string(),
+        state: Some("desktop-expired-code-state".to_string()),
+        code_challenge: Some(code_challenge),
+        code_challenge_method: Some("S256".to_string()),
+        tenant_id: Some(DESKTOP_E2E_TENANT_ID.to_string()),
+    };
+    let scopes =
+        validate_authorize_request(&authorize_request, &client).expect("authorize request");
+    let (state_id, _) = create_pending_authorization_state(&pg, &client, &authorize_request, &scopes)
+        .await
+        .expect("create expired-code state");
+    let completion = complete_authorization_state(&pg, &state_id, &login_context)
+        .await
+        .expect("complete expired-code state");
+    let authorization_code = completion.authorization_code;
+
+    sqlx::query(
+        "UPDATE iam_oauth_authorization_state SET expires_at = $2 WHERE id = $1",
+    )
+    .bind(&state_id)
+    .bind("2000-01-01T00:00:00+00:00")
+    .execute(&pg)
+    .await
+    .expect("expire authorization state");
+
+    let (status, body) = redeem_desktop_session(
+        &app,
+        &authorization_code,
+        &code_verifier,
+        DESKTOP_E2E_REDIRECT_URI,
+        None,
+    )
+    .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "an expired authorization code must be rejected: {}",
+        serde_json::to_string(&body).unwrap_or_default()
+    );
+}
+
+#[tokio::test]
+async fn oauth_token_introspection_reports_the_grant_client_and_refresh_expiry() {
+    let _env_guard = lock_local_iam_env();
+    configure_desktop_e2e_env();
+
+    let app = build_desktop_e2e_app().await;
+    let pg = postgres_pool_for_tests().await;
+    seed_desktop_e2e_fixtures(&pg).await;
+    let (_, login_context) = login_desktop_e2e_session(&app).await;
+
+    let client =
+        resolve_relying_party_client(&pg, DESKTOP_E2E_CLIENT_APP_ID, Some(DESKTOP_E2E_TENANT_ID))
+            .await
+            .expect("resolve desktop e2e relying party client");
+    let (code_verifier, code_challenge) =
+        pkce_pair("desktop-introspection-verifier-with-sufficient-length");
+    let authorize_request = AuthorizeRequest {
+        client_id: DESKTOP_E2E_CLIENT_APP_ID.to_string(),
+        redirect_uri: DESKTOP_E2E_REDIRECT_URI.to_string(),
+        response_type: "code".to_string(),
+        scope: "openid profile email".to_string(),
+        state: Some("desktop-introspection-state".to_string()),
+        code_challenge: Some(code_challenge),
+        code_challenge_method: Some("S256".to_string()),
+        tenant_id: Some(DESKTOP_E2E_TENANT_ID.to_string()),
+    };
+    let scopes =
+        validate_authorize_request(&authorize_request, &client).expect("authorize request");
+    let (state_id, _) = create_pending_authorization_state(&pg, &client, &authorize_request, &scopes)
+        .await
+        .expect("create introspection state");
+    let completion = complete_authorization_state(&pg, &state_id, &login_context)
+        .await
+        .expect("complete introspection state");
+    let tokens = exchange_authorization_code(
+        &pg,
+        &client,
+        &completion.authorization_code,
+        DESKTOP_E2E_REDIRECT_URI,
+        Some(&code_verifier),
+        None,
+    )
+    .await
+    .expect("exchange introspection code");
+    let access_token = tokens["access_token"].as_str().expect("access token");
+    let refresh_token = tokens["refresh_token"].as_str().expect("refresh token");
+
+    let access_introspection = introspect_oauth_token(
+        &pg,
+        access_token,
+        Some(DESKTOP_E2E_CLIENT_APP_ID),
+        Some(DESKTOP_E2E_TENANT_ID),
+        None,
+    )
+    .await
+    .expect("introspect access token");
+    assert_eq!(access_introspection["active"], true);
+    assert_eq!(
+        access_introspection["client_id"],
+        DESKTOP_E2E_CLIENT_APP_ID
+    );
+
+    let refresh_introspection = introspect_oauth_token(
+        &pg,
+        refresh_token,
+        Some(DESKTOP_E2E_CLIENT_APP_ID),
+        Some(DESKTOP_E2E_TENANT_ID),
+        None,
+    )
+    .await
+    .expect("introspect refresh token");
+    assert_eq!(refresh_introspection["active"], true);
+    assert_eq!(refresh_introspection["token_type"], "refresh_token");
+    assert_eq!(
+        refresh_introspection["client_id"],
+        DESKTOP_E2E_CLIENT_APP_ID
+    );
+
+    revoke_oauth_token(
+        &pg,
+        access_token,
+        Some(DESKTOP_E2E_CLIENT_APP_ID),
+        Some(DESKTOP_E2E_TENANT_ID),
+        None,
+    )
+    .await
+    .expect("revoke oauth access token");
+    let revoked_introspection = introspect_oauth_token(
+        &pg,
+        access_token,
+        Some(DESKTOP_E2E_CLIENT_APP_ID),
+        Some(DESKTOP_E2E_TENANT_ID),
+        None,
+    )
+    .await
+    .expect("introspect revoked token");
+    assert_eq!(revoked_introspection["active"], false);
+}
+
+#[tokio::test]
+async fn concurrent_authorization_code_redemptions_issue_only_one_session() {
+    let _env_guard = lock_local_iam_env();
+    configure_desktop_e2e_env();
+
+    let app = build_desktop_e2e_app().await;
+    let pg = postgres_pool_for_tests().await;
+    seed_desktop_e2e_fixtures(&pg).await;
+    let (_, login_context) = login_desktop_e2e_session(&app).await;
+
+    let client =
+        resolve_relying_party_client(&pg, DESKTOP_E2E_CLIENT_APP_ID, Some(DESKTOP_E2E_TENANT_ID))
+            .await
+            .expect("resolve desktop e2e relying party client");
+    let (code_verifier, code_challenge) =
+        pkce_pair("desktop-concurrent-redemption-verifier-sufficient-length");
+    let authorize_request = AuthorizeRequest {
+        client_id: DESKTOP_E2E_CLIENT_APP_ID.to_string(),
+        redirect_uri: DESKTOP_E2E_REDIRECT_URI.to_string(),
+        response_type: "code".to_string(),
+        scope: "openid profile email".to_string(),
+        state: Some("desktop-concurrent-redemption-state".to_string()),
+        code_challenge: Some(code_challenge),
+        code_challenge_method: Some("S256".to_string()),
+        tenant_id: Some(DESKTOP_E2E_TENANT_ID.to_string()),
+    };
+    let scopes =
+        validate_authorize_request(&authorize_request, &client).expect("authorize request");
+    let (state_id, _) = create_pending_authorization_state(&pg, &client, &authorize_request, &scopes)
+        .await
+        .expect("create concurrent-redemption state");
+    let completion = complete_authorization_state(&pg, &state_id, &login_context)
+        .await
+        .expect("complete concurrent-redemption state");
+    let authorization_code = completion.authorization_code;
+
+    let (first, second) = tokio::join!(
+        redeem_desktop_session(
+            &app,
+            &authorization_code,
+            &code_verifier,
+            DESKTOP_E2E_REDIRECT_URI,
+            None,
+        ),
+        redeem_desktop_session(
+            &app,
+            &authorization_code,
+            &code_verifier,
+            DESKTOP_E2E_REDIRECT_URI,
+            None,
+        ),
+    );
+    let mut statuses = [first.0, second.0];
+    statuses.sort();
+    assert_eq!(
+        statuses,
+        [StatusCode::OK, StatusCode::BAD_REQUEST],
+        "exactly one concurrent redemption may succeed"
+    );
+}
+
+#[tokio::test]
+async fn desktop_exchange_rejects_a_redirect_uri_that_differs_from_the_code() {
+    let _env_guard = lock_local_iam_env();
+    configure_desktop_e2e_env();
+
+    let app = build_desktop_e2e_app().await;
+    let pg = postgres_pool_for_tests().await;
+    seed_desktop_e2e_fixtures(&pg).await;
+    let (_, login_context) = login_desktop_e2e_session(&app).await;
+
+    let client =
+        resolve_relying_party_client(&pg, DESKTOP_E2E_CLIENT_APP_ID, Some(DESKTOP_E2E_TENANT_ID))
+            .await
+            .expect("resolve desktop e2e relying party client");
+    let (code_verifier, code_challenge) =
+        pkce_pair("desktop-redirect-binding-verifier-with-sufficient-length");
+    let authorize_request = AuthorizeRequest {
+        client_id: DESKTOP_E2E_CLIENT_APP_ID.to_string(),
+        redirect_uri: DESKTOP_E2E_REDIRECT_URI.to_string(),
+        response_type: "code".to_string(),
+        scope: "openid profile email".to_string(),
+        state: Some("desktop-redirect-binding-state".to_string()),
+        code_challenge: Some(code_challenge),
+        code_challenge_method: Some("S256".to_string()),
+        tenant_id: Some(DESKTOP_E2E_TENANT_ID.to_string()),
+    };
+    let scopes =
+        validate_authorize_request(&authorize_request, &client).expect("authorize request");
+    let (state_id, _) = create_pending_authorization_state(&pg, &client, &authorize_request, &scopes)
+        .await
+        .expect("create redirect-binding state");
+    let completion = complete_authorization_state(&pg, &state_id, &login_context)
+        .await
+        .expect("complete redirect-binding state");
+    let authorization_code = completion.authorization_code;
+
+    let (status, body) = redeem_desktop_session(
+        &app,
+        &authorization_code,
+        &code_verifier,
+        "https://attacker.example/oauth/callback",
+        None,
+    )
+    .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "a code redeemed with a different redirect URI must be rejected: {}",
+        serde_json::to_string(&body).unwrap_or_default()
+    );
+}
+
+#[tokio::test]
+async fn hosted_authorization_bootstrap_creates_a_pending_state_without_redirecting() {
+    let _env_guard = lock_local_iam_env();
+    configure_desktop_e2e_env();
+
+    let app = build_desktop_e2e_app().await;
+    let pg = postgres_pool_for_tests().await;
+    seed_desktop_e2e_fixtures(&pg).await;
+
+    let (_verifier, code_challenge) =
+        pkce_pair("hosted-bootstrap-verifier-with-sufficient-length");
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/app/v3/api/oauth/authorizations")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "clientId": DESKTOP_E2E_CLIENT_APP_ID,
+                        "responseType": "code",
+                        "redirectUri": DESKTOP_E2E_REDIRECT_URI,
+                        "scope": "openid profile email",
+                        "state": "bootstrap-state",
+                        "codeChallenge": code_challenge,
+                        "codeChallengeMethod": "S256"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .expect("hosted authorization bootstrap request");
+
+    let status = response.status();
+    let location = response.headers().get("location").cloned();
+    let body = read_json(response).await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "hosted authorization bootstrap failed: {}",
+        serde_json::to_string(&body).unwrap_or_default()
+    );
+    assert!(location.is_none(), "the JSON bootstrap must not redirect the browser");
+    assert_eq!(body["code"].as_i64(), Some(0));
+    let authorization_state_id = body["data"]["authorizationStateId"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .expect("bootstrap authorization state id")
+        .to_owned();
+    assert!(body["data"]["expiresAt"].as_str().is_some());
+
+    let state_status: String = sqlx::query_scalar(
+        "SELECT status FROM iam_oauth_authorization_state WHERE id = $1",
+    )
+    .bind(&authorization_state_id)
+    .fetch_one(&pg)
+    .await
+    .expect("bootstrap state row");
+    assert_eq!(state_status, "pending");
+
+    // An unknown client is rejected before any state is created.
+    let unknown_client = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/app/v3/api/oauth/authorizations")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "clientId": "client-that-does-not-exist",
+                        "responseType": "code",
+                        "redirectUri": DESKTOP_E2E_REDIRECT_URI,
+                        "scope": "openid profile email",
+                        "state": "bootstrap-state",
+                        "codeChallenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+                        "codeChallengeMethod": "S256"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .expect("unknown client bootstrap request");
+    assert_eq!(unknown_client.status(), StatusCode::BAD_REQUEST);
+
+    // Disabling the relying party in Admin must stop the hosted bootstrap too.
+    let previous_runtime_config: sqlx::types::Json<Value> = sqlx::query_scalar(
+        "SELECT runtime_config_json FROM iam_tenant_application \
+         WHERE tenant_id = $1 AND app_id = $2 LIMIT 1",
+    )
+    .bind(DESKTOP_E2E_TENANT_ID)
+    .bind(DESKTOP_E2E_CLIENT_APP_ID)
+    .fetch_one(&pg)
+    .await
+    .expect("desktop relying party runtime config");
+    let mut disabled_config = previous_runtime_config.0.clone();
+    disabled_config["oauth"]["relyingParty"]["enabled"] = json!(false);
+    sqlx::query(
+        "UPDATE iam_tenant_application SET runtime_config_json = $3 \
+         WHERE tenant_id = $1 AND app_id = $2",
+    )
+    .bind(DESKTOP_E2E_TENANT_ID)
+    .bind(DESKTOP_E2E_CLIENT_APP_ID)
+    .bind(sqlx::types::Json(&disabled_config))
+    .execute(&pg)
+    .await
+    .expect("disable desktop relying party");
+
+    let disabled_bootstrap = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/app/v3/api/oauth/authorizations")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "clientId": DESKTOP_E2E_CLIENT_APP_ID,
+                        "responseType": "code",
+                        "redirectUri": DESKTOP_E2E_REDIRECT_URI,
+                        "scope": "openid profile email",
+                        "state": "bootstrap-state",
+                        "codeChallenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+                        "codeChallengeMethod": "S256"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .expect("disabled relying party bootstrap request");
+    assert_eq!(disabled_bootstrap.status(), StatusCode::BAD_REQUEST);
+
+    sqlx::query(
+        "UPDATE iam_tenant_application SET runtime_config_json = $3 \
+         WHERE tenant_id = $1 AND app_id = $2",
+    )
+    .bind(DESKTOP_E2E_TENANT_ID)
+    .bind(DESKTOP_E2E_CLIENT_APP_ID)
+    .bind(sqlx::types::Json(&previous_runtime_config.0))
+    .execute(&pg)
+    .await
+    .expect("restore desktop relying party");
 }
 
 #[tokio::test]
@@ -451,7 +1701,7 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
         &app,
         &authorization_code,
         &code_verifier,
-        DESKTOP_E2E_REDIRECT_URI,
+        DESKTOP_E2E_REDIRECT_URI, None,
     )
     .await;
     assert_eq!(
@@ -487,6 +1737,47 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
         Value::String("0".into())
     );
 
+    // 4b. Redeeming the desktop session must not revoke the browser session
+    //     that completed the authorization (and, by extension, must not sign
+    //     the user out of other applications). Signing in again replaces only
+    //     the previous session of the same application.
+    let browser_after_desktop = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri("/app/v3/api/auth/sessions/current")
+                .header("authorization", format!("Bearer {auth_token}"))
+                .header("access-token", access_token)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("browser session request after desktop redeem");
+    let browser_after_desktop_status = browser_after_desktop.status();
+    let browser_after_desktop_body = read_json(browser_after_desktop).await;
+    assert_eq!(
+        browser_after_desktop_status,
+        StatusCode::OK,
+        "the desktop session must not revoke the browser session: {}",
+        serde_json::to_string(&browser_after_desktop_body).unwrap_or_default()
+    );
+
+    let desktop_session_app_id: String = sqlx::query_scalar(
+        "SELECT s.app_id FROM iam_session s \
+         JOIN iam_user u ON u.id = s.user_id AND u.tenant_id = s.tenant_id \
+         WHERE u.email = $1 AND s.revoked_at IS NULL \
+         ORDER BY s.created_at DESC LIMIT 1",
+    )
+    .bind(DESKTOP_E2E_USERNAME)
+    .fetch_one(&pg)
+    .await
+    .expect("desktop session app id");
+    assert_eq!(
+        desktop_session_app_id, DESKTOP_E2E_CLIENT_APP_ID,
+        "the redeemed session must be bound to the desktop relying party app"
+    );
+
     // 5. The redeemed session exists as a real IAM session row.
     let session_count: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM iam_session s \
@@ -505,7 +1796,7 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
         &app,
         &authorization_code,
         &code_verifier,
-        DESKTOP_E2E_REDIRECT_URI,
+        DESKTOP_E2E_REDIRECT_URI, None,
     )
     .await;
     assert_eq!(
@@ -537,7 +1828,7 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
         &app,
         &second_code,
         &wrong_verifier,
-        DESKTOP_E2E_REDIRECT_URI,
+        DESKTOP_E2E_REDIRECT_URI, None,
     )
     .await;
     assert_eq!(
@@ -643,7 +1934,7 @@ async fn desktop_session_exchange_rejects_a_web_surface_code() {
         &app,
         &completion.authorization_code,
         &verifier,
-        DESKTOP_E2E_WEB_REDIRECT_URI,
+        DESKTOP_E2E_WEB_REDIRECT_URI, None,
     )
     .await;
     assert_eq!(

@@ -157,6 +157,10 @@ fn build_sdkwork_iam_app_api_core_router(state: LocalIamState) -> Router {
                 .get(retrieve_current_session)
                 .patch(update_current_session),
         )
+        .route(
+            "/app/v3/api/auth/sessions/current/logout",
+            post(logout_current_session),
+        )
         .route("/app/v3/api/auth/sessions/refresh", post(refresh_session))
         .route("/app/v3/api/auth/registrations", post(create_registration))
         .route(
@@ -210,6 +214,10 @@ fn build_sdkwork_iam_app_api_core_router(state: LocalIamState) -> Router {
         .route(
             "/app/v3/api/oauth/grants/{grant_id}",
             delete(delete_oauth_grant),
+        )
+        .route(
+            "/app/v3/api/oauth/authorizations",
+            post(create_oauth_authorization),
         )
         .route(
             "/app/v3/api/oauth/authorizations/{authorization_state_id}/completions",
@@ -1261,6 +1269,47 @@ async fn delete_current_session(
         );
     }
     StatusCode::NO_CONTENT.into_response()
+}
+
+async fn logout_current_session(
+    State(state): State<LocalIamState>,
+    Json(body): Json<Value>,
+) -> Response {
+    // Logout must revoke the server session even when the short-lived access
+    // token already expired: the refresh token is the long-lived credential
+    // that still authorizes the session, so it is the proof accepted here.
+    let Some(refresh_token) = optional_string(body.get("refreshToken"))
+        .or_else(|| optional_string(body.get("refresh_token")))
+    else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_refresh_token_required",
+            "refresh token is required",
+        );
+    };
+    let refresh_token_hash = hash_token(&refresh_token);
+    if let Some(response) = enforce_rate_limit(
+        &state,
+        LOCAL_EPHEMERAL_SCOPE,
+        &format!("auth:logout:{}", &refresh_token_hash[..16]),
+    )
+    .await
+    {
+        return response;
+    }
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+    match revoke_session_by_refresh_token(pg, &state.config, &refresh_token_hash).await {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => appbase_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "iam_session_revoke_failed",
+            &error,
+        ),
+    }
 }
 
 async fn refresh_session(State(state): State<LocalIamState>, Json(body): Json<Value>) -> Response {
@@ -3033,6 +3082,128 @@ async fn delete_current_user_contact_binding(
     }
 }
 
+/// Create the pending authorization state the hosted web login completes.
+///
+/// This is the anonymous bootstrap for the first-party desktop browser login:
+/// the hosted OAuth page stays on its own origin, calls this endpoint with the
+/// authorization request, authenticates the user, and then completes the state
+/// through `authorizations.completions.create`. It never redirects; the OAuth
+/// protocol GET endpoint remains the standard redirecting entry for external
+/// clients.
+async fn create_oauth_authorization(
+    State(state): State<LocalIamState>,
+    Json(body): Json<Value>,
+) -> Response {
+    let Some(client_id) = optional_string(body.get("clientId").or_else(|| body.get("client_id")))
+    else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_oauth_authorize_invalid",
+            "OAuth clientId is required",
+        );
+    };
+
+    if let Some(response) =
+        enforce_rate_limit(&state, LOCAL_EPHEMERAL_SCOPE, &format!("oauth:authorize:{client_id}"))
+            .await
+    {
+        return response;
+    }
+
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+
+    let Some(redirect_uri) =
+        optional_string(body.get("redirectUri").or_else(|| body.get("redirect_uri")))
+    else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_oauth_authorize_invalid",
+            "OAuth redirect_uri is required",
+        );
+    };
+    let Some(state_param) = optional_string(body.get("state")) else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_oauth_authorize_invalid",
+            "OAuth state is required",
+        );
+    };
+    let Some(code_challenge) =
+        optional_string(body.get("codeChallenge").or_else(|| body.get("code_challenge")))
+    else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_oauth_authorize_invalid",
+            "OAuth code_challenge is required for public clients",
+        );
+    };
+
+    let request = sdkwork_iam_web_adapter::AuthorizeRequest {
+        client_id,
+        redirect_uri,
+        response_type: optional_string(body.get("responseType").or_else(|| body.get("response_type")))
+            .unwrap_or_else(|| "code".to_string()),
+        scope: optional_string(body.get("scope"))
+            .unwrap_or_else(|| "openid profile offline_access".to_string()),
+        state: Some(state_param),
+        code_challenge: Some(code_challenge),
+        code_challenge_method: optional_string(
+            body.get("codeChallengeMethod").or_else(|| body.get("code_challenge_method")),
+        )
+        .or_else(|| Some("S256".to_string())),
+        tenant_id: optional_string(body.get("tenantId").or_else(|| body.get("tenant_id"))),
+    };
+
+    let client = match sdkwork_iam_web_adapter::resolve_relying_party_client(
+        pg,
+        &request.client_id,
+        request.tenant_id.as_deref(),
+    )
+    .await
+    {
+        Ok(client) => client,
+        Err(error) => {
+            return appbase_error(StatusCode::BAD_REQUEST, "iam_oauth_client_invalid", &error)
+        }
+    };
+    let scopes = match sdkwork_iam_web_adapter::validate_authorize_request(&request, &client) {
+        Ok(scopes) => scopes,
+        Err(error) => {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_oauth_authorize_invalid",
+                &error,
+            )
+        }
+    };
+
+    match sdkwork_iam_web_adapter::create_pending_authorization_state(
+        pg, &client, &request, &scopes,
+    )
+    .await
+    {
+        Ok((authorization_state_id, _login_url)) => {
+            let expires_at = chrono::Utc::now()
+                + chrono::Duration::seconds(
+                    sdkwork_iam_web_adapter::AUTHORIZATION_CODE_TTL_SECONDS,
+                );
+            appbase_ok(json!({
+                "authorizationStateId": authorization_state_id,
+                "expiresAt": expires_at.to_rfc3339(),
+            }))
+        }
+        Err(error) => appbase_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "iam_oauth_authorization_create_failed",
+            &error,
+        ),
+    }
+}
+
 async fn complete_oauth_authorization(
     State(state): State<LocalIamState>,
     headers: HeaderMap,
@@ -3115,6 +3286,18 @@ async fn create_desktop_session(
         .or_else(|| optional_string(body.get("code_verifier")));
     let client_secret = optional_string(body.get("clientSecret"))
         .or_else(|| optional_string(body.get("client_secret")));
+    let device_id =
+        optional_string(body.get("deviceId")).or_else(|| optional_string(body.get("device_id")));
+    let device_id = match normalize_session_device_id(device_id.as_deref()) {
+        Ok(device_id) => device_id,
+        Err(error) => {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_oauth_device_id_invalid",
+                &error,
+            );
+        }
+    };
 
     if let Some(response) = enforce_rate_limit(
         &state,
@@ -3182,20 +3365,26 @@ async fn create_desktop_session(
         } else {
             Some(redeemed.organization_id.clone())
         };
-    let session =
-        match create_session_record(&pg, &state.config, &user, organization_id, &client.app_id)
-            .await
-        {
-            Ok(session) => session,
-            Err(error) => {
-                tracing::error!(%error, "desktop browser-login session creation failed");
-                return appbase_error(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "iam_session_create_failed",
-                    &error,
-                );
-            }
-        };
+    let session = match create_session_record_with_device(
+        &pg,
+        &state.config,
+        &user,
+        organization_id,
+        &client.app_id,
+        device_id.as_deref(),
+    )
+    .await
+    {
+        Ok(session) => session,
+        Err(error) => {
+            tracing::error!(%error, "desktop browser-login session creation failed");
+            return appbase_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "iam_session_create_failed",
+                &error,
+            );
+        }
+    };
 
     crate::security_events::record_login_success(
         &pg,

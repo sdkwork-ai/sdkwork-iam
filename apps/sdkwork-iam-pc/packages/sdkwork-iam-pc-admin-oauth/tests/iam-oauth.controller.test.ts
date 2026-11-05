@@ -98,6 +98,39 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
     });
   });
 
+  it("turns the hosted OAuth login off through the relying party switch", async () => {
+    const service = createOauthServiceMock();
+    const controller = createSdkworkIamOauthAdminController({ service: service as never });
+
+    await controller.updateRelyingParty({
+      allowedScopesText: "openid, profile",
+      clientId: "iam-app-1",
+      clientIdHint: "iam-app-1",
+      clientSecretHash: "$argon2id$v=19$hash",
+      confidential: true,
+      enabled: false,
+      hasExistingSecret: false,
+      redirectUrisText: "https://forum.example.com/callback",
+      tenantApplicationId: "iamta-1",
+      tenantId: "iamt-1",
+    });
+
+    expect(service.iam.tenantApplications.management.update).toHaveBeenCalledWith("iamt-1", "iamta-1", {
+      runtimeConfig: {
+        oauth: {
+          relyingParty: {
+            enabled: false,
+            clientId: "iam-app-1",
+            redirectUris: ["https://forum.example.com/callback"],
+            allowedScopes: ["openid", "profile"],
+            confidential: true,
+            clientSecretHash: "$argon2id$v=19$hash",
+          },
+        },
+      },
+    });
+  });
+
   it("provisions a complete enabled provider connection without exposing the secret again", async () => {
     const service = createOauthServiceMock();
     const controller = createSdkworkIamOauthAdminController({ service: service as never });

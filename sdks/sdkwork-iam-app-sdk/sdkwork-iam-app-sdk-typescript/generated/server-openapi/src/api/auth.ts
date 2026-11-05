@@ -1,7 +1,7 @@
 import { appApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { AppbaseOperationCommand, AppbaseSessionCreateCommand, SdkWorkCommandData } from '../types';
+import type { AppbaseOperationCommand, AppbaseSessionCreateCommand, SdkWorkCommandData, SessionsCurrentLogoutRequest } from '../types';
 
 
 export class AuthVerificationCodeRequestsApi {
@@ -67,6 +67,11 @@ export class AuthSessionsCurrentApi {
 /** Sessions current update. */
   async update(body?: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
     return this.client.request<Record<string, unknown>>(appApiPath(`/auth/sessions/current`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PATCH' as any, ...(body !== undefined ? { body, contentType: 'application/json' } : {}), sdkworkUnwrapKind: 'item' });
+  }
+
+/** Sessions current logout. */
+  async logout(body: SessionsCurrentLogoutRequest, requestOptions?: ApiRequestOptions): Promise<void> {
+    return this.client.request<void>(appApiPath(`/auth/sessions/current/logout`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true });
   }
 }
 

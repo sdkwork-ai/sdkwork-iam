@@ -11,7 +11,12 @@ export {
   statesMatch,
 } from "./authorize.ts";
 export { parseSdkworkDesktopAuthCallbackUri } from "./callback.ts";
-export { createInMemorySdkworkDesktopAuthFlowStore } from "./flow-store.ts";
+export {
+  createBrowserSdkworkDesktopAuthFlowStore,
+  createInMemorySdkworkDesktopAuthFlowStore,
+  SDKWORK_DESKTOP_AUTH_FLOW_STORAGE_KEY,
+} from "./flow-store.ts";
+export type { SdkworkDesktopAuthFlowStorage } from "./flow-store.ts";
 export { createBrowserDesktopAuthHost } from "./browser-host.ts";
 export { createSdkworkIamDesktopAuthController } from "./controller.ts";
 export {
