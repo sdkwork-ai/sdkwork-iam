@@ -1,7 +1,7 @@
 schema_version: 1
 kind: sdkwork.database.schema
-module_id: iam
 database_role: authoritative-server
+module_id: iam
 contract_version: 1.0.0
 owner_team: sdkwork-iam
 compliance_level: L2
@@ -196,6 +196,9 @@ tables:
     lifecycle_status: active
     owner: sdkwork-iam
   - name: iam_user_identity
+    lifecycle_status: active
+    owner: sdkwork-iam
+  - name: iam_user_official_account
     lifecycle_status: active
     owner: sdkwork-iam
   - name: iam_user_persona

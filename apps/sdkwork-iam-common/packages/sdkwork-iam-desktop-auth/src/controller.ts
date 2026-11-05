@@ -37,6 +37,7 @@ export function createSdkworkIamDesktopAuthController(
 
   let waiting = false;
   let disposed = false;
+  let expiryTimer: ReturnType<typeof setTimeout> | null = null;
   const listeners = new Set<() => void>();
   let unsubscribeOpenUrl: (() => void) | null = null;
 
@@ -46,7 +47,17 @@ export function createSdkworkIamDesktopAuthController(
     }
   };
 
+  const clearExpiryTimer = (): void => {
+    if (expiryTimer !== null) {
+      clearTimeout(expiryTimer);
+      expiryTimer = null;
+    }
+  };
+
   const setWaiting = (value: boolean): void => {
+    if (!value) {
+      clearExpiryTimer();
+    }
     if (waiting !== value) {
       waiting = value;
       notify();
@@ -72,6 +83,10 @@ export function createSdkworkIamDesktopAuthController(
         );
       }
 
+      // A repeated beginLogin replaces the pending flow; the previous
+      // deadline must not expire the new attempt.
+      clearExpiryTimer();
+
       const { codeChallenge, codeVerifier } = await createSdkworkDesktopPkcePair();
       const state = createSdkworkDesktopStateToken();
       const startedAt = now();
@@ -96,6 +111,21 @@ export function createSdkworkIamDesktopAuthController(
         });
       }
       setWaiting(true);
+      expiryTimer = setTimeout(() => {
+        expiryTimer = null;
+        if (!waiting || disposed) return;
+        // Leave the waiting state before notifying so a host that reacts by
+        // reading `isWaiting()` already sees the settled flow.
+        waiting = false;
+        notify();
+        void Promise.resolve(flowStore.clear()).catch(() => undefined);
+        options.onFlowExpired?.(
+          new SdkworkDesktopAuthError(
+            "flow-expired",
+            "The browser login window expired; start the login again.",
+          ),
+        );
+      }, flowTtlMs);
 
       try {
         await options.host.openExternal(authorizeUrl);
@@ -144,6 +174,27 @@ export function createSdkworkIamDesktopAuthController(
       });
 
       if (callback.kind === "error") {
+        const pending = await flowStore.load();
+        if (!pending) {
+          throw new SdkworkDesktopAuthError(
+            "no-pending-flow",
+            "No desktop browser login is in progress.",
+          );
+        }
+        if (callback.state === undefined) {
+          throw new SdkworkDesktopAuthError(
+            "invalid-callback",
+            "The browser login error callback is missing its state.",
+          );
+        }
+        if (!statesMatch(pending.state, callback.state)) {
+          // Like the success path, a foreign error callback must not be able
+          // to cancel the user's in-progress login.
+          throw new SdkworkDesktopAuthError(
+            "state-mismatch",
+            "Deep-link state does not match the pending browser login.",
+          );
+        }
         setWaiting(false);
         await flowStore.clear();
         throw new SdkworkDesktopAuthError(
@@ -183,6 +234,7 @@ export function createSdkworkIamDesktopAuthController(
           authorizationCode: callback.code,
           clientId: pending.appId,
           codeVerifier: pending.codeVerifier,
+          ...(options.deviceId?.trim() ? { deviceId: options.deviceId.trim() } : {}),
           redirectUri: pending.redirectUri,
         });
       } catch (error) {

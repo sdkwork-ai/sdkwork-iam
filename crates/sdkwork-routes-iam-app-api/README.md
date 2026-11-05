@@ -36,6 +36,12 @@ This crate is a base dependency of `sdkwork-iam`. It is not an independent appli
 
 Do not add secrets, live tokens, manual auth headers, or app-local credential handling to this crate. Protected API and SDK access must use the declared request-context or SDK boundary.
 
+Personal-login sessions use `organization_id = "0"`. `iam_organization` is keyed by `(tenant_id, id)`, and every tenant receives its own `"0"` sentinel; session creation provisions it when missing, so login is not limited to the bootstrap tenant.
+
+Refresh-token reuse detection keeps a short grace window (`SDKWORK_IAM_REFRESH_REUSE_GRACE_SECONDS`, default 30, `0` disables): a client that timed out after the server committed a rotation can retry the old token and receive `401` without revoking every session the user owns. Reuse outside the window still revokes the user's active sessions and records a security event.
+
+Authorization codes expire after 300 seconds; the redeem endpoints reject an expired code even when its authorization state row still exists. Consumption is a conditional `approved -> consumed` update, so two concurrent redemptions of the same code yield exactly one session. Completing the same authorization state concurrently also approves only one grant; the loser deletes its orphan grant. Token introspection reports the grant's `client_id` (not the caller's) and uses the refresh-token expiry for refresh-token introspection; revocation is scoped to the requesting client when one is supplied.
+
 ## Extension Points
 
 Extension points are limited to public exports, runtime entrypoints, SDK clients, events, and config keys declared in `specs/component.spec.json`.

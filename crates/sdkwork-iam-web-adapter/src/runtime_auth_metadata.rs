@@ -219,6 +219,20 @@ mod tests {
     }
 
     #[test]
+    fn parse_runtime_auth_policy_reads_disabled_relying_party() {
+        let runtime_config = json!({
+            "oauth": {
+                "relyingParty": {
+                    "enabled": false,
+                    "redirectUris": ["https://forum.example.com/auth/oauth/callback"]
+                }
+            }
+        });
+        let policy = parse_runtime_auth_policy(&runtime_config);
+        assert_eq!(policy.sdkwork_oauth_provider_enabled, Some(false));
+    }
+
+    #[test]
     fn parse_runtime_auth_policy_reads_auth_and_relying_party() {
         let runtime_config = json!({
             "auth": {

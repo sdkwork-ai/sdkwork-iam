@@ -35,9 +35,11 @@ import { useSdkworkAuthIntl } from "../auth-intl.tsx";
 import {
   createAuthRouteCatalog,
   buildSdkworkAuthDesktopLaunchLocation,
+  buildSdkworkAuthDesktopLaunchPath,
   isSdkworkDesktopDeepLinkRedirect,
   resolveAuthRedirectTarget,
 } from "../auth.ts";
+import { storeSdkworkDesktopLaunchRedirect } from "../desktop-launch-handoff.ts";
 import { buildSdkworkLoginRedirectPath } from "../../../sdkwork-auth-runtime-pc-react/src/sessionAuthRedirect.ts";
 import {
   buildSdkworkAuthOAuthCallbackUri,
@@ -233,9 +235,15 @@ function SdkworkAuthOAuthCallbackPageContent({
             return;
           }
           if (isSdkworkDesktopDeepLinkRedirect(completion.redirectUrl)) {
+            // Keep the one-time code out of the URL/history: the launch page
+            // reads it from same-origin session storage; a browser without
+            // storage falls back to the query form.
+            const transferred = storeSdkworkDesktopLaunchRedirect(completion.redirectUrl);
             startTransition(() => {
               navigate(
-                buildSdkworkAuthDesktopLaunchLocation(completion.redirectUrl, { basePath }),
+                transferred
+                  ? buildSdkworkAuthDesktopLaunchPath({ basePath })
+                  : buildSdkworkAuthDesktopLaunchLocation(completion.redirectUrl, { basePath }),
                 { replace: true },
               );
             });

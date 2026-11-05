@@ -66,6 +66,8 @@ export interface SdkworkAuthController {
   listOAuthProviders(): Promise<string[]>;
   listScanLoginModes(): Promise<SdkworkAuthScanLoginMode[]>;
   getState(): SdkworkAuthControllerState;
+  /** Reset the controller to the anonymous state after the session ended. */
+  handleSessionExpired(): void;
   register(input: SdkworkAuthRegisterInput): Promise<SdkworkAuthSession>;
   requestPasswordReset(input: SdkworkAuthPasswordResetRequestInput): Promise<void>;
   resetPassword(input: SdkworkAuthPasswordResetInput): Promise<void>;
@@ -350,6 +352,14 @@ export function createSdkworkAuthController(
             isBootstrapped: true,
           });
         }
+      });
+    },
+    handleSessionExpired() {
+      // The token store is already cleared by the runtime that detected the
+      // failure; reset the UI state without another remote logout attempt.
+      setState({
+        ...DEFAULT_STATE,
+        isBootstrapped: true,
       });
     },
     subscribe(listener) {

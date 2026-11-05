@@ -1,18 +1,19 @@
 /**
  * Canonical hosted app-login protocol paths.
  *
- * A platform that hosts `GET /iam/v3/oauth/authorize` for native applications
- * (and the versionless alias) forwards the validated request to the IAM
- * open-api authorize endpoint, then lets the hosted login continue on
- * `/auth/login` and hand the deep link back from `/auth/desktop/launch`.
+ * A platform hosts the hosted app authorization page for native applications
+ * at `GET /iam/oauth/authorize` (and the legacy `/iam/v3/oauth/authorize`
+ * spelling). The page creates the pending authorization state through the IAM
+ * app-api, renders the login surface on that same route, and hands the deep
+ * link back from `/auth/desktop/launch`.
  * These strings are the protocol, so every browser host imports them from one
  * place instead of restating literals.
  */
 
-/** Authorize path a native application opens on the platform origin. */
+/** Legacy versioned authorize path; still answered for installed clients. */
 export const SDKWORK_OAUTH_APP_AUTHORIZE_PATH = "/iam/v3/oauth/authorize";
 
-/** Versionless alias of the authorize path; both render the same hosted entry. */
+/** Authorize path native applications open on the platform origin. */
 export const SDKWORK_OAUTH_APP_AUTHORIZE_VERSIONLESS_PATH = "/iam/oauth/authorize";
 
 /** Every authorize path the hosted entry answers. */

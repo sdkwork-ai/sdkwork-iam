@@ -1,0 +1,53 @@
+{
+  "name": "@sdkwork/iam-pc-oauth",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "User-facing IAM PC OAuth surface: the signed-in account's own official (service) account configuration and custom-menu draft, mounted by the IAM PC app and embedded by product clients.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@sdkwork/i18n-pc-react": "workspace:*",
+    "@sdkwork/ui-pc-react": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18.2.0 <20.0.0",
+    "react-dom": ">=18.2.0 <20.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@testing-library/react": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "typescript": "^6.0.2",
+    "vitest": "catalog:"
+  },
+  "sdkwork": {
+    "workspace": "sdkwork-iam",
+    "architecture": "pc-react",
+    "surface": "app",
+    "domain": "iam",
+    "capability": "oauth",
+    "status": "standard"
+  }
+}

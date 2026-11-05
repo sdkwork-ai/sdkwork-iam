@@ -250,6 +250,20 @@
       }
     },
     {
+      "id": "app.iam.oauth.official-accounts",
+      "tier": "app",
+      "capability": "oauth",
+      "api": "app-api",
+      "status": { "pc": "partial", "h5": "missing", "flutter": "missing", "miniProgram": "missing", "harmony": "missing" },
+      "evidence": {
+        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-oauth/src/client/panel.tsx"
+      },
+      "tests": {
+        "pc": "apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-oauth/tests/"
+      },
+      "notes": "The app-tier panel, controller, adapter, and zh-CN/en-US catalog are implemented and test-covered, and the IAM PC host registry lists the package. The IAM PC app root has no oauth route mounted yet, so the screen is addressable only through hosts that mount the panel (BirdCoder embeds it in its settings dialog)."
+    },
+    {
       "id": "console.iam.tenant.overview",
       "tier": "console",
       "capability": "tenant",

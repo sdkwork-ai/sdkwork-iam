@@ -9,11 +9,11 @@ use crate::{
     utils::{canonical_identity, current_timestamp_utc, new_iam_user_id, LOCAL_EPHEMERAL_SCOPE},
 };
 use sdkwork_iam_web_adapter::{
-    builtin_oauth_provider_catalog, catalog_entry_for_provider, exchange_oauth_authorization_code,
+    builtin_oauth_provider_catalog, exchange_oauth_authorization_code,
     exchange_wechat_mini_program_code, load_oauth_integration_exchange_context_for_app,
     normalize_oauth_provider_code, oauth_login_allowed, oauth_provider_allowed,
     provider_catalog_entry_to_json, AccountBindingPolicyDocument, LocalOAuthAuthority,
-    LocalOAuthProviderProfile,
+    LocalOAuthProviderProfile, OauthProviderCatalogEntry, OauthProviderRegionGroup,
 };
 
 #[derive(Clone)]
@@ -80,27 +80,29 @@ pub(crate) async fn list_login_enabled_providers(
         }
     }
 
-    let mut items = builtin_oauth_provider_catalog()
+    let enabled_codes = enabled_codes.into_iter().collect::<Vec<_>>();
+    let catalog_entries = match pg {
+        Some(pg) => load_oauth_catalog_entries(pg, tenant_id, &enabled_codes).await?,
+        None => std::collections::HashMap::new(),
+    };
+    let builtin_entries = builtin_oauth_provider_catalog()
         .into_iter()
-        .filter(|entry| entry.supports_login)
-        .filter(|entry| enabled_codes.contains(&entry.provider_code))
-        .filter(|entry| {
-            oauth_provider_allowed(&policy.oauth_login.allowed_providers, &entry.provider_code)
-        })
-        .map(|entry| provider_catalog_entry_to_json(&entry, true))
-        .collect::<Vec<_>>();
+        .map(|entry| (entry.provider_code.clone(), entry))
+        .collect::<std::collections::HashMap<_, _>>();
 
+    let mut items = Vec::new();
     for provider_code in enabled_codes {
-        if items
-            .iter()
-            .any(|item| item.get("providerCode") == Some(&json!(provider_code)))
-        {
+        if !oauth_provider_allowed(&policy.oauth_login.allowed_providers, &provider_code) {
             continue;
         }
-        if let Some(entry) = catalog_entry_for_provider(&provider_code) {
-            if oauth_provider_allowed(&policy.oauth_login.allowed_providers, &entry.provider_code) {
-                items.push(provider_catalog_entry_to_json(&entry, true));
-            }
+        // A tenant-owned catalog row can add a provider the built-in catalog
+        // does not know; for a built-in provider, the database row wins so an
+        // operator can customize its name, region, or capabilities.
+        let entry = catalog_entries
+            .get(&provider_code)
+            .or_else(|| builtin_entries.get(&provider_code));
+        if let Some(entry) = entry.filter(|entry| entry.supports_login) {
+            items.push(provider_catalog_entry_to_json(entry, true));
         }
     }
 
@@ -110,6 +112,78 @@ pub(crate) async fn list_login_enabled_providers(
             .unwrap_or(999)
     });
     Ok(items)
+}
+
+/// Load the tenant-visible provider catalog rows for the enabled provider codes.
+///
+/// The catalog table is the admin-editable source of provider metadata; the
+/// built-in catalog remains the fallback for rows an operator never touched.
+async fn load_oauth_catalog_entries(
+    pg: &PgPool,
+    tenant_id: &str,
+    provider_codes: &[String],
+) -> Result<std::collections::HashMap<String, OauthProviderCatalogEntry>, String> {
+    if provider_codes.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+    let owner_tenant_id = if tenant_id.trim().is_empty() || tenant_id == LOCAL_EPHEMERAL_SCOPE {
+        "0"
+    } else {
+        tenant_id
+    };
+    let rows = sqlx::query(
+        "SELECT provider_code, provider_name, provider_display_name, region_group, \
+                protocol_family, supported_capabilities_json, sort_order \
+         FROM iam_oauth_provider_catalog \
+         WHERE status = 'active' \
+           AND (owner_tenant_id = $1 OR owner_tenant_id = '0') \
+           AND provider_code = ANY($2) \
+         ORDER BY (owner_tenant_id = $1) DESC, sort_order, provider_code",
+    )
+    .bind(owner_tenant_id)
+    .bind(provider_codes)
+    .fetch_all(pg)
+    .await
+    .map_err(|error| format!("load oauth provider catalog failed: {error}"))?;
+
+    let mut entries = std::collections::HashMap::new();
+    for row in rows {
+        let provider_code: String = row.get(0);
+        if entries.contains_key(&provider_code) {
+            continue;
+        }
+        let capabilities: Vec<String> =
+            serde_json::from_str::<Vec<String>>(&row.get::<String, _>(5)).unwrap_or_default();
+        let supports_login =
+            capabilities.is_empty() || capabilities.iter().any(|capability| capability == "login");
+        entries.insert(
+            provider_code.clone(),
+            OauthProviderCatalogEntry {
+                provider_code,
+                provider_name: row.get(1),
+                display_name: row.get(2),
+                region_group: oauth_provider_region_group_from_str(&row.get::<String, _>(3)),
+                protocol_family: row.get(4),
+                supports_login,
+                supports_account_linking: capabilities
+                    .iter()
+                    .any(|capability| capability == "account_linking"),
+                supports_mini_program: capabilities
+                    .iter()
+                    .any(|capability| capability == "mini_program"),
+                sort_order: row.get(6),
+            },
+        );
+    }
+    Ok(entries)
+}
+
+fn oauth_provider_region_group_from_str(value: &str) -> OauthProviderRegionGroup {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "mainland" => OauthProviderRegionGroup::Mainland,
+        "overseas" => OauthProviderRegionGroup::Overseas,
+        _ => OauthProviderRegionGroup::Global,
+    }
 }
 
 pub(crate) async fn create_oauth_authorization_url(

@@ -112,6 +112,7 @@ const credentialHeaderForbiddenAppOperationIds = new Set([
   'passwordResetRequests.create',
   'passwordResets.create',
   'registrations.create',
+  'authorizations.create',
   'deviceAuthorizations.create',
   'deviceAuthorizations.passwordCompletions.create',
   'sessions.create',
@@ -636,6 +637,14 @@ function buildOperation(surface, route) {
                   'Registered native redirect URI; the code must have been issued for a desktop surface (custom scheme or loopback).',
               },
               clientSecret: { type: 'string', format: 'password' },
+              deviceId: {
+                type: 'string',
+                minLength: 1,
+                maxLength: 128,
+                pattern: '^[A-Za-z0-9._:-]+$',
+                description:
+                  'Stable opaque per-install device identity. A new login replaces only this device\'s previous session for the same application.',
+              },
             },
           },
         },
@@ -662,6 +671,88 @@ function buildOperation(surface, route) {
                   sessionId: { type: 'string' },
                   context: { type: 'object', additionalProperties: true },
                   user: { type: 'object', additionalProperties: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+  }
+
+  if (route.operationId === 'sessions.current.logout') {
+    operation.requestBody = {
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['refreshToken'],
+            properties: {
+              refreshToken: {
+                type: 'string',
+                description:
+                  'Refresh token of the session to revoke. Accepted without an access token so logout still revokes the server session after the access token expired.',
+              },
+            },
+          },
+        },
+      },
+    };
+    delete operation.responses[200];
+    delete operation.responses[201];
+    operation.responses[204] = { description: 'Session revoked.' };
+  }
+
+  if (route.operationId === 'authorizations.create') {
+    delete operation.responses[201];
+    operation.requestBody = {
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            required: [
+              'clientId',
+              'responseType',
+              'redirectUri',
+              'scope',
+              'state',
+              'codeChallenge',
+              'codeChallengeMethod',
+            ],
+            properties: {
+              clientId: { type: 'string' },
+              responseType: { type: 'string', enum: ['code'] },
+              redirectUri: { type: 'string', format: 'uri' },
+              scope: { type: 'string' },
+              state: { type: 'string' },
+              codeChallenge: { type: 'string' },
+              codeChallengeMethod: { type: 'string', enum: ['S256'] },
+              tenantId: { type: 'string' },
+            },
+          },
+        },
+      },
+    };
+    operation.responses[200] = {
+      description: 'Pending authorization state created for the hosted web login.',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['code', 'data', 'traceId'],
+            properties: {
+              code: { type: 'integer' },
+              traceId: { type: 'string' },
+              data: {
+                type: 'object',
+                required: ['authorizationStateId', 'expiresAt'],
+                properties: {
+                  authorizationStateId: { type: 'string' },
+                  expiresAt: { type: 'string', format: 'date-time' },
                 },
               },
             },

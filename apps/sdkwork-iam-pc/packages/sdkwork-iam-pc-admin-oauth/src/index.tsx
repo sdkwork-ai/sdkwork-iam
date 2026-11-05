@@ -3,6 +3,7 @@ export { createSdkworkIamOauthAdminController } from "./services/oauth-admin-con
 export { SdkworkIamOauthAdminSettings } from "./pages/OauthAdminSettings";
 export { SdkworkIamOauthAdminWorkspace } from "./pages/OauthAdminWorkspace";
 export { SdkworkIamOauthProviderConnectionsPage } from "./pages/OauthProviderConnectionsPage";
+export { SdkworkIamOauthRelyingPartyPage } from "./pages/OauthRelyingPartyPage";
 export { SdkworkIamOauthMiniProgramAccountsPage } from "./pages/OauthMiniProgramAccountsPage";
 export { SdkworkIamOauthOfficialAccountsPage } from "./pages/OauthOfficialAccountsPage";
 export { SdkworkIamOauthOfficialAccountCustomMenuPage } from "./pages/OauthOfficialAccountCustomMenuPage";

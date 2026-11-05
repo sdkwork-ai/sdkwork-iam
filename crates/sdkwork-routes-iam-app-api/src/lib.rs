@@ -7,6 +7,7 @@ mod ephemeral_pool;
 #[allow(dead_code)]
 mod handlers;
 mod manifest;
+mod official_accounts;
 mod oauth_login;
 mod oauth_wechat_payment;
 mod password_session_bridge;

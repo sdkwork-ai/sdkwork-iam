@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createSdkworkAuthController } from "../src";
+import { createSdkworkAuthController } from "../src/auth-controller.ts";
 
 describe("sdkwork-auth-pc-react controller", () => {
   it("transitions into authenticated state after sign-in and clears state on sign-out", async () => {
@@ -53,6 +53,33 @@ describe("sdkwork-auth-pc-react controller", () => {
       status: "anonymous",
       user: null,
     });
+  });
+
+  it("resets to anonymous when the session expires without a remote call", async () => {
+    const service = {
+      getCurrentSession: vi.fn().mockResolvedValue(null),
+      getCurrentUser: vi.fn().mockResolvedValue(null),
+      signIn: vi.fn().mockResolvedValue({
+        accessToken: "access-token-1",
+        authToken: "auth-token-1",
+        user: { id: "1", username: "sdkwork" },
+      }),
+      signOut: vi.fn().mockResolvedValue(undefined),
+    };
+    const controller = createSdkworkAuthController({ service });
+
+    await controller.signIn({ password: "secret", username: "sdkwork" });
+    expect(controller.getState().isAuthenticated).toBe(true);
+
+    controller.handleSessionExpired();
+
+    expect(controller.getState()).toMatchObject({
+      isAuthenticated: false,
+      isBootstrapped: true,
+      status: "anonymous",
+      user: null,
+    });
+    expect(service.signOut).not.toHaveBeenCalled();
   });
 
   it("rejects direct controller session injection without dual tokens", () => {

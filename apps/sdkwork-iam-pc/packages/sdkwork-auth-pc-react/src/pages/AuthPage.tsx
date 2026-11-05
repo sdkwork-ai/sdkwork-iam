@@ -73,9 +73,12 @@ import {
 import {
   createAuthRouteCatalog,
   buildSdkworkAuthDesktopLaunchLocation,
+  buildSdkworkAuthDesktopLaunchPath,
+  buildSdkworkDesktopAuthErrorRedirect,
   isSdkworkDesktopDeepLinkRedirect,
   resolveAuthRedirectTarget,
 } from "../auth.ts";
+import { storeSdkworkDesktopLaunchRedirect } from "../desktop-launch-handoff.ts";
 import type { SdkworkAuthDesktopBrowserLoginBinding } from "../desktop-browser-login.ts";
 import {
   buildSdkworkAuthRouteWithContext,
@@ -811,13 +814,41 @@ function SdkworkAuthPageContent({
     }
 
     if (oauthAuthorizationStateId) {
-      const completion = await controller.completeOAuthAuthorization(oauthAuthorizationStateId);
+      let completion: Awaited<ReturnType<typeof controller.completeOAuthAuthorization>>;
+      try {
+        completion = await controller.completeOAuthAuthorization(oauthAuthorizationStateId);
+      } catch (error) {
+        // The desktop app is waiting on its deep link. Report a failed
+        // completion through that same callback instead of leaving the app
+        // waiting until its flow deadline. Only the SDKWork callback shape
+        // derived from the client id is accepted, so the query string cannot
+        // turn this into an open redirect.
+        const errorRedirect = buildSdkworkDesktopAuthErrorRedirect({
+          clientId: searchParams.get("client_id"),
+          error: "server_error",
+          errorDescription:
+            "The desktop authorization could not be completed. Start the login again.",
+          redirectUri: searchParams.get("redirect_uri"),
+          state: searchParams.get("state"),
+        });
+        if (errorRedirect) {
+          window.location.assign(errorRedirect);
+          return;
+        }
+        throw error;
+      }
       if (isSdkworkDesktopDeepLinkRedirect(completion.redirectUrl)) {
         // The authorization was started by a desktop app: hand the code to
         // the hosted login-success page, which deep-links back into the app.
+        // The deep link is stored same-origin instead of being placed in the
+        // URL, so the single-use code never enters history or a Referer. A
+        // browser without session storage falls back to the query form.
+        const transferred = storeSdkworkDesktopLaunchRedirect(completion.redirectUrl);
         startTransition(() => {
           navigate(
-            buildSdkworkAuthDesktopLaunchLocation(completion.redirectUrl, { basePath }),
+            transferred
+              ? buildSdkworkAuthDesktopLaunchPath({ basePath })
+              : buildSdkworkAuthDesktopLaunchLocation(completion.redirectUrl, { basePath }),
             { replace: true },
           );
         });

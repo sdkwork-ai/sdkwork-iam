@@ -38,6 +38,12 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
         "auth",
         "sessions.current.delete",
     ),
+    HttpRoute::public(
+        HttpMethod::Post,
+        "/app/v3/api/auth/sessions/current/logout",
+        "auth",
+        "sessions.current.logout",
+    ),
     HttpRoute::refresh_token(
         HttpMethod::Post,
         "/app/v3/api/auth/sessions/refresh",
@@ -170,6 +176,13 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
         "oauth",
         "grants.delete",
     ),
+    HttpRoute::public(
+        HttpMethod::Post,
+        "/app/v3/api/oauth/authorizations",
+        "oauth",
+        "authorizations.create",
+    )
+    .with_forbid_credential_headers(true),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/app/v3/api/oauth/authorizations/{authorizationStateId}/completions",
@@ -260,6 +273,45 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
         "/app/v3/api/iam/users/current/persona",
         "iam",
         "users.current.persona.delete",
+    )
+    .with_required_permission("iam.profile.update"),
+    // Per-user official (service) account configuration. The rows are the
+    // caller's own channel configuration, scoped by tenant and user, and never
+    // participate in login; the backend-admin `iam.oauth.resourceAccounts.*`
+    // resource is a different, tenant-level surface.
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/iam/oauth/official_accounts",
+        "iam",
+        "iam.oauth.officialAccounts.list",
+    )
+    .with_required_permission("iam:self"),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/iam/oauth/official_accounts",
+        "iam",
+        "iam.oauth.officialAccounts.create",
+    )
+    .with_required_permission("iam.profile.update"),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}",
+        "iam",
+        "iam.oauth.officialAccounts.retrieve",
+    )
+    .with_required_permission("iam:self"),
+    HttpRoute::dual_token(
+        HttpMethod::Patch,
+        "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}",
+        "iam",
+        "iam.oauth.officialAccounts.update",
+    )
+    .with_required_permission("iam.profile.update"),
+    HttpRoute::dual_token(
+        HttpMethod::Delete,
+        "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}",
+        "iam",
+        "iam.oauth.officialAccounts.delete",
     )
     .with_required_permission("iam.profile.update"),
     HttpRoute::dual_token(
@@ -355,6 +407,8 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
 
 /// IAM operations that intentionally accept no framework credential.
 pub const IAM_ANONYMOUS_OPERATION_IDS: &[&str] = &[
+    "sessions.current.logout",
+    "authorizations.create",
     "deviceAuthorizations.create",
     "deviceAuthorizations.retrieve",
     "deviceAuthorizations.sessionExchanges.create",
@@ -378,6 +432,7 @@ pub const IAM_CREDENTIAL_ENTRY_OPERATION_IDS: &[&str] = &[
     "verificationCodeRequests.create",
     "passwordResets.create",
     "registrations.create",
+    "authorizations.create",
     "authorizationUrls.create",
     "providers.list",
     "deviceAuthorizations.scans.create",

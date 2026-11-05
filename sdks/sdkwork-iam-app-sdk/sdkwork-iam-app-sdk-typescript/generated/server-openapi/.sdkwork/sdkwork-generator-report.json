@@ -11,8 +11,8 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": true,
-  "changeFingerprint": "6202b4d21fd489e28b2066b73a766d37034b1968f5dc0664c7279ad915f8656b",
+  "hasDestructiveChanges": false,
+  "changeFingerprint": "b75551fa161d220b40e98985d1cb4fb219c3ef2a7ce6a2c64ef09d0245d1f5ed",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
@@ -23,28 +23,14 @@
       {
         "area": "api-surface",
         "paths": [
-          "src/api/iam.d.ts",
-          "src/api/iam.ts",
-          "src/api/oauth.d.ts"
+          "src/api/auth.ts"
         ]
       },
       {
         "area": "models",
         "paths": [
-          "src/types/appbase-session-create-command.d.ts",
-          "src/types/authorizations-completions-create-request.d.ts",
-          "src/types/authorizations-completions-create-response.d.ts",
-          "src/types/desktop-sessions-create-request.d.ts",
-          "src/types/desktop-sessions-create-response.d.ts",
-          "src/types/iam-persona-catalog-response.d.ts",
-          "src/types/iam-persona-catalog.d.ts",
-          "src/types/iam-persona-interest.d.ts",
-          "src/types/iam-persona-labels.d.ts",
-          "src/types/iam-persona-role.d.ts",
-          "src/types/iam-user-persona-response.d.ts",
-          "src/types/iam-user-persona-update-command.d.ts",
-          "src/types/iam-user-persona.d.ts",
-          "src/types/index.d.ts"
+          "src/types/index.ts",
+          "src/types/sessions-current-logout-request.ts"
         ]
       }
     ],
@@ -53,15 +39,12 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "backed-up-generated-files",
-      "deleted-generated-files",
-      "manual-review-required",
       "verification-required"
     ]
   },
@@ -164,25 +147,28 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 53,
-    "models": 26,
+    "totalFiles": 56,
+    "models": 29,
     "apis": 4,
-    "types": 28
+    "types": 31
   },
   "warnings": [],
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 1,
+    "writtenFiles": 3,
     "skippedScaffoldFiles": 2,
-    "skippedUnchangedGeneratedFiles": 50,
-    "deletedGeneratedFiles": 16,
+    "skippedUnchangedGeneratedFiles": 51,
+    "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "6202b4d21fd489e28b2066b73a766d37034b1968f5dc0664c7279ad915f8656b",
+    "changeFingerprint": "b75551fa161d220b40e98985d1cb4fb219c3ef2a7ce6a2c64ef09d0245d1f5ed",
     "changes": {
-      "createdGeneratedFiles": [],
+      "createdGeneratedFiles": [
+        "src/types/sessions-current-logout-request.ts"
+      ],
       "updatedGeneratedFiles": [
-        "src/api/iam.ts"
+        "src/api/auth.ts",
+        "src/types/index.ts"
       ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
@@ -195,8 +181,8 @@
         "package.json",
         "README.md",
         "sdkwork-sdk.json",
-        "src/api/auth.ts",
         "src/api/base.ts",
+        "src/api/iam.ts",
         "src/api/index.ts",
         "src/api/oauth.ts",
         "src/api/paths.ts",
@@ -210,6 +196,8 @@
         "src/types/appbase-session-create-command.ts",
         "src/types/authorizations-completions-create-request.ts",
         "src/types/authorizations-completions-create-response.ts",
+        "src/types/authorizations-create-request.ts",
+        "src/types/authorizations-create-response.ts",
         "src/types/common.ts",
         "src/types/desktop-sessions-create-request.ts",
         "src/types/desktop-sessions-create-response.ts",
@@ -222,7 +210,6 @@
         "src/types/iam-user-persona-response.ts",
         "src/types/iam-user-persona-update-command.ts",
         "src/types/iam-user-persona.ts",
-        "src/types/index.ts",
         "src/types/page-info.ts",
         "src/types/problem-detail.ts",
         "src/types/sdk-work-api-response.ts",
@@ -236,47 +223,13 @@
         "src/types/wechat-mini-program-session-create-command.ts",
         "tsconfig.json"
       ],
-      "deletedGeneratedFiles": [
-        "src/api/iam.d.ts",
-        "src/api/oauth.d.ts",
-        "src/types/appbase-session-create-command.d.ts",
-        "src/types/authorizations-completions-create-request.d.ts",
-        "src/types/authorizations-completions-create-response.d.ts",
-        "src/types/desktop-sessions-create-request.d.ts",
-        "src/types/desktop-sessions-create-response.d.ts",
-        "src/types/iam-persona-catalog-response.d.ts",
-        "src/types/iam-persona-catalog.d.ts",
-        "src/types/iam-persona-interest.d.ts",
-        "src/types/iam-persona-labels.d.ts",
-        "src/types/iam-persona-role.d.ts",
-        "src/types/iam-user-persona-response.d.ts",
-        "src/types/iam-user-persona-update-command.d.ts",
-        "src/types/iam-user-persona.d.ts",
-        "src/types/index.d.ts"
-      ],
+      "deletedGeneratedFiles": [],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/build-runtime.mjs",
         "custom/README.md"
       ],
-      "backedUpFiles": [
-        "src/api/iam.d.ts",
-        "src/api/oauth.d.ts",
-        "src/types/appbase-session-create-command.d.ts",
-        "src/types/authorizations-completions-create-request.d.ts",
-        "src/types/authorizations-completions-create-response.d.ts",
-        "src/types/desktop-sessions-create-request.d.ts",
-        "src/types/desktop-sessions-create-response.d.ts",
-        "src/types/iam-persona-catalog-response.d.ts",
-        "src/types/iam-persona-catalog.d.ts",
-        "src/types/iam-persona-interest.d.ts",
-        "src/types/iam-persona-labels.d.ts",
-        "src/types/iam-persona-role.d.ts",
-        "src/types/iam-user-persona-response.d.ts",
-        "src/types/iam-user-persona-update-command.d.ts",
-        "src/types/iam-user-persona.d.ts",
-        "src/types/index.d.ts"
-      ]
+      "backedUpFiles": []
     },
     "impact": {
       "schemaVersion": 1,
@@ -288,28 +241,14 @@
         {
           "area": "api-surface",
           "paths": [
-            "src/api/iam.d.ts",
-            "src/api/iam.ts",
-            "src/api/oauth.d.ts"
+            "src/api/auth.ts"
           ]
         },
         {
           "area": "models",
           "paths": [
-            "src/types/appbase-session-create-command.d.ts",
-            "src/types/authorizations-completions-create-request.d.ts",
-            "src/types/authorizations-completions-create-response.d.ts",
-            "src/types/desktop-sessions-create-request.d.ts",
-            "src/types/desktop-sessions-create-response.d.ts",
-            "src/types/iam-persona-catalog-response.d.ts",
-            "src/types/iam-persona-catalog.d.ts",
-            "src/types/iam-persona-interest.d.ts",
-            "src/types/iam-persona-labels.d.ts",
-            "src/types/iam-persona-role.d.ts",
-            "src/types/iam-user-persona-response.d.ts",
-            "src/types/iam-user-persona-update-command.d.ts",
-            "src/types/iam-user-persona.d.ts",
-            "src/types/index.d.ts"
+            "src/types/index.ts",
+            "src/types/sessions-current-logout-request.ts"
           ]
         }
       ],
@@ -361,36 +300,16 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "high",
+      "riskLevel": "medium",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
-        "backed-up-generated-files",
-        "deleted-generated-files",
-        "manual-review-required",
         "verification-required"
       ]
     },
-    "backedUpFiles": [
-      "src/api/iam.d.ts",
-      "src/api/oauth.d.ts",
-      "src/types/appbase-session-create-command.d.ts",
-      "src/types/authorizations-completions-create-request.d.ts",
-      "src/types/authorizations-completions-create-response.d.ts",
-      "src/types/desktop-sessions-create-request.d.ts",
-      "src/types/desktop-sessions-create-response.d.ts",
-      "src/types/iam-persona-catalog-response.d.ts",
-      "src/types/iam-persona-catalog.d.ts",
-      "src/types/iam-persona-interest.d.ts",
-      "src/types/iam-persona-labels.d.ts",
-      "src/types/iam-persona-role.d.ts",
-      "src/types/iam-user-persona-response.d.ts",
-      "src/types/iam-user-persona-update-command.d.ts",
-      "src/types/iam-user-persona.d.ts",
-      "src/types/index.d.ts"
-    ],
+    "backedUpFiles": [],
     "preservedLegacyFiles": false
   }
 }

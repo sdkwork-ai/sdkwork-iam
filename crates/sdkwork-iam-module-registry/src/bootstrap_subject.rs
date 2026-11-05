@@ -30,3 +30,10 @@ pub const DEFAULT_BOOTSTRAP_MANAGER_USERNAME: &str = "manager";
 pub const DEFAULT_BOOTSTRAP_MANAGER_DISPLAY_NAME: &str = "Manager";
 pub const DEFAULT_BOOTSTRAP_MANAGER_EMAIL: &str = "manager@sdkwork.com";
 pub const DEFAULT_BOOTSTRAP_MANAGER_ORGANIZATION_MEMBERSHIP_ID: &str = "100006";
+
+/// Operations administrator subject: the backend operations account that is neither the
+/// platform super admin (`admin`) nor the organization manager (`manager`).
+pub const DEFAULT_BOOTSTRAP_OPERATOR_USER_ID: &str = "3";
+pub const DEFAULT_BOOTSTRAP_OPERATOR_USERNAME: &str = "operator";
+pub const DEFAULT_BOOTSTRAP_OPERATOR_DISPLAY_NAME: &str = "Operations Administrator";
+pub const DEFAULT_BOOTSTRAP_OPERATOR_EMAIL: &str = "operator@sdkwork.com";

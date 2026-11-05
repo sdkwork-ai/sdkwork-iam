@@ -5,6 +5,7 @@ export * from "./auth-definition.ts";
 export * from "./auth-authority.ts";
 export * from "./auth-qr-route.ts";
 export * from "./auth-redirect.ts";
+export * from "./desktop-launch-handoff.ts";
 export * from "./oauth-app-paths.ts";
 export * from "./auth-runtime-authority.ts";
 export * from "./auth-controller.ts";

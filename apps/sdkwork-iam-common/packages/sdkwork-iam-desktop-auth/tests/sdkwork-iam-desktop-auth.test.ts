@@ -106,7 +106,7 @@ describe("authorize url", () => {
     });
     const parsed = new URL(url);
     expect(parsed.origin + parsed.pathname).toBe(
-      "https://iam.example.com/iam/v3/oauth/authorize",
+      "https://iam.example.com/iam/oauth/authorize",
     );
     expect(parsed.searchParams.get("response_type")).toBe("code");
     expect(parsed.searchParams.get("client_id")).toBe("sdkwork-iam");
@@ -222,6 +222,25 @@ describe("controller", () => {
     controller.dispose();
   });
 
+  it("sends the stable device id with the redeem command", async () => {
+    const hostHarness = createHostHarness();
+    const exchange = vi.fn(async () => SESSION);
+    const controller = createSdkworkIamDesktopAuthController({
+      descriptor: DESCRIPTOR,
+      deviceId: "install-device-1",
+      exchangeDesktopSession: exchange,
+      flowStore: createInMemorySdkworkDesktopAuthFlowStore(),
+      host: hostHarness.host,
+    });
+    await controller.beginLogin();
+    const state = new URL(hostHarness.dispatchedUrls[0]).searchParams.get("state");
+    await controller.handleOpenUrl(`${REDIRECT_URI}?code=device-code&state=${state}`);
+    expect(exchange).toHaveBeenCalledWith(
+      expect.objectContaining({ deviceId: "install-device-1" }),
+    );
+    controller.dispose();
+  });
+
   it("auto-dispatches deep-link events raised by the host", async () => {
     const { controller, hostHarness } = createControllerHarness();
     await controller.beginLogin();
@@ -261,6 +280,49 @@ describe("controller", () => {
       controller.handleOpenUrl(`${REDIRECT_URI}?code=abc&state=${state}`),
     ).rejects.toMatchObject({ code: "no-pending-flow" });
     controller.dispose();
+  });
+
+  it("rejects an error callback whose state does not match the pending flow", async () => {
+    const { controller, hostHarness } = createControllerHarness();
+    await controller.beginLogin();
+    const state = new URL(hostHarness.dispatchedUrls[0]).searchParams.get("state");
+    await expect(
+      controller.handleOpenUrl(`${REDIRECT_URI}?error=access_denied&state=forged`),
+    ).rejects.toMatchObject({ code: "state-mismatch" });
+    // A forged error must not cancel the real login.
+    expect(controller.isWaiting()).toBe(true);
+    await expect(
+      controller.handleOpenUrl(`${REDIRECT_URI}?code=late-code&state=${state}`),
+    ).resolves.toMatchObject({ authToken: "auth-jwt" });
+    controller.dispose();
+  });
+
+  it("reports flow expiry and leaves the waiting state", async () => {
+    vi.useFakeTimers();
+    try {
+      const onFlowExpired = vi.fn();
+      const hostHarness = createHostHarness();
+      const controller = createSdkworkIamDesktopAuthController({
+        descriptor: DESCRIPTOR,
+        dispatchHostDeepLinks: false,
+        exchangeDesktopSession: vi.fn(),
+        flowStore: createInMemorySdkworkDesktopAuthFlowStore(),
+        host: hostHarness.host,
+        flowTtlMs: 1000,
+        onFlowExpired,
+      });
+      await controller.beginLogin();
+      expect(controller.isWaiting()).toBe(true);
+      vi.advanceTimersByTime(999);
+      expect(controller.isWaiting()).toBe(true);
+      vi.advanceTimersByTime(1);
+      expect(controller.isWaiting()).toBe(false);
+      expect(onFlowExpired).toHaveBeenCalledTimes(1);
+      expect(onFlowExpired.mock.calls[0]?.[0]).toMatchObject({ code: "flow-expired" });
+      controller.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("fails closed when the flow expired", async () => {
@@ -457,6 +519,32 @@ describe("runtime factory", () => {
       /application id/iu,
     );
     expect(() => deriveSdkworkDesktopRedirectUri("1app")).toThrowError();
+  });
+
+  it("reports flow expiry through onError", async () => {
+    vi.useFakeTimers();
+    try {
+      const hostHarness = createHostHarness();
+      const onError = vi.fn();
+      const runtime = createSdkworkIamDesktopAuthRuntime({
+        appId: "sdkwork-iam",
+        appSdkClient: {
+          oauth: { desktopSessions: { create: vi.fn() } },
+        } as never,
+        authorizeBaseUrl: "https://iam.example.com",
+        flowTtlMs: 1000,
+        host: hostHarness.host,
+        onError,
+        onSession: vi.fn(),
+      });
+      await runtime.beginLogin();
+      vi.advanceTimersByTime(1000);
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError.mock.calls[0]?.[0]).toMatchObject({ code: "flow-expired" });
+      runtime.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("begins login and redeems the session through the bound SDK", async () => {

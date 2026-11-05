@@ -221,8 +221,7 @@ async fn upsert_postgres_default_subject(
             (id, tenant_id, parent_organization_id, code, name, path, status, organization_kind, tenant_boundary_kind, data_boundary_kind, app_boundary_enabled, verification_status, created_at, updated_at)
         VALUES
             ($1, $2, NULL, $3, $4, $5, 'active', $6, $7, $8, 0, $9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        ON CONFLICT(id) DO UPDATE SET
-            tenant_id = excluded.tenant_id,
+        ON CONFLICT(tenant_id, id) DO UPDATE SET
             code = excluded.code,
             name = excluded.name,
             path = excluded.path,

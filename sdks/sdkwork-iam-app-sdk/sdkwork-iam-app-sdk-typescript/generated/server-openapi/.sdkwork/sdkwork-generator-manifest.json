@@ -52,7 +52,7 @@
     },
     {
       "path": "src/api/auth.ts",
-      "sha256": "ac7c86da1339d58c368848f2f13e7cca90c4a302445d956d429d83cf98747d9c"
+      "sha256": "778b3c131c639499a480e8535b69166bc9e1608817ed59d4fd37d07eccb3ef10"
     },
     {
       "path": "src/api/base.ts",
@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/iam.ts",
-      "sha256": "ae3f48d3414566fa160c68ab7a2a1c7d34209053c84bc43fc7302a1289f9e86d"
+      "sha256": "f162fbeeac3e3e6061fc7d3028eadffb911358bac22a8bd5ac78eb81ceb2b1fc"
     },
     {
       "path": "src/api/index.ts",
@@ -68,7 +68,7 @@
     },
     {
       "path": "src/api/oauth.ts",
-      "sha256": "b67701c7477cce327f02e96b53c35c80aad3b4b6af4cd251236e8107a9cca2cb"
+      "sha256": "8b69bcfabb1fb9c84e9e2894d003644a8d7d314e22fd1f3b934952008043b8b4"
     },
     {
       "path": "src/api/paths.ts",
@@ -115,12 +115,20 @@
       "sha256": "dd1335d32cf68a7f17f97ddbe587402f6015b43d429869edd38fac71d32f7c65"
     },
     {
+      "path": "src/types/authorizations-create-request.ts",
+      "sha256": "5202a34f899d3b89c5c551f6484728a9a31c57ea191291c88f96d3897c00e141"
+    },
+    {
+      "path": "src/types/authorizations-create-response.ts",
+      "sha256": "4240837fe96114773f09a45d23310b6d1d9c2cf49296f2de16472e83c5886814"
+    },
+    {
       "path": "src/types/common.ts",
       "sha256": "d2506be8c4bdbe8e7059393467e6e71d75ef1d8c018dbf997bb0ab2a77b6c7b6"
     },
     {
       "path": "src/types/desktop-sessions-create-request.ts",
-      "sha256": "b8204c14961fa758383f581fa970ce75ff06507e6b321d6bf7259afce3177bc4"
+      "sha256": "296fbfcdbe2d4314373b5f887ad4f5c46e564f789a8c4668ade0f5087ebe0fb1"
     },
     {
       "path": "src/types/desktop-sessions-create-response.ts",
@@ -164,7 +172,7 @@
     },
     {
       "path": "src/types/index.ts",
-      "sha256": "ad88eb564ca0529bb55ed685b7225cbb59cf41c366bf8dd6335556daf2c4f2c8"
+      "sha256": "6699c2f3675de64704d762302ede25ad56f0b7b5e4176f6c8ae668833f703298"
     },
     {
       "path": "src/types/page-info.ts",
@@ -205,6 +213,10 @@
     {
       "path": "src/types/sdk-work-resource-response.ts",
       "sha256": "89c05f5549bef773335245f56f61ca1a6959978726799391d584a6bd25d12fdc"
+    },
+    {
+      "path": "src/types/sessions-current-logout-request.ts",
+      "sha256": "20c610226964cab94191f5b859589786387a9323d0bce97139f02582ff70c37b"
     },
     {
       "path": "src/types/wechat-mini-program-session-create-command.ts",

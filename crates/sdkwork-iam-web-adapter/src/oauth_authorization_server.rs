@@ -17,7 +17,7 @@ use sqlx::{PgPool, Row};
 type HmacSha256 = Hmac<Sha256>;
 
 const SDKWORK_OAUTH_PROVIDER_CODE: &str = "sdkwork";
-const AUTHORIZATION_CODE_TTL_SECONDS: i64 = 300;
+pub const AUTHORIZATION_CODE_TTL_SECONDS: i64 = 300;
 const OAUTH_ACCESS_TOKEN_TTL_SECONDS: i64 = 3600;
 const OAUTH_REFRESH_TOKEN_TTL_SECONDS: i64 = 60 * 60 * 24 * 30;
 
@@ -376,7 +376,7 @@ pub async fn complete_authorization_state(
     .await
     .map_err(|error| format!("create oauth grant failed: {error}"))?;
 
-    sqlx::query(
+    let approved = sqlx::query(
         "UPDATE iam_oauth_authorization_state \
          SET status = 'approved', nonce_hash = $2, return_path = $3, consumed_at = NULL \
          WHERE id = $1 AND status = 'pending'",
@@ -387,6 +387,15 @@ pub async fn complete_authorization_state(
     .execute(pg)
     .await
     .map_err(|error| format!("approve oauth authorization state failed: {error}"))?;
+    if approved.rows_affected() == 0 {
+        // A concurrent completion already approved this state; do not leak an
+        // orphan grant or hand back a code that was never persisted.
+        let _ = sqlx::query("DELETE FROM iam_oauth_grant WHERE id = $1")
+            .bind(&grant_id)
+            .execute(pg)
+            .await;
+        return Err("OAuth authorization state is no longer pending".to_string());
+    }
 
     let code_separator = if redirect_uri.contains('?') { '&' } else { '?' };
     let mut redirect_url = format!(
@@ -434,14 +443,16 @@ async fn load_approved_authorization_code(
                 requested_scopes_json, return_path \
          FROM iam_oauth_authorization_state \
          WHERE nonce_hash = $1 AND provider_code = $2 AND status = 'approved' \
+           AND expires_at::timestamptz > $3::timestamptz \
          LIMIT 1",
     )
     .bind(&code_hash)
     .bind(SDKWORK_OAUTH_PROVIDER_CODE)
+    .bind(chrono::Utc::now())
     .fetch_optional(pg)
     .await
     .map_err(|error| format!("load oauth authorization code failed: {error}"))?
-    .ok_or_else(|| "OAuth authorization code is invalid".to_string())?;
+    .ok_or_else(|| "OAuth authorization code is invalid or expired".to_string())?;
 
     let state_id: String = row.get(0);
     let tenant_id: String = row.get(1);
@@ -483,14 +494,19 @@ async fn load_approved_authorization_code(
 }
 
 async fn consume_authorization_code_state(pg: &PgPool, state_id: &str) -> Result<(), String> {
-    sqlx::query(
-        "UPDATE iam_oauth_authorization_state SET status = 'consumed', consumed_at = $2 WHERE id = $1",
+    let consumed = sqlx::query(
+        "UPDATE iam_oauth_authorization_state \
+         SET status = 'consumed', consumed_at = $2 \
+         WHERE id = $1 AND status = 'approved'",
     )
     .bind(state_id)
     .bind(chrono::Utc::now().to_rfc3339())
     .execute(pg)
     .await
     .map_err(|error| format!("finalize oauth authorization code failed: {error}"))?;
+    if consumed.rows_affected() == 0 {
+        return Err("OAuth authorization code was already used".to_string());
+    }
     Ok(())
 }
 
@@ -620,6 +636,10 @@ pub async fn exchange_authorization_code(
         );
     };
 
+    // Consume before issuing tokens: the conditional update is the single
+    // atomic gate for concurrent redemptions of the same code.
+    consume_authorization_code_state(pg, &state_id).await?;
+
     let access_token = sign_oauth_access_token(pg, &context, &client.client_id).await?;
     let refresh_token = generate_opaque_token("oauth_refresh");
     let refresh_hash = hash_value(&refresh_token);
@@ -643,8 +663,6 @@ pub async fn exchange_authorization_code(
     .execute(pg)
     .await
     .map_err(|error| format!("update oauth grant tokens failed: {error}"))?;
-
-    consume_authorization_code_state(pg, &state_id).await?;
 
     Ok(json!({
         "access_token": access_token,
@@ -888,21 +906,26 @@ pub async fn revoke_oauth_token(
         return Err("token is required".to_string());
     }
 
-    if let Some(client_id) = client_id.filter(|value| !value.is_empty()) {
+    let client_app_id = if let Some(client_id) = client_id.filter(|value| !value.is_empty()) {
         let client = resolve_relying_party_client(pg, client_id, tenant_hint).await?;
         if client.config.confidential {
             verify_client_secret(&client, client_secret)?;
         }
-    }
+        Some(client.client_id)
+    } else {
+        None
+    };
 
     let token_hash = hash_value(token);
     sqlx::query(
         "UPDATE iam_oauth_grant \
          SET status = 'revoked', updated_at = $2 \
-         WHERE (access_token_hash = $1 OR refresh_token_hash = $1) AND status = 'active'",
+         WHERE (access_token_hash = $1 OR refresh_token_hash = $1) AND status = 'active' \
+           AND ($3::text IS NULL OR oauth_client_id = $3)",
     )
     .bind(&token_hash)
     .bind(chrono::Utc::now().to_rfc3339())
+    .bind(&client_app_id)
     .execute(pg)
     .await
     .map_err(|error| format!("revoke oauth token failed: {error}"))?;
@@ -922,23 +945,30 @@ pub async fn introspect_oauth_token(
         return Err("token is required".to_string());
     }
 
-    let client_app_id = if let Some(client_id) = client_id.filter(|value| !value.is_empty()) {
+    if let Some(client_id) = client_id.filter(|value| !value.is_empty()) {
         let client = resolve_relying_party_client(pg, client_id, tenant_hint).await?;
         if client.config.confidential {
             verify_client_secret(&client, client_secret)?;
         }
-        Some(client.client_id)
-    } else {
-        None
-    };
+    }
 
     if let Some(context) =
         crate::iam_session::resolve_iam_app_context_from_oauth_bearer(pg, token).await
     {
+        let token_hash = hash_value(token);
+        let token_client_id: Option<String> = sqlx::query_scalar(
+            "SELECT oauth_client_id FROM iam_oauth_grant \
+             WHERE access_token_hash = $1 AND status = 'active' LIMIT 1",
+        )
+        .bind(&token_hash)
+        .fetch_optional(pg)
+        .await
+        .ok()
+        .flatten();
         return Ok(json!({
             "active": true,
             "sub": context.user_id,
-            "client_id": client_app_id,
+            "client_id": token_client_id,
             "token_type": "Bearer",
             "scope": "openid profile email",
             "tenant_id": context.tenant_id,
@@ -947,7 +977,7 @@ pub async fn introspect_oauth_token(
 
     let token_hash = hash_value(token);
     let row = sqlx::query(
-        "SELECT user_id, oauth_client_id, authorized_scopes_json, token_expires_at, status \
+        "SELECT user_id, oauth_client_id, authorized_scopes_json, refresh_token_expires_at, status \
          FROM iam_oauth_grant \
          WHERE refresh_token_hash = $1 \
          LIMIT 1",
@@ -959,9 +989,9 @@ pub async fn introspect_oauth_token(
 
     if let Some(row) = row {
         let status: String = row.get(4);
-        let expires_at: Option<String> = row.get(3);
+        let refresh_expires_at: Option<String> = row.get(3);
         let active = status == "active"
-            && expires_at
+            && refresh_expires_at
                 .as_ref()
                 .and_then(|value| chrono::DateTime::parse_from_rfc3339(value).ok())
                 .is_some_and(|value| value > chrono::Utc::now());

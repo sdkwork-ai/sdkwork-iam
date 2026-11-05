@@ -217,5 +217,9 @@ async fn run_postgres_bootstrap_hooks(pg: &PgPool) -> Result<(), String> {
         Ok(outcome) => tracing::info!(?outcome, "IAM bootstrap manager user seed finished"),
         Err(error) => return Err(format!("ensure bootstrap manager user failed: {error}")),
     }
+    match sdkwork_iam_bootstrap::ensure_postgres_bootstrap_operator_user(pg).await {
+        Ok(outcome) => tracing::info!(?outcome, "IAM bootstrap operator user seed finished"),
+        Err(error) => return Err(format!("ensure bootstrap operator user failed: {error}")),
+    }
     Ok(())
 }

@@ -329,11 +329,35 @@ async fn oauth_authorization_code_pkce_exchange_userinfo_and_revocation() {
     let session = iam_context_from_login_data(&login_data);
     let pg = postgres_pool_for_tests().await;
 
+    // Personal login in a non-bootstrap tenant stores the "0" sentinel; the
+    // organization row is tenant-scoped, not the bootstrap tenant's row.
+    let session_organization: String = sqlx::query_scalar(
+        "SELECT s.organization_id FROM iam_session s \
+         JOIN iam_user u ON u.id = s.user_id AND u.tenant_id = s.tenant_id \
+         WHERE u.tenant_id = $1 AND u.email = $2 AND s.revoked_at IS NULL \
+         ORDER BY s.created_at DESC LIMIT 1",
+    )
+    .bind(OAUTH_E2E_TENANT_ID)
+    .bind(OAUTH_E2E_USERNAME)
+    .fetch_one(&pg)
+    .await
+    .expect("oauth tenant personal session");
+    assert_eq!(session_organization, "0");
+
+    let sentinel_tenant: String = sqlx::query_scalar(
+        "SELECT tenant_id FROM iam_organization WHERE tenant_id = $1 AND id = '0'",
+    )
+    .bind(OAUTH_E2E_TENANT_ID)
+    .fetch_one(&pg)
+    .await
+    .expect("oauth tenant personal-login sentinel");
+    assert_eq!(sentinel_tenant, OAUTH_E2E_TENANT_ID);
+
     let client =
         resolve_relying_party_client(&pg, OAUTH_E2E_CLIENT_APP_ID, Some(OAUTH_E2E_TENANT_ID))
             .await
             .expect("resolve oauth relying party client");
-    let (code_verifier, code_challenge) = pkce_pair("oauth-pkce-verifier-with-sufficient-length");
+    let (code_verifier, code_challenge) = pkce_pair("oauth-pkce-verifier-with-sufficient-length-1");
     let authorize_request = AuthorizeRequest {
         client_id: OAUTH_E2E_CLIENT_APP_ID.to_string(),
         redirect_uri: OAUTH_E2E_REDIRECT_URI.to_string(),
@@ -445,7 +469,7 @@ async fn oauth_open_api_http_token_and_userinfo_endpoints_exchange_pkce_flow() {
         resolve_relying_party_client(&pg, OAUTH_E2E_CLIENT_APP_ID, Some(OAUTH_E2E_TENANT_ID))
             .await
             .expect("resolve oauth relying party client");
-    let (code_verifier, code_challenge) = pkce_pair("oauth-pkce-verifier-with-sufficient-length");
+    let (code_verifier, code_challenge) = pkce_pair("oauth-pkce-verifier-with-sufficient-length-1");
     let authorize_request = AuthorizeRequest {
         client_id: OAUTH_E2E_CLIENT_APP_ID.to_string(),
         redirect_uri: OAUTH_E2E_REDIRECT_URI.to_string(),
@@ -534,7 +558,7 @@ async fn oauth_public_client_token_exchange_rejects_invalid_pkce_verifier() {
         resolve_relying_party_client(&pg, OAUTH_E2E_CLIENT_APP_ID, Some(OAUTH_E2E_TENANT_ID))
             .await
             .expect("resolve oauth relying party client");
-    let (_code_verifier, code_challenge) = pkce_pair("oauth-pkce-verifier-with-sufficient-length");
+    let (_code_verifier, code_challenge) = pkce_pair("oauth-pkce-verifier-with-sufficient-length-1");
     let authorize_request = AuthorizeRequest {
         client_id: OAUTH_E2E_CLIENT_APP_ID.to_string(),
         redirect_uri: OAUTH_E2E_REDIRECT_URI.to_string(),

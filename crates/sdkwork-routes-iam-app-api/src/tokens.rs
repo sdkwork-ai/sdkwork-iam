@@ -28,32 +28,46 @@ pub(crate) fn hash_token(token: &str) -> String {
 
 // ── Session lifecycle (database-driven) ────────────────────────────
 
-pub(crate) async fn revoke_active_sessions_for_user(
+/// Revoke a user's active sessions for one application and one device.
+///
+/// A login replaces the previous session of the same application on the same
+/// device only. A desktop login therefore must not revoke the browser session
+/// that completed its authorization, a second desktop must not sign the first
+/// one out, and sessions of other applications stay valid. A session without a
+/// device id (browser login) replaces the previous session without a device id
+/// for that application. Credential changes still use the user-wide revocation
+/// path.
+pub(crate) async fn revoke_active_sessions_for_user_app_device(
     pg: &PgPool,
     tenant_id: &str,
     user_id: &str,
+    app_id: &str,
+    device_id: Option<&str>,
 ) -> Result<(), String> {
     let batch_size = sdkwork_iam_bootstrap::limits::IAM_ACTIVE_SESSION_REVOKE_BATCH_SIZE;
     loop {
         let now = current_timestamp_utc();
         let rows = sqlx::query(
-            "UPDATE iam_session SET revoked_at = $3, updated_at = $4 \
+            "UPDATE iam_session SET revoked_at = $5, updated_at = $6 \
              WHERE id IN ( \
                SELECT id FROM iam_session \
-               WHERE tenant_id = $1 AND user_id = $2 AND revoked_at IS NULL \
+               WHERE tenant_id = $1 AND user_id = $2 AND app_id = $3 \
+                 AND device_id IS NOT DISTINCT FROM $4 AND revoked_at IS NULL \
                ORDER BY id \
-               LIMIT $5 \
+               LIMIT $7 \
              ) \
              RETURNING id, organization_id",
         )
         .bind(tenant_id)
         .bind(user_id)
+        .bind(app_id)
+        .bind(device_id)
         .bind(&now)
         .bind(&now)
         .bind(batch_size)
         .fetch_all(pg)
         .await
-        .map_err(|error| format!("revoke active sessions for user failed: {error}"))?;
+        .map_err(|error| format!("revoke active sessions for user app device failed: {error}"))?;
 
         if rows.is_empty() {
             break;
@@ -81,6 +95,51 @@ pub(crate) async fn revoke_active_sessions_for_user(
     Ok(())
 }
 
+/// Validate and normalize the optional opaque device identity of a session.
+pub(crate) fn normalize_session_device_id(device_id: Option<&str>) -> Result<Option<String>, String> {
+    let Some(raw) = device_id else {
+        return Ok(None);
+    };
+    let value = raw.trim();
+    if value.is_empty() {
+        return Ok(None);
+    }
+    if value.len() > 128
+        || !value
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || matches!(character, '.' | '_' | ':' | '-'))
+    {
+        return Err("session deviceId is invalid".to_string());
+    }
+    Ok(Some(value.to_string()))
+}
+
+/// Provision the tenant's `organization_id = "0"` sentinel.
+///
+/// Personal logins have no organization scope, but `iam_session.organization_id`
+/// is NOT NULL and references `(tenant_id, organization_id)`. The sentinel row
+/// must therefore exist for every tenant, not only the bootstrap tenant.
+async fn ensure_personal_login_organization(
+    pg: &PgPool,
+    tenant_id: &str,
+) -> Result<(), String> {
+    sqlx::query(
+        "INSERT INTO iam_organization (\
+            id, tenant_id, parent_organization_id, code, name, organization_kind, \
+            tenant_boundary_kind, data_boundary_kind, app_boundary_enabled, \
+            verification_status, path, status, created_at, updated_at\
+         ) VALUES ('0', $1, NULL, '__personal_login__', 'Root Organization', 'team', \
+                   'exclusive', 'tenant', 0, 'verified', '/0', 'active', $2, $2) \
+         ON CONFLICT DO NOTHING",
+    )
+    .bind(tenant_id)
+    .bind(current_timestamp_utc().to_rfc3339())
+    .execute(pg)
+    .await
+    .map_err(|error| format!("ensure personal-login organization failed: {error}"))?;
+    Ok(())
+}
+
 pub(crate) async fn create_session_record(
     pg: &PgPool,
     config: &LocalIamConfig,
@@ -88,6 +147,23 @@ pub(crate) async fn create_session_record(
     organization_id: Option<String>,
     runtime_app_id: &str,
 ) -> Result<LocalSession, String> {
+    create_session_record_with_device(pg, config, user, organization_id, runtime_app_id, None).await
+}
+
+/// Create a session bound to an optional opaque device identity.
+///
+/// The device id is what makes multiple devices of the same application
+/// coexist: the new session replaces the previous session of the same
+/// application on that device instead of every session of the application.
+pub(crate) async fn create_session_record_with_device(
+    pg: &PgPool,
+    config: &LocalIamConfig,
+    user: &LocalIamUser,
+    organization_id: Option<String>,
+    runtime_app_id: &str,
+    device_id: Option<&str>,
+) -> Result<LocalSession, String> {
+    let device_id = normalize_session_device_id(device_id)?;
     // iam_session.organization_id is NOT NULL DEFAULT '0'; the platform
     // sentinel stands in for an absent organization scope so personal-login
     // sessions (no org membership) still persist.
@@ -96,6 +172,9 @@ pub(crate) async fn create_session_record(
             .filter(|value| !crate::is_blank(Some(value)))
             .unwrap_or_else(|| "0".to_string()),
     );
+    if organization_id.as_deref() == Some("0") {
+        ensure_personal_login_organization(pg, &user.tenant_id).await?;
+    }
     if runtime_app_id.trim().is_empty() {
         return Err("runtime appId is required for session creation".to_string());
     }
@@ -131,9 +210,16 @@ pub(crate) async fn create_session_record(
         }
     }
 
-    revoke_active_sessions_for_user(pg, &user.tenant_id, &user.id).await?;
-
     let app_id = runtime_app_id.trim().to_string();
+    revoke_active_sessions_for_user_app_device(
+        pg,
+        &user.tenant_id,
+        &user.id,
+        &app_id,
+        device_id.as_deref(),
+    )
+    .await?;
+
     let session_id = generate_opaque_token("session");
     let now = current_timestamp_utc();
     let expires_at = now + chrono::Duration::seconds(LOCAL_TOKEN_TTL_SECONDS as i64);
@@ -189,9 +275,9 @@ pub(crate) async fn create_session_record(
          principal_kind, principal_id, app_id, environment, deployment_mode, auth_level, \
          auth_token_hash, auth_token_kid, access_token_hash, access_token_kid, \
          refresh_token_hash, refresh_token_kid, sharding_key, sharding_strategy, \
-         data_scope_json, permission_scope_json, expires_at, created_at, updated_at) \
+         data_scope_json, permission_scope_json, expires_at, created_at, updated_at, device_id) \
          VALUES ($1, $2, $3, $4, $5, 'user', $5, $6, $7, $8, $9, \
-                 $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)",
+                 $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)",
     )
     .bind(&session_id)
     .bind(&user.tenant_id)
@@ -215,6 +301,7 @@ pub(crate) async fn create_session_record(
     .bind(&expires_at)
     .bind(&now)
     .bind(&now)
+    .bind(&device_id)
     .execute(pg)
     .await
     .map_err(|e| format!("insert session failed: {e}"))?;
@@ -250,6 +337,51 @@ pub(crate) async fn create_session_record(
         session_id,
         user: user.clone(),
     })
+}
+
+pub(crate) async fn revoke_session_by_refresh_token(
+    pg: &PgPool,
+    config: &LocalIamConfig,
+    refresh_token_hash: &str,
+) -> Result<(), String> {
+    let now = current_timestamp_utc();
+    let row = sqlx::query(
+        "UPDATE iam_session SET revoked_at = $2, updated_at = $3 \
+         WHERE refresh_token_hash = $1 AND revoked_at IS NULL \
+         RETURNING id, tenant_id, user_id, organization_id",
+    )
+    .bind(refresh_token_hash)
+    .bind(&now)
+    .bind(&now)
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| format!("revoke session by refresh token failed: {error}"))?;
+
+    if let Some(row) = row {
+        let session_id: String = row.get(0);
+        let tenant_id: String = row.get(1);
+        let user_id: String = row.get(2);
+        let organization_id: Option<String> = row.get(3);
+        crate::security_events::record_session_revoked(
+            pg,
+            &tenant_id,
+            organization_id.as_deref(),
+            &user_id,
+            &session_id,
+        )
+        .await;
+        crate::audit_events::record_session_revoked(
+            pg,
+            config,
+            &tenant_id,
+            organization_id.as_deref(),
+            &user_id,
+            &session_id,
+        )
+        .await;
+    }
+
+    Ok(())
 }
 
 pub(crate) async fn remove_session(
@@ -701,7 +833,7 @@ pub(crate) async fn claim_session_for_refresh(
 pub(crate) async fn handle_refresh_token_reuse(pg: &PgPool, refresh_token: &str) -> bool {
     let refresh_hash = hash_token(refresh_token);
     let row = match sqlx::query(
-        "SELECT s.tenant_id, s.organization_id, s.user_id, s.id \
+        "SELECT s.tenant_id, s.organization_id, s.user_id, s.id, s.revoked_at \
          FROM iam_session s \
          JOIN iam_user u ON u.id = s.user_id AND u.tenant_id = s.tenant_id \
          WHERE s.refresh_token_hash = $1 \
@@ -720,6 +852,21 @@ pub(crate) async fn handle_refresh_token_reuse(pg: &PgPool, refresh_token: &str)
     let Some(row) = row else {
         return false;
     };
+
+    let revoked_at: Option<String> = row.get(4);
+    // A refresh that timed out after the server committed the rotation is
+    // indistinguishable from token theft to the client, but it is routine on
+    // mobile/flaky networks. Within the grace window, reject the stale token
+    // without revoking every session the user owns.
+    if let Some(revoked_at) = revoked_at {
+        if let Some(revoked_at) = parse_db_timestamp(&revoked_at) {
+            let age = chrono::Utc::now().signed_duration_since(revoked_at);
+            let grace_seconds = refresh_reuse_grace_seconds();
+            if grace_seconds > 0 && age.num_seconds() >= 0 && age.num_seconds() <= grace_seconds {
+                return true;
+            }
+        }
+    }
 
     let tenant_id: String = row.get(0);
     let organization_id: Option<String> = row.get(1);
@@ -746,6 +893,30 @@ pub(crate) async fn handle_refresh_token_reuse(pg: &PgPool, refresh_token: &str)
     )
     .await;
     true
+}
+
+fn refresh_reuse_grace_seconds() -> i64 {
+    std::env::var("SDKWORK_IAM_REFRESH_REUSE_GRACE_SECONDS")
+        .ok()
+        .and_then(|value| value.trim().parse::<i64>().ok())
+        .filter(|value| *value >= 0)
+        .unwrap_or(30)
+}
+
+/// Parse the timestamp text stored in IAM tables.
+///
+/// SQLx writes `DateTime<Utc>` as `YYYY-MM-DD HH:MM:SS.ffffff+00`, while the
+/// API also reads RFC 3339 text written by older code paths.
+fn parse_db_timestamp(value: &str) -> Option<chrono::DateTime<chrono::Utc>> {
+    if let Ok(parsed) = chrono::DateTime::parse_from_rfc3339(value) {
+        return Some(parsed.with_timezone(&chrono::Utc));
+    }
+    if let Ok(parsed) = chrono::DateTime::parse_from_str(value, "%Y-%m-%d %H:%M:%S%.f%#z") {
+        return Some(parsed.with_timezone(&chrono::Utc));
+    }
+    chrono::NaiveDateTime::parse_from_str(value, "%Y-%m-%d %H:%M:%S%.f")
+        .ok()
+        .map(|parsed| parsed.and_utc())
 }
 
 pub(crate) async fn rotate_current_session_context(
@@ -1350,4 +1521,17 @@ pub(crate) fn resolve_login_username(body: &Value) -> String {
         .or_else(|| optional_string(body.get("email")))
         .or_else(|| optional_string(body.get("phone")))
         .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_db_timestamp;
+
+    #[test]
+    fn parses_sqlx_and_rfc3339_timestamps() {
+        assert!(parse_db_timestamp("2026-11-05 08:47:03.395924+00").is_some());
+        assert!(parse_db_timestamp("2026-11-05T08:47:03.395924+00:00").is_some());
+        assert!(parse_db_timestamp("2026-11-05 08:47:03.395924").is_some());
+        assert!(parse_db_timestamp("not-a-timestamp").is_none());
+    }
 }

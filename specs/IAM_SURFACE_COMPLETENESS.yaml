@@ -13,7 +13,7 @@ ratingScale:
 
 database:
   status: complete
-  tables: 61
+  tables: 65
   baseline: database/ddl/baseline/postgres/0001_iam_baseline.sql
   migrations: database/migrations/postgres/
 
@@ -117,7 +117,13 @@ capabilities:
       `/oauth/providers`: the provider catalog is paged and searched on the
       server, and starting a flow mints the authorization URL through the
       controller and hands it to the host, which owns navigation and the
-      in-app-browser/deep-link decision.
+      in-app-browser/deep-link decision. The app api now serves the signed-in
+      account's own official (service) account configuration
+      (`iam.oauth.officialAccounts.*`: list/create/retrieve/update/delete,
+      scoped by the session's tenant and user) and the new app-tier PC package
+      `@sdkwork/iam-pc-oauth` maintains it together with the custom-menu draft;
+      the IAM PC app root has no oauth route mounted yet, so the PC cell stays
+      partial until that host route lands.
 
   - id: user-directory
     database: complete

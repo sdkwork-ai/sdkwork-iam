@@ -1,7 +1,7 @@
 import { appApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { AppbaseOperationCommand, AppbaseSessionCreateCommand, AuthorizationsCompletionsCreateRequest, DesktopSessionsCreateRequest, SdkWorkPageData, WechatMiniProgramSessionCreateCommand } from '../types';
+import type { AppbaseOperationCommand, AppbaseSessionCreateCommand, AuthorizationsCompletionsCreateRequest, AuthorizationsCreateRequest, DesktopSessionsCreateRequest, SdkWorkPageData, WechatMiniProgramSessionCreateCommand } from '../types';
 
 
 export interface OauthWechatPaymentOauthStartParams {
@@ -281,12 +281,19 @@ export class OauthAuthorizationsCompletionsApi {
 }
 
 export class OauthAuthorizationsApi {
+  private client: HttpClient;
   public readonly completions: OauthAuthorizationsCompletionsApi;
 
   constructor(client: HttpClient) {
+    this.client = client;
     this.completions = new OauthAuthorizationsCompletionsApi(client);
   }
 
+
+/** Authorizations create. */
+  async create(body: AuthorizationsCreateRequest, requestOptions?: ApiRequestOptions): Promise<{ authorizationStateId: string; expiresAt: string; }> {
+    return this.client.request<{ authorizationStateId: string; expiresAt: string; }>(appApiPath(`/oauth/authorizations`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true, sdkworkUnwrapKind: 'data' });
+  }
 }
 
 export class OauthAuthorizationUrlsApi {

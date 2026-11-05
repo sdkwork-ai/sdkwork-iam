@@ -4,8 +4,12 @@ import {
   useState,
 } from "react";
 import { ArrowRight, ExternalLink, MonitorSmartphone } from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@sdkwork/ui-pc-react";
+import {
+  clearSdkworkDesktopLaunchRedirect,
+  readSdkworkDesktopLaunchRedirect,
+} from "../desktop-launch-handoff.ts";
 import {
   createSdkworkAuthDarkHeaderStyle,
   createSdkworkAuthLightShellStyle,
@@ -63,9 +67,20 @@ function SdkworkAuthDesktopLaunchPageContent({
   const { copy } = useSdkworkAuthIntl();
   const resolvedAppearance = resolveSdkworkAuthAppearance(appearance);
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
-  const requestedRedirectUrl = searchParams.get("redirectUrl")?.trim() ?? "";
-  // The query string is attacker-influenced: only a native-app hand-off
+  // Prefer the same-origin transfer written by the auth page. The query form
+  // remains readable for already-issued links, but it is stripped from the
+  // visible URL as soon as the page has adopted it; either way the single-use
+  // code is never left in the address bar or history for the new flow.
+  const [requestedRedirectUrl] = useState(() => {
+    const transferred = readSdkworkDesktopLaunchRedirect();
+    if (transferred !== undefined) {
+      return transferred;
+    }
+    return searchParams.get("redirectUrl")?.trim() ?? "";
+  });
+  // The requested URL is attacker-influenced: only a native-app hand-off
   // surface (custom scheme or loopback) may be auto-navigated to, otherwise
   // this page would be an open redirect.
   const redirectUrl = isSafeSdkworkDesktopLaunchUrl(requestedRedirectUrl)
@@ -76,6 +91,16 @@ function SdkworkAuthDesktopLaunchPageContent({
     redirectUrl ? "launching" : "failed",
   );
   const launchAttemptedRef = useRef(false);
+
+  useEffect(() => {
+    clearSdkworkDesktopLaunchRedirect();
+    if (searchParams.has("redirectUrl")) {
+      navigate(
+        { pathname: location.pathname, search: "" },
+        { replace: true },
+      );
+    }
+  }, [location.pathname, navigate, searchParams]);
 
   useEffect(() => {
     if (!redirectUrl || launchAttemptedRef.current) {

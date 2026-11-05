@@ -1,4 +1,5 @@
 import type { IamAppSdkClient } from "@sdkwork/iam-sdk-ports";
+import type { SdkworkDesktopAuthError } from "./errors.ts";
 
 /** Host identities a desktop browser-login port can represent. */
 export type SdkworkDesktopAuthHostId =
@@ -96,6 +97,12 @@ export type SdkworkDesktopSessionExchangePort = (
 export interface SdkworkDesktopAuthControllerOptions {
   descriptor: SdkworkDesktopBrowserLoginDescriptor;
   exchangeDesktopSession: SdkworkDesktopSessionExchangePort;
+  /**
+   * Stable opaque per-install device identity sent with the redeem command.
+   * A new login replaces only this device's previous session of the same
+   * application; another device keeps its session.
+   */
+  deviceId?: string;
   flowStore?: SdkworkDesktopAuthFlowStore;
   flowTtlMs?: number;
   host: SdkworkDesktopAuthHostPort;
@@ -108,6 +115,13 @@ export interface SdkworkDesktopAuthControllerOptions {
    * second redemption fails and reports a failed login after a successful one.
    */
   dispatchHostDeepLinks?: boolean;
+  /**
+   * Reports that a pending browser login reached its flow deadline without a
+   * callback. The controller has already left the waiting state and cleared
+   * the pending flow; the host uses this to show "login expired, try again"
+   * instead of leaving the hand-off card waiting forever.
+   */
+  onFlowExpired?: (error: SdkworkDesktopAuthError) => void;
 }
 
 export interface SdkworkDesktopAuthController {

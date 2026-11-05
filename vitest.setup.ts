@@ -6,6 +6,10 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
 
   afterEach(() => {
     cleanup();
+    // Linked workspace packages can bring a second @testing-library/react
+    // instance whose cleanup does not know this renderer's container. Clearing
+    // the body keeps per-test queries from seeing a previous test's DOM.
+    document.body.innerHTML = "";
   });
 
   // jsdom does not implement these browser APIs; Radix primitives (Select,

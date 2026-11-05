@@ -162,6 +162,14 @@ impl SeedProvider for IamDatabaseModule {
                 )));
             }
         }
+        match sdkwork_iam_bootstrap::ensure_postgres_bootstrap_operator_user(pg).await {
+            Ok(outcome) => tracing::info!(?outcome, "IAM bootstrap operator user seed finished"),
+            Err(error) => {
+                return Err(SpiError::Seed(format!(
+                    "ensure bootstrap operator user failed: {error}"
+                )));
+            }
+        }
         Ok(())
     }
 }

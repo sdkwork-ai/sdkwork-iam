@@ -1,6 +1,6 @@
 import { mockAccessToken, mockAuthToken } from "./authJwtFixtures.ts";
 import { describe, expect, it, vi } from "vitest";
-import * as authPackage from "../src";
+import * as authPackage from "../src/index.ts";
 import {
   createSdkworkAuthService,
   createSdkworkCanonicalAuthController,
@@ -9,7 +9,9 @@ import {
   createSdkworkLocalAuthService,
   SdkworkAuthOrganizationSelectionRequiredError,
   type SdkworkAuthClient,
-} from "../src";
+} from "../src/index.ts";
+import { createSdkworkIamRuntimeAuthService } from "../src/auth-iam-runtime.ts";
+import { scheduleSdkworkAuthSessionRefresh } from "../src/auth-iam-runtime.ts";
 
 interface LocalAuthTestUser {
   email: string;
@@ -1570,10 +1572,12 @@ describe("sdkwork-auth-pc-react service", () => {
     const accessToken = mockAccessToken("access-token-1", {
       app_id: "sdkwork-chat",
       environment: "dev",
+      organization_id: "100001",
     });
     const authToken = mockAuthToken("auth-token-1", {
       app_id: "sdkwork-chat",
       environment: "dev",
+      organization_id: "100001",
     });
     const client = {
       auth: {
@@ -1619,8 +1623,14 @@ describe("sdkwork-auth-pc-react service", () => {
 
   it("normalizes appbase login context without exposing shardingContext or duplicate wire aliases", async () => {
     const commitSession = vi.fn();
-    const chatAccessToken = mockAccessToken("access-token-1", { app_id: "sdkwork-chat" });
-    const chatAuthToken = mockAuthToken("auth-token-1", { app_id: "sdkwork-chat" });
+    const chatAccessToken = mockAccessToken("access-token-1", {
+      app_id: "sdkwork-chat",
+      organization_id: "100001",
+    });
+    const chatAuthToken = mockAuthToken("auth-token-1", {
+      app_id: "sdkwork-chat",
+      organization_id: "100001",
+    });
     const client = {
       auth: {
         sessions: {
@@ -4516,5 +4526,478 @@ describe("sdkwork-auth-pc-react service", () => {
       phoneCodeLoginEnabled: false,
       phoneRegistrationVerificationRequired: false,
     });
+  });
+});
+
+describe("runtime token refresh", () => {
+  it("refreshes the access token before it expires", async () => {
+    vi.useFakeTimers();
+    try {
+      const now = Date.now();
+      const create = vi.fn().mockResolvedValue({
+        accessToken: mockAccessToken("initial", {
+          exp: Math.floor((now + 10 * 60_000) / 1000),
+        }),
+        authToken: mockAuthToken("initial"),
+        refreshToken: "refresh-token-1",
+      });
+      const refresh = vi.fn().mockResolvedValue({
+        accessToken: mockAccessToken("refreshed", {
+          exp: Math.floor((now + 60 * 60_000) / 1000),
+        }),
+        authToken: mockAuthToken("refreshed"),
+        refreshToken: "refresh-token-2",
+      });
+      const runtime = {
+        service: {
+          auth: {
+            sessions: {
+              create,
+              refresh,
+              current: {
+                delete: vi.fn(),
+                retrieve: vi.fn(),
+              },
+            },
+          },
+        },
+        tokenStore: (() => {
+          let stored: Record<string, unknown> = {};
+          return {
+            clear: vi.fn().mockResolvedValue(undefined),
+            get: vi.fn(async () => stored),
+            set: vi.fn(async (session: Record<string, unknown>) => {
+              stored = session;
+            }),
+          };
+        })(),
+      };
+      const service = createSdkworkIamRuntimeAuthService({
+        getRuntime: () => runtime as never,
+      });
+
+      await service.signIn({ password: "secret", username: "sdkwork" });
+      // The timer fires one minute before the ten-minute access token expires.
+      await vi.advanceTimersByTimeAsync(9 * 60_000 + 1_000);
+
+      expect(refresh).toHaveBeenCalledWith(expect.objectContaining({
+        refreshToken: "refresh-token-1",
+      }));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("reports an expired session when the refresh token is rejected", async () => {
+    vi.useFakeTimers();
+    try {
+      const now = Date.now();
+      const create = vi.fn().mockResolvedValue({
+        accessToken: mockAccessToken("initial", {
+          exp: Math.floor((now + 10 * 60_000) / 1000),
+        }),
+        authToken: mockAuthToken("initial"),
+        refreshToken: "refresh-token-1",
+      });
+      const refresh = vi.fn().mockRejectedValue(new Error("refresh token revoked"));
+      const onSessionExpired = vi.fn();
+      const runtime = {
+        service: {
+          auth: {
+            sessions: {
+              create,
+              refresh,
+              current: {
+                delete: vi.fn(),
+                retrieve: vi.fn(),
+              },
+            },
+          },
+        },
+        tokenStore: (() => {
+          let stored: Record<string, unknown> = {};
+          return {
+            clear: vi.fn().mockResolvedValue(undefined),
+            get: vi.fn(async () => stored),
+            set: vi.fn(async (session: Record<string, unknown>) => {
+              stored = session;
+            }),
+          };
+        })(),
+      };
+      const service = createSdkworkIamRuntimeAuthService({
+        getRuntime: () => runtime as never,
+        onSessionExpired,
+      });
+
+      await service.signIn({ password: "secret", username: "sdkwork" });
+      await vi.advanceTimersByTimeAsync(9 * 60_000 + 1_000);
+
+      expect(refresh).toHaveBeenCalled();
+      expect(onSessionExpired).toHaveBeenCalledOnce();
+      expect(runtime.tokenStore.clear).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("schedules refresh for a session committed outside the auth service", async () => {
+    vi.useFakeTimers();
+    try {
+      const now = Date.now();
+      const refresh = vi.fn().mockResolvedValue({
+        accessToken: mockAccessToken("refreshed", {
+          exp: Math.floor((now + 60 * 60_000) / 1000),
+        }),
+        authToken: mockAuthToken("refreshed"),
+        refreshToken: "refresh-token-2",
+      });
+      const runtime = {
+        service: {
+          auth: {
+            sessions: {
+              refresh,
+              current: {
+                delete: vi.fn(),
+                retrieve: vi.fn(),
+              },
+            },
+          },
+        },
+        tokenStore: {
+          clear: vi.fn().mockResolvedValue(undefined),
+          get: vi.fn().mockResolvedValue({
+            accessToken: mockAccessToken("committed", {
+              exp: Math.floor((now + 10 * 60_000) / 1000),
+            }),
+            authToken: mockAuthToken("committed"),
+            refreshToken: "refresh-token-1",
+          }),
+          set: vi.fn().mockResolvedValue(undefined),
+        },
+      };
+
+      scheduleSdkworkAuthSessionRefresh(runtime as never, {
+        accessToken: mockAccessToken("committed", {
+          exp: Math.floor((now + 10 * 60_000) / 1000),
+        }),
+        authToken: mockAuthToken("committed"),
+        refreshToken: "refresh-token-1",
+      });
+      await vi.advanceTimersByTimeAsync(9 * 60_000 + 1_000);
+
+      expect(refresh).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("adopts tokens refreshed by another tab instead of rotating again", async () => {
+    vi.useFakeTimers();
+    try {
+      const now = Date.now();
+      const initialAccess = mockAccessToken("initial", {
+        exp: Math.floor((now + 10 * 60_000) / 1000),
+      });
+      const otherTabAccess = mockAccessToken("other-tab", {
+        exp: Math.floor((now + 60 * 60_000) / 1000),
+      });
+      let stored: Record<string, unknown> = {};
+      const refresh = vi.fn().mockResolvedValue({
+        accessToken: mockAccessToken("own-refresh", {
+          exp: Math.floor((now + 60 * 60_000) / 1000),
+        }),
+        authToken: mockAuthToken("own-refresh"),
+        refreshToken: "refresh-token-own",
+      });
+      const runtime = {
+        service: {
+          auth: {
+            sessions: {
+              create: vi.fn().mockResolvedValue({
+                accessToken: initialAccess,
+                authToken: mockAuthToken("initial"),
+                refreshToken: "refresh-token-1",
+              }),
+              refresh,
+              current: {
+                delete: vi.fn(),
+                retrieve: vi.fn(),
+              },
+            },
+          },
+        },
+        tokenStore: {
+          clear: vi.fn().mockResolvedValue(undefined),
+          get: vi.fn(async () => stored),
+          set: vi.fn(async (session: Record<string, unknown>) => {
+            stored = session;
+          }),
+        },
+      };
+      const service = createSdkworkIamRuntimeAuthService({
+        getRuntime: () => runtime as never,
+      });
+
+      await service.signIn({ password: "secret", username: "sdkwork" });
+      // Another tab finished its refresh first and wrote the rotated tokens.
+      stored = {
+        accessToken: otherTabAccess,
+        authToken: mockAuthToken("other-tab"),
+        refreshToken: "refresh-token-other",
+      };
+
+      await vi.advanceTimersByTimeAsync(9 * 60_000 + 1_000);
+
+      expect(refresh).not.toHaveBeenCalled();
+      expect(stored.accessToken).toBe(otherTabAccess);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("signs out the other tab through the session channel", async () => {
+    const runtimeA = {
+      service: {
+        auth: {
+          sessions: {
+            current: {
+              delete: vi.fn().mockResolvedValue(undefined),
+              logout: vi.fn().mockResolvedValue(undefined),
+            },
+          },
+        },
+      },
+      tokenStore: {
+        clear: vi.fn().mockResolvedValue(undefined),
+        get: vi.fn().mockResolvedValue({
+          accessToken: mockAccessToken("a"),
+          authToken: mockAuthToken("a"),
+          refreshToken: "refresh-a",
+        }),
+      },
+    };
+    const runtimeB = {
+      service: {
+        auth: {
+          sessions: {
+            current: {
+              delete: vi.fn().mockResolvedValue(undefined),
+              logout: vi.fn().mockResolvedValue(undefined),
+            },
+          },
+        },
+      },
+      tokenStore: {
+        clear: vi.fn().mockResolvedValue(undefined),
+        get: vi.fn().mockResolvedValue({
+          accessToken: mockAccessToken("b"),
+          authToken: mockAuthToken("b"),
+          refreshToken: "refresh-b",
+        }),
+      },
+    };
+    const onExpiredB = vi.fn();
+    const serviceA = createSdkworkIamRuntimeAuthService({
+      getRuntime: () => runtimeA as never,
+    });
+    createSdkworkIamRuntimeAuthService({
+      getRuntime: () => runtimeB as never,
+      onSessionExpired: onExpiredB,
+    });
+
+    await serviceA.signOut();
+    await new Promise((resolve) => {
+      setTimeout(resolve, 20);
+    });
+
+    expect(runtimeB.tokenStore.clear).toHaveBeenCalled();
+    expect(onExpiredB).toHaveBeenCalled();
+  });
+
+  it("retries a transient refresh failure without signing out", async () => {
+    vi.useFakeTimers();
+    try {
+      const now = Date.now();
+      const initialAccess = mockAccessToken("initial", {
+        exp: Math.floor((now + 10 * 60_000) / 1000),
+      });
+      const retriedAccess = mockAccessToken("retried", {
+        exp: Math.floor((now + 60 * 60_000) / 1000),
+      });
+      let stored: Record<string, unknown> = {};
+      const refresh = vi
+        .fn()
+        .mockRejectedValueOnce(Object.assign(new Error("Failed to fetch"), { name: "TypeError" }))
+        .mockResolvedValueOnce({
+          accessToken: retriedAccess,
+          authToken: mockAuthToken("retried"),
+          refreshToken: "refresh-token-2",
+        });
+      const runtime = {
+        service: {
+          auth: {
+            sessions: {
+              create: vi.fn().mockResolvedValue({
+                accessToken: initialAccess,
+                authToken: mockAuthToken("initial"),
+                refreshToken: "refresh-token-1",
+              }),
+              refresh,
+              current: {
+                delete: vi.fn(),
+                retrieve: vi.fn(),
+              },
+            },
+          },
+        },
+        tokenStore: {
+          clear: vi.fn().mockResolvedValue(undefined),
+          get: vi.fn(async () => stored),
+          set: vi.fn(async (session: Record<string, unknown>) => {
+            stored = session;
+          }),
+        },
+      };
+      const onExpired = vi.fn();
+      const service = createSdkworkIamRuntimeAuthService({
+        getRuntime: () => runtime as never,
+        onSessionExpired: onExpired,
+      });
+
+      await service.signIn({ password: "secret", username: "sdkwork" });
+      await vi.advanceTimersByTimeAsync(9 * 60_000 + 1_000);
+      expect(refresh).toHaveBeenCalledTimes(1);
+      expect(onExpired).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(refresh).toHaveBeenCalledTimes(2);
+      expect(onExpired).not.toHaveBeenCalled();
+      expect(stored.accessToken).toBe(retriedAccess);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("resets the controller when the refresh token is rejected", async () => {
+    vi.useFakeTimers();
+    try {
+      const now = Date.now();
+      const runtime = {
+        service: {
+          auth: {
+            sessions: {
+              create: vi.fn().mockResolvedValue({
+                accessToken: mockAccessToken("initial", {
+                  exp: Math.floor((now + 10 * 60_000) / 1000),
+                }),
+                authToken: mockAuthToken("initial"),
+                refreshToken: "refresh-token-1",
+              }),
+              refresh: vi.fn().mockRejectedValue(new Error("refresh token revoked")),
+              current: {
+                delete: vi.fn(),
+                retrieve: vi.fn(),
+              },
+            },
+          },
+        },
+        tokenStore: (() => {
+          let stored: Record<string, unknown> = {};
+          return {
+            clear: vi.fn().mockResolvedValue(undefined),
+            get: vi.fn(async () => stored),
+            set: vi.fn(async (session: Record<string, unknown>) => {
+              stored = session;
+            }),
+          };
+        })(),
+      };
+      const controller = createSdkworkIamRuntimeAuthController({
+        getRuntime: () => runtime as never,
+      });
+
+      await controller.signIn({ password: "secret", username: "sdkwork" });
+      expect(controller.getState().isAuthenticated).toBe(true);
+
+      await vi.advanceTimersByTimeAsync(9 * 60_000 + 1_000);
+
+      expect(controller.getState()).toMatchObject({
+        isAuthenticated: false,
+        isBootstrapped: true,
+        status: "anonymous",
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("runtime sign-out", () => {
+  it("revokes with the refresh token so logout survives an expired access token", async () => {
+    const logout = vi.fn().mockResolvedValue(undefined);
+    const remove = vi.fn().mockResolvedValue(undefined);
+    const clear = vi.fn().mockResolvedValue(undefined);
+    const runtime = {
+      service: {
+        auth: {
+          sessions: {
+            current: {
+              delete: remove,
+              logout,
+            },
+          },
+        },
+      },
+      tokenStore: {
+        clear,
+        get: vi.fn().mockResolvedValue({
+          accessToken: mockAccessToken("logout-access"),
+          authToken: mockAuthToken("logout-auth"),
+          refreshToken: "logout-refresh-token",
+        }),
+      },
+    };
+    const service = createSdkworkIamRuntimeAuthService({
+      getRuntime: () => runtime as never,
+    });
+
+    await service.signOut();
+
+    expect(logout).toHaveBeenCalledWith({ refreshToken: "logout-refresh-token" });
+    expect(remove).not.toHaveBeenCalled();
+    expect(clear).toHaveBeenCalledOnce();
+  });
+
+  it("falls back to the dual-token delete when no refresh token is stored", async () => {
+    const logout = vi.fn().mockResolvedValue(undefined);
+    const remove = vi.fn().mockResolvedValue(undefined);
+    const runtime = {
+      service: {
+        auth: {
+          sessions: {
+            current: {
+              delete: remove,
+              logout,
+            },
+          },
+        },
+      },
+      tokenStore: {
+        clear: vi.fn().mockResolvedValue(undefined),
+        get: vi.fn().mockResolvedValue({
+          accessToken: mockAccessToken("logout-access"),
+          authToken: mockAuthToken("logout-auth"),
+        }),
+      },
+    };
+    const service = createSdkworkIamRuntimeAuthService({
+      getRuntime: () => runtime as never,
+    });
+
+    await service.signOut();
+
+    expect(remove).toHaveBeenCalledOnce();
+    expect(logout).not.toHaveBeenCalled();
   });
 });
