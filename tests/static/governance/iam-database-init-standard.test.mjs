@@ -140,6 +140,25 @@ test("IAM database seed hooks always provision the bootstrap admin and gate only
   assert.match(bootstrapOperator, /if let Some\(password\) = password\.as_deref\(\)/u);
 });
 
+test("IAM database seed hooks provision the operations administrator from its own password env", () => {
+  const databaseModule = readText("crates/sdkwork-iam-database-host/src/iam_database_module.rs");
+  const databaseHostLib = readText("crates/sdkwork-iam-database-host/src/lib.rs");
+  const bootstrapOperator = readText("crates/sdkwork-iam-bootstrap/src/bootstrap_operator.rs");
+
+  for (const source of [databaseModule, databaseHostLib]) {
+    assert.match(source, /ensure_postgres_bootstrap_operator_user/u);
+  }
+  assert.match(bootstrapOperator, /DEFAULT_BOOTSTRAP_OPERATOR_USERNAME/u);
+  assert.match(bootstrapOperator, /DEFAULT_BOOTSTRAP_OPERATOR_EMAIL/u);
+  assert.match(bootstrapOperator, /PLATFORM_SYSTEM_ADMIN_ROLE_CODE/u);
+  assert.match(bootstrapOperator, /SDKWORK_IAM_OPERATOR_PASSWORD_ENV/u);
+  // The operations administrator must never inherit the super-admin bootstrap secret.
+  assert.doesNotMatch(
+    bootstrapOperator,
+    /read_env_trimmed\(SDKWORK_IAM_OPERATOR_PASSWORD_ENV\)\s*\.or_else/u,
+  );
+});
+
 test("IAM component spec declares DATABASE_FRAMEWORK_SPEC and database verification", () => {
   const componentSpec = JSON.parse(readText("specs/component.spec.json"));
   const canonicalFiles = (componentSpec.canonicalSpecs ?? []).map((entry) => entry.file);

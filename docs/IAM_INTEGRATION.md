@@ -110,7 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
 The function executes three steps in order:
 
-1. `bootstrap_iam_database_from_env()` — IAM schema, migrations, module catalog materialization, super-admin/manager credentials
+1. `bootstrap_iam_database_from_env()` — IAM schema, migrations, module catalog materialization, super-admin/manager/operator credentials
 2. `ensure_tenant_application_from_app_root_with_env_and_fallback()` — provisions the tenant application from `agent.app.config.json` at `SDKWORK_APP_ROOT` so the app-api auth runtime can resolve signing keys, access scopes, and runtime `app_id`
 3. `assemble_api_router()` — merges the three API surface routers
 
@@ -123,10 +123,29 @@ The function executes three steps in order:
 | `SDKWORK_IAM_SUPER_ADMIN_PASSWORD` | Bootstrap super-admin password credential | Yes (dev) / N/A (prod) |
 | `SDKWORK_IAM_BOOTSTRAP_PASSWORD` | Fallback for super-admin password when `SUPER_ADMIN_PASSWORD` is unset | Optional |
 | `SDKWORK_IAM_MANAGER_PASSWORD` | Bootstrap manager (org admin) password credential | Optional |
+| `SDKWORK_IAM_OPERATOR_PASSWORD` | Bootstrap operations administrator (`operator`) password credential | Optional |
 | `SDKWORK_IM_ENVIRONMENT` | `dev` / `test` / `prod` — controls production hardening gates | Optional (defaults to production posture) |
 | `SDKWORK_IAM_SIGNING_MASTER_SECRET` | Tenant signing key master secret — required outside explicit development profiles | Required (prod) |
 
 When `SDKWORK_IM_ENVIRONMENT` is `dev` or `test`, the bootstrap provisions the super-admin password credential from the environment. In production posture (`prod`/`staging`/`saas`), `SDKWORK_IAM_SUPER_ADMIN_PASSWORD` is forbidden by `assert_production_hardening()` and the super admin must be provisioned through the backend management API instead.
+
+### Operations Administrator
+
+`SDKWORK_IAM_OPERATOR_PASSWORD` provisions the canonical `operator` subject
+(`operator@sdkwork.com`, user id `3`) in the same seed hook that provisions `admin` and
+`manager`. It is created only when that variable is set; it never inherits
+`SDKWORK_IAM_BOOTSTRAP_PASSWORD`, so the super-admin secret cannot silently grant a second
+account. The subject receives:
+
+- an active `iam_tenant_member` row and a primary root-organization membership, which is what
+  `IamUserSurface::can_access_backend_api()` requires — without it the account authenticates but
+  the backend API answers 401;
+- the `platform_system_admin` role at tenant scope (`iam.*`, `ops.*`, `system.*`) plus the
+  `app_user` baseline. It deliberately does **not** receive `platform_super_admin`'s `*` grant.
+
+Re-running `db:bootstrap` / `--bootstrap-databases` is idempotent: it rotates the credential to
+the current environment value and leaves every other row in place. Removing the variable leaves
+the existing account untouched.
 
 ### Why 404/401 Occurs Without One-Shot Bootstrap
 

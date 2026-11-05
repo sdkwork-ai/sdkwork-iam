@@ -1,14 +1,17 @@
-//! Bootstrap operator (platform super-admin) provisioning for IAM database initialization.
+//! Bootstrap operator provisioning for IAM database initialization.
 //!
-//! Creates the canonical default admin user when an explicit bootstrap password is configured.
-//! Passwords must never be embedded in SQL seeds; use `SDKWORK_IAM_SUPER_ADMIN_PASSWORD` or
-//! `SDKWORK_IAM_BOOTSTRAP_PASSWORD`.
+//! Creates the canonical default subjects — platform super admin (`admin`), organization
+//! manager (`manager`), and operations administrator (`operator`) — each only when its explicit
+//! bootstrap password is configured. Passwords must never be embedded in SQL seeds; use
+//! `SDKWORK_IAM_SUPER_ADMIN_PASSWORD` / `SDKWORK_IAM_BOOTSTRAP_PASSWORD`,
+//! `SDKWORK_IAM_MANAGER_PASSWORD`, or `SDKWORK_IAM_OPERATOR_PASSWORD`.
 
 use argon2::password_hash::{rand_core::OsRng, PasswordHasher, SaltString};
 use argon2::Argon2;
 use chrono::Utc;
 use sdkwork_iam_context_service::{
     APP_USER_ROLE_CODE, ORG_ADMIN_ROLE_CODE, PLATFORM_SUPER_ADMIN_ROLE_CODE,
+    PLATFORM_SYSTEM_ADMIN_ROLE_CODE,
 };
 use sqlx::PgPool;
 #[cfg(feature = "sqlite")]
@@ -22,12 +25,24 @@ use crate::{
     DEFAULT_BOOTSTRAP_ADMIN_USERNAME, DEFAULT_BOOTSTRAP_ADMIN_USER_ID,
     DEFAULT_BOOTSTRAP_MANAGER_DISPLAY_NAME, DEFAULT_BOOTSTRAP_MANAGER_EMAIL,
     DEFAULT_BOOTSTRAP_MANAGER_USERNAME, DEFAULT_BOOTSTRAP_MANAGER_USER_ID,
+    DEFAULT_BOOTSTRAP_OPERATOR_DISPLAY_NAME, DEFAULT_BOOTSTRAP_OPERATOR_EMAIL,
+    DEFAULT_BOOTSTRAP_OPERATOR_USERNAME, DEFAULT_BOOTSTRAP_OPERATOR_USER_ID,
     DEFAULT_IAM_ORGANIZATION_ID, DEFAULT_IAM_TENANT_ID,
 };
 
 pub const SDKWORK_IAM_SUPER_ADMIN_PASSWORD_ENV: &str = "SDKWORK_IAM_SUPER_ADMIN_PASSWORD";
 pub const SDKWORK_IAM_BOOTSTRAP_PASSWORD_ENV: &str = "SDKWORK_IAM_BOOTSTRAP_PASSWORD";
 pub const SDKWORK_IAM_MANAGER_PASSWORD_ENV: &str = "SDKWORK_IAM_MANAGER_PASSWORD";
+pub const SDKWORK_IAM_OPERATOR_PASSWORD_ENV: &str = "SDKWORK_IAM_OPERATOR_PASSWORD";
+
+/// Roles granted to the operations administrator.
+///
+/// `platform_system_admin` covers the backend management surface (`iam.*`, `ops.*`,
+/// `system.*`) without the super-admin `*` grant; `app_user` is the app-surface baseline.
+/// Add `ORG_OPERATIONS_ROLE_CODE` here when the account should also operate business domains
+/// (commerce, courses, content).
+pub const BOOTSTRAP_OPERATOR_ROLE_CODES: &[&str] =
+    &[PLATFORM_SYSTEM_ADMIN_ROLE_CODE, APP_USER_ROLE_CODE];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BootstrapAdminUserOutcome {
@@ -52,6 +67,22 @@ pub enum BootstrapManagerUserOutcome {
 pub fn resolve_bootstrap_manager_password_from_env() -> Option<String> {
     read_env_trimmed(SDKWORK_IAM_MANAGER_PASSWORD_ENV)
         .or_else(|| read_env_trimmed(SDKWORK_IAM_BOOTSTRAP_PASSWORD_ENV))
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BootstrapOperatorUserOutcome {
+    Created,
+    SkippedExistingOperator,
+    /// The operations administrator was left untouched because no bootstrap password is set.
+    SkippedMissingPassword,
+}
+
+/// Resolves the operations-administrator bootstrap password.
+///
+/// Deliberately has no fallback to `SDKWORK_IAM_BOOTSTRAP_PASSWORD`: the operations
+/// administrator must never silently inherit the super-admin bootstrap secret.
+pub fn resolve_bootstrap_operator_password_from_env() -> Option<String> {
+    read_env_trimmed(SDKWORK_IAM_OPERATOR_PASSWORD_ENV)
 }
 
 pub async fn ensure_postgres_bootstrap_admin_user(
@@ -474,6 +505,245 @@ pub async fn ensure_sqlite_bootstrap_manager_user(
     })
 }
 
+/// Provisions the canonical operations-administrator account.
+///
+/// The account can reach the backend API surface because it receives an active tenant
+/// membership plus a root-organization membership (`IamUserSurface::can_access_backend_api`
+/// requires the latter). Its authorization is the platform system-admin role, which carries
+/// `iam.*` / `ops.*` / `system.*` but not the super-admin `*` grant.
+pub async fn ensure_postgres_bootstrap_operator_user(
+    pool: &PgPool,
+) -> Result<BootstrapOperatorUserOutcome, sqlx::Error> {
+    let Some(password) = resolve_bootstrap_operator_password_from_env() else {
+        return Ok(BootstrapOperatorUserOutcome::SkippedMissingPassword);
+    };
+    let operator_exists =
+        postgres_tenant_has_bootstrap_operator(pool, DEFAULT_IAM_TENANT_ID).await?;
+
+    let now = Utc::now();
+    let password_hash = hash_password(&password);
+    let root_membership_id = bootstrap_member_membership_id(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID);
+
+    upsert_postgres_standard_roles(pool, DEFAULT_IAM_TENANT_ID).await?;
+
+    sqlx::query(
+        "INSERT INTO iam_user (id, tenant_id, username, display_name, email, phone, \
+         email_verified, phone_verified, status, is_deleted, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, NULL, 1, 0, 'active', 0, $6, $6) \
+         ON CONFLICT (tenant_id, username) DO UPDATE SET \
+           display_name = EXCLUDED.display_name, \
+           email = EXCLUDED.email, \
+           status = 'active', \
+           is_deleted = 0, \
+           updated_at = EXCLUDED.updated_at",
+    )
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID)
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_USERNAME)
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_DISPLAY_NAME)
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_EMAIL)
+    .bind(now)
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        "INSERT INTO iam_credential (id, tenant_id, user_id, credential_type, credential_hash, \
+         failed_attempts, status, created_at, updated_at) \
+         VALUES ($1, $2, $3, 'password', $4, 0, 'active', $5, $5) \
+         ON CONFLICT (tenant_id, user_id, credential_type) DO UPDATE SET \
+           credential_hash = EXCLUDED.credential_hash, \
+           status = 'active', \
+           updated_at = EXCLUDED.updated_at",
+    )
+    .bind(bootstrap_credential_id(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID))
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID)
+    .bind(&password_hash)
+    .bind(now)
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        "INSERT INTO iam_tenant_member (id, tenant_id, user_id, member_kind, status, joined_at, created_at, updated_at) \
+         VALUES ($1, $2, $3, 'member', 'active', $4, $4, $4) \
+         ON CONFLICT (tenant_id, user_id, member_kind) DO UPDATE SET \
+           status = 'active', updated_at = EXCLUDED.updated_at",
+    )
+    .bind(bootstrap_member_tenant_member_id(
+        DEFAULT_BOOTSTRAP_OPERATOR_USER_ID,
+    ))
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID)
+    .bind(now)
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        "INSERT INTO iam_organization_membership (id, tenant_id, organization_id, user_id, \
+         membership_kind, is_primary, status, joined_at, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, 'member', 1, 'active', $5, $5, $5) \
+         ON CONFLICT (tenant_id, organization_id, user_id, membership_kind) DO UPDATE SET \
+           status = 'active', is_primary = 1, updated_at = EXCLUDED.updated_at",
+    )
+    .bind(&root_membership_id)
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(DEFAULT_IAM_ORGANIZATION_ID)
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID)
+    .bind(now)
+    .execute(pool)
+    .await?;
+
+    ensure_postgres_bootstrap_operator_role_bindings(
+        pool,
+        DEFAULT_IAM_TENANT_ID,
+        DEFAULT_BOOTSTRAP_OPERATOR_USER_ID,
+        &now,
+    )
+    .await
+    .map_err(sqlx::Error::Protocol)?;
+
+    Ok(if operator_exists {
+        BootstrapOperatorUserOutcome::SkippedExistingOperator
+    } else {
+        BootstrapOperatorUserOutcome::Created
+    })
+}
+
+#[cfg(feature = "sqlite")]
+pub async fn ensure_sqlite_bootstrap_operator_user(
+    pool: &SqlitePool,
+) -> Result<BootstrapOperatorUserOutcome, sqlx::Error> {
+    let Some(password) = resolve_bootstrap_operator_password_from_env() else {
+        return Ok(BootstrapOperatorUserOutcome::SkippedMissingPassword);
+    };
+    let operator_exists = sqlite_tenant_has_bootstrap_operator(pool, DEFAULT_IAM_TENANT_ID).await?;
+
+    let now = Utc::now().to_rfc3339();
+    let password_hash = hash_password(&password);
+    let root_membership_id = bootstrap_member_membership_id(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID);
+
+    upsert_sqlite_standard_roles(pool, DEFAULT_IAM_TENANT_ID).await?;
+
+    sqlx::query(
+        "INSERT INTO iam_user (id, tenant_id, username, display_name, email, phone, \
+         email_verified, phone_verified, status, is_deleted, created_at, updated_at) \
+         VALUES (?, ?, ?, ?, ?, NULL, 1, 0, 'active', 0, ?, ?) \
+         ON CONFLICT(tenant_id, username) DO UPDATE SET \
+           display_name = excluded.display_name, \
+           email = excluded.email, \
+           status = 'active', \
+           is_deleted = 0, \
+           updated_at = excluded.updated_at",
+    )
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID)
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_USERNAME)
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_DISPLAY_NAME)
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_EMAIL)
+    .bind(&now)
+    .bind(&now)
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        "INSERT INTO iam_credential (id, tenant_id, user_id, credential_type, credential_hash, \
+         failed_attempts, status, created_at, updated_at) \
+         VALUES (?, ?, ?, 'password', ?, 0, 'active', ?, ?) \
+         ON CONFLICT(tenant_id, user_id, credential_type) DO UPDATE SET \
+           credential_hash = excluded.credential_hash, \
+           status = 'active', \
+           updated_at = excluded.updated_at",
+    )
+    .bind(bootstrap_credential_id(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID))
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID)
+    .bind(&password_hash)
+    .bind(&now)
+    .bind(&now)
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        "INSERT INTO iam_tenant_member (id, tenant_id, user_id, member_kind, status, joined_at, created_at, updated_at) \
+         VALUES (?, ?, ?, 'member', 'active', ?, ?, ?) \
+         ON CONFLICT(tenant_id, user_id, member_kind) DO UPDATE SET \
+           status = 'active', updated_at = excluded.updated_at",
+    )
+    .bind(bootstrap_member_tenant_member_id(
+        DEFAULT_BOOTSTRAP_OPERATOR_USER_ID,
+    ))
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID)
+    .bind(&now)
+    .bind(&now)
+    .bind(&now)
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        "INSERT INTO iam_organization_membership (id, tenant_id, organization_id, user_id, \
+         membership_kind, is_primary, status, joined_at, created_at, updated_at) \
+         VALUES (?, ?, ?, ?, 'member', 1, 'active', ?, ?, ?) \
+         ON CONFLICT(tenant_id, organization_id, user_id, membership_kind) DO UPDATE SET \
+           status = 'active', is_primary = 1, updated_at = excluded.updated_at",
+    )
+    .bind(&root_membership_id)
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(DEFAULT_IAM_ORGANIZATION_ID)
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID)
+    .bind(&now)
+    .bind(&now)
+    .bind(&now)
+    .execute(pool)
+    .await?;
+
+    ensure_sqlite_bootstrap_operator_role_bindings(
+        pool,
+        DEFAULT_IAM_TENANT_ID,
+        DEFAULT_BOOTSTRAP_OPERATOR_USER_ID,
+        &now,
+    )
+    .await
+    .map_err(sqlx::Error::Protocol)?;
+
+    Ok(if operator_exists {
+        BootstrapOperatorUserOutcome::SkippedExistingOperator
+    } else {
+        BootstrapOperatorUserOutcome::Created
+    })
+}
+
+async fn postgres_tenant_has_bootstrap_operator(
+    pool: &PgPool,
+    tenant_id: &str,
+) -> Result<bool, sqlx::Error> {
+    let count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*)::bigint FROM iam_organization_membership \
+         WHERE tenant_id = $1 AND user_id = $2 AND membership_kind = 'member' AND status = 'active'",
+    )
+    .bind(tenant_id)
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID)
+    .fetch_one(pool)
+    .await?;
+    Ok(count > 0)
+}
+
+#[cfg(feature = "sqlite")]
+async fn sqlite_tenant_has_bootstrap_operator(
+    pool: &SqlitePool,
+    tenant_id: &str,
+) -> Result<bool, sqlx::Error> {
+    let count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM iam_organization_membership \
+         WHERE tenant_id = ? AND user_id = ? AND membership_kind = 'member' AND status = 'active'",
+    )
+    .bind(tenant_id)
+    .bind(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID)
+    .fetch_one(pool)
+    .await?;
+    Ok(count > 0)
+}
+
 async fn postgres_tenant_has_bootstrap_manager(
     pool: &PgPool,
     tenant_id: &str,
@@ -628,6 +898,37 @@ async fn ensure_sqlite_bootstrap_manager_role_bindings(
             now,
         )
         .await?;
+    }
+    Ok(())
+}
+
+/// Binds the operations administrator to the platform system-admin role.
+///
+/// Both bindings are tenant-scoped: `platform_system_admin` is a platform-surface role, and
+/// `app_user` is the app-surface baseline every authenticated subject carries. Neither is
+/// organization-scoped, so the operator keeps backend access independent of any single
+/// organization subtree.
+async fn ensure_postgres_bootstrap_operator_role_bindings(
+    pool: &PgPool,
+    tenant_id: &str,
+    user_id: &str,
+    now: &chrono::DateTime<chrono::Utc>,
+) -> Result<(), String> {
+    for &role_code in BOOTSTRAP_OPERATOR_ROLE_CODES {
+        ensure_postgres_tenant_user_role_binding(pool, tenant_id, user_id, role_code, now).await?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "sqlite")]
+async fn ensure_sqlite_bootstrap_operator_role_bindings(
+    pool: &SqlitePool,
+    tenant_id: &str,
+    user_id: &str,
+    now: &str,
+) -> Result<(), String> {
+    for &role_code in BOOTSTRAP_OPERATOR_ROLE_CODES {
+        ensure_sqlite_tenant_user_role_binding(pool, tenant_id, user_id, role_code, now).await?;
     }
     Ok(())
 }
@@ -1007,6 +1308,54 @@ mod tests {
     fn bootstrap_admin_ids_are_stable() {
         assert_eq!(bootstrap_owner_membership_id("1"), "iamom_owner_1");
         assert_eq!(bootstrap_credential_id("1"), "iamc_bootstrap_1");
+    }
+
+    #[test]
+    fn resolve_bootstrap_operator_password_requires_its_own_env() {
+        let _lock = crate::test_env_lock::lock();
+        std::env::remove_var(SDKWORK_IAM_OPERATOR_PASSWORD_ENV);
+        std::env::set_var(SDKWORK_IAM_BOOTSTRAP_PASSWORD_ENV, "bootstrap-secret");
+        std::env::set_var(SDKWORK_IAM_MANAGER_PASSWORD_ENV, "manager-secret");
+        // The operations administrator never inherits another subject's secret.
+        assert_eq!(resolve_bootstrap_operator_password_from_env(), None);
+
+        std::env::set_var(SDKWORK_IAM_OPERATOR_PASSWORD_ENV, "operator-secret");
+        assert_eq!(
+            resolve_bootstrap_operator_password_from_env().as_deref(),
+            Some("operator-secret")
+        );
+
+        std::env::remove_var(SDKWORK_IAM_OPERATOR_PASSWORD_ENV);
+        std::env::remove_var(SDKWORK_IAM_BOOTSTRAP_PASSWORD_ENV);
+        std::env::remove_var(SDKWORK_IAM_MANAGER_PASSWORD_ENV);
+    }
+
+    #[test]
+    fn bootstrap_operator_subject_is_distinct_from_admin_and_manager() {
+        assert_eq!(
+            bootstrap_credential_id(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID),
+            "iamc_bootstrap_3"
+        );
+        assert_eq!(
+            bootstrap_member_membership_id(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID),
+            "iamom_member_3"
+        );
+        assert_eq!(
+            bootstrap_member_tenant_member_id(DEFAULT_BOOTSTRAP_OPERATOR_USER_ID),
+            "iamtm_member_3"
+        );
+        assert_ne!(
+            DEFAULT_BOOTSTRAP_OPERATOR_USER_ID,
+            DEFAULT_BOOTSTRAP_ADMIN_USER_ID
+        );
+        assert_ne!(
+            DEFAULT_BOOTSTRAP_OPERATOR_USER_ID,
+            DEFAULT_BOOTSTRAP_MANAGER_USER_ID
+        );
+        assert_ne!(
+            DEFAULT_BOOTSTRAP_OPERATOR_EMAIL,
+            DEFAULT_BOOTSTRAP_ADMIN_EMAIL
+        );
     }
 
     #[cfg(feature = "sqlite")]

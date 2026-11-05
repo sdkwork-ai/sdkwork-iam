@@ -13,13 +13,17 @@ pub mod tenant_signing_key;
 
 pub use bootstrap_operator::{
     ensure_postgres_bootstrap_admin_user, ensure_postgres_bootstrap_manager_user,
-    resolve_bootstrap_admin_password_from_env, resolve_bootstrap_manager_password_from_env,
-    BootstrapAdminUserOutcome, BootstrapManagerUserOutcome, SDKWORK_IAM_BOOTSTRAP_PASSWORD_ENV,
-    SDKWORK_IAM_MANAGER_PASSWORD_ENV, SDKWORK_IAM_SUPER_ADMIN_PASSWORD_ENV,
+    ensure_postgres_bootstrap_operator_user, resolve_bootstrap_admin_password_from_env,
+    resolve_bootstrap_manager_password_from_env, resolve_bootstrap_operator_password_from_env,
+    BootstrapAdminUserOutcome, BootstrapManagerUserOutcome, BootstrapOperatorUserOutcome,
+    BOOTSTRAP_OPERATOR_ROLE_CODES, SDKWORK_IAM_BOOTSTRAP_PASSWORD_ENV,
+    SDKWORK_IAM_MANAGER_PASSWORD_ENV, SDKWORK_IAM_OPERATOR_PASSWORD_ENV,
+    SDKWORK_IAM_SUPER_ADMIN_PASSWORD_ENV,
 };
 #[cfg(feature = "sqlite")]
 pub use bootstrap_operator::{
     ensure_sqlite_bootstrap_admin_user, ensure_sqlite_bootstrap_manager_user,
+    ensure_sqlite_bootstrap_operator_user,
 };
 pub use constants::*;
 pub use iam_entity_ids::{
