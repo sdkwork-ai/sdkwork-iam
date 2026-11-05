@@ -160,6 +160,26 @@ export interface SdkworkAuthSession extends Required<Pick<SdkworkAuthStoredSessi
 
 export const SDKWORK_AUTH_SESSION_REQUIRED_MESSAGE = "Valid IAM auth session is required.";
 
+/** Longest a sign-out waits for the server-side session revocation. */
+const SIGN_OUT_REVOCATION_TIMEOUT_MS = 1500;
+
+/**
+ * Wait for a remote revocation only as long as a sign-out can afford.
+ *
+ * The request still runs to completion; this only bounds how long the local
+ * session clear is delayed by an unreachable or slow IAM API.
+ */
+function settleWithin(promise: Promise<unknown>, timeoutMs: number): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const finish = () => {
+      globalThis.clearTimeout(timer);
+      resolve();
+    };
+    const timer = globalThis.setTimeout(finish, timeoutMs);
+    void promise.then(finish, finish);
+  });
+}
+
 function normalizeAuthSessionToken(value: unknown): string | undefined {
   const normalized = typeof value === "string" ? value.trim() : "";
   return normalized || undefined;
@@ -1655,7 +1675,10 @@ export function createSdkworkAuthService(
     );
 
     try {
-      await deleteCurrentSession();
+      // The local session is what sign-out must end. An unreachable API must
+      // not hold the sign-out surface open, so the remote revoke is bounded;
+      // the request keeps running in the background.
+      await settleWithin(deleteCurrentSession(), SIGN_OUT_REVOCATION_TIMEOUT_MS);
     } finally {
       await clearSession();
     }

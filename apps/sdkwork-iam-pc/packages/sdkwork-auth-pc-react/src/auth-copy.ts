@@ -7,6 +7,12 @@ import {
 export type SdkworkAuthLocale = "en-US" | "zh-CN";
 
 export interface SdkworkAuthMessages {
+  account: {
+    menuLabel: string;
+    signOut: string;
+    signedInAs: string;
+    signingOut: string;
+  };
   callback: {
     backToLogin: string;
     badge: string;
@@ -209,6 +215,12 @@ export function formatSdkworkAuthTemplate(
 }
 
 const EN_US_MESSAGES: SdkworkAuthMessages = {
+  account: {
+    menuLabel: "Account menu",
+    signOut: "Sign out",
+    signedInAs: "Signed in as",
+    signingOut: "Signing out\u2026",
+  },
   callback: {
     backToLogin: "Back to login",
     badge: "Identity",
@@ -415,6 +427,12 @@ const EN_US_MESSAGES: SdkworkAuthMessages = {
 };
 
 const ZH_CN_MESSAGES: SdkworkAuthMessages = {
+  account: {
+    menuLabel: "\u8d26\u6237\u83dc\u5355",
+    signOut: "\u9000\u51fa\u767b\u5f55",
+    signedInAs: "\u5df2\u767b\u5f55\u4e3a",
+    signingOut: "\u6b63\u5728\u9000\u51fa\u2026",
+  },
   callback: {
     backToLogin: "\u8fd4\u56de\u767b\u5f55",
     badge: "\u8eab\u4efd\u8ba4\u8bc1",

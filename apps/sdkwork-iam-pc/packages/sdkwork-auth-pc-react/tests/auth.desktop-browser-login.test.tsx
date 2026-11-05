@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SdkworkI18nProvider } from "@sdkwork/i18n-pc-react";
@@ -23,7 +23,10 @@ import { SdkworkAuthPage } from "../src/pages/AuthPage.tsx";
 import { SdkworkAuthOAuthCallbackPage } from "../src/pages/AuthOAuthCallbackPage.tsx";
 import { mockAccessToken, mockAuthToken } from "./authJwtFixtures.ts";
 import type { SdkworkAuthDesktopBrowserLoginBinding } from "../src/desktop-browser-login.ts";
-import { createSdkworkAuthController } from "../src/auth-controller.ts";
+import {
+  createSdkworkAuthController,
+  type SdkworkAuthController,
+} from "../src/auth-controller.ts";
 
 describe("desktop deep-link redirect helpers", () => {
   it("detects custom-scheme deep-link redirects", () => {
@@ -132,31 +135,39 @@ describe("auth access for the desktop hand-off page", () => {
   });
 });
 
+function renderLaunchPage(
+  initialEntry: string,
+  options: {
+    controller?: SdkworkAuthController;
+    onLaunch?: (url: string) => void;
+  } = {},
+) {
+  return render(
+    <SdkworkI18nProvider catalogs={[SDKWORK_AUTH_I18N_CATALOG]} locale="en-US">
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <Routes>
+          <Route
+            element={
+              <SdkworkAuthDesktopLaunchPage
+                controller={options.controller}
+                onLaunch={options.onLaunch}
+              />
+            }
+            path="/auth/desktop/launch"
+          />
+          <Route element={<output>login-page</output>} path="/auth/login" />
+        </Routes>
+      </MemoryRouter>
+    </SdkworkI18nProvider>,
+  );
+}
+
 describe("sdkwork desktop launch page", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
     vi.useRealTimers();
   });
-
-  function renderLaunchPage(
-    initialEntry: string,
-    options: { onLaunch?: (url: string) => void } = {},
-  ) {
-    return render(
-      <SdkworkI18nProvider catalogs={[SDKWORK_AUTH_I18N_CATALOG]} locale="en-US">
-        <MemoryRouter initialEntries={[initialEntry]}>
-          <Routes>
-            <Route
-              element={<SdkworkAuthDesktopLaunchPage onLaunch={options.onLaunch} />}
-              path="/auth/desktop/launch"
-            />
-            <Route element={<output>login-page</output>} path="/auth/login" />
-          </Routes>
-        </MemoryRouter>
-      </SdkworkI18nProvider>,
-    );
-  }
 
   it("renders the success hand-off and auto-launches the deep link once", async () => {
     vi.useFakeTimers();
@@ -228,6 +239,78 @@ describe("sdkwork desktop launch page", () => {
     renderLaunchPage("/auth/desktop/launch");
     fireEvent.click(screen.getByText("Back to login"));
     expect(screen.getByText("login-page")).toBeInTheDocument();
+  });
+});
+
+describe("sdkwork desktop launch page account header", () => {
+  const SESSION = {
+    accessToken: "access",
+    authToken: "auth",
+    user: {
+      id: "u1",
+      displayName: "Bird Coder",
+      email: "bird@example.com",
+      firstName: "Bird",
+      lastName: "Coder",
+      initials: "BC",
+    },
+  };
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  function renderSignedInLaunchPage() {
+    const signOut = vi.fn().mockResolvedValue(undefined);
+    const controller = createSdkworkAuthController({
+      service: {
+        getCurrentSession: vi.fn().mockResolvedValue(SESSION),
+        signOut,
+      },
+    });
+    renderLaunchPage("/auth/desktop/launch", { controller });
+    return { controller, signOut };
+  }
+
+  it("shows the signed-in identity and signs out from the header menu", async () => {
+    const { signOut } = renderSignedInLaunchPage();
+
+    const header = await screen.findByRole("banner");
+    expect(await within(header).findByText("Bird Coder")).toBeInTheDocument();
+    const trigger = within(header).getByTestId("sdkwork-auth-account-menu-trigger");
+    expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+    fireEvent.mouseEnter(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+    expect(screen.getByText("Signed in as")).toBeInTheDocument();
+    expect(screen.getByText("bird@example.com")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("sdkwork-auth-account-menu-sign-out"));
+
+    await vi.waitFor(() => {
+      expect(signOut).toHaveBeenCalledTimes(1);
+    });
+    await vi.waitFor(() => {
+      expect(screen.getByText("login-page")).toBeInTheDocument();
+    });
+  });
+
+  it("opens the account menu on click and closes it on Escape", async () => {
+    renderSignedInLaunchPage();
+
+    const trigger = await screen.findByTestId("sdkwork-auth-account-menu-trigger");
+    fireEvent.click(trigger);
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 });
 
