@@ -12,8 +12,8 @@ import { SdkworkIamUserAdminWorkspace } from "../src";
  * (persist first, upload second); edit uploads immediately against the
  * existing id. A failed post-create upload keeps the drawer open as the
  * created user's edit view so the retry cannot create a duplicate. Without a
- * host upload capability the field degrades to the plain URL input — never a
- * local data-URL read.
+ * host upload capability the field stays read-only and explains that uploads
+ * are unavailable; it never falls back to a URL input.
  */
 
 /** Drawer-scoped queries: the footer submit shares the toolbar button's label. */
@@ -186,7 +186,7 @@ describe("user avatar upload adoption", () => {
     );
   });
 
-  it("offers only the external-URL field when no upload capability is injected", async () => {
+  it("keeps the avatar read-only instead of offering a URL field when no upload capability is injected", async () => {
     const controller = createController();
     render(
       <SdkworkIamUserAdminWorkspace
@@ -200,10 +200,12 @@ describe("user avatar upload adoption", () => {
     fireEvent.click(screen.getByRole("button", { name: "编辑用户: Alice" }));
     await screen.findByRole("button", { name: "保存更改" });
 
-    // No pick affordance without a host capability: a local data-URL read
-    // would be a fake upload, so the field degrades to the URL input.
+    // No pick affordance and no URL input without a host capability: the
+    // current avatar stays visible and the field explains the limitation.
     expect(screen.queryByRole("button", { name: "点击或拖拽图片到此处" })).toBeNull();
-    expect(screen.getByPlaceholderText("头像图片链接")).not.toBeNull();
+    expect(document.querySelector('input[type="url"]')).toBeNull();
+    expect(screen.queryByPlaceholderText("头像图片链接")).toBeNull();
+    expect(screen.getByText("当前环境未启用头像上传。")).toBeTruthy();
     expect(document.querySelector('input[type="file"]')).toBeNull();
   });
 });

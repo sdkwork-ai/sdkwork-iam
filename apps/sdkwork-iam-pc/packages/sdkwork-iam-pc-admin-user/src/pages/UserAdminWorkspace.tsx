@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type RefObject } from "react";
-import { Ban, Eye, Pencil, Plus, Search, Trash2, Unlock } from "lucide-react";
+import { Ban, Eye, Pencil, Plus, Search, Trash2, Unlock, UserRound } from "lucide-react";
 import { CatalogPagination } from "@sdkwork/iam-pc-admin-core";
 import {
   Button,
@@ -45,12 +45,12 @@ const userAdminMessages = {
     avatar: "Avatar",
     avatarHint: "JPG, PNG, WebP, and other image formats up to 5 MB",
     avatarInvalidType: "The avatar must be an image file.",
-    avatarPlaceholder: "Avatar image URL",
     avatarRemove: "Remove avatar",
     avatarReplace: "Replace avatar",
     avatarRetry: "Retry upload",
     avatarTooLarge: "The avatar must be 5 MiB or smaller.",
     avatarTooLargeDetail: "The avatar must be {max} or smaller.",
+    avatarUnavailable: "Avatar uploads are not available in this environment.",
     avatarUpload: "Click or drop an image here",
     avatarUploadFailed: "Avatar upload failed",
     avatarUploading: "Uploading avatar…",
@@ -117,12 +117,12 @@ const userAdminMessages = {
     avatar: "头像",
     avatarHint: "支持 JPG、PNG、WebP 等图片格式，不超过 5 MB",
     avatarInvalidType: "头像必须是图片文件。",
-    avatarPlaceholder: "头像图片链接",
     avatarRemove: "移除头像",
     avatarReplace: "更换头像",
     avatarRetry: "重试上传",
     avatarTooLarge: "头像不能超过 5 MiB。",
     avatarTooLargeDetail: "头像不能超过 {max}。",
+    avatarUnavailable: "当前环境未启用头像上传。",
     avatarUpload: "点击或拖拽图片到此处",
     avatarUploadFailed: "头像上传失败",
     avatarUploading: "头像上传中…",
@@ -584,16 +584,11 @@ function UserDrawer({
               ref={avatarFieldRef}
               service={driveUploadImageService}
               shape="circle"
-              sizePx={72}
+              sizePx={96}
               value={avatarResourceToDriveUploadImageValue(draft.avatar)}
             />
           ) : (
-            <AvatarUrlField
-              copy={copy}
-              disabled={viewing}
-              onDraftChange={onDraftChange}
-              draft={draft}
-            />
+            <AvatarPreviewField copy={copy} draft={draft} />
           )}
           <Field disabled={viewing} label={copy.username} onChange={(username) => onDraftChange({ ...draft, username })} value={draft.username ?? ""} />
           <Field disabled={viewing} label={copy.email} onChange={(email) => onDraftChange({ ...draft, email })} type="email" value={draft.email ?? ""} />
@@ -757,32 +752,38 @@ function Field({ disabled, hint, label, onChange, placeholder, type = "text", va
 }
 
 /**
- * Degraded avatar field for hosts without the Drive upload capability.
+ * Read-only avatar preview for hosts without the Drive upload capability.
  *
- * A local data-URL read would be a fake upload, so without the injected
- * service the field offers only the plain delivery-URL input — the same
- * degradation contract the organization workspace follows.
+ * Pasting a delivery URL is not an avatar-editing product capability: it
+ * bypasses upload governance and breaks the stored media-resource contract.
+ * Without the injected upload service the field keeps showing the current
+ * avatar and explains that uploads are unavailable, instead of degrading to a
+ * URL input.
  */
-function AvatarUrlField({
+function AvatarPreviewField({
   copy,
-  disabled,
   draft,
-  onDraftChange,
 }: {
   copy: typeof userAdminMessages["en-US"] | typeof userAdminMessages["zh-CN"];
-  disabled?: boolean;
   draft: SdkworkIamAdminUserDraft;
-  onDraftChange: (draft: SdkworkIamAdminUserDraft) => void;
 }) {
+  const source = draft.avatarUrl?.trim()
+    || draft.avatar?.publicUrl
+    || draft.avatar?.url;
   return (
-    <Field
-      disabled={disabled}
-      label={copy.avatar}
-      onChange={(avatarUrl) => onDraftChange({ ...draft, avatarUrl, avatar: undefined })}
-      placeholder={copy.avatarPlaceholder}
-      type="url"
-      value={draft.avatarUrl ?? ""}
-    />
+    <div className="space-y-2 text-sm">
+      <span className="block">{copy.avatar}</span>
+      <div className="flex items-center gap-4">
+        <span className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-panel-muted)]">
+          {source ? (
+            <img alt={copy.avatar} className="h-full w-full object-cover" src={source} />
+          ) : (
+            <UserRound className="h-7 w-7 text-[var(--sdk-color-text-muted)]" />
+          )}
+        </span>
+        <span className="min-w-0 text-xs text-[var(--sdk-color-text-muted)]">{copy.avatarUnavailable}</span>
+      </div>
+    </div>
   );
 }
 
