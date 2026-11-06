@@ -3,6 +3,7 @@ export const commonMessages = {
   accountPlaceholder: "Phone or email",
   and: "and",
   codePlaceholder: "Enter verification code",
+  confirmPasswordPlaceholder: "Re-enter password",
   getCode: "Get code",
   passwordPlaceholder: "Enter password",
   readAndAgree: "I have read and agree to the",

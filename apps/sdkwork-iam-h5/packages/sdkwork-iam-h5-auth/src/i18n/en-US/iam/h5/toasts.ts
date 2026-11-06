@@ -7,6 +7,7 @@ export const toastsMessages = {
   enterPassword: "Please enter your password",
   enterValidAccount: "Please enter a valid account",
   operationFailed: "Operation failed",
+  passwordMismatch: "Passwords do not match",
   passwordResetSuccess: "Password reset successfully, please sign in again",
   verificationUnavailable: "Verification code service is unavailable; try password sign in",
   loggingIn: "signing in...",

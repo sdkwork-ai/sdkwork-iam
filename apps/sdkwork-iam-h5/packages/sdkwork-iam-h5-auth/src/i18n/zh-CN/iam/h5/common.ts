@@ -3,6 +3,7 @@ export const commonMessages = {
   accountPlaceholder: "手机号或邮箱",
   and: "和",
   codePlaceholder: "请输入验证码",
+  confirmPasswordPlaceholder: "请再次输入密码",
   getCode: "获取验证码",
   passwordPlaceholder: "请输入密码",
   readAndAgree: "我已阅读并同意",
