@@ -1,0 +1,20 @@
+/**
+ * Root bootstrap: environment resolution only.
+ *
+ * The runtime document is loaded by the build/profile materialization before
+ * SDK clients are constructed. Nothing here reads secrets or writes config.
+ */
+import { readIamUniappxRuntimeEnv } from '@sdkwork/iam-uniappx-core';
+import type { IamUniappxRuntimeEnv } from '@sdkwork/iam-uniappx-core';
+
+export function readBootstrapEnvironment(): IamUniappxRuntimeEnv {
+  return readIamUniappxRuntimeEnv();
+}
+
+export function describeBootstrapTarget(): { profileId: string; target: string } {
+  const env = readBootstrapEnvironment();
+  return {
+    profileId: env.SDKWORK_PROFILE_ID,
+    target: env.SDKWORK_RUNTIME_TARGET,
+  };
+}

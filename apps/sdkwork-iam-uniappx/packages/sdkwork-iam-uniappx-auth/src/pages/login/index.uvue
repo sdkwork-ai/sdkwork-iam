@@ -1,0 +1,187 @@
+<template>
+  <view class="iam-login">
+    <text class="iam-login__title">{{ title }}</text>
+    <text class="iam-login__subtitle">{{ subtitle }}</text>
+
+    <view class="iam-login__field">
+      <text class="iam-login__label">{{ identifierLabel }}</text>
+      <input
+        class="iam-login__input"
+        :value="identifier"
+        :placeholder="identifierPlaceholder"
+        :disabled="submitting"
+        @input="onIdentifierInput"
+      />
+      <text v-if="identifierError" class="iam-login__error">{{ identifierError }}</text>
+    </view>
+
+    <view class="iam-login__field">
+      <text class="iam-login__label">{{ passwordLabel }}</text>
+      <input
+        class="iam-login__input"
+        :value="password"
+        :password="true"
+        :placeholder="passwordPlaceholder"
+        :disabled="submitting"
+        @input="onPasswordInput"
+      />
+      <text v-if="passwordError" class="iam-login__error">{{ passwordError }}</text>
+    </view>
+
+    <text v-if="errorMessage" class="iam-login__form-error">{{ errorMessage }}</text>
+
+    <button class="iam-login__submit" type="primary" :disabled="submitting" @click="onSubmit">
+      {{ submitLabel }}
+    </button>
+  </view>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import {
+  IAM_LOGIN_FORM_ERROR_MESSAGES,
+  validateIamLoginForm,
+} from '../../forms/login-form.ts';
+
+const props = defineProps({
+  title: {
+    type: String,
+    default: 'Sign in',
+  },
+  subtitle: {
+    type: String,
+    default: 'Use your SDKWork IAM account.',
+  },
+  identifierLabel: {
+    type: String,
+    default: 'Email, phone, or username',
+  },
+  identifierPlaceholder: {
+    type: String,
+    default: 'name@example.com',
+  },
+  passwordLabel: {
+    type: String,
+    default: 'Password',
+  },
+  passwordPlaceholder: {
+    type: String,
+    default: 'Your password',
+  },
+  submitLabel: {
+    type: String,
+    default: 'Sign in',
+  },
+  submitting: {
+    type: Boolean,
+    default: false,
+  },
+  errorMessage: {
+    type: String,
+    default: '',
+  },
+});
+
+const emit = defineEmits(['submit']);
+
+const identifier = ref('');
+const password = ref('');
+const identifierError = ref('');
+const passwordError = ref('');
+
+function onIdentifierInput(event) {
+  identifier.value = event.detail.value;
+  identifierError.value = '';
+}
+
+function onPasswordInput(event) {
+  password.value = event.detail.value;
+  passwordError.value = '';
+}
+
+function onSubmit() {
+  const errors = validateIamLoginForm({
+    identifier: identifier.value,
+    password: password.value,
+    tenantId: '',
+    organizationId: '',
+  });
+  identifierError.value = errors.identifier
+    ? IAM_LOGIN_FORM_ERROR_MESSAGES[errors.identifier] ?? errors.identifier
+    : '';
+  passwordError.value = errors.password
+    ? IAM_LOGIN_FORM_ERROR_MESSAGES[errors.password] ?? errors.password
+    : '';
+  if (identifierError.value || passwordError.value) {
+    return;
+  }
+  emit('submit', {
+    identifier: identifier.value.trim(),
+    password: password.value,
+  });
+}
+</script>
+
+<style>
+.iam-login {
+  flex: 1;
+  padding: 24px;
+  background-color: #ffffff;
+}
+
+.iam-login__title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.iam-login__subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.iam-login__field {
+  margin-bottom: 16px;
+}
+
+.iam-login__label {
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.iam-login__input {
+  height: 44px;
+  padding-left: 12px;
+  padding-right: 12px;
+  background-color: #f9fafb;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #e5e7eb;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #111827;
+}
+
+.iam-login__error {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #b42318;
+}
+
+.iam-login__form-error {
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #b42318;
+}
+
+.iam-login__submit {
+  height: 46px;
+  border-radius: 10px;
+  background-color: #0b63ce;
+  color: #ffffff;
+  font-size: 16px;
+}
+</style>

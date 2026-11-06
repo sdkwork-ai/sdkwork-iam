@@ -1,0 +1,33 @@
+{
+  "name": "@sdkwork/iam-uniappx-shell",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Account shell .uvue components and route composition for the SDKWork IAM uni-app x root.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./components/account-header": "./src/components/AccountHeader.uvue",
+    "./components/account-menu": "./src/components/AccountMenu.uvue"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@sdkwork/iam-uniappx-core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
+  "sdkwork": {
+    "architecture": "uniappx",
+    "surface": "app",
+    "domain": "iam",
+    "capability": "shell",
+    "packageType": "runtime",
+    "status": "standardizing"
+  }
+}

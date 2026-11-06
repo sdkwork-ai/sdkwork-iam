@@ -1,0 +1,7 @@
+import { createIamUniappxHostAdapters } from '@sdkwork/iam-uniappx-host';
+import type { IamHostAdapters } from '@sdkwork/iam-uniappx-core';
+
+/** Typed host adapters. Feature packages never import `uni.*` themselves. */
+export function createHostAdapters(): IamHostAdapters {
+  return createIamUniappxHostAdapters();
+}

@@ -1,0 +1,24 @@
+import {
+  createIamRouteRegistry,
+  projectIamPagesJson,
+} from '@sdkwork/iam-uniappx-core';
+import type {
+  IamPagesJsonProjection,
+  IamRouteContribution,
+  IamRouteRegistry,
+} from '@sdkwork/iam-uniappx-core';
+
+import { createIamShellRoutes } from '@sdkwork/iam-uniappx-shell';
+
+export function resolveBootstrapRoutes(): readonly IamRouteContribution[] {
+  return createIamShellRoutes();
+}
+
+export function bootstrapRouteRegistry(): IamRouteRegistry {
+  return createIamRouteRegistry(resolveBootstrapRoutes());
+}
+
+/** `pages.json` stays a projection of route contributions. */
+export function projectBootstrapPagesJson(): IamPagesJsonProjection {
+  return projectIamPagesJson(resolveBootstrapRoutes());
+}

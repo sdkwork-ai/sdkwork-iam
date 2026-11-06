@@ -1,0 +1,40 @@
+import { createIamAuthSessionMachine } from '@sdkwork/iam-uniappx-auth';
+import type { IamAuthSessionMachine } from '@sdkwork/iam-uniappx-auth';
+import type {
+  IamAppSdkAuthPort,
+  IamContextStore,
+  IamSensitiveClearReason,
+  IamTokenManager,
+} from '@sdkwork/iam-uniappx-core';
+
+export interface IamAuthRuntime {
+  machine: IamAuthSessionMachine;
+  dispose(): void;
+}
+
+/**
+ * Wires the auth/session machine to the one global TokenManager and the context
+ * store. Every reset path drops the token, the context, and the sensitive-state
+ * hook.
+ */
+export function createAuthRuntime(options: {
+  gateway: IamAppSdkAuthPort;
+  tokenManager: IamTokenManager;
+  contextStore: IamContextStore;
+  onSensitiveStateCleared?: (reason: IamSensitiveClearReason) => void;
+}): IamAuthRuntime {
+  const machine = createIamAuthSessionMachine({
+    gateway: options.gateway,
+    tokenManager: options.tokenManager,
+    contextStore: options.contextStore,
+    onSensitiveStateCleared: options.onSensitiveStateCleared,
+  });
+
+  return {
+    machine,
+    dispose(): void {
+      options.tokenManager.clear();
+      options.contextStore.clear();
+    },
+  };
+}

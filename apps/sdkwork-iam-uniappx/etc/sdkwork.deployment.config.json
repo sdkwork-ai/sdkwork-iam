@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component-deployment",
+  "application": "sdkwork-iam-uniappx",
+  "parentDeploymentConfig": "../../../etc/sdkwork.deployment.config.json",
+  "parentTopologySpec": "../../../specs/topology.spec.json",
+  "materialization": {
+    "authority": "../../../etc/sdkwork.deployment.config.json",
+    "format": "json",
+    "outputPattern": "../config/app/runtime-env.{deploymentProfile}.{environment}.json",
+    "profiles": [
+      "standalone.development",
+      "standalone.test",
+      "standalone.staging",
+      "standalone.demo",
+      "standalone.production",
+      "cloud.development",
+      "cloud.test",
+      "cloud.staging",
+      "cloud.demo",
+      "cloud.production"
+    ],
+    "runtimeTarget": "android-native",
+    "checkedIn": false,
+    "deferred": true,
+    "deferredReason": "uni-app x App runtime documents are materialized per delivery target by the release pipeline. This change ships the component contract and the build-evidence validator; it does not commit public runtime documents, so `scripts/build-runtime.mjs` fails closed until the profiles are materialized."
+  },
+  "profiles": {}
+}

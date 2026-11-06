@@ -1,0 +1,29 @@
+import {
+  createIamUniappxAppSdkClient,
+} from '@sdkwork/iam-uniappx-core';
+import type {
+  IamAppSdkAuthPort,
+  IamUniappxAppSdkClient,
+  IamUniappxRuntimeEnv,
+} from '@sdkwork/iam-uniappx-core';
+
+export interface IamUniappxSdkClients {
+  app: IamUniappxAppSdkClient;
+}
+
+/**
+ * Constructs the generated app SDK client from the resolved profile and the
+ * typed auth port supplied by the application composition.
+ *
+ * The generated IAM app SDK exposes `auth.sessions.*`; the adapter that
+ * satisfies `IamAppSdkAuthPort` is owned by the application bootstrap so this
+ * root never guesses generated response shapes.
+ */
+export function createSdkClients(
+  env: IamUniappxRuntimeEnv,
+  auth: IamAppSdkAuthPort,
+): IamUniappxSdkClients {
+  return {
+    app: createIamUniappxAppSdkClient(env, auth),
+  };
+}

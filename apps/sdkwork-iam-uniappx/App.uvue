@@ -1,0 +1,14 @@
+<script setup>
+import { onLaunch } from '@dcloudio/uni-app';
+import { installIamUniappxRuntime } from './bootstrap/runtime.uts';
+
+onLaunch(() => {
+  installIamUniappxRuntime();
+});
+</script>
+
+<style>
+page {
+  background-color: #f4f5f7;
+}
+</style>

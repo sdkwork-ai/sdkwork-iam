@@ -1,0 +1,35 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": [
+      "ES2022"
+    ],
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "@sdkwork/iam-uniappx-core": [
+        "./packages/sdkwork-iam-uniappx-core/src/index.ts"
+      ],
+      "@sdkwork/iam-uniappx-auth": [
+        "./packages/sdkwork-iam-uniappx-auth/src/index.ts"
+      ],
+      "@sdkwork/iam-uniappx-host": [
+        "./packages/sdkwork-iam-uniappx-host/src/index.ts"
+      ],
+      "@sdkwork/iam-uniappx-shell": [
+        "./packages/sdkwork-iam-uniappx-shell/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "bootstrap",
+    "packages"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "unpackage",
+    "tmp"
+  ]
+}

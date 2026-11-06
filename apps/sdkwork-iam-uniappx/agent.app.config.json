@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 3,
+  "kind": "agent.app",
+  "app": {
+    "key": "sdkwork-iam-uniappx",
+    "name": "SDKWork IAM uni-app x",
+    "displayName": "SDKWork IAM",
+    "description": "SDKWork IAM uni-app x client for authentication, session, account, and approved console surfaces.",
+    "vendor": "SDKWork",
+    "officialWebsiteUrl": "https://sdkwork.com/apps/sdkwork-iam-uniappx",
+    "supportUrl": "https://sdkwork.com/support",
+    "privacyPolicyUrl": "https://sdkwork.com/privacy",
+    "termsOfServiceUrl": "https://sdkwork.com/terms",
+    "iconUrl": "https://cdn.sdkwork.com/apps/sdkwork-iam-uniappx/assets/icon-1024.png",
+    "appType": "APP_UNIAPP",
+    "versionSource": "package.json",
+    "identifiers": {
+      "packageName": null,
+      "bundleId": null,
+      "desktopAppId": null,
+      "containerImage": "registry.sdkwork.com/apps/sdkwork-iam-uniappx"
+    }
+  },
+  "backend": {
+    "profileKey": "backend-root-admin",
+    "ownerMode": "tenant",
+    "grantMode": "current",
+    "platform": "APP_ANDROID",
+    "appId": "sdkwork-iam",
+    "serviceId": "sdkwork-api-iam-assembly",
+    "tenantId": "100001",
+    "organizationId": "0",
+    "accessTokenPermissionScope": [
+      "iam:self",
+      "iam.users.read",
+      "iam.organizations.read",
+      "iam.roles.read",
+      "iam.permissions.read"
+    ]
+  },
+  "runtime": {
+    "family": "mobile",
+    "framework": "uni-app-x",
+    "runtimes": [
+      "APP_ANDROID",
+      "APP_IOS",
+      "APP_HARMONY"
+    ],
+    "defaultPlatform": "APP_ANDROID",
+    "defaultArchitecture": "uniappx",
+    "targetPlatforms": [
+      "android",
+      "ios",
+      "harmony"
+    ],
+    "clientArchitectures": [
+      "uniappx"
+    ],
+    "uniappxMode": "vapor",
+    "supportedDeploymentProfiles": [
+      "standalone",
+      "cloud"
+    ],
+    "defaultDeploymentProfile": "standalone"
+  },
+  "media": {
+    "icons": {
+      "primary": {
+        "id": "sdkwork-iam-uniappx-primary-icon",
+        "type": "ICON",
+        "purpose": "PRIMARY",
+        "url": "https://cdn.sdkwork.com/apps/sdkwork-iam-uniappx/assets/icon-1024.png",
+        "platform": "APP_ANDROID",
+        "locale": "en-US",
+        "width": 1024,
+        "height": 1024,
+        "format": "PNG",
+        "fileSizeBytes": 524288,
+        "alphaChannel": true,
+        "enabled": true,
+        "metadata": {
+          "generatedPlaceholder": true
+        }
+      },
+      "platform": [],
+      "metadata": {
+        "generatedPlaceholder": true
+      }
+    },
+    "screenshots": [],
+    "previews": [],
+    "metadata": {
+      "assetVersion": "0.1.0",
+      "defaultLocale": "en-US"
+    }
+  },
+  "publish": {
+    "status": "DRAFT",
+    "preLaunch": true,
+    "installSkill": false,
+    "platforms": [
+      "APP_ANDROID",
+      "APP_IOS",
+      "APP_HARMONY"
+    ],
+    "installPlatforms": [
+      "APP_ANDROID",
+      "APP_IOS",
+      "APP_HARMONY"
+    ],
+    "config": {
+      "workspaceRoot": "apps/sdkwork-iam-uniappx",
+      "framework": "uni-app-x",
+      "managedBy": "sdkwork-iam-client-app-surfaces"
+    }
+  },
+  "artifacts": {
+    "installConfig": {
+      "packages": [],
+      "metadata": {
+        "workspaceRoot": "apps/sdkwork-iam-uniappx",
+        "framework": "uni-app-x",
+        "packageManager": "pnpm",
+        "releaseBuildDeferred": true,
+        "releaseBuildDeferredReason": "HBuilderX is the uni-app x App build toolchain and is not available in this environment, so App packages cannot be built or previewed here. Builds run through the HBuilderX CLI in the release pipeline."
+      }
+    }
+  },
+  "release": {
+    "currentVersion": "0.1.0",
+    "defaultChannel": "BETA",
+    "latest": {
+      "BETA": "0.1.0"
+    },
+    "notes": [
+      {
+        "version": "0.1.0",
+        "channel": "BETA",
+        "current": true,
+        "packageIds": []
+      }
+    ]
+  },
+  "security": {
+    "checksumRequired": true,
+    "signatureRequired": false,
+    "sbomRequired": true
+  },
+  "devApp": {
+    "build": {
+      "targets": []
+    },
+    "sourceRoot": "apps/sdkwork-iam-uniappx"
+  },
+  "metadata": {
+    "standardOwner": "sdkwork-iam",
+    "initializedAt": "2026-11-06T00:00:00Z",
+    "deploymentConfig": "etc/sdkwork.deployment.config.json",
+    "releaseAuthority": "../../agent.workflow.json",
+    "architectureSpec": "UNIAPP_X_APP_ARCHITECTURE_SPEC.md",
+    "runtimeTarget": "android-native",
+    "uniappxMode": "vapor",
+    "appTypeNote": "APP_MANIFEST_SPEC PlusProjectType has no native uni-app x member; APP_UNIAPP is the closest closed-set value. This root is a uni-app x (vapor mode) App client, not a uni-app project.",
+    "modeDeclaration": "manifest.json#uni-app-x.vapor mirrors runtime.uniappxMode and specs/uniappx-mode.spec.json."
+  }
+}

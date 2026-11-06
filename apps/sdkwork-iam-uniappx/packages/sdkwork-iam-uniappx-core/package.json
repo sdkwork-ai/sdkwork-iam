@@ -1,0 +1,32 @@
+{
+  "name": "@sdkwork/iam-uniappx-core",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Framework-neutral IAM runtime contracts, TokenManager, route registry, and generated app SDK ports for the SDKWork IAM uni-app x root.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./host": "./src/host/index.ts",
+    "./sdk": "./src/sdk/index.ts",
+    "./session": "./src/session/index.ts",
+    "./routes": "./src/routes/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
+  "sdkwork": {
+    "architecture": "uniappx",
+    "surface": "app",
+    "domain": "iam",
+    "capability": "core",
+    "packageType": "runtime",
+    "status": "standardizing"
+  }
+}

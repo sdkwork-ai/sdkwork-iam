@@ -1,0 +1,58 @@
+<template>
+  <view class="iam-auth-gate">
+    <slot v-if="authenticated"></slot>
+    <view v-else class="iam-auth-gate__signed-out">
+      <text class="iam-auth-gate__message">{{ signedOutMessage }}</text>
+      <button class="iam-auth-gate__action" type="primary" @click="onSignIn">
+        {{ signInLabel }}
+      </button>
+    </view>
+  </view>
+</template>
+
+<script setup>
+const props = defineProps({
+  authenticated: {
+    type: Boolean,
+    default: false,
+  },
+  signedOutMessage: {
+    type: String,
+    default: 'Sign in to continue.',
+  },
+  signInLabel: {
+    type: String,
+    default: 'Sign in',
+  },
+});
+
+const emit = defineEmits(['sign-in']);
+
+function onSignIn() {
+  emit('sign-in');
+}
+</script>
+
+<style>
+.iam-auth-gate {
+  flex: 1;
+}
+
+.iam-auth-gate__signed-out {
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.iam-auth-gate__message {
+  font-size: 15px;
+  color: #6b7280;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.iam-auth-gate__action {
+  width: 200px;
+}
+</style>

@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.uniappx-mode.spec",
+  "root": "sdkwork-iam/apps/sdkwork-iam-uniappx",
+  "architecture": "uniappx",
+  "framework": "uni-app-x",
+  "mode": "vapor",
+  "targets": [
+    "APP_ANDROID",
+    "APP_IOS",
+    "APP_HARMONY"
+  ],
+  "minimumVersions": {
+    "android": 23,
+    "ios": 15,
+    "harmony": 20
+  },
+  "runtimeClassification": {
+    "APP_ANDROID": "vapor",
+    "APP_IOS": "vapor",
+    "APP_HARMONY": "vapor"
+  },
+  "viewLayerCompilation": "bytecode",
+  "toolchain": {
+    "hbuilderx": "5.21+",
+    "android": "5.21+",
+    "ios": "5.11+",
+    "harmony": "5.0+"
+  },
+  "styleIsolationVersion": "2",
+  "evidence": {
+    "modeDecision": "New SDKWork IAM uni-app x root. Vapor is the DCloud successor mode and the default for new uni-app x roots per UNIAPP_X_APP_ARCHITECTURE_SPEC.md section 2; the root ships App targets only in this change, so every delivered target runs Vapor.",
+    "modeDeclarations": [
+      "manifest.json#uni-app-x.vapor",
+      "agent.app.config.json#runtime.uniappxMode"
+    ],
+    "hotUpdate": "not-enabled-in-this-change",
+    "verification": [
+      "node ../../../sdkwork-specs/tools/check-uniappx-architecture.mjs --root .",
+      "pnpm test:mode"
+    ]
+  }
+}

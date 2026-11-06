@@ -1,0 +1,51 @@
+<template>
+  <view class="iam-account-menu">
+    <view v-for="action in actions" :key="action.key" class="iam-account-menu__item" @click="onSelect(action.key)">
+      <text class="iam-account-menu__label">{{ labels[action.key] }}</text>
+    </view>
+  </view>
+</template>
+
+<script setup>
+import {
+  IAM_ACCOUNT_MENU_ACTIONS,
+  IAM_ACCOUNT_MENU_LABELS,
+} from '../routes.ts';
+
+const props = defineProps({
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+const emit = defineEmits(['select']);
+
+const actions = IAM_ACCOUNT_MENU_ACTIONS;
+const labels = IAM_ACCOUNT_MENU_LABELS;
+
+function onSelect(key) {
+  if (props.disabled) return;
+  emit('select', key);
+}
+</script>
+
+<style>
+.iam-account-menu {
+  background-color: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.iam-account-menu__item {
+  padding: 16px;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: #f0f1f3;
+}
+
+.iam-account-menu__label {
+  font-size: 15px;
+  color: #1f2937;
+}
+</style>

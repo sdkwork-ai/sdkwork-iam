@@ -1,0 +1,35 @@
+{
+  "name": "@sdkwork/iam-uniappx-auth",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Headless IAM auth/session state machine and .uvue login/AuthGate components for the SDKWork IAM uni-app x root.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./session": "./src/session/index.ts",
+    "./forms": "./src/forms/index.ts",
+    "./components/auth-gate": "./src/components/AuthGate.uvue",
+    "./pages/login": "./src/pages/login/index.uvue"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@sdkwork/iam-uniappx-core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
+  "sdkwork": {
+    "architecture": "uniappx",
+    "surface": "app",
+    "domain": "iam",
+    "capability": "auth",
+    "packageType": "runtime",
+    "status": "standardizing"
+  }
+}
