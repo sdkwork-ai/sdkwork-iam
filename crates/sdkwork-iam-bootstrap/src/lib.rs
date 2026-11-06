@@ -152,7 +152,7 @@ pub async fn upsert_sqlite_default_subject(pool: &SqlitePool) -> Result<(), sqlx
             )
         VALUES
             (?, ?, NULL, ?, ?, ?, 'active', ?, ?, ?, 0, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET
+        ON CONFLICT(tenant_id, id) DO UPDATE SET
             tenant_id = excluded.tenant_id,
             parent_organization_id = excluded.parent_organization_id,
             code = excluded.code,
@@ -241,7 +241,7 @@ pub async fn upsert_postgres_default_subject(pool: &PgPool) -> Result<(), sqlx::
                 CURRENT_TIMESTAMP,
                 CURRENT_TIMESTAMP
             )
-        ON CONFLICT(id) DO UPDATE SET
+        ON CONFLICT(tenant_id, id) DO UPDATE SET
             tenant_id = excluded.tenant_id,
             parent_organization_id = excluded.parent_organization_id,
             code = excluded.code,

@@ -2,6 +2,7 @@ mod access_token_issue;
 mod account_binding_policy;
 mod api_key_lookup;
 mod app_manifest;
+mod application_access_token;
 mod application_registry;
 mod authorization_policy;
 mod authorization_scope;
@@ -62,6 +63,10 @@ pub use app_manifest::{
     resolve_manifest_runtime_app_bindings, validate_manifest_for_embedded_bootstrap,
     EmbeddedApplicationBootstrapOptions, EmbeddedApplicationRuntimeBinding, ManifestAppSection,
     ManifestBackendSection, ManifestReleaseNote, ManifestReleaseSection, SdkworkAppManifest,
+};
+pub use application_access_token::{
+    parse_public_application_access_token, resolve_application_access_token_context,
+    PublicApplicationAccessTokenClaims, APPLICATION_ACCESS_TOKEN_NO_EXPIRY,
 };
 pub use application_registry::{
     dedupe_postgres_tenant_application_org_template_rows,

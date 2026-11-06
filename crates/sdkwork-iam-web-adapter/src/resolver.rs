@@ -10,6 +10,7 @@ use sqlx::PgPool;
 use std::sync::Arc;
 
 use crate::api_key_lookup::IamApiKeyLookupService;
+use crate::application_access_token::resolve_application_access_token_context;
 use crate::dev_runtime::allows_dev_authentication_fallback;
 use crate::iam_session::{
     resolve_iam_app_context_from_access_token, resolve_iam_app_context_from_access_token_pool,
@@ -268,6 +269,19 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
             {
                 return self.validate_production_principal(web_request_principal_from_iam(context));
             }
+            // Public application access token (`token_class:application`): the
+            // spec resolves it from its claims and the enabled tenant
+            // application registry, never from a persisted session row
+            // (`APP_ACCESS_TOKEN_SPEC.md` section 5). This is the credential the
+            // packaged renderer carries before any interactive session exists.
+            if let Some(pg) = pool.as_postgres() {
+                if let Some(context) =
+                    resolve_application_access_token_context(pg, raw_access_token).await
+                {
+                    return self
+                        .validate_production_principal(web_request_principal_from_iam(context));
+                }
+            }
             if allows_dev_authentication_fallback() {
                 return self
                     .jwt_fallback
@@ -281,6 +295,11 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
         if let Some(pool) = &self.iam_pool {
             if let Some(context) =
                 resolve_iam_app_context_from_access_token(pool, raw_access_token).await
+            {
+                return self.validate_production_principal(web_request_principal_from_iam(context));
+            }
+            if let Some(context) =
+                resolve_application_access_token_context(pool.as_ref(), raw_access_token).await
             {
                 return self.validate_production_principal(web_request_principal_from_iam(context));
             }

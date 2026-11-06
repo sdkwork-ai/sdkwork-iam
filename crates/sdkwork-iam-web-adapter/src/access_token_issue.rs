@@ -21,6 +21,18 @@ pub const IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION: &str = "iam.access_credentia
 
 const LOCAL_TOKEN_TTL_SECONDS: u128 = 60 * 60;
 
+/// Expiry sentinel for a credential that never expires.
+///
+/// The deployed portal receives the application access credential before any
+/// interactive session exists; it is isolation material, not a session
+/// lifetime, so its default expiry is `0` ("no expiry"). A non-zero TTL remains
+/// available for operator-issued delegated credentials.
+pub const NO_EXPIRY_EPOCH_SECONDS: i64 = 0;
+
+fn no_expiry_timestamp() -> chrono::DateTime<chrono::Utc> {
+    chrono::DateTime::<chrono::Utc>::UNIX_EPOCH
+}
+
 type HmacSha256 = Hmac<Sha256>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -212,8 +224,16 @@ pub async fn issue_standalone_bootstrap_access_credential(
     let organization_id = tenant_application.organization_id.clone();
     let session_id = generate_opaque_token("session");
     let now = chrono::Utc::now();
-    let ttl = ttl_seconds.unwrap_or(LOCAL_TOKEN_TTL_SECONDS as u64);
-    let expires_at = now + chrono::Duration::seconds(ttl as i64);
+    // Default: no expiry (`ttl_seconds = None` or `Some(0)`). The bootstrap
+    // credential only isolates tenant/app/environment before login; expiring it
+    // after a session lifetime made every packaged portal fail
+    // `invalid or expired IAM access token` one TTL after deployment.
+    let ttl = ttl_seconds.unwrap_or(0);
+    let expires_at = if ttl == NO_EXPIRY_EPOCH_SECONDS as u64 {
+        no_expiry_timestamp()
+    } else {
+        now + chrono::Duration::seconds(ttl as i64)
+    };
 
     let environment = bootstrap_environment();
     let context = IamAppContext::new(
@@ -289,7 +309,8 @@ fn bootstrap_environment() -> Environment {
 /// 2. otherwise a signed tenant-bound token is issued through
 ///    [`issue_standalone_bootstrap_access_credential`] (tenant signing key
 ///    ensured first — the "update the tenant secret" step on first boot —
-///    then a signed JWT persisted as an IAM session);
+///    then a signed JWT persisted as an IAM session). The bootstrap credential
+///    never expires by default (`exp: 0`, session `expires_at` sentinel);
 /// 3. `Ok(None)` when no IAM database is configured, letting the caller fall
 ///    back to a development-only token.
 ///
@@ -519,7 +540,13 @@ pub(crate) fn sign_local_session_token_with_ttl(
     ttl_seconds: u128,
 ) -> String {
     let issued_at = current_millis() / 1000;
-    let expires_at = issued_at + ttl_seconds;
+    // `0` is the explicit "no expiry" sentinel: the access credential carries
+    // `exp: 0` and the verifier treats it as never expiring.
+    let expires_at = if ttl_seconds == 0 {
+        0_u128
+    } else {
+        issued_at + ttl_seconds
+    };
     let organization_id = context
         .organization_id
         .as_deref()

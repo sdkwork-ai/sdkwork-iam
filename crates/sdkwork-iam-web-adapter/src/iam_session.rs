@@ -158,6 +158,7 @@ async fn resolve_sqlite_iam_app_context_from_dual_tokens(
     }
     let row = sqlx::query(sqlx::AssertSqlSafe(sqlite_session_context_query(
         "s.auth_token_hash = ? AND s.access_token_hash = ?",
+        false,
     )))
     .bind(hash_token(&auth_token))
     .bind(hash_token(&access_token))
@@ -186,7 +187,7 @@ async fn resolve_sqlite_iam_app_context_from_access_token(
     let now_unix = (current_millis() / 1000) as i64;
     let claims = verify_local_session_token(&signing_key, &access_token, "access", now_unix)?;
     let row = sqlx::query(sqlx::AssertSqlSafe(
-        sqlite_session_context_query("s.access_token_hash = ?"),
+        sqlite_session_context_query("s.access_token_hash = ?", true),
     ))
         .bind(hash_token(&access_token))
         .bind(current_timestamp_utc().to_rfc3339())
@@ -203,7 +204,12 @@ async fn resolve_sqlite_iam_app_context_from_access_token(
 }
 
 #[cfg(feature = "sqlite")]
-fn sqlite_session_context_query(token_predicate: &str) -> String {
+fn sqlite_session_context_query(token_predicate: &str, allow_no_expiry: bool) -> String {
+    let expiry_predicate = if allow_no_expiry {
+        "(s.expires_at = '1970-01-01T00:00:00Z' OR s.expires_at > ?)"
+    } else {
+        "s.expires_at > ?"
+    };
     format!(
         "SELECT s.id, s.tenant_id, s.organization_id, s.login_scope, s.user_id, \
                 s.app_id, s.environment, s.deployment_mode, s.auth_level, \
@@ -212,7 +218,7 @@ fn sqlite_session_context_query(token_predicate: &str) -> String {
                 COALESCE(u.email_verified, 0) \
          FROM iam_session s \
          JOIN iam_user u ON u.id = s.user_id AND u.tenant_id = s.tenant_id \
-         WHERE {token_predicate} AND s.revoked_at IS NULL AND s.expires_at > ? \
+         WHERE {token_predicate} AND s.revoked_at IS NULL AND {expiry_predicate} \
            AND u.status = 'active' AND u.is_deleted = 0 LIMIT 1"
     )
 }
@@ -360,7 +366,9 @@ async fn find_iam_context_from_access_token(
         "SELECT {IAM_SESSION_CONTEXT_SELECT} \
          FROM iam_session s {IAM_SESSION_CONTEXT_JOINS} \
          WHERE s.access_token_hash = $1 \
-           AND s.revoked_at IS NULL AND s.expires_at::timestamptz > $2::timestamptz \
+           AND s.revoked_at IS NULL \
+           AND (s.expires_at::timestamptz <= 'epoch'::timestamptz \
+             OR s.expires_at::timestamptz > $2::timestamptz) \
            AND ((s.principal_kind = 'user' AND u.status = 'active' AND u.is_deleted = 0) \
              OR (s.principal_kind = 'service_account' AND sa.status = 'active' \
                AND sac.status = 'active' \
@@ -665,7 +673,9 @@ fn verify_local_session_token_flexible(
         return None;
     }
     let exp = payload.get("exp").and_then(Value::as_i64)?;
-    if exp < now_unix {
+    // `0` is the explicit "never expires" sentinel for the application
+    // bootstrap access credential; a concrete past instant still expires.
+    if exp != 0 && exp < now_unix {
         return None;
     }
     let iss = payload.get("iss").and_then(Value::as_str)?;
@@ -860,7 +870,9 @@ fn verify_local_session_token(
         return None;
     }
     let exp = payload.get("exp").and_then(Value::as_i64)?;
-    if exp < now_unix {
+    // `0` is the explicit "never expires" sentinel for the application
+    // bootstrap access credential; a concrete past instant still expires.
+    if exp != 0 && exp < now_unix {
         return None;
     }
     let iss = payload.get("iss").and_then(Value::as_str)?;

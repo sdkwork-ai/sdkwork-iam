@@ -45,7 +45,7 @@ VALUES
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
     )
-ON CONFLICT (id) DO UPDATE SET
+ON CONFLICT (tenant_id, id) DO UPDATE SET
     tenant_id = EXCLUDED.tenant_id,
     parent_organization_id = EXCLUDED.parent_organization_id,
     code = EXCLUDED.code,

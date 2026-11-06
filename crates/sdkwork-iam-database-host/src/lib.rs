@@ -82,6 +82,18 @@ pub async fn bootstrap_iam_database(pool: DatabasePool) -> Result<IamDatabaseHos
             .map_err(|error| format!("IAM database migrate failed: {error}"))?;
     }
 
+    // `seedOnBoot: true` in database/database.manifest.json: a fresh database
+    // needs the default tenant/organization/roles seed (and the platform
+    // tenant application seed) before embedded application registration and the
+    // bootstrap admin user can reference tenant 100001. Seeding is idempotent,
+    // so every startup converges instead of failing on a missing tenant.
+    if options.seed_on_boot {
+        orchestrator
+            .seed(&options.seed_locale, &options.seed_profile)
+            .await
+            .map_err(|error| format!("IAM database seed failed: {error}"))?;
+    }
+
     // DATABASE_SPEC §35: readiness must fail when required migrations are
     // missing or the schema drifts from the contract. Drift is observation only
     // (DATABASE_FRAMEWORK_SPEC §4.2); repair runs `db:migrate`. This gate must
