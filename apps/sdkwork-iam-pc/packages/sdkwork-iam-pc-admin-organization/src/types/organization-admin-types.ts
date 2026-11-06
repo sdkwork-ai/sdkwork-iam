@@ -33,6 +33,10 @@ export interface SdkworkIamOrganizationDraft {
   industryCategory?: string;
   /** Drive-backed logo media resource uploaded through the shared component. */
   logo?: SdkworkIamOrganizationLogoMediaResource;
+  /**
+   * Legacy external delivery URL. Read-only: legacy records keep their value,
+   * but the drawer only mutates the logo through the shared upload component.
+   */
   logoUrl?: string;
   name: string;
   organizationCategory?: string;
@@ -214,41 +218,23 @@ export interface SdkworkIamOrganizationController {
   updateOrganization(organizationId: string, body: Partial<SdkworkIamOrganizationDraft>): Promise<SdkworkIamOrganization>;
 }
 
-/**
- * Host-injected organization logo capability for the admin workspace.
- *
- * The workspace never touches the drive SDK or upload declarations itself:
- * the host (for example the webserver console) composes both and injects this
- * service. `attachLogo` receives the existing organization's id because the
- * Drive upload contract attributes uploads to an existing entity
- * (`DRIVE_SPEC.md` section 18.3) — the create flow persists the organization
- * first and uploads second.
- */
-export interface SdkworkIamOrganizationLogoService {
-  /** Transient display URL for a stored logo snapshot (bounded Drive preview). */
-  resolveLogoUrl(logo: SdkworkIamOrganizationLogoMediaResource): Promise<string | undefined>;
-  /** Uploads the picked image against the existing organization and returns the snapshot resource. */
-  attachLogo(organizationId: string, file: File): Promise<SdkworkIamOrganizationLogoMediaResource>;
-}
-
 export interface SdkworkIamOrganizationAdminWorkspaceProps {
   controller: SdkworkIamOrganizationController;
   /**
    * Host-injected Drive image-upload capability (`createDriveUploadImageService`).
    *
-   * Present: the logo drawer renders the shared `DriveUploadImage` component
-   * and uploads land in Drive through the host's declared intent. Absent: the
-   * drawer degrades to the plain external-URL field and offers no file picker
-   * — there is no local data-URL fallback, because persisting a base64 payload
-   * would be a fake upload (`DRIVE_SPEC.md` section 18).
+   * The organization drawer and the selected-organization header both render
+   * the shared `DriveUploadImage` component/reader: picking uploads against the
+   * organization id through the host's declared upload intent, and stored
+   * Drive snapshots resolve through the same bounded preview reader. There is
+   * no external-URL field and no local data-URL fallback — persisting a base64
+   * payload or asking an operator to paste a link would be a fake upload
+   * (`DRIVE_SPEC.md` section 18).
+   *
+   * Absent: the drawer renders a disabled upload placeholder with an
+   * explanatory hint instead of an unusable picker.
    */
   driveUploadImageService?: DriveUploadImageService;
-  /**
-   * Host-injected logo attach/resolve capability. Present: the create drawer
-   * accepts a file and the detail header resolves Drive-backed snapshots.
-   * Absent: create mode offers the external-URL field only.
-   */
-  logoService?: SdkworkIamOrganizationLogoService;
   permissions?: {
     departments: {
       create: boolean;

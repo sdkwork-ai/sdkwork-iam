@@ -829,6 +829,13 @@ function toOrganizationWirePayload(draft: Partial<SdkworkIamOrganizationDraft>):
     payload.logo = draft.logo;
   }
   text("logoUrl", draft.logoUrl);
+  // Removing the stored logo is an explicit `logo: null` patch. An omitted
+  // key means "leave the snapshot unchanged" on the backend, so the shared
+  // upload component's remove affordance would otherwise do nothing. A legacy
+  // delivery URL still wins over the removal.
+  if (!draft.logo && !(draft.logoUrl ?? "").trim() && "logo" in draft) {
+    payload.logo = null;
+  }
   if (draft.status) {
     payload.status = draft.status;
   }

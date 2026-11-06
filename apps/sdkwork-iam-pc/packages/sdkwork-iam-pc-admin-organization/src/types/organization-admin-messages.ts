@@ -14,7 +14,7 @@ export interface SdkworkIamOrganizationAdminMessages {
     emptyDescription: string;
     emptyTitle: string;
     statuses: { active: string; disabled: string; unknown: string };
-    table: { code: string; department: string; parent: string; status: string };
+    table: { actions: string; code: string; department: string; parent: string; status: string };
     titleTemplate: string;
   };
   drawers: {
@@ -40,29 +40,53 @@ export interface SdkworkIamOrganizationAdminMessages {
     };
     organization: {
       address: string;
+      addressPlaceholder: string;
+      basicDescription: string;
+      basicSection: string;
       category: string;
       categoryPlaceholder: string;
       code: string;
+      codeHint: string;
+      codeInvalid: string;
+      codePlaceholder: string;
+      codeRequired: string;
       contactEmail: string;
+      contactEmailPlaceholder: string;
       contactPhone: string;
+      contactPhonePlaceholder: string;
+      contactSection: string;
       createDescription: string;
       createTitle: string;
       description: string;
+      descriptionCountTemplate: string;
+      descriptionPlaceholder: string;
       editDescription: string;
       editTitle: string;
+      emailInvalid: string;
       industry: string;
       industryPlaceholder: string;
       kind: string;
       logo: string;
-      logoHint: string;
+      logoHintTemplate: string;
       logoInvalidType: string;
-      logoPlaceholder: string;
       logoReadError: string;
+      logoRemove: string;
+      logoReplace: string;
+      logoRetry: string;
       logoTooLarge: string;
+      logoTooLargeTemplate: string;
+      logoUnavailable: string;
       logoUpload: string;
+      logoUploading: string;
       name: string;
+      namePlaceholder: string;
+      nameRequired: string;
       noParent: string;
+      parentHint: string;
       parentId: string;
+      phoneInvalid: string;
+      profileDescription: string;
+      profileSection: string;
       status: string;
     };
   };
@@ -72,7 +96,7 @@ export interface SdkworkIamOrganizationAdminMessages {
     emptyTitle: string;
     membershipKinds: { employee: string; member: string; owner: string; unknown: string };
     statuses: { active: string; disabled: string; unknown: string };
-    table: { kind: string; member: string; role: string; status: string };
+    table: { actions: string; kind: string; member: string; role: string; status: string };
     titleTemplate: string;
   };
   notices: {
@@ -109,7 +133,7 @@ export interface SdkworkIamOrganizationAdminMessages {
     selectedTitleTemplate: string;
     statuses: { active: string; disabled: string; unknown: string };
     structure: string;
-    table: { code: string; kind: string; organization: string; parent: string; status: string };
+    table: { actions: string; code: string; kind: string; organization: string; parent: string; status: string };
   };
   pagination: {
     next: string;

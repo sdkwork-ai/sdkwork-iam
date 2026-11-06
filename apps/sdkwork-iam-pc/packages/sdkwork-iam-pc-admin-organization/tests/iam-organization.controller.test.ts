@@ -425,4 +425,30 @@ describe("@sdkwork/iam-pc-admin-organization", () => {
     await controller.updateOrganization("org-root", { name: "根组织", parentId: "" });
     expect(update).toHaveBeenCalledWith("org-root", { name: "根组织", parentOrganizationId: "" });
   });
+
+  it("sends an explicit logo null when the drawer removes the stored logo", async () => {
+    const update = vi.fn().mockResolvedValue({ name: "Platform", organizationId: "org-1" });
+    const controller = createSdkworkIamOrganizationController({
+      service: {
+        iam: {
+          departmentAssignments: { list: vi.fn() },
+          departments: { list: vi.fn() },
+          organizationMemberships: { list: vi.fn() },
+          organizations: { list: vi.fn().mockResolvedValue([]), update },
+          positions: { list: vi.fn() },
+          roleBindings: { list: vi.fn() },
+        },
+      } as never,
+    });
+
+    // Removing the logo is an explicit `logo: null` patch; an omitted key
+    // means "leave the snapshot unchanged" on the backend, so the shared
+    // upload component's remove affordance would otherwise do nothing.
+    await controller.updateOrganization("org-1", { logo: undefined, logoUrl: "", name: "Platform" });
+    expect(update).toHaveBeenCalledWith("org-1", { logo: null, name: "Platform" });
+
+    // An update that does not mention the logo must leave the snapshot alone.
+    await controller.updateOrganization("org-1", { name: "Platform" });
+    expect(update).toHaveBeenLastCalledWith("org-1", { name: "Platform" });
+  });
 });

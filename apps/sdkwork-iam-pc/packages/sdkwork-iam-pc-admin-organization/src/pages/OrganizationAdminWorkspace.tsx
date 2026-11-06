@@ -1,7 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode, type RefObject } from "react";
 import { Briefcase, Building2, GitBranch, Image as ImageIcon, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from "lucide-react";
-import { DriveUploadImage } from "sdkwork-drive-pc-upload-image";
-import type { DriveUploadImageValue } from "@sdkwork/drive-upload-image-core";
+import { DriveUploadImage, type DriveUploadImageHandle } from "sdkwork-drive-pc-upload-image";
+import {
+  formatDriveUploadImageBytes,
+  type DriveUploadImageService,
+  type DriveUploadImageValue,
+} from "@sdkwork/drive-upload-image-core";
 import { CatalogPagination } from "@sdkwork/iam-pc-admin-core";
 import {
   Button,
@@ -25,6 +29,7 @@ import {
   SelectValue,
   StatusBadge,
   StatusNotice,
+  Textarea,
 } from "@sdkwork/ui-pc-react";
 
 import { useSdkworkIamOrganizationAdminMessages } from "../i18n";
@@ -36,7 +41,6 @@ import type {
   SdkworkIamOrganizationAdminWorkspaceProps,
   SdkworkIamOrganizationDraft,
   SdkworkIamOrganizationLogoMediaResource,
-  SdkworkIamOrganizationLogoService,
   SdkworkIamOrganizationMembership,
   SdkworkIamOrganizationMembershipDraft,
   SdkworkIamOrganizationState,
@@ -49,12 +53,27 @@ type PageInfoState = Pick<SdkworkIamOrganizationState,
 type DrawerMode = "create" | "edit";
 type OrganizationDetailTab = "departments" | "memberships" | "positions" | "roleBindings";
 type ListKind = "organizations" | "departments" | "memberships" | "positions" | "roleBindings";
+type OrganizationDraftField = "code" | "contactEmail" | "contactPhone" | "name";
 
 /// Tokens accepted by the backend organizations.create/update validation.
 const ORGANIZATION_KINDS = ["enterprise", "government", "nonprofit", "team", "other"] as const;
-/// Raw file ceiling for an uploaded logo, mirroring the backend's 128 KiB
-/// snapshot cap with headroom for the JSON wrapper.
-const LOGO_MAX_FILE_BYTES = 96 * 1024;
+/// Accepted logo image types; mirrors the catalog image upload declaration.
+const ORGANIZATION_LOGO_ACCEPT = ["image/png", "image/jpeg", "image/webp"] as const;
+/// Raw file ceiling for an uploaded logo. The backend persists only the media
+/// resource snapshot (uri + drive identity), so the image itself can follow the
+/// standard admin-asset image ceiling.
+const ORGANIZATION_LOGO_MAX_BYTES = 2 * 1024 * 1024;
+/// Organization codes are the unique business identifier and become the
+/// organization path, so the drawer keeps them URL-safe.
+const ORGANIZATION_CODE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/u;
+/// Contact details are optional, but a malformed value would otherwise reach
+/// the backend and surface as an opaque failure.
+const ORGANIZATION_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
+const ORGANIZATION_PHONE_PATTERN = /^[+()0-9][0-9+()\s-]{3,31}$/u;
+const ORGANIZATION_DESCRIPTION_MAX_LENGTH = 200;
+/// Page ceiling the backend list endpoint accepts; the parent picker loads the
+/// whole tenant hierarchy in one request instead of the current page slice.
+const ORGANIZATION_PARENT_PAGE_SIZE = 200;
 /// Radix Select forbids empty-string item values, so the "no parent" option
 /// uses this sentinel and the change handler maps it back to "".
 const ROOT_PARENT_VALUE = "__sdkwork_root__";
@@ -66,7 +85,6 @@ const emptyMembershipDraft = (): SdkworkIamOrganizationMembershipDraft => ({ use
 export function SdkworkIamOrganizationAdminWorkspace({
   controller,
   driveUploadImageService,
-  logoService,
   onOpenStructure,
   permissions = {
     departments: { create: true, delete: true, read: true, update: true },
@@ -116,12 +134,22 @@ export function SdkworkIamOrganizationAdminWorkspace({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
-  // Create-mode parked logo: the shared component owns its own controller and
-  // cannot hand the raw file back, so create mode parks the pick locally and
-  // attaches it right after the organization exists (persist first, upload
-  // second — DRIVE_SPEC.md section 18.3).
-  const [pendingLogoFile, setPendingLogoFile] = useState<File>();
-  const [pendingLogoPreviewUrl, setPendingLogoPreviewUrl] = useState<string>();
+  // The shared upload field owns the picked file in its own controller
+  // (persist-first, DRIVE_SPEC.md section 18.3). Create mode parks the pick
+  // with no anchor and this handle flushes it against the freshly created
+  // organization id; closing the drawer destroys the controller and with it
+  // an unsubmitted pick.
+  const logoFieldRef = useRef<DriveUploadImageHandle | null>(null);
+  // Parent picker candidates: the whole tenant hierarchy, not the current
+  // table page, so an organization never becomes unreachable because it sits
+  // past page one.
+  const [parentOptions, setParentOptions] = useState<readonly SdkworkIamOrganization[]>([]);
+  // Required-field errors appear after the first submit attempt, then stay in
+  // sync with the draft.
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  // True while the shared logo field is uploading; saving is blocked so the
+  // persisted record cannot race an in-flight logo upload.
+  const [logoUploading, setLogoUploading] = useState(false);
   // Detail header display URL for a Drive-backed logo snapshot, resolved
   // through the injected bounded preview reader. Presentation-only state and
   // never persisted.
@@ -198,16 +226,22 @@ export function SdkworkIamOrganizationAdminWorkspace({
   }, [controller]);
 
   // Drive-backed logo snapshots have no delivery URL; the detail header shows
-  // the bounded preview the injected service resolves. External logos keep
-  // their own delivery URL and skip this entirely.
+  // the bounded preview the injected upload service resolves. External logos
+  // keep their own delivery URL and skip this entirely.
   const selectedLogo = selectedOrganization?.logo;
+  const selectedLogoUrl = selectedOrganization?.logoUrl || undefined;
   useEffect(() => {
-    if (!selectedLogo || !logoService) {
+    if (selectedLogoUrl || !selectedLogo || !driveUploadImageService) {
+      setResolvedLogoUrl(undefined);
+      return;
+    }
+    const uri = selectedLogo.uri ?? selectedLogo.publicUrl ?? selectedLogo.url;
+    if (!uri) {
       setResolvedLogoUrl(undefined);
       return;
     }
     let cancelled = false;
-    void logoService.resolveLogoUrl(selectedLogo)
+    void driveUploadImageService.resolvePreview({ uri })
       .then((url) => {
         if (!cancelled) setResolvedLogoUrl(url ?? undefined);
       })
@@ -217,7 +251,7 @@ export function SdkworkIamOrganizationAdminWorkspace({
     return () => {
       cancelled = true;
     };
-  }, [selectedLogo, logoService]);
+  }, [driveUploadImageService, selectedLogo, selectedLogoUrl]);
 
   const runAction = async (action: () => Promise<void>, successMessage: string, fallbackError = messages.common.operationError) => {
     setBusy(true);
@@ -317,6 +351,25 @@ export function SdkworkIamOrganizationAdminWorkspace({
       .finally(() => setDetailLoading(false));
   };
 
+  // The parent picker must offer the whole hierarchy, so each drawer opening
+  // refreshes the candidate list independently of the current table page.
+  const loadParentOptions = async () => {
+    try {
+      setParentOptions(await controller.listOrganizations({ page: 1, page_size: ORGANIZATION_PARENT_PAGE_SIZE }));
+    } catch {
+      setParentOptions(organizations);
+    }
+  };
+
+  const openOrganizationCreator = () => {
+    setOrganizationEditTarget(undefined);
+    setOrganizationDraft(emptyOrganizationDraft());
+    setLogoUploading(false);
+    setSubmitAttempted(false);
+    setOrganizationDrawerMode("create");
+    void loadParentOptions();
+  };
+
   const openOrganizationEditor = (organization: SdkworkIamOrganization) => {
     setOrganizationEditTarget(organization);
     setOrganizationDraft({
@@ -335,23 +388,69 @@ export function SdkworkIamOrganizationAdminWorkspace({
       status: organization.status ?? "",
       tenantId: organization.tenantId ?? "",
     });
+    setLogoUploading(false);
+    setSubmitAttempted(false);
     setOrganizationDrawerMode("edit");
+    void loadParentOptions();
   };
 
-  // Create-mode logo park (see the pending state note above). The URL field in
-  // the drawer stays available for an external delivery URL.
-  const handleLogoFileSelected = (file: File) => {
-    clearPendingLogo();
-    setPendingLogoFile(file);
-    setPendingLogoPreviewUrl(URL.createObjectURL(file));
-  };
-
-  const clearPendingLogo = () => {
-    setPendingLogoFile(undefined);
-    setPendingLogoPreviewUrl((current) => {
-      if (current) URL.revokeObjectURL(current);
-      return undefined;
-    });
+  /**
+   * Submits the organization drawer.
+   *
+   * Create runs persist-first (`DRIVE_SPEC.md` section 18.3): the organization
+   * is created, then the shared upload field flushes its parked pick against
+   * the new id and a follow-up update attaches the returned media resource.
+   * When the attach fails the drawer flips to edit mode for the created record
+   * so the retry targets that entity instead of creating a duplicate, and the
+   * failure is reported without a success notice.
+   */
+  const submitOrganization = async () => {
+    setBusy(true);
+    setError(undefined);
+    setNotice(undefined);
+    try {
+      if (organizationDrawerMode === "edit" && organizationEditTarget) {
+        const updated = await controller.updateOrganization(organizationEditTarget.organizationId, organizationDraft);
+        if (selectedOrganization?.organizationId === updated.organizationId) setSelectedOrganization(updated);
+        await refreshOrganizations();
+        setNotice(messages.notices.organizationUpdated);
+      } else {
+        const created = await controller.createOrganization(organizationDraft);
+        let attached: SdkworkIamOrganization = created;
+        try {
+          const values = await logoFieldRef.current?.uploadPending({ appResourceId: created.organizationId });
+          const logoValue = values?.[values.length - 1];
+          if (logoValue) {
+            attached = await controller.updateOrganization(created.organizationId, {
+              logo: driveUploadImageValueToLogoResource(logoValue),
+            });
+          }
+        } catch {
+          setOrganizationEditTarget(created);
+          setOrganizationDrawerMode("edit");
+          setSubmitAttempted(false);
+          await refreshOrganizations();
+          setError(messages.notices.organizationLogoAttachFailed);
+          return;
+        }
+        await refreshOrganizations();
+        setNotice(messages.notices.organizationCreated);
+        if (onOpenStructure) {
+          onOpenStructure(attached);
+        } else {
+          setSelectedOrganization(attached);
+          const nextTab = detailTabs[0]?.value;
+          setActiveTab(nextTab);
+          if (nextTab) await loadDetailTab(nextTab, attached.organizationId);
+        }
+      }
+      setOrganizationDrawerMode(undefined);
+      setOrganizationEditTarget(undefined);
+    } catch (actionError) {
+      setError(toErrorMessage(actionError, messages.common.operationError));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const openDepartmentEditor = (department: SdkworkIamDepartment) => {
@@ -431,7 +530,7 @@ export function SdkworkIamOrganizationAdminWorkspace({
             <Button disabled={loading} type="submit" variant="outline"><Search className="h-4 w-4" />{messages.organizations.searchAction}</Button>
           </form>
           {permissions.organizations.create ? (
-            <Button onClick={() => { clearPendingLogo(); setOrganizationDraft(emptyOrganizationDraft()); setOrganizationDrawerMode("create"); }} type="button">
+            <Button onClick={openOrganizationCreator} type="button">
               <Plus className="h-4 w-4" />{messages.organizations.create}
             </Button>
           ) : null}
@@ -446,6 +545,7 @@ export function SdkworkIamOrganizationAdminWorkspace({
           getRowId={(item) => item.organizationId}
           loading={loading}
           onRowClick={(item) => (onOpenStructure ? onOpenStructure(item) : void selectOrganization(item))}
+          rowActionsLabel={messages.organizations.table.actions}
           rowActions={(item) => (
             <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
               {onOpenStructure ? (
@@ -515,6 +615,7 @@ export function SdkworkIamOrganizationAdminWorkspace({
                   getRowId={(item) => item.departmentId}
                   loading={detailLoading}
                   onRowClick={permissions.departments.update ? openDepartmentEditor : undefined}
+                  rowActionsLabel={messages.departments.table.actions}
                   rowActions={permissions.departments.update || permissions.departments.delete ? (item) => (
                     <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
                       {permissions.departments.update ? <IconButton aria-label={messages.common.edit} onClick={() => openDepartmentEditor(item)} title={messages.common.edit} variant="ghost"><Pencil className="h-3.5 w-3.5" /></IconButton> : null}
@@ -543,6 +644,7 @@ export function SdkworkIamOrganizationAdminWorkspace({
                   getRowId={(item) => item.id}
                   loading={detailLoading}
                   onRowClick={permissions.memberships.update ? openMembershipEditor : undefined}
+                  rowActionsLabel={messages.memberships.table.actions}
                   rowActions={permissions.memberships.update ? (item) => <IconButton aria-label={messages.common.edit} onClick={() => openMembershipEditor(item)} title={messages.common.edit} variant="ghost"><Pencil className="h-3.5 w-3.5" /></IconButton> : undefined}
                   rows={[...memberships]}
                   slotProps={{
@@ -568,76 +670,29 @@ export function SdkworkIamOrganizationAdminWorkspace({
         ) : null}
       </div>
 
-      <ResourceDrawer busy={busy} description={organizationDrawerMode === "edit" ? messages.drawers.organization.editDescription : messages.drawers.organization.createDescription} mode={organizationDrawerMode} onOpenChange={(open) => { if (!open) { setOrganizationDrawerMode(undefined); setOrganizationEditTarget(undefined); } }} onSubmit={() => void runAction(async () => {
-        if (organizationDrawerMode === "edit" && organizationEditTarget) {
-          const updated = await controller.updateOrganization(organizationEditTarget.organizationId, organizationDraft);
-          if (selectedOrganization?.organizationId === updated.organizationId) setSelectedOrganization(updated);
-        } else {
-          const created = await controller.createOrganization(organizationDraft);
-          // Persist first, upload second (DRIVE_SPEC.md section 18.3): the
-          // parked create-mode logo uploads against the freshly created
-          // organization id, then a follow-up update attaches the returned
-          // media resource.
-          if (pendingLogoFile && logoService) {
-            try {
-              const logo = await logoService.attachLogo(created.organizationId, pendingLogoFile);
-              const attached = await controller.updateOrganization(created.organizationId, { logo });
-              if (onOpenStructure) {
-                onOpenStructure(attached);
-              } else {
-                setSelectedOrganization(attached);
-              }
-            } catch {
-              // The organization exists; a second Create would duplicate it.
-              // Flip the drawer to the created organization's edit mode so the
-              // retry attaches to the entity that already exists, and name
-              // the failure instead of leaving the create button armed.
-              setOrganizationDrawerMode("edit");
-              setOrganizationEditTarget(created);
-              setError(messages.notices.organizationLogoAttachFailed);
-              clearPendingLogo();
-              return;
-            }
-          } else if (onOpenStructure) {
-            onOpenStructure(created);
-          } else {
-            setSelectedOrganization(created);
-            const nextTab = detailTabs[0]?.value;
-            setActiveTab(nextTab);
-            if (nextTab) await loadDetailTab(nextTab, created.organizationId);
-          }
-        }
-        clearPendingLogo();
-        await refreshOrganizations();
-        setOrganizationDrawerMode(undefined);
-        setOrganizationEditTarget(undefined);
-      }, organizationDrawerMode === "edit" ? messages.notices.organizationUpdated : messages.notices.organizationCreated)} submitDisabled={!organizationDraft.name.trim()} submitLabel={organizationDrawerMode === "edit" ? messages.common.save : messages.common.create} title={organizationDrawerMode === "edit" ? messages.drawers.organization.editTitle : messages.drawers.organization.createTitle}>
-        <OrganizationLogoField
-          copy={messages.drawers.organization}
-          driveUploadImageService={driveUploadImageService}
-          editing={organizationDrawerMode === "edit"}
-          logoService={logoService}
-          maxBytes={LOGO_MAX_FILE_BYTES}
-          onDraftChange={setOrganizationDraft}
-          onFileSelected={handleLogoFileSelected}
-          onFileCleared={clearPendingLogo}
-          onInvalid={(message) => setError(message)}
-          draft={organizationDraft}
-          organizationId={organizationEditTarget?.organizationId}
-          pendingPreviewUrl={pendingLogoPreviewUrl}
-        />
-        <Field label={messages.drawers.organization.name} onChange={(name) => setOrganizationDraft({ ...organizationDraft, name })} value={organizationDraft.name} />
-        <Field label={messages.drawers.organization.code} onChange={(code) => setOrganizationDraft({ ...organizationDraft, code })} value={organizationDraft.code ?? ""} />
-        <OrganizationKindSelectField kinds={messages.organizations.organizationKinds} label={messages.drawers.organization.kind} onChange={(organizationKind) => setOrganizationDraft({ ...organizationDraft, organizationKind })} value={organizationDraft.organizationKind ?? "enterprise"} />
-        <Field label={messages.drawers.organization.category} onChange={(organizationCategory) => setOrganizationDraft({ ...organizationDraft, organizationCategory })} placeholder={messages.drawers.organization.categoryPlaceholder} value={organizationDraft.organizationCategory ?? ""} />
-        <Field label={messages.drawers.organization.industry} onChange={(industryCategory) => setOrganizationDraft({ ...organizationDraft, industryCategory })} placeholder={messages.drawers.organization.industryPlaceholder} value={organizationDraft.industryCategory ?? ""} />
-        <ParentOrganizationSelectField label={messages.drawers.organization.parentId} noParentLabel={messages.drawers.organization.noParent} onChange={(parentId) => setOrganizationDraft({ ...organizationDraft, parentId })} organizations={organizations} selfOrganizationId={organizationDrawerMode === "edit" ? organizationEditTarget?.organizationId : undefined} value={organizationDraft.parentId ?? ""} />
-        <Field label={messages.drawers.organization.description} onChange={(description) => setOrganizationDraft({ ...organizationDraft, description })} value={organizationDraft.description ?? ""} />
-        <Field label={messages.drawers.organization.contactPhone} onChange={(contactPhone) => setOrganizationDraft({ ...organizationDraft, contactPhone })} value={organizationDraft.contactPhone ?? ""} />
-        <Field label={messages.drawers.organization.contactEmail} onChange={(contactEmail) => setOrganizationDraft({ ...organizationDraft, contactEmail })} value={organizationDraft.contactEmail ?? ""} />
-        <Field label={messages.drawers.organization.address} onChange={(address) => setOrganizationDraft({ ...organizationDraft, address })} value={organizationDraft.address ?? ""} />
-        {organizationDrawerMode === "edit" ? <StatusSelectField label={messages.drawers.organization.status} onChange={(status) => setOrganizationDraft({ ...organizationDraft, status })} statuses={messages.organizations.statuses} value={organizationDraft.status ?? ""} /> : null}
-      </ResourceDrawer>
+      <OrganizationDrawer
+        busy={busy}
+        copy={messages.drawers.organization}
+        draft={organizationDraft}
+        driveUploadImageService={driveUploadImageService}
+        logoFieldRef={logoFieldRef}
+        logoUploading={logoUploading}
+        mode={organizationDrawerMode}
+        onClose={() => {
+          setOrganizationDrawerMode(undefined);
+          setOrganizationEditTarget(undefined);
+          setLogoUploading(false);
+        }}
+        onDraftChange={setOrganizationDraft}
+        onLogoUploadingChange={setLogoUploading}
+        onInvalidLogo={(message) => setError(message)}
+        onSubmit={() => void submitOrganization()}
+        onSubmitted={() => setSubmitAttempted(true)}
+        organizationId={organizationDrawerMode === "edit" ? organizationEditTarget?.organizationId : undefined}
+        parentOptions={parentOptions}
+        statuses={messages.organizations.statuses}
+        submitAttempted={submitAttempted}
+      />
 
       <ResourceDrawer busy={busy} description={departmentDrawerMode === "edit" ? messages.drawers.department.editDescription : messages.drawers.department.createDescription} mode={departmentDrawerMode} onOpenChange={(open) => { if (!open) setDepartmentDrawerMode(undefined); }} onSubmit={() => {
         if (!selectedOrganization) return;
@@ -719,175 +774,367 @@ function ResourceDrawer({ busy, children, description, mode, onOpenChange, onSub
   );
 }
 
-function Field({ disabled, label, onChange, placeholder, value }: { disabled?: boolean; label: string; onChange: (value: string) => void; placeholder?: string; value: string }) {
+/**
+ * The organization create/edit drawer.
+ *
+ * Layout follows the backend-admin form convention: identity first (logo,
+ * name, code, type), then hierarchy and profile attributes, then contact
+ * details. Required fields validate on the first submit attempt and stay in
+ * sync afterwards. The logo is one shared placeholder upload field: there is
+ * no separate pick button and no image-URL input.
+ */
+function OrganizationDrawer({
+  busy,
+  copy,
+  draft,
+  driveUploadImageService,
+  logoFieldRef,
+  logoUploading,
+  mode,
+  onClose,
+  onDraftChange,
+  onInvalidLogo,
+  onLogoUploadingChange,
+  onSubmit,
+  onSubmitted,
+  organizationId,
+  parentOptions,
+  statuses,
+  submitAttempted,
+}: {
+  busy: boolean;
+  copy: SdkworkIamOrganizationAdminMessages["drawers"]["organization"];
+  draft: SdkworkIamOrganizationDraft;
+  driveUploadImageService?: DriveUploadImageService;
+  logoFieldRef: RefObject<DriveUploadImageHandle | null>;
+  logoUploading: boolean;
+  mode?: DrawerMode;
+  onClose: () => void;
+  onDraftChange: (draft: SdkworkIamOrganizationDraft) => void;
+  onInvalidLogo: (message: string) => void;
+  onLogoUploadingChange: (uploading: boolean) => void;
+  onSubmit: () => void;
+  onSubmitted: () => void;
+  organizationId?: string;
+  parentOptions: readonly SdkworkIamOrganization[];
+  statuses: SdkworkIamOrganizationAdminMessages["organizations"]["statuses"];
+  submitAttempted: boolean;
+}) {
+  const messages = useSdkworkIamOrganizationAdminMessages();
+  const editing = mode === "edit";
+  const errors = validateOrganizationDraft(draft, copy);
+  const errorFor = (field: OrganizationDraftField) => (submitAttempted ? errors[field] : undefined);
+  const logoHint = template(copy.logoHintTemplate, {
+    max: formatDriveUploadImageBytes(ORGANIZATION_LOGO_MAX_BYTES),
+  });
+
+  const submit = () => {
+    onSubmitted();
+    if (Object.keys(errors).length > 0) return;
+    onSubmit();
+  };
+
+  return (
+    <Drawer onOpenChange={(open) => { if (!open) onClose(); }} open={Boolean(mode)}>
+      <DrawerContent size="lg">
+        <DrawerHeader>
+          <DrawerTitle>{editing ? copy.editTitle : copy.createTitle}</DrawerTitle>
+          <DrawerDescription>{editing ? copy.editDescription : copy.createDescription}</DrawerDescription>
+        </DrawerHeader>
+        <DrawerBody className="space-y-7">
+          <DrawerSection description={copy.basicDescription} title={copy.basicSection}>
+            <OrganizationLogoField
+              copy={copy}
+              draft={draft}
+              driveUploadImageService={driveUploadImageService}
+              editing={editing}
+              hint={logoHint}
+              logoFieldRef={logoFieldRef}
+              onDraftChange={onDraftChange}
+              onInvalid={onInvalidLogo}
+              onUploadingChange={onLogoUploadingChange}
+              organizationId={organizationId}
+            />
+            <Field
+              error={errorFor("name")}
+              label={copy.name}
+              onChange={(name) => onDraftChange({ ...draft, name })}
+              placeholder={copy.namePlaceholder}
+              required
+              value={draft.name}
+            />
+            <Field
+              error={errorFor("code")}
+              hint={copy.codeHint}
+              label={copy.code}
+              onChange={(code) => onDraftChange({ ...draft, code })}
+              placeholder={copy.codePlaceholder}
+              required
+              value={draft.code ?? ""}
+            />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <OrganizationKindSelectField
+                kinds={messages.organizations.organizationKinds}
+                label={copy.kind}
+                onChange={(organizationKind) => onDraftChange({ ...draft, organizationKind })}
+                required
+                value={draft.organizationKind ?? "enterprise"}
+              />
+              {editing ? (
+                <StatusSelectField
+                  label={copy.status}
+                  onChange={(status) => onDraftChange({ ...draft, status })}
+                  statuses={statuses}
+                  value={draft.status ?? ""}
+                />
+              ) : null}
+            </div>
+          </DrawerSection>
+
+          <DrawerSection description={copy.profileDescription} title={copy.profileSection}>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field
+                label={copy.category}
+                onChange={(organizationCategory) => onDraftChange({ ...draft, organizationCategory })}
+                placeholder={copy.categoryPlaceholder}
+                value={draft.organizationCategory ?? ""}
+              />
+              <Field
+                label={copy.industry}
+                onChange={(industryCategory) => onDraftChange({ ...draft, industryCategory })}
+                placeholder={copy.industryPlaceholder}
+                value={draft.industryCategory ?? ""}
+              />
+            </div>
+            <ParentOrganizationSelectField
+              hint={copy.parentHint}
+              label={copy.parentId}
+              noParentLabel={copy.noParent}
+              onChange={(parentId) => onDraftChange({ ...draft, parentId })}
+              organizations={parentOptions}
+              selfOrganizationId={editing ? organizationId : undefined}
+              value={draft.parentId ?? ""}
+            />
+            <TextareaField
+              counterTemplate={copy.descriptionCountTemplate}
+              label={copy.description}
+              maxLength={ORGANIZATION_DESCRIPTION_MAX_LENGTH}
+              onChange={(description) => onDraftChange({ ...draft, description })}
+              placeholder={copy.descriptionPlaceholder}
+              value={draft.description ?? ""}
+            />
+          </DrawerSection>
+
+          <DrawerSection title={copy.contactSection}>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field
+                error={errorFor("contactPhone")}
+                label={copy.contactPhone}
+                onChange={(contactPhone) => onDraftChange({ ...draft, contactPhone })}
+                placeholder={copy.contactPhonePlaceholder}
+                type="tel"
+                value={draft.contactPhone ?? ""}
+              />
+              <Field
+                error={errorFor("contactEmail")}
+                label={copy.contactEmail}
+                onChange={(contactEmail) => onDraftChange({ ...draft, contactEmail })}
+                placeholder={copy.contactEmailPlaceholder}
+                type="email"
+                value={draft.contactEmail ?? ""}
+              />
+            </div>
+            <Field
+              label={copy.address}
+              onChange={(address) => onDraftChange({ ...draft, address })}
+              placeholder={copy.addressPlaceholder}
+              value={draft.address ?? ""}
+            />
+          </DrawerSection>
+        </DrawerBody>
+        <DrawerFooter>
+          <Button disabled={busy} onClick={onClose} type="button" variant="secondary">{messages.common.cancel}</Button>
+          <Button disabled={busy || logoUploading} loading={busy} onClick={submit} type="button">
+            {editing ? messages.common.save : messages.common.create}
+          </Button>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+/** A titled group inside the drawer body; keeps long forms scannable. */
+function DrawerSection({ children, description, title }: { children: ReactNode; description?: string; title: string }) {
+  return (
+    <section className="space-y-4">
+      <div className="space-y-1 border-b border-[var(--sdk-color-border-subtle)] pb-2">
+        <h3 className="text-sm font-semibold text-[var(--sdk-color-text-primary)]">{title}</h3>
+        {description ? <p className="text-xs text-[var(--sdk-color-text-muted)]">{description}</p> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function FieldLabel({ label, required }: { label: string; required?: boolean }) {
+  return (
+    <span className="flex items-center gap-1 font-medium text-[var(--sdk-color-text-primary)]">
+      {label}
+      {required ? <span aria-hidden="true" className="text-[var(--sdk-color-state-danger)]">*</span> : null}
+    </span>
+  );
+}
+
+function FieldSupport({ error, hint }: { error?: string; hint?: string }) {
+  if (error) {
+    return <span className="block text-xs text-[var(--sdk-color-state-danger)]" role="alert">{error}</span>;
+  }
+  if (hint) {
+    return <span className="block text-xs text-[var(--sdk-color-text-muted)]">{hint}</span>;
+  }
+  return null;
+}
+
+function Field({ disabled, error, hint, label, onChange, placeholder, required, type, value }: {
+  disabled?: boolean;
+  error?: string;
+  hint?: string;
+  label: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  type?: "email" | "tel" | "text" | "url";
+  value: string;
+}) {
   return (
     <label className="block space-y-1.5 text-sm">
-      <span className="font-medium text-[var(--sdk-color-text-primary)]">{label}</span>
-      <Input disabled={disabled} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} value={value} />
+      <FieldLabel label={label} required={required} />
+      <Input
+        aria-invalid={error ? true : undefined}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        type={type}
+        value={value}
+      />
+      <FieldSupport error={error} hint={hint} />
     </label>
   );
 }
 
-interface OrganizationLogoFieldProps {
-  copy: SdkworkIamOrganizationAdminMessages["drawers"]["organization"];
-  draft: SdkworkIamOrganizationDraft;
-  driveUploadImageService?: SdkworkIamOrganizationAdminWorkspaceProps["driveUploadImageService"];
-  editing: boolean;
-  logoService?: SdkworkIamOrganizationLogoService;
-  maxBytes: number;
-  onDraftChange: (draft: SdkworkIamOrganizationDraft) => void;
-  onFileCleared: () => void;
-  onFileSelected: (file: File) => void;
-  onInvalid: (message: string) => void;
-  organizationId?: string;
-  pendingPreviewUrl?: string;
+function TextareaField({ counterTemplate, label, maxLength, onChange, placeholder, value }: {
+  counterTemplate: string;
+  label: string;
+  maxLength: number;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  value: string;
+}) {
+  return (
+    <label className="block space-y-1.5 text-sm">
+      <span className="flex items-center justify-between gap-3">
+        <FieldLabel label={label} />
+        <span className="text-xs tabular-nums text-[var(--sdk-color-text-muted)]">
+          {template(counterTemplate, { count: String(value.length), max: String(maxLength) })}
+        </span>
+      </span>
+      <Textarea
+        maxLength={maxLength}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        rows={3}
+        value={value}
+      />
+    </label>
+  );
 }
 
 /**
- * The organization drawer's logo field, one branch per capability level.
+ * The organization logo field.
  *
- * - Edit/view with the injected shared service: the canonical
- *   `DriveUploadImage` component — picking uploads against the organization id
- *   through the host's declared intent and previews through its bounded
- *   reader.
- * - Create mode with the injected logo service: park-then-attach — the picked
- *   file is held by the workspace and uploaded right after the organization
- *   exists (the component's controller cannot hand back the raw file).
- * - Without either capability: the plain external-URL field only. There is
- *   deliberately no local data-URL fallback; persisting a base64 payload
- *   would be a fake upload (`DRIVE_SPEC.md` section 18).
+ * Every mode renders the shared `DriveUploadImage` placeholder  - the dashed
+ * pick area is the upload trigger, so the drawer needs no separate button.
+ * Edit uploads immediately against the organization id; create passes a
+ * resolver that returns `null`, so the pick parks in the field's controller
+ * and the workspace flushes it after the organization exists
+ * (`DRIVE_SPEC.md` section 18.3). Previews of stored Drive snapshots go
+ * through the same service's bounded reader.
  */
 function OrganizationLogoField({
   copy,
   draft,
   driveUploadImageService,
   editing,
-  logoService,
-  maxBytes,
+  hint,
+  logoFieldRef,
   onDraftChange,
-  onFileCleared,
-  onFileSelected,
   onInvalid,
+  onUploadingChange,
   organizationId,
-  pendingPreviewUrl,
-}: OrganizationLogoFieldProps) {
-  const draftLogoUrl = draft.logoUrl ?? "";
-  const draftLogoValue = logoResourceToDriveUploadImageValue(draft.logo);
-
-  if (driveUploadImageService && editing && organizationId) {
+}: {
+  copy: SdkworkIamOrganizationAdminMessages["drawers"]["organization"];
+  draft: SdkworkIamOrganizationDraft;
+  driveUploadImageService?: DriveUploadImageService;
+  editing: boolean;
+  hint: string;
+  logoFieldRef: RefObject<DriveUploadImageHandle | null>;
+  onDraftChange: (draft: SdkworkIamOrganizationDraft) => void;
+  onInvalid: (message: string) => void;
+  onUploadingChange: (uploading: boolean) => void;
+  organizationId?: string;
+}) {
+  if (!driveUploadImageService) {
     return (
       <div className="space-y-1.5 text-sm">
-        <span className="block font-medium text-[var(--sdk-color-text-primary)]">{copy.logo}</span>
+        <FieldLabel label={copy.logo} />
+        <div className="flex items-start gap-4">
+          <span aria-hidden="true" className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[var(--sdk-radius-control)] border-2 border-dashed border-[var(--sdk-color-border-default)] text-[var(--sdk-color-text-muted)]">
+            <ImageIcon className="h-6 w-6" />
+          </span>
+          <span className="max-w-72 pt-1 text-xs leading-5 text-[var(--sdk-color-text-muted)]">{copy.logoUnavailable}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5 text-sm">
+      <FieldLabel label={copy.logo} />
+      <div className="flex items-start gap-4">
         <DriveUploadImage
-          accept={["image/png", "image/jpeg", "image/webp"]}
+          accept={[...ORGANIZATION_LOGO_ACCEPT]}
           alt={copy.logo}
-          appResourceId={organizationId}
-          label={copy.logoUpload}
-          maxSizeBytes={maxBytes}
-          onChange={(value) => onDraftChange({
+          appResourceId={editing && organizationId ? organizationId : () => null}
+          className="shrink-0"
+          copy={{
+            fileTooLarge: copy.logoTooLarge,
+            fileTooLargeDetail: copy.logoTooLargeTemplate,
+            invalidFileType: copy.logoInvalidType,
+            pickImage: copy.logoUpload,
+            removeImage: copy.logoRemove,
+            replaceImage: copy.logoReplace,
+            retryUpload: copy.logoRetry,
+            uploadFailed: copy.logoReadError,
+            uploading: copy.logoUploading,
+          }}
+          maxSizeBytes={ORGANIZATION_LOGO_MAX_BYTES}
+          onChange={(next) => onDraftChange({
             ...draft,
-            logo: value ? driveUploadImageValueToLogoResource(value) : undefined,
+            logo: next ? driveUploadImageValueToLogoResource(next) : undefined,
             logoUrl: "",
           })}
           onFileRejected={(rejection) => onInvalid(rejection.code === "file-too-large" ? copy.logoTooLarge : copy.logoInvalidType)}
           onUploadError={() => onInvalid(copy.logoReadError)}
+          onUploadingChange={onUploadingChange}
+          ref={logoFieldRef}
           service={driveUploadImageService}
           shape="rounded"
-          sizePx={64}
-          value={draftLogoValue}
+          sizePx={96}
+          value={logoResourceToDriveUploadImageValue(draft.logo)}
         />
-        <OrganizationLogoUrlField copy={copy} onDraftChange={onDraftChange} draft={draft} />
+        <p className="min-w-0 flex-1 pt-1 text-xs leading-5 text-[var(--sdk-color-text-muted)]">{hint}</p>
       </div>
-    );
-  }
-
-  if (logoService && !editing) {
-    const previewSrc = pendingPreviewUrl || draftLogoValue?.uri || draftLogoUrl || "";
-    return (
-      <div className="space-y-1.5 text-sm">
-        <span className="block font-medium text-[var(--sdk-color-text-primary)]">{copy.logo}</span>
-        <div className="flex items-center gap-3">
-          {previewSrc ? (
-            <img
-              alt=""
-              className="h-12 w-12 shrink-0 rounded-[var(--sdk-radius-control)] border border-[var(--sdk-color-border-default)] object-cover"
-              src={previewSrc}
-            />
-          ) : (
-            <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--sdk-radius-control)] border border-dashed border-[var(--sdk-color-border-default)] text-[var(--sdk-color-text-muted)]">
-              <ImageIcon className="h-5 w-5" />
-            </span>
-          )}
-          <div className="min-w-0 flex-1">
-            <LogoParkFileInput copy={copy} maxBytes={maxBytes} onCleared={onFileCleared} onInvalid={onInvalid} onSelected={onFileSelected} />
-          </div>
-        </div>
-        <span className="block text-xs text-[var(--sdk-color-text-muted)]">{copy.logoHint}</span>
-        <OrganizationLogoUrlField copy={copy} onDraftChange={onDraftChange} draft={draft} />
-      </div>
-    );
-  }
-
-  return <OrganizationLogoUrlField copy={copy} onDraftChange={onDraftChange} draft={draft} />;
-}
-
-/** The external-URL alternative: a plain delivery URL the backend wraps into the snapshot. */
-function OrganizationLogoUrlField({ copy, draft, onDraftChange }: {
-  copy: SdkworkIamOrganizationAdminMessages["drawers"]["organization"];
-  draft: SdkworkIamOrganizationDraft;
-  onDraftChange: (draft: SdkworkIamOrganizationDraft) => void;
-}) {
-  return (
-    <label className="block space-y-1.5 text-xs">
-      <span className="text-[var(--sdk-color-text-muted)]">{copy.logoPlaceholder}</span>
-      <Input
-        onChange={(event) => onDraftChange({ ...draft, logoUrl: event.target.value })}
-        placeholder={copy.logoPlaceholder}
-        type="url"
-        value={draft.logoUrl ?? ""}
-      />
-    </label>
-  );
-}
-
-/** Create-mode file picker that parks the pick locally instead of reading it as a data URL. */
-function LogoParkFileInput({ copy, maxBytes, onCleared, onInvalid, onSelected }: {
-  copy: SdkworkIamOrganizationAdminMessages["drawers"]["organization"];
-  maxBytes: number;
-  onCleared: () => void;
-  onInvalid: (message: string) => void;
-  onSelected: (file: File) => void;
-}) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  return (
-    <>
-      <Button onClick={() => fileInputRef.current?.click()} size="sm" type="button" variant="outline">
-        {copy.logoUpload}
-      </Button>
-      <input
-        accept="image/png,image/jpeg,image/webp"
-        hidden
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = "";
-          if (!file) {
-            onCleared();
-            return;
-          }
-          if (!file.type.startsWith("image/")) {
-            onInvalid(copy.logoInvalidType);
-            return;
-          }
-          if (file.size > maxBytes) {
-            onInvalid(copy.logoTooLarge);
-            return;
-          }
-          onSelected(file);
-        }}
-        ref={fileInputRef}
-        type="file"
-      />
-    </>
+    </div>
   );
 }
 
@@ -913,7 +1160,13 @@ function logoResourceToDriveUploadImageValue(
   };
 }
 
-/** Maps a freshly uploaded component value back onto the stored snapshot shape. */
+/**
+ * Maps a freshly uploaded component value back onto the stored snapshot shape.
+ *
+ * The snapshot is what `iam_organization.logo_resource_snapshot` persists, so
+ * it keeps the stable Drive reference plus the display metadata the media
+ * resource contract defines — never a transient preview URL.
+ */
 function driveUploadImageValueToLogoResource(
   value: DriveUploadImageValue,
 ): SdkworkIamOrganizationLogoMediaResource {
@@ -922,6 +1175,10 @@ function driveUploadImageValueToLogoResource(
     ? { drive: { nodeId: drive.nodeId, spaceId: drive.spaceId } }
     : undefined;
   return {
+    ...(drive?.contentType === undefined ? {} : { mimeType: drive.contentType }),
+    ...(drive?.contentLength === undefined ? {} : { sizeBytes: drive.contentLength }),
+    ...(drive?.nodeId === undefined ? {} : { id: drive.nodeId }),
+    ...(drive?.originalFileName === undefined ? {} : { fileName: drive.originalFileName }),
     kind: "image",
     ...(driveMetadata === undefined ? {} : { metadata: driveMetadata }),
     source: value.source,
@@ -929,13 +1186,13 @@ function driveUploadImageValueToLogoResource(
   };
 }
 
-function OrganizationKindSelectField({ kinds, label, onChange, value }: { kinds: { enterprise: string; government: string; nonprofit: string; other: string; team: string; unknown: string }; label: string; onChange: (value: string) => void; value: string }) {
+function OrganizationKindSelectField({ kinds, label, onChange, required, value }: { kinds: { enterprise: string; government: string; nonprofit: string; other: string; team: string; unknown: string }; label: string; onChange: (value: string) => void; required?: boolean; value: string }) {
   const normalized = value.trim().toLowerCase();
   const options = ORGANIZATION_KINDS.map((kind) => [kind, kinds[kind]] as const);
   const currentUnknown = options.some(([optionValue]) => optionValue === normalized) ? undefined : value;
   return (
     <label className="block space-y-1.5 text-sm">
-      <span className="font-medium text-[var(--sdk-color-text-primary)]">{label}</span>
+      <FieldLabel label={label} required={required} />
       <Select onValueChange={onChange} value={value}>
         <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
@@ -947,25 +1204,93 @@ function OrganizationKindSelectField({ kinds, label, onChange, value }: { kinds:
   );
 }
 
-function ParentOrganizationSelectField({ label, noParentLabel, onChange, organizations, selfOrganizationId, value }: { label: string; noParentLabel: string; onChange: (value: string) => void; organizations: readonly SdkworkIamOrganization[]; selfOrganizationId?: string; value: string }) {
-  const candidates = organizations.filter((organization) => organization.organizationId !== selfOrganizationId);
+/**
+ * Parent picker over the whole tenant hierarchy.
+ *
+ * The organization itself and every descendant are excluded: selecting one
+ * would create a cycle the backend closure rebuild rejects. The current value
+ * is always displayable even when the candidate page has not loaded yet.
+ */
+function ParentOrganizationSelectField({ hint, label, noParentLabel, onChange, organizations, selfOrganizationId, value }: {
+  hint?: string;
+  label: string;
+  noParentLabel: string;
+  onChange: (value: string) => void;
+  organizations: readonly SdkworkIamOrganization[];
+  selfOrganizationId?: string;
+  value: string;
+}) {
+  const candidates = useMemo(() => {
+    const excluded = selfOrganizationId ? collectDescendantIds(organizations, selfOrganizationId) : new Set<string>();
+    return organizations.filter((organization) =>
+      organization.organizationId !== selfOrganizationId
+      && !excluded.has(organization.organizationId));
+  }, [organizations, selfOrganizationId]);
+  const depthByOrganizationId = useMemo(() => buildDepthIndex(organizations), [organizations]);
   const known = !value || candidates.some((organization) => organization.organizationId === value) || value === selfOrganizationId;
   const selectValue = value || ROOT_PARENT_VALUE;
   return (
     <label className="block space-y-1.5 text-sm">
-      <span className="font-medium text-[var(--sdk-color-text-primary)]">{label}</span>
+      <FieldLabel label={label} />
       <Select onValueChange={(selected) => onChange(selected === ROOT_PARENT_VALUE ? "" : selected)} value={selectValue}>
         <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value={ROOT_PARENT_VALUE}>{noParentLabel}</SelectItem>
           {candidates.map((organization) => (
-            <SelectItem key={organization.organizationId} value={organization.organizationId}>{organization.name}</SelectItem>
+            <SelectItem key={organization.organizationId} value={organization.organizationId}>
+              <span style={{ paddingLeft: `${(depthByOrganizationId.get(organization.organizationId) ?? 0) * 12}px` }}>
+                {organization.name}
+              </span>
+            </SelectItem>
           ))}
           {!known && value ? <SelectItem value={value}>{value}</SelectItem> : null}
         </SelectContent>
       </Select>
+      <FieldSupport hint={hint} />
     </label>
   );
+}
+
+/** Parent -> children index used by the picker's cycle guard and depth labels. */
+function buildDepthIndex(organizations: readonly SdkworkIamOrganization[]): Map<string, number> {
+  const byId = new Map(organizations.map((organization) => [organization.organizationId, organization]));
+  const depth = new Map<string, number>();
+  const resolve = (organizationId: string): number => {
+    const cached = depth.get(organizationId);
+    if (cached !== undefined) return cached;
+    const organization = byId.get(organizationId);
+    const parentId = organization?.parentId;
+    const next = parentId && byId.has(parentId)
+      ? Math.min(resolve(parentId) + 1, organizations.length)
+      : 0;
+    depth.set(organizationId, next);
+    return next;
+  };
+  for (const organization of organizations) resolve(organization.organizationId);
+  return depth;
+}
+
+/** Every descendant id of `rootOrganizationId`, including grandchildren. */
+function collectDescendantIds(organizations: readonly SdkworkIamOrganization[], rootOrganizationId: string): Set<string> {
+  const childrenByParent = new Map<string, string[]>();
+  for (const organization of organizations) {
+    if (!organization.parentId) continue;
+    const children = childrenByParent.get(organization.parentId) ?? [];
+    children.push(organization.organizationId);
+    childrenByParent.set(organization.parentId, children);
+  }
+  const descendants = new Set<string>();
+  const queue = [rootOrganizationId];
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (current === undefined) break;
+    for (const childId of childrenByParent.get(current) ?? []) {
+      if (descendants.has(childId)) continue;
+      descendants.add(childId);
+      queue.push(childId);
+    }
+  }
+  return descendants;
 }
 
 function StatusSelectField({ label, onChange, statuses, value }: { label: string; onChange: (value: string) => void; statuses: { active: string; disabled: string; unknown: string }; value: string }) {
@@ -977,7 +1302,7 @@ function StatusSelectField({ label, onChange, statuses, value }: { label: string
   const currentUnknown = options.some(([optionValue]) => optionValue === normalized) ? undefined : value;
   return (
     <label className="block space-y-1.5 text-sm">
-      <span className="font-medium text-[var(--sdk-color-text-primary)]">{label}</span>
+      <FieldLabel label={label} />
       <Select onValueChange={onChange} value={value}>
         <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
@@ -1020,6 +1345,38 @@ function kindLabel(labels: Record<string, string>, value: string | undefined): s
   if (!value) return undefined;
   const normalized = value.trim().toLowerCase();
   return labels[normalized] ?? value;
+}
+
+/**
+ * Drawer-level validation.
+ *
+ * Name and code are required by the backend create handler, so the drawer
+ * blocks the request instead of letting a returning 400 read as an opaque
+ * operation failure. Optional contact values only validate when present.
+ */
+function validateOrganizationDraft(
+  draft: SdkworkIamOrganizationDraft,
+  copy: SdkworkIamOrganizationAdminMessages["drawers"]["organization"],
+): Partial<Record<OrganizationDraftField, string>> {
+  const errors: Partial<Record<OrganizationDraftField, string>> = {};
+  if (!draft.name.trim()) {
+    errors.name = copy.nameRequired;
+  }
+  const code = draft.code?.trim() ?? "";
+  if (!code) {
+    errors.code = copy.codeRequired;
+  } else if (!ORGANIZATION_CODE_PATTERN.test(code)) {
+    errors.code = copy.codeInvalid;
+  }
+  const email = draft.contactEmail?.trim() ?? "";
+  if (email && !ORGANIZATION_EMAIL_PATTERN.test(email)) {
+    errors.contactEmail = copy.emailInvalid;
+  }
+  const phone = draft.contactPhone?.trim() ?? "";
+  if (phone && !ORGANIZATION_PHONE_PATTERN.test(phone)) {
+    errors.contactPhone = copy.phoneInvalid;
+  }
+  return errors;
 }
 
 function detailLoadError(tab: OrganizationDetailTab, notices: ReturnType<typeof useSdkworkIamOrganizationAdminMessages>["notices"]) {

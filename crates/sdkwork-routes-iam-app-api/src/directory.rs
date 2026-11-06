@@ -809,6 +809,11 @@ pub(crate) fn organization_from_row(row: &sqlx::postgres::PgRow, order: i64) -> 
 
 /// Delivery URL of a stored image media-resource snapshot (organization
 /// logo); mirrors the backend-api `media_delivery_url` shape.
+///
+/// A `drive://` uri is a Drive reference, not a browser-usable URL: emitting
+/// it here would make every consumer render a broken image. Drive-backed
+/// logos travel through the `logo` snapshot (whose bounded preview reader
+/// resolves them) and leave `logoUrl` absent.
 fn image_delivery_url(image: &Value) -> Option<String> {
     ["publicUrl", "url", "uri", "public_url"]
         .iter()
@@ -820,6 +825,7 @@ fn image_delivery_url(image: &Value) -> Option<String> {
                 .filter(|value| !value.is_empty())
                 .map(str::to_owned)
         })
+        .filter(|url| !url.starts_with("drive://"))
 }
 
 pub(crate) fn organization_to_json(o: &LocalOrganization) -> Value {
@@ -1239,4 +1245,26 @@ fn percent_encode(v: &str, keep_colon: bool) -> String {
         }
     }
     e
+}
+
+#[cfg(test)]
+mod tests {
+    use super::image_delivery_url;
+    use serde_json::json;
+
+    #[test]
+    fn image_delivery_url_never_exposes_a_drive_reference() {
+        // A Drive-backed organization logo is only usable through its
+        // snapshot and bounded preview reader; `logoUrl` must stay absent
+        // instead of handing a browser a `drive://` URI.
+        assert_eq!(
+            image_delivery_url(&json!({ "source": "drive", "uri": "drive://spaces/space-1/nodes/node-1" })),
+            None
+        );
+        // External snapshots keep their browser-usable URL.
+        assert_eq!(
+            image_delivery_url(&json!({ "source": "external", "uri": "https://cdn.example.com/logo.png" })),
+            Some("https://cdn.example.com/logo.png".to_owned())
+        );
+    }
 }

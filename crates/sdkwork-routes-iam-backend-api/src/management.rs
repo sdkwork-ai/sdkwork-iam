@@ -1728,8 +1728,40 @@ include!("directory_crud.impl.rs");
 
 #[cfg(test)]
 mod tests {
-    use super::nest_tree;
+    use super::{nest_tree, organization_patch_fields, PatchValue};
     use serde_json::json;
+
+    #[test]
+    fn organization_patch_fields_clears_the_logo_on_an_explicit_null() {
+        let assignments = organization_patch_fields(&json!({ "logo": null })).expect("patch fields");
+        assert!(assignments.iter().any(|(column, value)| {
+            column == "logo_resource_snapshot" && *value == PatchValue::NullText
+        }));
+    }
+
+    #[test]
+    fn organization_patch_fields_keeps_a_delivery_url_over_a_null_logo() {
+        let assignments = organization_patch_fields(&json!({
+            "logo": null,
+            "logoUrl": "https://cdn.example.com/logo.png",
+        }))
+        .expect("patch fields");
+        let snapshot = assignments
+            .iter()
+            .find(|(column, _)| column == "logo_resource_snapshot");
+        assert!(matches!(
+            snapshot.map(|(_, value)| value),
+            Some(PatchValue::Text(text)) if text.contains("cdn.example.com/logo.png")
+        ));
+    }
+
+    #[test]
+    fn organization_patch_fields_leaves_the_logo_untouched_when_the_key_is_absent() {
+        let assignments = organization_patch_fields(&json!({ "name": "North" })).expect("patch fields");
+        assert!(!assignments
+            .iter()
+            .any(|(column, _)| column == "logo_resource_snapshot"));
+    }
 
     #[test]
     fn nest_tree_preserves_descendants_when_rows_are_not_topologically_sorted() {

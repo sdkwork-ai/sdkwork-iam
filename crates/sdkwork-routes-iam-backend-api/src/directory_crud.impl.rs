@@ -1509,7 +1509,16 @@ fn organization_patch_fields(body: &Value) -> Result<Vec<(String, PatchValue)>, 
     if let Some(kind) = read_organization_kind(body)? {
         assignments.push(("organization_kind".to_owned(), PatchValue::Text(kind)));
     }
-    if let Some(snapshot) = read_logo_snapshot(body)? {
+    // An explicit `logo: null` (with no delivery URL) is the console's
+    // "remove the logo" request. An omitted key still means "leave the
+    // snapshot unchanged", but the removal must clear the column instead of
+    // being dropped like an absent field — otherwise the shared upload
+    // component's remove affordance would silently do nothing.
+    let clears_logo = body.get("logo").map(Value::is_null).unwrap_or(false)
+        && read_string_field(body, &["logoUrl", "logo_url"]).is_none();
+    if clears_logo {
+        assignments.push(("logo_resource_snapshot".to_owned(), PatchValue::NullText));
+    } else if let Some(snapshot) = read_logo_snapshot(body)? {
         assignments.push(("logo_resource_snapshot".to_owned(), PatchValue::Text(snapshot)));
     }
     Ok(assignments)
