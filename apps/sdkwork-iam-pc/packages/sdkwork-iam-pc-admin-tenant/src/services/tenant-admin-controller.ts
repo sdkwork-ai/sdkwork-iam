@@ -7,6 +7,7 @@ import type {
   SdkworkIamTenantController,
   SdkworkIamTenantDraft,
   SdkworkIamTenantApplication,
+  SdkworkIamTenantApplicationAccessToken,
   SdkworkIamTenantApplicationDraft,
   SdkworkIamTenantApplicationSummary,
   SdkworkIamTenantApplicationUpdateDraft,
@@ -91,6 +92,34 @@ export function createSdkworkIamTenantController(
         setState({ status: "error" });
         throw error;
       }
+    },
+    createTenantApplicationAccessToken: async (tenantId, tenantApplicationId) => {
+      const normalizedTenantId = requireId(tenantId, "tenantId");
+      const normalizedApplicationId = requireId(tenantApplicationId, "tenantApplicationId");
+      const application = state.applications.find(
+        (item) => item.tenantApplicationId === normalizedApplicationId,
+      );
+      const payload = await resolved.service.iam.accessCredentials.create({
+        organizationId: application?.organizationId || "0",
+        tenantApplicationId: normalizedApplicationId,
+        tenantId: normalizedTenantId,
+      });
+      const record = toRecord(payload);
+      const data = toRecord(record.data);
+      const item = toRecord(data.item ?? record.item ?? record);
+      const accessToken = optionalString(item.accessCredential) || optionalString(item.accessToken);
+      if (!accessToken) {
+        throw new Error("SDKWork IAM access credential response is missing accessCredential");
+      }
+      return {
+        accessToken,
+        appId: optionalString(item.appId),
+        expiresAt: optionalString(item.expiresAt),
+        organizationId: optionalString(item.organizationId),
+        sessionId: optionalString(item.sessionId),
+        tenantApplicationId: optionalString(item.tenantApplicationId) || normalizedApplicationId,
+        tenantId: optionalString(item.tenantId) || normalizedTenantId,
+      };
     },
     createTenantMember: async (tenantId, body) => {
       const normalizedTenantId = requireId(tenantId, "tenantId");

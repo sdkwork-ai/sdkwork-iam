@@ -2,7 +2,27 @@ import type { SdkworkIamTenantAdminMessages } from "../../../../types/tenant-adm
 
 export const sdkworkIamTenantAdminMessages: SdkworkIamTenantAdminMessages = {
   applications: {
-    actions: { copyAppId: "Copy application ID", edit: "Edit application", register: "Register application" },
+    accessToken: {
+      appId: "Application ID",
+      close: "Close",
+      copied: "Copied",
+      copy: "Copy token",
+      description: "Issue a short-lived access token for this application to call platform APIs as the application.",
+      error: "The access token could not be issued. Please retry.",
+      expiresAt: "Expires",
+      forbidden: "The current account is not allowed to issue application access tokens.",
+      hide: "Hide token",
+      loading: "Issuing the access token…",
+      regenerate: "Regenerate",
+      reveal: "Reveal token",
+      securityNote: "The access token is the application's calling credential. Never expose it in a client or a public channel; issue a new one after it expires.",
+      sessionId: "Session ID",
+      tenantApplicationId: "IAM tenant application ID",
+      title: "Application access token",
+      tokenLabel: "Access token",
+      unavailable: "The application is not enabled, so no access token can be issued. Enable it and retry.",
+    },
+    actions: { accessToken: "Access token", copyAppId: "Copy application ID", edit: "Edit application", register: "Register application" },
     description: "Register and operate the application instances owned by this tenant.",
     drawer: {
       accessPermissions: "Access permissions",
@@ -63,7 +83,7 @@ export const sdkworkIamTenantAdminMessages: SdkworkIamTenantAdminMessages = {
     },
     statuses: { disabled: "Disabled", enabled: "Enabled", pendingConfig: "Pending configuration", unknown: "Unknown" },
     summary: { disabled: "Disabled", enabled: "Enabled", pending: "Pending", total: "Applications" },
-    table: { appId: "App ID", application: "Application", applicationType: "Application type", domain: "Primary domain", environment: "Environment", status: "Status" },
+    table: { actions: "Actions", appId: "App ID", application: "Application", applicationType: "Application type", domain: "Primary domain", environment: "Environment", status: "Status" },
     tenantSelectorEmpty: "No tenants available",
     tenantSelectorLabel: "Select tenant",
     title: "Tenant applications",

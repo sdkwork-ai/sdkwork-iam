@@ -2,7 +2,27 @@ import type { SdkworkIamTenantAdminMessages } from "../../../../types/tenant-adm
 
 export const sdkworkIamTenantAdminMessages: SdkworkIamTenantAdminMessages = {
   applications: {
-    actions: { copyAppId: "复制应用 ID", edit: "编辑应用", register: "注册应用" },
+    accessToken: {
+      appId: "应用 ID",
+      close: "关闭",
+      copied: "已复制",
+      copy: "复制令牌",
+      description: "为当前应用签发短期访问令牌，用于以该应用身份调用平台 API。",
+      error: "访问令牌签发失败，请重试。",
+      expiresAt: "有效期至",
+      forbidden: "当前账号没有签发应用访问令牌的权限。",
+      hide: "隐藏令牌",
+      loading: "正在签发访问令牌…",
+      regenerate: "重新生成",
+      reveal: "显示令牌",
+      securityNote: "访问令牌等同于该应用的调用凭证，请勿在客户端或公开渠道泄露；令牌到期后需要重新签发。",
+      sessionId: "会话 ID",
+      tenantApplicationId: "IAM 租户应用 ID",
+      title: "应用访问令牌",
+      tokenLabel: "访问令牌",
+      unavailable: "该应用当前不是启用状态，无法签发访问令牌。请启用应用后重试。",
+    },
+    actions: { accessToken: "访问令牌", copyAppId: "复制应用 ID", edit: "编辑应用", register: "注册应用" },
     description: "注册并管理当前租户拥有的应用运行实例。",
     drawer: {
       accessPermissions: "访问权限",
@@ -63,7 +83,7 @@ export const sdkworkIamTenantAdminMessages: SdkworkIamTenantAdminMessages = {
     },
     statuses: { disabled: "已停用", enabled: "已启用", pendingConfig: "待配置", unknown: "未知" },
     summary: { disabled: "已停用", enabled: "已启用", pending: "待配置", total: "应用总数" },
-    table: { appId: "App ID", application: "应用", applicationType: "应用类型", domain: "主域名", environment: "运行环境", status: "状态" },
+    table: { actions: "操作", appId: "App ID", application: "应用", applicationType: "应用类型", domain: "主域名", environment: "运行环境", status: "状态" },
     tenantSelectorEmpty: "暂无可用租户",
     tenantSelectorLabel: "选择租户",
     title: "租户应用",

@@ -6,6 +6,7 @@ import {
   Clock3,
   Code2,
   Globe2,
+  KeyRound,
   Monitor,
   Pencil,
   Plus,
@@ -41,6 +42,10 @@ import {
 } from "@sdkwork/ui-pc-react";
 
 import { useSdkworkIamTenantAdminMessages } from "../i18n";
+import {
+  TenantApplicationAccessTokenDrawer,
+  type TenantAccessTokenState,
+} from "./TenantApplicationAccessTokenDrawer";
 import type {
   SdkworkIamTenant,
   SdkworkIamTenantApplication,
@@ -100,6 +105,8 @@ export function TenantApplicationsPanel({ controller, tenant }: TenantApplicatio
   const [editingApplication, setEditingApplication] = useState<SdkworkIamTenantApplication>();
   const [registerOpen, setRegisterOpen] = useState(false);
   const [statusTransition, setStatusTransition] = useState<StatusTransition>();
+  const [tokenApplication, setTokenApplication] = useState<SdkworkIamTenantApplication>();
+  const [tokenState, setTokenState] = useState<TenantAccessTokenState>({ status: "loading" });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -155,6 +162,24 @@ export function TenantApplicationsPanel({ controller, tenant }: TenantApplicatio
       accessPermissions: [...application.accessPermissions],
       primaryDomain: application.primaryDomain ?? "",
     });
+  };
+
+  const loadAccessToken = async (application: SdkworkIamTenantApplication) => {
+    setTokenState({ status: "loading" });
+    try {
+      const value = await controller.createTenantApplicationAccessToken(
+        tenant.tenantId,
+        application.tenantApplicationId,
+      );
+      setTokenState({ status: "ready", value });
+    } catch (issueError) {
+      setTokenState({ error: issueError, status: "error" });
+    }
+  };
+
+  const openAccessToken = (application: SdkworkIamTenantApplication) => {
+    setTokenApplication(application);
+    void loadAccessToken(application);
   };
 
   const columns = useMemo<DataTableColumn<SdkworkIamTenantApplication>[]>(() => [
@@ -357,6 +382,14 @@ export function TenantApplicationsPanel({ controller, tenant }: TenantApplicatio
         rowActions={(application) => (
           <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
             <IconButton
+              aria-label={messages.applications.actions.accessToken}
+              onClick={() => openAccessToken(application)}
+              title={messages.applications.actions.accessToken}
+              variant="outline"
+            >
+              <KeyRound className="h-3.5 w-3.5" />
+            </IconButton>
+            <IconButton
               aria-label={messages.applications.actions.edit}
               disabled={!capabilities.canUpdate}
               onClick={() => openEditor(application)}
@@ -373,6 +406,7 @@ export function TenantApplicationsPanel({ controller, tenant }: TenantApplicatio
             />
           </div>
         )}
+        rowActionsLabel={messages.applications.table.actions}
         rows={[...applications]}
         slotProps={{
           surface: { className: "flex min-h-0 flex-1 flex-col" },
@@ -441,6 +475,22 @@ export function TenantApplicationsPanel({ controller, tenant }: TenantApplicatio
         open={Boolean(statusTransition)}
         title={statusTransition?.enabled ? messages.applications.statusDialog.enableTitle : messages.applications.statusDialog.disableTitle}
         tone={statusTransition?.enabled ? "default" : "danger"}
+      />
+
+      <TenantApplicationAccessTokenDrawer
+        application={tokenApplication}
+        onOpenChange={(open) => {
+          if (!open) {
+            setTokenApplication(undefined);
+          }
+        }}
+        onRetry={() => {
+          if (tokenApplication) {
+            void loadAccessToken(tokenApplication);
+          }
+        }}
+        open={Boolean(tokenApplication)}
+        state={tokenState}
       />
     </div>
   );

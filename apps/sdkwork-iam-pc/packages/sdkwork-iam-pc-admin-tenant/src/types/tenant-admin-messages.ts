@@ -1,6 +1,27 @@
 export interface SdkworkIamTenantAdminMessages {
   applications: {
+    accessToken: {
+      appId: string;
+      close: string;
+      copied: string;
+      copy: string;
+      description: string;
+      error: string;
+      expiresAt: string;
+      forbidden: string;
+      hide: string;
+      loading: string;
+      regenerate: string;
+      reveal: string;
+      securityNote: string;
+      sessionId: string;
+      tenantApplicationId: string;
+      title: string;
+      tokenLabel: string;
+      unavailable: string;
+    };
     actions: {
+      accessToken: string;
       copyAppId: string;
       edit: string;
       register: string;
@@ -88,6 +109,7 @@ export interface SdkworkIamTenantAdminMessages {
       total: string;
     };
     table: {
+      actions: string;
       appId: string;
       application: string;
       applicationType: string;

@@ -111,6 +111,17 @@ export interface SdkworkIamTenantApplicationUpdateDraft {
   primaryDomain: string;
 }
 
+/** Short-lived delegated access credential issued for one tenant application. */
+export interface SdkworkIamTenantApplicationAccessToken {
+  accessToken: string;
+  appId?: string;
+  expiresAt?: string;
+  organizationId?: string;
+  sessionId?: string;
+  tenantApplicationId?: string;
+  tenantId?: string;
+}
+
 export interface SdkworkIamTenantApplicationSummary {
   disabled: number;
   enabled: number;
@@ -146,6 +157,10 @@ export interface CreateSdkworkIamTenantControllerInput {
 
 export interface SdkworkIamTenantController {
   createTenant(body: SdkworkIamTenantDraft): Promise<SdkworkIamTenant>;
+  createTenantApplicationAccessToken(
+    tenantId: string,
+    tenantApplicationId: string,
+  ): Promise<SdkworkIamTenantApplicationAccessToken>;
   createTenantMember(tenantId: string, body: SdkworkIamTenantMemberDraft): Promise<SdkworkIamTenantMember>;
   deleteTenant(tenantId: string): Promise<void>;
   getApplicationCapabilities(): SdkworkIamTenantApplicationCapabilities;
