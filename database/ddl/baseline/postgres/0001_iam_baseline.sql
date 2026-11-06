@@ -1902,6 +1902,10 @@ CREATE TABLE IF NOT EXISTS iam_oauth_scan_login_config (
   url_login_enabled INTEGER NOT NULL DEFAULT 1,
   default_qr_mode TEXT NOT NULL DEFAULT 'auto',
   modes_json TEXT NOT NULL DEFAULT '[]',
+  -- Master switch for the whole scan-login surface (folded migration
+  -- 0029_iam_scan_login_enabled). 0 hides every QR mode on the login and
+  -- register pages without clearing the per-mode configuration.
+  scan_login_enabled INTEGER NOT NULL DEFAULT 1,
   updated_at TEXT NOT NULL
 );
 

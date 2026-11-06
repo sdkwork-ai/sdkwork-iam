@@ -1911,8 +1911,19 @@ async fn list_scan_login_modes(
         .filter(|value| !value.is_empty())
         .map(str::to_string)
         .unwrap_or_else(|| "__local__".to_string());
+    let enabled = match crate::scan_login::load_scan_login_enabled(pg, &tenant_id).await {
+        Ok(value) => value,
+        Err(error) => {
+            return appbase_error(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "iam_oauth_scan_login_modes_failed",
+                &error,
+            );
+        }
+    };
     match crate::scan_login::load_scan_login_modes(pg, &tenant_id).await {
         Ok(modes) => appbase_ok(json!({
+            "enabled": enabled,
             "modes": modes
                 .iter()
                 .filter(|mode| mode.enabled)
@@ -3484,7 +3495,10 @@ async fn retrieve_runtime(State(state): State<LocalIamState>, ctx: WebRequestCon
     appbase_ok(payload)
 }
 
-async fn retrieve_verification_policy(State(state): State<LocalIamState>) -> Response {
+async fn retrieve_verification_policy(
+    State(state): State<LocalIamState>,
+    ctx: WebRequestContext,
+) -> Response {
     let account_binding = match postgres_pool_or_error(&state) {
         Ok(pg) => {
             let policy = effective_public_account_binding_policy(&state, pg).await;
@@ -3493,6 +3507,22 @@ async fn retrieve_verification_policy(State(state): State<LocalIamState>) -> Res
         Err(_) => account_binding_policy_to_json(&default_account_binding_policy()),
     };
     let code_login_enabled = code_login_enabled_for_config(&state.config);
+    // The QR login capability follows the tenant master switch configured in
+    // the backend-admin scan-login settings; a database failure keeps the
+    // previous fail-open behavior so the login surface stays usable.
+    let qr_login_enabled = match postgres_pool_or_error(&state) {
+        Ok(pg) => {
+            let tenant_id = ctx
+                .tenant_id()
+                .filter(|value| !value.is_empty())
+                .map(str::to_string)
+                .unwrap_or_else(|| "__local__".to_string());
+            crate::scan_login::load_scan_login_enabled(pg, &tenant_id)
+                .await
+                .unwrap_or(true)
+        }
+        Err(_) => true,
+    };
 
     appbase_ok(json!({
         "accountBinding": account_binding,
@@ -3503,7 +3533,7 @@ async fn retrieve_verification_policy(State(state): State<LocalIamState>) -> Res
         "phoneCodeLoginEnabled": code_login_enabled,
         "phoneRegisterVerificationRequired": false,
         "phoneRegistrationVerificationRequired": false,
-        "qrLoginEnabled": true,
+        "qrLoginEnabled": qr_login_enabled,
         "registrationEnabled": true
     }))
 }
@@ -3542,6 +3572,32 @@ async fn create_oauth_device_authorization(
             "iam_oauth_device_authorization_purpose_invalid",
             "OAuth device authorization purpose must be login or register",
         );
+    }
+
+    // The tenant master switch disables the whole QR surface. Existing QR
+    // sessions (already scanned or waiting for scan) remain valid so a phone
+    // that scanned just before the switch-off can still finish; only new QR
+    // sessions are refused.
+    if let Ok(pg) = postgres_pool_or_error(&state) {
+        let tenant_id =
+            crate::scan_login::resolve_scan_login_tenant_id(optional_string(body.get("tenantId")));
+        match crate::scan_login::load_scan_login_enabled(pg, &tenant_id).await {
+            Ok(true) => {}
+            Ok(false) => {
+                return appbase_error(
+                    StatusCode::CONFLICT,
+                    "iam_oauth_scan_login_disabled",
+                    "Scan login is disabled; enable it in admin first",
+                );
+            }
+            Err(error) => {
+                return appbase_error(
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    "iam_oauth_scan_login_modes_failed",
+                    &error,
+                );
+            }
+        }
     }
 
     let qr_mode = match resolve_oauth_device_authorization_qr_mode(&state, &body).await {

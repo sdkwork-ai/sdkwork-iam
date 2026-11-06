@@ -80,6 +80,12 @@ pub(crate) async fn load_scan_login_modes(
     pg: &PgPool,
     tenant_id: &str,
 ) -> Result<Vec<ScanLoginMode>, String> {
+    // The tenant master switch turns the whole QR surface off: an empty mode
+    // list makes the login page hide the QR rail and makes the default-mode
+    // fallback stop resolving a mode.
+    if !load_scan_login_enabled(pg, tenant_id).await? {
+        return Ok(Vec::new());
+    }
     let tenant_id = tenant_id.trim();
     let global = tenant_id.is_empty() || tenant_id == LOCAL_EPHEMERAL_SCOPE;
     let row = if global {
@@ -116,6 +122,31 @@ pub(crate) async fn load_scan_login_modes(
         modes.retain(|mode| mode.mode != SCAN_LOGIN_MODE_URL);
     }
     Ok(modes)
+}
+
+/// Whether the tenant-level scan-login master switch is enabled.
+/// Defaults to `true` when no config row exists (pre-switch behavior).
+pub(crate) async fn load_scan_login_enabled(pg: &PgPool, tenant_id: &str) -> Result<bool, String> {
+    let tenant_id = tenant_id.trim();
+    let global = tenant_id.is_empty() || tenant_id == LOCAL_EPHEMERAL_SCOPE;
+    let row = if global {
+        sqlx::query(
+            "SELECT scan_login_enabled FROM iam_oauth_scan_login_config \
+             ORDER BY tenant_id LIMIT 1",
+        )
+        .fetch_optional(pg)
+        .await
+    } else {
+        sqlx::query(
+            "SELECT scan_login_enabled FROM iam_oauth_scan_login_config \
+             WHERE tenant_id = $1",
+        )
+        .bind(tenant_id)
+        .fetch_optional(pg)
+        .await
+    }
+    .map_err(|error| format!("load scan login enabled failed: {error}"))?;
+    Ok(row.map(|row| row.get::<i32, _>(0) != 0).unwrap_or(true))
 }
 
 /// Whether URL scan login is enabled (`url_login_enabled`) for the tenant.

@@ -304,6 +304,14 @@ export const sdkworkIamOauthAdminMessages: SdkworkIamOauthAdminMessages = {
     currentActiveBadge: "当前生效",
     modeNotEnabledBadge: "未启用",
     currentModeLabel: "当前登录模式",
+    masterSwitch: {
+      disabledHint: "关闭后，sdkwork-iam 的登录、验证页面不再展示扫码二维码；已配置的模式与账号会保留。",
+      disabledNotice: "扫码登录已关闭，登录页和验证页不会显示二维码；重新开启后按当前模式恢复。",
+      enabledHint: "开启后，sdkwork-iam 登录页与注册页会按下方配置展示扫码登录二维码。",
+      label: "启用扫码登录",
+      off: "已关闭",
+      on: "已开启",
+    },
     modeCardDescriptions: {
       officialAccount: "扫码关注公众号即完成登录",
       provider: "扫码跳转第三方平台完成授权登录",

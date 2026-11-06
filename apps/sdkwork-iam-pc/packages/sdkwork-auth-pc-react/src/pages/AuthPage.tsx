@@ -690,7 +690,7 @@ function SdkworkAuthPageContent({
       : undefined;
   const qrPanelEnabled = isSdkworkAuthQrLoginEnabled(runtimeConfig?.qrLoginEnabled);
   const canRenderDesktopQrRail = !qrEntryKey && (mode === "login" || mode === "register");
-  const shouldRenderQrRail = !canRenderDesktopQrRail
+  const staticQrRailEnabled = !canRenderDesktopQrRail
     ? false
     : typeof explicitQrRailSetting === "boolean"
       ? explicitQrRailSetting
@@ -710,6 +710,15 @@ function SdkworkAuthPageContent({
   const [qrReloadNonce, setQrReloadNonce] = useState(0);
   const [scanLoginModes, setScanLoginModes] = useState<SdkworkAuthScanLoginMode[]>([]);
   const [activeScanModeIndex, setActiveScanModeIndex] = useState(0);
+  // The tenant scan-login configuration decides whether the QR rail may
+  // render at all. Until the app API answers, the page keeps the non-QR rail
+  // so an administrator's "scan login off" switch never flashes a QR code.
+  const [scanLoginConfigStatus, setScanLoginConfigStatus] = useState<
+    "loading" | "ready" | "unavailable"
+  >("loading");
+  const shouldRenderQrRail = staticQrRailEnabled
+    && (scanLoginConfigStatus === "unavailable"
+      || (scanLoginConfigStatus === "ready" && scanLoginModes.length > 0));
   const qrPollSecretRef = useRef("");
   const [organizationSelectionChallenge, setOrganizationSelectionChallenge] =
     useState<SdkworkAuthOrganizationSelectionChallenge | null>(null);
@@ -1334,8 +1343,10 @@ function SdkworkAuthPageContent({
     };
   }, [activeScanModeIndex, controller, copy.qr.generateFailed, copy.qr.missingPayload, copy.qr.unavailable, mode, navigate, qrReloadNonce, redirectTarget, scanLoginModes, shouldRenderQrRail]);
 
-  // Loads the configured scan-login modes for the QR panel. Failures are
-  // silent: the panel falls back to the backend's default mode (single QR).
+  // Loads the configured scan-login modes for the QR panel. The response also
+  // carries the tenant master switch; an explicit "off" or an empty enabled
+  // mode list hides the QR rail. A transport failure keeps the previous
+  // static runtime-config behavior instead of removing a working QR surface.
   useEffect(() => {
     let disposed = false;
     void controller.listScanLoginModes()
@@ -1343,9 +1354,14 @@ function SdkworkAuthPageContent({
         if (!disposed) {
           setScanLoginModes(modes);
           setActiveScanModeIndex(0);
+          setScanLoginConfigStatus("ready");
         }
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (!disposed) {
+          setScanLoginConfigStatus("unavailable");
+        }
+      });
     return () => {
       disposed = true;
     };

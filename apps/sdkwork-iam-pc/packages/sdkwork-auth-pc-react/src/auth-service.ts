@@ -1239,6 +1239,12 @@ function toPlatformLoginQrCode(
 
 function normalizeScanLoginModes(value: unknown): SdkworkAuthScanLoginMode[] {
   const record = value && typeof value === "object" ? value as Record<string, unknown> : {};
+  // The tenant master switch is the authority for the QR surface: when the
+  // backend reports `enabled: false`, no mode may be offered even if a stale
+  // registry still lists entries.
+  if (typeof record.enabled === "boolean" && !record.enabled) {
+    return [];
+  }
   const entries = Array.isArray(record.modes) ? record.modes : [];
   return entries
     .map((entry): SdkworkAuthScanLoginMode | undefined => {
@@ -1932,7 +1938,10 @@ export function createSdkworkAuthService(
     const client = getClient();
     const listScanLoginModesMethod = client.oauth?.scanLoginModes?.list;
     if (!listScanLoginModesMethod) {
-      return [];
+      // No IAM app client is wired: report unavailable so the login page
+      // keeps its static runtime-config fallback instead of treating an
+      // absent API as "scan login disabled".
+      throw new Error(formatMethodUnavailable("oauth.scanLoginModes.list"));
     }
     const response = unwrapAppSdkResponse<unknown>(
       await listScanLoginModesMethod(),

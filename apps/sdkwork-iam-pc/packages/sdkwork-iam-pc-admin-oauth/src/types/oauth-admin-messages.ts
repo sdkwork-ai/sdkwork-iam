@@ -308,6 +308,14 @@ export interface SdkworkIamOauthAdminMessages {
     currentActiveBadge: string;
     currentModeLabel: string;
     modeNotEnabledBadge: string;
+    masterSwitch: {
+      disabledHint: string;
+      disabledNotice: string;
+      enabledHint: string;
+      label: string;
+      off: string;
+      on: string;
+    };
     help: {
       description: string;
       title: string;

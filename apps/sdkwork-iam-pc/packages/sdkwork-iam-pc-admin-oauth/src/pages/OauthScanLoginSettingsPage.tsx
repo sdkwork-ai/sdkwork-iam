@@ -17,6 +17,7 @@ import {
   ModalTitle,
   StatusBadge,
   StatusNotice,
+  Switch,
 } from "@sdkwork/ui-pc-react";
 
 import type {
@@ -42,12 +43,15 @@ type ScanLoginModeKind = "official_account" | "url" | "provider";
 /**
  * Scan login configuration surface.
  *
- * The operator picks the login mode with a radio choice (official-account
+ * A tenant-level master switch turns the whole QR surface on or off. The
+ * operator then picks the login mode with a radio choice (official-account
  * service accounts / H5 URL / third-party provider); selecting a mode saves
  * it as the only enabled mode and renders that mode's configuration form.
  * Service accounts can be added right here in a drawer (no navigation to the
  * official-accounts page), and exactly one account powers scan login at a
- * time. The selected mode is read back from the backend on every load.
+ * time. Turning the master switch off preserves every mode and account entry
+ * while the IAM login/register pages stop rendering QR codes. The selected
+ * mode is read back from the backend on every load.
  */
 export function SdkworkIamOauthScanLoginSettingsPage({
   accountPermissions,
@@ -198,6 +202,23 @@ export function SdkworkIamOauthScanLoginSettingsPage({
     }
   };
 
+  // The master switch saves on its own: turning scan login off must not clear
+  // the mode registry, so re-enabling restores the operator's last setup.
+  const toggleEnabled = (enabled: boolean) => {
+    setBusy(true);
+    setError(undefined);
+    setNotice(undefined);
+    void controller.updateScanLoginSettings({ enabled })
+      .then((updated) => {
+        setSettings(updated);
+        setNotice(copy.common.saveSuccess);
+      })
+      .catch((saveError) => {
+        setError(saveError instanceof Error ? saveError.message : copy.common.error);
+      })
+      .finally(() => setBusy(false));
+  };
+
   const saveProviderMode = () => {
     if (!providerCode.trim()) {
       return;
@@ -282,128 +303,159 @@ export function SdkworkIamOauthScanLoginSettingsPage({
       ) : null}
       {settings ? (
         <>
-          <div className="space-y-2">
-            <span className="text-sm font-medium text-[var(--sdk-color-text-secondary)]">
-              {copy.currentModeLabel}
-            </span>
-            <div className="space-y-2">
-              {modeRadios.map((mode) => {
-                const selected = mode === activeMode;
-                return (
-                  <label
-                    className={`flex items-start gap-3 rounded-lg border p-3 transition-colors ${
-                      selected
-                        ? "border-[var(--sdk-color-brand-primary)] bg-[var(--sdk-color-brand-primary-soft)]"
-                        : "border-[var(--sdk-color-border-default)] hover:border-[var(--sdk-color-border-strong)]"
-                    }`}
-                    key={mode}
-                  >
-                    <input
-                      checked={selected}
-                      className="mt-1 h-4 w-4 accent-[var(--sdk-color-brand-primary)]"
-                      disabled={busy || !canUpdate}
-                      name="oauth-scan-login-mode"
-                      onChange={() => selectMode(mode)}
-                      type="radio"
-                    />
-                    <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                        selected
-                          ? "bg-[var(--sdk-color-brand-primary)] text-white"
-                          : "bg-[var(--sdk-color-surface-panel-muted)] text-[var(--sdk-color-text-secondary)]"
-                      }`}
-                    >
-                      {modeIcon(mode)}
-                    </span>
-                    <span className="min-w-0 flex-1 space-y-1">
-                      <span className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-[var(--sdk-color-text-primary)]">
-                          {modeLabel(mode)}
-                        </span>
-                        {selected ? (
-                          <StatusBadge label={copy.currentActiveBadge} showIcon status="enabled" />
-                        ) : null}
-                      </span>
-                      <span className="block text-xs text-[var(--sdk-color-text-muted)]">
-                        {modeDescription(mode)}
-                      </span>
-                    </span>
-                  </label>
-                );
-              })}
+          <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-[var(--sdk-color-border-default)] p-4">
+            <div className="min-w-0 space-y-1">
+              <p className="text-sm font-medium text-[var(--sdk-color-text-primary)]">
+                {copy.masterSwitch.label}
+              </p>
+              <p className="text-xs text-[var(--sdk-color-text-muted)]">
+                {settings.enabled ? copy.masterSwitch.enabledHint : copy.masterSwitch.disabledHint}
+              </p>
             </div>
+            <label
+              className="flex shrink-0 items-center gap-2 text-sm text-[var(--sdk-color-text-secondary)]"
+              htmlFor="oauth-scan-login-enabled"
+            >
+              <Switch
+                aria-label={copy.masterSwitch.label}
+                checked={settings.enabled}
+                disabled={busy || !canUpdate}
+                id="oauth-scan-login-enabled"
+                onCheckedChange={toggleEnabled}
+              />
+              {settings.enabled ? copy.masterSwitch.on : copy.masterSwitch.off}
+            </label>
           </div>
-
-          {activeMode === "official_account" ? (
-            <OauthOfficialAccountScanLoginSection
-              accounts={settings.officialAccounts}
-              busy={busy}
-              canAddAccount={accountPermissions?.create ?? true}
-              canCreate={canCreate}
-              canUpdate={canUpdate}
-              controller={controller}
-              onAddAccount={() => setAddDrawerOpen(true)}
-              onChanged={() => {
-                setError(undefined);
-                load();
-              }}
-              onError={setError}
-              onPreview={handlePreview}
-            />
+          {!settings.enabled ? (
+            <StatusNotice tone="default">{copy.masterSwitch.disabledNotice}</StatusNotice>
           ) : null}
-          {activeMode === "url" ? (
-            <OauthUrlScanLoginSection
-              busy={busy}
-              canCreate={canCreate}
-              canUpdate={canUpdate}
-              controller={controller}
-              onChanged={(updated) => {
-                setError(undefined);
-                setSettings(updated);
-              }}
-              onError={setError}
-              onNotice={handleNotice}
-              onPreview={handlePreview}
-              settings={settings}
-            />
-          ) : null}
-          {activeMode === "provider" ? (
-            <div className="flex flex-col gap-3 rounded-lg border border-[var(--sdk-color-border-default)] p-4">
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="w-72">
-                  <OauthAdminSelectField
-                    disabled={busy || !canUpdate}
-                    label={copy.providerSelectLabel}
-                    onChange={(value) => {
-                      setProviderCode(value);
-                      if (value) {
-                        saveMode("provider", value);
-                      }
-                    }}
-                    options={[
-                      { label: copy.providerSelectPlaceholder, value: "" },
-                      ...providerOptions.map((option) => ({
-                        label: `${option.name} (${option.code})`,
-                        value: option.code,
-                      })),
-                    ]}
-                    value={providerCode}
-                  />
-                </div>
-                <Button
-                  disabled={busy || !canCreate || !providerCode.trim()}
-                  loading={busy}
-                  onClick={generateProviderPreview}
-                  size="sm"
-                  type="button"
-                >
-                  <QrCode aria-hidden="true" className="h-4 w-4" />
-                  {copy.accounts.generateLabel}
-                </Button>
+          <fieldset
+            className="min-w-0 space-y-6 disabled:opacity-60"
+            disabled={busy || !canUpdate || !settings.enabled}
+          >
+            <div className="space-y-2">
+              <span className="text-sm font-medium text-[var(--sdk-color-text-secondary)]">
+                {copy.currentModeLabel}
+              </span>
+              <div className="space-y-2">
+                {modeRadios.map((mode) => {
+                  const selected = mode === activeMode;
+                  return (
+                    <label
+                      className={`flex items-start gap-3 rounded-lg border p-3 transition-colors ${
+                        selected
+                          ? "border-[var(--sdk-color-brand-primary)] bg-[var(--sdk-color-brand-primary-soft)]"
+                          : "border-[var(--sdk-color-border-default)] hover:border-[var(--sdk-color-border-strong)]"
+                      }`}
+                      key={mode}
+                    >
+                      <input
+                        checked={selected}
+                        className="mt-1 h-4 w-4 accent-[var(--sdk-color-brand-primary)]"
+                        disabled={busy || !canUpdate || !settings.enabled}
+                        name="oauth-scan-login-mode"
+                        onChange={() => selectMode(mode)}
+                        type="radio"
+                      />
+                      <span
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                          selected
+                            ? "bg-[var(--sdk-color-brand-primary)] text-white"
+                            : "bg-[var(--sdk-color-surface-panel-muted)] text-[var(--sdk-color-text-secondary)]"
+                        }`}
+                      >
+                        {modeIcon(mode)}
+                      </span>
+                      <span className="min-w-0 flex-1 space-y-1">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-medium text-[var(--sdk-color-text-primary)]">
+                            {modeLabel(mode)}
+                          </span>
+                          {settings.enabled && selected ? (
+                            <StatusBadge label={copy.currentActiveBadge} showIcon status="enabled" />
+                          ) : null}
+                        </span>
+                        <span className="block text-xs text-[var(--sdk-color-text-muted)]">
+                          {modeDescription(mode)}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
-              <p className="text-xs text-[var(--sdk-color-text-muted)]">{copy.providerModeHint}</p>
             </div>
-          ) : null}
+
+            {activeMode === "official_account" ? (
+              <OauthOfficialAccountScanLoginSection
+                accounts={settings.officialAccounts}
+                busy={busy}
+                canAddAccount={accountPermissions?.create ?? true}
+                canCreate={canCreate}
+                canUpdate={canUpdate}
+                controller={controller}
+                onAddAccount={() => setAddDrawerOpen(true)}
+                onChanged={() => {
+                  setError(undefined);
+                  load();
+                }}
+                onError={setError}
+                onPreview={handlePreview}
+              />
+            ) : null}
+            {activeMode === "url" ? (
+              <OauthUrlScanLoginSection
+                busy={busy}
+                canCreate={canCreate}
+                canUpdate={canUpdate}
+                controller={controller}
+                onChanged={(updated) => {
+                  setError(undefined);
+                  setSettings(updated);
+                }}
+                onError={setError}
+                onNotice={handleNotice}
+                onPreview={handlePreview}
+                settings={settings}
+              />
+            ) : null}
+            {activeMode === "provider" ? (
+              <div className="flex flex-col gap-3 rounded-lg border border-[var(--sdk-color-border-default)] p-4">
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="w-72">
+                    <OauthAdminSelectField
+                      disabled={busy || !canUpdate}
+                      label={copy.providerSelectLabel}
+                      onChange={(value) => {
+                        setProviderCode(value);
+                        if (value) {
+                          saveMode("provider", value);
+                        }
+                      }}
+                      options={[
+                        { label: copy.providerSelectPlaceholder, value: "" },
+                        ...providerOptions.map((option) => ({
+                          label: `${option.name} (${option.code})`,
+                          value: option.code,
+                        })),
+                      ]}
+                      value={providerCode}
+                    />
+                  </div>
+                  <Button
+                    disabled={busy || !canCreate || !providerCode.trim()}
+                    loading={busy}
+                    onClick={generateProviderPreview}
+                    size="sm"
+                    type="button"
+                  >
+                    <QrCode aria-hidden="true" className="h-4 w-4" />
+                    {copy.accounts.generateLabel}
+                  </Button>
+                </div>
+                <p className="text-xs text-[var(--sdk-color-text-muted)]">{copy.providerModeHint}</p>
+              </div>
+            ) : null}
+          </fieldset>
         </>
       ) : null}
 

@@ -892,10 +892,18 @@ export function createSdkworkIamRuntimeAuthService(
     const runtime = await readRuntime();
     const listModes = runtime.service.oauth?.scanLoginModes?.list;
     if (!listModes) {
-      return [];
+      // No scan-login resource on this runtime: report unavailable so the
+      // login page keeps its static runtime-config fallback instead of
+      // treating an absent API as "scan login disabled".
+      throw new Error(methodUnavailableMessage);
     }
     const payload = unwrapRuntimeResponse(await listModes());
     const record = toRecord(payload);
+    // The tenant master switch is authoritative even if a stale registry
+    // still lists modes.
+    if (record.enabled === false) {
+      return [];
+    }
     const entries = Array.isArray(payload)
       ? payload
       : Array.isArray(record.modes)

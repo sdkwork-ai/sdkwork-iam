@@ -304,6 +304,14 @@ export const sdkworkIamOauthAdminMessages: SdkworkIamOauthAdminMessages = {
     currentActiveBadge: "Active",
     modeNotEnabledBadge: "Not enabled",
     currentModeLabel: "Current login mode",
+    masterSwitch: {
+      disabledHint: "When disabled, no QR code is shown on the sdkwork-iam login or verification pages; the configured modes and accounts are kept.",
+      disabledNotice: "Scan login is off. The login and verification pages no longer render QR codes; turn it back on to restore the current mode.",
+      enabledHint: "When enabled, the sdkwork-iam login and register pages show the scan-login QR codes configured below.",
+      label: "Enable scan login",
+      off: "Off",
+      on: "On",
+    },
     modeCardDescriptions: {
       officialAccount: "Scan to follow the official account and sign in",
       provider: "Scan to authorize with the third-party provider",

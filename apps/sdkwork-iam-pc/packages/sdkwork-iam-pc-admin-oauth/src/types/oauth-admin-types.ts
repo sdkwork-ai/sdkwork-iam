@@ -337,6 +337,12 @@ export interface SdkworkIamOauthScanLoginOfficialAccount {
 
 export interface SdkworkIamOauthScanLoginSettings {
   defaultQrMode: "auto" | SdkworkIamOauthScanLoginQrMode;
+  /**
+   * Tenant-level master switch for the whole scan-login surface. When
+   * `false`, the IAM login/register pages render no QR rail and the app API
+   * stops advertising scan-login modes.
+   */
+  enabled: boolean;
   modes: SdkworkIamOauthScanLoginModeEntry[];
   officialAccounts: SdkworkIamOauthScanLoginOfficialAccount[];
   urlLogin: {
@@ -347,6 +353,7 @@ export interface SdkworkIamOauthScanLoginSettings {
 
 export interface SdkworkIamOauthScanLoginSettingsDraft {
   defaultQrMode?: "auto" | SdkworkIamOauthScanLoginQrMode;
+  enabled?: boolean;
   modes?: SdkworkIamOauthScanLoginModeEntry[];
   urlLogin?: {
     enabled?: boolean;

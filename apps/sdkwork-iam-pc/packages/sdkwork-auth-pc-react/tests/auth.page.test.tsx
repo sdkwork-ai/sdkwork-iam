@@ -2874,6 +2874,95 @@ describe("sdkwork-auth-pc-react page", () => {
     );
   });
 
+  it("hides the QR rail when the tenant scan-login configuration disables it", async () => {
+    const generateLoginQrCode = vi.fn().mockResolvedValue({
+      qrContent: "sdkwork://auth/disabled-qr-login",
+      sessionKey: "qr-disabled-1",
+    });
+    const controller = createSdkworkAuthController({
+      service: {
+        // The app API reports no enabled scan-login modes when the admin
+        // master switch is off, so the login page must render the non-QR rail.
+        listScanLoginModes: vi.fn().mockResolvedValue([]),
+        generateLoginQrCode,
+        checkLoginQrCodeStatus: vi.fn(),
+        getCurrentSession: vi.fn().mockResolvedValue(null),
+        getCurrentUser: vi.fn().mockResolvedValue(null),
+      },
+    });
+
+    render(
+      <SdkworkThemeProvider defaultTheme="light">
+        <MemoryRouter initialEntries={["/auth/login"]}>
+          <Routes>
+            <Route
+              path="/auth/login"
+              element={
+                <SdkworkAuthPage
+                  controller={controller}
+                  runtimeConfig={{
+                    loginMethods: ["password"],
+                    oauthProviders: [],
+                    qrLoginEnabled: true,
+                  }}
+                />
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </SdkworkThemeProvider>,
+    );
+
+    await waitFor(() => {
+      expect(controller.service.listScanLoginModes).toHaveBeenCalled();
+    });
+    expect(screen.queryByText("Scan to sign in")).not.toBeInTheDocument();
+    expect(screen.queryByAltText(/login qr code/i)).not.toBeInTheDocument();
+    expect(generateLoginQrCode).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the QR rail when the scan-login configuration request fails", async () => {
+    const generateLoginQrCode = vi.fn().mockResolvedValue({
+      qrContent: "sdkwork://auth/fallback-qr-login",
+      sessionKey: "qr-fallback-1",
+    });
+    const controller = createSdkworkAuthController({
+      service: {
+        listScanLoginModes: vi.fn().mockRejectedValue(new Error("scan login modes unavailable")),
+        generateLoginQrCode,
+        checkLoginQrCodeStatus: vi.fn().mockResolvedValue({ status: "pending" }),
+        getCurrentSession: vi.fn().mockResolvedValue(null),
+        getCurrentUser: vi.fn().mockResolvedValue(null),
+      },
+    });
+
+    render(
+      <SdkworkThemeProvider defaultTheme="light">
+        <MemoryRouter initialEntries={["/auth/login"]}>
+          <Routes>
+            <Route
+              path="/auth/login"
+              element={
+                <SdkworkAuthPage
+                  controller={controller}
+                  runtimeConfig={{
+                    loginMethods: ["password"],
+                    oauthProviders: [],
+                    qrLoginEnabled: true,
+                  }}
+                />
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </SdkworkThemeProvider>,
+    );
+
+    await waitFor(() => {
+      expect(generateLoginQrCode).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it("uses localized QR defaults when local IAM returns generic English QR copy", async () => {
     const controller = createSdkworkAuthController({
       service: {
@@ -2929,7 +3018,7 @@ describe("sdkwork-auth-pc-react page", () => {
     expect(
       screen.queryByText("Use SDKWork local IAM to complete this QR authentication session."),
     ).not.toBeInTheDocument();
-    expect(screen.getByAltText("\u767b\u5f55\u4e8c\u7ef4\u7801")).toBeInTheDocument();
+    expect(await screen.findByAltText("\u767b\u5f55\u4e8c\u7ef4\u7801")).toBeInTheDocument();
   });
 
   it("uses backend QR image URLs directly instead of generating a local QR image", async () => {
@@ -3860,7 +3949,7 @@ describe("sdkwork-auth-pc-react page", () => {
       "placeholder",
       "\u7528\u6237\u540d\u3001\u624b\u673a\u53f7\u6216\u90ae\u7bb1",
     );
-    expect(screen.getByAltText("\u767b\u5f55\u4e8c\u7ef4\u7801")).toBeInTheDocument();
+    expect(await screen.findByAltText("\u767b\u5f55\u4e8c\u7ef4\u7801")).toBeInTheDocument();
     expect(screen.getByText("\u626b\u7801\u767b\u5f55")).toBeInTheDocument();
     expect(screen.queryByText("\u626b\u63cf\u4e8c\u7ef4\u7801\uff0c\u5feb\u901f\u767b\u5f55")).not.toBeInTheDocument();
     expect(screen.queryByText(/后端签发/)).not.toBeInTheDocument();

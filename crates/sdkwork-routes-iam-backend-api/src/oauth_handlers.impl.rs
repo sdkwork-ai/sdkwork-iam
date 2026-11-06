@@ -4632,6 +4632,7 @@ where
 // ── Scan login settings & previews ─────────────────────────────────
 
 /// Loads the scan-login configuration JSON for a tenant:
+/// - `enabled`: tenant-level master switch for the whole QR surface
 /// - `urlLogin`: H5 mobile login URL mode settings
 /// - `defaultQrMode`: login page QR mode (`auto` = first enabled registry mode)
 /// - `modes`: ordered scan-login mode registry (official_account / url /
@@ -4640,23 +4641,31 @@ where
 ///   message-callback (webhook) status for follow-to-login
 async fn scan_login_settings_json(pg: &PgPool, tenant_id: &str) -> Result<Value, String> {
     let config_row = sqlx::query(
-        "SELECT h5_login_origin, url_login_enabled, default_qr_mode, modes_json \
+        "SELECT h5_login_origin, url_login_enabled, default_qr_mode, modes_json, scan_login_enabled \
          FROM iam_oauth_scan_login_config WHERE tenant_id = $1",
     )
     .bind(tenant_id)
     .fetch_optional(pg)
     .await
     .map_err(|error| format!("load scan login config failed: {error}"))?;
-    let (h5_login_origin, url_login_enabled, default_qr_mode, modes_json) = match config_row {
-        Some(row) => {
-            let origin: String = row.get(0);
-            let enabled: i32 = row.get(1);
-            let mode: String = row.get(2);
-            let modes: String = row.get(3);
-            (origin, enabled != 0, mode, modes)
-        }
-        None => (String::new(), true, "auto".to_string(), "[]".to_string()),
-    };
+    let (h5_login_origin, url_login_enabled, default_qr_mode, modes_json, scan_login_enabled) =
+        match config_row {
+            Some(row) => {
+                let origin: String = row.get(0);
+                let enabled: i32 = row.get(1);
+                let mode: String = row.get(2);
+                let modes: String = row.get(3);
+                let scan_enabled: i32 = row.get(4);
+                (origin, enabled != 0, mode, modes, scan_enabled != 0)
+            }
+            None => (
+                String::new(),
+                true,
+                "auto".to_string(),
+                "[]".to_string(),
+                true,
+            ),
+        };
     let modes = serde_json::from_str::<Value>(&normalize_scan_login_modes_json(&modes_json))
         .unwrap_or_else(|_| json!([]));
 
@@ -4723,6 +4732,7 @@ async fn scan_login_settings_json(pg: &PgPool, tenant_id: &str) -> Result<Value,
 
     Ok(json!({
         "defaultQrMode": default_qr_mode,
+        "enabled": scan_login_enabled,
         "modes": modes,
         "officialAccounts": official_accounts,
         "urlLogin": {
@@ -4767,7 +4777,7 @@ async fn update_scan_login_settings(
     };
 
     let existing = match sqlx::query(
-        "SELECT h5_login_origin, url_login_enabled, default_qr_mode, modes_json \
+        "SELECT h5_login_origin, url_login_enabled, default_qr_mode, modes_json, scan_login_enabled \
          FROM iam_oauth_scan_login_config WHERE tenant_id = $1",
     )
     .bind(&tenant_id)
@@ -4779,18 +4789,27 @@ async fn update_scan_login_settings(
             return internal_handler_error("iam_oauth_scan_login_settings_update_failed", error);
         }
     };
-    let (mut h5_login_origin, mut url_login_enabled, mut default_qr_mode, mut modes_json) =
-        match existing {
-            Some(row) => {
-                let origin: String = row.get(0);
-                let enabled: i32 = row.get(1);
-                let mode: String = row.get(2);
-                let modes: String = row.get(3);
-                (origin, enabled != 0, mode, modes)
-            }
-            None => (String::new(), true, "auto".to_string(), "[]".to_string()),
-        };
+    let (
+        mut h5_login_origin,
+        mut url_login_enabled,
+        mut default_qr_mode,
+        mut modes_json,
+        mut scan_login_enabled,
+    ) = match existing {
+        Some(row) => {
+            let origin: String = row.get(0);
+            let enabled: i32 = row.get(1);
+            let mode: String = row.get(2);
+            let modes: String = row.get(3);
+            let scan_enabled: i32 = row.get(4);
+            (origin, enabled != 0, mode, modes, scan_enabled != 0)
+        }
+        None => (String::new(), true, "auto".to_string(), "[]".to_string(), true),
+    };
 
+    if let Some(value) = read_i32_field(&body, &["enabled"]) {
+        scan_login_enabled = value != 0;
+    }
     if let Some(url_login) = body.get("urlLogin") {
         if let Some(value) = read_string_field(url_login, &["h5LoginOrigin", "h5_login_origin"]) {
             h5_login_origin = value.trim().to_string();
@@ -4812,13 +4831,14 @@ async fn update_scan_login_settings(
     let now = Utc::now().to_rfc3339();
     match sqlx::query(
         "INSERT INTO iam_oauth_scan_login_config \
-         (tenant_id, h5_login_origin, url_login_enabled, default_qr_mode, modes_json, updated_at) \
-         VALUES ($1, $2, $3, $4, $5, $6) \
+         (tenant_id, h5_login_origin, url_login_enabled, default_qr_mode, modes_json, scan_login_enabled, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7) \
          ON CONFLICT (tenant_id) DO UPDATE SET \
            h5_login_origin = EXCLUDED.h5_login_origin, \
            url_login_enabled = EXCLUDED.url_login_enabled, \
            default_qr_mode = EXCLUDED.default_qr_mode, \
            modes_json = EXCLUDED.modes_json, \
+           scan_login_enabled = EXCLUDED.scan_login_enabled, \
            updated_at = EXCLUDED.updated_at",
     )
     .bind(&tenant_id)
@@ -4826,6 +4846,7 @@ async fn update_scan_login_settings(
     .bind(if url_login_enabled { 1 } else { 0 })
     .bind(&default_qr_mode)
     .bind(&modes_json)
+    .bind(if scan_login_enabled { 1 } else { 0 })
     .bind(&now)
     .execute(pg)
     .await

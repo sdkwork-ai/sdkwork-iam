@@ -1367,6 +1367,7 @@ function normalizeScanLoginSettings(value: unknown): SdkworkIamOauthScanLoginSet
   const requestedMode = optionalString(record.defaultQrMode) || "auto";
   return {
     defaultQrMode: requestedMode === "official_account" || requestedMode === "url" ? requestedMode : "auto",
+    enabled: typeof record.enabled === "boolean" ? record.enabled : true,
     modes,
     officialAccounts: accounts,
     urlLogin: {

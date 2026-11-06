@@ -14,6 +14,7 @@ import { SdkworkIamOauthScanLoginSettingsPage } from "../src/pages/OauthScanLogi
 
 const SETTINGS: SdkworkIamOauthScanLoginSettings = {
   defaultQrMode: "auto",
+  enabled: true,
   modes: [],
   officialAccounts: [],
   urlLogin: {
@@ -163,6 +164,7 @@ describe("SDKWork IAM OAuth scan login sections", () => {
   it("selects scan login modes with radios and adds service accounts in a drawer", async () => {
     const settings: SdkworkIamOauthScanLoginSettings = {
       defaultQrMode: "auto",
+      enabled: true,
       modes: [{ enabled: true, mode: "official_account", qrMode: "official_account", sortOrder: 10 }],
       officialAccounts: [],
       urlLogin: { enabled: true, h5LoginOrigin: "" },
@@ -226,6 +228,50 @@ describe("SDKWork IAM OAuth scan login sections", () => {
         }),
       );
     });
+    unmount();
+  });
+
+  it("turns the whole scan-login surface off without clearing the configured modes", async () => {
+    const enabledSettings: SdkworkIamOauthScanLoginSettings = {
+      defaultQrMode: "auto",
+      enabled: true,
+      modes: [{ enabled: true, mode: "url", qrMode: "url", sortOrder: 10 }],
+      officialAccounts: [],
+      urlLogin: { enabled: true, h5LoginOrigin: "https://m.example.com" },
+    };
+    const updateScanLoginSettings = vi.fn().mockResolvedValue({
+      ...enabledSettings,
+      enabled: false,
+    });
+    const controller = {
+      loadScanLoginSettings: vi.fn().mockResolvedValue(enabledSettings),
+      load: vi.fn().mockResolvedValue({ providerCatalog: [] }),
+      updateScanLoginSettings,
+      setResourceAccountQrLogin: vi.fn(),
+      generateScanLoginPreview: vi.fn(),
+    } as unknown as SdkworkIamOauthAdminController;
+    const { unmount } = render(
+      <SdkworkI18nProvider locale="zh-CN">
+        <SdkworkIamOauthScanLoginSettingsPage controller={controller} />
+      </SdkworkI18nProvider>,
+    );
+
+    const masterSwitch = await screen.findByRole("switch", { name: "启用扫码登录" });
+    expect((masterSwitch as HTMLButtonElement).getAttribute("aria-checked")).not.toBe("false");
+    fireEvent.click(masterSwitch);
+    await vi.waitFor(() => {
+      expect(updateScanLoginSettings).toHaveBeenCalledWith({ enabled: false });
+    });
+
+    // Turning the master switch off must preserve the registry payload while
+    // making every mode control read-only, and the page explains the effect.
+    await vi.waitFor(() => {
+      expect(screen.getByText(/扫码登录已关闭/u)).toBeTruthy();
+    });
+    expect(screen.getAllByRole("radio").every((radio) => (radio as HTMLInputElement).disabled)).toBe(true);
+    expect(
+      updateScanLoginSettings.mock.calls.every(([body]) => !("modes" in (body as Record<string, unknown>))),
+    ).toBe(true);
     unmount();
   });
 });

@@ -836,6 +836,7 @@ fn database_baseline_declares_oauth_provider_callback_and_operational_resources(
         "url_login_enabled",
         "default_qr_mode",
         "modes_json",
+        "scan_login_enabled",
     ] {
         assert!(
             scan_login.contains(column),
