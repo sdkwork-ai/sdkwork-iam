@@ -28,6 +28,7 @@ export * from "./components/auth/RegisterFlow.tsx";
 export * from "./components/auth/SessionBridgeLoginForm.tsx";
 export * from "./components/auth/VerificationCodeField.tsx";
 export * from "./components/auth/useActionCooldown.ts";
+export * from "./components/auth-account-menu.tsx";
 export * from "./components/auth-page-shell.tsx";
 export * from "./components/oauth-provider-grid.tsx";
 export * from "./components/qr-login-panel.tsx";

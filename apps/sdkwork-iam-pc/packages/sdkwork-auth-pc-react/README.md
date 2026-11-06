@@ -29,7 +29,9 @@ This package is the standard auth UI layer for appbase-based desktop apps. Host 
   form is still read for already-issued links and stripped from the visible
   URL), fires the deep-link back into the desktop app, and offers a manual
   open button plus guidance. It is exempt from the authenticated-user bounce
-  in `resolveAuthAccess`.
+  in `resolveAuthAccess`. When the hosted session is authenticated it also
+  shows an account header with the user's initials, display name, and a
+  hover/click menu that can sign the browser session out.
 - `SdkworkAuthPageShell` is the reusable shell abstraction aligned to the current `sdkwork-studio` baseline.
 - `appearance` is the single customization contract. It supports:
   - `theme`: token-level theme overrides
@@ -55,6 +57,7 @@ Key exports:
 - `SdkworkAuthPage`
 - `SdkworkAuthOAuthCallbackPage`
 - `SdkworkAuthPageShell`
+- `SdkworkAuthAccountMenu`
 - `createSdkworkAuthController`
 - `SdkworkAuthGate`
 - `createSdkworkCanonicalAuthDefinition`

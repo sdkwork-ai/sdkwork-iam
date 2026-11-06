@@ -11,6 +11,12 @@ import {
   readSdkworkDesktopLaunchRedirect,
 } from "../desktop-launch-handoff.ts";
 import {
+  useSdkworkAuthController,
+  useSdkworkAuthControllerState,
+  type SdkworkAuthController,
+} from "../auth-controller.ts";
+import { SdkworkAuthAccountMenu } from "../components/auth-account-menu.tsx";
+import {
   createSdkworkAuthDarkHeaderStyle,
   createSdkworkAuthLightShellStyle,
   SDKWORK_AUTH_SURFACE_THEME_STYLE,
@@ -27,6 +33,7 @@ import { SdkworkAuthPageRouterContextBoundary } from "./routerContextBoundary.ts
 export interface SdkworkAuthDesktopLaunchPageProps {
   appearance?: SdkworkAuthAppearanceConfig;
   basePath?: string;
+  controller?: SdkworkAuthController;
   /**
    * Hands the deep-link redirect URL to the operating system. Defaults to a
    * `window.location.assign` navigation; hosts with their own launcher
@@ -62,9 +69,12 @@ function resolveLoginRoutePath(basePath: string): string {
 function SdkworkAuthDesktopLaunchPageContent({
   appearance,
   basePath = "/auth",
+  controller: providedController,
   onLaunch = defaultLaunchSdkworkDesktopRedirect,
 }: SdkworkAuthDesktopLaunchPageProps) {
   const { copy } = useSdkworkAuthIntl();
+  const controller = useSdkworkAuthController(providedController);
+  const authState = useSdkworkAuthControllerState(controller);
   const resolvedAppearance = resolveSdkworkAuthAppearance(appearance);
   const navigate = useNavigate();
   const location = useLocation();
@@ -91,6 +101,28 @@ function SdkworkAuthDesktopLaunchPageContent({
     redirectUrl ? "launching" : "failed",
   );
   const launchAttemptedRef = useRef(false);
+  const bootstrapAttemptedRef = useRef(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  // The header can only name the account when the session is hydrated, but the
+  // success hand-off must render immediately: bootstrap runs once in the
+  // background instead of gating the page. A controller that already holds the
+  // session a login just created is left alone — re-retrieving it would let a
+  // transient read failure clear that brand-new session.
+  useEffect(() => {
+    if (
+      bootstrapAttemptedRef.current
+      || authState.isBootstrapped
+      || authState.isAuthenticated
+    ) {
+      return;
+    }
+    bootstrapAttemptedRef.current = true;
+    void controller.bootstrap().catch(() => {
+      // An anonymous or expired session simply leaves the header without an
+      // account chip; the hand-off itself does not depend on it.
+    });
+  }, [authState.isAuthenticated, authState.isBootstrapped, controller]);
 
   useEffect(() => {
     clearSdkworkDesktopLaunchRedirect();
@@ -132,18 +164,62 @@ function SdkworkAuthDesktopLaunchPageContent({
     }
   };
 
+  const handleSignOut = async () => {
+    if (signingOut) {
+      return;
+    }
+    setSigningOut(true);
+    try {
+      await controller.signOut();
+    } catch {
+      // `signOut()` clears the local controller state in its own finally path,
+      // so a rejected remote revoke still signs this page out.
+    } finally {
+      setSigningOut(false);
+      navigate(loginRoute, { replace: true });
+    }
+  };
+
   return (
     <div
       className={mergeSdkworkAuthClassNames(
-        "sdkwork-auth-surface relative flex h-[100dvh] min-h-[100dvh] w-full items-center justify-center overflow-hidden bg-zinc-100 p-4 dark:bg-zinc-950 sm:p-8",
+        "sdkwork-auth-surface relative flex min-h-[100dvh] w-full flex-col overflow-x-hidden bg-zinc-100 p-4 dark:bg-zinc-950 sm:p-8",
         resolvedAppearance?.pageClassName,
       )}
       style={resolvedAppearance?.pageStyle}
     >
       <style>{SDKWORK_AUTH_SURFACE_THEME_STYLE}</style>
+      <header className="relative z-20 mx-auto flex w-full max-w-lg shrink-0 items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2 text-sm font-bold tracking-tight text-zinc-600 dark:text-zinc-300">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-950 text-[10px] font-black tracking-wide text-white dark:bg-white dark:text-zinc-950">
+            IAM
+          </span>
+          <span className="truncate">SDKWork IAM</span>
+        </div>
+        {authState.isAuthenticated && authState.user ? (
+          <div
+            aria-label={copy.account.menuLabel}
+            className="relative z-20 shrink-0"
+            role="group"
+          >
+            <SdkworkAuthAccountMenu
+              displayName={authState.user.displayName}
+              email={authState.user.email}
+              initials={authState.user.initials}
+              menuLabel={copy.account.menuLabel}
+              onSignOut={() => {
+                void handleSignOut();
+              }}
+              signedInLabel={copy.account.signedInAs}
+              signOutLabel={signingOut ? copy.account.signingOut : copy.account.signOut}
+              signingOut={signingOut}
+            />
+          </div>
+        ) : null}
+      </header>
       <div
         className={mergeSdkworkAuthClassNames(
-          "sdkwork-auth-desktop-launch-shell relative z-10 w-full max-w-lg overflow-hidden rounded-3xl bg-white/92 shadow-2xl dark:bg-zinc-900/92",
+          "sdkwork-auth-desktop-launch-shell relative z-10 mx-auto my-auto w-full max-w-lg overflow-hidden rounded-3xl bg-white/92 shadow-2xl dark:bg-zinc-900/92",
           resolvedAppearance?.callbackShellClassName,
         )}
         style={mergeSdkworkAuthStyles(
