@@ -271,6 +271,35 @@ pub(crate) fn read_string_field(body: &Value, keys: &[&str]) -> Option<String> {
     })
 }
 
+/// Reads a nullable text patch field with explicit-clear semantics.
+///
+/// - `None` — every key is absent: leave the column unchanged.
+/// - `Some(None)` — the key is present but empty/whitespace: clear the column.
+/// - `Some(Some(value))` — the key carries text: set the column to the trimmed
+///   value.
+///
+/// `read_string_field` drops empty strings, which is right for required
+/// identifiers but makes an operator's "clear this field" request
+/// indistinguishable from "leave it alone". Profile columns use this reader so
+/// the admin console can actually erase a description, phone number, or logo.
+pub(crate) fn read_patch_text(body: &Value, keys: &[&str]) -> Option<Option<String>> {
+    for key in keys {
+        let Some(value) = body.get(*key) else {
+            continue;
+        };
+        let Some(text) = value.as_str() else {
+            continue;
+        };
+        let trimmed = text.trim();
+        return Some(if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_owned())
+        });
+    }
+    None
+}
+
 pub(crate) fn read_i32_field(body: &Value, keys: &[&str]) -> Option<i32> {
     keys.iter().find_map(|key| {
         body.get(*key).and_then(|value| match value {

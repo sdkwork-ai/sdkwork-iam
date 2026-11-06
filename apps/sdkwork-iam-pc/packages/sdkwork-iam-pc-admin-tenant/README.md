@@ -25,6 +25,25 @@ Protected calls are delegated to the common IAM service and use the canonical du
 
 This package must not create raw HTTP clients, manually assemble headers, or import a concrete generated SDK.
 
+## Tenant Profile And Logo Upload
+
+The create/edit tenant drawer renders the shared `DriveUploadImage` field from `sdkwork-drive-pc-upload-image` as a single placeholder upload area. There is no image-URL input, no second pick button, and no local data-URL fallback.
+
+- The host injects `driveUploadImageService` (built with `createDriveUploadImageService` from its own declared upload intent). The Cloud Router host declares the `admin-tenant-logo` slot in `apps/sdkwork-cloudrouter-pc/specs/upload.declaration.json`.
+- Edit mode uploads immediately against the tenant id.
+- Create mode parks the pick inside the field's controller and flushes it through `uploadPending({ appResourceId })` after `createTenant` returns, then attaches the returned media resource with a follow-up update (`DRIVE_SPEC.md` section 18.3). A failed attach keeps the drawer on the created record's edit view so the retry cannot duplicate the tenant.
+- Saving is disabled while an upload is in flight, so the stored record cannot race the new logo value.
+- Without the injected service the field renders a disabled placeholder and an explanatory hint; it never falls back to a URL input.
+
+## Tenant Drawer Contract
+
+- Basic information: logo, name, code, and (edit only) lifecycle status.
+- Tenant profile: industry category and a 200-character description.
+- Contact details: phone, email, and address.
+- Name and code are both required because the backend create handler rejects a request that omits either; the drawer validates them before calling the controller and keeps validation in sync after the first submit attempt.
+- The edit status selector offers the registered `IAM_SPEC.md` lifecycle set: `active`, `suspended`, `disabled`, and `terminated`.
+- Nullable profile values travel as an explicit empty string when cleared, and removing the stored logo travels as an explicit `logo: null` patch; the backend clears the corresponding column instead of silently ignoring the removal.
+
 Tenant application administration uses the authenticated operator methods under
 `service.iam.tenantApplications.management`. Global application-template registration and
 bootstrap credential issuance remain server/CLI bootstrap responsibilities and are never exposed

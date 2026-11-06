@@ -103,7 +103,9 @@ export interface SdkworkIamTenantAdminMessages {
   common: {
     cancel: string;
     close: string;
+    create: string;
     edit: string;
+    operationError: string;
     save: string;
   };
   members: {
@@ -154,12 +156,48 @@ export interface SdkworkIamTenantAdminMessages {
     deleteTitle: string;
     edit: string;
     drawer: {
+      address: string;
+      addressPlaceholder: string;
+      basicDescription: string;
+      basicSection: string;
       code: string;
+      codeHint: string;
+      codeInvalid: string;
+      codePlaceholder: string;
+      codeRequired: string;
+      contactEmail: string;
+      contactEmailPlaceholder: string;
+      contactPhone: string;
+      contactPhonePlaceholder: string;
+      contactSection: string;
       createDescription: string;
       createTitle: string;
+      description: string;
+      descriptionCountTemplate: string;
+      descriptionPlaceholder: string;
       editDescription: string;
       editTitle: string;
+      emailInvalid: string;
+      industry: string;
+      industryPlaceholder: string;
+      logo: string;
+      logoHintTemplate: string;
+      logoInvalidType: string;
+      logoReadError: string;
+      logoRemove: string;
+      logoReplace: string;
+      logoRetry: string;
+      logoTooLarge: string;
+      logoTooLargeTemplate: string;
+      logoUnavailable: string;
+      logoUpload: string;
+      logoUploading: string;
       name: string;
+      namePlaceholder: string;
+      nameRequired: string;
+      phoneInvalid: string;
+      profileDescription: string;
+      profileSection: string;
       status: string;
     };
     emptyDescription: string;
@@ -171,6 +209,7 @@ export interface SdkworkIamTenantAdminMessages {
       createSuccess: string;
       deleteSuccess: string;
       loadError: string;
+      logoAttachFailed: string;
       updateSuccess: string;
     };
     selectedDescriptionTemplate: string;
@@ -178,10 +217,14 @@ export interface SdkworkIamTenantAdminMessages {
     statuses: {
       active: string;
       disabled: string;
+      suspended: string;
+      terminated: string;
       unknown: string;
     };
     table: {
+      actions: string;
       code: string;
+      industry: string;
       name: string;
       status: string;
       tenantId: string;

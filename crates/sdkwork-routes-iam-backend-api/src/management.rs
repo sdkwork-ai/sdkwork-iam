@@ -23,7 +23,7 @@ use crate::backend_audit::{
 use crate::backend_sql::{
     cursor_page_json, encode_timeline_keyset_cursor, internal_handler_error,
     list_page_params_or_error, list_search_pattern, list_tenant_rows, page_json_from_rows,
-    patch_tenant_row_tx, read_i32_field, read_string_field, retrieve_tenant_row,
+    patch_tenant_row_tx, read_i32_field, read_patch_text, read_string_field, retrieve_tenant_row,
     role_binding_list_filter_sql, role_binding_list_filter_values, timeline_cursor_page_from_rows,
     timeline_list_params_or_error, tree_resource_json, PatchValue, TimelineListParams,
     LIST_TOTAL_COLUMN,
@@ -1462,8 +1462,12 @@ fn user_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
 }
 
 /// Delivery URL of a stored image media-resource snapshot (user avatar,
-/// organization logo). Reads the camelCase SDK shape first and falls back to
-/// the snake_case shape the user-center host serializes.
+/// organization logo, tenant logo). Reads the camelCase SDK shape first and
+/// falls back to the snake_case shape the user-center host serializes.
+///
+/// A `drive://` uri is a Drive reference, not a browser-usable URL: emitting it
+/// here would make every console render a broken image. Drive-backed images
+/// travel through the snapshot object and its bounded preview reader instead.
 fn media_delivery_url(image: &Value) -> Option<String> {
     ["publicUrl", "url", "uri", "public_url"]
         .iter()
@@ -1475,6 +1479,7 @@ fn media_delivery_url(image: &Value) -> Option<String> {
                 .filter(|value| !value.is_empty())
                 .map(str::to_owned)
         })
+        .filter(|url| !url.starts_with("drive://"))
 }
 
 fn role_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
@@ -1728,7 +1733,9 @@ include!("directory_crud.impl.rs");
 
 #[cfg(test)]
 mod tests {
-    use super::{nest_tree, organization_patch_fields, PatchValue};
+    use super::{
+        media_delivery_url, nest_tree, organization_patch_fields, tenant_patch_fields, PatchValue,
+    };
     use serde_json::json;
 
     #[test]
@@ -1761,6 +1768,55 @@ mod tests {
         assert!(!assignments
             .iter()
             .any(|(column, _)| column == "logo_resource_snapshot"));
+    }
+
+    #[test]
+    fn organization_patch_fields_clears_a_profile_field_on_an_explicit_empty_string() {
+        let assignments = organization_patch_fields(&json!({ "description": "" })).expect("patch fields");
+        assert!(assignments
+            .iter()
+            .any(|(column, value)| column == "description" && *value == PatchValue::NullText));
+    }
+
+    #[test]
+    fn tenant_patch_fields_clears_profile_fields_and_the_logo() {
+        let assignments = tenant_patch_fields(&json!({
+            "address": "   ",
+            "description": "",
+            "logo": null,
+        }))
+        .expect("patch fields");
+        for column in ["address", "description", "logo_resource_snapshot"] {
+            assert!(
+                assignments
+                    .iter()
+                    .any(|(candidate, value)| candidate == column && *value == PatchValue::NullText),
+                "{column} should be explicitly cleared"
+            );
+        }
+    }
+
+    #[test]
+    fn tenant_patch_fields_normalizes_and_guards_the_lifecycle_status() {
+        let assignments =
+            tenant_patch_fields(&json!({ "status": "Suspended" })).expect("patch fields");
+        assert!(assignments
+            .iter()
+            .any(|(column, value)| column == "status" && *value == PatchValue::Text("suspended".to_owned())));
+
+        assert!(tenant_patch_fields(&json!({ "status": "archived" })).is_err());
+    }
+
+    #[test]
+    fn media_delivery_url_never_exposes_a_drive_reference() {
+        assert_eq!(
+            media_delivery_url(&json!({ "uri": "drive://spaces/space-1/nodes/node-1" })),
+            None
+        );
+        assert_eq!(
+            media_delivery_url(&json!({ "uri": "https://cdn.example.com/logo.png" })),
+            Some("https://cdn.example.com/logo.png".to_owned())
+        );
     }
 
     #[test]

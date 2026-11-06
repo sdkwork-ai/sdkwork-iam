@@ -158,6 +158,12 @@ fn read_logo_snapshot(body: &Value) -> Result<Option<String>, Response> {
     read_image_snapshot(body, "logo", &["logoUrl", "logo_url"], "iam_organization_invalid_logo")
 }
 
+/// Same contract as `read_avatar_snapshot` for the tenant logo stored in
+/// `iam_tenant.logo_resource_snapshot`.
+fn read_tenant_logo_snapshot(body: &Value) -> Result<Option<String>, Response> {
+    read_image_snapshot(body, "logo", &["logoUrl", "logo_url"], "iam_tenant_invalid_logo")
+}
+
 /// Organization kinds the backend-admin console may submit for
 /// organizations.create / organizations.update. The column is free-form TEXT
 /// but the API fail-closes on an explicit token set so tree rendering and
@@ -1491,10 +1497,19 @@ async fn retrieve_organization(State(state): State<BackendIamState>, ctx: WebReq
 /// field on a department/membership update can never reach a foreign table.
 fn organization_patch_fields(body: &Value) -> Result<Vec<(String, PatchValue)>, Response> {
     let mut assignments = Vec::new();
+    // Required identifiers never clear; an absent or empty value leaves them
+    // untouched.
     for (column, keys) in [
         ("name", ["name"].as_slice()),
         ("code", ["code"].as_slice()),
         ("status", ["status"].as_slice()),
+    ] {
+        if let Some(value) = read_string_field(body, keys) {
+            assignments.push((column.to_owned(), PatchValue::Text(value)));
+        }
+    }
+    // Nullable profile columns accept an explicit empty string as "clear it".
+    for (column, keys) in [
         ("organization_category", ["organizationCategory", "organization_category"].as_slice()),
         ("industry_category", ["industryCategory", "industry_category"].as_slice()),
         ("description", ["description"].as_slice()),
@@ -1502,8 +1517,11 @@ fn organization_patch_fields(body: &Value) -> Result<Vec<(String, PatchValue)>, 
         ("contact_email", ["contactEmail", "contact_email"].as_slice()),
         ("address", ["address"].as_slice()),
     ] {
-        if let Some(value) = read_string_field(body, keys) {
-            assignments.push((column.to_owned(), PatchValue::Text(value)));
+        if let Some(value) = read_patch_text(body, keys) {
+            assignments.push((
+                column.to_owned(),
+                value.map_or(PatchValue::NullText, PatchValue::Text),
+            ));
         }
     }
     if let Some(kind) = read_organization_kind(body)? {
@@ -2221,8 +2239,88 @@ async fn update_position_assignment(State(state): State<BackendIamState>, ctx: W
     }
 }
 
+/// Tenant lifecycle states registered by `IAM_SPEC.md`: login, token
+/// validation, and every protected request reject a non-active tenant, while
+/// suspension stays separate from deletion so reactivation and audit remain
+/// possible.
+const TENANT_STATUSES: [&str; 4] = ["active", "suspended", "disabled", "terminated"];
+
+fn read_tenant_status(body: &Value) -> Result<Option<String>, Response> {
+    let Some(status) = read_string_field(body, &["status"]) else {
+        return Ok(None);
+    };
+    let normalized = status.to_ascii_lowercase();
+    if !TENANT_STATUSES.contains(&normalized.as_str()) {
+        return Err(appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_tenant_invalid_status",
+            "status must be one of active, suspended, disabled, terminated",
+        ));
+    }
+    Ok(Some(normalized))
+}
+
 fn tenant_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
-    json!({ "code": row.get::<String, _>(1), "id": row.get::<String, _>(0), "name": row.get::<String, _>(2), "status": row.get::<String, _>(3), "tenantId": row.get::<String, _>(0) })
+    let logo: Option<Value> = row
+        .get::<Option<String>, _>("logo_resource_snapshot")
+        .and_then(|snapshot| serde_json::from_str::<Value>(&snapshot).ok())
+        .filter(|value| value.is_object());
+    json!({
+        "address": row.get::<Option<String>, _>("address"),
+        "code": row.get::<String, _>("code"),
+        "contactEmail": row.get::<Option<String>, _>("contact_email"),
+        "contactPhone": row.get::<Option<String>, _>("contact_phone"),
+        "createdAt": row.get::<String, _>("created_at"),
+        "description": row.get::<Option<String>, _>("description"),
+        "id": row.get::<String, _>("id"),
+        "industryCategory": row.get::<Option<String>, _>("industry_category"),
+        "logo": logo,
+        "logoUrl": logo.as_ref().and_then(media_delivery_url),
+        "name": row.get::<String, _>("name"),
+        "status": row.get::<String, _>("status"),
+        "tenantId": row.get::<String, _>("id"),
+        "updatedAt": row.get::<String, _>("updated_at"),
+    })
+}
+
+/// Column allowlist accepted by tenants.update. Tenant-specific so a stray
+/// organization-only field can never reach the tenant table, and profile
+/// columns keep their explicit-clear semantics.
+fn tenant_patch_fields(body: &Value) -> Result<Vec<(String, PatchValue)>, Response> {
+    let mut assignments = Vec::new();
+    for (column, keys) in [
+        ("code", ["code"].as_slice()),
+        ("name", ["name"].as_slice()),
+    ] {
+        if let Some(value) = read_string_field(body, keys) {
+            assignments.push((column.to_owned(), PatchValue::Text(value)));
+        }
+    }
+    if let Some(status) = read_tenant_status(body)? {
+        assignments.push(("status".to_owned(), PatchValue::Text(status)));
+    }
+    for (column, keys) in [
+        ("industry_category", ["industryCategory", "industry_category"].as_slice()),
+        ("description", ["description"].as_slice()),
+        ("contact_phone", ["contactPhone", "contact_phone"].as_slice()),
+        ("contact_email", ["contactEmail", "contact_email"].as_slice()),
+        ("address", ["address"].as_slice()),
+    ] {
+        if let Some(value) = read_patch_text(body, keys) {
+            assignments.push((
+                column.to_owned(),
+                value.map_or(PatchValue::NullText, PatchValue::Text),
+            ));
+        }
+    }
+    let clears_logo = body.get("logo").map(Value::is_null).unwrap_or(false)
+        && read_string_field(body, &["logoUrl", "logo_url"]).is_none();
+    if clears_logo {
+        assignments.push(("logo_resource_snapshot".to_owned(), PatchValue::NullText));
+    } else if let Some(snapshot) = read_tenant_logo_snapshot(body)? {
+        assignments.push(("logo_resource_snapshot".to_owned(), PatchValue::Text(snapshot)));
+    }
+    Ok(assignments)
 }
 
 async fn list_tenants(State(state): State<BackendIamState>, ctx: WebRequestContext, Query(query): Query<HashMap<String, String>>) -> Response {
@@ -2233,7 +2331,8 @@ async fn list_tenants(State(state): State<BackendIamState>, ctx: WebRequestConte
     };
     let search_pattern = list_search_pattern(&query);
     match sqlx::query(sqlx::AssertSqlSafe(format!(
-        "SELECT id, code, name, status, created_at, updated_at, \
+        "SELECT id, code, name, status, logo_resource_snapshot, industry_category, description, \
+                contact_phone, contact_email, address, created_at, updated_at, \
                 COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
          FROM iam_tenant \
          WHERE id = $1 \
@@ -2254,6 +2353,15 @@ async fn create_tenant(State(state): State<BackendIamState>, ctx: WebRequestCont
     let Ok(pg) = postgres_pool_or_error(&state) else { return postgres_pool_or_error(&state).err().expect("error response"); };
     let code = read_string_field(&body, &["code"]); let name = read_string_field(&body, &["name"]);
     if code.as_deref().unwrap_or("").is_empty() || name.as_deref().unwrap_or("").is_empty() { return appbase_error(StatusCode::BAD_REQUEST, "iam_tenant_invalid", "code and name are required"); }
+    let logo_snapshot = match read_tenant_logo_snapshot(&body) {
+        Ok(snapshot) => snapshot,
+        Err(response) => return response,
+    };
+    let industry_category = read_string_field(&body, &["industryCategory", "industry_category"]);
+    let description = read_string_field(&body, &["description"]);
+    let contact_phone = read_string_field(&body, &["contactPhone", "contact_phone"]);
+    let contact_email = read_string_field(&body, &["contactEmail", "contact_email"]);
+    let address = read_string_field(&body, &["address"]);
     let id = format!("iamt-{}", Uuid::new_v4()); let now = Utc::now().to_rfc3339();
     let insert_id = id.clone();
     let code_value = code.as_ref().expect("validated").clone();
@@ -2263,18 +2371,27 @@ async fn create_tenant(State(state): State<BackendIamState>, ctx: WebRequestCont
         &ctx,
         "iam_tenant",
         id.clone(),
-        json!({ "code": code }),
+        json!({ "code": code, "name": name }),
         |tx| Box::pin(async move {
             let code_value = code_value.clone();
             let name_value = name_value.clone();
             let now = now.clone();
-            
+
                 sqlx::query(
-                    "INSERT INTO iam_tenant (id, code, name, status, created_at, updated_at) VALUES ($1, $2, $3, 'active', $4, $4)",
+                    "INSERT INTO iam_tenant \
+                     (id, code, name, status, logo_resource_snapshot, industry_category, description, \
+                      contact_phone, contact_email, address, created_at, updated_at) \
+                     VALUES ($1, $2, $3, 'active', $4, $5, $6, $7, $8, $9, $10, $10)",
                 )
                 .bind(&insert_id)
                 .bind(&code_value)
                 .bind(&name_value)
+                .bind(&logo_snapshot)
+                .bind(&industry_category)
+                .bind(&description)
+                .bind(&contact_phone)
+                .bind(&contact_email)
+                .bind(&address)
                 .bind(&now)
                 .execute(&mut **tx)
                 .await
@@ -2297,7 +2414,11 @@ async fn retrieve_tenant(State(state): State<BackendIamState>, ctx: WebRequestCo
     if let Err(response) = ensure_target_tenant_access(&ctx, &tenant_id) {
         return response;
     }
-    match sqlx::query("SELECT id, code, name, status, created_at, updated_at FROM iam_tenant WHERE id = $1 LIMIT 1").bind(&tenant_id).fetch_optional(pg).await {
+    match sqlx::query(
+        "SELECT id, code, name, status, logo_resource_snapshot, industry_category, description, \
+                contact_phone, contact_email, address, created_at, updated_at \
+         FROM iam_tenant WHERE id = $1 LIMIT 1",
+    ).bind(&tenant_id).fetch_optional(pg).await {
         Ok(Some(row)) => appbase_ok(tenant_row_to_json(&row)),
         Ok(None) => appbase_error(StatusCode::NOT_FOUND, "iam_tenant_not_found", "tenant not found"),
         Err(error) => internal_handler_error("iam_tenant_retrieve_failed", &error),
@@ -2309,7 +2430,11 @@ async fn update_tenant(State(state): State<BackendIamState>, ctx: WebRequestCont
     if let Err(response) = ensure_target_tenant_access(&ctx, &tenant_id) {
         return response;
     }
-    let mut assignments = patch_fields(&body); assignments.push(("updated_at".to_owned(), PatchValue::Text(Utc::now().to_rfc3339())));
+    let mut assignments = match tenant_patch_fields(&body) {
+        Ok(assignments) => assignments,
+        Err(response) => return response,
+    };
+    assignments.push(("updated_at".to_owned(), PatchValue::Text(Utc::now().to_rfc3339())));
     if assignments.len() == 1 { return appbase_error(StatusCode::BAD_REQUEST, "iam_tenant_invalid", "no updatable fields provided"); }
     let mut set_clause = String::new();
     for (index, (column, _)) in assignments.iter().enumerate() { if index > 0 { set_clause.push_str(", "); } set_clause.push_str(column); set_clause.push_str(" = $"); set_clause.push_str(&(index + 2).to_string()); }

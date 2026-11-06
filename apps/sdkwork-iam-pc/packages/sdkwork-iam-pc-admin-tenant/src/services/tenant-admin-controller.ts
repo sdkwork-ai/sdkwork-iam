@@ -10,6 +10,7 @@ import type {
   SdkworkIamTenantApplicationDraft,
   SdkworkIamTenantApplicationSummary,
   SdkworkIamTenantApplicationUpdateDraft,
+  SdkworkIamTenantLogoMediaResource,
   SdkworkIamTenantMember,
   SdkworkIamTenantMemberDraft,
   SdkworkIamTenantState,
@@ -75,9 +76,10 @@ export function createSdkworkIamTenantController(
   const controller: SdkworkIamTenantController = {
     createTenant: async (body) => {
       requireId(body.name, "name");
+      requireId(body.code, "code");
       setState({ status: "loading" });
       try {
-        const tenant = toTenant(await resolved.service.iam.tenants.create(body as unknown as Record<string, unknown>));
+        const tenant = toTenant(await resolved.service.iam.tenants.create(toTenantWirePayload(body)));
         if (!tenant) {
           throw new Error("SDKWork IAM tenant create response is missing tenantId");
         }
@@ -365,7 +367,7 @@ export function createSdkworkIamTenantController(
       const normalizedTenantId = requireId(tenantId, "tenantId");
       setState({ status: "loading" });
       try {
-        const tenant = toTenant(await resolved.service.iam.tenants.update(normalizedTenantId, body))
+        const tenant = toTenant(await resolved.service.iam.tenants.update(normalizedTenantId, toTenantWirePayload(body)))
           ?? toTenant(await resolved.service.iam.tenants.retrieve(normalizedTenantId));
         if (!tenant) {
           throw new Error("SDKWork IAM tenant update response is missing tenantId");
@@ -485,12 +487,105 @@ function toTenant(value: unknown): SdkworkIamTenant | undefined {
   }
 
   return {
+    address: optionalString(record.address),
     code: optionalString(record.code),
+    contactEmail: optionalString(record.contactEmail) || optionalString(record.contact_email),
+    contactPhone: optionalString(record.contactPhone) || optionalString(record.contact_phone),
+    createdAt: optionalString(record.createdAt) || optionalString(record.created_at),
+    description: optionalString(record.description),
     id: optionalString(record.id) || tenantId,
+    industryCategory: optionalString(record.industryCategory) || optionalString(record.industry_category),
+    logo: tenantLogoSnapshot(record.logo),
+    logoUrl: optionalString(record.logoUrl) || tenantLogoSnapshotDeliveryUrl(record.logo),
     name: optionalString(record.name) || optionalString(record.tenantName) || tenantId,
     status: optionalString(record.status),
     tenantId,
+    updatedAt: optionalString(record.updatedAt) || optionalString(record.updated_at),
   };
+}
+
+/**
+ * The wire payload for tenants.create / tenants.update.
+ *
+ * Required identifiers always travel; nullable profile fields travel only when
+ * they carry a value, and a key present with an empty value becomes an explicit
+ * empty string so the backend can clear the column. Removing the stored logo is
+ * an explicit `logo: null` patch — an omitted key means "leave the snapshot
+ * unchanged" on the backend.
+ */
+function toTenantWirePayload(draft: Partial<SdkworkIamTenantDraft>): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  const text = (key: keyof SdkworkIamTenantDraft, value: string | undefined) => {
+    const normalized = typeof value === "string" ? value.trim() : "";
+    if (normalized) {
+      payload[key] = normalized;
+    }
+  };
+  text("name", draft.name);
+  text("code", draft.code);
+  text("status", draft.status);
+  text("industryCategory", draft.industryCategory);
+  text("description", draft.description);
+  text("contactPhone", draft.contactPhone);
+  text("contactEmail", draft.contactEmail);
+  text("address", draft.address);
+  if (draft.logo) {
+    payload.logo = draft.logo;
+  }
+  text("logoUrl", draft.logoUrl);
+  if (!draft.logo && !(draft.logoUrl ?? "").trim() && "logo" in draft) {
+    payload.logo = null;
+  }
+  for (const key of ["industryCategory", "description", "contactPhone", "contactEmail", "address"] as const) {
+    if (key in draft && payload[key] === undefined) {
+      payload[key] = "";
+    }
+  }
+  return payload;
+}
+
+/** Parses the tenant logo snapshot the backend returns on `logo`. */
+function tenantLogoSnapshot(value: unknown): SdkworkIamTenantLogoMediaResource | undefined {
+  const record = toRecord(value);
+  if (Object.keys(record).length === 0) {
+    return undefined;
+  }
+  const metadata = toRecord(record.metadata);
+  const drive = toRecord(metadata.drive);
+  const resource: SdkworkIamTenantLogoMediaResource = {
+    fileName: optionalString(record.fileName) || optionalString(record.file_name),
+    id: optionalString(record.id),
+    kind: optionalString(record.kind),
+    metadata: Object.keys(drive).length > 0
+      ? {
+          drive: {
+            nodeId: optionalString(drive.nodeId) || optionalString(drive.node_id),
+            spaceId: optionalString(drive.spaceId) || optionalString(drive.space_id),
+            spaceType: optionalString(drive.spaceType) || optionalString(drive.space_type),
+          },
+        }
+      : undefined,
+    mimeType: optionalString(record.mimeType) || optionalString(record.mime_type),
+    publicUrl: optionalString(record.publicUrl) || optionalString(record.public_url),
+    sizeBytes: optionalString(record.sizeBytes) || optionalString(record.size_bytes),
+    source: optionalString(record.source),
+    uri: optionalString(record.uri),
+    url: optionalString(record.url),
+  };
+  if (!resource.uri && !resource.url && !resource.publicUrl && !resource.id) {
+    return undefined;
+  }
+  return resource;
+}
+
+/**
+ * Browser-usable delivery URL of the tenant logo snapshot. A `drive://` uri is
+ * a Drive reference, not a URL: Drive-backed logos resolve through the injected
+ * preview reader instead.
+ */
+function tenantLogoSnapshotDeliveryUrl(value: unknown): string | undefined {
+  const record = toRecord(value);
+  return optionalString(record.publicUrl) || optionalString(record.url);
 }
 
 function toTenantMember(value: unknown): SdkworkIamTenantMember | undefined {

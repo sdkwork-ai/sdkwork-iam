@@ -2434,6 +2434,9 @@ importers:
 
   apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-admin-tenant:
     dependencies:
+      '@sdkwork/drive-upload-image-core':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-drive/apps/sdkwork-drive-common/packages/sdkwork-drive-upload-image-core
       '@sdkwork/i18n-pc-react':
         specifier: workspace:*
         version: link:../../../../../sdkwork-appbase/packages/pc-react/foundation/sdkwork-i18n-pc-react
@@ -2458,6 +2461,9 @@ importers:
       react-dom:
         specifier: '>=18.2.0 <20.0.0'
         version: 19.2.4(react@19.2.4)
+      sdkwork-drive-pc-upload-image:
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-drive/apps/sdkwork-drive-pc/packages/sdkwork-drive-pc-upload-image
     devDependencies:
       '@types/react':
         specifier: 'catalog:'
