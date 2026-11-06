@@ -70,6 +70,7 @@ export const sdkworkIamOrganizationAdminMessages: SdkworkIamOrganizationAdminMes
     organizationDeleted: "Organization deleted.", organizationUpdated: "Organization updated.",
   },
   organizations: {
+    applications: "Applications",
     create: "Create organization", delete: "Delete", deleteDescriptionTemplate: "Delete {name}? This action cannot be undone.", deleteTitle: "Delete organization",
     edit: "Edit organization",
     emptyDescription: "Create an organization to model operational ownership within a tenant.", emptyTitle: "No organizations found",

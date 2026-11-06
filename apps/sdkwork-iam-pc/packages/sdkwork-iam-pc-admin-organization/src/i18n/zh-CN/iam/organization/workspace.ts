@@ -60,6 +60,7 @@ export const sdkworkIamOrganizationAdminMessages: SdkworkIamOrganizationAdminMes
     organizationCreated: "组织已创建。", organizationDeleted: "组织已删除。", organizationUpdated: "组织已更新。",
   },
   organizations: {
+    applications: "应用管理",
     create: "创建组织", delete: "删除", deleteDescriptionTemplate: "确定删除“{name}”吗？此操作无法撤销。", deleteTitle: "删除组织",
     edit: "编辑组织", emptyDescription: "创建组织以表达租户内的运营归属。",
     emptyTitle: "暂无组织", manage: "查看详情",

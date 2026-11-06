@@ -149,6 +149,7 @@ export interface SdkworkIamTenantAdminMessages {
     total: string;
   };
   tenants: {
+    applications: string;
     applySearch: string;
     create: string;
     delete: string;

@@ -45,4 +45,26 @@ describe("tenant administration workspace", () => {
     await screen.findByRole("search");
     expect(screen.queryByRole("button", { name: "成员" })).toBeNull();
   });
+
+  it("opens the tenant application management page from the row action", async () => {
+    const controller = createController();
+    const onOpenApplications = vi.fn();
+    render(
+      <SdkworkI18nProvider locale="zh-CN">
+        <SdkworkIamTenantAdminWorkspace
+          controller={controller as never}
+          onOpenApplications={onOpenApplications}
+          permissions={{
+            members: { create: false, delete: false, read: false, update: false },
+            tenants: { create: false, delete: false, update: false },
+          }}
+        />
+      </SdkworkI18nProvider>,
+    );
+
+    await screen.findByText("Acme");
+    fireEvent.click(screen.getByRole("button", { name: "应用管理" }));
+
+    expect(onOpenApplications).toHaveBeenCalledWith(expect.objectContaining({ tenantId: "tenant-1" }));
+  });
 });

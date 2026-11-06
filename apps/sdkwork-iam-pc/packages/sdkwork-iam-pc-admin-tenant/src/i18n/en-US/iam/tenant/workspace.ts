@@ -92,6 +92,7 @@ export const sdkworkIamTenantAdminMessages: SdkworkIamTenantAdminMessages = {
   },
   pagination: { next: "Next", pageSize: "Per page", previous: "Previous", total: "{total} items in total" },
   tenants: {
+    applications: "Applications",
     applySearch: "Search",
     create: "Create tenant",
     delete: "Delete",

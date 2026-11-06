@@ -235,6 +235,12 @@ export interface SdkworkIamOrganizationAdminWorkspaceProps {
    * explanatory hint instead of an unusable picker.
    */
   driveUploadImageService?: DriveUploadImageService;
+  /**
+   * Opens the organization's unified application management page (IAM,
+   * Deploy, and App Store). Present: the organization table exposes an
+   * "应用管理" row action.
+   */
+  onOpenApplications?: (organization: SdkworkIamOrganization) => void;
   permissions?: {
     departments: {
       create: boolean;

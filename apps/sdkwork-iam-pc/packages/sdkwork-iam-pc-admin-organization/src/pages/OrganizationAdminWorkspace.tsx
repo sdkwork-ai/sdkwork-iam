@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode, type RefObject } from "react";
-import { Briefcase, Building2, GitBranch, Image as ImageIcon, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from "lucide-react";
+import { Boxes, Briefcase, Building2, GitBranch, Image as ImageIcon, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from "lucide-react";
 import { DriveUploadImage, type DriveUploadImageHandle } from "sdkwork-drive-pc-upload-image";
 import {
   formatDriveUploadImageBytes,
@@ -85,6 +85,7 @@ const emptyMembershipDraft = (): SdkworkIamOrganizationMembershipDraft => ({ use
 export function SdkworkIamOrganizationAdminWorkspace({
   controller,
   driveUploadImageService,
+  onOpenApplications,
   onOpenStructure,
   permissions = {
     departments: { create: true, delete: true, read: true, update: true },
@@ -548,6 +549,12 @@ export function SdkworkIamOrganizationAdminWorkspace({
           rowActionsLabel={messages.organizations.table.actions}
           rowActions={(item) => (
             <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
+              {onOpenApplications ? (
+                <Button onClick={() => onOpenApplications(item)} size="sm" type="button" variant="outline">
+                  <Boxes className="h-3.5 w-3.5" />
+                  {messages.organizations.applications}
+                </Button>
+              ) : null}
               {onOpenStructure ? (
                 <Button onClick={() => onOpenStructure(item)} size="sm" type="button" variant="outline">
                   <GitBranch className="h-3.5 w-3.5" />

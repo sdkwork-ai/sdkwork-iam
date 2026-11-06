@@ -81,6 +81,31 @@ describe("organization administration workspace", () => {
     expect(screen.queryByText("正在管理 Platform")).toBeNull();
   });
 
+  it("opens the organization application management page from the row action", async () => {
+    const controller = createController();
+    const onOpenApplications = vi.fn();
+    render(
+      <SdkworkI18nProvider locale="zh-CN">
+        <SdkworkIamOrganizationAdminWorkspace
+          controller={controller as never}
+          onOpenApplications={onOpenApplications}
+          permissions={{
+            departments: { create: false, delete: false, read: false, update: false },
+            memberships: { create: false, read: false, update: false },
+            organizations: { create: false, delete: false, update: false },
+            positions: { read: false },
+            roleBindings: { read: false },
+          }}
+        />
+      </SdkworkI18nProvider>,
+    );
+
+    await screen.findByText("Platform");
+    fireEvent.click(screen.getByRole("button", { name: "应用管理" }));
+
+    expect(onOpenApplications).toHaveBeenCalledWith(expect.objectContaining({ organizationId: "org-1" }));
+  });
+
   it("opens the structure page from the explicit structure action when navigation is wired", async () => {
     const controller = createController();
     const onOpenStructure = vi.fn();

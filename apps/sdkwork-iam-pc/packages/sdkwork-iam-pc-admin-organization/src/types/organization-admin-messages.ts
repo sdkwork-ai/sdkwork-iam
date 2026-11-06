@@ -117,6 +117,7 @@ export interface SdkworkIamOrganizationAdminMessages {
     organizationUpdated: string;
   };
   organizations: {
+    applications: string;
     create: string;
     delete: string;
     deleteDescriptionTemplate: string;

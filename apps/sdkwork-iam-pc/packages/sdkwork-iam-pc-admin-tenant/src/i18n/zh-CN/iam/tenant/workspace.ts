@@ -92,6 +92,7 @@ export const sdkworkIamTenantAdminMessages: SdkworkIamTenantAdminMessages = {
   },
   pagination: { next: "下一页", pageSize: "每页", previous: "上一页", total: "共 {total} 条" },
   tenants: {
+    applications: "应用管理",
     applySearch: "搜索",
     create: "创建租户",
     delete: "删除",

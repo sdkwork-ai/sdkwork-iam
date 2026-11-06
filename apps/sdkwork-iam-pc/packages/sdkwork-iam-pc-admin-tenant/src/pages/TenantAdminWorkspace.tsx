@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode, type RefObject } from "react";
-import { AppWindow, Building2, Image as ImageIcon, Pencil, Plus, Search, Trash2, Users } from "lucide-react";
+import { AppWindow, Boxes, Building2, Image as ImageIcon, Pencil, Plus, Search, Trash2, Users } from "lucide-react";
 import { DriveUploadImage, type DriveUploadImageHandle } from "sdkwork-drive-pc-upload-image";
 import {
   formatDriveUploadImageBytes,
@@ -66,6 +66,7 @@ const emptyMemberDraft = (): SdkworkIamTenantMemberDraft => ({ roleCode: "", use
 export function SdkworkIamTenantAdminWorkspace({
   controller,
   driveUploadImageService,
+  onOpenApplications,
   permissions = {
     members: { create: true, delete: true, read: true, update: true },
     tenants: { create: true, delete: true, update: true },
@@ -409,6 +410,12 @@ export function SdkworkIamTenantAdminWorkspace({
           rowActionsLabel={messages.tenants.table.actions}
           rowActions={(tenant) => (
             <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
+              {onOpenApplications ? (
+                <Button onClick={() => onOpenApplications(tenant)} size="sm" type="button" variant="outline">
+                  <Boxes className="h-3.5 w-3.5" />
+                  {messages.tenants.applications}
+                </Button>
+              ) : null}
               <Button onClick={() => void selectTenant(tenant)} size="sm" type="button" variant="outline">
                 {messages.tenants.manage}
               </Button>

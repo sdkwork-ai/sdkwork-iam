@@ -184,6 +184,11 @@ export interface SdkworkIamTenantAdminWorkspaceProps {
    * placeholder with an explanatory hint.
    */
   driveUploadImageService?: DriveUploadImageService;
+  /**
+   * Opens the tenant's unified application management page (IAM, Deploy, and
+   * App Store). Present: the tenant table exposes an "应用管理" row action.
+   */
+  onOpenApplications?: (tenant: SdkworkIamTenant) => void;
   permissions?: {
     members: {
       create: boolean;
