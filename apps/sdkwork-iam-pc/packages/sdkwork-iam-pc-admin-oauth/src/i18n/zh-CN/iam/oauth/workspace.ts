@@ -413,6 +413,7 @@ export const sdkworkIamOauthAdminMessages: SdkworkIamOauthAdminMessages = {
         remove: "移除图标",
         title: "公众号图标",
         tooLarge: "图片大小不能超过 512KB。",
+        unavailable: "当前环境未启用图标上传，已保留现有图标。",
       },
       notify: {
         dataFormat: "数据格式",

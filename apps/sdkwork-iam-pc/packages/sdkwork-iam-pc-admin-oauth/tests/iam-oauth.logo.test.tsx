@@ -92,7 +92,7 @@ describe("oauth account logo upload adoption", () => {
     unmount();
   });
 
-  it("degrades to the external-URL field when no upload capability is injected", async () => {
+  it("keeps the logo read-only instead of offering a URL field when no upload capability is injected", async () => {
     const { unmount } = render(
       <SdkworkI18nProvider locale="zh-CN">
         <SdkworkIamOauthOfficialAccountsPage controller={createController({ ...officialAccount, config: {} })} />
@@ -101,9 +101,11 @@ describe("oauth account logo upload adoption", () => {
     await screen.findByText("My official account");
     fireEvent.click(screen.getByTitle("操作"));
     expect(await screen.findByText("公众号图标")).toBeTruthy();
-    // Without a host capability there is no pick control: a local data-URL
-    // read would be a fake upload, so only the external-URL input remains.
+    // Without a host capability there is no pick control and no URL input:
+    // the current logo stays visible with an unavailability hint.
     expect(document.querySelector("input[type='file']")).toBeNull();
+    expect(document.querySelector("input[type='url']")).toBeNull();
+    expect(screen.getByText("当前环境未启用图标上传，已保留现有图标。")).toBeTruthy();
     unmount();
   });
 });

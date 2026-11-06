@@ -417,6 +417,7 @@ export interface SdkworkIamOauthAdminMessages {
         remove: string;
         title: string;
         tooLarge: string;
+        unavailable: string;
       };
       notify: {
         dataFormat: string;

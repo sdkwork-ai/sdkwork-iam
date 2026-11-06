@@ -413,6 +413,7 @@ export const sdkworkIamOauthAdminMessages: SdkworkIamOauthAdminMessages = {
         remove: "Remove logo",
         title: "Account logo",
         tooLarge: "The image must be 512KB or smaller.",
+        unavailable: "Logo uploads are not available in this environment; the current logo is kept.",
       },
       notify: {
         dataFormat: "Data format",

@@ -1506,9 +1506,10 @@ function OauthAccountFormTabs({
  * - Create mode with the injected service: park-then-attach — the picked file
  *   is handed to the section (`onFileSelected`) and uploaded right after the
  *   account exists (the component's controller cannot hand back the raw file).
- * - Without the service: the plain external-URL input only. There is
- *   deliberately no local data-URL fallback; persisting a base64 payload would
- *   be a fake upload (`DRIVE_SPEC.md` section 18).
+ * - Without the service: the current logo stays visible with an explicit
+ *   unavailability hint. There is deliberately no URL input and no local
+ *   data-URL fallback; a pasted link bypasses upload governance and a base64
+ *   payload would be a fake upload (`DRIVE_SPEC.md` section 18).
  */
 function OauthAccountLogoField({
   accountId,
@@ -1635,28 +1636,10 @@ function OauthAccountLogoField({
           ) : null}
         </div>
       )}
-      <OauthLogoUrlInput copy={copy} disabled={disabled} onChange={onChange} value={value} />
+      {!driveUploadImageService ? (
+        <p className="text-xs text-[var(--sdk-color-text-muted)]">{copy.unavailable}</p>
+      ) : null}
     </section>
-  );
-}
-
-/** The external-URL alternative: a plain delivery URL stored in `config.logoUrl`. */
-function OauthLogoUrlInput({ copy, disabled, onChange, value }: {
-  copy: AccountConfigCopy["logo"];
-  disabled: boolean;
-  onChange: (logoUrl: string | undefined) => void;
-  value?: string;
-}) {
-  return (
-    <Input
-      aria-label={copy.title}
-      className="max-w-md font-mono text-xs"
-      disabled={disabled}
-      onChange={(event) => onChange(event.target.value.trim() || undefined)}
-      placeholder={copy.hint}
-      type="url"
-      value={value && !value.startsWith("drive://") ? value : ""}
-    />
   );
 }
 
