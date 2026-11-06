@@ -25,7 +25,7 @@ import {
   readRepoBootstrapAccessToken,
   resolveRepoBootstrapAccessTokenPaths,
 } from '../src/node-bootstrap.mjs';
-import { createSdkworkCredentialEntryBootstrapVitePlugin } from '../src/vite.ts';
+import { createSdkworkCredentialEntryBootstrapVitePlugin, createSdkworkPublicApplicationAccessTokenVitePlugin } from '../src/vite.ts';
 
 function createFixtureRepo() {
   const repoRoot = mkdtempSync(join(tmpdir(), 'sdkwork-credential-entry-'));
@@ -351,4 +351,134 @@ describe('@sdkwork/iam-credential-entry', () => {
       })).toBeUndefined();
     });
   }
+
+  it('emits the committed public application token as a same-origin external script for production builds', () => {
+    const token = createPublicApplicationToken({ environment: 'production' });
+    const plugin = createSdkworkPublicApplicationAccessTokenVitePlugin({
+      accessToken: token,
+      applicationId: 'sdkwork-example-pc',
+      environment: 'production',
+      profileId: 'cloud.production',
+    });
+    const emitted: Array<{ type: string; fileName: string; source: string }> = [];
+
+    plugin.generateBundle.call({
+      emitFile: (file) => {
+        emitted.push(file);
+        return file.fileName;
+      },
+    });
+
+    expect(plugin.name).toBe('sdkwork-iam-public-application-access-token');
+    expect('apply' in plugin).toBe(false);
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]?.fileName).toMatch(/^credential-entry-bootstrap-[0-9a-f]{12}\.js$/u);
+    expect(emitted[0]?.source).toContain(SDKWORK_CREDENTIAL_ENTRY_BOOTSTRAP_ACCESS_TOKEN_GLOBAL_KEY);
+    expect(emitted[0]?.source).toContain(token);
+
+    const tag = plugin.transformIndexHtml.handler('<html></html>').tags[0];
+    expect(tag?.attrs.src).toBe(`/${emitted[0]?.fileName}`);
+    expect(tag).not.toHaveProperty('children');
+  });
+
+  it('serves the same bootstrap script from the dev server as an external asset', () => {
+    const token = createPublicApplicationToken({ environment: 'production' });
+    const plugin = createSdkworkPublicApplicationAccessTokenVitePlugin({
+      accessToken: token,
+      environment: 'production',
+    });
+    const emitted: Array<{ fileName: string; source: string }> = [];
+    plugin.generateBundle.call({ emitFile: (file) => { emitted.push(file); return file.fileName; } });
+    const assetUrl = `/${emitted[0]?.fileName}`;
+
+    let handler: ((request: { url?: string }, response: {
+      setHeader: (name: string, value: string) => void;
+      end: (body: string) => void;
+    }, next: () => void) => void) | undefined;
+    plugin.configureServer({
+      middlewares: {
+        use: (candidate) => { handler = candidate; },
+      },
+    });
+
+    let served = '';
+    const headers: Record<string, string> = {};
+    let nextCalled = false;
+    handler?.(
+      { url: `${assetUrl}?v=1` },
+      { setHeader: (name, value) => { headers[name] = value; }, end: (body) => { served = body; } },
+      () => { nextCalled = true; },
+    );
+    expect(nextCalled).toBe(false);
+    expect(headers['Content-Type']).toContain('javascript');
+    expect(served).toBe(emitted[0]?.source);
+
+    handler?.({ url: '/other.js' }, { setHeader: () => {}, end: () => {} }, () => { nextCalled = true; });
+    expect(nextCalled).toBe(true);
+  });
+
+  it.each(['test', 'staging', 'demo', 'production'] as const)(
+    'fails closed instead of shipping %s H5/PC HTML without the public application token',
+    (environment) => {
+      const previousAccessToken = process.env.SDKWORK_ACCESS_TOKEN;
+      delete process.env.SDKWORK_ACCESS_TOKEN;
+      try {
+        expect(() => createSdkworkPublicApplicationAccessTokenVitePlugin({
+          accessToken: '',
+          environment,
+        })).toThrow(/public application access token is missing/u);
+      } finally {
+        if (previousAccessToken === undefined) {
+          delete process.env.SDKWORK_ACCESS_TOKEN;
+        } else {
+          process.env.SDKWORK_ACCESS_TOKEN = previousAccessToken;
+        }
+      }
+    },
+  );
+
+  it('rejects a private operator or session credential in a production artifact', () => {
+    const signedSessionToken = [
+      Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url'),
+      Buffer.from(JSON.stringify({
+        app_id: 'sdkwork-example-pc',
+        environment: 'production',
+        token_class: 'session',
+        token_type: 'access',
+      })).toString('base64url'),
+      'signed',
+    ].join('.');
+
+    expect(() => createSdkworkPublicApplicationAccessTokenVitePlugin({
+      accessToken: signedSessionToken,
+      environment: 'production',
+    })).toThrow(/never be embedded in a browser artifact/u);
+  });
+
+  it('rejects a public token minted for another lifecycle or application', () => {
+    expect(() => createSdkworkPublicApplicationAccessTokenVitePlugin({
+      accessToken: createPublicApplicationToken({ environment: 'test' }),
+      environment: 'production',
+    })).toThrow(/declares environment "test"/u);
+    expect(() => createSdkworkPublicApplicationAccessTokenVitePlugin({
+      accessToken: createPublicApplicationToken({ environment: 'production', app_id: 'another-app' }),
+      applicationId: 'sdkwork-example-pc',
+      environment: 'production',
+    })).toThrow(/does not match this application/u);
+  });
 });
+
+function createPublicApplicationToken(overrides: Record<string, unknown> = {}): string {
+  const encode = (value: Record<string, unknown>): string =>
+    Buffer.from(JSON.stringify(value)).toString('base64url');
+  const header = { alg: 'none', kid: 'public-app-token', typ: 'JWT' };
+  const payload = {
+    app_id: 'sdkwork-example-pc',
+    environment: 'production',
+    exp: 4102444800,
+    token_class: 'application',
+    token_type: 'access',
+    ...overrides,
+  };
+  return `${encode(header)}.${encode(payload)}.public`;
+}
