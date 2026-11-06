@@ -1,0 +1,25 @@
+/**
+ * Mode-specific platform facts.
+ *
+ * Authority: `UNIAPP_X_APP_ARCHITECTURE_SPEC.md` §7. `VUE3-VAPOR` conditional
+ * compilation is allowed only in `sdkwork-iam-uniappx-host` and the root
+ * bootstrap; this file is the host's single mode-conditional source.
+ */
+
+// #ifdef VUE3-VAPOR
+export const IAM_UNIAPPX_PLATFORM_MODE = 'vapor';
+// #endif
+
+// #ifndef VUE3-VAPOR
+export const IAM_UNIAPPX_PLATFORM_MODE = 'vdom';
+// #endif
+
+/** Web and mini program builds of a vapor root still run the VDOM runtime. */
+export function resolveRuntimeClassification(
+  target: 'APP_ANDROID' | 'APP_IOS' | 'APP_HARMONY' | 'H5' | 'MP_WEIXIN',
+): 'vapor' | 'vdom' {
+  if (target === 'APP_ANDROID' || target === 'APP_IOS' || target === 'APP_HARMONY') {
+    return IAM_UNIAPPX_PLATFORM_MODE;
+  }
+  return 'vdom';
+}

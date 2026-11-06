@@ -1,0 +1,47 @@
+<template>
+  <view class="iam-login-page">
+    <IamLoginPage
+      :submitting="submitting"
+      :error-message="errorMessage"
+      @submit="onSubmit"
+    />
+  </view>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import IamLoginPage from '@sdkwork/iam-uniappx-auth/pages/login';
+import { getIamUniappxRuntime } from '../../bootstrap/runtime.uts';
+
+const submitting = ref(false);
+const errorMessage = ref('');
+
+const NOT_BOUND_MESSAGE =
+  'The generated IAM app SDK auth gateway is not bound to this build. '
+  + 'Install the runtime with authGateway before signing in.';
+
+async function onSubmit(credentials) {
+  const runtime = getIamUniappxRuntime();
+  if (!runtime.auth) {
+    errorMessage.value = NOT_BOUND_MESSAGE;
+    return;
+  }
+  submitting.value = true;
+  errorMessage.value = '';
+  const state = await runtime.auth.login({
+    identifier: credentials.identifier,
+    password: credentials.password,
+  });
+  submitting.value = false;
+  if (state.error) {
+    errorMessage.value = state.error.message;
+  }
+}
+</script>
+
+<style>
+.iam-login-page {
+  flex: 1;
+  background-color: #ffffff;
+}
+</style>

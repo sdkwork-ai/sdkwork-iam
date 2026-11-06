@@ -1,0 +1,28 @@
+{
+  "pages": [
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationBarTitleText": "Sign in"
+      }
+    },
+    {
+      "path": "pages/account/index",
+      "style": {
+        "navigationBarTitleText": "Account"
+      }
+    },
+    {
+      "path": "pages/error/index",
+      "style": {
+        "navigationBarTitleText": "Something went wrong"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "SDKWork IAM",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F4F5F7"
+  }
+}

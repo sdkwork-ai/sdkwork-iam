@@ -1,0 +1,54 @@
+<template>
+  <view class="iam-account-page">
+    <AccountHeader
+      :display-name="displayName"
+      :email="email"
+      :tenant-name="tenantName"
+      :organization-name="organizationName"
+    />
+    <AccountMenu :disabled="!authenticated" @select="onSelect" />
+    <view v-if="!authenticated" class="iam-account-page__empty">
+      <text class="iam-account-page__empty-text">Sign in to manage your account.</text>
+    </view>
+  </view>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue';
+import AccountHeader from '@sdkwork/iam-uniappx-shell/components/account-header';
+import AccountMenu from '@sdkwork/iam-uniappx-shell/components/account-menu';
+import { getIamUniappxRuntime } from '../../bootstrap/runtime.uts';
+
+const runtime = getIamUniappxRuntime();
+const state = ref(runtime.auth ? runtime.auth.getState() : null);
+
+const authenticated = computed(() => state.value?.status === 'authenticated');
+const session = computed(() => state.value?.session ?? null);
+const displayName = computed(() => session.value?.displayName ?? 'SDKWork user');
+const email = computed(() => session.value?.email ?? '');
+const tenantName = computed(() => session.value?.tenantId ?? '');
+const organizationName = computed(() => session.value?.organizationId ?? '');
+
+async function onSelect(action) {
+  if (action !== 'sign-out') return;
+  if (!runtime.auth) return;
+  state.value = await runtime.auth.logout();
+}
+</script>
+
+<style>
+.iam-account-page {
+  flex: 1;
+  background-color: #f4f5f7;
+}
+
+.iam-account-page__empty {
+  padding: 24px;
+  align-items: center;
+}
+
+.iam-account-page__empty-text {
+  font-size: 14px;
+  color: #6b7280;
+}
+</style>

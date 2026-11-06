@@ -1,0 +1,91 @@
+<template>
+  <view class="iam-account-header">
+    <view class="iam-account-header__avatar">
+      <text class="iam-account-header__avatar-text">{{ initials }}</text>
+    </view>
+    <view class="iam-account-header__identity">
+      <text class="iam-account-header__name">{{ displayName }}</text>
+      <text class="iam-account-header__secondary">{{ secondaryText }}</text>
+    </view>
+  </view>
+</template>
+
+<script setup>
+import { computed } from 'vue';
+
+const props = defineProps({
+  displayName: {
+    type: String,
+    default: 'SDKWork user',
+  },
+  email: {
+    type: String,
+    default: '',
+  },
+  tenantName: {
+    type: String,
+    default: '',
+  },
+  organizationName: {
+    type: String,
+    default: '',
+  },
+});
+
+const initials = computed(() => {
+  const source = props.displayName.trim();
+  if (!source) return '?';
+  const parts = source.split(' ');
+  if (parts.length === 1) return source.slice(0, 2).toUpperCase();
+  return `${parts[0].slice(0, 1)}${parts[parts.length - 1].slice(0, 1)}`.toUpperCase();
+});
+
+const secondaryText = computed(() => {
+  if (props.organizationName && props.tenantName) {
+    return `${props.organizationName} · ${props.tenantName}`;
+  }
+  if (props.tenantName) return props.tenantName;
+  return props.email;
+});
+</script>
+
+<style>
+.iam-account-header {
+  flex-direction: row;
+  align-items: center;
+  padding: 16px;
+  background-color: #ffffff;
+}
+
+.iam-account-header__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background-color: #0b63ce;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+}
+
+.iam-account-header__avatar-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.iam-account-header__identity {
+  flex: 1;
+}
+
+.iam-account-header__name {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.iam-account-header__secondary {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #6b7280;
+}
+</style>

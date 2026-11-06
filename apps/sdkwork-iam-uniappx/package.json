@@ -1,0 +1,39 @@
+{
+  "name": "sdkwork-iam-uniappx",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "pnpm dev:standalone",
+    "dev:standalone": "pnpm exec sdkwork-app dev --root ../.. --deployment-profile standalone",
+    "dev:cloud": "pnpm exec sdkwork-app dev --root ../.. --deployment-profile cloud",
+    "stop": "pnpm exec sdkwork-app stop --root ../..",
+    "build": "pnpm exec sdkwork-app build",
+    "test": "pnpm exec sdkwork-app test",
+    "check": "pnpm exec sdkwork-app check",
+    "verify": "pnpm exec sdkwork-app verify",
+    "clean": "pnpm exec sdkwork-app clean",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:config": "node ../../../sdkwork-specs/tools/check-app-manifest-standard.mjs --root . && node ../../../sdkwork-specs/tools/check-uniappx-architecture.mjs --root ../..",
+    "test:mode": "node scripts/verify-uniappx-root.mjs --mode-only",
+    "test:routes": "node --test tests/route-projection.test.mjs",
+    "build:dev": "node scripts/build-runtime.mjs",
+    "build:dev:cloud": "node scripts/build-runtime.mjs --deployment-profile cloud --environment development",
+    "_sdkwork:build": "node scripts/build-runtime.mjs",
+    "_sdkwork:test": "node --test tests/*.test.mjs",
+    "_sdkwork:check": "pnpm run typecheck && pnpm run test:config && pnpm run test:mode",
+    "_sdkwork:verify": "pnpm run _sdkwork:check && pnpm run _sdkwork:test",
+    "_sdkwork:clean": "node -e \"const fs = require('node:fs'); fs.rmSync('dist', { recursive: true, force: true }); fs.rmSync('unpackage', { recursive: true, force: true });\""
+  },
+  "dependencies": {
+    "@sdkwork/iam-uniappx-auth": "workspace:*",
+    "@sdkwork/iam-uniappx-core": "workspace:*",
+    "@sdkwork/iam-uniappx-host": "workspace:*",
+    "@sdkwork/iam-uniappx-shell": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

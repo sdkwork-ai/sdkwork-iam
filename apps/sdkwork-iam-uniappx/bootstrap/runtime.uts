@@ -1,0 +1,74 @@
+import {
+  createIamContextStore,
+  createIamTokenManager,
+} from '@sdkwork/iam-uniappx-core';
+import type {
+  IamAppSdkAuthPort,
+  IamContextStore,
+  IamHostAdapters,
+  IamRouteRegistry,
+  IamSensitiveClearReason,
+  IamTokenManager,
+} from '@sdkwork/iam-uniappx-core';
+import { createIamAuthSessionMachine } from '@sdkwork/iam-uniappx-auth';
+import type { IamAuthSessionMachine } from '@sdkwork/iam-uniappx-auth';
+
+import { createHostAdapters } from './hostAdapters.uts';
+import { bootstrapRouteRegistry } from './routes.uts';
+
+export interface IamUniappxRuntime {
+  tokenManager: IamTokenManager;
+  contextStore: IamContextStore;
+  host: IamHostAdapters;
+  routes: IamRouteRegistry;
+  auth: IamAuthSessionMachine | null;
+}
+
+export interface IamUniappxRuntimeOptions {
+  /**
+   * Typed generated-SDK auth port. Supplied by the application composition when
+   * the generated IAM app SDK is bound; without it the root still boots and
+   * renders, but auth actions report that the gateway is not bound.
+   */
+  authGateway?: IamAppSdkAuthPort;
+  onSensitiveStateCleared?: (reason: IamSensitiveClearReason) => void;
+}
+
+let currentRuntime: IamUniappxRuntime | null = null;
+
+export function createIamUniappxRuntime(
+  options: IamUniappxRuntimeOptions = {},
+): IamUniappxRuntime {
+  const tokenManager = createIamTokenManager();
+  const contextStore = createIamContextStore();
+  const host = createHostAdapters();
+  const routes = bootstrapRouteRegistry();
+  const auth = options.authGateway
+    ? createIamAuthSessionMachine({
+        gateway: options.authGateway,
+        tokenManager,
+        contextStore,
+        onSensitiveStateCleared: options.onSensitiveStateCleared,
+      })
+    : null;
+
+  return { tokenManager, contextStore, host, routes, auth };
+}
+
+export function installIamUniappxRuntime(
+  options: IamUniappxRuntimeOptions = {},
+): IamUniappxRuntime {
+  currentRuntime = createIamUniappxRuntime(options);
+  return currentRuntime;
+}
+
+export function getIamUniappxRuntime(): IamUniappxRuntime {
+  if (!currentRuntime) {
+    throw new Error('sdkwork-iam-uniappx: runtime was not installed before use.');
+  }
+  return currentRuntime;
+}
+
+export function resetIamUniappxRuntime(): void {
+  currentRuntime = null;
+}

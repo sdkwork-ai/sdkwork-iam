@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.uniappx.host",
+  "root": "sdkwork-iam/apps/sdkwork-iam-uniappx",
+  "framework": "uni-app-x",
+  "mode": "vapor",
+  "appIds": {
+    "android": {
+      "packageName": "com.sdkwork.iam",
+      "minSdkVersion": 23,
+      "targetSdkVersion": 36
+    },
+    "ios": {
+      "bundleId": "com.sdkwork.iam",
+      "minimumOSVersion": "15.0"
+    },
+    "harmony": {
+      "bundleName": "com.sdkwork.iam",
+      "compatibleSdkVersion": "6.0.0(20)",
+      "targetSdkVersion": "6.0.0(20)"
+    }
+  },
+  "permissions": [],
+  "signing": {
+    "reference": "sdkwork-iam-android-release",
+    "material": "external"
+  },
+  "storeLanes": {
+    "android": "private",
+    "ios": "private",
+    "harmony": "private"
+  },
+  "notes": [
+    "Signing private keys and store credentials live in the approved secret store, never in this repository.",
+    "App ids are references; the release pipeline materializes them into manifest.json for the selected profile."
+  ]
+}

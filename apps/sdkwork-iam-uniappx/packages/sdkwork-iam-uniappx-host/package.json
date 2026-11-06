@@ -1,0 +1,31 @@
+{
+  "name": "@sdkwork/iam-uniappx-host",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Typed uni.* host adapters and the generated app SDK request transport for the SDKWork IAM uni-app x root.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@sdkwork/iam-uniappx-core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
+  "sdkwork": {
+    "architecture": "uniappx",
+    "surface": "app",
+    "domain": "iam",
+    "capability": "host",
+    "packageType": "adapter",
+    "status": "standardizing"
+  }
+}

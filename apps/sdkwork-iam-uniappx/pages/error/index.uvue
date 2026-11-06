@@ -1,0 +1,42 @@
+<template>
+  <view class="iam-error-page">
+    <text class="iam-error-page__title">{{ title }}</text>
+    <text class="iam-error-page__message">{{ message }}</text>
+  </view>
+</template>
+
+<script setup>
+const props = defineProps({
+  title: {
+    type: String,
+    default: 'Something went wrong',
+  },
+  message: {
+    type: String,
+    default: 'The page could not be loaded. Return to the previous page and try again.',
+  },
+});
+</script>
+
+<style>
+.iam-error-page {
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-color: #ffffff;
+}
+
+.iam-error-page__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.iam-error-page__message {
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+}
+</style>

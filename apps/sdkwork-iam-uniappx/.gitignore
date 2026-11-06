@@ -1,0 +1,5 @@
+.cache/
+dist/
+unpackage/
+*.local.*
+node_modules/
