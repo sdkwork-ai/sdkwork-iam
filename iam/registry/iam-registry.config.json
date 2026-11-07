@@ -15,7 +15,9 @@
     "system",
     "skills",
     "mcp",
-    "appstore"
+    "appstore",
+    "agents",
+    "plugins"
   ],
   "optionalModules": [
     "iot"
