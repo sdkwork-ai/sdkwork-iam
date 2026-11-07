@@ -46,16 +46,45 @@ pub fn ensure_iam_database_host_installed(host: IamDatabaseHost) -> Arc<IamDatab
 }
 
 pub fn resolve_iam_app_root() -> PathBuf {
-    if let Ok(app_root) = std::env::var("SDKWORK_IAM_APP_ROOT") {
-        return PathBuf::from(app_root);
+    // Env-provided roots may be workspace-relative (e.g. `../sdkwork-iam` from
+    // the topology env). The database seeder rejects seed paths containing
+    // `..` as traversal, so the root is canonicalized to an absolute path
+    // before any seed file joins onto it.
+    for key in ["SDKWORK_IAM_APP_ROOT", "SDKWORK_APPBASE_APP_ROOT"] {
+        if let Ok(app_root) = std::env::var(key) {
+            if app_root.trim().is_empty() {
+                continue;
+            }
+            let path = PathBuf::from(app_root);
+            return strip_verbatim_prefix(path.canonicalize().unwrap_or(path));
+        }
     }
-    if let Ok(app_root) = std::env::var("SDKWORK_APPBASE_APP_ROOT") {
-        return PathBuf::from(app_root);
+    strip_verbatim_prefix(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .canonicalize()
+            .unwrap_or_else(|_| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")),
+    )
+}
+
+/// `std::fs::canonicalize` returns Windows verbatim paths (the device
+/// prefix disables path normalization), so downstream joins with
+/// forward-slash literals then fail at the syscall level (os error 5).
+/// Strip the prefix for drive-letter paths; UNC paths keep their form
+/// minus the device marker.
+fn strip_verbatim_prefix(path: PathBuf) -> PathBuf {
+    let Some(text) = path.to_str() else {
+        return path;
+    };
+    const DEVICE_PREFIX: &str = r"\\?\";
+    const UNC_PREFIX: &str = r"\\?\\UNC\";
+    if let Some(stripped) = text.strip_prefix(UNC_PREFIX) {
+        return PathBuf::from(format!(r"\\{}", stripped));
     }
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
-        .canonicalize()
-        .unwrap_or_else(|_| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."))
+    if let Some(stripped) = text.strip_prefix(DEVICE_PREFIX) {
+        return PathBuf::from(stripped);
+    }
+    path
 }
 
 pub async fn bootstrap_iam_database(pool: DatabasePool) -> Result<IamDatabaseHost, String> {
