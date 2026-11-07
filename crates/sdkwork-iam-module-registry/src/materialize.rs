@@ -1149,8 +1149,26 @@ fn write_lock_file(
     let serialized = serde_json::to_string_pretty(&lock)
         .map_err(|error| format!("serialize lock file failed: {error}"))?;
     let path = app_root.join("iam/registry/iam-registry.lock.json");
-    std::fs::write(&path, format!("{serialized}\n"))
-        .map_err(|error| format!("write lock file {path:?} failed: {error}"))?;
+    let payload = format!("{serialized}\n");
+    // Idempotent materialization: skip the write when the on-disk lock already
+    // carries exactly this content.
+    if std::fs::read(&path)
+        .map(|existing| existing == payload.as_bytes())
+        .unwrap_or(false)
+    {
+        return Ok(());
+    }
+    // The lock file is a local audit artifact with no readers in the codebase;
+    // the authoritative materialization snapshot lives in the database
+    // (registry metadata + snapshot rows committed above). A host that cannot
+    // persist it (restricted-token dev sandboxes) still seeds correctly, so
+    // the write degrades to a warning instead of failing the seed.
+    if let Err(error) = std::fs::write(&path, payload) {
+        eprintln!(
+            "warning: write lock file {path:?} failed: {error}; \
+             the authoritative catalog snapshot remains in the database"
+        );
+    }
     Ok(())
 }
 
