@@ -484,6 +484,21 @@ export function LoginRoute() {
 }
 ```
 
+## Host branding
+
+Pass the product identity the host's admin surface manages so the shared auth
+pages do not fall back to the IAM identity:
+
+```tsx
+<SdkworkIamAuthRoutes
+  brand={{ name: "Cloud Router", logoUrl: siteBranding.logoUrl }}
+  // ...
+/>
+```
+
+`brand` is optional. The hosted desktop hand-off page renders it in its page
+header; a host that omits it keeps the shipped `SDKWork IAM` name and mark.
+
 ## Integration rule
 
 - Host apps should not fork auth page structure for branding.

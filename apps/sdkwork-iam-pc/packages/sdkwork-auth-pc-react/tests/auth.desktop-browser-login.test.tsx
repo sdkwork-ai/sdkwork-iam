@@ -21,6 +21,7 @@ import {
 import { SdkworkAuthDesktopLaunchPage } from "../src/pages/AuthDesktopLaunchPage.tsx";
 import { SdkworkAuthPage } from "../src/pages/AuthPage.tsx";
 import { SdkworkAuthOAuthCallbackPage } from "../src/pages/AuthOAuthCallbackPage.tsx";
+import type { SdkworkAuthBrand } from "../src/auth-brand.ts";
 import { mockAccessToken, mockAuthToken } from "./authJwtFixtures.ts";
 import type { SdkworkAuthDesktopBrowserLoginBinding } from "../src/desktop-browser-login.ts";
 import {
@@ -138,6 +139,7 @@ describe("auth access for the desktop hand-off page", () => {
 function renderLaunchPage(
   initialEntry: string,
   options: {
+    brand?: SdkworkAuthBrand;
     controller?: SdkworkAuthController;
     onLaunch?: (url: string) => void;
   } = {},
@@ -149,6 +151,7 @@ function renderLaunchPage(
           <Route
             element={
               <SdkworkAuthDesktopLaunchPage
+                brand={options.brand}
                 controller={options.controller}
                 onLaunch={options.onLaunch}
               />
@@ -239,6 +242,42 @@ describe("sdkwork desktop launch page", () => {
     renderLaunchPage("/auth/desktop/launch");
     fireEvent.click(screen.getByText("Back to login"));
     expect(screen.getByText("login-page")).toBeInTheDocument();
+  });
+
+  it("renders the host brand name and logo instead of the IAM identity", () => {
+    renderLaunchPage("/auth/desktop/launch", {
+      brand: {
+        logoUrl: "https://cdn.example.test/cloud-router-logo.png",
+        name: "Cloud Router",
+      },
+    });
+
+    const header = screen.getByRole("banner");
+    expect(within(header).getByTestId("sdkwork-auth-brand-logo")).toHaveAttribute(
+      "src",
+      "https://cdn.example.test/cloud-router-logo.png",
+    );
+    expect(within(header).getByTestId("sdkwork-auth-brand-name")).toHaveTextContent("Cloud Router");
+    expect(within(header).queryByText("SDKWork IAM")).not.toBeInTheDocument();
+    expect(within(header).queryByTestId("sdkwork-auth-brand-mark")).not.toBeInTheDocument();
+  });
+
+  it("falls back to an initials mark when the host configures only a name", () => {
+    renderLaunchPage("/auth/desktop/launch", {
+      brand: { name: "Cloud Router" },
+    });
+
+    const header = screen.getByRole("banner");
+    expect(within(header).getByTestId("sdkwork-auth-brand-mark")).toHaveTextContent("CR");
+    expect(within(header).queryByTestId("sdkwork-auth-brand-logo")).not.toBeInTheDocument();
+  });
+
+  it("keeps the shipped IAM identity when the host supplies no brand", () => {
+    renderLaunchPage("/auth/desktop/launch");
+
+    const header = screen.getByRole("banner");
+    expect(within(header).getByTestId("sdkwork-auth-brand-name")).toHaveTextContent("SDKWork IAM");
+    expect(within(header).getByTestId("sdkwork-auth-brand-mark")).toHaveTextContent("IAM");
   });
 });
 

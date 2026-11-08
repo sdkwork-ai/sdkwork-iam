@@ -15,6 +15,7 @@ export * from "./auth-local-service.ts";
 export * from "./auth-copy.ts";
 export * from "./auth-config.ts";
 export * from "./auth-appearance.ts";
+export * from "./auth-brand.ts";
 export * from "./auth-page-routing.ts";
 export * from "./auth-intl.tsx";
 export * from "./components/auth/AccountPasswordLoginForm.tsx";

@@ -26,6 +26,12 @@ import {
   type SdkworkAuthAppearanceConfig,
 } from "../auth-appearance.ts";
 import { useSdkworkAuthIntl } from "../auth-intl.tsx";
+import {
+  resolveSdkworkAuthBrandLogoUrl,
+  resolveSdkworkAuthBrandMark,
+  resolveSdkworkAuthBrandName,
+  type SdkworkAuthBrand,
+} from "../auth-brand.ts";
 import { createAuthRouteCatalog } from "../auth.ts";
 import { isSafeSdkworkDesktopLaunchUrl } from "../auth-redirect.ts";
 import { SdkworkAuthPageRouterContextBoundary } from "./routerContextBoundary.tsx";
@@ -33,6 +39,11 @@ import { SdkworkAuthPageRouterContextBoundary } from "./routerContextBoundary.ts
 export interface SdkworkAuthDesktopLaunchPageProps {
   appearance?: SdkworkAuthAppearanceConfig;
   basePath?: string;
+  /**
+   * Product brand configured by the host application's admin surface. The
+   * shared page renders the IAM identity when the host supplies none.
+   */
+  brand?: SdkworkAuthBrand;
   controller?: SdkworkAuthController;
   /**
    * Hands the deep-link redirect URL to the operating system. Defaults to a
@@ -69,10 +80,13 @@ function resolveLoginRoutePath(basePath: string): string {
 function SdkworkAuthDesktopLaunchPageContent({
   appearance,
   basePath = "/auth",
+  brand,
   controller: providedController,
   onLaunch = defaultLaunchSdkworkDesktopRedirect,
 }: SdkworkAuthDesktopLaunchPageProps) {
   const { copy } = useSdkworkAuthIntl();
+  const brandName = resolveSdkworkAuthBrandName(brand);
+  const brandLogoUrl = resolveSdkworkAuthBrandLogoUrl(brand);
   const controller = useSdkworkAuthController(providedController);
   const authState = useSdkworkAuthControllerState(controller);
   const resolvedAppearance = resolveSdkworkAuthAppearance(appearance);
@@ -191,10 +205,25 @@ function SdkworkAuthDesktopLaunchPageContent({
       <style>{SDKWORK_AUTH_SURFACE_THEME_STYLE}</style>
       <header className="relative z-20 mx-auto flex w-full max-w-lg shrink-0 items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2 text-sm font-bold tracking-tight text-zinc-600 dark:text-zinc-300">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-950 text-[10px] font-black tracking-wide text-white dark:bg-white dark:text-zinc-950">
-            IAM
+          {brandLogoUrl ? (
+            <img
+              alt=""
+              className="h-7 w-auto max-w-[6rem] shrink-0 rounded-lg object-contain"
+              data-testid="sdkwork-auth-brand-logo"
+              src={brandLogoUrl}
+            />
+          ) : (
+            <span
+              aria-hidden="true"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-950 text-[10px] font-black tracking-wide text-white dark:bg-white dark:text-zinc-950"
+              data-testid="sdkwork-auth-brand-mark"
+            >
+              {resolveSdkworkAuthBrandMark(brandName)}
+            </span>
+          )}
+          <span className="truncate" data-testid="sdkwork-auth-brand-name">
+            {brandName}
           </span>
-          <span className="truncate">SDKWork IAM</span>
         </div>
         {authState.isAuthenticated && authState.user ? (
           <div

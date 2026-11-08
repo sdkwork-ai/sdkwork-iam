@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import { SdkworkI18nProvider } from "@sdkwork/i18n-pc-react";
 import type { SdkworkAuthAppearanceConfig } from "../auth-appearance.ts";
+import type { SdkworkAuthBrand } from "../auth-brand.ts";
 import type {
   CreateSdkworkIamRuntimeAuthControllerOptions,
   SdkworkIamRuntimeAuthRuntimeLike,
@@ -42,6 +43,11 @@ import {
 export interface SdkworkIamAuthRoutesProps {
   appearance?: SdkworkAuthAppearanceConfig;
   basePath?: string;
+  /**
+   * Product brand configured by the host application. Auth pages that render
+   * a product header show it instead of the shared IAM identity.
+   */
+  brand?: SdkworkAuthBrand;
   className?: string;
   controllerOptions?: Omit<
     CreateSdkworkIamRuntimeAuthControllerOptions,
@@ -129,6 +135,7 @@ function SdkworkIamAuthRoutesContent({
 function SdkworkIamAuthRoutesPage({
   appearance,
   basePath = "/auth",
+  brand,
   controllerOptions,
   desktopBrowserLogin,
   events,
@@ -185,7 +192,7 @@ function SdkworkIamAuthRoutesPage({
   >;
 
   if (isDesktopLaunchRoute(location.pathname, basePath)) {
-    return <SdkworkAuthDesktopLaunchPage {...commonProps} />;
+    return <SdkworkAuthDesktopLaunchPage {...commonProps} brand={brand} />;
   }
 
   if (isOAuthCallbackRoute(location.pathname, basePath)) {
