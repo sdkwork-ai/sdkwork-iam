@@ -186,14 +186,15 @@ async fn resolve_sqlite_iam_app_context_from_access_token(
     let signing_key = load_sqlite_signing_key_by_kid(sqlite, &kid).await?;
     let now_unix = (current_millis() / 1000) as i64;
     let claims = verify_local_session_token(&signing_key, &access_token, "access", now_unix)?;
-    let row = sqlx::query(sqlx::AssertSqlSafe(
-        sqlite_session_context_query("s.access_token_hash = ?", true),
-    ))
-        .bind(hash_token(&access_token))
-        .bind(current_timestamp_utc().to_rfc3339())
-        .fetch_optional(sqlite)
-        .await
-        .ok()??;
+    let row = sqlx::query(sqlx::AssertSqlSafe(sqlite_session_context_query(
+        "s.access_token_hash = ?",
+        true,
+    )))
+    .bind(hash_token(&access_token))
+    .bind(current_timestamp_utc().to_rfc3339())
+    .fetch_optional(sqlite)
+    .await
+    .ok()??;
     let context = iam_context_from_sqlite_session_row(&row)?;
     if !session_claims_match_context(&claims, &context)
         || !signing_key_matches_claims(&signing_key, &claims)
@@ -990,8 +991,7 @@ fn resolve_context_organization_scope(
     organization_id: Option<&str>,
     login_scope: &LoginScope,
 ) -> Option<String> {
-    let scope =
-        sdkwork_iam_context_service::normalize_resolved_organization_scope(organization_id);
+    let scope = sdkwork_iam_context_service::normalize_resolved_organization_scope(organization_id);
     let tenant_level = sdkwork_iam_context_service::is_platform_organization_id(&scope);
     match (login_scope, tenant_level) {
         (LoginScope::Tenant, true) | (LoginScope::Organization, false) => Some(scope),
@@ -1147,7 +1147,9 @@ mod tests {
         let scope = resolve_context_organization_scope(Some("0"), &LoginScope::Tenant)
             .expect("tenant-level scope");
         assert_eq!("0", scope);
-        assert!(sdkwork_iam_context_service::is_platform_organization_id(&scope));
+        assert!(sdkwork_iam_context_service::is_platform_organization_id(
+            &scope
+        ));
     }
 
     #[test]

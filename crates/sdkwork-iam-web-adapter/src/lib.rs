@@ -136,8 +136,8 @@ pub use oauth_authorization_server::{
     oauth_issuer_base_url, oauth_login_base_url, parse_relying_party_config,
     redeem_authorization_code_session_context, resolve_relying_party_client, revoke_oauth_token,
     validate_authorize_request, AuthorizationCompletion, AuthorizeRequest,
-    AUTHORIZATION_CODE_TTL_SECONDS, RedeemedAuthorizationContext, RelyingPartyConfig,
-    ResolvedRelyingParty,
+    RedeemedAuthorizationContext, RelyingPartyConfig, ResolvedRelyingParty,
+    AUTHORIZATION_CODE_TTL_SECONDS,
 };
 pub use oauth_integration_exchange::{
     builtin_authorization_endpoint, builtin_default_scopes, builtin_token_endpoint,

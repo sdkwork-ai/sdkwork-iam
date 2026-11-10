@@ -96,7 +96,9 @@ pub(crate) async fn revoke_active_sessions_for_user_app_device(
 }
 
 /// Validate and normalize the optional opaque device identity of a session.
-pub(crate) fn normalize_session_device_id(device_id: Option<&str>) -> Result<Option<String>, String> {
+pub(crate) fn normalize_session_device_id(
+    device_id: Option<&str>,
+) -> Result<Option<String>, String> {
     let Some(raw) = device_id else {
         return Ok(None);
     };
@@ -105,9 +107,9 @@ pub(crate) fn normalize_session_device_id(device_id: Option<&str>) -> Result<Opt
         return Ok(None);
     }
     if value.len() > 128
-        || !value
-            .chars()
-            .all(|character| character.is_ascii_alphanumeric() || matches!(character, '.' | '_' | ':' | '-'))
+        || !value.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '.' | '_' | ':' | '-')
+        })
     {
         return Err("session deviceId is invalid".to_string());
     }
@@ -119,10 +121,7 @@ pub(crate) fn normalize_session_device_id(device_id: Option<&str>) -> Result<Opt
 /// Personal logins have no organization scope, but `iam_session.organization_id`
 /// is NOT NULL and references `(tenant_id, organization_id)`. The sentinel row
 /// must therefore exist for every tenant, not only the bootstrap tenant.
-async fn ensure_personal_login_organization(
-    pg: &PgPool,
-    tenant_id: &str,
-) -> Result<(), String> {
+async fn ensure_personal_login_organization(pg: &PgPool, tenant_id: &str) -> Result<(), String> {
     sqlx::query(
         "INSERT INTO iam_organization (\
             id, tenant_id, parent_organization_id, code, name, organization_kind, \

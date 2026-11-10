@@ -36,11 +36,15 @@ impl IamOAuthTokenLookupService {
 }
 
 fn configured_environment() -> Option<String> {
-    ["SDKWORK_ENVIRONMENT", "SDKWORK_LIFECYCLE_ENVIRONMENT", "SDKWORK_IM_ENVIRONMENT"]
-        .iter()
-        .find_map(|key| std::env::var(key).ok())
-        .map(|value| value.trim().to_owned())
-        .filter(|value| !value.is_empty())
+    [
+        "SDKWORK_ENVIRONMENT",
+        "SDKWORK_LIFECYCLE_ENVIRONMENT",
+        "SDKWORK_IM_ENVIRONMENT",
+    ]
+    .iter()
+    .find_map(|key| std::env::var(key).ok())
+    .map(|value| value.trim().to_owned())
+    .filter(|value| !value.is_empty())
 }
 
 fn canonical_environment(value: &str) -> String {
@@ -53,7 +57,9 @@ fn canonical_environment(value: &str) -> String {
     }
 }
 
-fn context_environment_label(environment: &sdkwork_iam_context_service::Environment) -> &'static str {
+fn context_environment_label(
+    environment: &sdkwork_iam_context_service::Environment,
+) -> &'static str {
     match environment {
         sdkwork_iam_context_service::Environment::Dev => "dev",
         sdkwork_iam_context_service::Environment::Test => "test",

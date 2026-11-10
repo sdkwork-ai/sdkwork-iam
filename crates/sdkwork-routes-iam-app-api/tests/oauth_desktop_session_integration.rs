@@ -23,9 +23,10 @@ use http_body_util::BodyExt;
 use sdkwork_iam_context_service::{AuthLevel, DeploymentMode, Environment, IamAppContext};
 use sdkwork_iam_web_adapter::{
     complete_authorization_state, create_pending_authorization_state,
-    default_account_binding_policy, ensure_platform_tenant_application, exchange_authorization_code,
-    introspect_oauth_token, parse_relying_party_config, platform_runtime_app_id_for_tenant,
-    resolve_relying_party_client, revoke_oauth_token, validate_authorize_request, AuthorizeRequest,
+    default_account_binding_policy, ensure_platform_tenant_application,
+    exchange_authorization_code, introspect_oauth_token, parse_relying_party_config,
+    platform_runtime_app_id_for_tenant, resolve_relying_party_client, revoke_oauth_token,
+    validate_authorize_request, AuthorizeRequest,
 };
 use sdkwork_web_core::bootstrap_access_token_jwt;
 use serde_json::{json, Value};
@@ -383,7 +384,8 @@ async fn issue_desktop_code(
         code_challenge_method: Some("S256".to_string()),
         tenant_id: Some(DESKTOP_E2E_TENANT_ID.to_string()),
     };
-    let scopes = validate_authorize_request(&request, client).expect("authorize device e2e request");
+    let scopes =
+        validate_authorize_request(&request, client).expect("authorize device e2e request");
     let (authorization_state_id, _) =
         create_pending_authorization_state(pg, client, &request, &scopes)
             .await
@@ -487,7 +489,11 @@ async fn desktop_sessions_are_scoped_to_the_device() {
         .to_owned();
 
     let active = active_desktop_sessions(&pg, &user_id).await;
-    assert_eq!(active.len(), 2, "both devices must keep an active session: {active:?}");
+    assert_eq!(
+        active.len(),
+        2,
+        "both devices must keep an active session: {active:?}"
+    );
 
     // The same device logs in again: only its previous session is replaced.
     let (code_a2, verifier_a2) = issue_desktop_code(
@@ -525,15 +531,21 @@ async fn desktop_sessions_are_scoped_to_the_device() {
         "device a re-login must replace only device a: {active:?}"
     );
     assert!(
-        !active.iter().any(|(session_id, _)| session_id == &first_session_id),
+        !active
+            .iter()
+            .any(|(session_id, _)| session_id == &first_session_id),
         "device a's previous session must be revoked"
     );
     assert!(
-        active.iter().any(|(session_id, _)| session_id == &second_session_id),
+        active
+            .iter()
+            .any(|(session_id, _)| session_id == &second_session_id),
         "device b's session must remain active"
     );
     assert!(
-        active.iter().any(|(session_id, _)| session_id == &third_session_id),
+        active
+            .iter()
+            .any(|(session_id, _)| session_id == &third_session_id),
         "device a's new session must be active"
     );
 
@@ -943,7 +955,9 @@ async fn admin_provider_catalog_entries_appear_on_the_login_surface() {
         .cloned()
         .unwrap_or_default();
     assert!(
-        providers.iter().any(|code| code.as_str() == Some(provider_code)),
+        providers
+            .iter()
+            .any(|code| code.as_str() == Some(provider_code)),
         "admin-configured provider must appear on the login surface: {providers:?}"
     );
 
@@ -970,7 +984,10 @@ async fn admin_provider_catalog_entries_appear_on_the_login_surface() {
             Request::builder()
                 .method(Method::GET)
                 .uri("/app/v3/api/system/iam/runtime")
-                .header("access-token", bootstrap_access_token_jwt(tenant_id, &runtime_app_id))
+                .header(
+                    "access-token",
+                    bootstrap_access_token_jwt(tenant_id, &runtime_app_id),
+                )
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -1015,7 +1032,10 @@ async fn admin_provider_catalog_entries_appear_on_the_login_surface() {
             Request::builder()
                 .method(Method::GET)
                 .uri("/app/v3/api/system/iam/runtime")
-                .header("access-token", bootstrap_access_token_jwt(tenant_id, &runtime_app_id))
+                .header(
+                    "access-token",
+                    bootstrap_access_token_jwt(tenant_id, &runtime_app_id),
+                )
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -1057,7 +1077,10 @@ async fn admin_provider_catalog_entries_appear_on_the_login_surface() {
             Request::builder()
                 .method(Method::GET)
                 .uri("/app/v3/api/system/iam/runtime")
-                .header("access-token", bootstrap_access_token_jwt(tenant_id, &runtime_app_id))
+                .header(
+                    "access-token",
+                    bootstrap_access_token_jwt(tenant_id, &runtime_app_id),
+                )
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -1158,9 +1181,10 @@ async fn concurrent_authorization_completions_approve_only_one_state() {
     };
     let scopes =
         validate_authorize_request(&authorize_request, &client).expect("authorize request");
-    let (state_id, _) = create_pending_authorization_state(&pg, &client, &authorize_request, &scopes)
-        .await
-        .expect("create concurrent-completion state");
+    let (state_id, _) =
+        create_pending_authorization_state(&pg, &client, &authorize_request, &scopes)
+            .await
+            .expect("create concurrent-completion state");
 
     let (first, second) = tokio::join!(
         complete_authorization_state(&pg, &state_id, &login_context),
@@ -1200,7 +1224,8 @@ async fn desktop_exchange_rejects_an_expired_authorization_code() {
         resolve_relying_party_client(&pg, DESKTOP_E2E_CLIENT_APP_ID, Some(DESKTOP_E2E_TENANT_ID))
             .await
             .expect("resolve desktop e2e relying party client");
-    let (code_verifier, code_challenge) = pkce_pair("desktop-expired-code-verifier-sufficient-length");
+    let (code_verifier, code_challenge) =
+        pkce_pair("desktop-expired-code-verifier-sufficient-length");
     let authorize_request = AuthorizeRequest {
         client_id: DESKTOP_E2E_CLIENT_APP_ID.to_string(),
         redirect_uri: DESKTOP_E2E_REDIRECT_URI.to_string(),
@@ -1213,22 +1238,21 @@ async fn desktop_exchange_rejects_an_expired_authorization_code() {
     };
     let scopes =
         validate_authorize_request(&authorize_request, &client).expect("authorize request");
-    let (state_id, _) = create_pending_authorization_state(&pg, &client, &authorize_request, &scopes)
-        .await
-        .expect("create expired-code state");
+    let (state_id, _) =
+        create_pending_authorization_state(&pg, &client, &authorize_request, &scopes)
+            .await
+            .expect("create expired-code state");
     let completion = complete_authorization_state(&pg, &state_id, &login_context)
         .await
         .expect("complete expired-code state");
     let authorization_code = completion.authorization_code;
 
-    sqlx::query(
-        "UPDATE iam_oauth_authorization_state SET expires_at = $2 WHERE id = $1",
-    )
-    .bind(&state_id)
-    .bind("2000-01-01T00:00:00+00:00")
-    .execute(&pg)
-    .await
-    .expect("expire authorization state");
+    sqlx::query("UPDATE iam_oauth_authorization_state SET expires_at = $2 WHERE id = $1")
+        .bind(&state_id)
+        .bind("2000-01-01T00:00:00+00:00")
+        .execute(&pg)
+        .await
+        .expect("expire authorization state");
 
     let (status, body) = redeem_desktop_session(
         &app,
@@ -1274,9 +1298,10 @@ async fn oauth_token_introspection_reports_the_grant_client_and_refresh_expiry()
     };
     let scopes =
         validate_authorize_request(&authorize_request, &client).expect("authorize request");
-    let (state_id, _) = create_pending_authorization_state(&pg, &client, &authorize_request, &scopes)
-        .await
-        .expect("create introspection state");
+    let (state_id, _) =
+        create_pending_authorization_state(&pg, &client, &authorize_request, &scopes)
+            .await
+            .expect("create introspection state");
     let completion = complete_authorization_state(&pg, &state_id, &login_context)
         .await
         .expect("complete introspection state");
@@ -1303,10 +1328,7 @@ async fn oauth_token_introspection_reports_the_grant_client_and_refresh_expiry()
     .await
     .expect("introspect access token");
     assert_eq!(access_introspection["active"], true);
-    assert_eq!(
-        access_introspection["client_id"],
-        DESKTOP_E2E_CLIENT_APP_ID
-    );
+    assert_eq!(access_introspection["client_id"], DESKTOP_E2E_CLIENT_APP_ID);
 
     let refresh_introspection = introspect_oauth_token(
         &pg,
@@ -1373,9 +1395,10 @@ async fn concurrent_authorization_code_redemptions_issue_only_one_session() {
     };
     let scopes =
         validate_authorize_request(&authorize_request, &client).expect("authorize request");
-    let (state_id, _) = create_pending_authorization_state(&pg, &client, &authorize_request, &scopes)
-        .await
-        .expect("create concurrent-redemption state");
+    let (state_id, _) =
+        create_pending_authorization_state(&pg, &client, &authorize_request, &scopes)
+            .await
+            .expect("create concurrent-redemption state");
     let completion = complete_authorization_state(&pg, &state_id, &login_context)
         .await
         .expect("complete concurrent-redemption state");
@@ -1434,9 +1457,10 @@ async fn desktop_exchange_rejects_a_redirect_uri_that_differs_from_the_code() {
     };
     let scopes =
         validate_authorize_request(&authorize_request, &client).expect("authorize request");
-    let (state_id, _) = create_pending_authorization_state(&pg, &client, &authorize_request, &scopes)
-        .await
-        .expect("create redirect-binding state");
+    let (state_id, _) =
+        create_pending_authorization_state(&pg, &client, &authorize_request, &scopes)
+            .await
+            .expect("create redirect-binding state");
     let completion = complete_authorization_state(&pg, &state_id, &login_context)
         .await
         .expect("complete redirect-binding state");
@@ -1467,8 +1491,7 @@ async fn hosted_authorization_bootstrap_creates_a_pending_state_without_redirect
     let pg = postgres_pool_for_tests().await;
     seed_desktop_e2e_fixtures(&pg).await;
 
-    let (_verifier, code_challenge) =
-        pkce_pair("hosted-bootstrap-verifier-with-sufficient-length");
+    let (_verifier, code_challenge) = pkce_pair("hosted-bootstrap-verifier-with-sufficient-length");
     let response = app
         .clone()
         .oneshot(
@@ -1502,7 +1525,10 @@ async fn hosted_authorization_bootstrap_creates_a_pending_state_without_redirect
         "hosted authorization bootstrap failed: {}",
         serde_json::to_string(&body).unwrap_or_default()
     );
-    assert!(location.is_none(), "the JSON bootstrap must not redirect the browser");
+    assert!(
+        location.is_none(),
+        "the JSON bootstrap must not redirect the browser"
+    );
     assert_eq!(body["code"].as_i64(), Some(0));
     let authorization_state_id = body["data"]["authorizationStateId"]
         .as_str()
@@ -1511,13 +1537,12 @@ async fn hosted_authorization_bootstrap_creates_a_pending_state_without_redirect
         .to_owned();
     assert!(body["data"]["expiresAt"].as_str().is_some());
 
-    let state_status: String = sqlx::query_scalar(
-        "SELECT status FROM iam_oauth_authorization_state WHERE id = $1",
-    )
-    .bind(&authorization_state_id)
-    .fetch_one(&pg)
-    .await
-    .expect("bootstrap state row");
+    let state_status: String =
+        sqlx::query_scalar("SELECT status FROM iam_oauth_authorization_state WHERE id = $1")
+            .bind(&authorization_state_id)
+            .fetch_one(&pg)
+            .await
+            .expect("bootstrap state row");
     assert_eq!(state_status, "pending");
 
     // An unknown client is rejected before any state is created.
@@ -1701,7 +1726,8 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
         &app,
         &authorization_code,
         &code_verifier,
-        DESKTOP_E2E_REDIRECT_URI, None,
+        DESKTOP_E2E_REDIRECT_URI,
+        None,
     )
     .await;
     assert_eq!(
@@ -1796,7 +1822,8 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
         &app,
         &authorization_code,
         &code_verifier,
-        DESKTOP_E2E_REDIRECT_URI, None,
+        DESKTOP_E2E_REDIRECT_URI,
+        None,
     )
     .await;
     assert_eq!(
@@ -1828,7 +1855,8 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
         &app,
         &second_code,
         &wrong_verifier,
-        DESKTOP_E2E_REDIRECT_URI, None,
+        DESKTOP_E2E_REDIRECT_URI,
+        None,
     )
     .await;
     assert_eq!(
@@ -1934,7 +1962,8 @@ async fn desktop_session_exchange_rejects_a_web_surface_code() {
         &app,
         &completion.authorization_code,
         &verifier,
-        DESKTOP_E2E_WEB_REDIRECT_URI, None,
+        DESKTOP_E2E_WEB_REDIRECT_URI,
+        None,
     )
     .await;
     assert_eq!(

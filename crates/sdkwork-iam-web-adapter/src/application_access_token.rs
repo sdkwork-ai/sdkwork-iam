@@ -12,10 +12,10 @@
 //! mean "never expires". A concrete past `exp` is still rejected.
 
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
-use serde_json::Value;
 use sdkwork_iam_context_service::{
     AuthLevel, DeploymentMode, Environment, IamAppContext, IamPrincipalKind,
 };
+use serde_json::Value;
 use sqlx::PgPool;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -134,8 +134,8 @@ pub fn parse_public_application_access_token(
     let deployment_mode = normalize_deployment_mode(
         &claim_text(&payload, "deployment_mode").unwrap_or_else(|| "saas".to_owned()),
     );
-    let session_id = claim_text(&payload, "session_id")
-        .unwrap_or_else(|| format!("bootstrap-public-{app_id}"));
+    let session_id =
+        claim_text(&payload, "session_id").unwrap_or_else(|| format!("bootstrap-public-{app_id}"));
     if let Some(exp) = payload.get("exp").and_then(Value::as_i64) {
         if exp != APPLICATION_ACCESS_TOKEN_NO_EXPIRY && exp < current_unix_seconds() {
             return None;
@@ -163,15 +163,10 @@ pub async fn resolve_application_access_token_context(
     token: &str,
 ) -> Option<IamAppContext> {
     let claims = parse_public_application_access_token(token)?;
-    let application = resolve_tenant_application(
-        pg,
-        &claims.tenant_id,
-        None,
-        Some(&claims.app_id),
-        None,
-    )
-    .await
-    .ok()??;
+    let application =
+        resolve_tenant_application(pg, &claims.tenant_id, None, Some(&claims.app_id), None)
+            .await
+            .ok()??;
     if application.status != "enabled" {
         return None;
     }
@@ -218,12 +213,7 @@ mod tests {
     }
 
     fn token(header: Value, payload: Value, signature: &str) -> String {
-        format!(
-            "{}.{}.{}",
-            encode(&header),
-            encode(&payload),
-            signature
-        )
+        format!("{}.{}.{}", encode(&header), encode(&payload), signature)
     }
 
     fn public_header() -> Value {
@@ -270,45 +260,37 @@ mod tests {
     fn accepts_exp_zero_and_absent_as_never_expiring() {
         let mut zero = public_payload();
         zero["exp"] = serde_json::json!(APPLICATION_ACCESS_TOKEN_NO_EXPIRY);
-        assert!(parse_public_application_access_token(&token(
-            public_header(),
-            zero,
-            "public",
-        ))
-        .is_some());
+        assert!(
+            parse_public_application_access_token(&token(public_header(), zero, "public",))
+                .is_some()
+        );
 
         let mut absent = public_payload();
         absent.as_object_mut().expect("object").remove("exp");
-        assert!(parse_public_application_access_token(&token(
-            public_header(),
-            absent,
-            "public",
-        ))
-        .is_some());
+        assert!(
+            parse_public_application_access_token(&token(public_header(), absent, "public",))
+                .is_some()
+        );
     }
 
     #[test]
     fn rejects_an_expired_application_token() {
         let mut expired = public_payload();
         expired["exp"] = serde_json::json!(1_i64);
-        assert!(parse_public_application_access_token(&token(
-            public_header(),
-            expired,
-            "public",
-        ))
-        .is_none());
+        assert!(
+            parse_public_application_access_token(&token(public_header(), expired, "public",))
+                .is_none()
+        );
     }
 
     #[test]
     fn rejects_a_private_or_malformed_credential() {
         let mut session = public_payload();
         session["token_class"] = serde_json::json!("session");
-        assert!(parse_public_application_access_token(&token(
-            public_header(),
-            session,
-            "public",
-        ))
-        .is_none());
+        assert!(
+            parse_public_application_access_token(&token(public_header(), session, "public",))
+                .is_none()
+        );
 
         let mut signed_header = public_header();
         signed_header["alg"] = serde_json::json!("HS256");

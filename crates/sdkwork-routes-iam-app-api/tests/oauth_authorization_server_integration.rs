@@ -558,7 +558,8 @@ async fn oauth_public_client_token_exchange_rejects_invalid_pkce_verifier() {
         resolve_relying_party_client(&pg, OAUTH_E2E_CLIENT_APP_ID, Some(OAUTH_E2E_TENANT_ID))
             .await
             .expect("resolve oauth relying party client");
-    let (_code_verifier, code_challenge) = pkce_pair("oauth-pkce-verifier-with-sufficient-length-1");
+    let (_code_verifier, code_challenge) =
+        pkce_pair("oauth-pkce-verifier-with-sufficient-length-1");
     let authorize_request = AuthorizeRequest {
         client_id: OAUTH_E2E_CLIENT_APP_ID.to_string(),
         redirect_uri: OAUTH_E2E_REDIRECT_URI.to_string(),

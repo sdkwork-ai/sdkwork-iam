@@ -272,7 +272,8 @@ async fn create_session(
     // (`DATABASE_SPEC.md` §6.10), and the paired `login_scope` derives from it
     // (`API_SPEC.md` §10.4). Binding `None` wrote NULL for tenant-level logins.
     let organization_id = context.organization_scope();
-    let login_scope = if sdkwork_iam_context_service::is_platform_organization_id(&organization_id) {
+    let login_scope = if sdkwork_iam_context_service::is_platform_organization_id(&organization_id)
+    {
         "TENANT"
     } else {
         "ORGANIZATION"

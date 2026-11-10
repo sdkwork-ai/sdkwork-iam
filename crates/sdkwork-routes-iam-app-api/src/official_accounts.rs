@@ -314,16 +314,25 @@ async fn create_official_account(
     };
 
     let Some(app_id) = normalized_required(&body.app_id, MAX_APP_ID_LEN) else {
-        return official_account_invalid("appId", "a non-empty AppID of at most 64 characters is required");
+        return official_account_invalid(
+            "appId",
+            "a non-empty AppID of at most 64 characters is required",
+        );
     };
     if !app_id
         .chars()
         .all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '-')
     {
-        return official_account_invalid("appId", "only letters, digits, `_`, and `-` are accepted");
+        return official_account_invalid(
+            "appId",
+            "only letters, digits, `_`, and `-` are accepted",
+        );
     }
     let Some(display_name) = normalized_required(&body.display_name, MAX_DISPLAY_NAME_LEN) else {
-        return official_account_invalid("displayName", "a display name of 1 to 128 characters is required");
+        return official_account_invalid(
+            "displayName",
+            "a display name of 1 to 128 characters is required",
+        );
     };
     let account_type = match normalized_optional(body.account_type.as_deref(), 32) {
         Ok(value) => value,
@@ -343,11 +352,15 @@ async fn create_official_account(
     };
     let app_secret_ref = match sealed_secret(body.app_secret.as_deref()) {
         Ok(value) => value,
-        Err(()) => return official_account_invalid("appSecret", "the secret could not be accepted"),
+        Err(()) => {
+            return official_account_invalid("appSecret", "the secret could not be accepted")
+        }
     };
     let notify_token_ref = match sealed_secret(body.notify_token.as_deref()) {
         Ok(value) => value,
-        Err(()) => return official_account_invalid("notifyToken", "the token could not be accepted"),
+        Err(()) => {
+            return official_account_invalid("notifyToken", "the token could not be accepted")
+        }
     };
     let notify_encoding_aes_key_ref = match sealed_secret(body.notify_encoding_aes_key.as_deref()) {
         Ok(value) => value,
@@ -529,12 +542,16 @@ async fn update_official_account(
     let app_secret_ref = match sealed_secret(body.app_secret.as_deref()) {
         Ok(Some(value)) => Some(value),
         Ok(None) => current.app_secret_ref.clone(),
-        Err(()) => return official_account_invalid("appSecret", "the secret could not be accepted"),
+        Err(()) => {
+            return official_account_invalid("appSecret", "the secret could not be accepted")
+        }
     };
     let notify_token_ref = match sealed_secret(body.notify_token.as_deref()) {
         Ok(Some(value)) => Some(value),
         Ok(None) => current.notify_token_ref.clone(),
-        Err(()) => return official_account_invalid("notifyToken", "the token could not be accepted"),
+        Err(()) => {
+            return official_account_invalid("notifyToken", "the token could not be accepted")
+        }
     };
     let notify_encoding_aes_key_ref = match sealed_secret(body.notify_encoding_aes_key.as_deref()) {
         Ok(Some(value)) => Some(value),
@@ -623,7 +640,10 @@ mod tests {
 
     #[test]
     fn normalizes_required_text() {
-        assert_eq!(normalized_required("  wx1234  ", MAX_APP_ID_LEN).as_deref(), Some("wx1234"));
+        assert_eq!(
+            normalized_required("  wx1234  ", MAX_APP_ID_LEN).as_deref(),
+            Some("wx1234")
+        );
         assert!(normalized_required("   ", MAX_APP_ID_LEN).is_none());
         assert!(normalized_required(&"a".repeat(65), MAX_APP_ID_LEN).is_none());
     }
@@ -631,7 +651,10 @@ mod tests {
     #[test]
     fn blank_optional_text_clears_a_value_and_over_long_text_is_rejected() {
         assert_eq!(normalized_optional(Some(" "), 8).unwrap(), None);
-        assert_eq!(normalized_optional(Some(" ok "), 8).unwrap().as_deref(), Some("ok"));
+        assert_eq!(
+            normalized_optional(Some(" ok "), 8).unwrap().as_deref(),
+            Some("ok")
+        );
         assert!(normalized_optional(Some("toolongvalue"), 8).is_err());
         assert_eq!(normalized_optional(None, 8).unwrap(), None);
     }
@@ -651,7 +674,10 @@ mod tests {
     #[test]
     fn custom_menu_accepts_objects_only() {
         assert_eq!(normalized_custom_menu(None).unwrap(), json!({}));
-        assert_eq!(normalized_custom_menu(Some(&Value::Null)).unwrap(), json!({}));
+        assert_eq!(
+            normalized_custom_menu(Some(&Value::Null)).unwrap(),
+            json!({})
+        );
         assert!(normalized_custom_menu(Some(&json!([1, 2]))).is_err());
         assert_eq!(
             normalized_custom_menu(Some(&json!({ "button": [] }))).unwrap(),

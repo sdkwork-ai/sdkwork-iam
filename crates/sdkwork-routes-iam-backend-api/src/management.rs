@@ -1740,7 +1740,8 @@ mod tests {
 
     #[test]
     fn organization_patch_fields_clears_the_logo_on_an_explicit_null() {
-        let assignments = organization_patch_fields(&json!({ "logo": null })).expect("patch fields");
+        let assignments =
+            organization_patch_fields(&json!({ "logo": null })).expect("patch fields");
         assert!(assignments.iter().any(|(column, value)| {
             column == "logo_resource_snapshot" && *value == PatchValue::NullText
         }));
@@ -1764,7 +1765,8 @@ mod tests {
 
     #[test]
     fn organization_patch_fields_leaves_the_logo_untouched_when_the_key_is_absent() {
-        let assignments = organization_patch_fields(&json!({ "name": "North" })).expect("patch fields");
+        let assignments =
+            organization_patch_fields(&json!({ "name": "North" })).expect("patch fields");
         assert!(!assignments
             .iter()
             .any(|(column, _)| column == "logo_resource_snapshot"));
@@ -1772,7 +1774,8 @@ mod tests {
 
     #[test]
     fn organization_patch_fields_clears_a_profile_field_on_an_explicit_empty_string() {
-        let assignments = organization_patch_fields(&json!({ "description": "" })).expect("patch fields");
+        let assignments =
+            organization_patch_fields(&json!({ "description": "" })).expect("patch fields");
         assert!(assignments
             .iter()
             .any(|(column, value)| column == "description" && *value == PatchValue::NullText));
@@ -1800,9 +1803,8 @@ mod tests {
     fn tenant_patch_fields_normalizes_and_guards_the_lifecycle_status() {
         let assignments =
             tenant_patch_fields(&json!({ "status": "Suspended" })).expect("patch fields");
-        assert!(assignments
-            .iter()
-            .any(|(column, value)| column == "status" && *value == PatchValue::Text("suspended".to_owned())));
+        assert!(assignments.iter().any(|(column, value)| column == "status"
+            && *value == PatchValue::Text("suspended".to_owned())));
 
         assert!(tenant_patch_fields(&json!({ "status": "archived" })).is_err());
     }

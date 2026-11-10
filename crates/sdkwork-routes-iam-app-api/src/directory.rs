@@ -1258,12 +1258,16 @@ mod tests {
         // snapshot and bounded preview reader; `logoUrl` must stay absent
         // instead of handing a browser a `drive://` URI.
         assert_eq!(
-            image_delivery_url(&json!({ "source": "drive", "uri": "drive://spaces/space-1/nodes/node-1" })),
+            image_delivery_url(
+                &json!({ "source": "drive", "uri": "drive://spaces/space-1/nodes/node-1" })
+            ),
             None
         );
         // External snapshots keep their browser-usable URL.
         assert_eq!(
-            image_delivery_url(&json!({ "source": "external", "uri": "https://cdn.example.com/logo.png" })),
+            image_delivery_url(
+                &json!({ "source": "external", "uri": "https://cdn.example.com/logo.png" })
+            ),
             Some("https://cdn.example.com/logo.png".to_owned())
         );
     }

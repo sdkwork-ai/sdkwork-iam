@@ -3114,9 +3114,12 @@ async fn create_oauth_authorization(
         );
     };
 
-    if let Some(response) =
-        enforce_rate_limit(&state, LOCAL_EPHEMERAL_SCOPE, &format!("oauth:authorize:{client_id}"))
-            .await
+    if let Some(response) = enforce_rate_limit(
+        &state,
+        LOCAL_EPHEMERAL_SCOPE,
+        &format!("oauth:authorize:{client_id}"),
+    )
+    .await
     {
         return response;
     }
@@ -3143,9 +3146,10 @@ async fn create_oauth_authorization(
             "OAuth state is required",
         );
     };
-    let Some(code_challenge) =
-        optional_string(body.get("codeChallenge").or_else(|| body.get("code_challenge")))
-    else {
+    let Some(code_challenge) = optional_string(
+        body.get("codeChallenge")
+            .or_else(|| body.get("code_challenge")),
+    ) else {
         return appbase_error(
             StatusCode::BAD_REQUEST,
             "iam_oauth_authorize_invalid",
@@ -3156,14 +3160,18 @@ async fn create_oauth_authorization(
     let request = sdkwork_iam_web_adapter::AuthorizeRequest {
         client_id,
         redirect_uri,
-        response_type: optional_string(body.get("responseType").or_else(|| body.get("response_type")))
-            .unwrap_or_else(|| "code".to_string()),
+        response_type: optional_string(
+            body.get("responseType")
+                .or_else(|| body.get("response_type")),
+        )
+        .unwrap_or_else(|| "code".to_string()),
         scope: optional_string(body.get("scope"))
             .unwrap_or_else(|| "openid profile offline_access".to_string()),
         state: Some(state_param),
         code_challenge: Some(code_challenge),
         code_challenge_method: optional_string(
-            body.get("codeChallengeMethod").or_else(|| body.get("code_challenge_method")),
+            body.get("codeChallengeMethod")
+                .or_else(|| body.get("code_challenge_method")),
         )
         .or_else(|| Some("S256".to_string())),
         tenant_id: optional_string(body.get("tenantId").or_else(|| body.get("tenant_id"))),

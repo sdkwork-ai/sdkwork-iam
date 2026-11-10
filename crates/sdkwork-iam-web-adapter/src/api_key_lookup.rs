@@ -45,11 +45,15 @@ impl IamApiKeyLookupService {
 }
 
 fn configured_environment() -> Option<String> {
-    ["SDKWORK_ENVIRONMENT", "SDKWORK_LIFECYCLE_ENVIRONMENT", "SDKWORK_IM_ENVIRONMENT"]
-        .iter()
-        .find_map(|key| std::env::var(key).ok())
-        .map(|value| value.trim().to_owned())
-        .filter(|value| !value.is_empty())
+    [
+        "SDKWORK_ENVIRONMENT",
+        "SDKWORK_LIFECYCLE_ENVIRONMENT",
+        "SDKWORK_IM_ENVIRONMENT",
+    ]
+    .iter()
+    .find_map(|key| std::env::var(key).ok())
+    .map(|value| value.trim().to_owned())
+    .filter(|value| !value.is_empty())
 }
 
 fn canonical_environment(value: &str) -> String {
@@ -133,11 +137,12 @@ impl ApiKeyLookupService for IamApiKeyLookupService {
             })
             .unwrap_or(true);
         if last_used_is_stale {
-            let _ = sqlx::query("UPDATE iam_api_key SET last_used_at = $2::timestamptz WHERE id = $1")
-                .bind(&api_key_id)
-                .bind(now.to_rfc3339())
-                .execute(self.pool.as_ref())
-                .await;
+            let _ =
+                sqlx::query("UPDATE iam_api_key SET last_used_at = $2::timestamptz WHERE id = $1")
+                    .bind(&api_key_id)
+                    .bind(now.to_rfc3339())
+                    .execute(self.pool.as_ref())
+                    .await;
         }
 
         Ok(ApiKeyPrincipalRecord {
@@ -182,11 +187,7 @@ fn normalize_organization_id(organization_id: &str) -> Option<String> {
     // §5.3.1). The record supplies the resolved scope directly: `'0'` is the
     // tenant-level sentinel, any other value is organization-level. It is never
     // an absent scope and never inferred from the request.
-    Some(
-        sdkwork_iam_context_service::normalize_resolved_organization_scope(Some(
-            organization_id,
-        )),
-    )
+    Some(sdkwork_iam_context_service::normalize_resolved_organization_scope(Some(organization_id)))
 }
 
 fn parse_string_vec_json(raw: &str) -> Vec<String> {

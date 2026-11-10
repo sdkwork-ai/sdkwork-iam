@@ -245,13 +245,12 @@ pub async fn exchange_service_account_credential(
     let credential = load_active_credential(pg, &request.client_id).await?;
     verify_secret(&credential.secret_hash, &request.client_secret)?;
 
-    let tenant_active = sqlx::query(
-        "SELECT 1 FROM iam_tenant WHERE id = $1 AND status = 'active' LIMIT 1",
-    )
-    .bind(&credential.tenant_id)
-    .fetch_optional(pg)
-    .await
-    .map_err(|error| format!("load tenant status failed: {error}"))?;
+    let tenant_active =
+        sqlx::query("SELECT 1 FROM iam_tenant WHERE id = $1 AND status = 'active' LIMIT 1")
+            .bind(&credential.tenant_id)
+            .fetch_optional(pg)
+            .await
+            .map_err(|error| format!("load tenant status failed: {error}"))?;
     if tenant_active.is_none() {
         return Err("tenant is not active".to_string());
     }

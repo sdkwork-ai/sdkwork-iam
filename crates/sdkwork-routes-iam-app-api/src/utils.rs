@@ -190,8 +190,7 @@ pub(crate) fn resolve_login_organization_scope(
     organization_id: Option<&str>,
     login_scope: &sdkwork_iam_context_service::LoginScope,
 ) -> Option<String> {
-    let scope =
-        sdkwork_iam_context_service::normalize_resolved_organization_scope(organization_id);
+    let scope = sdkwork_iam_context_service::normalize_resolved_organization_scope(organization_id);
     let tenant_level = sdkwork_iam_context_service::is_platform_organization_id(&scope);
     let consistent = match login_scope {
         sdkwork_iam_context_service::LoginScope::Tenant => tenant_level,
