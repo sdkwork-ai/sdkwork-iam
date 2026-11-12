@@ -182,6 +182,15 @@ export interface SdkworkAuthMessages {
     startOAuthFailed: string;
     verifyCodeFailed: string;
   };
+  signOut: {
+    backToHome: string;
+    backToLogin: string;
+    badge: string;
+    description: string;
+    signingOut: string;
+    title: string;
+    workingTitle: string;
+  };
   toasts: {
     codeSent: string;
     passwordResetSuccess: string;
@@ -404,6 +413,15 @@ const EN_US_MESSAGES: SdkworkAuthMessages = {
     startOAuthFailed: "Third-party login is temporarily unavailable.",
     verifyCodeFailed: "Failed to verify code.",
   },
+  signOut: {
+    backToHome: "Back to home",
+    backToLogin: "Sign in again",
+    badge: "Account security",
+    description: "This browser session has ended. Sign in again from any SDKWork product when you need it.",
+    signingOut: "Signing out of this account\u2026",
+    title: "Signed out",
+    workingTitle: "Signing out",
+  },
   toasts: {
     codeSent: "Verification code sent.",
     passwordResetSuccess: "Password reset successful.",
@@ -615,6 +633,15 @@ const ZH_CN_MESSAGES: SdkworkAuthMessages = {
     signInFailed: "\u767b\u5f55\u5931\u8d25\u3002",
     startOAuthFailed: "\u7b2c\u4e09\u65b9\u767b\u5f55\u6682\u65f6\u65e0\u6cd5\u542f\u52a8\u3002",
     verifyCodeFailed: "\u6821\u9a8c\u9a8c\u8bc1\u7801\u5931\u8d25\u3002",
+  },
+  signOut: {
+    backToHome: "\u8fd4\u56de\u9996\u9875",
+    backToLogin: "\u91cd\u65b0\u767b\u5f55",
+    badge: "\u8d26\u53f7\u5b89\u5168",
+    description: "\u5f53\u524d\u6d4f\u89c8\u5668\u7684\u8d26\u53f7\u4f1a\u8bdd\u5df2\u7ed3\u675f\u3002\u9700\u8981\u7ee7\u7eed\u4f7f\u7528\u65f6\uff0c\u53ef\u4ece\u4efb\u4e00 SDKWork \u4ea7\u54c1\u91cd\u65b0\u767b\u5f55\u3002",
+    signingOut: "\u6b63\u5728\u9000\u51fa\u5f53\u524d\u8d26\u53f7\u2026",
+    title: "\u5df2\u9000\u51fa\u767b\u5f55",
+    workingTitle: "\u6b63\u5728\u9000\u51fa\u767b\u5f55",
   },
   toasts: {
     codeSent: "\u9a8c\u8bc1\u7801\u5df2\u53d1\u9001\u3002",

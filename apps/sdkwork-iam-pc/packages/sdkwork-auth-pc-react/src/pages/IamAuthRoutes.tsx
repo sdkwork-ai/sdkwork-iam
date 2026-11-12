@@ -23,6 +23,8 @@ import {
 import {
   SdkworkAuthOAuthCallbackPage,
 } from "./AuthOAuthCallbackPage.tsx";
+import { SdkworkAuthSignOutPage } from "./AuthSignOutPage.tsx";
+import { isSdkworkAuthSignOutPath } from "../auth-sign-out.ts";
 import {
   SdkworkAuthPage,
   type SdkworkAuthPageEvents,
@@ -190,6 +192,13 @@ function SdkworkIamAuthRoutesPage({
     | "routerContextMode"
     | "runtimeConfig"
   >;
+
+  // Sign-out runs before the desktop launch and OAuth branches: it is the one
+  // auth-area route an authenticated visitor must keep, and the desktop shell
+  // opens it in the system browser to end the shared account session.
+  if (isSdkworkAuthSignOutPath(location.pathname, basePath)) {
+    return <SdkworkAuthSignOutPage {...commonProps} brand={brand} />;
+  }
 
   if (isDesktopLaunchRoute(location.pathname, basePath)) {
     return <SdkworkAuthDesktopLaunchPage {...commonProps} brand={brand} />;
