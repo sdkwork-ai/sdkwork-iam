@@ -574,6 +574,156 @@ fn app_routes_expose_independent_organization_directory_reads() {
     }
 }
 
+/// The organization roster is IAM-owned: it joins
+/// `iam_organization_membership` with `iam_user`, so the operation must be a
+/// dual-token IAM route mounted under the organization path template. Product
+/// surfaces compose the roster from this operation instead of receiving a copy
+/// from another module.
+#[test]
+fn organization_member_roster_route_is_registered() {
+    use sdkwork_web_contract::RouteAuth;
+
+    let path = "/app/v3/api/iam/organizations/{organizationId}/members";
+    let route = app_routes()
+        .into_iter()
+        .find(|route| route.path == path)
+        .expect("app IAM manifest must declare the organization roster route");
+    assert_eq!(route.method, HttpMethod::Get);
+    assert_eq!(route.tag, "iam");
+    assert_eq!(route.operation_id, "organizations.members.list");
+    assert_eq!(route.auth, RouteAuth::DualToken);
+
+    let handlers = include_str!("../src/handlers.rs");
+    assert!(
+        handlers.contains("\"/app/v3/api/iam/organizations/{organization_id}/members\"")
+            && handlers.contains("get(list_organization_members)"),
+        "the organization roster path must be mounted on the app IAM router"
+    );
+}
+
+/// Two authorization rules guard the roster read, so they are pinned at the
+/// source level: an active membership in the addressed organization is
+/// required (otherwise 403), and `email` is projected only for an `owner` or
+/// `admin` caller. A `member` caller still gets `displayName`/`username`.
+#[test]
+fn organization_member_roster_enforces_active_membership_and_email_privacy() {
+    let handlers = include_str!("../src/handlers.rs");
+    let directory = include_str!("../src/directory.rs");
+
+    for required in [
+        "require_session_from_context(pg, &ctx).await",
+        "ensure_directory_permission(&session, &[\"iam.memberships.read\"])",
+        "active_organization_membership_kind(pg, &session, &organization_id)",
+        "\"iam_organization_membership_required\"",
+        "organization_member_contact_reader(&caller_membership_kind)",
+        "matches!(caller_membership_kind, \"owner\" | \"admin\")",
+        "organization_member_to_json(member, include_email)",
+        "m.status = 'active' OR m.status = '1'",
+        "ORDER BY m.is_primary DESC, u.display_name, m.id",
+        "ESCAPE '\\\\'",
+    ] {
+        assert!(
+            handlers.contains(required),
+            "organization roster handler must keep {required}"
+        );
+    }
+
+    assert!(
+        directory.contains("pub(crate) fn organization_member_to_json(\n    m: &LocalOrganizationMember,\n    include_email: bool,\n)")
+            && directory.contains("if include_email {"),
+        "roster email projection must stay conditional on the caller membership kind"
+    );
+    assert!(
+        !directory.contains("\"email\": m.email"),
+        "roster email must never be projected unconditionally"
+    );
+    for field in [
+        "\"userId\"",
+        "\"membershipId\"",
+        "\"displayName\"",
+        "\"username\"",
+        "\"membershipKind\"",
+        "\"status\"",
+        "\"isPrimary\"",
+    ] {
+        assert!(
+            directory.contains(field),
+            "organization roster item must publish {field}"
+        );
+    }
+}
+
+/// The published authority is what generated clients are built from, so the
+/// roster operation must carry the full standard SDKWork operation metadata.
+#[test]
+fn app_openapi_publishes_the_organization_member_roster_operation() {
+    let document: Value = serde_json::from_str(include_str!(
+        "../../../apis/app-api/iam/sdkwork-iam-app-api.openapi.yaml"
+    ))
+    .expect("the IAM app-api OpenAPI authority is JSON content despite its .yaml extension");
+    let operation = &document["paths"]["/app/v3/api/iam/organizations/{organizationId}/members"]["get"];
+
+    assert_eq!(operation["operationId"], "organizations.members.list");
+    assert_eq!(operation["tags"], json!(["iam"]));
+    assert_eq!(operation["security"], json!([{"AuthToken": [], "AccessToken": []}]));
+    assert_eq!(operation["x-sdkwork-auth-mode"], "dual-token");
+    assert_eq!(operation["x-sdkwork-owner"], "sdkwork-iam");
+    assert_eq!(operation["x-sdkwork-api-authority"], "sdkwork-iam-app-api");
+    assert_eq!(operation["x-sdkwork-domain"], "iam");
+    assert_eq!(operation["x-sdkwork-resource"], "organizationMembers");
+    assert_eq!(operation["x-sdkwork-request-context"], "WebRequestContext");
+    assert_eq!(operation["x-sdkwork-api-surface"], "app-api");
+    assert_eq!(operation["x-sdkwork-server-request-id"], true);
+    assert_eq!(operation["x-sdkwork-permission"], "iam.memberships.read");
+
+    let parameters = operation["parameters"]
+        .as_array()
+        .expect("roster operation parameters");
+    let names = parameters
+        .iter()
+        .filter_map(|parameter| parameter["name"].as_str())
+        .collect::<Vec<_>>();
+    for name in ["page", "page_size", "cursor", "q", "role"] {
+        assert!(names.contains(&name), "roster operation must document {name}");
+    }
+    let role = parameters
+        .iter()
+        .find(|parameter| parameter["name"] == "role")
+        .expect("roster role filter parameter");
+    assert_eq!(role["schema"]["enum"], json!(["owner", "admin", "member"]));
+
+    for status in ["400", "401", "403", "404", "409", "422", "429", "500", "503"] {
+        assert_eq!(
+            operation["responses"][status]["content"]["application/problem+json"]["schema"]["$ref"],
+            "#/components/schemas/ProblemDetail",
+            "roster operation must document problem+json for {status}"
+        );
+    }
+    assert_eq!(
+        operation["responses"]["200"]["content"]["application/json"]["schema"]["$ref"],
+        "#/components/schemas/IamOrganizationMemberListResponse"
+    );
+
+    let item = &document["components"]["schemas"]["IamOrganizationMember"];
+    for field in [
+        "userId",
+        "membershipId",
+        "displayName",
+        "username",
+        "email",
+        "membershipKind",
+        "status",
+    ] {
+        assert_eq!(item["properties"][field]["type"], "string", "IamOrganizationMember.{field} is a string");
+    }
+    assert_eq!(item["properties"]["isPrimary"]["type"], "boolean");
+    assert_eq!(
+        document["components"]["schemas"]["IamOrganizationMemberListResponse"]["allOf"][1]
+            ["properties"]["data"]["properties"]["items"]["items"]["$ref"],
+        "#/components/schemas/IamOrganizationMember"
+    );
+}
+
 #[test]
 fn app_route_manifest_matches_the_standard_operation_surface() {
     let routes = app_routes();
