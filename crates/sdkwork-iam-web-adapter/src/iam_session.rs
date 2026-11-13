@@ -10,6 +10,8 @@ use sdkwork_iam_context_service::{
 use sdkwork_web_core::{validate_token_version_json, TokenVersionPolicy};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
+
+use crate::session_scope_cache::{insert_session_scopes, SessionScopes};
 #[cfg(feature = "sqlite")]
 use sqlx::SqlitePool;
 use sqlx::{types::Json, PgPool, Row};
@@ -26,7 +28,9 @@ pub(crate) const IAM_SESSION_CONTEXT_SELECT: &str =
      COALESCE(u.display_name, '') AS user_display_name, \
      COALESCE(u.email, '') AS user_email, \
      u.email_verified AS user_email_verified, \
-     s.principal_kind, COALESCE(s.principal_id, s.user_id) AS principal_id";
+     s.principal_kind, COALESCE(s.principal_id, s.user_id) AS principal_id, \
+     s.authz_epoch AS session_authz_epoch, \
+     COALESCE((SELECT e.epoch FROM iam_authz_epoch e WHERE e.id = 1), 0) AS current_authz_epoch";
 
 const IAM_SESSION_CONTEXT_JOINS: &str =
     "JOIN iam_tenant t ON t.id = s.tenant_id AND t.status = 'active' \
@@ -308,14 +312,87 @@ async fn find_iam_context_from_dual_tokens(
     .await;
     let row = row.ok()??;
 
-    let context = iam_context_from_session_row(&row)?;
+    let mut context = iam_context_from_session_row(&row)?;
     if !session_claims_match_context(&auth_claims, &context)
         || !session_claims_match_context(&access_claims, &context)
         || !signing_key_matches_claims(&signing_key, &auth_claims)
     {
         return None;
     }
+    if !refresh_session_authorization_if_stale(pg, &row, &mut context).await {
+        return None;
+    }
     Some(context)
+}
+
+/// Refreshes a local session's authorization snapshot when the platform
+/// authorization epoch has advanced.
+///
+/// `iam_session.permission_scope_json` is written at login, but permission
+/// catalogs and role grants change on deploy and on RBAC administration.
+/// Requiring a re-login for every such change is poor experience and, for
+/// revokes, a security lag. `iam_authz_epoch` is bumped by database triggers on
+/// every RBAC/catalog write; a session whose stored `authz_epoch` is older than
+/// the current epoch re-resolves its scopes from the authoritative bindings and
+/// persists them. Steady state adds one indexed scalar to the existing session
+/// read and no extra round trip; only sessions observed after a change pay the
+/// two-query refresh. See `sdkwork-specs/AUTHORIZATION_STATE_SPEC.md`.
+///
+/// Returns `false` when the snapshot is stale and could not be refreshed:
+/// authorization fails closed (AUTHORIZATION_STATE_SPEC 3.2) instead of
+/// authorizing with scopes that may no longer be current.
+async fn refresh_session_authorization_if_stale(
+    pg: &PgPool,
+    row: &sqlx::postgres::PgRow,
+    context: &mut IamAppContext,
+) -> bool {
+    if context.principal_kind != IamPrincipalKind::User {
+        return true;
+    }
+    let session_epoch = row
+        .try_get::<Option<i64>, _>("session_authz_epoch")
+        .ok()
+        .flatten();
+    let current_epoch = row.try_get::<i64, _>("current_authz_epoch").unwrap_or(0);
+    if session_epoch == Some(current_epoch) {
+        return true;
+    }
+    let Ok((data_scope, permission_scope)) = sdkwork_iam_bootstrap::resolve_session_scopes(
+        pg,
+        &context.tenant_id,
+        &context.user_id,
+        context.organization_id.as_deref(),
+    )
+    .await
+    else {
+        return false;
+    };
+    let persisted = sqlx::query(
+        "UPDATE iam_session \
+            SET data_scope_json = $2, permission_scope_json = $3, \
+                authz_epoch = $4, updated_at = CURRENT_TIMESTAMP \
+          WHERE id = $1",
+    )
+    .bind(&context.session_id)
+    .bind(Json(&data_scope))
+    .bind(Json(&permission_scope))
+    .bind(current_epoch)
+    .execute(pg)
+    .await;
+    if persisted.is_err() {
+        return false;
+    }
+    context.data_scope = data_scope.clone();
+    context.permission_scope = permission_scope.clone();
+    insert_session_scopes(
+        &context.tenant_id,
+        &context.session_id,
+        SessionScopes {
+            data_scope,
+            permission_scope,
+        },
+    );
+    true
 }
 
 async fn find_iam_context_from_auth_token(pg: &PgPool, auth_token: &str) -> Option<IamAppContext> {
@@ -340,7 +417,7 @@ async fn find_iam_context_from_auth_token(pg: &PgPool, auth_token: &str) -> Opti
     .await
     .ok()??;
 
-    let context = iam_context_from_session_row(&row)?;
+    let mut context = iam_context_from_session_row(&row)?;
     if auth_token.contains('.') {
         let kid = jwt_header_kid(auth_token)?;
         let signing_key = load_signing_key_by_kid(pg, &kid).await?;
@@ -351,6 +428,9 @@ async fn find_iam_context_from_auth_token(pg: &PgPool, auth_token: &str) -> Opti
         {
             return None;
         }
+    }
+    if !refresh_session_authorization_if_stale(pg, &row, &mut context).await {
+        return None;
     }
     Some(context)
 }
@@ -409,7 +489,7 @@ async fn find_iam_context_from_oauth_jwt(pg: &PgPool, token: &str) -> Option<Iam
     let now_unix = (current_millis() / 1000) as i64;
     let claims = verify_oauth_access_token_claims_for_database(pg, token, now_unix).await?;
     let mut context = iam_context_from_token_claims(&claims)?;
-    // Scope is deliberately *not* taken from the claims (IAM_SPEC §5.2): the
+    // Scope is deliberately *not* taken from the claims (IAM_SPEC 搂5.2): the
     // claims carry an identity envelope only, and the authoritative scope is
     // resolved from the session row. A subject whose scope cannot be resolved
     // is rejected rather than degraded to an empty scope.
@@ -526,7 +606,7 @@ fn oauth_access_token_claims_are_valid(payload: &Value, now_unix: i64) -> bool {
         && validate_token_version_json(payload, &TokenVersionPolicy::standard()).is_ok()
 }
 
-/// IAM_SPEC §5.6: the authorization scope of an OAuth bearer subject is a
+/// IAM_SPEC 搂5.6: the authorization scope of an OAuth bearer subject is a
 /// server-side fact read from the authoritative session row, never a claim.
 /// Liveness and scope come from the *same* row in a *single* query, so a
 /// subject that passes this gate cannot be authorized against a row it did not
@@ -601,9 +681,9 @@ fn iam_context_from_token_claims(claims: &Value) -> Option<IamAppContext> {
         "system" => AuthLevel::System,
         _ => AuthLevel::Password,
     };
-    // IAM_SPEC §5.6: authorization scope is server-resolved, never a claim.
+    // IAM_SPEC 搂5.6: authorization scope is server-resolved, never a claim.
     // Reading it from the claims here would silently re-introduce a second
-    // source of truth — and, with the claims slimmed per §5.2, an empty scope.
+    // source of truth 鈥?and, with the claims slimmed per 搂5.2, an empty scope.
     // `find_iam_context_from_oauth_jwt` overwrites both fields from the
     // authoritative session row; anything that builds a context from claims
     // without doing so must be treated as having no scope at all.
@@ -935,7 +1015,7 @@ fn session_token_claims_match(auth_claims: &Value, access_claims: &Value) -> boo
         }
     }
     // Overlapping tenancy claims are compared after normalization
-    // (`API_SPEC.md` §10.2): an absent `organization_id` and `"0"` are the same
+    // (`API_SPEC.md` 搂10.2): an absent `organization_id` and `"0"` are the same
     // tenant-level scope, and `login_scope` is case-insensitive on the wire.
     let auth_scope = sdkwork_iam_context_service::normalize_resolved_organization_scope(
         claim_string_value(auth_claims, &["organization_id"]).as_deref(),
@@ -982,7 +1062,7 @@ fn login_scope_from_string(value: &str) -> LoginScope {
 
 /// Reconciles a persisted/claimed organization scope with its `login_scope`.
 ///
-/// `API_SPEC.md` §10.4 derives the resolved scope from those two facts only. A
+/// `API_SPEC.md` 搂10.4 derives the resolved scope from those two facts only. A
 /// `TENANT` scope must be the sentinel `0`; an `ORGANIZATION` scope must be a
 /// non-zero id. Anything else is a contradictory credential and MUST fail closed
 /// (`40103`) instead of degrading to tenant-level data or guessing an
@@ -1028,6 +1108,16 @@ mod tests {
 
     const TEST_SIGNING_SECRET: &[u8] = b"0123456789abcdef0123456789abcdef";
 
+    /// AUTHORIZATION_STATE_SPEC.md section 3.3: the session read must carry both
+    /// the snapshot version it was derived from and the current platform epoch,
+    /// otherwise a stale login-time snapshot can never be detected.
+    #[test]
+    fn session_context_select_versions_the_authorization_snapshot() {
+        assert!(IAM_SESSION_CONTEXT_SELECT.contains("s.authz_epoch"));
+        assert!(IAM_SESSION_CONTEXT_SELECT.contains("current_authz_epoch"));
+        assert!(IAM_SESSION_CONTEXT_SELECT.contains("iam_authz_epoch"));
+    }
+
     fn test_signing_key() -> TenantSigningKey {
         TenantSigningKey {
             tenant_id: "100001".to_owned(),
@@ -1069,9 +1159,9 @@ mod tests {
         )
     }
 
-    // token-claims-gate: legacy-fixture — models a pre-slimming token (with the
+    // token-claims-gate: legacy-fixture 鈥?models a pre-slimming token (with the
     // retired sid/sub/principal_id aliases plus scope claims) so this test can
-    // assert the scope is no longer an authorization source (IAM_SPEC §5.2/§5.6).
+    // assert the scope is no longer an authorization source (IAM_SPEC 搂5.2/搂5.6).
     fn legacy_payload_with_user_id(user_id: &str, now_unix: i64) -> Value {
         json!({
             "app_id": "sdkwork-cloudrouter",
@@ -1143,7 +1233,7 @@ mod tests {
     fn tenant_level_session_scope_is_the_sentinel_and_not_organization_membership() {
         // `iam_session.organization_id` is NOT NULL DEFAULT '0', so a tenant-level
         // row stores '0'. Projecting that as `Some("0")` must NOT make the
-        // principal an organization member (API_SPEC §10.4, DATABASE_SPEC §6.10).
+        // principal an organization member (API_SPEC 搂10.4, DATABASE_SPEC 搂6.10).
         let scope = resolve_context_organization_scope(Some("0"), &LoginScope::Tenant)
             .expect("tenant-level scope");
         assert_eq!("0", scope);

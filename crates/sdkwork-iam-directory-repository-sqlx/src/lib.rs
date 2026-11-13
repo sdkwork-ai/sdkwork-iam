@@ -32,6 +32,7 @@ impl IamTables {
     pub const API_KEY: &'static str = "iam_api_key";
     pub const SECURITY_EVENT: &'static str = "iam_security_event";
     pub const AUDIT_EVENT: &'static str = "iam_audit_event";
+    pub const AUTHZ_EPOCH: &'static str = "iam_authz_epoch";
     pub const OAUTH_PROVIDER_CATALOG: &'static str = "iam_oauth_provider_catalog";
     pub const OAUTH_INTEGRATION: &'static str = "iam_oauth_integration";
     pub const OAUTH_CLIENT: &'static str = "iam_oauth_client";
@@ -97,6 +98,7 @@ pub fn iam_database_tables() -> Vec<&'static str> {
         IamTables::API_KEY,
         IamTables::SECURITY_EVENT,
         IamTables::AUDIT_EVENT,
+        IamTables::AUTHZ_EPOCH,
         IamTables::OAUTH_PROVIDER_CATALOG,
         IamTables::OAUTH_INTEGRATION,
         IamTables::OAUTH_CLIENT,
