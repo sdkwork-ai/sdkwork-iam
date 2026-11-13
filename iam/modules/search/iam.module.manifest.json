@@ -296,8 +296,25 @@
   },
   "roles": {
     "domainStandardRoles": [],
-    "roleGrantExtensions": [],
-    "roleExclusions": []
+    "roleExclusions": [],
+    "roleGrantExtensions": [
+      {
+        "roleCode": "app_user",
+        "patterns": [
+          "search.events.create",
+          "search.promotions.create",
+          "search.queries.create",
+          "search.recommendations.create",
+          "search.semantic_queries.create"
+        ]
+      },
+      {
+        "roleCode": "platform_system_admin",
+        "patterns": [
+          "search.*"
+        ]
+      }
+    ]
   },
   "catalogVersion": "1.0.0",
   "owner": "sdkwork-search",

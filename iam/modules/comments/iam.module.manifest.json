@@ -87,8 +87,22 @@
   },
   "roles": {
     "domainStandardRoles": [],
-    "roleGrantExtensions": [],
-    "roleExclusions": []
+    "roleExclusions": [],
+    "roleGrantExtensions": [
+      {
+        "roleCode": "app_user",
+        "patterns": [
+          "comments.comments.write",
+          "comments.reactions.write"
+        ]
+      },
+      {
+        "roleCode": "org_admin",
+        "patterns": [
+          "comments.*"
+        ]
+      }
+    ]
   },
   "catalogVersion": "1.0.0",
   "owner": "sdkwork-comments",

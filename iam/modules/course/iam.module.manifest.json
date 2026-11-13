@@ -384,8 +384,15 @@
   },
   "roles": {
     "domainStandardRoles": [],
-    "roleGrantExtensions": [],
-    "roleExclusions": []
+    "roleExclusions": [],
+    "roleGrantExtensions": [
+      {
+        "roleCode": "org_admin",
+        "patterns": [
+          "course.*"
+        ]
+      }
+    ]
   },
   "catalogVersion": "1.0.0",
   "owner": "sdkwork-course",
