@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "mail",
+  "catalogVersion": "1.0.0",
+  "domain": "mail",
+  "owner": "sdkwork-mail",
+  "displayName": "Mail Module",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "mail.accounts.read",
+        "name": "Read mail accounts",
+        "resource": "mail.accounts",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "mail.folders.read",
+        "name": "Read mail folders",
+        "resource": "mail.folders",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "mail.messages.read",
+        "name": "Read mail messages",
+        "resource": "mail.messages",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "mail.messages.write",
+        "name": "Send and update mail messages",
+        "resource": "mail.messages",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "mail.provider_accounts.read",
+        "name": "Read mail provider accounts",
+        "resource": "mail.provider_accounts",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "mail.provider_accounts.write",
+        "name": "Manage mail provider accounts",
+        "resource": "mail.provider_accounts",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "mail.templates.read",
+        "name": "Read mail templates",
+        "resource": "mail.templates",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "mail.templates.write",
+        "name": "Manage mail templates",
+        "resource": "mail.templates",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "mail.threads.read",
+        "name": "Read mail threads",
+        "resource": "mail.threads",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "mail.transactional.write",
+        "name": "Send transactional mail",
+        "resource": "mail.transactional",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "mail.verification.write",
+        "name": "Complete mail verification flows",
+        "resource": "mail.verification",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [
+      {
+        "roleCode": "app_user",
+        "patterns": [
+          "mail.accounts.read",
+          "mail.folders.read",
+          "mail.messages.read",
+          "mail.messages.write",
+          "mail.threads.read",
+          "mail.transactional.write",
+          "mail.verification.write"
+        ]
+      },
+      {
+        "roleCode": "org_admin",
+        "patterns": [
+          "mail.*"
+        ]
+      }
+    ],
+    "roleExclusions": []
+  },
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

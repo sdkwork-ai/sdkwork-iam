@@ -1,0 +1,259 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "company",
+  "catalogVersion": "1.0.0",
+  "domain": "company",
+  "owner": "sdkwork-company",
+  "displayName": "SDKWork Company Module",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "company.applications.manage",
+        "name": "Manage job applications",
+        "resource": "applications",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.applications.read",
+        "name": "Read job applications",
+        "resource": "applications",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.applications.write",
+        "name": "Write job applications",
+        "resource": "applications",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.bids.manage",
+        "name": "Manage company demand bids",
+        "resource": "bids",
+        "action": "manage",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.bids.read",
+        "name": "Read company demand bids",
+        "resource": "bids",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.bids.write",
+        "name": "Write company demand bids",
+        "resource": "bids",
+        "action": "write",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.demand_categories.manage",
+        "name": "Manage company demand categories",
+        "resource": "demand_categories",
+        "action": "manage",
+        "status": "active",
+        "since": "1.2.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.demand_categories.read",
+        "name": "Read company demand categories",
+        "resource": "demand_categories",
+        "action": "read",
+        "status": "active",
+        "since": "1.2.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.demands.manage",
+        "name": "Manage company demands",
+        "resource": "demands",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.demands.read",
+        "name": "Read company demands",
+        "resource": "demands",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.demands.write",
+        "name": "Write company demands",
+        "resource": "demands",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.hotwords.manage",
+        "name": "Manage company search hotwords",
+        "resource": "hotwords",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.hotwords.read",
+        "name": "Read company search hotwords",
+        "resource": "hotwords",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.jobs.manage",
+        "name": "Manage company job positions",
+        "resource": "jobs",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.jobs.read",
+        "name": "Read company job positions",
+        "resource": "jobs",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.jobs.write",
+        "name": "Write company job positions",
+        "resource": "jobs",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.moderation.manage",
+        "name": "Manage company moderation",
+        "resource": "moderation",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.profiles.manage",
+        "name": "Manage company profiles",
+        "resource": "profiles",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.profiles.read",
+        "name": "Read company profiles",
+        "resource": "profiles",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.profiles.write",
+        "name": "Write company profiles",
+        "resource": "profiles",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.resumes.read",
+        "name": "Read company resumes",
+        "resource": "resumes",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.resumes.write",
+        "name": "Write company resumes",
+        "resource": "resumes",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.supplies.manage",
+        "name": "Manage company supplies",
+        "resource": "supplies",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.supplies.read",
+        "name": "Read company supplies",
+        "resource": "supplies",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "company.supplies.write",
+        "name": "Write company supplies",
+        "resource": "supplies",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": []
+  },
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

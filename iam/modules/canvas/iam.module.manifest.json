@@ -1,0 +1,386 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "canvas",
+  "catalogVersion": "1.0.0",
+  "domain": "canvas",
+  "owner": "sdkwork-canvas",
+  "displayName": "SDKWork Canvas Module",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "canvas.ai_jobs.write",
+        "name": "Create and manage Canvas app AI jobs",
+        "resource": "canvas.ai_jobs",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.ai_suggestions.feedback.write",
+        "name": "Write Canvas app AI suggestion feedback",
+        "resource": "canvas.ai_suggestions.feedback",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.ai_suggestions.write",
+        "name": "Accept, reject, or apply Canvas app AI suggestions",
+        "resource": "canvas.ai_suggestions",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.backend.ai_jobs.read",
+        "name": "Read Canvas backend AI jobs",
+        "resource": "canvas.backend.ai_jobs",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.backend.ai_jobs.write",
+        "name": "Manage Canvas backend AI jobs",
+        "resource": "canvas.backend.ai_jobs",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.backend.ai_suggestions.feedback.read",
+        "name": "Read Canvas backend AI suggestion feedback",
+        "resource": "canvas.backend.ai_suggestions.feedback",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.backend.ai_suggestions.write",
+        "name": "Manage Canvas backend AI suggestions",
+        "resource": "canvas.backend.ai_suggestions",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.backend.diagnostics.read",
+        "name": "Read Canvas backend diagnostics",
+        "resource": "canvas.backend.diagnostics",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.backend.diagnostics.write",
+        "name": "Run Canvas backend diagnostic repairs",
+        "resource": "canvas.backend.diagnostics",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.backend.index_jobs.read",
+        "name": "Read Canvas backend index jobs",
+        "resource": "canvas.backend.index_jobs",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.backend.index_jobs.write",
+        "name": "Create Canvas backend index jobs",
+        "resource": "canvas.backend.index_jobs",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.backend.projections.rebuild",
+        "name": "Rebuild Canvas backend projections",
+        "resource": "canvas.backend.projections",
+        "action": "rebuild",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.backend.workspaces.read",
+        "name": "Read Canvas backend workspaces",
+        "resource": "canvas.backend.workspaces",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.backend.workspaces.write",
+        "name": "Manage Canvas backend workspaces",
+        "resource": "canvas.backend.workspaces",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.boards.ai_suggestions.read",
+        "name": "Read Canvas board AI suggestions",
+        "resource": "canvas.boards.ai_suggestions",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.boards.content.read",
+        "name": "Read Canvas board content",
+        "resource": "canvas.boards.content",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.boards.content.write",
+        "name": "Update Canvas board content",
+        "resource": "canvas.boards.content",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.boards.read",
+        "name": "Read Canvas boards",
+        "resource": "canvas.boards",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.boards.versions.read",
+        "name": "Read Canvas board versions",
+        "resource": "canvas.boards.versions",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.boards.versions.write",
+        "name": "Restore Canvas board versions",
+        "resource": "canvas.boards.versions",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.boards.write",
+        "name": "Create or update Canvas boards",
+        "resource": "canvas.boards",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.open.exports.read",
+        "name": "Read Canvas open API exports",
+        "resource": "canvas.open.exports",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.open.exports.write",
+        "name": "Create Canvas open API exports",
+        "resource": "canvas.open.exports",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.open.pages.content.read",
+        "name": "Read Canvas open API page content",
+        "resource": "canvas.open.pages.content",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.open.pages.content.write",
+        "name": "Update Canvas open API page content",
+        "resource": "canvas.open.pages.content",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.open.pages.read",
+        "name": "Read Canvas open API pages",
+        "resource": "canvas.open.pages",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.open.pages.versions.read",
+        "name": "Read Canvas open API page versions",
+        "resource": "canvas.open.pages.versions",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.open.pages.versions.write",
+        "name": "Restore Canvas open API page versions",
+        "resource": "canvas.open.pages.versions",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.open.pages.write",
+        "name": "Create or update Canvas open API pages",
+        "resource": "canvas.open.pages",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.open.search.query",
+        "name": "Query Canvas open API search",
+        "resource": "canvas.open.search",
+        "action": "query",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.open.workspaces.read",
+        "name": "Read Canvas open API workspaces",
+        "resource": "canvas.open.workspaces",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.search.query",
+        "name": "Query Canvas search",
+        "resource": "canvas.search",
+        "action": "query",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.workspaces.read",
+        "name": "Read Canvas workspaces",
+        "resource": "canvas.workspaces",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "canvas.workspaces.write",
+        "name": "Create Canvas workspaces",
+        "resource": "canvas.workspaces",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": [
+      "../apis/app-api/canvas/canvas-app-api.openapi.json",
+      "../apis/backend-api/canvas/canvas-backend-api.openapi.json",
+      "../apis/open-api/canvas/canvas-open-api.openapi.json"
+    ]
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [
+      {
+        "roleCode": "app_user",
+        "patterns": [
+          "canvas.ai_jobs.write",
+          "canvas.ai_suggestions.feedback.write",
+          "canvas.ai_suggestions.write",
+          "canvas.boards.ai_suggestions.read",
+          "canvas.boards.content.read",
+          "canvas.boards.content.write",
+          "canvas.boards.read",
+          "canvas.boards.versions.read",
+          "canvas.boards.versions.write",
+          "canvas.boards.write",
+          "canvas.open.exports.read",
+          "canvas.open.exports.write",
+          "canvas.open.pages.content.read",
+          "canvas.open.pages.content.write",
+          "canvas.open.pages.read",
+          "canvas.open.pages.versions.read",
+          "canvas.open.pages.versions.write",
+          "canvas.open.pages.write",
+          "canvas.open.search.query",
+          "canvas.open.workspaces.read",
+          "canvas.search.query",
+          "canvas.workspaces.read",
+          "canvas.workspaces.write"
+        ]
+      },
+      {
+        "roleCode": "org_admin",
+        "patterns": [
+          "canvas.*"
+        ]
+      },
+      {
+        "roleCode": "platform_system_admin",
+        "patterns": [
+          "canvas.backend.*"
+        ]
+      }
+    ],
+    "roleExclusions": []
+  },
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel",
+      "drive"
+    ]
+  }
+}

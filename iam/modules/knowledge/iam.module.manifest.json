@@ -1,0 +1,245 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "knowledge",
+  "catalogVersion": "2.0.0",
+  "domain": "knowledge",
+  "owner": "sdkwork-knowledgebase",
+  "displayName": "Knowledgebase Module",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "knowledge.agent_profiles.read",
+        "name": "Read knowledge agent profiles",
+        "resource": "knowledge.agent_profiles",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.agent_profiles.write",
+        "name": "Manage knowledge agent profiles",
+        "resource": "knowledge.agent_profiles",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.context_bindings.read",
+        "name": "Read knowledge context bindings",
+        "resource": "knowledge.context_bindings",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.context_bindings.write",
+        "name": "Manage knowledge context bindings",
+        "resource": "knowledge.context_bindings",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.context_packs.write",
+        "name": "Assemble knowledge context packs",
+        "resource": "knowledge.context_packs",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.documents.read",
+        "name": "Read knowledge documents",
+        "resource": "knowledge.documents",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.documents.write",
+        "name": "Create and update knowledge documents",
+        "resource": "knowledge.documents",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.imports.write",
+        "name": "Import knowledge from drive or git",
+        "resource": "knowledge.imports",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.ingests.read",
+        "name": "Read knowledge ingests",
+        "resource": "knowledge.ingests",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.ingests.write",
+        "name": "Create knowledge ingests",
+        "resource": "knowledge.ingests",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.market.read",
+        "name": "Read knowledge market catalog",
+        "resource": "knowledge.market",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.market.write",
+        "name": "Manage knowledge market listings",
+        "resource": "knowledge.market",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.media.write",
+        "name": "Manage knowledge media tasks",
+        "resource": "knowledge.media",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.okf.read",
+        "name": "Read OKF knowledge bundles",
+        "resource": "knowledge.okf",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.okf.write",
+        "name": "Mutate OKF knowledge bundles",
+        "resource": "knowledge.okf",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.platform.manage",
+        "name": "Manage knowledge platform backend operations",
+        "resource": "knowledge.platform",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.retrievals.read",
+        "name": "Read knowledge retrievals",
+        "resource": "knowledge.retrievals",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.retrievals.write",
+        "name": "Run knowledge retrievals",
+        "resource": "knowledge.retrievals",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.spaces.read",
+        "name": "Read knowledge spaces",
+        "resource": "knowledge.spaces",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.spaces.write",
+        "name": "Create and update knowledge spaces",
+        "resource": "knowledge.spaces",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.uploads.write",
+        "name": "Upload knowledge files",
+        "resource": "knowledge.uploads",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "knowledge.wechat.manage",
+        "name": "Manage WeChat official account integrations",
+        "resource": "knowledge.wechat",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [
+      {
+        "roleCode": "app_user",
+        "patterns": [
+          "knowledge.*"
+        ]
+      },
+      {
+        "roleCode": "org_admin",
+        "patterns": [
+          "knowledge.*"
+        ]
+      }
+    ],
+    "roleExclusions": []
+  },
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

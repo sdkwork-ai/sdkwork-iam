@@ -18,19 +18,19 @@
         "replacementCode": null
       },
       {
-        "code": "agent.business.category.read",
-        "name": "Read agent categories",
+        "code": "agent.business.category.manage",
+        "name": "Manage agent categories",
         "resource": "agent_category",
-        "action": "read",
+        "action": "manage",
         "status": "active",
         "since": "1.0.0",
         "replacementCode": null
       },
       {
-        "code": "agent.business.category.manage",
-        "name": "Manage agent categories",
+        "code": "agent.business.category.read",
+        "name": "Read agent categories",
         "resource": "agent_category",
-        "action": "manage",
+        "action": "read",
         "status": "active",
         "since": "1.0.0",
         "replacementCode": null
@@ -252,51 +252,6 @@
         "replacementCode": null
       },
       {
-        "code": "agent.business.session.archive",
-        "name": "Archive agent sessions",
-        "resource": "session",
-        "action": "archive",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "agent.business.session.close",
-        "name": "Close agent sessions",
-        "resource": "session",
-        "action": "close",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "agent.business.session.create",
-        "name": "Create agent sessions",
-        "resource": "session",
-        "action": "create",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "agent.business.session.list",
-        "name": "List agent sessions",
-        "resource": "session",
-        "action": "list",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "agent.business.session.retrieve",
-        "name": "Retrieve agent sessions",
-        "resource": "session",
-        "action": "retrieve",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
         "code": "agent.business.session_item.list",
         "name": "List agent session items",
         "resource": "session_item",
@@ -369,10 +324,109 @@
         "replacementCode": null
       },
       {
+        "code": "agent.business.session.archive",
+        "name": "Archive agent sessions",
+        "resource": "session",
+        "action": "archive",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "agent.business.session.close",
+        "name": "Close agent sessions",
+        "resource": "session",
+        "action": "close",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "agent.business.session.create",
+        "name": "Create agent sessions",
+        "resource": "session",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "agent.business.session.list",
+        "name": "List agent sessions",
+        "resource": "session",
+        "action": "list",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "agent.business.session.retrieve",
+        "name": "Retrieve agent sessions",
+        "resource": "session",
+        "action": "retrieve",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
         "code": "agent.business.status.update",
         "name": "Update agent lifecycle status",
         "resource": "status",
         "action": "update",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "agent.business.task_run_attempt.list",
+        "name": "List agent task run attempts",
+        "resource": "task_run_attempt",
+        "action": "list",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "agent.business.task_run.cancel",
+        "name": "Cancel agent task runs",
+        "resource": "task_run",
+        "action": "cancel",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "agent.business.task_run.list",
+        "name": "List agent task runs",
+        "resource": "task_run",
+        "action": "list",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "agent.business.task_run.reconcile",
+        "name": "Reconcile agent task runs",
+        "resource": "task_run",
+        "action": "reconcile",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "agent.business.task_run.retrieve",
+        "name": "Retrieve agent task runs",
+        "resource": "task_run",
+        "action": "retrieve",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "agent.business.task_run.retry",
+        "name": "Retry agent task runs",
+        "resource": "task_run",
+        "action": "retry",
         "status": "active",
         "since": "1.0.0",
         "replacementCode": null
@@ -450,60 +504,6 @@
         "replacementCode": null
       },
       {
-        "code": "agent.business.task_run.cancel",
-        "name": "Cancel agent task runs",
-        "resource": "task_run",
-        "action": "cancel",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "agent.business.task_run.list",
-        "name": "List agent task runs",
-        "resource": "task_run",
-        "action": "list",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "agent.business.task_run.reconcile",
-        "name": "Reconcile agent task runs",
-        "resource": "task_run",
-        "action": "reconcile",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "agent.business.task_run.retrieve",
-        "name": "Retrieve agent task runs",
-        "resource": "task_run",
-        "action": "retrieve",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "agent.business.task_run.retry",
-        "name": "Retry agent task runs",
-        "resource": "task_run",
-        "action": "retry",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "agent.business.task_run_attempt.list",
-        "name": "List agent task run attempts",
-        "resource": "task_run_attempt",
-        "action": "list",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
         "code": "agent.business.turn.cancel",
         "name": "Cancel agent conversation turns",
         "resource": "turn",
@@ -575,7 +575,8 @@
         "since": "1.0.0",
         "replacementCode": null
       }
-    ]
+    ],
+    "openapiAuthorities": []
   },
   "roles": {
     "domainStandardRoles": [
@@ -610,15 +611,15 @@
       {
         "roleCode": "org_operations",
         "patterns": [
-          "agent.business.list",
-          "agent.business.retrieve",
-          "agent.business.create",
-          "agent.business.update",
-          "agent.business.status.update",
-          "agent.business.restore",
           "agent.business.audit.read",
+          "agent.business.category.manage",
           "agent.business.category.read",
-          "agent.business.category.manage"
+          "agent.business.create",
+          "agent.business.list",
+          "agent.business.restore",
+          "agent.business.retrieve",
+          "agent.business.status.update",
+          "agent.business.update"
         ]
       }
     ],
@@ -637,5 +638,6 @@
     "requiresModules": [
       "iam-kernel"
     ]
-  }
+  },
+  "oauthScopeMappings": []
 }

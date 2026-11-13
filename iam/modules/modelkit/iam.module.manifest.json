@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "modelkit",
+  "domain": "modelkit",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "modelkit.catalog.read",
+        "description": "Permission modelkit.catalog.read",
+        "source": "openapi",
+        "name": "modelkit.catalog.read",
+        "resource": "modelkit.catalog",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "modelkit.catalog.write",
+        "description": "Permission modelkit.catalog.write",
+        "source": "openapi",
+        "name": "modelkit.catalog.write",
+        "resource": "modelkit.catalog",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "modelkit.preferences.read",
+        "description": "Permission modelkit.preferences.read",
+        "source": "openapi",
+        "name": "modelkit.preferences.read",
+        "resource": "modelkit.preferences",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "modelkit.preferences.write",
+        "description": "Permission modelkit.preferences.write",
+        "source": "openapi",
+        "name": "modelkit.preferences.write",
+        "resource": "modelkit.preferences",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": []
+  },
+  "catalogVersion": "1.0.0",
+  "owner": "sdkwork-modelkit",
+  "displayName": "modelkit",
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

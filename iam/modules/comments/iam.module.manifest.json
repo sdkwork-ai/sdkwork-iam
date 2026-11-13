@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "comments",
+  "domain": "comments",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "comments.comments.moderate",
+        "description": "Permission comments.comments.moderate",
+        "source": "openapi",
+        "name": "comments.comments.moderate",
+        "resource": "comments.comments",
+        "action": "moderate",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "comments.comments.read",
+        "description": "Permission comments.comments.read",
+        "source": "openapi",
+        "name": "comments.comments.read",
+        "resource": "comments.comments",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "comments.comments.write",
+        "description": "Permission comments.comments.write",
+        "source": "openapi",
+        "name": "comments.comments.write",
+        "resource": "comments.comments",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "comments.moderation.read",
+        "description": "Permission comments.moderation.read",
+        "source": "openapi",
+        "name": "comments.moderation.read",
+        "resource": "comments.moderation",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "comments.moderation.write",
+        "description": "Permission comments.moderation.write",
+        "source": "openapi",
+        "name": "comments.moderation.write",
+        "resource": "comments.moderation",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "comments.reactions.write",
+        "description": "Permission comments.reactions.write",
+        "source": "openapi",
+        "name": "comments.reactions.write",
+        "resource": "comments.reactions",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "comments.threads.read",
+        "description": "Permission comments.threads.read",
+        "source": "openapi",
+        "name": "comments.threads.read",
+        "resource": "comments.threads",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": []
+  },
+  "catalogVersion": "1.0.0",
+  "owner": "sdkwork-comments",
+  "displayName": "comments",
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

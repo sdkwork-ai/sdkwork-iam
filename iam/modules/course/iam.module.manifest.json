@@ -1,0 +1,408 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "course",
+  "domain": "course",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "course.applications.read",
+        "description": "Permission course.applications.read",
+        "source": "openapi",
+        "name": "course.applications.read",
+        "resource": "course.applications",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.applications.review",
+        "description": "Permission course.applications.review",
+        "source": "openapi",
+        "name": "course.applications.review",
+        "resource": "course.applications",
+        "action": "review",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.applications.write",
+        "description": "Permission course.applications.write",
+        "source": "openapi",
+        "name": "course.applications.write",
+        "resource": "course.applications",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.audit_logs.read",
+        "description": "Permission course.audit_logs.read",
+        "source": "openapi",
+        "name": "course.audit_logs.read",
+        "resource": "course.audit_logs",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.categories.read",
+        "description": "Permission course.categories.read",
+        "source": "openapi",
+        "name": "course.categories.read",
+        "resource": "course.categories",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.categories.write",
+        "description": "Permission course.categories.write",
+        "source": "openapi",
+        "name": "course.categories.write",
+        "resource": "course.categories",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.comments.moderate",
+        "description": "Permission course.comments.moderate",
+        "source": "openapi",
+        "name": "course.comments.moderate",
+        "resource": "course.comments",
+        "action": "moderate",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.comments.read",
+        "description": "Permission course.comments.read",
+        "source": "openapi",
+        "name": "course.comments.read",
+        "resource": "course.comments",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.comments.write",
+        "description": "Permission course.comments.write",
+        "source": "openapi",
+        "name": "course.comments.write",
+        "resource": "course.comments",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.courses.publish",
+        "description": "Permission course.courses.publish",
+        "source": "openapi",
+        "name": "course.courses.publish",
+        "resource": "course.courses",
+        "action": "publish",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.courses.read",
+        "description": "Permission course.courses.read",
+        "source": "openapi",
+        "name": "course.courses.read",
+        "resource": "course.courses",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.courses.write",
+        "description": "Permission course.courses.write",
+        "source": "openapi",
+        "name": "course.courses.write",
+        "resource": "course.courses",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.enrollments.read",
+        "description": "Permission course.enrollments.read",
+        "source": "openapi",
+        "name": "course.enrollments.read",
+        "resource": "course.enrollments",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.enrollments.write",
+        "description": "Permission course.enrollments.write",
+        "source": "openapi",
+        "name": "course.enrollments.write",
+        "resource": "course.enrollments",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.instructors.read",
+        "description": "Permission course.instructors.read",
+        "source": "openapi",
+        "name": "course.instructors.read",
+        "resource": "course.instructors",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.instructors.write",
+        "description": "Permission course.instructors.write",
+        "source": "openapi",
+        "name": "course.instructors.write",
+        "resource": "course.instructors",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.lessons.read",
+        "description": "Permission course.lessons.read",
+        "source": "openapi",
+        "name": "course.lessons.read",
+        "resource": "course.lessons",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.lessons.write",
+        "description": "Permission course.lessons.write",
+        "source": "openapi",
+        "name": "course.lessons.write",
+        "resource": "course.lessons",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.live_sessions.join",
+        "description": "Permission course.live_sessions.join",
+        "source": "openapi",
+        "name": "course.live_sessions.join",
+        "resource": "course.live_sessions",
+        "action": "join",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.live_sessions.operate",
+        "description": "Permission course.live_sessions.operate",
+        "source": "openapi",
+        "name": "course.live_sessions.operate",
+        "resource": "course.live_sessions",
+        "action": "operate",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.live_sessions.read",
+        "description": "Permission course.live_sessions.read",
+        "source": "openapi",
+        "name": "course.live_sessions.read",
+        "resource": "course.live_sessions",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.live_sessions.write",
+        "description": "Permission course.live_sessions.write",
+        "source": "openapi",
+        "name": "course.live_sessions.write",
+        "resource": "course.live_sessions",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.offerings.read",
+        "description": "Permission course.offerings.read",
+        "source": "openapi",
+        "name": "course.offerings.read",
+        "resource": "course.offerings",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.offerings.write",
+        "description": "Permission course.offerings.write",
+        "source": "openapi",
+        "name": "course.offerings.write",
+        "resource": "course.offerings",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.progress.read",
+        "description": "Permission course.progress.read",
+        "source": "openapi",
+        "name": "course.progress.read",
+        "resource": "course.progress",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.progress.repair",
+        "description": "Permission course.progress.repair",
+        "source": "openapi",
+        "name": "course.progress.repair",
+        "resource": "course.progress",
+        "action": "repair",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.progress.write",
+        "description": "Permission course.progress.write",
+        "source": "openapi",
+        "name": "course.progress.write",
+        "resource": "course.progress",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.reactions.read",
+        "description": "Permission course.reactions.read",
+        "source": "openapi",
+        "name": "course.reactions.read",
+        "resource": "course.reactions",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.reactions.write",
+        "description": "Permission course.reactions.write",
+        "source": "openapi",
+        "name": "course.reactions.write",
+        "resource": "course.reactions",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.reports.read",
+        "description": "Permission course.reports.read",
+        "source": "openapi",
+        "name": "course.reports.read",
+        "resource": "course.reports",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.resources.read",
+        "description": "Permission course.resources.read",
+        "source": "openapi",
+        "name": "course.resources.read",
+        "resource": "course.resources",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.resources.write",
+        "description": "Permission course.resources.write",
+        "source": "openapi",
+        "name": "course.resources.write",
+        "resource": "course.resources",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.reviews.read",
+        "description": "Permission course.reviews.read",
+        "source": "openapi",
+        "name": "course.reviews.read",
+        "resource": "course.reviews",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "course.reviews.review",
+        "description": "Permission course.reviews.review",
+        "source": "openapi",
+        "name": "course.reviews.review",
+        "resource": "course.reviews",
+        "action": "review",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": []
+  },
+  "catalogVersion": "1.0.0",
+  "owner": "sdkwork-course",
+  "displayName": "course",
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

@@ -1,0 +1,320 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "search",
+  "domain": "search",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "search.ab_experiments.read",
+        "description": "Permission search.ab_experiments.read",
+        "source": "openapi",
+        "name": "search.ab_experiments.read",
+        "resource": "search.ab_experiments",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.ab_experiments.write",
+        "description": "Permission search.ab_experiments.write",
+        "source": "openapi",
+        "name": "search.ab_experiments.write",
+        "resource": "search.ab_experiments",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.analytics.read",
+        "description": "Permission search.analytics.read",
+        "source": "openapi",
+        "name": "search.analytics.read",
+        "resource": "search.analytics",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.documents.write",
+        "description": "Permission search.documents.write",
+        "source": "openapi",
+        "name": "search.documents.write",
+        "resource": "search.documents",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.embedding_jobs.read",
+        "description": "Permission search.embedding_jobs.read",
+        "source": "openapi",
+        "name": "search.embedding_jobs.read",
+        "resource": "search.embedding_jobs",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.embedding_jobs.write",
+        "description": "Permission search.embedding_jobs.write",
+        "source": "openapi",
+        "name": "search.embedding_jobs.write",
+        "resource": "search.embedding_jobs",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.events.create",
+        "description": "Permission search.events.create",
+        "source": "openapi",
+        "name": "search.events.create",
+        "resource": "search.events",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.indexes.read",
+        "description": "Permission search.indexes.read",
+        "source": "openapi",
+        "name": "search.indexes.read",
+        "resource": "search.indexes",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.indexes.write",
+        "description": "Permission search.indexes.write",
+        "source": "openapi",
+        "name": "search.indexes.write",
+        "resource": "search.indexes",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.jobs.write",
+        "description": "Permission search.jobs.write",
+        "source": "openapi",
+        "name": "search.jobs.write",
+        "resource": "search.jobs",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.promotions.create",
+        "description": "Permission search.promotions.create",
+        "source": "openapi",
+        "name": "search.promotions.create",
+        "resource": "search.promotions",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.promotions.read",
+        "description": "Permission search.promotions.read",
+        "source": "openapi",
+        "name": "search.promotions.read",
+        "resource": "search.promotions",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.promotions.write",
+        "description": "Permission search.promotions.write",
+        "source": "openapi",
+        "name": "search.promotions.write",
+        "resource": "search.promotions",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.providers.read",
+        "description": "Permission search.providers.read",
+        "source": "openapi",
+        "name": "search.providers.read",
+        "resource": "search.providers",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.providers.write",
+        "description": "Permission search.providers.write",
+        "source": "openapi",
+        "name": "search.providers.write",
+        "resource": "search.providers",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.queries.create",
+        "description": "Permission search.queries.create",
+        "source": "openapi",
+        "name": "search.queries.create",
+        "resource": "search.queries",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.ranking_profiles.read",
+        "description": "Permission search.ranking_profiles.read",
+        "source": "openapi",
+        "name": "search.ranking_profiles.read",
+        "resource": "search.ranking_profiles",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.ranking_profiles.write",
+        "description": "Permission search.ranking_profiles.write",
+        "source": "openapi",
+        "name": "search.ranking_profiles.write",
+        "resource": "search.ranking_profiles",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.recent_queries.read",
+        "description": "Permission search.recent_queries.read",
+        "source": "openapi",
+        "name": "search.recent_queries.read",
+        "resource": "search.recent_queries",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.recommendation_strategies.read",
+        "description": "Permission search.recommendation_strategies.read",
+        "source": "openapi",
+        "name": "search.recommendation_strategies.read",
+        "resource": "search.recommendation_strategies",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.recommendation_strategies.write",
+        "description": "Permission search.recommendation_strategies.write",
+        "source": "openapi",
+        "name": "search.recommendation_strategies.write",
+        "resource": "search.recommendation_strategies",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.recommendations.create",
+        "description": "Permission search.recommendations.create",
+        "source": "openapi",
+        "name": "search.recommendations.create",
+        "resource": "search.recommendations",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.semantic_queries.create",
+        "description": "Permission search.semantic_queries.create",
+        "source": "openapi",
+        "name": "search.semantic_queries.create",
+        "resource": "search.semantic_queries",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.suggestions.read",
+        "description": "Permission search.suggestions.read",
+        "source": "openapi",
+        "name": "search.suggestions.read",
+        "resource": "search.suggestions",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.synonyms.read",
+        "description": "Permission search.synonyms.read",
+        "source": "openapi",
+        "name": "search.synonyms.read",
+        "resource": "search.synonyms",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "search.synonyms.write",
+        "description": "Permission search.synonyms.write",
+        "source": "openapi",
+        "name": "search.synonyms.write",
+        "resource": "search.synonyms",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": []
+  },
+  "catalogVersion": "1.0.0",
+  "owner": "sdkwork-search",
+  "displayName": "search",
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

@@ -9,15 +9,6 @@
   "permissions": {
     "catalog": [
       {
-        "code": "plugins.admin.category.read",
-        "name": "Read plugin categories",
-        "resource": "plugin_category",
-        "action": "read",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
         "code": "plugins.admin.category.manage",
         "name": "Manage plugin categories",
         "resource": "plugin_category",
@@ -27,9 +18,9 @@
         "replacementCode": null
       },
       {
-        "code": "plugins.admin.plugin.read",
-        "name": "Read managed plugins",
-        "resource": "plugin",
+        "code": "plugins.admin.category.read",
+        "name": "Read plugin categories",
+        "resource": "plugin_category",
         "action": "read",
         "status": "active",
         "since": "1.0.0",
@@ -45,9 +36,9 @@
         "replacementCode": null
       },
       {
-        "code": "plugins.marketplace.read",
-        "name": "Read the published plugin marketplace",
-        "resource": "plugin_marketplace",
+        "code": "plugins.admin.plugin.read",
+        "name": "Read managed plugins",
+        "resource": "plugin",
         "action": "read",
         "status": "active",
         "since": "1.0.0",
@@ -61,8 +52,18 @@
         "status": "active",
         "since": "1.0.0",
         "replacementCode": null
+      },
+      {
+        "code": "plugins.marketplace.read",
+        "name": "Read the published plugin marketplace",
+        "resource": "plugin_marketplace",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
       }
-    ]
+    ],
+    "openapiAuthorities": []
   },
   "roles": {
     "domainStandardRoles": [
@@ -85,15 +86,17 @@
     "roleGrantExtensions": [
       {
         "roleCode": "org_admin",
-        "patterns": ["plugins.*"]
+        "patterns": [
+          "plugins.*"
+        ]
       },
       {
         "roleCode": "org_operations",
         "patterns": [
-          "plugins.admin.category.read",
           "plugins.admin.category.manage",
-          "plugins.admin.plugin.read",
-          "plugins.admin.plugin.manage"
+          "plugins.admin.category.read",
+          "plugins.admin.plugin.manage",
+          "plugins.admin.plugin.read"
         ]
       }
     ],
@@ -109,6 +112,9 @@
     "supportedAttributes": []
   },
   "dependencies": {
-    "requiresModules": ["iam-kernel"]
-  }
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  },
+  "oauthScopeMappings": []
 }

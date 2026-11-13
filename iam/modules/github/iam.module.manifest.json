@@ -1,0 +1,397 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "github",
+  "domain": "github",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "github.catalog.bootstrap",
+        "description": "Permission github.catalog.bootstrap",
+        "source": "openapi",
+        "name": "github.catalog.bootstrap",
+        "resource": "github.catalog",
+        "action": "bootstrap",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.catalog.sync",
+        "description": "Permission github.catalog.sync",
+        "source": "openapi",
+        "name": "github.catalog.sync",
+        "resource": "github.catalog",
+        "action": "sync",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.integration.link",
+        "description": "Permission github.integration.link",
+        "source": "openapi",
+        "name": "github.integration.link",
+        "resource": "github.integration",
+        "action": "link",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.integration.oauth.begin",
+        "description": "Permission github.integration.oauth.begin",
+        "source": "openapi",
+        "name": "github.integration.oauth.begin",
+        "resource": "github.integration.oauth",
+        "action": "begin",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.integration.oauth.callback",
+        "description": "Permission github.integration.oauth.callback",
+        "source": "openapi",
+        "name": "github.integration.oauth.callback",
+        "resource": "github.integration.oauth",
+        "action": "callback",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.integration.read",
+        "description": "Permission github.integration.read",
+        "source": "openapi",
+        "name": "github.integration.read",
+        "resource": "github.integration",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.integration.unlink",
+        "description": "Permission github.integration.unlink",
+        "source": "openapi",
+        "name": "github.integration.unlink",
+        "resource": "github.integration",
+        "action": "unlink",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.integrations.read",
+        "description": "Permission github.integrations.read",
+        "source": "openapi",
+        "name": "github.integrations.read",
+        "resource": "github.integrations",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.integrations.sync",
+        "description": "Permission github.integrations.sync",
+        "source": "openapi",
+        "name": "github.integrations.sync",
+        "resource": "github.integrations",
+        "action": "sync",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.issues.read",
+        "description": "Permission github.issues.read",
+        "source": "openapi",
+        "name": "github.issues.read",
+        "resource": "github.issues",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.issues.sync",
+        "description": "Permission github.issues.sync",
+        "source": "openapi",
+        "name": "github.issues.sync",
+        "resource": "github.issues",
+        "action": "sync",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.plans.read",
+        "description": "Permission github.plans.read",
+        "source": "openapi",
+        "name": "github.plans.read",
+        "resource": "github.plans",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.repositories.read",
+        "description": "Permission github.repositories.read",
+        "source": "openapi",
+        "name": "github.repositories.read",
+        "resource": "github.repositories",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.repositories.sync",
+        "description": "Permission github.repositories.sync",
+        "source": "openapi",
+        "name": "github.repositories.sync",
+        "resource": "github.repositories",
+        "action": "sync",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.issues.comments.create",
+        "description": "Permission github.tracker.issues.comments.create",
+        "source": "openapi",
+        "name": "github.tracker.issues.comments.create",
+        "resource": "github.tracker.issues.comments",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.issues.comments.list",
+        "description": "Permission github.tracker.issues.comments.list",
+        "source": "openapi",
+        "name": "github.tracker.issues.comments.list",
+        "resource": "github.tracker.issues.comments",
+        "action": "list",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.issues.create",
+        "description": "Permission github.tracker.issues.create",
+        "source": "openapi",
+        "name": "github.tracker.issues.create",
+        "resource": "github.tracker.issues",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.issues.detail",
+        "description": "Permission github.tracker.issues.detail",
+        "source": "openapi",
+        "name": "github.tracker.issues.detail",
+        "resource": "github.tracker.issues",
+        "action": "detail",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.issues.list",
+        "description": "Permission github.tracker.issues.list",
+        "source": "openapi",
+        "name": "github.tracker.issues.list",
+        "resource": "github.tracker.issues",
+        "action": "list",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.issues.update",
+        "description": "Permission github.tracker.issues.update",
+        "source": "openapi",
+        "name": "github.tracker.issues.update",
+        "resource": "github.tracker.issues",
+        "action": "update",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.issues.votes.status",
+        "description": "Permission github.tracker.issues.votes.status",
+        "source": "openapi",
+        "name": "github.tracker.issues.votes.status",
+        "resource": "github.tracker.issues.votes",
+        "action": "status",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.issues.votes.toggle",
+        "description": "Permission github.tracker.issues.votes.toggle",
+        "source": "openapi",
+        "name": "github.tracker.issues.votes.toggle",
+        "resource": "github.tracker.issues.votes",
+        "action": "toggle",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.labels.create",
+        "description": "Permission github.tracker.labels.create",
+        "source": "openapi",
+        "name": "github.tracker.labels.create",
+        "resource": "github.tracker.labels",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.labels.list",
+        "description": "Permission github.tracker.labels.list",
+        "source": "openapi",
+        "name": "github.tracker.labels.list",
+        "resource": "github.tracker.labels",
+        "action": "list",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.milestones.create",
+        "description": "Permission github.tracker.milestones.create",
+        "source": "openapi",
+        "name": "github.tracker.milestones.create",
+        "resource": "github.tracker.milestones",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.milestones.issues",
+        "description": "Permission github.tracker.milestones.issues",
+        "source": "openapi",
+        "name": "github.tracker.milestones.issues",
+        "resource": "github.tracker.milestones",
+        "action": "issues",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.milestones.list",
+        "description": "Permission github.tracker.milestones.list",
+        "source": "openapi",
+        "name": "github.tracker.milestones.list",
+        "resource": "github.tracker.milestones",
+        "action": "list",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.roadmaps.create",
+        "description": "Permission github.tracker.roadmaps.create",
+        "source": "openapi",
+        "name": "github.tracker.roadmaps.create",
+        "resource": "github.tracker.roadmaps",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.roadmaps.detail",
+        "description": "Permission github.tracker.roadmaps.detail",
+        "source": "openapi",
+        "name": "github.tracker.roadmaps.detail",
+        "resource": "github.tracker.roadmaps",
+        "action": "detail",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.roadmaps.items.add",
+        "description": "Permission github.tracker.roadmaps.items.add",
+        "source": "openapi",
+        "name": "github.tracker.roadmaps.items.add",
+        "resource": "github.tracker.roadmaps.items",
+        "action": "add",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.roadmaps.items.remove",
+        "description": "Permission github.tracker.roadmaps.items.remove",
+        "source": "openapi",
+        "name": "github.tracker.roadmaps.items.remove",
+        "resource": "github.tracker.roadmaps.items",
+        "action": "remove",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.roadmaps.list",
+        "description": "Permission github.tracker.roadmaps.list",
+        "source": "openapi",
+        "name": "github.tracker.roadmaps.list",
+        "resource": "github.tracker.roadmaps",
+        "action": "list",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "github.tracker.roadmaps.update",
+        "description": "Permission github.tracker.roadmaps.update",
+        "source": "openapi",
+        "name": "github.tracker.roadmaps.update",
+        "resource": "github.tracker.roadmaps",
+        "action": "update",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": []
+  },
+  "catalogVersion": "1.0.0",
+  "owner": "sdkwork-github",
+  "displayName": "github",
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

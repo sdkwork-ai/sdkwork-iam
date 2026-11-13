@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "community",
+  "catalogVersion": "1.0.0",
+  "domain": "community",
+  "owner": "sdkwork-community",
+  "displayName": "SDKWork Community Module",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "community.categories.manage",
+        "name": "Manage community categories",
+        "resource": "categories",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.categories.read",
+        "name": "Read community categories",
+        "resource": "categories",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.categories.write",
+        "name": "Write community circles",
+        "resource": "categories",
+        "action": "write",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.comments.read",
+        "name": "Read community comments",
+        "resource": "comments",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.comments.write",
+        "name": "Write community comments",
+        "resource": "comments",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.entries.read",
+        "name": "Read community entries",
+        "resource": "entries",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.entries.write",
+        "name": "Write community entries",
+        "resource": "entries",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.groups.read",
+        "name": "Read community groups",
+        "resource": "groups",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.groups.write",
+        "name": "Write community groups",
+        "resource": "groups",
+        "action": "write",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.members.read",
+        "name": "Read community members",
+        "resource": "members",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.members.write",
+        "name": "Write community members",
+        "resource": "members",
+        "action": "write",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.memberships.write",
+        "name": "Write community memberships",
+        "resource": "memberships",
+        "action": "write",
+        "status": "active",
+        "since": "1.2.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.moderation.manage",
+        "name": "Manage community moderation state",
+        "resource": "moderation",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.moderation.read",
+        "name": "Read community moderation state",
+        "resource": "moderation",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.reactions.write",
+        "name": "Write community reactions",
+        "resource": "reactions",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.recommendations.manage",
+        "name": "Manage community recommendations",
+        "resource": "recommendations",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.recommendations.read",
+        "name": "Read community recommendations",
+        "resource": "recommendations",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.tiers.read",
+        "name": "Read community membership tiers",
+        "resource": "tiers",
+        "action": "read",
+        "status": "active",
+        "since": "1.2.0",
+        "replacementCode": null
+      },
+      {
+        "code": "community.tiers.write",
+        "name": "Write community membership tiers",
+        "resource": "tiers",
+        "action": "write",
+        "status": "active",
+        "since": "1.2.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": [],
+    "assignability": [],
+    "bootstrapDefaults": []
+  },
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

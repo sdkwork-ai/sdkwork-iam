@@ -184,6 +184,10 @@ pub struct IamRegistryConfig {
     pub default_profile: String,
     #[serde(rename = "enabledModules")]
     pub enabled_modules: Vec<String>,
+    /// Modules that ship in the bundle but stay disabled unless explicitly
+    /// listed in `enabledModules` (AUTHORIZATION_STATE_SPEC 3.8).
+    #[serde(rename = "optionalModules", default)]
+    pub optional_modules: Vec<String>,
 }
 
 fn default_since() -> String {
