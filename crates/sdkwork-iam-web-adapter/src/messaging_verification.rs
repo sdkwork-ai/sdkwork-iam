@@ -11,6 +11,9 @@ pub const MESSAGING_VERIFICATION_SCENE_RESET_PASSWORD: &str = "RESET_PASSWORD";
 pub const MESSAGING_VERIFICATION_SCENE_BIND_EMAIL: &str = "BIND_EMAIL";
 pub const MESSAGING_VERIFICATION_SCENE_BIND_PHONE: &str = "BIND_PHONE";
 pub const MESSAGING_VERIFICATION_SCENE_LOGIN: &str = "LOGIN";
+/// Ownership proof for a phone number that is being associated with an
+/// inbound OAuth identity (third-party login, mini program, official account).
+pub const MESSAGING_VERIFICATION_SCENE_OAUTH_PHONE_BINDING: &str = "OAUTH_PHONE_BINDING";
 
 pub fn messaging_verification_enabled() -> bool {
     read_env_flag(&[

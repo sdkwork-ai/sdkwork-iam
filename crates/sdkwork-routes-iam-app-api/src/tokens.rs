@@ -332,6 +332,7 @@ pub(crate) async fn create_session_record_with_device(
         access_token,
         auth_token,
         context,
+        device_id,
         refresh_token,
         session_id,
         user: user.clone(),
@@ -472,8 +473,69 @@ pub(crate) async fn revoke_sessions_for_username(
     Ok(())
 }
 
-// ── Session resolution from headers ────────────────────────────────
+/// Revokes every active session of a user except the one that stays usable.
+///
+/// Used after a credential rotation: the session that proved the change keeps
+/// working, every other device is signed out because it may hold a session the
+/// previous credential authorized.
+pub(crate) async fn revoke_sessions_except(
+    pg: &PgPool,
+    tenant_id: &str,
+    user_id: &str,
+    keep_session_id: Option<&str>,
+) -> Result<(), String> {
+    let batch_size = sdkwork_iam_bootstrap::limits::IAM_ACTIVE_SESSION_REVOKE_BATCH_SIZE;
+    loop {
+        let now = current_timestamp_utc();
+        let rows = sqlx::query(
+            "UPDATE iam_session SET revoked_at = $4, updated_at = $5 \
+             WHERE id IN ( \
+               SELECT id FROM iam_session \
+               WHERE tenant_id = $1 AND user_id = $2 \
+                 AND ($3::text IS NULL OR id <> $3) \
+                 AND revoked_at IS NULL \
+               ORDER BY id \
+               LIMIT $6 \
+             ) \
+             RETURNING id, organization_id",
+        )
+        .bind(tenant_id)
+        .bind(user_id)
+        .bind(keep_session_id)
+        .bind(&now)
+        .bind(&now)
+        .bind(batch_size)
+        .fetch_all(pg)
+        .await
+        .map_err(|error| format!("revoke sessions except current failed: {error}"))?;
 
+        if rows.is_empty() {
+            break;
+        }
+
+        let row_count = rows.len();
+        for row in rows {
+            let session_id: String = row.get(0);
+            let organization_id: Option<String> = row.get(1);
+            crate::security_events::record_session_revoked(
+                pg,
+                tenant_id,
+                organization_id.as_deref(),
+                user_id,
+                &session_id,
+            )
+            .await;
+        }
+
+        if row_count < batch_size as usize {
+            break;
+        }
+    }
+
+    Ok(())
+}
+
+// ── Session resolution from headers ────────────────────────────────
 pub(crate) async fn resolve_session_from_headers(
     pg: &PgPool,
     headers: &HeaderMap,
@@ -552,7 +614,8 @@ async fn find_session_from_dual_tokens(
                 (SELECT EXISTS(SELECT 1 FROM iam_tenant_member tm \
                     WHERE tm.tenant_id = s.tenant_id AND tm.user_id = s.user_id AND tm.status = 'active')) AS app_member, \
                 (SELECT EXISTS(SELECT 1 FROM iam_organization_membership om \
-                    WHERE om.tenant_id = s.tenant_id AND om.user_id = s.user_id AND om.status = 'active')) AS organization_member \
+                    WHERE om.tenant_id = s.tenant_id AND om.user_id = s.user_id AND om.status = 'active')) AS organization_member, \
+                s.device_id \
          FROM iam_session s \
          JOIN iam_user u ON u.id = s.user_id AND u.tenant_id = s.tenant_id \
          WHERE s.auth_token_hash = $1 AND s.access_token_hash = $2 \
@@ -630,6 +693,7 @@ fn build_session_from_row(
     let password_changed_at: Option<String> = row.get(18);
     let app_member: bool = row.try_get::<bool, _>(19).unwrap_or(true);
     let organization_member: bool = row.try_get::<bool, _>(20).unwrap_or(false);
+    let device_id: Option<String> = row.try_get::<Option<String>, _>(21).unwrap_or(None);
 
     let context = IamAppContext {
         app_id,
@@ -668,6 +732,7 @@ fn build_session_from_row(
         access_token,
         auth_token,
         context,
+        device_id,
         refresh_token,
         session_id,
         user: LocalIamUser {
@@ -709,7 +774,8 @@ const SESSION_REFRESH_SELECT: &str =
             (SELECT EXISTS(SELECT 1 FROM iam_tenant_member tm \
                 WHERE tm.tenant_id = s.tenant_id AND tm.user_id = s.user_id AND tm.status = 'active')) AS app_member, \
             (SELECT EXISTS(SELECT 1 FROM iam_organization_membership om \
-                WHERE om.tenant_id = s.tenant_id AND om.user_id = s.user_id AND om.status = 'active')) AS organization_member \
+                WHERE om.tenant_id = s.tenant_id AND om.user_id = s.user_id AND om.status = 'active')) AS organization_member, \
+            s.device_id \
      FROM iam_session s \
      JOIN iam_user u ON u.id = s.user_id AND u.tenant_id = s.tenant_id";
 
@@ -1027,6 +1093,7 @@ pub(crate) async fn rotate_current_session_context(
         access_token,
         auth_token,
         context,
+        device_id: session.device_id.clone(),
         refresh_token,
         session_id: session.session_id.clone(),
         user: session.user.clone(),
@@ -1524,7 +1591,7 @@ pub(crate) fn resolve_login_username(body: &Value) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::parse_db_timestamp;
+    use super::{normalize_session_device_id, parse_db_timestamp};
 
     #[test]
     fn parses_sqlx_and_rfc3339_timestamps() {
@@ -1532,5 +1599,17 @@ mod tests {
         assert!(parse_db_timestamp("2026-11-05T08:47:03.395924+00:00").is_some());
         assert!(parse_db_timestamp("2026-11-05 08:47:03.395924").is_some());
         assert!(parse_db_timestamp("not-a-timestamp").is_none());
+    }
+
+    #[test]
+    fn normalizes_session_device_ids() {
+        assert_eq!(normalize_session_device_id(None).unwrap(), None);
+        assert_eq!(normalize_session_device_id(Some("   ")).unwrap(), None);
+        assert_eq!(
+            normalize_session_device_id(Some("  web.pc-1:a  ")).unwrap(),
+            Some("web.pc-1:a".to_string())
+        );
+        assert!(normalize_session_device_id(Some("bad device")).is_err());
+        assert!(normalize_session_device_id(Some(&"x".repeat(129))).is_err());
     }
 }

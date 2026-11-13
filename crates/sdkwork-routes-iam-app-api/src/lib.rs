@@ -8,6 +8,7 @@ mod ephemeral_pool;
 mod handlers;
 mod manifest;
 mod oauth_login;
+mod oauth_phone_binding;
 mod oauth_wechat_payment;
 mod official_accounts;
 mod password_session_bridge;

@@ -186,6 +186,7 @@ mod tests {
                 enabled: true,
                 allowed_providers: vec!["github".to_owned()],
                 auto_registration_enabled: true,
+                ..Default::default()
             },
             ..Default::default()
         };

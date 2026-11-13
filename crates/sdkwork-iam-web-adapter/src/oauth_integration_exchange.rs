@@ -497,9 +497,106 @@ fn parse_wechat_mini_program_response(
         union_scope_id: union_scope_id.map(str::to_string),
         email: None,
         phone: None,
+        phone_verified: false,
         name: None,
         avatar: None,
     })
+}
+
+/// Exchanges a WeChat mini program `getPhoneNumber` code for the subscriber's
+/// phone number.
+///
+/// The code is minted by the mini program client from the user's confirmed
+/// "get phone number" action and is single-use. WeChat returns the number only
+/// after it verified the SIM, so the result is authoritative and may feed the
+/// phone-association decision.
+pub async fn exchange_wechat_mini_program_phone_number(
+    pg: &PgPool,
+    tenant_id: &str,
+    runtime_app_id: &str,
+    surface_code: Option<&str>,
+    phone_code: &str,
+) -> Result<String, String> {
+    let phone_code = phone_code.trim();
+    if phone_code.is_empty() {
+        return Err("WeChat mini program phoneCode is required".to_string());
+    }
+    let Some(ctx) = load_oauth_integration_exchange_context_for_app(
+        pg,
+        tenant_id,
+        "wechat_mini_program",
+        Some(runtime_app_id),
+        surface_code,
+    )
+    .await?
+    else {
+        return Err("WeChat mini program integration is not configured".to_string());
+    };
+    let access_token = crate::wechat_mp::fetch_wechat_mp_access_token(
+        pg,
+        &ctx.provider_client_id,
+        &ctx.client_secret,
+    )
+    .await?;
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|error| format!("create WeChat mini program client failed: {error}"))?;
+    let response = client
+        .post(format!(
+            "{}/wxa/business/getuserphonenumber",
+            crate::wechat_mp::wechat_mp_api_base()
+        ))
+        .query(&[("access_token", access_token.as_str())])
+        .json(&serde_json::json!({ "code": phone_code }))
+        .header(ACCEPT, "application/json")
+        .send()
+        .await
+        .map_err(|error| format!("WeChat mini program phone exchange failed: {error}"))?;
+    let status = response.status();
+    let body = response
+        .text()
+        .await
+        .map_err(|error| format!("read WeChat mini program phone response failed: {error}"))?;
+    if !status.is_success() {
+        return Err(format!(
+            "WeChat mini program phone exchange failed with status {}",
+            status.as_u16()
+        ));
+    }
+    parse_wechat_mini_program_phone_response(&body)
+}
+
+fn parse_wechat_mini_program_phone_response(body: &str) -> Result<String, String> {
+    let value: Value = serde_json::from_str(body)
+        .map_err(|error| format!("parse WeChat mini program phone response failed: {error}"))?;
+    if let Some(error_code) = value.get("errcode").and_then(Value::as_i64) {
+        if error_code != 0 {
+            let message = value
+                .get("errmsg")
+                .and_then(Value::as_str)
+                .unwrap_or("unknown WeChat error");
+            return Err(format!(
+                "WeChat mini program phone exchange failed ({error_code}): {message}"
+            ));
+        }
+    }
+    let phone_info = value
+        .get("phone_info")
+        .or_else(|| value.get("phoneInfo"))
+        .ok_or_else(|| "WeChat mini program phone response is missing phone_info".to_string())?;
+    let phone = phone_info
+        .get("purePhoneNumber")
+        .or_else(|| phone_info.get("pure_phone_number"))
+        .or_else(|| phone_info.get("phoneNumber"))
+        .or_else(|| phone_info.get("phone_number"))
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| {
+            "WeChat mini program phone response is missing the phone number".to_string()
+        })?;
+    Ok(phone.to_string())
 }
 
 async fn resolve_oauth_client_secret_if_configured(
@@ -1114,9 +1211,46 @@ fn map_claims_to_profile(
         union_scope_id: union_scope_id.map(str::to_string),
         email,
         phone,
+        phone_verified: claim_asserts_verified_phone(&claims),
         name,
         avatar,
     })
+}
+
+/// Reads the provider's own phone-verification statement.
+///
+/// Only an explicit `true` marks the phone as verified: a provider that does
+/// not publish the flag, or publishes `false`, leaves the number unverified and
+/// the account-association policy then requires an ownership proof.
+fn claim_asserts_verified_phone(claims: &Value) -> bool {
+    for key in [
+        "phone_number_verified",
+        "phoneNumberVerified",
+        "phone_verified",
+        "phoneVerified",
+        "verified_phone",
+    ] {
+        if let Some(flag) = claims.get(key) {
+            if flag.as_bool() == Some(true) {
+                return true;
+            }
+            if let Some(text) = flag.as_str() {
+                let normalized = text.trim().to_ascii_lowercase();
+                if matches!(normalized.as_str(), "true" | "1" | "yes") {
+                    return true;
+                }
+            }
+            if flag.as_i64() == Some(1) {
+                return true;
+            }
+        }
+    }
+    // WeChat returns a mobile number only from a successful `getPhoneNumber`
+    // exchange, so a `purePhoneNumber` payload is authoritative.
+    claims
+        .get("purePhoneNumber")
+        .and_then(Value::as_str)
+        .is_some_and(|value| !value.trim().is_empty())
 }
 
 fn extract_subject(claims: &Value) -> Option<String> {
@@ -1447,6 +1581,59 @@ mod tests {
         assert_eq!(profile.provider, "google");
         assert_eq!(profile.subject, "google-user-1");
         assert_eq!(profile.email.as_deref(), Some("user@example.com"));
+        // A provider that does not assert verification leaves the phone
+        // untrusted, so the association policy requires an ownership proof.
+        assert!(!profile.phone_verified);
+    }
+
+    #[test]
+    fn reads_the_provider_phone_verification_assertion() {
+        assert!(!claim_asserts_verified_phone(&json!({})));
+        assert!(!claim_asserts_verified_phone(
+            &json!({"phone_number_verified": false})
+        ));
+        assert!(claim_asserts_verified_phone(
+            &json!({"phone_number_verified": true})
+        ));
+        assert!(claim_asserts_verified_phone(
+            &json!({"phoneNumberVerified": "true"})
+        ));
+        assert!(claim_asserts_verified_phone(&json!({"phone_verified": 1})));
+        assert!(claim_asserts_verified_phone(
+            &json!({"purePhoneNumber": "13800008000"})
+        ));
+
+        let verified = map_claims_to_profile(
+            "google",
+            None,
+            json!({
+                "sub": "google-user-1",
+                "phone_number": "+8613800008000",
+                "phone_number_verified": true
+            }),
+        )
+        .expect("profile");
+        assert_eq!(verified.phone.as_deref(), Some("+8613800008000"));
+        assert!(verified.phone_verified);
+    }
+
+    #[test]
+    fn parses_the_wechat_mini_program_phone_response() {
+        let phone = parse_wechat_mini_program_phone_response(
+            r#"{"errcode":0,"errmsg":"ok","phone_info":{"phoneNumber":"+8613800008000","purePhoneNumber":"13800008000","countryCode":"86"}}"#,
+        )
+        .expect("phone");
+        assert_eq!(phone, "13800008000");
+
+        let error = parse_wechat_mini_program_phone_response(
+            r#"{"errcode":40029,"errmsg":"invalid code"}"#,
+        )
+        .expect_err("provider error");
+        assert!(error.contains("40029"));
+
+        let missing = parse_wechat_mini_program_phone_response(r#"{"errcode":0}"#)
+            .expect_err("missing phone_info");
+        assert!(missing.contains("phone_info"));
     }
 
     #[test]

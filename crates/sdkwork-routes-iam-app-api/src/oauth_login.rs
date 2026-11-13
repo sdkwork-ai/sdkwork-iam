@@ -1,5 +1,5 @@
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
-use serde_json::{json, Value};
+use serde_json::Value;
 use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Row};
 
@@ -9,16 +9,64 @@ use crate::{
     utils::{canonical_identity, current_timestamp_utc, new_iam_user_id, LOCAL_EPHEMERAL_SCOPE},
 };
 use sdkwork_iam_web_adapter::{
-    builtin_oauth_provider_catalog, exchange_oauth_authorization_code,
-    exchange_wechat_mini_program_code, load_oauth_integration_exchange_context_for_app,
-    normalize_oauth_provider_code, oauth_login_allowed, oauth_provider_allowed,
-    provider_catalog_entry_to_json, AccountBindingPolicyDocument, LocalOAuthAuthority,
-    LocalOAuthProviderProfile, OauthProviderCatalogEntry, OauthProviderRegionGroup,
+    builtin_oauth_provider_catalog, decide_oauth_phone_association,
+    exchange_oauth_authorization_code, exchange_wechat_mini_program_code,
+    load_oauth_integration_exchange_context_for_app, normalize_oauth_provider_code,
+    oauth_login_allowed, oauth_provider_allowed, provider_catalog_entry_to_json,
+    AccountBindingPolicyDocument, LocalOAuthAuthority, LocalOAuthProviderProfile,
+    OauthPhoneAssociationOutcome, OauthProviderCatalogEntry, OauthProviderRegionGroup,
 };
 
 #[derive(Clone)]
 pub(crate) struct OAuthLoginContext {
     pub local_authority: LocalOAuthAuthority,
+}
+
+/// Why the inbound OAuth identity cannot be turned into a session yet.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum OAuthPhoneBindingReason {
+    /// The provider returned no trusted phone number and the tenant requires
+    /// every OAuth account to own a verified phone.
+    MissingPhone,
+    /// The provider phone already belongs to another IAM account, and the
+    /// tenant does not allow silent linking on a provider-asserted phone.
+    ExistingAccount,
+}
+
+impl OAuthPhoneBindingReason {
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Self::MissingPhone => "missing_phone",
+            Self::ExistingAccount => "existing_account",
+        }
+    }
+}
+
+/// The pending association that a phone-binding step must finish.
+#[derive(Clone)]
+pub(crate) struct OAuthPhoneBindingChallenge {
+    pub profile: LocalOAuthProviderProfile,
+    pub integration_id: String,
+    pub reason: OAuthPhoneBindingReason,
+    pub masked_phone: Option<String>,
+}
+
+/// Outcome of resolving one inbound OAuth identity.
+#[derive(Clone)]
+pub(crate) enum OAuthLoginResolution {
+    User(Box<LocalIamUser>),
+    PhoneBindingRequired(Box<OAuthPhoneBindingChallenge>),
+}
+
+impl OAuthLoginResolution {
+    pub(crate) fn into_user(self, flow: &str) -> Result<LocalIamUser, String> {
+        match self {
+            Self::User(user) => Ok(*user),
+            Self::PhoneBindingRequired(_) => Err(format!(
+                "{flow} requires a phone-binding step before a session can be issued"
+            )),
+        }
+    }
 }
 
 impl OAuthLoginContext {
@@ -256,7 +304,7 @@ pub(crate) async fn resolve_oauth_login_user(
     redirect_uri: Option<&str>,
     pkce_verifier: Option<&str>,
     scope: Option<&str>,
-) -> Result<LocalIamUser, String> {
+) -> Result<OAuthLoginResolution, String> {
     let normalized = normalize_oauth_provider_code(provider)
         .ok_or_else(|| "OAuth provider is invalid".to_string())?;
     if !oauth_login_allowed(policy, Some(normalized.as_str())) {
@@ -303,7 +351,7 @@ pub(crate) async fn resolve_oauth_login_user(
         );
     };
 
-    resolve_or_create_oauth_user(pg, policy, tenant_id, &profile, &integration_id).await
+    resolve_oauth_login_identity(pg, policy, tenant_id, &profile, &integration_id).await
 }
 
 pub(crate) async fn resolve_wechat_mini_program_login_user(
@@ -313,17 +361,114 @@ pub(crate) async fn resolve_wechat_mini_program_login_user(
     runtime_app_id: &str,
     surface_code: Option<&str>,
     code: &str,
-) -> Result<LocalIamUser, String> {
+    phone_code: Option<&str>,
+) -> Result<OAuthLoginResolution, String> {
     const PROVIDER: &str = "wechat_mini_program";
     if !oauth_login_allowed(policy, Some(PROVIDER)) {
         return Err("WeChat mini program login is disabled for this tenant".to_string());
     }
-    let (profile, integration_id) =
+    let (mut profile, integration_id) =
         exchange_wechat_mini_program_code(pg, tenant_id, runtime_app_id, surface_code, code)
             .await?;
-    resolve_or_create_oauth_user(pg, policy, tenant_id, &profile, &integration_id).await
+    // `getPhoneNumber` is an explicit, user-confirmed grant: WeChat has already
+    // verified the SIM, so the number may anchor the account association.
+    if let Some(phone_code) = phone_code.map(str::trim).filter(|value| !value.is_empty()) {
+        let phone = sdkwork_iam_web_adapter::exchange_wechat_mini_program_phone_number(
+            pg,
+            tenant_id,
+            runtime_app_id,
+            surface_code,
+            phone_code,
+        )
+        .await?;
+        profile.phone = Some(phone);
+        profile.phone_verified = true;
+    }
+    resolve_oauth_login_identity(pg, policy, tenant_id, &profile, &integration_id).await
 }
 
+/// Resolves an inbound OAuth identity to a session-bearing IAM user, or to the
+/// phone-binding challenge that must run before a session may be issued.
+///
+/// Resolution order follows industry practice for multi-surface identity:
+///
+/// 1. an existing external-subject (or union-id) link always wins;
+/// 2. a provider-verified phone may associate the external identity with the
+///    account that already owns that phone, so a person who registered on the
+///    PC keeps one account across every login surface;
+/// 3. otherwise the OAuth registration policy decides between creating an
+///    account and raising a phone-binding challenge.
+pub(crate) async fn resolve_oauth_login_identity(
+    pg: &PgPool,
+    policy: &AccountBindingPolicyDocument,
+    tenant_id: &str,
+    profile: &LocalOAuthProviderProfile,
+    integration_id: &str,
+) -> Result<OAuthLoginResolution, String> {
+    if let Some(user_id) =
+        find_user_id_by_oauth_subject(pg, tenant_id, integration_id, profile).await?
+    {
+        if let Some(user) = load_user_by_id(pg, tenant_id, &user_id).await? {
+            upsert_oauth_account_link(pg, &user, profile, integration_id, "oauth_login").await?;
+            return Ok(OAuthLoginResolution::User(Box::new(user)));
+        }
+    }
+
+    let trusted_phone = trusted_provider_phone(profile);
+    let matched_user_id = match trusted_phone {
+        Some(phone) => {
+            reject_phone_owned_by_unavailable_account(pg, tenant_id, phone).await?;
+            find_user_id_by_phone(pg, tenant_id, phone).await?
+        }
+        None => None,
+    };
+    let existing_account_found = matched_user_id.is_some();
+
+    match decide_oauth_phone_association(policy, trusted_phone.is_some(), existing_account_found) {
+        OauthPhoneAssociationOutcome::LinkExistingAccount => {
+            let user_id = matched_user_id
+                .ok_or_else(|| "OAuth phone association lost the matched account".to_string())?;
+            let user = load_user_by_id(pg, tenant_id, &user_id)
+                .await?
+                .ok_or_else(|| {
+                    "OAuth phone association target account is unavailable".to_string()
+                })?;
+            link_oauth_identity(pg, &user, profile).await?;
+            upsert_oauth_account_link(pg, &user, profile, integration_id, "phone_association")
+                .await?;
+            Ok(OAuthLoginResolution::User(Box::new(user)))
+        }
+        OauthPhoneAssociationOutcome::RegisterNewAccount => {
+            let user = create_oauth_user(pg, tenant_id, integration_id, profile).await?;
+            link_oauth_identity(pg, &user, profile).await?;
+            upsert_oauth_account_link(pg, &user, profile, integration_id, "oauth_login").await?;
+            Ok(OAuthLoginResolution::User(Box::new(user)))
+        }
+        OauthPhoneAssociationOutcome::RequireOwnershipProof => Ok(
+            OAuthLoginResolution::PhoneBindingRequired(Box::new(OAuthPhoneBindingChallenge {
+                profile: profile.clone(),
+                integration_id: integration_id.to_string(),
+                reason: OAuthPhoneBindingReason::ExistingAccount,
+                masked_phone: trusted_phone.map(mask_phone),
+            })),
+        ),
+        OauthPhoneAssociationOutcome::RequirePhoneBinding => Ok(
+            OAuthLoginResolution::PhoneBindingRequired(Box::new(OAuthPhoneBindingChallenge {
+                profile: profile.clone(),
+                integration_id: integration_id.to_string(),
+                reason: OAuthPhoneBindingReason::MissingPhone,
+                masked_phone: None,
+            })),
+        ),
+        OauthPhoneAssociationOutcome::RejectRegistrationDisabled => {
+            Err("OAuth auto registration is disabled for this tenant".to_string())
+        }
+    }
+}
+
+/// Session-issuing variant for flows that cannot interrupt the user with a
+/// phone-binding screen (for example the official-account follow-login
+/// webhook). It fails when a binding step would be required.
 pub(crate) async fn resolve_or_create_oauth_user(
     pg: &PgPool,
     policy: &AccountBindingPolicyDocument,
@@ -331,23 +476,89 @@ pub(crate) async fn resolve_or_create_oauth_user(
     profile: &LocalOAuthProviderProfile,
     integration_id: &str,
 ) -> Result<LocalIamUser, String> {
-    if let Some(user_id) =
-        find_user_id_by_oauth_subject(pg, tenant_id, integration_id, profile).await?
-    {
-        if let Some(user) = load_user_by_id(pg, tenant_id, &user_id).await? {
-            upsert_oauth_account_link(pg, &user, profile, integration_id).await?;
-            return Ok(user);
-        }
-    }
+    resolve_oauth_login_identity(pg, policy, tenant_id, profile, integration_id)
+        .await?
+        .into_user("OAuth login on a non-interactive surface")
+}
 
-    if !policy.oauth_login.auto_registration_enabled {
-        return Err("OAuth auto registration is disabled for this tenant".to_string());
+/// The phone a provider asserted as verified, if any.
+pub(crate) fn trusted_provider_phone(profile: &LocalOAuthProviderProfile) -> Option<&str> {
+    if !profile.phone_verified {
+        return None;
     }
+    profile
+        .phone
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+}
 
-    let user = create_oauth_user(pg, tenant_id, integration_id, profile).await?;
-    link_oauth_identity(pg, &user, profile).await?;
-    upsert_oauth_account_link(pg, &user, profile, integration_id).await?;
-    Ok(user)
+/// Tenant-scoped lookup of the account that owns a phone number.
+pub(crate) async fn find_user_id_by_phone(
+    pg: &PgPool,
+    tenant_id: &str,
+    phone: &str,
+) -> Result<Option<String>, String> {
+    sqlx::query_scalar::<_, String>(
+        "SELECT id FROM iam_user \
+         WHERE tenant_id = $1 AND phone = $2 \
+           AND status = 'active' \
+         LIMIT 1",
+    )
+    .bind(tenant_id)
+    .bind(phone)
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| format!("lookup oauth phone association target failed: {error}"))
+}
+
+/// Returns the status of the account that owns a phone, whatever its state.
+///
+/// The phone column is unique per tenant, so a phone owned by a suspended or
+/// disabled account still blocks registration: creating a second account would
+/// violate the index and, worse, resurrect a disabled identity through a
+/// different login surface. Callers use this to reject the sign-in cleanly.
+pub(crate) async fn phone_owner_status(
+    pg: &PgPool,
+    tenant_id: &str,
+    phone: &str,
+) -> Result<Option<String>, String> {
+    sqlx::query_scalar::<_, String>(
+        "SELECT status FROM iam_user \
+         WHERE tenant_id = $1 AND phone = $2 AND is_deleted = 0 \
+         LIMIT 1",
+    )
+    .bind(tenant_id)
+    .bind(phone)
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| format!("lookup oauth phone owner failed: {error}"))
+}
+
+/// Rejects an OAuth identity whose verified phone belongs to an account that
+/// cannot sign in.
+async fn reject_phone_owned_by_unavailable_account(
+    pg: &PgPool,
+    tenant_id: &str,
+    phone: &str,
+) -> Result<(), String> {
+    match phone_owner_status(pg, tenant_id, phone).await? {
+        Some(status) if status == "active" => Ok(()),
+        Some(_) => Err(
+            "the phone number belongs to an account that is not available for sign-in".to_string(),
+        ),
+        None => Ok(()),
+    }
+}
+
+fn mask_phone(phone: &str) -> String {
+    let digits = phone.chars().collect::<Vec<_>>();
+    if digits.len() < 7 {
+        return "*".repeat(digits.len());
+    }
+    let head = digits.iter().take(3).collect::<String>();
+    let tail = digits.iter().skip(digits.len() - 4).collect::<String>();
+    format!("{head}****{tail}")
 }
 
 async fn build_integration_authorization_url(
@@ -488,7 +699,7 @@ pub(crate) async fn find_active_integration_tenant_for_tenant(
     .map_err(|error| format!("lookup tenant oauth integration failed: {error}"))
 }
 
-async fn find_user_id_by_oauth_subject(
+pub(crate) async fn find_user_id_by_oauth_subject(
     pg: &PgPool,
     tenant_id: &str,
     integration_id: &str,
@@ -538,7 +749,7 @@ async fn find_user_id_by_oauth_subject(
     Ok(None)
 }
 
-async fn create_oauth_user(
+pub(crate) async fn create_oauth_user(
     pg: &PgPool,
     tenant_id: &str,
     integration_id: &str,
@@ -556,7 +767,12 @@ async fn create_oauth_user(
         .unwrap_or_else(|| username.clone());
     let now = current_timestamp_utc();
     let email_verified = profile.email.is_some() as i32;
-    let phone_verified = profile.phone.is_some() as i32;
+    // Only a provider-verified phone becomes the account's identity anchor.
+    // An unverified claim is dropped instead of being stored as if the number
+    // had been proven, because `iam_user.phone` is unique per tenant and is
+    // what phone-based account association matches on.
+    let phone = trusted_provider_phone(profile);
+    let phone_verified = phone.is_some() as i32;
 
     sqlx::query(
         "INSERT INTO iam_user (id, tenant_id, username, display_name, email, phone, \
@@ -568,7 +784,7 @@ async fn create_oauth_user(
     .bind(&username)
     .bind(&display_name)
     .bind(&profile.email)
-    .bind(&profile.phone)
+    .bind(phone)
     .bind(email_verified)
     .bind(phone_verified)
     .bind(&now)
@@ -583,7 +799,7 @@ async fn create_oauth_user(
         username,
         display_name,
         email: profile.email.clone(),
-        phone: profile.phone.clone(),
+        phone: phone.map(str::to_string),
         email_verified: email_verified != 0,
         phone_verified: phone_verified != 0,
         last_login_at: None,
@@ -591,7 +807,7 @@ async fn create_oauth_user(
     })
 }
 
-async fn link_oauth_identity(
+pub(crate) async fn link_oauth_identity(
     pg: &PgPool,
     user: &LocalIamUser,
     profile: &LocalOAuthProviderProfile,
@@ -617,11 +833,12 @@ async fn link_oauth_identity(
     Ok(())
 }
 
-async fn upsert_oauth_account_link(
+pub(crate) async fn upsert_oauth_account_link(
     pg: &PgPool,
     user: &LocalIamUser,
     profile: &LocalOAuthProviderProfile,
     integration_id: &str,
+    link_source: &str,
 ) -> Result<(), String> {
     let now = current_timestamp_utc();
     let organization_id = primary_organization_id(pg, &user.tenant_id)
@@ -634,15 +851,21 @@ async fn upsert_oauth_account_link(
     let subject_hash = hash_subject(&profile.subject);
     let open_id_hash = profile.open_id.as_deref().map(hash_subject);
     let union_id_hash = profile.union_id.as_deref().map(hash_subject);
+    let phone = trusted_provider_phone(profile);
+    let phone_hash = phone.map(hash_subject);
+    // `link_source` records which rule produced the link so operators can tell
+    // a first-time OAuth registration from a phone-based association of an
+    // account that already existed.
     sqlx::query(
         "INSERT INTO iam_oauth_account_link (\
             id, uuid, tenant_id, organization_id, user_id, provider_code, integration_id, \
             external_subject, external_subject_hash, external_open_id, external_open_id_hash, \
             external_union_id, external_union_id_hash, provider_union_scope_id, \
-            external_account_display_snapshot, link_source, linked_at, status, claim_snapshot_json, \
+            external_account_display_snapshot, phone_hash, phone_verified, \
+            link_source, linked_at, status, claim_snapshot_json, \
             created_at, updated_at\
          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, \
-                   'oauth_login', $16, 'active', $17, $16, $16) \
+                   $16, $17, $18, $19, 'active', $20, $19, $19) \
          ON CONFLICT (id) DO UPDATE SET \
            user_id = EXCLUDED.user_id, \
            integration_id = EXCLUDED.integration_id, \
@@ -652,6 +875,11 @@ async fn upsert_oauth_account_link(
            external_union_id_hash = COALESCE(EXCLUDED.external_union_id_hash, iam_oauth_account_link.external_union_id_hash), \
            provider_union_scope_id = COALESCE(EXCLUDED.provider_union_scope_id, iam_oauth_account_link.provider_union_scope_id), \
            external_account_display_snapshot = EXCLUDED.external_account_display_snapshot, \
+           phone_hash = COALESCE(EXCLUDED.phone_hash, iam_oauth_account_link.phone_hash), \
+           phone_verified = GREATEST(EXCLUDED.phone_verified, iam_oauth_account_link.phone_verified), \
+           link_source = CASE \
+             WHEN iam_oauth_account_link.link_source = 'oauth_login' THEN EXCLUDED.link_source \
+             ELSE iam_oauth_account_link.link_source END, \
            status = 'active', \
            unlinked_at = NULL, \
            updated_at = EXCLUDED.updated_at",
@@ -671,6 +899,9 @@ async fn upsert_oauth_account_link(
     .bind(union_id_hash)
     .bind(&profile.union_scope_id)
     .bind(profile.name.clone().or_else(|| profile.email.clone()))
+    .bind(phone_hash)
+    .bind(if phone.is_some() { 1 } else { 0 })
+    .bind(link_source)
     .bind(&now)
     .bind(
         serde_json::to_string(profile)

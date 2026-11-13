@@ -1,3 +1,10 @@
+pub mod organization_directory;
+
+pub use organization_directory::{
+    IamDirectoryError, IamDirectoryFuture, IamOrganizationDirectory, IamOrganizationMemberQuery,
+    IamOrganizationMemberRecord, IamOrganizationRecord, SqlxIamOrganizationDirectory,
+};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct IamTables;
 

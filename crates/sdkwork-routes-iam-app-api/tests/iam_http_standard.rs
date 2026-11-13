@@ -105,9 +105,11 @@ fn iam_app_api_limits_anonymous_operations_to_qr_login_component_requests() {
     assert_eq!(
         IAM_ANONYMOUS_OPERATION_IDS,
         &[
+            "sessions.current.logout",
             "deviceAuthorizations.create",
             "deviceAuthorizations.retrieve",
             "deviceAuthorizations.sessionExchanges.create",
+            "authorizations.create",
             "desktopSessions.create",
             "wechatPaymentOauth.callback",
         ]
@@ -740,6 +742,7 @@ fn app_route_manifest_matches_the_standard_operation_surface() {
         "accountLinks.list",
         "authorizationUrls.create",
         "authorizations.completions.create",
+        "authorizations.create",
         "callbacks.create",
         "callbacks.retrieve",
         "desktopSessions.create",
@@ -764,6 +767,8 @@ fn app_route_manifest_matches_the_standard_operation_surface() {
         "organizations.tree.retrieve",
         "passwordResetRequests.create",
         "passwordResets.create",
+        "phoneBindingSessions.create",
+        "phoneBindingSessions.verificationCodeRequests.create",
         "positionAssignments.list",
         "positions.list",
         "registrations.create",
@@ -771,6 +776,7 @@ fn app_route_manifest_matches_the_standard_operation_surface() {
         "scanLoginModes.list",
         "sessions.create",
         "sessions.current.delete",
+        "sessions.current.logout",
         "sessions.current.retrieve",
         "sessions.current.update",
         "sessions.loginContextSelection.create",

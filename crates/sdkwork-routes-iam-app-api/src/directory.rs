@@ -734,6 +734,11 @@ pub(crate) fn session_to_json(session: &LocalSession) -> Value {
     if !session.refresh_token.is_empty() {
         v["refreshToken"] = json!(session.refresh_token);
     }
+    if let Some(device_id) = session.device_id.as_deref() {
+        // Echo the bound device so a client can verify which device slot its
+        // session occupies, and so QR/continuation round trips keep it.
+        v["deviceId"] = json!(device_id);
+    }
     v
 }
 

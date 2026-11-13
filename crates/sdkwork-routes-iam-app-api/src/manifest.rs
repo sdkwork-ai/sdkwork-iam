@@ -152,6 +152,21 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
         "oauth",
         "sessions.create",
     ),
+    // Phone ownership proof for a pending OAuth account association. Both
+    // calls run before any session exists, so they are credential-entry
+    // bootstrap routes like the provider session exchange itself.
+    HttpRoute::credential_entry_bootstrap(
+        HttpMethod::Post,
+        "/app/v3/api/oauth/phone_binding_sessions",
+        "oauth",
+        "phoneBindingSessions.create",
+    ),
+    HttpRoute::credential_entry_bootstrap(
+        HttpMethod::Post,
+        "/app/v3/api/oauth/phone_binding_sessions/verification_code_requests",
+        "oauth",
+        "phoneBindingSessions.verificationCodeRequests.create",
+    ),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/app/v3/api/oauth/account_links",
@@ -408,10 +423,10 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
 /// IAM operations that intentionally accept no framework credential.
 pub const IAM_ANONYMOUS_OPERATION_IDS: &[&str] = &[
     "sessions.current.logout",
-    "authorizations.create",
     "deviceAuthorizations.create",
     "deviceAuthorizations.retrieve",
     "deviceAuthorizations.sessionExchanges.create",
+    "authorizations.create",
     "desktopSessions.create",
     "wechatPaymentOauth.callback",
 ];
@@ -432,7 +447,6 @@ pub const IAM_CREDENTIAL_ENTRY_OPERATION_IDS: &[&str] = &[
     "verificationCodeRequests.create",
     "passwordResets.create",
     "registrations.create",
-    "authorizations.create",
     "authorizationUrls.create",
     "providers.list",
     "deviceAuthorizations.scans.create",
@@ -441,6 +455,8 @@ pub const IAM_CREDENTIAL_ENTRY_OPERATION_IDS: &[&str] = &[
     "callbacks.create",
     "miniProgramSessions.create",
     "sessions.create",
+    "phoneBindingSessions.create",
+    "phoneBindingSessions.verificationCodeRequests.create",
     "iam.runtime.retrieve",
     "iam.verificationPolicy.retrieve",
     "iam.accountBindingPolicy.retrieve",

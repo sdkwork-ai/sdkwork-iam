@@ -13,8 +13,13 @@ const KIND_PASSWORD_RESET: &str = "password_reset";
 const KIND_CODE_LOGIN: &str = "code_login";
 const KIND_QR_SESSION: &str = "qr_session";
 const KIND_OAUTH_STATE: &str = "oauth_state";
+const KIND_OAUTH_PHONE_BINDING: &str = "oauth_phone_binding";
 
 pub(crate) const OAUTH_STATE_TTL_MILLIS: u128 = 10 * 60 * 1000;
+/// Lifetime of a pending OAuth phone-binding challenge. The window has to be
+/// long enough for the person to receive and type an SMS code, and short
+/// enough that a stolen ticket is useless.
+pub(crate) const OAUTH_PHONE_BINDING_TTL_MILLIS: u128 = 10 * 60 * 1000;
 
 fn artifact_key(tenant_id: &str, kind: &str, key: &str) -> String {
     format!("{tenant_id}:{kind}:{key}")
@@ -357,9 +362,109 @@ pub(crate) async fn mutate_qr_session(
     Ok(Some(session))
 }
 
+/// Stores one pending OAuth phone-binding challenge under `token`.
+///
+/// The ticket is the only thing the client holds between "the provider told us
+/// who this is" and "the person proved ownership of a phone"; it carries no
+/// session and is consumed exactly once by the completion call.
+pub(crate) async fn upsert_oauth_phone_binding(
+    pg: &PgPool,
+    tenant_id: &str,
+    token: &str,
+    expire_time_millis: u128,
+    payload: &Value,
+) -> Result<(), String> {
+    let storage_key = artifact_key(tenant_id, KIND_OAUTH_PHONE_BINDING, token);
+    let timestamp = current_timestamp_utc();
+    sqlx::query(
+        "INSERT INTO iam_ephemeral_artifact \
+         (artifact_key, tenant_id, artifact_kind, payload_json, expires_at, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7) \
+         ON CONFLICT (artifact_key) DO UPDATE SET \
+           payload_json = EXCLUDED.payload_json, \
+           expires_at = EXCLUDED.expires_at, \
+           updated_at = EXCLUDED.updated_at",
+    )
+    .bind(&storage_key)
+    .bind(tenant_id)
+    .bind(KIND_OAUTH_PHONE_BINDING)
+    .bind(Json(payload.clone()))
+    .bind(millis_to_timestamp(expire_time_millis))
+    .bind(&timestamp)
+    .bind(&timestamp)
+    .execute(pg)
+    .await
+    .map_err(|error| format!("upsert oauth phone binding artifact failed: {error}"))?;
+    Ok(())
+}
+
+/// Reads a pending OAuth phone-binding challenge without consuming it, so the
+/// verification-code request can validate the ticket while the completion call
+/// still owns the single consumption.
+pub(crate) async fn get_oauth_phone_binding(
+    pg: &PgPool,
+    tenant_id: &str,
+    token: &str,
+) -> Result<Option<Value>, String> {
+    let storage_key = artifact_key(tenant_id, KIND_OAUTH_PHONE_BINDING, token);
+    let row = sqlx::query(
+        "SELECT payload_json FROM iam_ephemeral_artifact \
+         WHERE artifact_key = $1 AND expires_at > $2",
+    )
+    .bind(&storage_key)
+    .bind(current_timestamp_utc())
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| format!("load oauth phone binding artifact failed: {error}"))?;
+    Ok(row.map(|row| {
+        let payload: Json<Value> = row.get(0);
+        payload.0
+    }))
+}
+
+/// Atomically consumes a pending OAuth phone-binding challenge.
+pub(crate) async fn take_oauth_phone_binding(
+    pg: &PgPool,
+    tenant_id: &str,
+    token: &str,
+) -> Result<Option<Value>, String> {
+    let storage_key = artifact_key(tenant_id, KIND_OAUTH_PHONE_BINDING, token);
+    let mut tx = pg
+        .begin()
+        .await
+        .map_err(|error| format!("begin oauth phone binding transaction failed: {error}"))?;
+    let row = sqlx::query(
+        "SELECT payload_json FROM iam_ephemeral_artifact \
+         WHERE artifact_key = $1 AND expires_at > $2 \
+         FOR UPDATE",
+    )
+    .bind(&storage_key)
+    .bind(current_timestamp_utc())
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|error| format!("load oauth phone binding artifact failed: {error}"))?;
+    let Some(row) = row else {
+        tx.rollback()
+            .await
+            .map_err(|error| format!("rollback empty oauth phone binding failed: {error}"))?;
+        return Ok(None);
+    };
+    let payload: Json<Value> = row.get(0);
+    sqlx::query("DELETE FROM iam_ephemeral_artifact WHERE artifact_key = $1")
+        .bind(&storage_key)
+        .execute(&mut *tx)
+        .await
+        .map_err(|error| format!("delete oauth phone binding artifact failed: {error}"))?;
+    tx.commit()
+        .await
+        .map_err(|error| format!("commit oauth phone binding transaction failed: {error}"))?;
+    Ok(Some(payload.0))
+}
+
 fn login_continuation_to_json(continuation: &LocalLoginContinuation) -> Value {
     json!({
         "continuationKind": continuation.continuation_kind,
+        "deviceId": continuation.device_id,
         "expireTimeMs": continuation.expire_time,
         "organizationIds": continuation.organization_ids,
         "qrSessionKey": continuation.qr_session_key,
@@ -391,6 +496,8 @@ fn login_continuation_from_json(payload: &Value) -> Option<LocalLoginContinuatio
     let user = user_from_json(payload.get("user")?)?;
     Some(LocalLoginContinuation {
         continuation_kind,
+        device_id: optional_string(payload.get("deviceId"))
+            .or_else(|| optional_string(payload.get("device_id"))),
         expire_time,
         organization_ids,
         qr_session_key,
@@ -529,6 +636,8 @@ fn session_from_json(value: &Value) -> Option<LocalSession> {
         refresh_token,
         session_id,
         user,
+        device_id: optional_string(value.get("deviceId"))
+            .or_else(|| optional_string(value.get("device_id"))),
     })
 }
 

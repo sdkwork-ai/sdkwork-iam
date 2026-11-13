@@ -7892,6 +7892,278 @@
         }
       }
     },
+    "/app/v3/api/oauth/phone_binding_sessions": {
+      "post": {
+        "tags": [
+          "oauth"
+        ],
+        "summary": "Phone Binding Sessions create.",
+        "operationId": "phoneBindingSessions.create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkWorkResourceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "x-sdkwork-auth-mode": "credential-entry-bootstrap",
+        "x-sdkwork-forbid-credential-headers": true,
+        "x-sdkwork-owner": "sdkwork-iam",
+        "x-sdkwork-api-authority": "sdkwork-iam-app-api",
+        "x-sdkwork-domain": "iam",
+        "x-sdkwork-resource": "phoneBindingSessions",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-server-request-id": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OauthPhoneBindingSessionCreateCommand"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/app/v3/api/oauth/phone_binding_sessions/verification_code_requests": {
+      "post": {
+        "tags": [
+          "oauth"
+        ],
+        "summary": "Phone Binding Sessions verification Code Requests create.",
+        "operationId": "phoneBindingSessions.verificationCodeRequests.create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkWorkResourceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "x-sdkwork-auth-mode": "credential-entry-bootstrap",
+        "x-sdkwork-forbid-credential-headers": true,
+        "x-sdkwork-owner": "sdkwork-iam",
+        "x-sdkwork-api-authority": "sdkwork-iam-app-api",
+        "x-sdkwork-domain": "iam",
+        "x-sdkwork-resource": "phoneBindingSessions.verificationCodeRequests",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-server-request-id": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OauthPhoneBindingVerificationCodeRequestCommand"
+              }
+            }
+          }
+        }
+      }
+    },
     "/app/v3/api/oauth/providers": {
       "get": {
         "tags": [
@@ -9559,6 +9831,13 @@
             "writeOnly": true,
             "description": "One-time code returned by wx.login()."
           },
+          "phoneCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "writeOnly": true,
+            "description": "One-time code returned by the mini program getPhoneNumber grant. WeChat verified the subscriber SIM for this code, so the resulting phone may associate the WeChat identity with an existing account (subject to the tenant OAuth phone-association policy). Omit it to require the phone-binding step instead."
+          },
           "providerCode": {
             "type": "string",
             "enum": [
@@ -9571,6 +9850,80 @@
             "minLength": 1,
             "maxLength": 128,
             "description": "Registered IAM OAuth mini-program surface code."
+          },
+          "deviceId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Opaque client device identity. Sessions are replaced per application per device, so the same device signing in again revokes only its own previous session instead of every session of the application. Carried forward across refresh and the phone-binding step."
+          }
+        }
+      },
+      "OauthPhoneBindingSessionCreateCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "continuationToken",
+          "phone",
+          "verificationCode"
+        ],
+        "description": "Completes a pending OAuth account association after the person proved ownership of the phone. Answered with the standard session payload, or with the `LOGIN_CONTEXT_SELECTION` challenge for an account that belongs to several organizations.",
+        "properties": {
+          "continuationToken": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "description": "One-time `continuationToken` returned by the `OAUTH_PHONE_BINDING_REQUIRED` challenge of an OAuth, mini-program, or official-account session exchange."
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 32,
+            "description": "Phone number that owns the target IAM account. When no account owns it yet, a new account is registered for the OAuth identity if the tenant allows OAuth auto-registration."
+          },
+          "verificationCode": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 12,
+            "writeOnly": true,
+            "description": "One-time SMS verification code requested for this phone."
+          },
+          "surfaceCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Originating client surface, recorded with the association."
+          },
+          "deviceId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Opaque client device identity kept from the challenge. Omit it only when the original request did not send one; the session then binds no device slot."
+          }
+        }
+      },
+      "OauthPhoneBindingVerificationCodeRequestCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "continuationToken",
+          "phone"
+        ],
+        "description": "Requests the ownership-proof SMS code for a pending OAuth account association. Unlike `auth/verification_code_requests` the caller is not yet authenticated; the pending-binding ticket is the authorization.",
+        "properties": {
+          "continuationToken": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "description": "One-time `continuationToken` returned by the `OAUTH_PHONE_BINDING_REQUIRED` challenge."
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 32,
+            "description": "Phone number to prove ownership of."
           }
         }
       },
@@ -9625,6 +9978,13 @@
           "organizationId": {
             "type": "string",
             "description": "Verified organization id supplied by an external user-center session exchange when the upstream identity resolved an organization scope."
+          },
+          "deviceId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Opaque client device identity. Sessions are replaced per application per device; omitting it keeps the legacy single-slot behaviour where only sessions without a device are revoked."
           }
         }
       }

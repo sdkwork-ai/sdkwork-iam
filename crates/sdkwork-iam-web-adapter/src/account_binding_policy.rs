@@ -25,6 +25,45 @@ pub struct ContactBindingPolicy {
     pub require_verification: bool,
 }
 
+/// Phone-based account association policy for inbound OAuth login.
+///
+/// Multi-surface products let a person sign in from a PC browser, a WeChat
+/// mini program, an official account, or any other OAuth provider. The phone
+/// number is the one stable identifier those surfaces share, so this policy
+/// decides whether a provider-verified phone may be used to associate the
+/// external identity with an existing IAM account instead of fabricating a
+/// duplicate account on every new surface.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct OauthLoginPhoneAssociationPolicy {
+    /// Master switch. When disabled, the provider phone never associates an
+    /// external identity with an existing account, and a phone that already
+    /// belongs to another account downgrades to the ownership-proof step
+    /// instead of creating a second account on the same phone.
+    #[serde(default)]
+    pub enabled: bool,
+    /// When the provider asserts a verified phone that matches an existing
+    /// account, link and sign in directly. When disabled the person must
+    /// prove control of the phone with a verification code before the link is
+    /// created, which is the defence against provider-side phone spoofing.
+    #[serde(default = "default_true")]
+    pub auto_link_verified_phone: bool,
+    /// Force the phone-binding step for OAuth identities that carry no
+    /// trusted phone number, so every account ends up with a verified phone.
+    #[serde(default)]
+    pub require_phone_binding: bool,
+}
+
+impl Default for OauthLoginPhoneAssociationPolicy {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            auto_link_verified_phone: true,
+            require_phone_binding: false,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct OauthLoginPolicy {
@@ -34,6 +73,8 @@ pub struct OauthLoginPolicy {
     pub allowed_providers: Vec<String>,
     #[serde(default = "default_true")]
     pub auto_registration_enabled: bool,
+    #[serde(default)]
+    pub phone_association: OauthLoginPhoneAssociationPolicy,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
@@ -87,6 +128,11 @@ pub fn default_account_binding_policy() -> AccountBindingPolicyDocument {
             enabled: false,
             allowed_providers: Vec::new(),
             auto_registration_enabled: true,
+            phone_association: OauthLoginPhoneAssociationPolicy {
+                enabled: false,
+                auto_link_verified_phone: true,
+                require_phone_binding: false,
+            },
         },
         oauth_binding: OauthBindingPolicy {
             enabled: false,
@@ -270,6 +316,92 @@ pub enum OauthBindingActionKind {
     Unlink,
 }
 
+/// The account-association decision for one inbound OAuth sign-in.
+///
+/// This is the complete outcome space of the phone-association matrix; the
+/// caller maps it onto "issue a session", "link an existing account", or
+/// "return a phone-binding challenge".
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum OauthPhoneAssociationOutcome {
+    /// A provider-verified phone matched an existing account and the policy
+    /// allows silent linking. The external identity is attached and the
+    /// person signs in as that account.
+    LinkExistingAccount,
+    /// The phone belongs to an existing account but silent linking is not
+    /// allowed (or the association switch is off). The person must prove
+    /// control of the phone before the link is created.
+    RequireOwnershipProof,
+    /// The OAuth identity carries no trusted phone and the policy requires
+    /// one, so the person must bind a phone before an account is issued.
+    RequirePhoneBinding,
+    /// No account matched and registration is allowed.
+    RegisterNewAccount,
+    /// No account matched and OAuth auto-registration is disabled.
+    RejectRegistrationDisabled,
+}
+
+/// True when the tenant allows phone-based account association at all.
+#[must_use]
+pub fn oauth_phone_association_enabled(policy: &AccountBindingPolicyDocument) -> bool {
+    policy.oauth_login.enabled && policy.oauth_login.phone_association.enabled
+}
+
+/// True when a phone-binding challenge must be raised instead of silently
+/// creating an account: the tenant wants every OAuth account to own a phone.
+#[must_use]
+pub fn oauth_phone_binding_required(policy: &AccountBindingPolicyDocument) -> bool {
+    oauth_phone_association_enabled(policy)
+        && policy.oauth_login.phone_association.require_phone_binding
+}
+
+/// Decides how one inbound OAuth identity should be turned into a session.
+///
+/// `provider_phone_present` must only be `true` when the provider asserted a
+/// phone number and its verification state is trusted. `existing_account_found`
+/// is the result of the caller's tenant-scoped phone lookup and is only
+/// consulted together with a present phone.
+#[must_use]
+pub fn decide_oauth_phone_association(
+    policy: &AccountBindingPolicyDocument,
+    provider_phone_present: bool,
+    existing_account_found: bool,
+) -> OauthPhoneAssociationOutcome {
+    let oauth_login = &policy.oauth_login;
+    let phone_association = &oauth_login.phone_association;
+    let registration_enabled = oauth_login.auto_registration_enabled;
+
+    if provider_phone_present && phone_association.enabled {
+        if existing_account_found {
+            return if phone_association.auto_link_verified_phone {
+                OauthPhoneAssociationOutcome::LinkExistingAccount
+            } else {
+                OauthPhoneAssociationOutcome::RequireOwnershipProof
+            };
+        }
+        return if registration_enabled {
+            OauthPhoneAssociationOutcome::RegisterNewAccount
+        } else {
+            OauthPhoneAssociationOutcome::RejectRegistrationDisabled
+        };
+    }
+
+    // A phone that another account already owns must never be cloned onto a
+    // second account: the single-phone index is the identity invariant.
+    if existing_account_found {
+        return OauthPhoneAssociationOutcome::RequireOwnershipProof;
+    }
+
+    if phone_association.enabled && phone_association.require_phone_binding {
+        return OauthPhoneAssociationOutcome::RequirePhoneBinding;
+    }
+
+    if registration_enabled {
+        OauthPhoneAssociationOutcome::RegisterNewAccount
+    } else {
+        OauthPhoneAssociationOutcome::RejectRegistrationDisabled
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -335,5 +467,134 @@ mod tests {
             OauthBindingActionKind::Link,
             Some("google")
         ));
+    }
+
+    fn oauth_login_policy(
+        enabled: bool,
+        registration: bool,
+        phone_enabled: bool,
+        auto_link: bool,
+        require_binding: bool,
+    ) -> AccountBindingPolicyDocument {
+        AccountBindingPolicyDocument {
+            oauth_login: OauthLoginPolicy {
+                enabled,
+                allowed_providers: Vec::new(),
+                auto_registration_enabled: registration,
+                phone_association: OauthLoginPhoneAssociationPolicy {
+                    enabled: phone_enabled,
+                    auto_link_verified_phone: auto_link,
+                    require_phone_binding: require_binding,
+                },
+            },
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn verified_phone_links_existing_account_when_policy_allows_it() {
+        let policy = oauth_login_policy(true, true, true, true, false);
+        assert_eq!(
+            decide_oauth_phone_association(&policy, true, true),
+            OauthPhoneAssociationOutcome::LinkExistingAccount
+        );
+    }
+
+    #[test]
+    fn verified_phone_requires_ownership_proof_when_auto_link_is_off() {
+        let policy = oauth_login_policy(true, true, true, false, false);
+        assert_eq!(
+            decide_oauth_phone_association(&policy, true, true),
+            OauthPhoneAssociationOutcome::RequireOwnershipProof
+        );
+    }
+
+    #[test]
+    fn disabled_association_never_clones_a_phone_onto_a_second_account() {
+        let policy = oauth_login_policy(true, true, false, true, false);
+        assert_eq!(
+            decide_oauth_phone_association(&policy, true, true),
+            OauthPhoneAssociationOutcome::RequireOwnershipProof
+        );
+    }
+
+    #[test]
+    fn phone_less_oauth_requires_binding_when_policy_demands_it() {
+        let policy = oauth_login_policy(true, true, true, true, true);
+        assert_eq!(
+            decide_oauth_phone_association(&policy, false, false),
+            OauthPhoneAssociationOutcome::RequirePhoneBinding
+        );
+
+        let policy = oauth_login_policy(true, true, true, true, false);
+        assert_eq!(
+            decide_oauth_phone_association(&policy, false, false),
+            OauthPhoneAssociationOutcome::RegisterNewAccount
+        );
+    }
+
+    #[test]
+    fn registration_disabled_rejects_unknown_identities() {
+        let policy = oauth_login_policy(true, false, true, true, false);
+        assert_eq!(
+            decide_oauth_phone_association(&policy, true, false),
+            OauthPhoneAssociationOutcome::RejectRegistrationDisabled
+        );
+        assert_eq!(
+            decide_oauth_phone_association(&policy, false, false),
+            OauthPhoneAssociationOutcome::RejectRegistrationDisabled
+        );
+    }
+
+    #[test]
+    fn unverified_phone_of_an_existing_account_still_needs_proof() {
+        // No provider phone at all, but the caller resolved a collision.
+        let policy = oauth_login_policy(true, true, true, true, false);
+        assert_eq!(
+            decide_oauth_phone_association(&policy, false, true),
+            OauthPhoneAssociationOutcome::RequireOwnershipProof
+        );
+    }
+
+    #[test]
+    fn phone_association_round_trips_through_the_policy_document() {
+        let policy = oauth_login_policy(true, true, true, false, true);
+        let json = account_binding_policy_to_json(&policy);
+        assert_eq!(
+            json["oauthLogin"]["phoneAssociation"]["enabled"],
+            json!(true)
+        );
+        assert_eq!(
+            json["oauthLogin"]["phoneAssociation"]["autoLinkVerifiedPhone"],
+            json!(false)
+        );
+        assert_eq!(
+            json["oauthLogin"]["phoneAssociation"]["requirePhoneBinding"],
+            json!(true)
+        );
+        assert_eq!(parse_account_binding_policy(&json), policy);
+    }
+
+    #[test]
+    fn legacy_policy_documents_default_to_safe_phone_association() {
+        // A document persisted before this policy existed must keep the old
+        // behavior: phone association off, silent linking allowed but unused.
+        let legacy = json!({
+            "oauthLogin": {
+                "enabled": true,
+                "allowedProviders": ["wechat_mini_program"],
+                "autoRegistrationEnabled": true
+            }
+        });
+        let policy = parse_account_binding_policy(&legacy);
+        assert!(policy.oauth_login.enabled);
+        assert!(!policy.oauth_login.phone_association.enabled);
+        assert!(
+            policy
+                .oauth_login
+                .phone_association
+                .auto_link_verified_phone
+        );
+        assert!(!policy.oauth_login.phone_association.require_phone_binding);
     }
 }

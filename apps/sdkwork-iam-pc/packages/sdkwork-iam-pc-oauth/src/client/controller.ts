@@ -120,14 +120,18 @@ export function toOfficialAccount(value: Record<string, unknown>): SdkworkIamOff
   };
 }
 
-/** Builds the create/update body; empty secrets are omitted so they are kept. */
+/**
+ * Builds the update body; empty secrets are omitted so they are kept.
+ *
+ * The WeChat AppID is not an update field: the row is addressed by
+ * `officialAccountId` and the app API keeps the AppID immutable after create.
+ */
 export function toOfficialAccountCommand(
   draft: SdkworkIamOfficialAccountDraft,
 ): Record<string, unknown> {
   const command: Record<string, unknown> = {
     displayName: draft.displayName.trim(),
   };
-  if (draft.appId !== undefined) command.appId = draft.appId.trim();
   if (draft.accountType !== undefined) command.accountType = draft.accountType;
   if (draft.originalId !== undefined) command.originalId = draft.originalId;
   if (draft.logoUrl !== undefined) command.logoUrl = draft.logoUrl;
@@ -143,6 +147,26 @@ export function toOfficialAccountCommand(
   }
   if (draft.customMenu !== undefined) command.customMenu = draft.customMenu;
   if (draft.enabled !== undefined) command.enabled = draft.enabled;
+  return command;
+}
+
+/**
+ * Builds the create body: the update body plus the WeChat AppID.
+ *
+ * The AppID travels as `wechatAppId`. The app API reserves a top-level `appId`
+ * key as an ambient tenant/app/subject context selector and rejects any request
+ * body that carries it, while this value is the channel's own WeChat identifier;
+ * the provider-qualified name is what the create command binds.
+ * @param draft - the new account.
+ * @returns the create request body.
+ */
+export function toOfficialAccountCreateCommand(
+  draft: SdkworkIamOfficialAccountDraft,
+): Record<string, unknown> {
+  const command = toOfficialAccountCommand(draft);
+  if (draft.appId !== undefined && draft.appId.trim() !== "") {
+    command.wechatAppId = draft.appId.trim();
+  }
   return command;
 }
 
@@ -170,7 +194,7 @@ export function createSdkworkIamOfficialAccountsClient(
       };
     },
     async create(draft: SdkworkIamOfficialAccountDraft): Promise<SdkworkIamOfficialAccount> {
-      return toOfficialAccount(await api.create(toOfficialAccountCommand(draft)));
+      return toOfficialAccount(await api.create(toOfficialAccountCreateCommand(draft)));
     },
     async update(
       officialAccountId: string,

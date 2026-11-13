@@ -19,7 +19,7 @@ remain the backend-admin `iam.oauth.resourceAccounts.*` capability in
 | `createSdkworkIamOfficialAccountsClient(api)` | Adapts `client.iam.oauth.officialAccounts` (or an equivalent transport) to the panel port. |
 | `SdkworkIamOfficialAccountsController` | List/query state, mutations, and commit-point publication. |
 | `SDKWORK_IAM_OFFICIAL_ACCOUNTS_I18N_CATALOG` | zh-CN / en-US copy; wrap the panel in `SdkworkI18nProvider` to localize. |
-| `toOfficialAccount`, `readOfficialAccountMenu`, `toOfficialAccountCommand` | Record/menu normalization used by host adapters. |
+| `toOfficialAccount`, `readOfficialAccountMenu`, `toOfficialAccountCommand`, `toOfficialAccountCreateCommand` | Record/menu normalization and request bodies used by host adapters. Create carries the WeChat AppID as `wechatAppId`; the app API rejects a top-level `appId` because that key is a reserved client context selector. |
 
 ## Usage
 
@@ -43,6 +43,12 @@ const controller = new SdkworkIamOfficialAccountsController(
   </SdkworkI18nProvider>
 </SdkworkThemeProvider>
 ```
+
+The panel is a workspace, not a page: it renders no heading of its own and its
+header is one toolbar row (search with its action on the left, refresh and add
+on the right). A dialog that already names the surface therefore shows that copy
+once. `SdkworkIamOfficialAccountsPage` supplies the title and description for a
+standalone route.
 
 Secrets are write-only: the panel never receives an AppSecret, message token,
 or EncodingAESKey back from the API, and leaving the field blank keeps the

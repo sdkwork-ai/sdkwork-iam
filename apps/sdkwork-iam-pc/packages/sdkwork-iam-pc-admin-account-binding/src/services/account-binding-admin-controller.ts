@@ -5,8 +5,7 @@ import type {
   SdkworkIamAccountBindingController,
   SdkworkIamAccountBindingPolicy,
   SdkworkIamAccountBindingPolicyState,
-} from "../types/account-binding-admin-types";
-import { DEFAULT_ACCOUNT_BINDING_POLICY } from "../types/account-binding-admin-types";
+} from "../types/account-binding-admin-types";import { DEFAULT_ACCOUNT_BINDING_POLICY } from "../types/account-binding-admin-types";
 
 export function createSdkworkIamAccountBindingController(
   input: SdkworkIamService | CreateSdkworkIamAccountBindingControllerInput,
@@ -103,6 +102,7 @@ function normalizePolicy(value: unknown): SdkworkIamAccountBindingPolicy {
         DEFAULT_ACCOUNT_BINDING_POLICY.oauthLogin.autoRegistrationEnabled,
       ),
       enabled: readBoolean(oauthLogin.enabled, DEFAULT_ACCOUNT_BINDING_POLICY.oauthLogin.enabled),
+      phoneAssociation: normalizePhoneAssociation(oauthLogin.phoneAssociation ?? oauthLogin.phone_association),
     },
     oauthBinding: {
       allowedProviders: Array.isArray(allowedProviders)
@@ -137,6 +137,24 @@ function toRemotePolicy(policy: SdkworkIamAccountBindingPolicy): Record<string, 
 
 function toRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? value as Record<string, unknown> : {};
+}
+
+function normalizePhoneAssociation(
+  value: unknown,
+): SdkworkIamAccountBindingPolicy["oauthLogin"]["phoneAssociation"] {
+  const fallback = DEFAULT_ACCOUNT_BINDING_POLICY.oauthLogin.phoneAssociation;
+  const record = toRecord(value);
+  return {
+    enabled: readBoolean(record.enabled, fallback.enabled),
+    autoLinkVerifiedPhone: readBoolean(
+      record.autoLinkVerifiedPhone ?? record.auto_link_verified_phone,
+      fallback.autoLinkVerifiedPhone,
+    ),
+    requirePhoneBinding: readBoolean(
+      record.requirePhoneBinding ?? record.require_phone_binding,
+      fallback.requirePhoneBinding,
+    ),
+  };
 }
 
 function readBoolean(value: unknown, fallback: boolean): boolean {

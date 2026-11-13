@@ -591,6 +591,24 @@ export const SDKWORK_IAM_API_ROUTES = {
         forbidCredentialHeaders: true,
       }),
     },
+    // Ownership proof that finishes an OAuth account association started on a
+    // different surface. Both calls run before any session exists, so they use
+    // the same credential-entry bootstrap shape as the provider exchanges.
+    phoneBindingSessions: {
+      create: operation("POST", `${app}/oauth/phone_binding_sessions`, "oauth", "oauth.phoneBindingSessions.create", "public", {
+        forbidCredentialHeaders: true,
+      }),
+      verificationCodeRequests: {
+        create: operation(
+          "POST",
+          `${app}/oauth/phone_binding_sessions/verification_code_requests`,
+          "oauth",
+          "oauth.phoneBindingSessions.verificationCodeRequests.create",
+          "public",
+          { forbidCredentialHeaders: true },
+        ),
+      },
+    },
     sessions: {
       create: operation("POST", `${app}/oauth/sessions`, "oauth", "oauth.sessions.create", "public", {
         forbidCredentialHeaders: true,
@@ -1037,6 +1055,8 @@ export const SDKWORK_IAM_CAPABILITIES = [
       "oauth.grants.delete",
       "oauth.grants.list",
       "oauth.miniProgramSessions.create",
+      "oauth.phoneBindingSessions.create",
+      "oauth.phoneBindingSessions.verificationCodeRequests.create",
       "oauth.providers.list",
       "oauth.scanLoginModes.list",
       "oauth.sessions.create",

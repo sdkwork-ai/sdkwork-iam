@@ -80,6 +80,8 @@ export function createIamAppSdkAdapter(client: unknown): IamAppSdkClient {
   const oauthDeviceAuthorizationSessionCompletions = toRecord(oauthDeviceAuthorizations.sessionCompletions);
   const oauthCallbacks = toRecord(oauth.callbacks);
   const oauthMiniProgramSessions = toRecord(oauth.miniProgramSessions);
+  const oauthPhoneBindingSessions = toRecord(oauth.phoneBindingSessions);
+  const oauthPhoneBindingVerificationCodeRequests = toRecord(oauthPhoneBindingSessions.verificationCodeRequests);
   const oauthSessions = toRecord(oauth.sessions);
   const oauthAuthorizations = toRecord(oauth.authorizations);
   const oauthAuthorizationCompletions = toRecord(oauthAuthorizations.completions);
@@ -202,6 +204,20 @@ export function createIamAppSdkAdapter(client: unknown): IamAppSdkClient {
       },
       miniProgramSessions: {
         create: standardResourceMethod(oauthMiniProgramSessions, "create", "appbaseApp.oauth.miniProgramSessions.create"),
+      },
+      phoneBindingSessions: {
+        create: standardResourceMethod(
+          oauthPhoneBindingSessions,
+          "create",
+          "appbaseApp.oauth.phoneBindingSessions.create",
+        ),
+        verificationCodeRequests: {
+          create: standardResourceMethod(
+            oauthPhoneBindingVerificationCodeRequests,
+            "create",
+            "appbaseApp.oauth.phoneBindingSessions.verificationCodeRequests.create",
+          ),
+        },
       },
       sessions: {
         create: standardResourceMethod(oauthSessions, "create", "appbaseApp.oauth.sessions.create"),

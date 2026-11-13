@@ -846,6 +846,12 @@ function createStandardAppClient(session: StandardSessionOptions = {}) {
       miniProgramSessions: {
         create: vi.fn(),
       },
+      phoneBindingSessions: {
+        create: vi.fn(),
+        verificationCodeRequests: {
+          create: vi.fn(),
+        },
+      },
       sessions: {
         create: vi.fn(),
       },

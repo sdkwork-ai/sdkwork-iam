@@ -955,6 +955,12 @@ function requestBodySchemaRef(route) {
   if (route.operationId === 'miniProgramSessions.create') {
     return '#/components/schemas/WechatMiniProgramSessionCreateCommand';
   }
+  if (route.operationId === 'phoneBindingSessions.create') {
+    return '#/components/schemas/OauthPhoneBindingSessionCreateCommand';
+  }
+  if (route.operationId === 'phoneBindingSessions.verificationCodeRequests.create') {
+    return '#/components/schemas/OauthPhoneBindingVerificationCodeRequestCommand';
+  }
   if (route.operationId === 'iam.oauth.clients.create') {
     return '#/components/schemas/IamOauthClientCreateCommand';
   }
@@ -1178,6 +1184,14 @@ function buildSchemas() {
           writeOnly: true,
           description: 'One-time code returned by wx.login().',
         },
+        phoneCode: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 512,
+          writeOnly: true,
+          description:
+            'One-time code returned by the mini program getPhoneNumber grant. WeChat verified the subscriber SIM for this code, so the resulting phone may associate the WeChat identity with an existing account (subject to the tenant OAuth phone-association policy). Omit it to require the phone-binding step instead.',
+        },
         providerCode: {
           type: 'string',
           enum: ['wechat_mini_program'],
@@ -1188,6 +1202,80 @@ function buildSchemas() {
           minLength: 1,
           maxLength: 128,
           description: 'Registered IAM OAuth mini-program surface code.',
+        },
+        deviceId: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 128,
+          pattern: '^[A-Za-z0-9._:-]+$',
+          description:
+            'Opaque client device identity. Sessions are replaced per application per device, so the same device signing in again revokes only its own previous session instead of every session of the application. Carried forward across refresh and the phone-binding step.',
+        },
+      },
+    },
+    OauthPhoneBindingSessionCreateCommand: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['continuationToken', 'phone', 'verificationCode'],
+      description:
+        'Completes a pending OAuth account association after the person proved ownership of the phone. Answered with the standard session payload, or with the `LOGIN_CONTEXT_SELECTION` challenge for an account that belongs to several organizations.',
+      properties: {
+        continuationToken: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 256,
+          description:
+            'One-time `continuationToken` returned by the `OAUTH_PHONE_BINDING_REQUIRED` challenge of an OAuth, mini-program, or official-account session exchange.',
+        },
+        phone: {
+          type: 'string',
+          minLength: 6,
+          maxLength: 32,
+          description:
+            'Phone number that owns the target IAM account. When no account owns it yet, a new account is registered for the OAuth identity if the tenant allows OAuth auto-registration.',
+        },
+        verificationCode: {
+          type: 'string',
+          minLength: 4,
+          maxLength: 12,
+          writeOnly: true,
+          description: 'One-time SMS verification code requested for this phone.',
+        },
+        surfaceCode: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 128,
+          description: 'Originating client surface, recorded with the association.',
+        },
+        deviceId: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 128,
+          pattern: '^[A-Za-z0-9._:-]+$',
+          description:
+            'Opaque client device identity kept from the challenge. Omit it only when the original request did not send one; the session then binds no device slot.',
+        },
+      },
+    },
+    OauthPhoneBindingVerificationCodeRequestCommand: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['continuationToken', 'phone'],
+      description:
+        'Requests the ownership-proof SMS code for a pending OAuth account association. Unlike `auth/verification_code_requests` the caller is not yet authenticated; the pending-binding ticket is the authorization.',
+      properties: {
+        continuationToken: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 256,
+          description:
+            'One-time `continuationToken` returned by the `OAUTH_PHONE_BINDING_REQUIRED` challenge.',
+        },
+        phone: {
+          type: 'string',
+          minLength: 6,
+          maxLength: 32,
+          description: 'Phone number to prove ownership of.',
         },
       },
     },
@@ -1265,6 +1353,14 @@ function buildSchemas() {
         organizationId: {
           type: 'string',
           description: 'Verified organization id supplied by an external user-center session exchange when the upstream identity resolved an organization scope.',
+        },
+        deviceId: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 128,
+          pattern: '^[A-Za-z0-9._:-]+$',
+          description:
+            'Opaque client device identity. Sessions are replaced per application per device; omitting it keeps the legacy single-slot behaviour where only sessions without a device are revoked.',
         },
       },
     },

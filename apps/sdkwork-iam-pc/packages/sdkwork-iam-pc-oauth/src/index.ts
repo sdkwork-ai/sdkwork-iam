@@ -25,6 +25,7 @@ export {
   SdkworkIamOfficialAccountsController,
   toOfficialAccount,
   toOfficialAccountCommand,
+  toOfficialAccountCreateCommand,
   type SdkworkIamOfficialAccountsApi,
 } from "./client/controller";
 export {

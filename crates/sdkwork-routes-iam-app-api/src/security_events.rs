@@ -231,3 +231,22 @@ pub(crate) async fn record_password_reset_completed(
     )
     .await;
 }
+
+/// Records an authenticated credential rotation that also invalidated the
+/// user's other sessions.
+pub(crate) async fn record_password_changed(pg: &PgPool, tenant_id: &str, user_id: &str) {
+    record_security_event(
+        pg,
+        tenant_id,
+        None,
+        Some(user_id),
+        None,
+        "users.current.password.update",
+        "info",
+        json!({
+            "result": "success",
+            "sessionsRevoked": true,
+        }),
+    )
+    .await;
+}

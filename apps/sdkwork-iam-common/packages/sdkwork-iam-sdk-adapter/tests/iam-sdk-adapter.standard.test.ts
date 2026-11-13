@@ -976,6 +976,12 @@ function createGeneratedAppClient(overrides: AnyRecord = {}): AnyRecord {
       miniProgramSessions: {
         create: vi.fn().mockResolvedValue({ data: null }),
       },
+      phoneBindingSessions: {
+        create: vi.fn().mockResolvedValue({ data: null }),
+        verificationCodeRequests: {
+          create: vi.fn().mockResolvedValue({ data: null }),
+        },
+      },
       sessions: {
         create: vi.fn().mockResolvedValue({ data: null }),
       },

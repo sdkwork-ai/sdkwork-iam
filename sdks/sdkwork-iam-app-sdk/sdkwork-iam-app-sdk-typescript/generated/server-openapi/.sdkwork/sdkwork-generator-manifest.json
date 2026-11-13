@@ -44,7 +44,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "0e7510f7b0318272aaa94313bd19ce6806b20a2eed90adccb1becb42061cf295"
+      "sha256": "8048d7f56790ba3b6c42bed39840eb4a5542a91795b201105c41157c8b84e4bf"
     },
     {
       "path": "sdkwork-sdk.json",
@@ -68,7 +68,7 @@
     },
     {
       "path": "src/api/oauth.ts",
-      "sha256": "8b69bcfabb1fb9c84e9e2894d003644a8d7d314e22fd1f3b934952008043b8b4"
+      "sha256": "9a02c83562a99f318b839c13afcbfea185a986a7359e6f8c8e573e5033246459"
     },
     {
       "path": "src/api/paths.ts",
@@ -104,7 +104,7 @@
     },
     {
       "path": "src/types/appbase-session-create-command.ts",
-      "sha256": "eefac92a4399dcf55077695fce3cda5832024e71f884811dc3e21681fd720c31"
+      "sha256": "070a861eddfb12425c85ff7e64227fd805d4d8e6b55c72464144362289b0b558"
     },
     {
       "path": "src/types/authorizations-completions-create-request.ts",
@@ -172,7 +172,15 @@
     },
     {
       "path": "src/types/index.ts",
-      "sha256": "6699c2f3675de64704d762302ede25ad56f0b7b5e4176f6c8ae668833f703298"
+      "sha256": "496fd38e58313512a438c6fff62c832e183464fe3f9a577e7d85c17b5e8e615d"
+    },
+    {
+      "path": "src/types/oauth-phone-binding-session-create-command.ts",
+      "sha256": "ff10ba5460eed39011b39ec1bc2060f100ed26fce0732ea62c956aa7cc537456"
+    },
+    {
+      "path": "src/types/oauth-phone-binding-verification-code-request-command.ts",
+      "sha256": "a696400601d83dc80cf789a89c0e9950d3089b9e5aef2a3e68d76db259f4bbb1"
     },
     {
       "path": "src/types/page-info.ts",
@@ -220,7 +228,7 @@
     },
     {
       "path": "src/types/wechat-mini-program-session-create-command.ts",
-      "sha256": "313571c4023695a32deae0ad277d03020fb355649c2c145fa7699f0e7bb25ff3"
+      "sha256": "1e9426c3f07b970967e8ef4e959c205700bbc87da1c6ff6dfb90369c6cffe237"
     },
     {
       "path": "tsconfig.json",

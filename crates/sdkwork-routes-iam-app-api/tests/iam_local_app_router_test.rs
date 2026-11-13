@@ -3883,7 +3883,7 @@ async fn seed_owner_directory_for_tenant(
              tenant_boundary_kind, data_boundary_kind, app_boundary_enabled, verification_status, \
              path, status, created_at, updated_at) \
              VALUES ($1, $2, $3, $4, 'team', 'exclusive', 'tenant', 0, 'verified', $5, 'active', $6, $7) \
-             ON CONFLICT (id) DO UPDATE SET \
+             ON CONFLICT (tenant_id, id) DO UPDATE SET \
                tenant_id = EXCLUDED.tenant_id, \
                code = EXCLUDED.code, \
                name = EXCLUDED.name, \

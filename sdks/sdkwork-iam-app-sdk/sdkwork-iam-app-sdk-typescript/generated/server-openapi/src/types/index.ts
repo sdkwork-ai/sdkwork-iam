@@ -20,6 +20,8 @@ export type { IamUserPersonaResponse } from './iam-user-persona-response';
 export type { IamUserPersonaUpdateCommand } from './iam-user-persona-update-command';
 export type { AppbaseOperationCommand } from './appbase-operation-command';
 export type { WechatMiniProgramSessionCreateCommand } from './wechat-mini-program-session-create-command';
+export type { OauthPhoneBindingSessionCreateCommand } from './oauth-phone-binding-session-create-command';
+export type { OauthPhoneBindingVerificationCodeRequestCommand } from './oauth-phone-binding-verification-code-request-command';
 export type { AppbaseSessionCreateCommand } from './appbase-session-create-command';
 export type { SessionsCurrentLogoutRequest } from './sessions-current-logout-request';
 export type { AuthorizationsCreateRequest } from './authorizations-create-request';
