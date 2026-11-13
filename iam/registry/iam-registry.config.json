@@ -17,9 +17,8 @@
     "mcp",
     "appstore",
     "agents",
-    "plugins"
-  ],
-  "optionalModules": [
+    "plugins",
     "iot"
-  ]
+  ],
+  "optionalModules": []
 }
