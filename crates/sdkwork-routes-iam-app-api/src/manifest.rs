@@ -378,6 +378,12 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
     ),
     HttpRoute::dual_token(
         HttpMethod::Get,
+        "/app/v3/api/iam/organizations/{organizationId}/members",
+        "iam",
+        "organizations.members.list",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
         "/app/v3/api/iam/organization_memberships",
         "iam",
         "organizationMemberships.list",

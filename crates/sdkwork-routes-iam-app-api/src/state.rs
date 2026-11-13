@@ -112,6 +112,24 @@ pub(crate) struct LocalOrganizationMembership {
     pub(crate) user_id: String,
 }
 
+/// One organization roster row composed from `iam_organization_membership`
+/// joined with `iam_user`.
+///
+/// The roster is organization-scoped rather than caller-scoped, so `email` is
+/// kept as a separate optional projection: the handler drops it unless the
+/// caller's own membership in the same organization is `owner` or `admin`.
+#[derive(Clone)]
+pub(crate) struct LocalOrganizationMember {
+    pub(crate) display_name: String,
+    pub(crate) email: Option<String>,
+    pub(crate) membership_id: String,
+    pub(crate) membership_kind: String,
+    pub(crate) primary: bool,
+    pub(crate) status: String,
+    pub(crate) user_id: String,
+    pub(crate) username: String,
+}
+
 #[derive(Clone)]
 pub(crate) struct LocalDepartment {
     pub(crate) id: String,

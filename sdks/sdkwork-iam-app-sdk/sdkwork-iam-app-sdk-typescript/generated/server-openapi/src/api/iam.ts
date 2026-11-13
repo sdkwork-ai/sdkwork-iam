@@ -1,7 +1,7 @@
 import { appApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { AppbaseOperationCommand, IamPersonaCatalog, IamUserPersona, IamUserPersonaUpdateCommand, SdkWorkPageData } from '../types';
+import type { AppbaseOperationCommand, IamOrganizationMember, IamPersonaCatalog, IamUserPersona, IamUserPersonaUpdateCommand, PageInfo, SdkWorkPageData } from '../types';
 
 
 export class IamUsersCurrentPhoneBindingsApi {
@@ -241,6 +241,37 @@ export class IamOrganizationsTreeApi {
   }
 }
 
+export interface IamOrganizationsMembersListParams {
+  page?: number;
+  pageSize?: number;
+  cursor?: string;
+  sort?: string;
+  q?: string;
+  role?: 'owner' | 'admin' | 'member';
+}
+
+export class IamOrganizationsMembersApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Organizations members list. */
+  async list(organizationId: string, params?: IamOrganizationsMembersListParams, requestOptions?: ApiRequestOptions): Promise<{ items: IamOrganizationMember[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
+      { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+      { name: 'role', value: params?.role, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: IamOrganizationMember[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/iam/organizations/${serializePathParameter(organizationId, { name: 'organizationId', style: 'simple', explode: false })}/members`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+}
+
 export interface IamOrganizationsListParams {
   page?: number;
   pageSize?: number;
@@ -251,10 +282,12 @@ export interface IamOrganizationsListParams {
 
 export class IamOrganizationsApi {
   private client: HttpClient;
+  public readonly members: IamOrganizationsMembersApi;
   public readonly tree: IamOrganizationsTreeApi;
 
   constructor(client: HttpClient) {
     this.client = client;
+    this.members = new IamOrganizationsMembersApi(client);
     this.tree = new IamOrganizationsTreeApi(client);
   }
 

@@ -257,6 +257,10 @@ fn build_sdkwork_iam_app_api_core_router(state: LocalIamState) -> Router {
             get(retrieve_organization_tree),
         )
         .route(
+            "/app/v3/api/iam/organizations/{organization_id}/members",
+            get(list_organization_members),
+        )
+        .route(
             "/app/v3/api/iam/organization_memberships",
             get(list_organization_memberships),
         )
@@ -5330,6 +5334,84 @@ async fn list_organization_memberships(
     ))
 }
 
+/// Membership kinds an organization roster `role` filter may address.
+const ORGANIZATION_MEMBER_ROLES: &[&str] = &["owner", "admin", "member"];
+
+/// `GET /app/v3/api/iam/organizations/{organizationId}/members`.
+///
+/// Organization roster facts are owned by IAM: product surfaces compose them
+/// from this operation instead of receiving a copy from another module. Two
+/// rules decide what the caller may see:
+///
+/// 1. The caller must hold an active membership in the addressed organization
+///    inside the session tenant, otherwise the roster is a 403 — the operation
+///    is organization-scoped, not a directory-wide read.
+/// 2. `email` is projected only when the caller's own membership in that
+///    organization is `owner` or `admin`. A `member` caller still sees
+///    `displayName`/`username` (needed to render a team page) but never the
+///    contact address of colleagues.
+async fn list_organization_members(
+    State(state): State<LocalIamState>,
+    ctx: WebRequestContext,
+    Path(organization_id): Path<String>,
+    Query(query): Query<HashMap<String, String>>,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+    let Some(session) = require_session_from_context(pg, &ctx).await else {
+        return iam_session_required_error();
+    };
+    if let Some(response) = ensure_directory_permission(&session, &["iam.memberships.read"]) {
+        return response;
+    }
+    let role = match optional_query_string(&query, &["role"]) {
+        Some(role) if !ORGANIZATION_MEMBER_ROLES.contains(&role.as_str()) => {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_organization_member_role_invalid",
+                "role must be one of owner, admin, or member",
+            );
+        }
+        role => role,
+    };
+    let caller_membership_kind =
+        match active_organization_membership_kind(pg, &session, &organization_id).await {
+            Ok(value) => value,
+            Err(error) => return directory_query_error(error),
+        };
+    let Some(caller_membership_kind) = caller_membership_kind else {
+        return appbase_error(
+            StatusCode::FORBIDDEN,
+            "iam_organization_membership_required",
+            "an active membership in the addressed organization is required",
+        );
+    };
+    let include_email = organization_member_contact_reader(&caller_membership_kind);
+    let (members, total, params) =
+        match paged_organization_members(pg, &session, &organization_id, role.as_deref(), &query)
+            .await
+        {
+            Ok(value) => value,
+            Err(error) => return directory_query_error(error),
+        };
+    appbase_ok(list_page_json(
+        members
+            .iter()
+            .map(|member| organization_member_to_json(member, include_email))
+            .collect(),
+        total,
+        &params,
+    ))
+}
+
+/// Whether the caller's own organization membership may read roster emails.
+fn organization_member_contact_reader(caller_membership_kind: &str) -> bool {
+    matches!(caller_membership_kind, "owner" | "admin")
+}
+
 async fn list_departments(
     State(state): State<LocalIamState>,
     ctx: WebRequestContext,
@@ -5678,6 +5760,43 @@ async fn active_organization_memberships_for_user(
             user: user.clone(),
         })
         .collect())
+}
+
+/// Resolves the caller's effective `membership_kind` in one organization.
+///
+/// Returns `None` when the caller holds no active membership there, which is
+/// what turns the roster into a 403. A person can hold several active rows in
+/// the same organization (the uniqueness key includes the kind), so the rows
+/// are ranked and the highest privilege wins: an `owner` row must never be
+/// shadowed by the person's own `member` row.
+async fn active_organization_membership_kind(
+    pg: &PgPool,
+    session: &LocalSession,
+    organization_id: &str,
+) -> Result<Option<String>, sqlx::Error> {
+    let row = sqlx::query(
+        "SELECT membership_kind FROM iam_organization_membership \
+         WHERE tenant_id = $1 AND organization_id = $2 AND user_id = $3 \
+           AND (status = 'active' OR status = '1') \
+         ORDER BY CASE membership_kind WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, id \
+         LIMIT 1",
+    )
+    .bind(&session.context.tenant_id)
+    .bind(organization_id)
+    .bind(&session.context.user_id)
+    .fetch_optional(pg)
+    .await?;
+    Ok(row.map(|row| row.get(0)))
+}
+
+/// Legacy membership rows store `status = '1'`; the roster contract reports
+/// `active` so a legacy row cannot leak its storage encoding onto the wire.
+fn organization_membership_status(raw: String) -> String {
+    if raw == "1" {
+        "active".to_owned()
+    } else {
+        raw
+    }
 }
 
 async fn has_active_organization_membership(
@@ -6052,6 +6171,61 @@ async fn paged_organization_memberships(
         })
         .collect();
     Ok((memberships, total, params))
+}
+
+/// Reads one page of the roster of a single organization.
+///
+/// Rows come from `iam_organization_membership` joined with `iam_user`, scoped
+/// to the session tenant and the addressed organization, and restricted to
+/// membership rows that are active (`'active'`, or the legacy `'1'` encoding).
+/// All ids stay bound as text; nothing is interpolated into the statement.
+async fn paged_organization_members(
+    pg: &PgPool,
+    session: &LocalSession,
+    organization_id: &str,
+    role: Option<&str>,
+    query: &HashMap<String, String>,
+) -> DirectoryPagedResult<LocalOrganizationMember> {
+    let params = clamped_list_page_params_for_directory(query)?;
+    let search_pattern = escaped_list_search_pattern(query);
+    let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
+        "SELECT m.id, m.user_id, m.membership_kind, m.status, m.is_primary, \
+                u.display_name, u.username, u.email, \
+                COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
+         FROM iam_organization_membership m \
+         JOIN iam_user u ON u.id = m.user_id AND u.tenant_id = m.tenant_id \
+         WHERE m.tenant_id = $1 AND m.organization_id = $2 \
+           AND (m.status = 'active' OR m.status = '1') \
+           AND ($3::text IS NULL OR m.membership_kind = $3) \
+           AND ($4::text IS NULL OR LOWER(u.username) LIKE $4 ESCAPE '\\' \
+                OR LOWER(u.display_name) LIKE $4 ESCAPE '\\' \
+                OR LOWER(COALESCE(u.email, '')) LIKE $4 ESCAPE '\\') \
+         ORDER BY m.is_primary DESC, u.display_name, m.id \
+         LIMIT $5 OFFSET $6"
+    )))
+    .bind(&session.context.tenant_id)
+    .bind(organization_id)
+    .bind(role)
+    .bind(&search_pattern)
+    .bind(params.page_size)
+    .bind(params.offset)
+    .fetch_all(pg)
+    .await?;
+    let total = total_from_rows(&rows);
+    let members = rows
+        .into_iter()
+        .map(|row| LocalOrganizationMember {
+            membership_id: row.get(0),
+            user_id: row.get(1),
+            membership_kind: row.get(2),
+            status: organization_membership_status(row.get(3)),
+            primary: row.get::<i32, _>(4) != 0,
+            display_name: row.get(5),
+            username: row.get(6),
+            email: row.get(7),
+        })
+        .collect();
+    Ok((members, total, params))
 }
 
 async fn scoped_departments_for_session(

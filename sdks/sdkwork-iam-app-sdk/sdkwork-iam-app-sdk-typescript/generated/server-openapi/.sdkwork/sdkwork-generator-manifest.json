@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/iam.ts",
-      "sha256": "f162fbeeac3e3e6061fc7d3028eadffb911358bac22a8bd5ac78eb81ceb2b1fc"
+      "sha256": "898c4101c3a4a1093513d645d5e2cda8fcb7ae1b1615fe8fa11fbb0b8ffca769"
     },
     {
       "path": "src/api/index.ts",
@@ -139,6 +139,14 @@
       "sha256": "7688827a804d5c888fdf626b89e3356832f858e24f0657069b6b842a31ae6907"
     },
     {
+      "path": "src/types/iam-organization-member-list-response.ts",
+      "sha256": "4436563873e24d801f49be0287bb54be222cd74ed1d75028d396f88dc0785f58"
+    },
+    {
+      "path": "src/types/iam-organization-member.ts",
+      "sha256": "ca9c9bb76892a21c88c598e414547c5bec0cecc09d416892e993ce4a973125af"
+    },
+    {
       "path": "src/types/iam-persona-catalog-response.ts",
       "sha256": "51c8e28da01d46d888bcd39f78bef2879f40e3ee4a3a9cc06b224d1eda3dbb70"
     },
@@ -172,7 +180,7 @@
     },
     {
       "path": "src/types/index.ts",
-      "sha256": "496fd38e58313512a438c6fff62c832e183464fe3f9a577e7d85c17b5e8e615d"
+      "sha256": "fb18a4846e3abd6464a728c113dba458c984aabcbed67f10be7c4eea912f3fb9"
     },
     {
       "path": "src/types/oauth-phone-binding-session-create-command.ts",

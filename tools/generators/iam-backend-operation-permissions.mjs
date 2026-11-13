@@ -34,6 +34,12 @@ function explicitBootstrapPermission(operationId) {
     case 'users.current.phoneBindings.create':
     case 'users.current.phoneBindings.delete':
       return 'iam.profile.update';
+    // The organization roster is organization-membership data, not
+    // organization metadata: it is gated by the membership read code users
+    // already hold for `organizationMemberships.list`, and the handler adds
+    // the organization-scoped active-membership check on top.
+    case 'organizations.members.list':
+      return 'iam.memberships.read';
     case 'applications.register':
       return 'iam.applications.register';
     case 'tenantApplications.create':

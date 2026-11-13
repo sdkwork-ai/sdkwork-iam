@@ -126,6 +126,19 @@ const methodNames = {
   Delete: 'delete',
 };
 
+/**
+ * Operations whose SDK resource is not simply `operationId` minus its action.
+ *
+ * The organization roster is addressed through the organization path
+ * (`organizations.members.list`) but is its own resource: it returns
+ * `IamOrganizationMember` facts, not organization facts, and generated clients
+ * must expose it as `organizationMembers.list` rather than as a child of
+ * `organizations`.
+ */
+const operationResourceOverrides = {
+  'organizations.members.list': 'organizationMembers',
+};
+
 export async function materializeAppbaseV3OpenApiBoundaries() {
   const routes = await collectRoutes();
   const appRoutes = selectRoutes(routes, surfaces.app.prefix);
@@ -408,7 +421,9 @@ function materializedFromSources(surface) {
 
 function buildOperation(surface, route) {
   const authMode = operationAuthMode(surface, route);
-  const successSchemaRef = personaSuccessSchemaRef(route) ?? successResponseSchemaRef(route);
+  const successSchemaRef = personaSuccessSchemaRef(route)
+    ?? typedListSuccessSchemaRef(route)
+    ?? successResponseSchemaRef(route);
   const responses = {
     400: problemResponse('Bad request'),
     401: problemResponse('Unauthorized'),
@@ -441,7 +456,9 @@ function buildOperation(surface, route) {
     'x-sdkwork-owner': surface.sdkOwner,
     'x-sdkwork-api-authority': surface.authorityName,
     'x-sdkwork-domain': route.owner,
-    'x-sdkwork-resource': route.operationId.split('.').slice(0, -1).join('.'),
+    'x-sdkwork-resource':
+      operationResourceOverrides[route.operationId]
+      ?? route.operationId.split('.').slice(0, -1).join('.'),
     'x-sdkwork-request-context': 'WebRequestContext',
     'x-sdkwork-api-surface': `${surface.sdkType}-api`,
     'x-sdkwork-server-request-id': true,
@@ -803,6 +820,17 @@ function buildOperation(surface, route) {
     );
   }
 
+  if (route.operationId === 'organizations.members.list') {
+    operation.parameters.push(
+      queryParameter('role', {
+        type: 'string',
+        enum: ['owner', 'admin', 'member'],
+        description:
+          'Exact membership kind filter. Omitted returns every active member of the organization.',
+      }),
+    );
+  }
+
   if (route.operationId === 'providerAccounts.list') {
     operation.parameters.push(
       queryParameter('vendorCode', {
@@ -1006,6 +1034,24 @@ function personaSuccessSchemaRef(route) {
   }
 }
 
+/**
+ * Typed list envelope for a list operation whose items are a named schema.
+ *
+ * The generic `SdkWorkListResponse` keeps `data.items` untyped, which would make
+ * generated clients return `Record<string, unknown>[]` and force every consumer
+ * to re-declare the item shape. The specialized schema keeps the exact same
+ * envelope (`code`/`data.items`/`data.pageInfo`/`traceId`) and only narrows the
+ * item type.
+ */
+function typedListSuccessSchemaRef(route) {
+  switch (route.operationId) {
+    case 'organizations.members.list':
+      return '#/components/schemas/IamOrganizationMemberListResponse';
+    default:
+      return undefined;
+  }
+}
+
 function buildSchemas() {
   const bootstrapAuth = bootstrapBodyAuthProperties();
 
@@ -1165,6 +1211,62 @@ function buildSchemas() {
           description: 'Whether the first-run prompt was answered.',
         },
       },
+    },
+    // Organization roster item. The roster is organization-scoped directory
+    // data about other people, so the wire type keeps every id a plain string
+    // id and makes `email` optional: a caller whose own membership in the
+    // organization is `member` never receives it.
+    IamOrganizationMember: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['userId', 'membershipId', 'membershipKind', 'status', 'isPrimary'],
+      description: 'One member of an organization roster as IAM publishes it.',
+      properties: {
+        userId: { type: 'string', description: 'IAM user id.' },
+        membershipId: {
+          type: 'string',
+          description: 'Organization membership row id that binds the user to the organization.',
+        },
+        displayName: { type: 'string', description: 'Display name of the member.' },
+        username: { type: 'string', description: 'Login name of the member.' },
+        email: {
+          type: 'string',
+          description:
+            'Contact email. Omitted unless the caller holds an owner or admin membership in the same organization.',
+        },
+        membershipKind: { type: 'string', enum: ['owner', 'admin', 'member'] },
+        status: {
+          type: 'string',
+          description: 'Membership status; an active roster only reports active rows.',
+        },
+        isPrimary: {
+          type: 'boolean',
+          description: 'Whether this membership is the member primary organization membership.',
+        },
+      },
+    },
+    IamOrganizationMemberListResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['items', 'pageInfo'],
+              properties: {
+                items: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/IamOrganizationMember' },
+                },
+                pageInfo: { $ref: '#/components/schemas/PageInfo' },
+              },
+            },
+          },
+        },
+      ],
     },
     AppbaseOperationCommand: {
       type: 'object',

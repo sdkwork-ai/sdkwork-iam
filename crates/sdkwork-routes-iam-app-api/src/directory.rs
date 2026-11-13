@@ -874,6 +874,33 @@ pub(crate) fn organization_membership_to_json(m: &LocalOrganizationMembership) -
     v
 }
 
+/// Organization roster item (`IamOrganizationMember`).
+///
+/// The roster exposes directory facts about other people, so `email` is
+/// projected only when `include_email` is true. The caller derives that flag
+/// from its own membership kind in the same organization: only `owner` and
+/// `admin` callers see contact data, a `member` caller never does.
+pub(crate) fn organization_member_to_json(
+    m: &LocalOrganizationMember,
+    include_email: bool,
+) -> Value {
+    let mut value = json!({
+        "displayName": m.display_name,
+        "isPrimary": m.primary,
+        "membershipId": m.membership_id,
+        "membershipKind": m.membership_kind,
+        "status": m.status,
+        "userId": m.user_id,
+        "username": m.username
+    });
+    if include_email {
+        if let Some(email) = m.email.as_ref().filter(|value| !value.is_empty()) {
+            value["email"] = json!(email);
+        }
+    }
+    value
+}
+
 pub(crate) fn department_to_json(d: &LocalDepartment) -> Value {
     json!({
         "departmentId": d.id, "displayName": d.name, "id": d.id, "name": d.name, "order": d.order,
