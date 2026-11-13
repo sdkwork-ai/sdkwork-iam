@@ -229,10 +229,12 @@ describe("@sdkwork/iam-h5-auth", () => {
     await expect(controller.register({
       account: "13800138000",
       code: "8888",
+      confirmPassword: "secret",
       password: "secret",
     })).resolves.toMatchObject({ kind: "session", session: { sessionId: "sess-register" } });
     expect(service.auth.registrations.create).toHaveBeenCalledWith({
       channel: "PHONE",
+      confirmPassword: "secret",
       password: "secret",
       username: "13800138000",
       verificationCode: "8888",

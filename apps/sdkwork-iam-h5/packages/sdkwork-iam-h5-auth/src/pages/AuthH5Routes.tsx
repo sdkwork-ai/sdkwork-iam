@@ -31,6 +31,8 @@ export interface SdkworkIamH5AuthRoutesProps {
    * the provider flow (the IM product currently fails closed).
    */
   onThirdPartyLogin?: (platform: string) => void;
+  /** Back affordance when the auth route was reached from another host page. */
+  onBack?: () => void;
 }
 
 function isOAuthCallbackRoute(pathname: string, basePath: string): boolean {
@@ -53,6 +55,7 @@ export function SdkworkIamH5AuthRoutes({
   onAuthenticated,
   onScanLoginCompleted,
   onThirdPartyLogin,
+  onBack,
 }: SdkworkIamH5AuthRoutesProps) {
   const location = useLocation();
   const resolvedBasePath = useMemo(() => normalizeBasePath(basePath), [basePath]);
@@ -74,6 +77,7 @@ export function SdkworkIamH5AuthRoutes({
           onAuthenticated={onAuthenticated}
           onScanLoginCompleted={onScanLoginCompleted}
           onThirdPartyLogin={onThirdPartyLogin}
+          {...(onBack ? { onBack } : {})}
         />
       )}
     </SdkworkI18nProvider>

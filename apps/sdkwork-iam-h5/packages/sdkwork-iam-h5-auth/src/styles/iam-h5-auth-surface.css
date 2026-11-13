@@ -2,29 +2,37 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * Mobile auth surface design tokens (based on the ClawChat mobile auth
- * design: dark-first, WeChat-style green accents).
+ * Mobile auth surface design tokens — SDKWork tech-blue theme.
  *
- * The surface is self-contained: it always renders the design's dark
+ * The surface is self-contained: it always renders the design's dark tech-blue
  * palette regardless of the host application theme, so the login experience
- * stays pixel-consistent with the product design in every host.
+ * stays pixel-consistent across every SDKWork host. The accent is the shared
+ * CloudRouter/tech blue (`#2563eb`) rather than the legacy WeChat green; the
+ * historical `--iam-h5-auth-green` variable name is kept as an alias so hosts
+ * that theme the surface through the documented tokens do not break.
  */
 
 .sdkwork-iam-h5-auth-surface {
-  --iam-h5-auth-bg: #0a0a0a;
-  --iam-h5-auth-text-main: #f3f4f6;
-  --iam-h5-auth-text-sub: #9ca3af;
-  --iam-h5-auth-border: #262626;
-  --iam-h5-auth-green: #07c160;
-  --iam-h5-auth-link: #576b95;
-  --iam-h5-auth-btn-disabled-bg: #2c2c2c;
-  --iam-h5-auth-btn-disabled-text: #5b5b5b;
-  --iam-h5-auth-input-placeholder: rgba(156, 163, 175, 0.5);
-  --iam-h5-auth-modal-bg: #1c1c1e;
-  --iam-h5-auth-border-soft: rgba(156, 163, 175, 0.4);
-  --iam-h5-auth-green-shadow: rgba(7, 193, 96, 0.2);
+  --iam-h5-auth-bg: #0b1220;
+  --iam-h5-auth-text-main: #f8fafc;
+  --iam-h5-auth-text-sub: #94a3b8;
+  --iam-h5-auth-border: #1e293b;
+  --iam-h5-auth-accent: #2563eb;
+  /* Backwards-compatible alias consumed by the existing components. */
+  --iam-h5-auth-green: var(--iam-h5-auth-accent);
+  --iam-h5-auth-link: #60a5fa;
+  --iam-h5-auth-btn-disabled-bg: #1e293b;
+  --iam-h5-auth-btn-disabled-text: #64748b;
+  --iam-h5-auth-input-placeholder: rgba(148, 163, 184, 0.55);
+  --iam-h5-auth-modal-bg: #111827;
+  --iam-h5-auth-border-soft: rgba(148, 163, 184, 0.35);
+  --iam-h5-auth-green-shadow: rgba(37, 99, 235, 0.35);
 
+  /* Tech-blue glow: a subtle radial light at the top over a deep navy base. */
   background-color: var(--iam-h5-auth-bg);
+  background-image:
+    radial-gradient(120% 80% at 50% 0%, rgba(37, 99, 235, 0.28), transparent 60%),
+    linear-gradient(180deg, #0b1220 0%, #070b14 100%);
   color: var(--iam-h5-auth-text-main);
   color-scheme: dark;
   font-family:
@@ -38,7 +46,7 @@
 .sdkwork-iam-h5-auth-surface input,
 .sdkwork-iam-h5-auth-surface textarea {
   color: var(--iam-h5-auth-text-main);
-  caret-color: var(--iam-h5-auth-green);
+  caret-color: var(--iam-h5-auth-accent);
 }
 
 .sdkwork-iam-h5-auth-surface input::placeholder {

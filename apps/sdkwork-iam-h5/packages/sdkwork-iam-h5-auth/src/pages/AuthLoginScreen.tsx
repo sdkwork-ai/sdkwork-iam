@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft } from "lucide-react";
 
 import { useSdkworkIamH5AuthMessages } from "../i18n";
 import type {
@@ -47,6 +48,7 @@ export function SdkworkIamH5AuthLoginScreen({
   onAuthenticated,
   onScanLoginCompleted,
   onThirdPartyLogin,
+  onBack,
 }: SdkworkIamH5AuthLoginScreenProps) {
   const messages = useSdkworkIamH5AuthMessages();
   // A mode is both a UI state and a route: `/auth/register` and
@@ -368,6 +370,16 @@ export function SdkworkIamH5AuthLoginScreen({
 
   return (
     <div className="sdkwork-iam-h5-auth-surface relative flex h-full flex-col overflow-y-auto">
+      {onBack ? (
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label={messages.links.backToPrevious}
+          className="absolute left-4 top-[calc(env(safe-area-inset-top,0px)+0.9rem)] z-20 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition-opacity active:opacity-70"
+        >
+          <ChevronLeft className="h-5 w-5" aria-hidden />
+        </button>
+      ) : null}
       <div className="flex min-h-[500px] flex-1 flex-col justify-center px-8 py-8">
         <SdkworkIamH5AuthHeader mode={mode} />
 
@@ -472,4 +484,11 @@ export interface SdkworkIamH5AuthLoginScreenProps {
    * the provider flow (the IM product currently fails closed).
    */
   onThirdPartyLogin?: (platform: string) => void;
+  /**
+   * Back affordance for a host that navigated here from another page.
+   *
+   * Omitted when the login screen is the entry surface (a direct/deep link), so
+   * a first-load login never shows a dead back button.
+   */
+  onBack?: () => void;
 }
