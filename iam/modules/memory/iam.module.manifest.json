@@ -857,8 +857,32 @@
   },
   "roles": {
     "domainStandardRoles": [],
-    "roleGrantExtensions": [],
-    "roleExclusions": []
+    "roleExclusions": [],
+    "roleGrantExtensions": [
+      {
+        "roleCode": "app_user",
+        "patterns": [
+          "memory.app.entities.write",
+          "memory.app.policies.write",
+          "memory.candidates.write",
+          "memory.events.write",
+          "memory.exports.write",
+          "memory.feedback.write",
+          "memory.forget.write",
+          "memory.habits.write",
+          "memory.learning.write",
+          "memory.records.write",
+          "memory.retrievals.write",
+          "memory.spaces.write"
+        ]
+      },
+      {
+        "roleCode": "org_admin",
+        "patterns": [
+          "memory.*"
+        ]
+      }
+    ]
   },
   "catalogVersion": "1.0.0",
   "owner": "sdkwork-memory",

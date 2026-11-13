@@ -238,8 +238,28 @@
   },
   "roles": {
     "domainStandardRoles": [],
-    "roleGrantExtensions": [],
-    "roleExclusions": []
+    "roleExclusions": [],
+    "roleGrantExtensions": [
+      {
+        "roleCode": "app_user",
+        "patterns": [
+          "company.applications.manage",
+          "company.applications.write",
+          "company.bids.write",
+          "company.demands.write",
+          "company.jobs.write",
+          "company.profiles.write",
+          "company.resumes.write",
+          "company.supplies.write"
+        ]
+      },
+      {
+        "roleCode": "org_admin",
+        "patterns": [
+          "company.*"
+        ]
+      }
+    ]
   },
   "directory": {
     "organizationTemplates": [],

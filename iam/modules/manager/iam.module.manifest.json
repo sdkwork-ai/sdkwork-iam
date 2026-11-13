@@ -43,8 +43,15 @@
   },
   "roles": {
     "domainStandardRoles": [],
-    "roleGrantExtensions": [],
-    "roleExclusions": []
+    "roleExclusions": [],
+    "roleGrantExtensions": [
+      {
+        "roleCode": "org_admin",
+        "patterns": [
+          "manager.*"
+        ]
+      }
+    ]
   },
   "catalogVersion": "1.0.0",
   "owner": "sdkwork-manager",
