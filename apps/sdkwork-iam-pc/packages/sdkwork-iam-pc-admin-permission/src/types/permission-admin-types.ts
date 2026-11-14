@@ -38,9 +38,24 @@ export interface SdkworkIamRoleBindingDraft {
 
 export interface SdkworkIamRole {
   code?: string;
+  /** Locale map of role descriptions keyed by BCP 47 tag; empty when untranslated. */
+  descriptions?: Readonly<Record<string, string>>;
   id: string;
+  /**
+   * Locale map of role labels keyed by BCP 47 tag
+   * (`{"zh-CN": "组织管理员", "en-US": "Organization Admin"}`), served verbatim as
+   * machine vocabulary. Render through `localizedLabel(labels, locale, name)`.
+   */
+  labels?: Readonly<Record<string, string>>;
+  /**
+   * The stored label. It is the canonical fallback for an uncovered locale and
+   * the operator-entered copy of a tenant-authored role, not a translated value.
+   */
   name: string;
+  roleClass?: string;
   roleId: string;
+  /** Whether the row belongs to the seeded standard catalog. */
+  standard?: boolean;
   status?: string;
   tenantId?: string;
 }

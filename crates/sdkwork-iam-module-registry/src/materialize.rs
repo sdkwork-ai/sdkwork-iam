@@ -488,6 +488,41 @@ async fn upsert_postgres_roles(
         upsert_role_permissions_postgres(tx, tenant_id, &role_id, &patterns, &catalog_codes)
             .await?;
     }
+
+    // Standard roles inherit the platform's localized display text, so a newly
+    // provisioned tenant renders the catalog in the caller's language instead of
+    // falling back to the English `name`. The canonical map is the newest
+    // sibling standard row for the same code that already carries one (the
+    // bootstrap tenant's locale seed is the usual source); a tenant-local map is
+    // never overwritten, and an absent canonical row leaves `{}` in place, which
+    // is the correct "no translation yet" state.
+    sqlx::query(
+        r#"
+        UPDATE iam_role AS target
+        SET label_i18n = canonical.label_i18n,
+            description_i18n = canonical.description_i18n,
+            updated_at = CURRENT_TIMESTAMP
+        FROM (
+            SELECT DISTINCT ON (code) code, label_i18n, description_i18n
+            FROM iam_role
+            WHERE standard = 1
+              AND label_i18n <> '{}'
+              AND tenant_id <> $1
+            ORDER BY code, updated_at DESC, tenant_id
+        ) AS canonical
+        WHERE target.tenant_id = $1
+          AND target.standard = 1
+          AND target.code = canonical.code
+          AND target.label_i18n = '{}'
+        "#,
+    )
+    .bind(tenant_id)
+    .execute(&mut **tx)
+    .await
+    .map_err(|error| {
+        format!("propagate localized role labels for tenant {tenant_id} failed: {error}")
+    })?;
+
     Ok(())
 }
 

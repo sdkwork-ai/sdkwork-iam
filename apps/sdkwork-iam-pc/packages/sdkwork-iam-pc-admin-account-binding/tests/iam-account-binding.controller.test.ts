@@ -20,6 +20,11 @@ const samplePolicy: SdkworkIamAccountBindingPolicy = {
     allowedProviders: ["wechat", "google"],
     autoRegistrationEnabled: true,
     enabled: true,
+    phoneAssociation: {
+      autoLinkVerifiedPhone: true,
+      enabled: false,
+      requirePhoneBinding: false,
+    },
   },
   oauthBinding: {
     allowedProviders: ["github"],

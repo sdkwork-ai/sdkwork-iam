@@ -110,6 +110,9 @@ export function createOauthServiceMock() {
           ],
         }),
         management: {
+          create: vi.fn().mockResolvedValue({}),
+          disable: vi.fn().mockResolvedValue({}),
+          enable: vi.fn().mockResolvedValue({}),
           update: vi.fn().mockResolvedValue({}),
         },
       },

@@ -27,7 +27,9 @@ export {
 export {
   createSdkworkIamH5MessageCatalog,
   normalizeLocaleTag,
+  resolveLocalizedLabel,
   SdkworkIamH5I18nProvider,
+  useSdkworkIamH5Locale,
   useSdkworkIamH5Messages,
   type SdkworkIamH5I18nProviderProps,
   type SdkworkIamH5LocaleBundle,

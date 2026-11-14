@@ -185,4 +185,59 @@ describe("@sdkwork/iam-pc-admin-permission", () => {
     expect(service.iam.policies.create).toHaveBeenCalledWith({ name: "Default" });
     expect(service.iam.roles.delete).toHaveBeenCalledWith("role-new");
   });
+
+  it("keeps the persisted role locale map so the workspace can render the active locale", async () => {
+    const service = {
+      iam: {
+        roles: {
+          list: vi.fn().mockResolvedValue([
+            {
+              code: "org_admin",
+              description_i18n: { "zh-CN": "管理组织成员、角色与授权" },
+              label_i18n: { "en-US": "Organization Admin", "zh-CN": "组织管理员" },
+              name: "Organization Admin",
+              role_class: "platform_standard",
+              roleId: "role-1",
+              standard: true,
+            },
+            {
+              code: "tenant_custom",
+              id: "role-2",
+              labels: {},
+              name: "区域运营",
+            },
+          ]),
+        },
+      },
+    };
+
+    const controller = createSdkworkIamPermissionController({ service: service as never });
+
+    await expect(controller.listRoles()).resolves.toEqual([
+      {
+        code: "org_admin",
+        descriptions: { "zh-CN": "管理组织成员、角色与授权" },
+        id: "role-1",
+        labels: { "en-US": "Organization Admin", "zh-CN": "组织管理员" },
+        name: "Organization Admin",
+        roleClass: "platform_standard",
+        roleId: "role-1",
+        standard: true,
+        status: undefined,
+        tenantId: undefined,
+      },
+      {
+        code: "tenant_custom",
+        descriptions: undefined,
+        id: "role-2",
+        labels: undefined,
+        name: "区域运营",
+        roleClass: undefined,
+        roleId: "role-2",
+        standard: undefined,
+        status: undefined,
+        tenantId: undefined,
+      },
+    ]);
+  });
 });

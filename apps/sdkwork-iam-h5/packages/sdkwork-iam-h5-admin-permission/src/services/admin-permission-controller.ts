@@ -138,11 +138,21 @@ function toRole(value: unknown): SdkworkIamH5AdminRole | undefined {
   const id = readString(record.roleId) ?? readString(record.role_id) ?? readString(record.id);
   if (!id) return undefined;
   const name = readString(record.name) ?? readString(record.displayName);
+  const labels = readLocaleMap(record.labels) ?? readLocaleMap(record.label_i18n);
   return {
     id,
     code: readString(record.code) ?? readString(record.roleCode) ?? id,
     ...(name === undefined ? {} : { name }),
+    ...(labels === undefined ? {} : { labels }),
   };
+}
+
+/** Reads a persisted locale map, keeping only non-empty string entries. */
+function readLocaleMap(value: unknown): Readonly<Record<string, string>> | undefined {
+  const entries = Object.entries(toRecord(value))
+    .map(([tag, label]) => [tag.trim(), readString(label) ?? ""] as const)
+    .filter(([tag, label]) => tag !== "" && label !== "");
+  return entries.length === 0 ? undefined : Object.fromEntries(entries);
 }
 
 function toPolicy(value: unknown): SdkworkIamH5AdminPolicy | undefined {

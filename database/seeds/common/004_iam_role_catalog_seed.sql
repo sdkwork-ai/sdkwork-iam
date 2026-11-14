@@ -22,8 +22,19 @@
 -- (`materialize_postgres_catalog`, re-run from `IamDatabaseModule::after_seed`). Until that
 -- materialization runs, the roles below exist with no permission grants.
 --
+-- Localized display text is NOT owned here. `label_i18n` / `description_i18n` are
+-- locale maps seeded one locale per file under `seeds/locales/<locale>/`
+-- (I18N_SPEC.md section 11): `003_iam_role_labels.sql` owns `zh-CN` and
+-- `002_iam_role_labels.sql` owns `en-US`, both selected by `standard = 1` so no
+-- locale seed pins a tenant literal. `name` below is the catalog's canonical
+-- fallback label, shown only when the requested locale has no map entry and for
+-- tenant-created roles, whose `name` is operator-entered account data rather
+-- than seeded copy. Adding or activating a locale therefore needs no schema
+-- change and no edit to this file.
+--
 -- Idempotency: INSERT ... ON CONFLICT (tenant_id, code) DO UPDATE only refreshes catalog
--- metadata, keeps the existing primary key, and never deletes roles. Re-running is safe.
+-- metadata, keeps the existing primary key, leaves `label_i18n` /
+-- `description_i18n` untouched, and never deletes roles. Re-running is safe.
 
 INSERT INTO iam_role (
   id,

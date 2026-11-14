@@ -144,3 +144,58 @@ export function useSdkworkIamH5Messages<TMessages>(
   }
   return registered(context.locale) as TMessages;
 }
+
+/**
+ * Active locale of the nearest IAM H5 i18n provider.
+ *
+ * A screen needs the raw tag when the value it renders is not a message key but
+ * persisted display text that arrives as a locale map (report labels, catalog
+ * names). It reads the same provider the message hook uses, so the two never
+ * disagree about the active locale.
+ * @returns the active locale tag, or `""` when the provider was given none.
+ * @throws when no `SdkworkIamH5I18nProvider` is above the caller.
+ */
+export function useSdkworkIamH5Locale(): string {
+  const context = useContext(IamH5I18nContext);
+  if (!context) {
+    throw new Error("iam-h5 i18n: useSdkworkIamH5Locale requires SdkworkIamH5I18nProvider");
+  }
+  return context.locale;
+}
+
+/**
+ * Resolve one display label from a persisted locale map.
+ *
+ * Server-owned catalog text is machine vocabulary: a `labels` object keyed by
+ * BCP 47 tag plus the row's stored label (I18N_SPEC.md section 7, backend message
+ * rules). Resolution is exact tag, then language-only tag, then `en-US`, then
+ * `zh-CN`, and only then the caller's fallback, which is what an untranslated
+ * row and a tenant-authored row legitimately have.
+ * @param labels - the persisted locale map, if any.
+ * @param locale - active locale tag, if known.
+ * @param fallback - the stored label to use when no map entry applies.
+ * @returns the label to render.
+ */
+export function resolveLocalizedLabel(
+  labels: Readonly<Record<string, string>> | null | undefined,
+  locale: string | null | undefined,
+  fallback: string,
+): string {
+  if (!labels) return fallback;
+  const byTag = new Map(
+    Object.entries(labels).map(([tag, value]) => [normalizeLocaleTag(tag), value] as const),
+  );
+  const requested = locale ? normalizeLocaleTag(locale) : "";
+  const candidates: string[] = [];
+  if (requested) {
+    candidates.push(requested);
+    const [language = ""] = requested.split("-");
+    if (language && language !== requested) candidates.push(language);
+  }
+  candidates.push("en-US", "zh-CN");
+  for (const candidate of candidates) {
+    const hit = byTag.get(candidate);
+    if (hit !== undefined && hit.trim() !== "") return hit;
+  }
+  return fallback;
+}
