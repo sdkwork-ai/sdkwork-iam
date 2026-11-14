@@ -14,7 +14,7 @@ remain the backend-admin `iam.oauth.resourceAccounts.*` capability in
 
 | Export | Purpose |
 | --- | --- |
-| `SdkworkIamOfficialAccountsPanel` | Transport-agnostic panel: list, create/edit, enable/disable, delete, custom-menu draft editor. |
+| `SdkworkIamOfficialAccountsPanel` | Transport-agnostic panel: list, create/edit, enable/disable, delete, custom-menu draft editor, and the Drive-backed logo field (host-injected `driveUploadImageService`). |
 | `SdkworkIamOfficialAccountsPage` | Page wrapper for the IAM PC app's app-tier route. |
 | `createSdkworkIamOfficialAccountsClient(api)` | Adapts `client.iam.oauth.officialAccounts` (or an equivalent transport) to the panel port. |
 | `SdkworkIamOfficialAccountsController` | List/query state, mutations, and commit-point publication. |
@@ -49,6 +49,14 @@ header is one toolbar row (search with its action on the left, refresh and add
 on the right). A dialog that already names the surface therefore shows that copy
 once. `SdkworkIamOfficialAccountsPage` supplies the title and description for a
 standalone route.
+
+The account logo is uploaded through Drive, never typed as a URL: the host
+service layer builds `createDriveUploadImageService` over its own declared
+upload intent and injects it as `driveUploadImageService`. Edit mode uploads
+against the account id; create mode parks the pick and the panel flushes it
+after the account exists (`DRIVE_SPEC.md` section 18.3). Without the injected
+service the field keeps a stored logo visible and states that uploads are
+unavailable — there is no URL input and no data-URL fallback.
 
 Secrets are write-only: the panel never receives an AppSecret, message token,
 or EncodingAESKey back from the API, and leaving the field blank keeps the

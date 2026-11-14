@@ -2310,3 +2310,35 @@ DROP TRIGGER IF EXISTS trg_iam_catalog_materialization_authz_epoch ON iam_catalo
 CREATE TRIGGER trg_iam_catalog_materialization_authz_epoch
   AFTER INSERT OR UPDATE OR DELETE ON iam_catalog_materialization
   FOR EACH STATEMENT EXECUTE FUNCTION iam_bump_authz_epoch();
+
+-- folded migration: migrations/postgres/0031_iam_user_official_account_domains.up.sql
+ALTER TABLE iam_user_official_account
+  ADD COLUMN IF NOT EXISTS js_secure_domains TEXT NOT NULL DEFAULT '[]';
+
+ALTER TABLE iam_user_official_account
+  ADD COLUMN IF NOT EXISTS web_auth_domains TEXT NOT NULL DEFAULT '[]';
+
+ALTER TABLE iam_user_official_account
+  ADD COLUMN IF NOT EXISTS business_domains TEXT NOT NULL DEFAULT '[]';
+
+ALTER TABLE iam_user_official_account
+  ADD COLUMN IF NOT EXISTS notify_encrypt_mode TEXT NOT NULL DEFAULT 'plaintext';
+
+ALTER TABLE iam_user_official_account
+  DROP CONSTRAINT IF EXISTS ck_iam_user_official_account_js_secure_domains;
+ALTER TABLE iam_user_official_account
+  DROP CONSTRAINT IF EXISTS ck_iam_user_official_account_web_auth_domains;
+ALTER TABLE iam_user_official_account
+  DROP CONSTRAINT IF EXISTS ck_iam_user_official_account_business_domains;
+ALTER TABLE iam_user_official_account
+  DROP CONSTRAINT IF EXISTS ck_iam_user_official_account_notify_encrypt_mode;
+
+ALTER TABLE iam_user_official_account
+  ADD CONSTRAINT ck_iam_user_official_account_js_secure_domains
+    CHECK (jsonb_typeof(js_secure_domains::jsonb) = 'array'),
+  ADD CONSTRAINT ck_iam_user_official_account_web_auth_domains
+    CHECK (jsonb_typeof(web_auth_domains::jsonb) = 'array'),
+  ADD CONSTRAINT ck_iam_user_official_account_business_domains
+    CHECK (jsonb_typeof(business_domains::jsonb) = 'array'),
+  ADD CONSTRAINT ck_iam_user_official_account_notify_encrypt_mode
+    CHECK (notify_encrypt_mode IN ('plaintext', 'compatible', 'safe'));

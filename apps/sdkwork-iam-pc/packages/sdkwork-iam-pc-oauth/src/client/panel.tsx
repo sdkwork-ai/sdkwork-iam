@@ -1,4 +1,16 @@
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import { DriveUploadImage, type DriveUploadImageHandle } from "sdkwork-drive-pc-upload-image";
+import type {
+  DriveUploadImageService,
+  DriveUploadImageValue,
+} from "@sdkwork/drive-upload-image-core";
 import {
   Button,
   ConfirmDialog,
@@ -37,8 +49,26 @@ const MAX_TOP_LEVEL_BUTTONS = 3;
 /** Maximum sub-buttons per top-level button (WeChat limit). */
 const MAX_SUB_BUTTONS = 5;
 
+/** Raw image ceiling accepted from the logo picker; Drive still enforces its quota. */
+const LOGO_MAX_BYTES = 5 * 1024 * 1024;
+
+/** Image formats the official-account logo field accepts. */
+const LOGO_ACCEPT = ["image/png", "image/jpeg", "image/webp"] as const;
+
 const FIELD_CLASS_NAME =
   "w-full rounded-[0.75rem] border border-[var(--sdk-color-border-default)] bg-transparent px-3 py-2 text-sm";
+
+/**
+ * Maps the persisted logo value (a `drive://` uri, a legacy delivery url, or
+ * empty) onto the shared upload field's value shape.
+ * @param logoUrl - the stored logo value.
+ * @returns the upload field value, or null when no logo is stored.
+ */
+function toLogoUploadValue(logoUrl: string): DriveUploadImageValue | null {
+  const uri = logoUrl.trim();
+  if (uri === "") return null;
+  return { uri, source: uri.startsWith("drive://") ? "drive" : "external" };
+}
 
 /** One editable menu-button draft. */
 interface MenuButtonDraft {
@@ -172,9 +202,23 @@ function AccountRow({
  */
 export function SdkworkIamOfficialAccountsPanel({
   controller,
+  driveUploadImageService,
   messages: messagesOverride,
 }: {
   controller: SdkworkIamOfficialAccountsController;
+  /**
+   * Host-injected Drive image-upload capability (`createDriveUploadImageService`).
+   *
+   * Present: the logo field renders the shared `DriveUploadImage` component —
+   * edit mode uploads immediately against the account id, create mode parks the
+   * pick and the panel flushes it through the field handle after the account
+   * exists (`DRIVE_SPEC.md` section 18.3: persist first, upload second).
+   * Absent: the field keeps a stored logo visible and states that uploads are
+   * unavailable. There is deliberately no URL input and no data-URL fallback:
+   * a pasted link bypasses upload governance and a base64 payload would be a
+   * fake upload.
+   */
+  driveUploadImageService?: DriveUploadImageService;
   /** Override copy (hosts and tests); defaults to the module catalog. */
   messages?: SdkworkIamOfficialAccountsMessages;
 }): ReactNode {
@@ -184,7 +228,11 @@ export function SdkworkIamOfficialAccountsPanel({
   const [form, setForm] = useState<FormState>();
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string>();
+  const [logoUploading, setLogoUploading] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<SdkworkIamOfficialAccount>();
+  // Create mode has no account id at pick time: the field parks the pick and
+  // the submit flushes it once `controller.create` returns an id.
+  const logoFieldRef = useRef<DriveUploadImageHandle | null>(null);
 
   useEffect(() => {
     if (state.status === "idle") void controller.load({ page: 1 });
@@ -192,20 +240,60 @@ export function SdkworkIamOfficialAccountsPanel({
 
   const openCreate = (): void => {
     setFormError(undefined);
+    setLogoUploading(false);
     setForm({ mode: "create", draft: emptyDraft(), menu: { buttons: [] } });
   };
   const openEdit = (account: SdkworkIamOfficialAccount): void => {
     setFormError(undefined);
+    setLogoUploading(false);
     setForm({ mode: "edit", account, draft: draftOf(account), menu: account.customMenu });
   };
   const openMenu = (account: SdkworkIamOfficialAccount): void => {
     setFormError(undefined);
+    setLogoUploading(false);
     setForm({ mode: "menu", account, draft: draftOf(account), menu: account.customMenu });
   };
   const closeForm = (): void => {
     if (saving) return;
     setForm(undefined);
     setFormError(undefined);
+    setLogoUploading(false);
+  };
+  /**
+   * Flushes a create-mode parked logo pick against the freshly created account.
+   * @param created - the account the create call stored.
+   * @returns a user-facing failure message, or undefined when the logo attached.
+   */
+  const attachPendingLogo = async (
+    created: SdkworkIamOfficialAccount,
+  ): Promise<string | undefined> => {
+    if (driveUploadImageService === undefined) return undefined;
+    try {
+      const values = logoFieldRef.current === null
+        ? []
+        : await logoFieldRef.current.uploadPending({ appResourceId: created.id });
+      const logo = values[values.length - 1];
+      if (logo === undefined) return undefined;
+      await controller.update(created.id, {
+        appId: created.appId,
+        displayName: created.displayName,
+        logoUrl: logo.uri,
+      });
+      return undefined;
+    } catch (error) {
+      // The account exists, so a retry must target it instead of creating a
+      // duplicate: switch the drawer to its edit view and keep the failure
+      // visible; the field's own retry affordance stays reachable.
+      setForm({
+        mode: "edit",
+        account: created,
+        draft: draftOf(created),
+        menu: created.customMenu,
+      });
+      return error instanceof Error
+        ? `${messages.form.logoUploadFailed} (${error.message})`
+        : messages.form.logoUploadFailed;
+    }
   };
   const submit = async (): Promise<void> => {
     if (form === undefined) return;
@@ -219,7 +307,12 @@ export function SdkworkIamOfficialAccountsPanel({
     try {
       const draft = { ...toDraft(form.draft), customMenu: form.menu };
       if (form.mode === "create") {
-        await controller.create(draft);
+        const created = await controller.create(draft);
+        const attachError = await attachPendingLogo(created);
+        if (attachError !== undefined) {
+          setFormError(attachError);
+          return;
+        }
       } else if (form.mode === "edit" && form.account !== undefined) {
         await controller.update(form.account.id, { ...draft, appId: form.account.appId });
       } else if (form.mode === "menu" && form.account !== undefined) {
@@ -346,17 +439,25 @@ export function SdkworkIamOfficialAccountsPanel({
               : form !== undefined
                 ? (
                   <AccountFields
+                    accountId={form.account?.id}
                     draft={form.draft}
+                    driveUploadImageService={driveUploadImageService}
                     editing={form.mode === "edit"}
+                    logoFieldRef={logoFieldRef}
                     messages={messages}
                     onChange={(draft) => setForm({ ...form, draft })}
+                    onLogoUploadingChange={setLogoUploading}
                   />
                 )
                 : null}
           </DrawerBody>
           <DrawerFooter>
             <Button onClick={closeForm} variant="outline">{messages.form.cancel}</Button>
-            <Button disabled={saving} loading={saving} onClick={() => { void submit(); }}>
+            <Button
+              disabled={saving || logoUploading}
+              loading={saving}
+              onClick={() => { void submit(); }}
+            >
               {saving
                 ? messages.actions.saving
                 : form?.mode === "menu" ? messages.menu.save : messages.form.save}
@@ -480,15 +581,24 @@ function validate(form: FormState, messages: SdkworkIamOfficialAccountsMessages)
 }
 
 function AccountFields({
+  accountId,
   draft,
+  driveUploadImageService,
   editing,
+  logoFieldRef,
   messages,
   onChange,
+  onLogoUploadingChange,
 }: {
+  /** Edit-mode upload attribution anchor: the account id. */
+  accountId?: string;
   draft: FormDraft;
+  driveUploadImageService?: DriveUploadImageService;
   editing: boolean;
+  logoFieldRef: RefObject<DriveUploadImageHandle | null>;
   messages: SdkworkIamOfficialAccountsMessages;
   onChange: (draft: FormDraft) => void;
+  onLogoUploadingChange: (uploading: boolean) => void;
 }): ReactNode {
   const set = <K extends keyof FormDraft>(key: K, value: FormDraft[K]): void => {
     onChange({ ...draft, [key]: value });
@@ -551,16 +661,15 @@ function AccountFields({
             value={draft.originalId}
           />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="official-account-logo">{messages.form.logoUrl}</Label>
-          <Input
-            id="official-account-logo"
-            className={FIELD_CLASS_NAME}
-            onChange={(event) => set("logoUrl", event.target.value)}
-            placeholder={messages.form.logoUrlPlaceholder}
-            value={draft.logoUrl}
-          />
-        </div>
+        <OfficialAccountLogoField
+          accountId={editing ? accountId : undefined}
+          copy={messages.form}
+          driveUploadImageService={driveUploadImageService}
+          fieldRef={logoFieldRef}
+          value={draft.logoUrl}
+          onChange={(logoUrl) => set("logoUrl", logoUrl)}
+          onUploadingChange={onLogoUploadingChange}
+        />
       </div>
 
       <fieldset className="space-y-3 rounded-[1rem] border border-[var(--sdk-color-border-default)] p-4">
@@ -614,6 +723,88 @@ function AccountFields({
           </label>
         )
         : null}
+    </div>
+  );
+}
+
+/**
+ * The account logo field, one branch per capability level.
+ *
+ * - With the injected Drive capability: the shared `DriveUploadImage`
+ *   component. Edit mode uploads against the account id through the host's
+ *   declared intent and stores the `drive://` reference in the draft; create
+ *   mode passes no anchor, so the pick parks in the field's controller and the
+ *   panel flushes it once the account exists (`DRIVE_SPEC.md` section 18.3).
+ * - Without it: the stored logo stays visible (when it is a delivery URL) and
+ *   the field states that uploads are unavailable. There is deliberately no URL
+ *   input: a pasted link bypasses upload governance, and a base64 payload would
+ *   be a fake upload.
+ */
+function OfficialAccountLogoField({
+  accountId,
+  copy,
+  driveUploadImageService,
+  fieldRef,
+  onChange,
+  onUploadingChange,
+  value,
+}: {
+  /** Edit-mode upload attribution anchor: the account id. */
+  accountId?: string;
+  copy: SdkworkIamOfficialAccountsMessages["form"];
+  driveUploadImageService?: DriveUploadImageService;
+  fieldRef: RefObject<DriveUploadImageHandle | null>;
+  onChange: (logoUrl: string) => void;
+  onUploadingChange: (uploading: boolean) => void;
+  value: string;
+}): ReactNode {
+  const previewSrc = value !== "" && !value.startsWith("drive://") ? value : undefined;
+  return (
+    <div className="space-y-1.5" data-official-account-logo="">
+      <span className="block text-sm font-medium text-[var(--sdk-color-text-primary)]">
+        {copy.logo}
+      </span>
+      {driveUploadImageService === undefined
+        ? (
+          <div className="flex items-center gap-3">
+            {previewSrc === undefined ? null : (
+              <img
+                alt={copy.logo}
+                className="h-14 w-14 rounded-xl border border-[var(--sdk-color-border-default)] object-cover"
+                src={previewSrc}
+              />
+            )}
+            <p className="text-xs text-[var(--sdk-color-text-muted)]">{copy.logoUnavailable}</p>
+          </div>
+        )
+        : (
+          <DriveUploadImage
+            accept={LOGO_ACCEPT}
+            alt={copy.logo}
+            appResourceId={accountId ?? (() => null)}
+            copy={{
+              pickImage: copy.logoChoose,
+              replaceImage: copy.logoReplace,
+              removeImage: copy.logoRemove,
+              retryUpload: copy.logoRetry,
+              uploading: copy.logoUploading,
+              uploadFailed: copy.logoUploadFailed,
+              invalidFileType: copy.logoInvalidType,
+              fileTooLarge: copy.logoTooLarge,
+              fileTooLargeDetail: copy.logoTooLargeDetail,
+              emptyFile: copy.logoEmptyFile,
+            }}
+            description={copy.logoHint}
+            maxSizeBytes={LOGO_MAX_BYTES}
+            onChange={(uploaded) => onChange(uploaded?.uri ?? "")}
+            onUploadingChange={onUploadingChange}
+            ref={fieldRef}
+            service={driveUploadImageService}
+            shape="rounded"
+            sizePx={72}
+            value={toLogoUploadValue(value)}
+          />
+        )}
     </div>
   );
 }

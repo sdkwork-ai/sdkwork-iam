@@ -49,6 +49,31 @@ const MAX_DISPLAY_NAME_LEN: usize = 128;
 /// Maximum accepted length of an AppID, matching the DDL check pattern.
 const MAX_APP_ID_LEN: usize = 64;
 
+/// WeChat allows at most five JS interface security domains per account.
+const JS_SECURE_DOMAIN_LIMIT: usize = 5;
+
+/// WeChat allows two web-authorization callback domains per account.
+const WEB_AUTH_DOMAIN_LIMIT: usize = 2;
+
+/// WeChat allows three business domains per account.
+const BUSINESS_DOMAIN_LIMIT: usize = 3;
+
+/// Longest accepted protected-domain host, per the WeChat console rules.
+const MAX_DOMAIN_LEN: usize = 253;
+
+/// WeChat server-configuration URL schemes (port 80 for http, 443 for https).
+const NOTIFY_URL_SCHEMES: [&str; 2] = ["http://", "https://"];
+
+/// WeChat server-configuration Token range (letters and digits only).
+const NOTIFY_TOKEN_MIN_LEN: usize = 3;
+const NOTIFY_TOKEN_MAX_LEN: usize = 32;
+
+/// WeChat message-encryption key length (A-Z, a-z, 0-9 only).
+const NOTIFY_AES_KEY_LEN: usize = 43;
+
+/// Message-push encryption modes the WeChat console offers.
+const NOTIFY_ENCRYPT_MODES: [&str; 3] = ["plaintext", "compatible", "safe"];
+
 /// Binds the official-account routes to the surface's shared state.
 pub(crate) fn official_account_routes() -> Router<LocalIamState> {
     Router::new()
@@ -104,6 +129,18 @@ pub(crate) struct OfficialAccountCreateCommand {
     /// Custom-menu draft as a menu object.
     #[serde(default)]
     pub(crate) custom_menu: Option<Value>,
+    /// WeChat JS interface security domains (normalized hosts, at most 5).
+    #[serde(default)]
+    pub(crate) js_secure_domains: Option<Vec<String>>,
+    /// WeChat web-authorization callback domains (normalized hosts, at most 2).
+    #[serde(default)]
+    pub(crate) web_auth_domains: Option<Vec<String>>,
+    /// WeChat business domains (normalized hosts, at most 3).
+    #[serde(default)]
+    pub(crate) business_domains: Option<Vec<String>>,
+    /// Message-push encryption mode: `plaintext`, `compatible`, or `safe`.
+    #[serde(default)]
+    pub(crate) notify_encrypt_mode: Option<String>,
 }
 
 /// Patch payload of `PATCH /app/v3/api/iam/oauth/official_accounts/{id}`.
@@ -131,6 +168,18 @@ pub(crate) struct OfficialAccountUpdateCommand {
     pub(crate) notify_encoding_aes_key: Option<String>,
     #[serde(default)]
     pub(crate) custom_menu: Option<Value>,
+    /// Replacement JS interface security domains (at most 5).
+    #[serde(default)]
+    pub(crate) js_secure_domains: Option<Vec<String>>,
+    /// Replacement web-authorization callback domains (at most 2).
+    #[serde(default)]
+    pub(crate) web_auth_domains: Option<Vec<String>>,
+    /// Replacement business domains (at most 3).
+    #[serde(default)]
+    pub(crate) business_domains: Option<Vec<String>>,
+    /// Replacement message-push encryption mode.
+    #[serde(default)]
+    pub(crate) notify_encrypt_mode: Option<String>,
     #[serde(default)]
     pub(crate) enabled: Option<bool>,
 }
@@ -147,6 +196,10 @@ struct StoredAccount {
     notify_token_ref: Option<String>,
     notify_encoding_aes_key_ref: Option<String>,
     custom_menu: Value,
+    js_secure_domains: Vec<String>,
+    web_auth_domains: Vec<String>,
+    business_domains: Vec<String>,
+    notify_encrypt_mode: String,
     enabled: i32,
 }
 
@@ -214,6 +267,180 @@ fn normalized_custom_menu(value: Option<&Value>) -> Result<Value, ()> {
     }
 }
 
+/// Normalizes one WeChat protected domain and rejects values the console rejects.
+///
+/// The WeChat console accepts a bare host name (no scheme, port, path, IP
+/// literal, or wildcard), lowercases it, and requires a registrable domain that
+/// passed ICP filing; a parent domain covers its subdomains.
+fn normalized_domain(raw: &str) -> Option<String> {
+    let domain = raw.trim().to_ascii_lowercase();
+    if domain.is_empty() || domain.len() > MAX_DOMAIN_LEN {
+        return None;
+    }
+    if domain.contains("://")
+        || domain.contains('/')
+        || domain.contains(':')
+        || domain.contains('*')
+        || domain.contains('@')
+        || domain.contains('?')
+        || domain.contains('#')
+        || domain.starts_with('.')
+        || domain.ends_with('.')
+        || !domain.contains('.')
+    {
+        return None;
+    }
+    // Reject bare IPv4/IPv6 literals: the console refuses IP addresses.
+    if domain.parse::<std::net::IpAddr>().is_ok() {
+        return None;
+    }
+    let mut labels = domain.split('.');
+    while let Some(label) = labels.next() {
+        if label.is_empty() || label.len() > 63 {
+            return None;
+        }
+        let bytes = label.as_bytes();
+        if bytes.first() == Some(&b'-') || bytes.last() == Some(&b'-') {
+            return None;
+        }
+        if !bytes
+            .iter()
+            .all(|byte| byte.is_ascii_alphanumeric() || *byte == b'-')
+        {
+            return None;
+        }
+    }
+    Some(domain)
+}
+
+/// Normalizes an ordered, de-duplicated protected-domain list within WeChat's limit.
+fn normalized_domains(
+    values: Option<&[String]>,
+    limit: usize,
+    field: &str,
+) -> Result<Vec<String>, Response> {
+    let mut domains: Vec<String> = Vec::new();
+    for raw in values.unwrap_or(&[]) {
+        if raw.trim().is_empty() {
+            continue;
+        }
+        let Some(domain) = normalized_domain(raw) else {
+            return Err(official_account_invalid(
+                field,
+                "the domain must be a bare host name (no scheme, port, path, or IP)",
+            ));
+        };
+        if !domains.contains(&domain) {
+            domains.push(domain);
+        }
+    }
+    if domains.len() > limit {
+        return Err(official_account_invalid(
+            field,
+            &format!("at most {limit} domains are accepted"),
+        ));
+    }
+    Ok(domains)
+}
+
+/// Validates the message-push encryption mode, defaulting to plaintext.
+fn normalized_encrypt_mode(value: Option<&str>) -> Result<String, ()> {
+    match value.map(str::trim) {
+        None => Ok("plaintext".to_owned()),
+        Some(raw) if raw.is_empty() => Ok("plaintext".to_owned()),
+        Some(raw) => {
+            let mode = raw.to_ascii_lowercase();
+            if NOTIFY_ENCRYPT_MODES.contains(&mode.as_str()) {
+                Ok(mode)
+            } else {
+                Err(())
+            }
+        }
+    }
+}
+
+/// Validates the callback URL the WeChat console accepts (http:80 / https:443).
+fn normalized_notify_url(value: Option<&str>) -> Result<Option<String>, ()> {
+    let Some(raw) = value else { return Ok(None) };
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+    if trimmed.len() > 1024 {
+        return Err(());
+    }
+    let lowered = trimmed.to_ascii_lowercase();
+    let (rest, expected_port) = if let Some(rest) = lowered.strip_prefix(NOTIFY_URL_SCHEMES[0]) {
+        (rest, 80)
+    } else if let Some(rest) = lowered.strip_prefix(NOTIFY_URL_SCHEMES[1]) {
+        (rest, 443)
+    } else {
+        return Err(());
+    };
+    let authority_end = rest.find(['/', '?', '#']).unwrap_or(rest.len());
+    let authority = &rest[..authority_end];
+    if authority.is_empty() {
+        return Err(());
+    }
+    let (host, port) = match authority.rsplit_once(':') {
+        Some((host, port)) => (host, Some(port)),
+        None => (authority, None),
+    };
+    if normalized_domain(host).as_deref() != Some(host) {
+        return Err(());
+    }
+    if let Some(port) = port {
+        if port.parse::<u16>().ok() != Some(expected_port) {
+            return Err(());
+        }
+    }
+    Ok(Some(trimmed.to_owned()))
+}
+
+/// Validates the WeChat server-configuration Token (letters and digits, 3-32).
+fn normalized_notify_token(value: Option<&str>) -> Result<Option<String>, ()> {
+    let Some(raw) = value else { return Ok(None) };
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+    if trimmed.len() < NOTIFY_TOKEN_MIN_LEN
+        || trimmed.len() > NOTIFY_TOKEN_MAX_LEN
+        || !trimmed.chars().all(|ch| ch.is_ascii_alphanumeric())
+    {
+        return Err(());
+    }
+    Ok(Some(trimmed.to_owned()))
+}
+
+/// Validates the WeChat message-encryption key (A-Z, a-z, 0-9, 43 chars).
+fn normalized_aes_key(value: Option<&str>) -> Result<Option<String>, ()> {
+    let Some(raw) = value else { return Ok(None) };
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+    if trimmed.len() != NOTIFY_AES_KEY_LEN
+        || !trimmed.chars().all(|ch| ch.is_ascii_alphanumeric())
+    {
+        return Err(());
+    }
+    Ok(Some(trimmed.to_owned()))
+}
+
+/// Decodes one stored JSON array of domain strings.
+fn parse_domains(raw: &str) -> Value {
+    serde_json::from_str::<Value>(raw)
+        .ok()
+        .filter(Value::is_array)
+        .unwrap_or_else(|| json!([]))
+}
+
+/// Decodes one stored JSON array of domain strings into a typed list.
+fn parse_domain_list(raw: &str) -> Vec<String> {
+    serde_json::from_str::<Vec<String>>(raw).unwrap_or_default()
+}
+
 async fn require_session(
     state: &LocalIamState,
     ctx: &WebRequestContext,
@@ -240,6 +467,10 @@ fn account_json(row: &sqlx::postgres::PgRow) -> Value {
         "hasNotifyToken": row.get::<bool, _>("has_notify_token"),
         "hasEncodingAesKey": row.get::<bool, _>("has_encoding_aes_key"),
         "customMenu": parse_custom_menu(&row.get::<String, _>("custom_menu")),
+        "jsSecureDomains": parse_domains(&row.get::<String, _>("js_secure_domains")),
+        "webAuthDomains": parse_domains(&row.get::<String, _>("web_auth_domains")),
+        "businessDomains": parse_domains(&row.get::<String, _>("business_domains")),
+        "notifyEncryptMode": row.get::<String, _>("notify_encrypt_mode"),
         "enabled": row.get::<i32, _>("enabled") != 0,
         "status": row.get::<String, _>("status"),
         "createdAt": row.get::<String, _>("created_at"),
@@ -260,7 +491,8 @@ const ACCOUNT_SELECT: &str = "id, app_id, display_name, account_type, original_i
      app_secret_ref IS NOT NULL AS has_app_secret, notify_url, \
      notify_token_ref IS NOT NULL AS has_notify_token, \
      notify_encoding_aes_key_ref IS NOT NULL AS has_encoding_aes_key, \
-     custom_menu, enabled, status, \
+     custom_menu, js_secure_domains, web_auth_domains, business_domains, notify_encrypt_mode, \
+     enabled, status, \
      to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at, \
      to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at";
 
@@ -352,9 +584,14 @@ async fn create_official_account(
         Ok(value) => value,
         Err(()) => return official_account_invalid("logoUrl", "at most 1024 characters"),
     };
-    let notify_url = match normalized_optional(body.notify_url.as_deref(), 1024) {
+    let notify_url = match normalized_notify_url(body.notify_url.as_deref()) {
         Ok(value) => value,
-        Err(()) => return official_account_invalid("notifyUrl", "at most 1024 characters"),
+        Err(()) => {
+            return official_account_invalid(
+                "notifyUrl",
+                "a callback URL starting with http:// (port 80) or https:// (port 443) is required",
+            )
+        }
     };
     let app_secret_ref = match sealed_secret(body.app_secret.as_deref()) {
         Ok(value) => value,
@@ -362,13 +599,31 @@ async fn create_official_account(
             return official_account_invalid("appSecret", "the secret could not be accepted")
         }
     };
-    let notify_token_ref = match sealed_secret(body.notify_token.as_deref()) {
+    let notify_token = match normalized_notify_token(body.notify_token.as_deref()) {
+        Ok(value) => value,
+        Err(()) => {
+            return official_account_invalid(
+                "notifyToken",
+                "the token must be 3 to 32 letters or digits",
+            )
+        }
+    };
+    let notify_token_ref = match sealed_secret(notify_token.as_deref()) {
         Ok(value) => value,
         Err(()) => {
             return official_account_invalid("notifyToken", "the token could not be accepted")
         }
     };
-    let notify_encoding_aes_key_ref = match sealed_secret(body.notify_encoding_aes_key.as_deref()) {
+    let notify_encoding_aes_key = match normalized_aes_key(body.notify_encoding_aes_key.as_deref()) {
+        Ok(value) => value,
+        Err(()) => {
+            return official_account_invalid(
+                "notifyEncodingAesKey",
+                "the encoding key must be exactly 43 letters or digits",
+            )
+        }
+    };
+    let notify_encoding_aes_key_ref = match sealed_secret(notify_encoding_aes_key.as_deref()) {
         Ok(value) => value,
         Err(()) => {
             return official_account_invalid(
@@ -380,6 +635,39 @@ async fn create_official_account(
     let custom_menu = match normalized_custom_menu(body.custom_menu.as_ref()) {
         Ok(value) => value,
         Err(()) => return official_account_invalid("customMenu", "a JSON object is required"),
+    };
+    let js_secure_domains = match normalized_domains(
+        body.js_secure_domains.as_deref(),
+        JS_SECURE_DOMAIN_LIMIT,
+        "jsSecureDomains",
+    ) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let web_auth_domains = match normalized_domains(
+        body.web_auth_domains.as_deref(),
+        WEB_AUTH_DOMAIN_LIMIT,
+        "webAuthDomains",
+    ) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let business_domains = match normalized_domains(
+        body.business_domains.as_deref(),
+        BUSINESS_DOMAIN_LIMIT,
+        "businessDomains",
+    ) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let notify_encrypt_mode = match normalized_encrypt_mode(body.notify_encrypt_mode.as_deref()) {
+        Ok(value) => value,
+        Err(()) => {
+            return official_account_invalid(
+                "notifyEncryptMode",
+                "the encryption mode must be plaintext, compatible, or safe",
+            )
+        }
     };
 
     let id = stable_local_id(
@@ -394,8 +682,10 @@ async fn create_official_account(
         "INSERT INTO iam_user_official_account \
            (id, tenant_id, user_id, app_id, display_name, account_type, original_id, logo_url, \
             app_secret_ref, notify_url, notify_token_ref, notify_encoding_aes_key_ref, custom_menu, \
+            js_secure_domains, web_auth_domains, business_domains, notify_encrypt_mode, \
             enabled, status, created_at, updated_at, version) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb, 1, 'active', \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb, \
+                 $14::jsonb, $15::jsonb, $16::jsonb, $17, 1, 'active', \
                  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1) \
          RETURNING {ACCOUNT_SELECT}"
     )))
@@ -412,6 +702,10 @@ async fn create_official_account(
     .bind(&notify_token_ref)
     .bind(&notify_encoding_aes_key_ref)
     .bind(custom_menu.to_string())
+    .bind(serde_json::to_string(&js_secure_domains).unwrap_or_else(|_| "[]".to_owned()))
+    .bind(serde_json::to_string(&web_auth_domains).unwrap_or_else(|_| "[]".to_owned()))
+    .bind(serde_json::to_string(&business_domains).unwrap_or_else(|_| "[]".to_owned()))
+    .bind(&notify_encrypt_mode)
     .fetch_one(&pg)
     .await;
 
@@ -471,7 +765,8 @@ async fn update_official_account(
 
     let stored = sqlx::query(
         "SELECT app_id, display_name, account_type, original_id, logo_url, app_secret_ref, \
-                notify_url, notify_token_ref, notify_encoding_aes_key_ref, custom_menu, enabled \
+                notify_url, notify_token_ref, notify_encoding_aes_key_ref, custom_menu, \
+                js_secure_domains, web_auth_domains, business_domains, notify_encrypt_mode, enabled \
          FROM iam_user_official_account \
          WHERE id = $1 AND tenant_id = $2 AND user_id = $3 AND status = 'active'",
     )
@@ -502,6 +797,10 @@ async fn update_official_account(
         notify_token_ref: row.get("notify_token_ref"),
         notify_encoding_aes_key_ref: row.get("notify_encoding_aes_key_ref"),
         custom_menu: parse_custom_menu(&row.get::<String, _>("custom_menu")),
+        js_secure_domains: parse_domain_list(&row.get::<String, _>("js_secure_domains")),
+        web_auth_domains: parse_domain_list(&row.get::<String, _>("web_auth_domains")),
+        business_domains: parse_domain_list(&row.get::<String, _>("business_domains")),
+        notify_encrypt_mode: row.get("notify_encrypt_mode"),
         enabled: row.get("enabled"),
     };
 
@@ -540,9 +839,14 @@ async fn update_official_account(
     };
     let notify_url = match body.notify_url.as_deref() {
         None => current.notify_url.clone(),
-        Some(value) => match normalized_optional(Some(value), 1024) {
+        Some(value) => match normalized_notify_url(Some(value)) {
             Ok(value) => value,
-            Err(()) => return official_account_invalid("notifyUrl", "at most 1024 characters"),
+            Err(()) => {
+                return official_account_invalid(
+                    "notifyUrl",
+                    "a callback URL starting with http:// (port 80) or https:// (port 443) is required",
+                )
+            }
         },
     };
     let app_secret_ref = match sealed_secret(body.app_secret.as_deref()) {
@@ -552,27 +856,97 @@ async fn update_official_account(
             return official_account_invalid("appSecret", "the secret could not be accepted")
         }
     };
-    let notify_token_ref = match sealed_secret(body.notify_token.as_deref()) {
-        Ok(Some(value)) => Some(value),
-        Ok(None) => current.notify_token_ref.clone(),
-        Err(()) => {
-            return official_account_invalid("notifyToken", "the token could not be accepted")
-        }
+    let notify_token_ref = match body.notify_token.as_deref() {
+        None => current.notify_token_ref.clone(),
+        Some(value) => match normalized_notify_token(Some(value)) {
+            Ok(Some(token)) => match sealed_secret(Some(token.as_str())) {
+                Ok(value) => value.or_else(|| current.notify_token_ref.clone()),
+                Err(()) => {
+                    return official_account_invalid(
+                        "notifyToken",
+                        "the token could not be accepted",
+                    )
+                }
+            },
+            Ok(None) => current.notify_token_ref.clone(),
+            Err(()) => {
+                return official_account_invalid(
+                    "notifyToken",
+                    "the token must be 3 to 32 letters or digits",
+                )
+            }
+        },
     };
-    let notify_encoding_aes_key_ref = match sealed_secret(body.notify_encoding_aes_key.as_deref()) {
-        Ok(Some(value)) => Some(value),
-        Ok(None) => current.notify_encoding_aes_key_ref.clone(),
-        Err(()) => {
-            return official_account_invalid(
-                "notifyEncodingAesKey",
-                "the encoding key could not be accepted",
-            )
-        }
+    let notify_encoding_aes_key_ref = match body.notify_encoding_aes_key.as_deref() {
+        None => current.notify_encoding_aes_key_ref.clone(),
+        Some(value) => match normalized_aes_key(Some(value)) {
+            Ok(Some(key)) => match sealed_secret(Some(key.as_str())) {
+                Ok(value) => value.or_else(|| current.notify_encoding_aes_key_ref.clone()),
+                Err(()) => {
+                    return official_account_invalid(
+                        "notifyEncodingAesKey",
+                        "the encoding key could not be accepted",
+                    )
+                }
+            },
+            Ok(None) => current.notify_encoding_aes_key_ref.clone(),
+            Err(()) => {
+                return official_account_invalid(
+                    "notifyEncodingAesKey",
+                    "the encoding key must be exactly 43 letters or digits",
+                )
+            }
+        },
     };
     let custom_menu = match normalized_custom_menu(body.custom_menu.as_ref()) {
         Ok(value) if body.custom_menu.is_some() => value,
         Ok(_) => current.custom_menu.clone(),
         Err(()) => return official_account_invalid("customMenu", "a JSON object is required"),
+    };
+    let js_secure_domains = match body.js_secure_domains.as_deref() {
+        None => current.js_secure_domains.clone(),
+        Some(values) => match normalized_domains(
+            Some(values),
+            JS_SECURE_DOMAIN_LIMIT,
+            "jsSecureDomains",
+        ) {
+            Ok(value) => value,
+            Err(response) => return response,
+        },
+    };
+    let web_auth_domains = match body.web_auth_domains.as_deref() {
+        None => current.web_auth_domains.clone(),
+        Some(values) => match normalized_domains(
+            Some(values),
+            WEB_AUTH_DOMAIN_LIMIT,
+            "webAuthDomains",
+        ) {
+            Ok(value) => value,
+            Err(response) => return response,
+        },
+    };
+    let business_domains = match body.business_domains.as_deref() {
+        None => current.business_domains.clone(),
+        Some(values) => match normalized_domains(
+            Some(values),
+            BUSINESS_DOMAIN_LIMIT,
+            "businessDomains",
+        ) {
+            Ok(value) => value,
+            Err(response) => return response,
+        },
+    };
+    let notify_encrypt_mode = match body.notify_encrypt_mode.as_deref() {
+        None => current.notify_encrypt_mode.clone(),
+        Some(value) => match normalized_encrypt_mode(Some(value)) {
+            Ok(value) => value,
+            Err(()) => {
+                return official_account_invalid(
+                    "notifyEncryptMode",
+                    "the encryption mode must be plaintext, compatible, or safe",
+                )
+            }
+        },
     };
     let enabled = body.enabled.unwrap_or(current.enabled != 0);
 
@@ -581,6 +955,8 @@ async fn update_official_account(
            display_name = $4, account_type = $5, original_id = $6, logo_url = $7, \
            app_secret_ref = $8, notify_url = $9, notify_token_ref = $10, \
            notify_encoding_aes_key_ref = $11, custom_menu = $12::jsonb, enabled = $13, \
+           js_secure_domains = $14::jsonb, web_auth_domains = $15::jsonb, \
+           business_domains = $16::jsonb, notify_encrypt_mode = $17, \
            updated_at = CURRENT_TIMESTAMP, version = version + 1 \
          WHERE id = $1 AND tenant_id = $2 AND user_id = $3 AND status = 'active' \
          RETURNING {ACCOUNT_SELECT}"
@@ -598,6 +974,10 @@ async fn update_official_account(
     .bind(&notify_encoding_aes_key_ref)
     .bind(custom_menu.to_string())
     .bind(if enabled { 1 } else { 0 })
+    .bind(serde_json::to_string(&js_secure_domains).unwrap_or_else(|_| "[]".to_owned()))
+    .bind(serde_json::to_string(&web_auth_domains).unwrap_or_else(|_| "[]".to_owned()))
+    .bind(serde_json::to_string(&business_domains).unwrap_or_else(|_| "[]".to_owned()))
+    .bind(&notify_encrypt_mode)
     .fetch_optional(&pg)
     .await;
 

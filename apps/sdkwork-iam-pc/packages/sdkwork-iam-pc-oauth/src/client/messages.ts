@@ -55,8 +55,19 @@ export interface SdkworkIamOfficialAccountsMessages {
     accountType: string;
     originalId: string;
     originalIdPlaceholder: string;
-    logoUrl: string;
-    logoUrlPlaceholder: string;
+    logo: string;
+    logoHint: string;
+    logoChoose: string;
+    logoReplace: string;
+    logoRemove: string;
+    logoRetry: string;
+    logoUploading: string;
+    logoUploadFailed: string;
+    logoInvalidType: string;
+    logoTooLarge: string;
+    logoTooLargeDetail: string;
+    logoEmptyFile: string;
+    logoUnavailable: string;
     notifySection: string;
     notifyUrl: string;
     notifyUrlPlaceholder: string;
@@ -155,8 +166,19 @@ const zhCN: SdkworkIamOfficialAccountsMessages = {
     accountType: "账号类型",
     originalId: "原始 ID",
     originalIdPlaceholder: "gh_xxxxxxxxxxxx",
-    logoUrl: "Logo 地址",
-    logoUrlPlaceholder: "https://…",
+    logo: "公众号 Logo",
+    logoHint: "支持 JPG、PNG、WebP，不超过 5 MB。",
+    logoChoose: "上传 Logo",
+    logoReplace: "更换",
+    logoRemove: "移除",
+    logoRetry: "重试",
+    logoUploading: "上传中…",
+    logoUploadFailed: "Logo 上传失败，请检查登录状态与 Drive 服务。",
+    logoInvalidType: "Logo 必须是图片文件。",
+    logoTooLarge: "Logo 不能超过 5 MB。",
+    logoTooLargeDetail: "Logo 不能超过 {max}。",
+    logoEmptyFile: "该文件为空。",
+    logoUnavailable: "当前环境未启用 Logo 上传。",
     notifySection: "消息推送",
     notifyUrl: "回调地址",
     notifyUrlPlaceholder: "https://…/wechat/notify",
@@ -252,8 +274,19 @@ const enUS: SdkworkIamOfficialAccountsMessages = {
     accountType: "Account type",
     originalId: "Original ID",
     originalIdPlaceholder: "gh_xxxxxxxxxxxx",
-    logoUrl: "Logo URL",
-    logoUrlPlaceholder: "https://…",
+    logo: "Official-account logo",
+    logoHint: "JPG, PNG, or WebP up to 5 MB.",
+    logoChoose: "Upload logo",
+    logoReplace: "Replace",
+    logoRemove: "Remove",
+    logoRetry: "Retry",
+    logoUploading: "Uploading…",
+    logoUploadFailed: "Logo upload failed; check the session and the Drive service.",
+    logoInvalidType: "The logo must be an image file.",
+    logoTooLarge: "The logo must be 5 MB or smaller.",
+    logoTooLargeDetail: "The logo must be {max} or smaller.",
+    logoEmptyFile: "This file is empty.",
+    logoUnavailable: "Logo uploads are not available in this environment.",
     notifySection: "Message push",
     notifyUrl: "Callback URL",
     notifyUrlPlaceholder: "https://…/wechat/notify",
