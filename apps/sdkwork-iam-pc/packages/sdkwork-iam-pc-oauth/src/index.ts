@@ -11,6 +11,7 @@
 export type {
   SdkworkIamOfficialAccount,
   SdkworkIamOfficialAccountDraft,
+  SdkworkIamOfficialAccountEncryptMode,
   SdkworkIamOfficialAccountMenu,
   SdkworkIamOfficialAccountMenuButton,
   SdkworkIamOfficialAccountsClient,

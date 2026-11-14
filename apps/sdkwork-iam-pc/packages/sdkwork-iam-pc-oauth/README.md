@@ -14,7 +14,7 @@ remain the backend-admin `iam.oauth.resourceAccounts.*` capability in
 
 | Export | Purpose |
 | --- | --- |
-| `SdkworkIamOfficialAccountsPanel` | Transport-agnostic panel: list, create/edit, enable/disable, delete, custom-menu draft editor. |
+| `SdkworkIamOfficialAccountsPanel` | Transport-agnostic panel: list, create/edit, enable/disable, delete, custom-menu draft editor, and the Drive-backed logo field (host-injected `driveUploadImageService`). |
 | `SdkworkIamOfficialAccountsPage` | Page wrapper for the IAM PC app's app-tier route. |
 | `createSdkworkIamOfficialAccountsClient(api)` | Adapts `client.iam.oauth.officialAccounts` (or an equivalent transport) to the panel port. |
 | `SdkworkIamOfficialAccountsController` | List/query state, mutations, and commit-point publication. |
@@ -49,6 +49,26 @@ header is one toolbar row (search with its action on the left, refresh and add
 on the right). A dialog that already names the surface therefore shows that copy
 once. `SdkworkIamOfficialAccountsPage` supplies the title and description for a
 standalone route.
+
+The account logo is uploaded through Drive, never typed as a URL: the host
+service layer builds `createDriveUploadImageService` over its own declared
+upload intent and injects it as `driveUploadImageService`. Edit mode uploads
+against the account id; create mode parks the pick and the panel flushes it
+after the account exists (`DRIVE_SPEC.md` section 18.3). Without the injected
+service the field keeps a stored logo visible and states that uploads are
+unavailable — there is no URL input and no data-URL fallback.
+
+The create/edit drawer mirrors the WeChat 公众号 console in two tabs:
+
+- **基础信息** — logo, account name, AppID, AppSecret, original id, account type,
+  and the enable switch, each with the console rule it must satisfy and an inline
+  reminder about the IP allowlist.
+- **域名配置** — the three protected-domain sets (JS 接口安全域名 ≤5, 网页授权域名
+  ≤2, 业务域名 ≤3) as normalized chip lists, plus the server configuration
+  (callback URL restricted to http:80 / https:443, Token 3–32 letters or digits,
+  EncodingAESKey exactly 43 letters or digits, and the 明文/兼容/安全 encryption
+  mode). Domain edits are validated as they are added; a failed submit opens the
+  tab that owns the first invalid field.
 
 Secrets are write-only: the panel never receives an AppSecret, message token,
 or EncodingAESKey back from the API, and leaving the field blank keeps the
