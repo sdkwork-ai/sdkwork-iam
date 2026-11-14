@@ -1,8 +1,9 @@
 pub mod organization_directory;
 
 pub use organization_directory::{
-    IamDirectoryError, IamDirectoryFuture, IamOrganizationDirectory, IamOrganizationMemberQuery,
-    IamOrganizationMemberRecord, IamOrganizationRecord, SqlxIamOrganizationDirectory,
+    organization_capability, organization_role_allows, IamDirectoryError, IamDirectoryFuture,
+    IamOrganizationDirectory, IamOrganizationMemberQuery, IamOrganizationMemberRecord,
+    IamOrganizationRecord, SqlxIamOrganizationDirectory,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

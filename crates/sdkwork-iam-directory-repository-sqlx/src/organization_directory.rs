@@ -41,6 +41,67 @@ use sqlx::{PgPool, Row};
 pub type IamDirectoryFuture<'a, T> =
     Pin<Box<dyn Future<Output = Result<T, IamDirectoryError>> + Send + 'a>>;
 
+/// IAM-owned organization capability catalog.
+///
+/// A sibling module asks for a capability by name and IAM decides. The sibling
+/// never encodes the role policy (`DOMAIN_SPEC.md` §5: the owning domain
+/// publishes the decision, consumers reference the stable id).
+pub mod organization_capability {
+    /// Assign or revoke organization team seats and update the seat policy.
+    ///
+    /// Consumed by the membership module through
+    /// [`super::IamOrganizationDirectory::authorize_organization_action`].
+    pub const TEAM_SEAT_MANAGE: &str = "membership.team.seat.manage";
+}
+
+/// Organization-role privilege rank: a lower rank is more privileged.
+const ORGANIZATION_ROLE_RANK_OWNER: u8 = 0;
+const ORGANIZATION_ROLE_RANK_ADMIN: u8 = 1;
+const ORGANIZATION_ROLE_RANK_MEMBER: u8 = 2;
+
+/// Rank one IAM organization role (`owner` > `admin` > `member`).
+///
+/// Returns `None` for an unknown role: IAM never grants a role it does not
+/// declare, so an unrecognized `membership_kind` has no privilege at all.
+fn organization_role_rank(role: &str) -> Option<u8> {
+    match role.trim().to_ascii_lowercase().as_str() {
+        "owner" => Some(ORGANIZATION_ROLE_RANK_OWNER),
+        "admin" => Some(ORGANIZATION_ROLE_RANK_ADMIN),
+        "member" => Some(ORGANIZATION_ROLE_RANK_MEMBER),
+        _ => None,
+    }
+}
+
+/// The least privileged organization role that grants one capability.
+///
+/// `None` means the capability is not in the IAM catalog and is therefore
+/// denied for every role.
+fn capability_required_role_rank(capability: &str) -> Option<u8> {
+    match capability.trim() {
+        organization_capability::TEAM_SEAT_MANAGE => Some(ORGANIZATION_ROLE_RANK_ADMIN),
+        _ => None,
+    }
+}
+
+/// Decide whether one IAM organization role grants `capability`.
+///
+/// This is the single authority for organization role policy:
+///
+/// | capability                              | owner | admin | member | unknown role |
+/// |-----------------------------------------|-------|-------|--------|--------------|
+/// | `organization_capability::TEAM_SEAT_MANAGE` | allow | allow | deny   | deny         |
+/// | any other (unknown) capability          | deny  | deny  | deny   | deny         |
+///
+/// Deny-by-default: an unknown capability never grants anything, so a typo in a
+/// sibling module fails closed.
+#[must_use]
+pub fn organization_role_allows(role: &str, capability: &str) -> bool {
+    let Some(required_rank) = capability_required_role_rank(capability) else {
+        return false;
+    };
+    organization_role_rank(role).is_some_and(|role_rank| role_rank <= required_rank)
+}
+
 /// One IAM organization row projected for sibling modules.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IamOrganizationRecord {
@@ -167,6 +228,22 @@ pub trait IamOrganizationDirectory: Send + Sync {
         organization_id: &'a str,
         user_ids: &'a [String],
     ) -> IamDirectoryFuture<'a, Vec<String>>;
+
+    /// Decide whether `user_id` may perform one organization `capability`.
+    ///
+    /// The role policy stays IAM-owned: the caller passes a capability id from
+    /// [`organization_capability`] and this port applies
+    /// [`organization_role_allows`] to the caller's highest active role.
+    ///
+    /// A caller that is not an active organization member is a normal denial
+    /// (`Ok(false)`), not an error.
+    fn authorize_organization_action<'a>(
+        &'a self,
+        tenant_id: &'a str,
+        organization_id: &'a str,
+        user_id: &'a str,
+        capability: &'a str,
+    ) -> IamDirectoryFuture<'a, bool>;
 }
 
 /// `sqlx`-PostgreSQL implementation of [`IamOrganizationDirectory`].
@@ -418,6 +495,53 @@ impl IamOrganizationDirectory for SqlxIamOrganizationDirectory {
                         .map(|value| value.unwrap_or_default())
                 })
                 .collect()
+        })
+    }
+
+    fn authorize_organization_action<'a>(
+        &'a self,
+        tenant_id: &'a str,
+        organization_id: &'a str,
+        user_id: &'a str,
+        capability: &'a str,
+    ) -> IamDirectoryFuture<'a, bool> {
+        Box::pin(async move {
+            let rows = sqlx::query(
+                r#"
+                SELECT CAST(m.membership_kind AS TEXT) AS membership_kind
+                FROM iam_organization_membership m
+                WHERE m.tenant_id = CAST($1 AS TEXT)
+                  AND m.organization_id = CAST($2 AS TEXT)
+                  AND m.user_id = CAST($3 AS TEXT)
+                  AND (m.status = 'active' OR CAST(m.status AS TEXT) = '1')
+                ORDER BY m.is_primary DESC,
+                         m.id ASC
+                "#,
+            )
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(user_id)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|error| {
+                directory_error(
+                    "failed to load the active organization roles of the caller",
+                    error,
+                )
+            })?;
+            // Highest privilege wins. The IAM baseline declares
+            // `UNIQUE (tenant_id, organization_id, user_id, membership_kind)`,
+            // so one user can hold several concurrent active kinds in the same
+            // organization; any allowing kind grants the capability.
+            let mut granted = false;
+            for row in &rows {
+                let role = text_cell(row, "membership_kind")?;
+                if organization_role_allows(&role, capability) {
+                    granted = true;
+                    break;
+                }
+            }
+            Ok(granted)
         })
     }
 }
