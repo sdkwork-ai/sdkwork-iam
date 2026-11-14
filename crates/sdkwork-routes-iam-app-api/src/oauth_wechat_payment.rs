@@ -1,9 +1,9 @@
-//! WeChat payment-scoped lightweight OAuth flow.
+﻿//! WeChat payment-scoped lightweight OAuth flow.
 //!
 //! The H5 cashier needs the payer's WeChat `openid` to run JSAPI payment
 //! inside the WeChat app. This flow performs a silent `snsapi_base`
-//! authorization (`code` → `openid`) without creating an IAM session or
-//! linking an OAuth identity — unlike the full login OAuth flow.
+//! authorization (`code` 鈫?`openid`) without creating an IAM session or
+//! linking an OAuth identity 鈥?unlike the full login OAuth flow.
 //!
 //! Flow:
 //!   1. `GET /app/v3/api/oauth/wechat/payment/start?redirect=...`
@@ -166,7 +166,7 @@ pub(crate) async fn start_wechat_payment_oauth_for_cashier(
         // Same observable result for unknown/tampered/expired links.
         return appbase_error(
             StatusCode::NOT_FOUND,
-            "iam_wechat_payment_oauth_cashier_invalid",
+            "iam_wechat_payment_oauth_cashier_not_found",
             "cashier link is not payable",
         );
     };
@@ -404,8 +404,8 @@ fn payment_oauth_callback_url(headers: &HeaderMap) -> String {
     format!("https://{host}{PAYMENT_OAUTH_COOKIE_PATH}/callback")
 }
 
-/// Host values must be a plain `host[:port]` pair — no path, credentials
-/// or whitespace — so they cannot smuggle an external target into the
+/// Host values must be a plain `host[:port]` pair 鈥?no path, credentials
+/// or whitespace 鈥?so they cannot smuggle an external target into the
 /// authorize redirect_uri.
 fn is_safe_host(value: &str) -> bool {
     let value = value.trim();
@@ -557,7 +557,7 @@ mod tests {
             percent_encode_component("https://im.sdkwork.com/cb"),
             "https%3A%2F%2Fim.sdkwork.com%2Fcb"
         );
-        assert_eq!(percent_encode_component("o_中文"), "o_%E4%B8%AD%E6%96%87");
+        assert_eq!(percent_encode_component("o_涓枃"), "o_%E4%B8%AD%E6%96%87");
     }
 
     #[test]
