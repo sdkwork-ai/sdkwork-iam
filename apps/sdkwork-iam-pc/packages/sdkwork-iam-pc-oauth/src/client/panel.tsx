@@ -513,7 +513,7 @@ export function SdkworkIamOfficialAccountsPanel({
       </footer>
 
       <Drawer onOpenChange={(open) => { if (!open) closeForm(); }} open={form !== undefined}>
-        <DrawerContent side="right" size="lg">
+        <DrawerContent side="right" size="xl">
           <DrawerHeader>
             <DrawerTitle>
               {form?.mode === "create"
@@ -914,7 +914,7 @@ function AccountForm({
       onValueChange={(value) => onTabChange(value === "domains" ? "domains" : "basic")}
       value={activeTab}
     >
-      <TabsList className="w-full justify-start">
+      <TabsList className="sticky top-0 z-10 w-full justify-start">
         <TabsTrigger className="flex-1" value="basic">
           {messages.form.tabBasic}
           {basicError
@@ -941,6 +941,7 @@ function AccountForm({
 
       <TabsContent
         className="mt-3 space-y-5 border-0 bg-transparent p-0 shadow-none"
+        forceMount
         value="basic"
       >
         <div className="grid gap-4 sm:grid-cols-2">
@@ -1043,6 +1044,7 @@ function AccountForm({
 
       <TabsContent
         className="mt-3 space-y-5 border-0 bg-transparent p-0 shadow-none"
+        forceMount
         value="domains"
       >
         <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.domainsHint}</p>
