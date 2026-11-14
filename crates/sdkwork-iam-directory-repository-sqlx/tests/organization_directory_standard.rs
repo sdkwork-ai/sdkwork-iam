@@ -8,8 +8,9 @@
 use std::sync::Arc;
 
 use sdkwork_iam_directory_repository_sqlx::{
-    IamDirectoryError, IamOrganizationDirectory, IamOrganizationMemberQuery,
-    IamOrganizationMemberRecord, IamOrganizationRecord, SqlxIamOrganizationDirectory,
+    organization_capability, organization_role_allows, IamDirectoryError, IamOrganizationDirectory,
+    IamOrganizationMemberQuery, IamOrganizationMemberRecord, IamOrganizationRecord,
+    SqlxIamOrganizationDirectory,
 };
 
 const DIRECTORY_SOURCE: &str = include_str!("../src/organization_directory.rs");
@@ -128,9 +129,108 @@ fn iam_repository_crate_owns_the_organization_directory_sql() {
 }
 
 #[test]
+fn organization_capability_catalog_is_iam_owned() {
+    assert_eq!(
+        "membership.team.seat.manage",
+        organization_capability::TEAM_SEAT_MANAGE,
+        "the seat-management capability id is a stable IAM-published contract",
+    );
+}
+
+#[test]
+fn organization_role_matrix_allows_owner_and_admin_only() {
+    let capability = organization_capability::TEAM_SEAT_MANAGE;
+
+    // IAM policy: owner and admin allow the capability.
+    assert!(organization_role_allows("owner", capability));
+    assert!(organization_role_allows("admin", capability));
+
+    // IAM policy: a plain member is denied.
+    assert!(!organization_role_allows("member", capability));
+
+    // The role is normalized, never matched case-sensitively.
+    assert!(organization_role_allows(" Owner ", capability));
+    assert!(organization_role_allows("ADMIN", capability));
+    assert!(!organization_role_allows("Member", capability));
+
+    // Unknown role denies (fail closed).
+    for role in ["", "  ", "guest", "superuser", "OWNER-ADMIN", "billing"] {
+        assert!(
+            !organization_role_allows(role, capability),
+            "unknown organization role {role:?} must be denied",
+        );
+    }
+
+    // Unknown capability denies for every role, including the most privileged.
+    for unknown in [
+        "",
+        "membership.team.seat.read",
+        "membership.team.seat.manage.all",
+        "IAM_OWNER",
+        "organization.owner",
+    ] {
+        for role in ["owner", "admin", "member"] {
+            assert!(
+                !organization_role_allows(role, unknown),
+                "unknown capability {unknown:?} must be denied for role {role:?}",
+            );
+        }
+    }
+}
+
+#[test]
+fn authorize_organization_action_stays_an_iam_decision_on_the_port() {
+    // The trait exposes the decision; membership never re-derives the policy.
+    assert!(
+        DIRECTORY_SOURCE.contains("fn authorize_organization_action<'a>"),
+        "the directory port must expose authorize_organization_action",
+    );
+    assert!(
+        DIRECTORY_SOURCE.contains("organization_role_allows(&role, capability)"),
+        "the port must apply the IAM-owned role matrix, not an inline role list",
+    );
+
+    // The decision is resolved from the caller's active organization roles.
+    // Both the trait declaration and the sqlx implementation use this name, so
+    // take the last occurrence (the implementation).
+    let authorize_block = DIRECTORY_SOURCE
+        .rsplit("fn authorize_organization_action<'a>")
+        .next()
+        .and_then(|rest| rest.split("fn directory_error(").next())
+        .expect("authorize_organization_action implementation");
+    assert!(
+        authorize_block.contains("FROM iam_organization_membership m"),
+        "the decision must read the IAM-owned organization membership table",
+    );
+    assert!(
+        authorize_block.contains("m.user_id = CAST($3 AS TEXT)"),
+        "the decision must be scoped to the calling user",
+    );
+    assert!(
+        authorize_block.contains("m.organization_id = CAST($2 AS TEXT)"),
+        "the decision must be scoped to the organization",
+    );
+    assert!(
+        authorize_block.contains("m.status = 'active'")
+            && authorize_block.contains("CAST(m.status AS TEXT) = '1'"),
+        "only an active organization membership may grant a capability",
+    );
+    assert!(
+        !authorize_block.contains("return Err("),
+        "a missing or unprivileged membership is a denial (Ok(false)), never a port error",
+    );
+    assert!(
+        authorize_block.contains("Ok(granted)"),
+        "the decision is returned as a plain bool",
+    );
+}
+
+#[test]
 fn iam_repository_crate_reexports_the_whole_port_surface() {
     for item in [
         "pub mod organization_directory;",
+        "organization_capability",
+        "organization_role_allows",
         "IamDirectoryError",
         "IamDirectoryFuture",
         "IamOrganizationDirectory",
@@ -159,9 +259,9 @@ fn directory_trait_declares_send_sync_and_boxed_futures() {
         "the directory port must be Send + Sync so it can be shared behind Arc",
     );
     assert_eq!(
-        6,
+        7,
         trait_block.matches("IamDirectoryFuture<'a,").count(),
-        "all six directory methods must return a boxed IamDirectoryFuture",
+        "all seven directory methods must return a boxed IamDirectoryFuture",
     );
     for method in [
         "fn load_organization",
@@ -170,6 +270,7 @@ fn directory_trait_declares_send_sync_and_boxed_futures() {
         "fn count_active_members_matching",
         "fn load_active_member",
         "fn filter_active_member_ids",
+        "fn authorize_organization_action",
     ] {
         assert!(trait_block.contains(method), "missing port method {method}");
     }
@@ -259,6 +360,18 @@ impl IamOrganizationDirectory for StubDirectory {
         let user_ids = user_ids.to_vec();
         Box::pin(async move { Ok(user_ids) })
     }
+
+    fn authorize_organization_action<'a>(
+        &'a self,
+        _tenant_id: &'a str,
+        _organization_id: &'a str,
+        user_id: &'a str,
+        capability: &'a str,
+    ) -> sdkwork_iam_directory_repository_sqlx::IamDirectoryFuture<'a, bool> {
+        // The stub mirrors the IAM matrix without touching a database.
+        let role = if user_id == "1001" { "owner" } else { "member" };
+        Box::pin(async move { Ok(organization_role_allows(role, capability)) })
+    }
 }
 
 #[tokio::test]
@@ -281,6 +394,31 @@ async fn stub_directory_round_trips_through_the_trait_object() {
         .await
         .expect("stub filter");
     assert_eq!(vec!["1".to_owned()], filtered);
+
+    assert!(
+        directory
+            .authorize_organization_action(
+                "100001",
+                "iamorg_backend_integration",
+                "1001",
+                organization_capability::TEAM_SEAT_MANAGE,
+            )
+            .await
+            .expect("stub authorization"),
+        "an owner must be authorized through the port",
+    );
+    assert!(
+        !directory
+            .authorize_organization_action(
+                "100001",
+                "iamorg_backend_integration",
+                "2002",
+                organization_capability::TEAM_SEAT_MANAGE,
+            )
+            .await
+            .expect("stub authorization"),
+        "a non-owner must be denied through the port",
+    );
 }
 
 #[tokio::test]

@@ -661,11 +661,15 @@ fn app_openapi_publishes_the_organization_member_roster_operation() {
         "../../../apis/app-api/iam/sdkwork-iam-app-api.openapi.yaml"
     ))
     .expect("the IAM app-api OpenAPI authority is JSON content despite its .yaml extension");
-    let operation = &document["paths"]["/app/v3/api/iam/organizations/{organizationId}/members"]["get"];
+    let operation =
+        &document["paths"]["/app/v3/api/iam/organizations/{organizationId}/members"]["get"];
 
     assert_eq!(operation["operationId"], "organizations.members.list");
     assert_eq!(operation["tags"], json!(["iam"]));
-    assert_eq!(operation["security"], json!([{"AuthToken": [], "AccessToken": []}]));
+    assert_eq!(
+        operation["security"],
+        json!([{"AuthToken": [], "AccessToken": []}])
+    );
     assert_eq!(operation["x-sdkwork-auth-mode"], "dual-token");
     assert_eq!(operation["x-sdkwork-owner"], "sdkwork-iam");
     assert_eq!(operation["x-sdkwork-api-authority"], "sdkwork-iam-app-api");
@@ -684,7 +688,10 @@ fn app_openapi_publishes_the_organization_member_roster_operation() {
         .filter_map(|parameter| parameter["name"].as_str())
         .collect::<Vec<_>>();
     for name in ["page", "page_size", "cursor", "q", "role"] {
-        assert!(names.contains(&name), "roster operation must document {name}");
+        assert!(
+            names.contains(&name),
+            "roster operation must document {name}"
+        );
     }
     let role = parameters
         .iter()
@@ -692,7 +699,9 @@ fn app_openapi_publishes_the_organization_member_roster_operation() {
         .expect("roster role filter parameter");
     assert_eq!(role["schema"]["enum"], json!(["owner", "admin", "member"]));
 
-    for status in ["400", "401", "403", "404", "409", "422", "429", "500", "503"] {
+    for status in [
+        "400", "401", "403", "404", "409", "422", "429", "500", "503",
+    ] {
         assert_eq!(
             operation["responses"][status]["content"]["application/problem+json"]["schema"]["$ref"],
             "#/components/schemas/ProblemDetail",
@@ -714,7 +723,10 @@ fn app_openapi_publishes_the_organization_member_roster_operation() {
         "membershipKind",
         "status",
     ] {
-        assert_eq!(item["properties"][field]["type"], "string", "IamOrganizationMember.{field} is a string");
+        assert_eq!(
+            item["properties"][field]["type"], "string",
+            "IamOrganizationMember.{field} is a string"
+        );
     }
     assert_eq!(item["properties"]["isPrimary"]["type"], "boolean");
     assert_eq!(
@@ -914,6 +926,7 @@ fn app_route_manifest_matches_the_standard_operation_surface() {
         "sessions.create",
         "organizationMemberships.list",
         "organizations.list",
+        "organizations.members.list",
         "organizations.tree.retrieve",
         "passwordResetRequests.create",
         "passwordResets.create",
