@@ -1,0 +1,267 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "web",
+  "catalogVersion": "1.0.0",
+  "domain": "web",
+  "owner": "sdkwork-webserver",
+  "displayName": "SDKWork Web Server",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "web.agent.read",
+        "name": "Read node agent state",
+        "resource": "agent",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.agent.write",
+        "name": "Manage node agent state",
+        "resource": "agent",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.applications.read",
+        "name": "Read served sites, applications, and source versions",
+        "resource": "applications",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.applications.write",
+        "name": "Manage served sites, applications, and source versions",
+        "resource": "applications",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.auditLogs.read",
+        "name": "Read audit logs",
+        "resource": "auditLogs",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.certificates.read",
+        "name": "Read certificates",
+        "resource": "certificates",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.certificates.write",
+        "name": "Manage certificates",
+        "resource": "certificates",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.cluster.read",
+        "name": "Read the Web Server cluster inventory and status",
+        "resource": "cluster",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.cluster.write",
+        "name": "Manage the Web Server cluster, hosts, and instances",
+        "resource": "cluster",
+        "action": "write",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.heartbeat.write",
+        "name": "Submit node heartbeat",
+        "resource": "heartbeat",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.nginx.write",
+        "name": "Manage Nginx configuration",
+        "resource": "nginx",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.plugins.read",
+        "name": "Read plugins",
+        "resource": "plugins",
+        "action": "read",
+        "status": "active",
+        "since": "0.1.5",
+        "replacementCode": null
+      },
+      {
+        "code": "web.plugins.write",
+        "name": "Manage plugins",
+        "resource": "plugins",
+        "action": "write",
+        "status": "active",
+        "since": "0.2.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.retrieve.write",
+        "name": "Retrieve node synchronization state",
+        "resource": "retrieve",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.runtimeAssignments.write",
+        "name": "Manage runtime assignments",
+        "resource": "runtimeAssignments",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.sandbox.read",
+        "name": "Read the caller's VM instances",
+        "resource": "sandbox",
+        "action": "read",
+        "status": "active",
+        "since": "1.3.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.servers.files.read",
+        "name": "Browse server deployment file systems",
+        "resource": "serverFiles",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.servers.files.write",
+        "name": "Run operations on server deployment projects",
+        "resource": "serverFiles",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.servers.read",
+        "name": "Read managed servers",
+        "resource": "servers",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.servers.write",
+        "name": "Manage servers",
+        "resource": "servers",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.traffic.read",
+        "name": "Read aggregated traffic usage",
+        "resource": "traffic",
+        "action": "read",
+        "status": "active",
+        "since": "1.2.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.tunnel.read",
+        "name": "Read tunnel machines",
+        "resource": "tunnel",
+        "action": "read",
+        "status": "active",
+        "since": "0.2.0",
+        "replacementCode": null
+      },
+      {
+        "code": "web.tunnel.write",
+        "name": "Manage tunnel machines",
+        "resource": "tunnel",
+        "action": "write",
+        "status": "active",
+        "since": "0.2.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [
+      {
+        "roleCode": "app_user",
+        "patterns": [
+          "deploy.appTemplates.read",
+          "deploy.apps.read",
+          "deploy.certificates.read",
+          "deploy.domainZones.read",
+          "deploy.marketplaceTemplates.read",
+          "iam.provider_accounts.read",
+          "mcp.marketplace.read",
+          "skills.marketplace.read",
+          "web.certificates.*",
+          "web.plugins.*",
+          "web.sandbox.*",
+          "web.traffic.read"
+        ]
+      },
+      {
+        "roleCode": "org_admin",
+        "patterns": [
+          "web.*"
+        ]
+      }
+    ],
+    "roleExclusions": [],
+    "assignability": [],
+    "bootstrapDefaults": []
+  },
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

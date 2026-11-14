@@ -31,6 +31,13 @@ export interface SdkworkIamAccountBindingAdminMessages {
     allowedProvidersPlaceholder: string;
     description: string;
     enableOauthLogin: string;
+    phoneAssociation: {
+      autoLinkVerifiedPhone: string;
+      description: string;
+      enablePhoneAssociation: string;
+      requirePhoneBinding: string;
+      title: string;
+    };
     title: string;
   };
 }

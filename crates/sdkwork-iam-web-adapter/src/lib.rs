@@ -49,11 +49,13 @@ pub use access_token_issue::{
     IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
 };
 pub use account_binding_policy::{
-    account_binding_policy_to_json, contact_binding_allowed, default_account_binding_policy,
-    load_account_binding_policy, merge_account_binding_policy, oauth_binding_allowed,
-    oauth_login_allowed, parse_account_binding_policy, save_account_binding_policy,
+    account_binding_policy_to_json, contact_binding_allowed, decide_oauth_phone_association,
+    default_account_binding_policy, load_account_binding_policy, merge_account_binding_policy,
+    oauth_binding_allowed, oauth_login_allowed, oauth_phone_association_enabled,
+    oauth_phone_binding_required, parse_account_binding_policy, save_account_binding_policy,
     AccountBindingPolicyDocument, AccountBindingPolicyOverrides, ContactBindingActionKind,
-    ContactBindingPolicy, OauthBindingActionKind, OauthBindingPolicy, OauthLoginPolicy,
+    ContactBindingPolicy, OauthBindingActionKind, OauthBindingPolicy,
+    OauthLoginPhoneAssociationPolicy, OauthLoginPolicy, OauthPhoneAssociationOutcome,
     IAM_ACCOUNT_BINDING_POLICY_CODE,
 };
 pub use api_key_lookup::{hash_api_key_secret, IamApiKeyLookupService};
@@ -126,7 +128,8 @@ pub use messaging_verification::{
     messaging_verification_table_available, messaging_verification_target_hash,
     verify_and_consume_messaging_challenge, MessagingVerificationRequest,
     MESSAGING_VERIFICATION_SCENE_BIND_EMAIL, MESSAGING_VERIFICATION_SCENE_BIND_PHONE,
-    MESSAGING_VERIFICATION_SCENE_LOGIN, MESSAGING_VERIFICATION_SCENE_RESET_PASSWORD,
+    MESSAGING_VERIFICATION_SCENE_LOGIN, MESSAGING_VERIFICATION_SCENE_OAUTH_PHONE_BINDING,
+    MESSAGING_VERIFICATION_SCENE_RESET_PASSWORD,
 };
 pub use oauth_authorization_server::{
     authorize_error_redirect_target, build_oauth_jwks_document,
@@ -142,8 +145,8 @@ pub use oauth_authorization_server::{
 pub use oauth_integration_exchange::{
     builtin_authorization_endpoint, builtin_default_scopes, builtin_token_endpoint,
     builtin_userinfo_endpoint, exchange_oauth_authorization_code,
-    exchange_wechat_mini_program_code, load_oauth_integration_exchange_context,
-    load_oauth_integration_exchange_context_for_app,
+    exchange_wechat_mini_program_code, exchange_wechat_mini_program_phone_number,
+    load_oauth_integration_exchange_context, load_oauth_integration_exchange_context_for_app,
     load_oauth_integration_exchange_context_for_client_any_state,
     load_oauth_integration_exchange_context_for_integration,
     load_oauth_integration_exchange_context_for_integration_any_state,

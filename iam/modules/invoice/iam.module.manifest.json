@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "invoice",
+  "domain": "commerce",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "commerce.invoices.manage",
+        "name": "Manage invoices",
+        "resource": "commerce.invoices",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.invoices.read",
+        "name": "Read invoices",
+        "resource": "commerce.invoices",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": []
+  },
+  "catalogVersion": "1.0.0",
+  "owner": "sdkwork-invoice",
+  "displayName": "invoice",
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

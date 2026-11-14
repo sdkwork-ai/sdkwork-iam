@@ -43,7 +43,7 @@ pub use validate::validate_catalog;
 mod federation_tests {
     use std::path::PathBuf;
 
-    use crate::discover::{discover_modules, load_registry_config, merge_discovered};
+    use crate::discover::{discover_registry_modules, load_registry_config, merge_discovered};
     use crate::validate::validate_catalog;
 
     fn app_root() -> PathBuf {
@@ -54,7 +54,7 @@ mod federation_tests {
     fn discovers_and_validates_bundled_modules() {
         let root = app_root();
         let config = load_registry_config(&root).expect("registry config");
-        let modules = discover_modules(&root, &config.enabled_modules).expect("discover");
+        let modules = discover_registry_modules(&root, &config).expect("discover");
         validate_catalog(&modules).expect("validate");
         let merged = merge_discovered(&modules);
         assert!(merged.permissions.len() >= 140);
@@ -64,5 +64,47 @@ mod federation_tests {
             .role_patterns
             .get("app_user")
             .is_some_and(|patterns| patterns.contains("ai.agents.use")));
+    }
+
+    /// AUTHORIZATION_STATE_SPEC 3.8: a shipped module manifest is materialized
+    /// without editing a hand-maintained enable list, so a new module reaches
+    /// existing sessions through the authorization epoch. Optional modules stay
+    /// opt-in.
+    #[test]
+    fn shipped_modules_auto_enable_unless_optional() {
+        use crate::discover::enabled_module_ids;
+        use crate::manifest::IamRegistryConfig;
+
+        let root = std::env::temp_dir().join(format!(
+            "sdkwork-iam-registry-auto-discovery-{}",
+            std::process::id()
+        ));
+        let modules = root.join("iam/modules");
+        for module_id in ["alpha", "beta", "gamma"] {
+            std::fs::create_dir_all(modules.join(module_id)).expect("module dir");
+            std::fs::write(
+                modules.join(module_id).join("iam.module.manifest.json"),
+                "{}",
+            )
+            .expect("manifest placeholder");
+        }
+        let config = IamRegistryConfig {
+            schema_version: 1,
+            kind: "sdkwork.iam.registry.config".to_string(),
+            default_profile: "operational".to_string(),
+            enabled_modules: Vec::new(),
+            optional_modules: vec!["gamma".to_string()],
+        };
+        let ids = enabled_module_ids(&root, &config).expect("enabled ids");
+        assert_eq!(ids, vec!["alpha".to_string(), "beta".to_string()]);
+
+        let opt_in = IamRegistryConfig {
+            enabled_modules: vec!["gamma".to_string()],
+            ..config
+        };
+        let ids = enabled_module_ids(&root, &opt_in).expect("enabled ids");
+        assert!(ids.contains(&"gamma".to_string()), "explicit opt-in wins");
+
+        std::fs::remove_dir_all(&root).expect("remove temp registry root");
     }
 }

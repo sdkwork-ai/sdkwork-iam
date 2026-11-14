@@ -156,7 +156,13 @@ pub(crate) async fn authenticate_password_and_create_session(
         };
     }
     if !password_valid {
-        record_failed_password_attempt(sqlite, config, &user, failed_attempts).await;
+        // An expired lock restarts the run of attempts; see
+        // `failed_attempt_baseline` for why the stale counter must not carry.
+        let attempt_baseline = crate::passwords::failed_attempt_baseline(
+            failed_attempts,
+            locked_until.is_some(),
+        );
+        record_failed_password_attempt(sqlite, config, &user, attempt_baseline).await;
         return SqlitePasswordSessionOutcome::InvalidCredentials;
     }
 
@@ -192,6 +198,7 @@ pub(crate) async fn resolve_session_from_headers(
         session_id: context.session_id.clone(),
         context,
         user,
+        device_id: None,
     })
 }
 
@@ -318,6 +325,9 @@ async fn create_session(
         access_token,
         auth_token,
         context,
+        // The SQLite local runtime has a single device per database; the
+        // Postgres-only device slot stays empty here.
+        device_id: None,
         refresh_token,
         session_id,
         user: user.clone(),

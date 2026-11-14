@@ -33,6 +33,15 @@ export const sdkworkIamAccountBindingAdminMessages: SdkworkIamAccountBindingAdmi
     allowedProvidersPlaceholder: "wechat、google、twitter（留空表示使用所有已配置提供方）",
     description: "OAuth 登录会在登录页展示第三方登录入口。提供方还需在 IAM OAuth 集成或本地 OAuth 环境变量中配置。",
     enableOauthLogin: "启用 OAuth 登录",
+    phoneAssociation: {
+      autoLinkVerifiedPhone:
+        "提供方已验证手机号与现有账号一致时，直接关联并登录（关闭后需先验证手机号归属）",
+      description:
+        "开启后，小程序、公众号或其它 OAuth 登录携带的手机号可用于关联 PC 端已注册的账号，保证多端共用同一套用户体系。关闭时不会用提供方手机号做关联，手机号已属于其它账号时改为验证手机号归属后再关联。",
+      enablePhoneAssociation: "启用手机号关联已有账号",
+      requirePhoneBinding: "未携带可信手机号的 OAuth 登录必须先绑定手机号",
+      title: "手机号关联",
+    },
     title: "OAuth 登录",
   },
 };

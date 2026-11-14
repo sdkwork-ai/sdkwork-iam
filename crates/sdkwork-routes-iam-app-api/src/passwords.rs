@@ -165,6 +165,21 @@ pub(crate) async fn finalize_successful_password_login(pg: &PgPool, user: &Local
         .await;
 }
 
+/// The failure counter a new mistake continues from.
+///
+/// A credential that still carries a `locked_until` value is either locked (the
+/// caller never reaches this point) or its lock just expired. In the expired
+/// case the run of attempts restarts at zero: carrying the stale counter
+/// forward would re-lock the account on the very first mistake after the window
+/// elapsed.
+pub(crate) fn failed_attempt_baseline(failed_attempts: i32, had_lock: bool) -> i32 {
+    if had_lock {
+        0
+    } else {
+        failed_attempts.max(0)
+    }
+}
+
 async fn record_failed_password_attempt(
     pg: &PgPool,
     user_id: &str,
@@ -231,10 +246,12 @@ pub(crate) async fn authenticate_password(
     };
 
     if rows.is_empty() {
+        spend_absent_account_verification(password).await;
         return PasswordAuthenticationOutcome::InvalidCredentials;
     }
 
     if rows.len() > sdkwork_iam_bootstrap::limits::IAM_PASSWORD_AUTH_USER_ROW_LIMIT as usize {
+        spend_absent_account_verification(password).await;
         return PasswordAuthenticationOutcome::InvalidCredentials;
     }
 
@@ -247,14 +264,19 @@ pub(crate) async fn authenticate_password(
         let failed_attempts: i32 = row.get(11);
         let locked_until = parse_optional_timestamp_from_row(row, 12);
 
-        if let Some(lock_time) = locked_until {
-            if lock_time > now {
-                if verify_password_async(password_hash.clone(), password.to_owned()).await {
-                    locked_with_valid_password = true;
-                }
-                continue;
+        let lock_active = locked_until.is_some_and(|lock_time| lock_time > now);
+        if lock_active {
+            if verify_password_async(password_hash.clone(), password.to_owned()).await {
+                locked_with_valid_password = true;
             }
+            continue;
         }
+
+        // An expired lock starts a new run of attempts. Keeping the stale
+        // counter would re-lock the account on the very first mistake after the
+        // window elapsed, so a person who once tripped the lockout could never
+        // get more than one try per lockout period again.
+        let attempt_baseline = failed_attempt_baseline(failed_attempts, locked_until.is_some());
 
         if !verify_password_async(password_hash.clone(), password.to_owned()).await {
             record_failed_password_attempt(
@@ -262,7 +284,7 @@ pub(crate) async fn authenticate_password(
                 &user.id,
                 &user.tenant_id,
                 &account_key,
-                failed_attempts,
+                attempt_baseline,
                 config,
             )
             .await;
@@ -302,6 +324,11 @@ pub(crate) async fn identity_exists_global(pg: &PgPool, identity: &str) -> Resul
 }
 
 /// Check whether an identity (username, email, or phone) already exists in the database.
+///
+/// Every non-deleted account counts, whatever its status: the uniqueness of
+/// `iam_user.username`/`email`/`phone` is a storage invariant, so a disabled
+/// account's identity is still taken. Ignoring disabled rows here made
+/// registration race the unique index and surface a 500 instead of a conflict.
 pub(crate) async fn identity_exists(
     pg: &PgPool,
     tenant_id: &str,
@@ -309,7 +336,7 @@ pub(crate) async fn identity_exists(
 ) -> Result<bool, String> {
     let identity_key = canonical_identity(identity);
     let row = sqlx::query(
-        "SELECT EXISTS(SELECT 1 FROM iam_user WHERE tenant_id = $1 AND (LOWER(username) = $2 OR LOWER(email) = $2 OR phone = $2) AND status <> 'disabled' AND is_deleted = 0) as exists_flag",
+        "SELECT EXISTS(SELECT 1 FROM iam_user WHERE tenant_id = $1 AND (LOWER(username) = $2 OR LOWER(email) = $2 OR phone = $2) AND is_deleted = 0) as exists_flag",
     )
     .bind(tenant_id)
     .bind(&identity_key)
@@ -479,6 +506,45 @@ pub(crate) fn verify_password(password_hash: &str, password: &str) -> bool {
                 .verify_password(password.as_bytes(), &parsed_hash)
                 .is_ok()
         })
+}
+
+/// A hash of a random per-process secret, used to spend the same Argon2 work
+/// when no account matched.
+///
+/// Without it, "unknown account" would answer measurably faster than "wrong
+/// password" and let an attacker enumerate valid accounts through response
+/// timing. The work factor matches `hash_password`, so both branches cost the
+/// same single Argon2 verification. The plaintext is generated from the OS
+/// entropy source and never leaves this process, so no known input can ever
+/// verify against it.
+fn timing_equivalent_password_hash() -> &'static str {
+    static DUMMY_HASH: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    DUMMY_HASH.get_or_init(|| {
+        use rand_core::RngCore;
+        let mut secret = [0u8; 32];
+        OsRng.fill_bytes(&mut secret);
+        let plaintext = secret
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        hash_password(&plaintext)
+            // An encoding failure must not reopen the timing gap; a
+            // structurally valid fallback still costs one verification.
+            .unwrap_or_else(|| {
+                "$argon2id$v=19$m=19456,t=2,p=1$c2Rrd29ya3RpbWU$0S8m9oCJ7m6o4m5o9L1oQ3S0oW6Q5T7V8X9Y0Z1a2b3"
+                    .to_string()
+            })
+    })
+}
+
+/// Spends one password verification when no credential matched, so the
+/// "unknown account" and "wrong password" paths take the same time.
+async fn spend_absent_account_verification(password: &str) {
+    let _ = verify_password_async(
+        timing_equivalent_password_hash().to_string(),
+        password.to_owned(),
+    )
+    .await;
 }
 
 pub(crate) fn resolve_registration_username(body: &Value) -> Option<String> {
@@ -726,4 +792,42 @@ pub(crate) async fn verify_code_login(
     }
 
     Err(CodeLoginVerificationError::NotConfigured)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn timing_equalizer_hash_is_a_real_argon2_verification_target() {
+        let hash = timing_equivalent_password_hash();
+        // It must parse as a password hash, otherwise `verify_password_async`
+        // would return early and reintroduce the timing gap it exists to close.
+        assert!(PasswordHash::new(hash).is_ok());
+        // The plaintext is process-local random entropy, so no candidate can
+        // authenticate against it.
+        assert!(!verify_password(hash, ""));
+        assert!(!verify_password(hash, "sdkwork-iam-timing-equalizer-not-a-user-password"));
+        assert!(!verify_password(hash, "any-candidate-password"));
+    }
+
+    #[test]
+    fn timing_equalizer_hash_is_computed_once() {
+        let first = timing_equivalent_password_hash();
+        let second = timing_equivalent_password_hash();
+        assert_eq!(first.as_ptr(), second.as_ptr());
+    }
+
+    #[test]
+    fn expired_lockout_starts_a_fresh_run_of_attempts() {
+        // No lock: the counter keeps accumulating.
+        assert_eq!(failed_attempt_baseline(0, false), 0);
+        assert_eq!(failed_attempt_baseline(2, false), 2);
+        // An expired lock resets the run, so the next mistake is the first one
+        // and does not immediately re-lock the account.
+        assert_eq!(failed_attempt_baseline(5, true), 0);
+        assert_eq!(failed_attempt_baseline(99, true), 0);
+        // Defensive: a negative counter cannot lower the threshold.
+        assert_eq!(failed_attempt_baseline(-3, false), 0);
+    }
 }

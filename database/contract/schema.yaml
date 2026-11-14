@@ -21,6 +21,9 @@ tables:
   - name: iam_audit_event
     lifecycle_status: active
     owner: sdkwork-iam
+  - name: iam_authz_epoch
+    lifecycle_status: active
+    owner: sdkwork-iam
   - name: iam_catalog_materialization
     lifecycle_status: active
     owner: sdkwork-iam

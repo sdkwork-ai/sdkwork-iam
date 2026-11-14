@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "deployments",
+  "domain": "deploy",
+  "owner": "sdkwork-deployments",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "deploy.apps.read",
+        "description": "Read application lifecycle and availability state",
+        "name": "deploy.apps.read",
+        "resource": "deploy.apps",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "deploy.artifacts.read",
+        "description": "Read deployment package artifacts",
+        "name": "deploy.artifacts.read",
+        "resource": "deploy.artifacts",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "deploy.auditLogs.read",
+        "description": "Read publishing operator audit evidence",
+        "name": "deploy.auditLogs.read",
+        "resource": "deploy.auditLogs",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "deploy.clusters.read",
+        "description": "Read node cluster inventory",
+        "name": "deploy.clusters.read",
+        "resource": "deploy.clusters",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "deploy.deployments.read",
+        "description": "Read rollout history and deployment state",
+        "name": "deploy.deployments.read",
+        "resource": "deploy.deployments",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "deploy.healthChecks.read",
+        "description": "Read health check policy and status",
+        "name": "deploy.healthChecks.read",
+        "resource": "deploy.healthChecks",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "deploy.nginx.write",
+        "description": "Write Nginx publishing gateway configuration",
+        "name": "deploy.nginx.write",
+        "resource": "deploy.nginx",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "deploy.releases.read",
+        "description": "Read immutable release versions",
+        "name": "deploy.releases.read",
+        "resource": "deploy.releases",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "deploy.servers.read",
+        "description": "Read host node inventory",
+        "name": "deploy.servers.read",
+        "resource": "deploy.servers",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": []
+  },
+  "catalogVersion": "1.0.0",
+  "displayName": "deployments",
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

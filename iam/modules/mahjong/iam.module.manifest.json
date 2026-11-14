@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "mahjong",
+  "domain": "mahjong",
+  "permissions": {
+    "catalog": [],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": []
+  },
+  "catalogVersion": "1.0.0",
+  "owner": "sdkwork-mahjong",
+  "displayName": "mahjong",
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

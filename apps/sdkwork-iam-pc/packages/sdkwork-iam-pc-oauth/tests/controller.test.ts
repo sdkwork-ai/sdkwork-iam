@@ -6,6 +6,7 @@ import {
   SdkworkIamOfficialAccountsController,
   toOfficialAccount,
   toOfficialAccountCommand,
+  toOfficialAccountCreateCommand,
   type SdkworkIamOfficialAccountsApi,
 } from "../src";
 
@@ -79,10 +80,21 @@ describe("official-account adapter", () => {
       appSecret: "   ",
       notifyToken: "",
     });
-    expect(command).toEqual({ displayName: "Name", appId: "wx1" });
+    expect(command).toEqual({ displayName: "Name" });
     expect(toOfficialAccountCommand({ displayName: "N", appSecret: " s3cret " })).toMatchObject({
       appSecret: "s3cret",
     });
+  });
+
+  it("names the WeChat AppID wechatAppId on create and leaves it out of updates", () => {
+    const draft = { appId: " wx1 ", displayName: "Name" };
+    expect(toOfficialAccountCreateCommand(draft)).toEqual({
+      displayName: "Name",
+      wechatAppId: "wx1",
+    });
+    // `appId` is an ambient context selector key the app API rejects in a body.
+    expect(toOfficialAccountCommand(draft)).not.toHaveProperty("appId");
+    expect(toOfficialAccountCreateCommand(draft)).not.toHaveProperty("appId");
   });
 
   it("maps the list page through the port", async () => {
@@ -127,19 +139,17 @@ describe("official-account controller", () => {
 
     const created = await controller.create(draft);
     expect(created.displayName).toBe("Name");
-    expect(api.create).toHaveBeenCalledWith({ displayName: "Name", appId: "wx1" });
+    expect(api.create).toHaveBeenCalledWith({ displayName: "Name", wechatAppId: "wx1" });
 
     await controller.update("acc-1", { ...draft, customMenu: { buttons: [] } });
     expect(api.update).toHaveBeenCalledWith("acc-1", {
       displayName: "Name",
-      appId: "wx1",
       customMenu: { buttons: [] },
     });
 
     await controller.setEnabled(toOfficialAccount(RECORD), false);
     expect(api.update).toHaveBeenCalledWith("acc-1", {
       displayName: "BirdCoder",
-      appId: "wx1234567890abcdef",
       enabled: false,
     });
 
@@ -148,7 +158,6 @@ describe("official-account controller", () => {
     });
     expect(api.update).toHaveBeenCalledWith("acc-1", {
       displayName: "BirdCoder",
-      appId: "wx1234567890abcdef",
       customMenu: { buttons: [{ name: "帮助", type: "click", key: "HELP" }] },
     });
 

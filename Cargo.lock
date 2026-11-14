@@ -2502,6 +2502,8 @@ version = "0.1.0"
 dependencies = [
  "sdkwork-database-config",
  "sdkwork-iam-context-service",
+ "sqlx",
+ "tokio",
 ]
 
 [[package]]

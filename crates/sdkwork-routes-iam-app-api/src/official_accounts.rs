@@ -65,12 +65,18 @@ pub(crate) fn official_account_routes() -> Router<LocalIamState> {
 }
 
 /// Create payload of `POST /app/v3/api/iam/oauth/official_accounts`.
+///
+/// The WeChat AppID arrives as `wechatAppId`, never as `appId`: the web
+/// framework rejects client-supplied body keys that name ambient
+/// tenant/app/subject context selectors, and `app_id`/`appId` is one of them
+/// (API_SPEC §14). This value is business data — the channel's own WeChat
+/// identifier — so it carries the provider-qualified name instead.
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct OfficialAccountCreateCommand {
     /// WeChat 公众号 AppID.
     #[serde(default)]
-    pub(crate) app_id: String,
+    pub(crate) wechat_app_id: String,
     /// Account display name shown in the caller's account list.
     #[serde(default)]
     pub(crate) display_name: String,
@@ -313,9 +319,9 @@ async fn create_official_account(
         Err(response) => return response,
     };
 
-    let Some(app_id) = normalized_required(&body.app_id, MAX_APP_ID_LEN) else {
+    let Some(app_id) = normalized_required(&body.wechat_app_id, MAX_APP_ID_LEN) else {
         return official_account_invalid(
-            "appId",
+            "wechatAppId",
             "a non-empty AppID of at most 64 characters is required",
         );
     };
@@ -324,7 +330,7 @@ async fn create_official_account(
         .all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '-')
     {
         return official_account_invalid(
-            "appId",
+            "wechatAppId",
             "only letters, digits, `_`, and `-` are accepted",
         );
     }
@@ -637,6 +643,25 @@ async fn delete_official_account(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn create_command_addresses_the_wechat_app_id_by_its_provider_qualified_name() {
+        let command: OfficialAccountCreateCommand = serde_json::from_value(json!({
+            "wechatAppId": "wx1234",
+            "displayName": "BirdCoder",
+        }))
+        .expect("create command");
+        assert_eq!(command.wechat_app_id, "wx1234");
+        assert_eq!(command.display_name, "BirdCoder");
+        // `appId` is an ambient context selector on this surface: the framework
+        // guard rejects a body that carries it, so the command must not bind it.
+        let bare: OfficialAccountCreateCommand = serde_json::from_value(json!({
+            "appId": "wx1234",
+            "displayName": "BirdCoder",
+        }))
+        .expect("create command");
+        assert!(bare.wechat_app_id.is_empty());
+    }
 
     #[test]
     fn normalizes_required_text() {

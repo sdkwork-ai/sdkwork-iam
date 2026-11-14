@@ -9,51 +9,6 @@
   "permissions": {
     "catalog": [
       {
-        "code": "skills.marketplace.read",
-        "name": "Read skills marketplace catalog",
-        "resource": "marketplace",
-        "action": "read",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "skills.packages.install",
-        "name": "Install skill packages",
-        "resource": "packages",
-        "action": "install",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "skills.packages.create",
-        "name": "Create skill packages owned by the authenticated user",
-        "resource": "packages",
-        "action": "create",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "skills.packages.update",
-        "name": "Update skill packages owned by the authenticated user",
-        "resource": "packages",
-        "action": "update",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "skills.packages.delete",
-        "name": "Delete skill packages owned by the authenticated user",
-        "resource": "packages",
-        "action": "delete",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
         "code": "skills.artifacts.create",
         "name": "Attach artifacts to skill packages owned by the authenticated user",
         "resource": "artifacts",
@@ -63,18 +18,9 @@
         "replacementCode": null
       },
       {
-        "code": "skills.packages.manage",
-        "name": "Manage skill packages",
-        "resource": "packages",
-        "action": "manage",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "skills.categories.manage",
-        "name": "Manage skill marketplace categories",
-        "resource": "categories",
+        "code": "skills.artifacts.manage",
+        "name": "Manage immutable skill artifacts",
+        "resource": "artifacts",
         "action": "manage",
         "status": "active",
         "since": "1.0.0",
@@ -90,9 +36,18 @@
         "replacementCode": null
       },
       {
-        "code": "skills.artifacts.manage",
-        "name": "Manage immutable skill artifacts",
-        "resource": "artifacts",
+        "code": "skills.categories.manage",
+        "name": "Manage skill marketplace categories",
+        "resource": "categories",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "skills.installations.manage",
+        "name": "Manage authorized non-user skill installations",
+        "resource": "installations",
         "action": "manage",
         "status": "active",
         "since": "1.0.0",
@@ -108,10 +63,55 @@
         "replacementCode": null
       },
       {
-        "code": "skills.installations.manage",
-        "name": "Manage authorized non-user skill installations",
-        "resource": "installations",
+        "code": "skills.marketplace.read",
+        "name": "Read skills marketplace catalog",
+        "resource": "marketplace",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "skills.packages.create",
+        "name": "Create skill packages owned by the authenticated user",
+        "resource": "packages",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "skills.packages.delete",
+        "name": "Delete skill packages owned by the authenticated user",
+        "resource": "packages",
+        "action": "delete",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "skills.packages.install",
+        "name": "Install skill packages",
+        "resource": "packages",
+        "action": "install",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "skills.packages.manage",
+        "name": "Manage skill packages",
+        "resource": "packages",
         "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "skills.packages.update",
+        "name": "Update skill packages owned by the authenticated user",
+        "resource": "packages",
+        "action": "update",
         "status": "active",
         "since": "1.0.0",
         "replacementCode": null
@@ -165,13 +165,13 @@
       {
         "roleCode": "app_user",
         "patterns": [
-          "skills.marketplace.read",
-          "skills.packages.install",
-          "skills.packages.create",
-          "skills.packages.update",
-          "skills.packages.delete",
           "skills.artifacts.create",
-          "skills.installations.read"
+          "skills.installations.read",
+          "skills.marketplace.read",
+          "skills.packages.create",
+          "skills.packages.delete",
+          "skills.packages.install",
+          "skills.packages.update"
         ]
       },
       {
@@ -183,13 +183,13 @@
       {
         "roleCode": "org_operations",
         "patterns": [
-          "skills.marketplace.read",
-          "skills.packages.manage",
-          "skills.categories.manage",
-          "skills.capabilities.manage",
           "skills.artifacts.manage",
+          "skills.capabilities.manage",
+          "skills.categories.manage",
+          "skills.installations.manage",
           "skills.installations.read",
-          "skills.installations.manage"
+          "skills.marketplace.read",
+          "skills.packages.manage"
         ]
       }
     ],

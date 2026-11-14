@@ -58,6 +58,13 @@ pub(crate) struct LocalSession {
     pub(crate) access_token: String,
     pub(crate) auth_token: String,
     pub(crate) context: sdkwork_iam_context_service::IamAppContext,
+    /// Opaque client device identity the session is bound to.
+    ///
+    /// A refresh must carry this forward: the "one session per application per
+    /// device" invariant is enforced by revoking sessions that match the same
+    /// device id, so a rotated session that forgets it would silently escape
+    /// that revocation.
+    pub(crate) device_id: Option<String>,
     pub(crate) refresh_token: String,
     pub(crate) session_id: String,
     pub(crate) user: LocalIamUser,
@@ -103,6 +110,24 @@ pub(crate) struct LocalOrganizationMembership {
     pub(crate) tenant_id: String,
     pub(crate) user: LocalIamUser,
     pub(crate) user_id: String,
+}
+
+/// One organization roster row composed from `iam_organization_membership`
+/// joined with `iam_user`.
+///
+/// The roster is organization-scoped rather than caller-scoped, so `email` is
+/// kept as a separate optional projection: the handler drops it unless the
+/// caller's own membership in the same organization is `owner` or `admin`.
+#[derive(Clone)]
+pub(crate) struct LocalOrganizationMember {
+    pub(crate) display_name: String,
+    pub(crate) email: Option<String>,
+    pub(crate) membership_id: String,
+    pub(crate) membership_kind: String,
+    pub(crate) primary: bool,
+    pub(crate) status: String,
+    pub(crate) user_id: String,
+    pub(crate) username: String,
 }
 
 #[derive(Clone)]
@@ -176,6 +201,10 @@ pub(crate) struct LocalPasswordResetRequest {
 #[derive(Clone)]
 pub(crate) struct LocalLoginContinuation {
     pub(crate) continuation_kind: String,
+    /// Client device identity captured at login time and re-applied when the
+    /// pending login finally issues its session, so the organization-selection
+    /// branch keeps the same per-device session replacement as a direct login.
+    pub(crate) device_id: Option<String>,
     pub(crate) expire_time: u128,
     pub(crate) organization_ids: Vec<String>,
     pub(crate) qr_session_key: Option<String>,

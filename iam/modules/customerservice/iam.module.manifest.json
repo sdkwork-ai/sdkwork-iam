@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "customerservice",
+  "domain": "customerservice",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "customerservice.channels.admin.read",
+        "description": "Permission customerservice.channels.admin.read",
+        "source": "openapi",
+        "name": "customerservice.channels.admin.read",
+        "resource": "customerservice.channels.admin",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "customerservice.channels.admin.write",
+        "description": "Permission customerservice.channels.admin.write",
+        "source": "openapi",
+        "name": "customerservice.channels.admin.write",
+        "resource": "customerservice.channels.admin",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "customerservice.plugins.admin.read",
+        "description": "Permission customerservice.plugins.admin.read",
+        "source": "openapi",
+        "name": "customerservice.plugins.admin.read",
+        "resource": "customerservice.plugins.admin",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "customerservice.plugins.admin.write",
+        "description": "Permission customerservice.plugins.admin.write",
+        "source": "openapi",
+        "name": "customerservice.plugins.admin.write",
+        "resource": "customerservice.plugins.admin",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "customerservice.tickets.admin.read",
+        "description": "Permission customerservice.tickets.admin.read",
+        "source": "openapi",
+        "name": "customerservice.tickets.admin.read",
+        "resource": "customerservice.tickets.admin",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "customerservice.tickets.admin.write",
+        "description": "Permission customerservice.tickets.admin.write",
+        "source": "openapi",
+        "name": "customerservice.tickets.admin.write",
+        "resource": "customerservice.tickets.admin",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "customerservice.tickets.read",
+        "description": "Permission customerservice.tickets.read",
+        "source": "openapi",
+        "name": "customerservice.tickets.read",
+        "resource": "customerservice.tickets",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "customerservice.tickets.write",
+        "description": "Permission customerservice.tickets.write",
+        "source": "openapi",
+        "name": "customerservice.tickets.write",
+        "resource": "customerservice.tickets",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": []
+  },
+  "catalogVersion": "1.0.0",
+  "owner": "sdkwork-customerservice",
+  "displayName": "customerservice",
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

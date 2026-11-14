@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "shop",
+  "domain": "commerce",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "commerce.catalog.manage",
+        "name": "Manage merchandise catalog",
+        "resource": "commerce.catalog",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.catalog.read",
+        "name": "Read merchandise catalog",
+        "resource": "commerce.catalog",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.shops.manage",
+        "name": "Manage shops",
+        "resource": "commerce.shops",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "commerce.shops.read",
+        "name": "Read shops",
+        "resource": "commerce.shops",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": []
+  },
+  "catalogVersion": "1.0.0",
+  "owner": "sdkwork-shop",
+  "displayName": "shop",
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

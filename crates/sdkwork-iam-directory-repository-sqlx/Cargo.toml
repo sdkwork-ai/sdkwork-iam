@@ -16,3 +16,7 @@ path = "src/lib.rs"
 [dependencies]
 sdkwork-database-config = { workspace = true }
 sdkwork_iam_context_service.workspace = true
+sqlx = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

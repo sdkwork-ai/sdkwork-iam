@@ -1,7 +1,7 @@
 import { appApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { AppbaseOperationCommand, AppbaseSessionCreateCommand, AuthorizationsCompletionsCreateRequest, AuthorizationsCreateRequest, DesktopSessionsCreateRequest, SdkWorkPageData, WechatMiniProgramSessionCreateCommand } from '../types';
+import type { AppbaseOperationCommand, AppbaseSessionCreateCommand, AuthorizationsCompletionsCreateRequest, AuthorizationsCreateRequest, DesktopSessionsCreateRequest, OauthPhoneBindingSessionCreateCommand, OauthPhoneBindingVerificationCodeRequestCommand, SdkWorkPageData, WechatMiniProgramSessionCreateCommand } from '../types';
 
 
 export interface OauthWechatPaymentOauthStartParams {
@@ -99,6 +99,36 @@ export class OauthProvidersApi {
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<SdkWorkPageData>(appendQueryString(appApiPath(`/oauth/providers`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, accessTokenOnly: true, sdkworkUnwrapKind: 'page' });
+  }
+}
+
+export class OauthPhoneBindingSessionsVerificationCodeRequestsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Phone Binding Sessions verification Code Requests create. */
+  async create(body: OauthPhoneBindingVerificationCodeRequestCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(appApiPath(`/oauth/phone_binding_sessions/verification_code_requests`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', accessTokenOnly: true, sdkworkUnwrapKind: 'item' });
+  }
+}
+
+export class OauthPhoneBindingSessionsApi {
+  private client: HttpClient;
+  public readonly verificationCodeRequests: OauthPhoneBindingSessionsVerificationCodeRequestsApi;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+    this.verificationCodeRequests = new OauthPhoneBindingSessionsVerificationCodeRequestsApi(client);
+  }
+
+
+/** Phone Binding Sessions create. */
+  async create(body: OauthPhoneBindingSessionCreateCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(appApiPath(`/oauth/phone_binding_sessions`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', accessTokenOnly: true, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -353,6 +383,7 @@ export class OauthApi {
   public readonly deviceAuthorizations: OauthDeviceAuthorizationsApi;
   public readonly grants: OauthGrantsApi;
   public readonly miniProgramSessions: OauthMiniProgramSessionsApi;
+  public readonly phoneBindingSessions: OauthPhoneBindingSessionsApi;
   public readonly providers: OauthProvidersApi;
   public readonly scanLoginModes: OauthScanLoginModesApi;
   public readonly sessions: OauthSessionsApi;
@@ -367,6 +398,7 @@ export class OauthApi {
     this.deviceAuthorizations = new OauthDeviceAuthorizationsApi(client);
     this.grants = new OauthGrantsApi(client);
     this.miniProgramSessions = new OauthMiniProgramSessionsApi(client);
+    this.phoneBindingSessions = new OauthPhoneBindingSessionsApi(client);
     this.providers = new OauthProvidersApi(client);
     this.scanLoginModes = new OauthScanLoginModesApi(client);
     this.sessions = new OauthSessionsApi(client);

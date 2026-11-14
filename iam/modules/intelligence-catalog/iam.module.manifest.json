@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "intelligence-catalog",
+  "catalogVersion": "1.0.0",
+  "domain": "intelligence",
+  "owner": "sdkwork-models",
+  "displayName": "Intelligence Model Catalog",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "intelligence.models.manage",
+        "name": "Manage intelligence model catalog",
+        "resource": "models",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "intelligence.models.read",
+        "name": "Read intelligence model catalog",
+        "resource": "models",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "intelligence.resources.manage",
+        "name": "Manage intelligence AI resources",
+        "resource": "resources",
+        "action": "manage",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "intelligence.resources.read",
+        "name": "Read intelligence AI resources",
+        "resource": "resources",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [
+      {
+        "roleCode": "org_admin",
+        "patterns": [
+          "intelligence.*"
+        ]
+      },
+      {
+        "roleCode": "org_operations",
+        "patterns": [
+          "intelligence.models.manage",
+          "intelligence.models.read",
+          "intelligence.resources.manage",
+          "intelligence.resources.read"
+        ]
+      }
+    ],
+    "roleExclusions": []
+  },
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

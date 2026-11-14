@@ -252,6 +252,7 @@ CREATE TABLE IF NOT EXISTS iam_session (
   sharding_strategy TEXT NOT NULL,
   data_scope_json TEXT NOT NULL,
   permission_scope_json TEXT NOT NULL,
+  authz_epoch BIGINT,
   expires_at TEXT NOT NULL,
   revoked_at TEXT,
   created_at TEXT NOT NULL,
@@ -2252,3 +2253,60 @@ CREATE TABLE IF NOT EXISTS iam_user_official_account (
 
 CREATE INDEX IF NOT EXISTS idx_iam_user_official_account_owner
   ON iam_user_official_account (tenant_id, user_id, status, updated_at);
+
+-- Authorization-state epoch (AUTHORIZATION_STATE_SPEC.md section 3).
+--
+-- The per-session permission snapshot is versioned, not authoritative: every
+-- write to the RBAC grant tables (role, role permission, permission catalog,
+-- role binding, role exclusion) advances this single counter, and a session
+-- snapshot older than the current counter is re-resolved from the authoritative
+-- bindings at request time. This keeps a deploy or a grant change from
+-- requiring re-authentication and bounds revoke latency to one request.
+CREATE TABLE IF NOT EXISTS iam_authz_epoch (
+  id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  epoch BIGINT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO iam_authz_epoch (id, epoch) VALUES (1, 1)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE OR REPLACE FUNCTION iam_bump_authz_epoch() RETURNS trigger AS $$
+BEGIN
+  UPDATE iam_authz_epoch
+     SET epoch = epoch + 1,
+         updated_at = CURRENT_TIMESTAMP
+   WHERE id = 1;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_iam_role_authz_epoch ON iam_role;
+CREATE TRIGGER trg_iam_role_authz_epoch
+  AFTER INSERT OR UPDATE OR DELETE ON iam_role
+  FOR EACH STATEMENT EXECUTE FUNCTION iam_bump_authz_epoch();
+
+DROP TRIGGER IF EXISTS trg_iam_role_permission_authz_epoch ON iam_role_permission;
+CREATE TRIGGER trg_iam_role_permission_authz_epoch
+  AFTER INSERT OR UPDATE OR DELETE ON iam_role_permission
+  FOR EACH STATEMENT EXECUTE FUNCTION iam_bump_authz_epoch();
+
+DROP TRIGGER IF EXISTS trg_iam_permission_authz_epoch ON iam_permission;
+CREATE TRIGGER trg_iam_permission_authz_epoch
+  AFTER INSERT OR UPDATE OR DELETE ON iam_permission
+  FOR EACH STATEMENT EXECUTE FUNCTION iam_bump_authz_epoch();
+
+DROP TRIGGER IF EXISTS trg_iam_role_binding_authz_epoch ON iam_role_binding;
+CREATE TRIGGER trg_iam_role_binding_authz_epoch
+  AFTER INSERT OR UPDATE OR DELETE ON iam_role_binding
+  FOR EACH STATEMENT EXECUTE FUNCTION iam_bump_authz_epoch();
+
+DROP TRIGGER IF EXISTS trg_iam_role_exclusion_authz_epoch ON iam_role_exclusion;
+CREATE TRIGGER trg_iam_role_exclusion_authz_epoch
+  AFTER INSERT OR UPDATE OR DELETE ON iam_role_exclusion
+  FOR EACH STATEMENT EXECUTE FUNCTION iam_bump_authz_epoch();
+
+DROP TRIGGER IF EXISTS trg_iam_catalog_materialization_authz_epoch ON iam_catalog_materialization;
+CREATE TRIGGER trg_iam_catalog_materialization_authz_epoch
+  AFTER INSERT OR UPDATE OR DELETE ON iam_catalog_materialization
+  FOR EACH STATEMENT EXECUTE FUNCTION iam_bump_authz_epoch();

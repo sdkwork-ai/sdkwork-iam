@@ -21,6 +21,13 @@ pub struct LocalOAuthProviderProfile {
     pub union_scope_id: Option<String>,
     pub email: Option<String>,
     pub phone: Option<String>,
+    /// Whether the provider itself asserted that `phone` is verified (for
+    /// example WeChat `getPhoneNumber`, or a `phone_number_verified` claim).
+    ///
+    /// Only a verified provider phone may associate an external identity with
+    /// an existing IAM account without an extra ownership proof.
+    #[serde(default)]
+    pub phone_verified: bool,
     pub name: Option<String>,
     pub avatar: Option<String>,
 }
@@ -31,6 +38,8 @@ struct LocalOAuthAuthorizationCodeClaims {
     subject: String,
     email: Option<String>,
     phone: Option<String>,
+    #[serde(default)]
+    phone_verified: bool,
     name: Option<String>,
     avatar: Option<String>,
     issued_at: i64,
@@ -133,6 +142,7 @@ impl LocalOAuthAuthority {
                 subject: profile.subject.clone(),
                 email: profile.email.clone(),
                 phone: profile.phone.clone(),
+                phone_verified: profile.phone_verified,
                 name: profile.name.clone(),
                 avatar: profile.avatar.clone(),
                 issued_at,
@@ -158,24 +168,33 @@ pub fn read_local_oauth_provider_profile(
     let subject =
         read_env_trimmed(&subject_env).unwrap_or_else(|| format!("{normalized}:local-subject"));
 
+    let email = local_oauth_provider_env_key(&normalized, "EMAIL")
+        .ok()
+        .and_then(|key| read_env_trimmed(&key));
+    let phone = local_oauth_provider_env_key(&normalized, "PHONE")
+        .ok()
+        .and_then(|key| read_env_trimmed(&key));
+    let name = local_oauth_provider_env_key(&normalized, "NAME")
+        .ok()
+        .and_then(|key| read_env_trimmed(&key));
+    let avatar = local_oauth_provider_env_key(&normalized, "AVATAR_URL")
+        .ok()
+        .and_then(|key| read_env_trimmed(&key));
+
     Ok(LocalOAuthProviderProfile {
         provider: normalized.clone(),
         subject,
         open_id: None,
         union_id: None,
         union_scope_id: None,
-        email: local_oauth_provider_env_key(&normalized, "EMAIL")
-            .ok()
-            .and_then(|key| read_env_trimmed(&key)),
-        phone: local_oauth_provider_env_key(&normalized, "PHONE")
-            .ok()
-            .and_then(|key| read_env_trimmed(&key)),
-        name: local_oauth_provider_env_key(&normalized, "NAME")
-            .ok()
-            .and_then(|key| read_env_trimmed(&key)),
-        avatar: local_oauth_provider_env_key(&normalized, "AVATAR_URL")
-            .ok()
-            .and_then(|key| read_env_trimmed(&key)),
+        email,
+        // A local development provider profile stands in for a provider that
+        // already verified the subscriber, so the dev harness can exercise the
+        // phone-association path.
+        phone_verified: phone.is_some(),
+        phone,
+        name,
+        avatar,
     })
 }
 

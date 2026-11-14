@@ -11,8 +11,8 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "b75551fa161d220b40e98985d1cb4fb219c3ef2a7ce6a2c64ef09d0245d1f5ed",
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "4acc909e70223a5811191b32b7a978148ed5c94230b5b715960d00fc0e799a46",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
@@ -23,14 +23,18 @@
       {
         "area": "api-surface",
         "paths": [
-          "src/api/auth.ts"
+          "src/api/iam.ts"
         ]
       },
       {
         "area": "models",
         "paths": [
+          "src/types/appbase-session-create-command.d.ts",
+          "src/types/iam-organization-member-list-response.ts",
+          "src/types/iam-organization-member.ts",
           "src/types/index.ts",
-          "src/types/sessions-current-logout-request.ts"
+          "src/types/oauth-phone-binding-session-create-command.d.ts",
+          "src/types/wechat-mini-program-session-create-command.d.ts"
         ]
       }
     ],
@@ -39,12 +43,15 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "backed-up-generated-files",
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },
@@ -147,27 +154,28 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 56,
-    "models": 29,
+    "totalFiles": 60,
+    "models": 33,
     "apis": 4,
-    "types": 31
+    "types": 35
   },
   "warnings": [],
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 3,
+    "writtenFiles": 4,
     "skippedScaffoldFiles": 2,
-    "skippedUnchangedGeneratedFiles": 51,
-    "deletedGeneratedFiles": 0,
+    "skippedUnchangedGeneratedFiles": 54,
+    "deletedGeneratedFiles": 3,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "b75551fa161d220b40e98985d1cb4fb219c3ef2a7ce6a2c64ef09d0245d1f5ed",
+    "changeFingerprint": "4acc909e70223a5811191b32b7a978148ed5c94230b5b715960d00fc0e799a46",
     "changes": {
       "createdGeneratedFiles": [
-        "src/types/sessions-current-logout-request.ts"
+        "src/types/iam-organization-member-list-response.ts",
+        "src/types/iam-organization-member.ts"
       ],
       "updatedGeneratedFiles": [
-        "src/api/auth.ts",
+        "src/api/iam.ts",
         "src/types/index.ts"
       ],
       "unchangedGeneratedFiles": [
@@ -181,8 +189,8 @@
         "package.json",
         "README.md",
         "sdkwork-sdk.json",
+        "src/api/auth.ts",
         "src/api/base.ts",
-        "src/api/iam.ts",
         "src/api/index.ts",
         "src/api/oauth.ts",
         "src/api/paths.ts",
@@ -210,6 +218,8 @@
         "src/types/iam-user-persona-response.ts",
         "src/types/iam-user-persona-update-command.ts",
         "src/types/iam-user-persona.ts",
+        "src/types/oauth-phone-binding-session-create-command.ts",
+        "src/types/oauth-phone-binding-verification-code-request-command.ts",
         "src/types/page-info.ts",
         "src/types/problem-detail.ts",
         "src/types/sdk-work-api-response.ts",
@@ -220,16 +230,25 @@
         "src/types/sdk-work-platform-error-code.ts",
         "src/types/sdk-work-resource-data.ts",
         "src/types/sdk-work-resource-response.ts",
+        "src/types/sessions-current-logout-request.ts",
         "src/types/wechat-mini-program-session-create-command.ts",
         "tsconfig.json"
       ],
-      "deletedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "src/types/appbase-session-create-command.d.ts",
+        "src/types/oauth-phone-binding-session-create-command.d.ts",
+        "src/types/wechat-mini-program-session-create-command.d.ts"
+      ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/build-runtime.mjs",
         "custom/README.md"
       ],
-      "backedUpFiles": []
+      "backedUpFiles": [
+        "src/types/appbase-session-create-command.d.ts",
+        "src/types/oauth-phone-binding-session-create-command.d.ts",
+        "src/types/wechat-mini-program-session-create-command.d.ts"
+      ]
     },
     "impact": {
       "schemaVersion": 1,
@@ -241,14 +260,18 @@
         {
           "area": "api-surface",
           "paths": [
-            "src/api/auth.ts"
+            "src/api/iam.ts"
           ]
         },
         {
           "area": "models",
           "paths": [
+            "src/types/appbase-session-create-command.d.ts",
+            "src/types/iam-organization-member-list-response.ts",
+            "src/types/iam-organization-member.ts",
             "src/types/index.ts",
-            "src/types/sessions-current-logout-request.ts"
+            "src/types/oauth-phone-binding-session-create-command.d.ts",
+            "src/types/wechat-mini-program-session-create-command.d.ts"
           ]
         }
       ],
@@ -300,16 +323,23 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "medium",
+      "riskLevel": "high",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
+        "backed-up-generated-files",
+        "deleted-generated-files",
+        "manual-review-required",
         "verification-required"
       ]
     },
-    "backedUpFiles": [],
+    "backedUpFiles": [
+      "src/types/appbase-session-create-command.d.ts",
+      "src/types/oauth-phone-binding-session-create-command.d.ts",
+      "src/types/wechat-mini-program-session-create-command.d.ts"
+    ],
     "preservedLegacyFiles": false
   }
 }

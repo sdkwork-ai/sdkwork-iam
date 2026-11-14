@@ -163,6 +163,12 @@ function AccountRow({
  * The user-facing official-account surface: list, create/edit, enable/disable,
  * delete, and the custom-menu draft editor for the signed-in account's own
  * WeChat 公众号 channels.
+ *
+ * The panel is a workspace, not a page: it renders no heading of its own, so a
+ * host dialog that already states the surface's title and description shows
+ * that copy exactly once. {@link SdkworkIamOfficialAccountsPage} renders the
+ * heading for a standalone route. Its header is a single toolbar row — search
+ * with its action on the left, the list actions on the right.
  */
 export function SdkworkIamOfficialAccountsPanel({
   controller,
@@ -230,14 +236,26 @@ export function SdkworkIamOfficialAccountsPanel({
   const totalPages = Math.max(1, Math.ceil(state.totalItems / Math.max(1, state.pageSize)));
   return (
     <div className="flex h-full min-h-0 w-full flex-col gap-4 p-1" data-sdkwork-iam-official-accounts="">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <h2 className="text-base font-semibold text-[var(--sdk-color-text-primary)]">
-            {messages.panel.title}
-          </h2>
-          <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.panel.description}</p>
+      <header className="flex flex-wrap items-center gap-2">
+        <div className="w-64 max-w-full shrink-0">
+          <Input
+            aria-label={messages.panel.searchPlaceholder}
+            className={FIELD_CLASS_NAME}
+            onChange={(event) => setSearch(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") void controller.load({ q: search, page: 1 });
+            }}
+            placeholder={messages.panel.searchPlaceholder}
+            value={search}
+          />
         </div>
-        <div className="flex items-center gap-2">
+        <Button onClick={() => { void controller.load({ q: search, page: 1 }); }} size="sm" variant="secondary">
+          {messages.panel.search}
+        </Button>
+        <span className="text-xs text-[var(--sdk-color-text-muted)]">
+          {messages.panel.total.replace("{total}", String(state.totalItems))}
+        </span>
+        <div className="ml-auto flex items-center gap-2">
           <Button
             onClick={() => { void controller.load({ page: state.page }); }}
             size="sm"
@@ -248,25 +266,6 @@ export function SdkworkIamOfficialAccountsPanel({
           <Button onClick={openCreate} size="sm">{messages.panel.add}</Button>
         </div>
       </header>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Input
-          aria-label={messages.panel.searchPlaceholder}
-          className={FIELD_CLASS_NAME}
-          onChange={(event) => setSearch(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") void controller.load({ q: search, page: 1 });
-          }}
-          placeholder={messages.panel.searchPlaceholder}
-          value={search}
-        />
-        <Button onClick={() => { void controller.load({ q: search, page: 1 }); }} size="sm" variant="secondary">
-          {messages.panel.search}
-        </Button>
-        <span className="ml-auto text-xs text-[var(--sdk-color-text-muted)]">
-          {messages.panel.total.replace("{total}", String(state.totalItems))}
-        </span>
-      </div>
 
       {state.error !== undefined ? <StatusNotice tone="danger">{state.error}</StatusNotice> : null}
 

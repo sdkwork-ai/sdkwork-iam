@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "feeds",
+  "catalogVersion": "1.0.0",
+  "domain": "feeds",
+  "owner": "sdkwork-feeds",
+  "displayName": "SDKWork Feeds IAM Module",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "feeds.items.read",
+        "name": "Read feed items",
+        "resource": "items",
+        "action": "read",
+        "status": "active",
+        "since": "0.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "feeds.items.write",
+        "name": "Write feed items",
+        "resource": "items",
+        "action": "write",
+        "status": "active",
+        "since": "0.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "feeds.streams.read",
+        "name": "Read feed streams",
+        "resource": "streams",
+        "action": "read",
+        "status": "active",
+        "since": "0.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "feeds.streams.write",
+        "name": "Write feed streams",
+        "resource": "streams",
+        "action": "write",
+        "status": "active",
+        "since": "0.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "feeds.sync.run",
+        "name": "Run feed source sync",
+        "resource": "sync",
+        "action": "run",
+        "status": "active",
+        "since": "0.1.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [
+      {
+        "code": "feeds.admin",
+        "name": "Feeds administrator",
+        "permissions": [
+          "feeds.streams.read",
+          "feeds.streams.write",
+          "feeds.items.read",
+          "feeds.items.write",
+          "feeds.sync.run"
+        ],
+        "surface": "organization",
+        "scope": "organization",
+        "standard": true,
+        "assignable": true,
+        "bindingPrincipalKind": "organization_membership",
+        "permissionPatterns": [
+          "feeds.streams.read",
+          "feeds.streams.write",
+          "feeds.items.read",
+          "feeds.items.write",
+          "feeds.sync.run"
+        ]
+      }
+    ],
+    "roleGrantExtensions": [],
+    "roleExclusions": [],
+    "assignability": {
+      "roleGrantAssignableBy": [
+        "iam.admin"
+      ]
+    },
+    "bootstrapDefaults": {
+      "defaultRoles": [
+        {
+          "role": "feeds.admin",
+          "scope": "tenant"
+        }
+      ]
+    }
+  },
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "dependencies": {
+    "requiresModules": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": []
+}

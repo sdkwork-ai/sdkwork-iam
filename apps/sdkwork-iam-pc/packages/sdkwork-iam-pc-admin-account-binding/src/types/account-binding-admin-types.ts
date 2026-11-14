@@ -11,10 +11,24 @@ export interface SdkworkIamContactBindingPolicy {
   requireVerification: boolean;
 }
 
+export interface SdkworkIamOauthLoginPhoneAssociationPolicy {
+  /** Allow the provider phone to associate an external identity with an
+   * existing IAM account. */
+  enabled: boolean;
+  /** Link (and sign in) directly when the provider asserts a verified phone
+   * that already owns an account. Off means the person proves ownership with a
+   * verification code first. */
+  autoLinkVerifiedPhone: boolean;
+  /** Require a phone-binding step for OAuth identities that carry no trusted
+   * phone, so every account ends up with a verified phone. */
+  requirePhoneBinding: boolean;
+}
+
 export interface SdkworkIamOauthLoginPolicy {
   allowedProviders: readonly string[];
   autoRegistrationEnabled: boolean;
   enabled: boolean;
+  phoneAssociation: SdkworkIamOauthLoginPhoneAssociationPolicy;
 }
 
 export interface SdkworkIamOauthBindingPolicy {
@@ -68,6 +82,11 @@ export const DEFAULT_ACCOUNT_BINDING_POLICY: SdkworkIamAccountBindingPolicy = {
     allowedProviders: [],
     autoRegistrationEnabled: true,
     enabled: false,
+    phoneAssociation: {
+      enabled: false,
+      autoLinkVerifiedPhone: true,
+      requirePhoneBinding: false,
+    },
   },
   oauthBinding: {
     allowedProviders: [],

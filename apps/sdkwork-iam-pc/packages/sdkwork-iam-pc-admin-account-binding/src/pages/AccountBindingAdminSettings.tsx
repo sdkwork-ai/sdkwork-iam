@@ -13,6 +13,7 @@ import type {
   SdkworkIamAccountBindingSettingsProps,
   SdkworkIamContactBindingPolicy,
   SdkworkIamOauthBindingPolicy,
+  SdkworkIamOauthLoginPhoneAssociationPolicy,
   SdkworkIamOauthLoginPolicy,
 } from "../types/account-binding-admin-types";
 
@@ -52,6 +53,21 @@ export function SdkworkIamAccountBindingSettings({
       oauthLogin: {
         ...current.oauthLogin,
         ...patch,
+      },
+    }));
+  };
+
+  const updatePhoneAssociation = (
+    patch: Partial<SdkworkIamOauthLoginPhoneAssociationPolicy>,
+  ) => {
+    setDraft((current) => ({
+      ...current,
+      oauthLogin: {
+        ...current.oauthLogin,
+        phoneAssociation: {
+          ...current.oauthLogin.phoneAssociation,
+          ...patch,
+        },
       },
     }));
   };
@@ -155,6 +171,38 @@ export function SdkworkIamAccountBindingSettings({
               value={draft.oauthLogin.allowedProviders.join(", ")}
             />
           </div>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection
+        description={messages.oauthLogin.phoneAssociation.description}
+        title={messages.oauthLogin.phoneAssociation.title}
+      >
+        <div className="space-y-4">
+          <PolicyToggle
+            checked={draft.oauthLogin.phoneAssociation.enabled}
+            disabled={!draft.oauthLogin.enabled}
+            label={messages.oauthLogin.phoneAssociation.enablePhoneAssociation}
+            onCheckedChange={(enabled) => updatePhoneAssociation({ enabled })}
+          />
+          <PolicyToggle
+            checked={draft.oauthLogin.phoneAssociation.autoLinkVerifiedPhone}
+            disabled={
+              !draft.oauthLogin.enabled || !draft.oauthLogin.phoneAssociation.enabled
+            }
+            label={messages.oauthLogin.phoneAssociation.autoLinkVerifiedPhone}
+            onCheckedChange={(autoLinkVerifiedPhone) =>
+              updatePhoneAssociation({ autoLinkVerifiedPhone })}
+          />
+          <PolicyToggle
+            checked={draft.oauthLogin.phoneAssociation.requirePhoneBinding}
+            disabled={
+              !draft.oauthLogin.enabled || !draft.oauthLogin.phoneAssociation.enabled
+            }
+            label={messages.oauthLogin.phoneAssociation.requirePhoneBinding}
+            onCheckedChange={(requirePhoneBinding) =>
+              updatePhoneAssociation({ requirePhoneBinding })}
+          />
         </div>
       </SettingsSection>
 

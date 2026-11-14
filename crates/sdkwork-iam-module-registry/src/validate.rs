@@ -26,7 +26,13 @@ pub fn validate_catalog(modules: &[DiscoveredModule]) -> Result<(), String> {
             .unwrap_or("");
         if domain != owner && !(*code == "*" && *module_id == "iam-kernel") {
             let allowed_cross_domain = (owner == "commerce" && domain == "finance")
-                || (owner == "drive" && domain == "storage");
+                || (owner == "drive" && domain == "storage")
+                // The commerce domain is federated across the order, payment,
+                // promotion, and partner modules; each owns its slice under the
+                // shared `commerce.` prefix (AUTHORIZATION_STATE_SPEC 3.8).
+                || (owner == "promotion" && domain == "commerce")
+                || (owner == "payment" && domain == "commerce")
+                || (owner == "partner" && domain == "commerce");
             if !allowed_cross_domain {
                 return Err(format!(
                     "permission {code} owned by {module_id} but domain prefix is {domain}"

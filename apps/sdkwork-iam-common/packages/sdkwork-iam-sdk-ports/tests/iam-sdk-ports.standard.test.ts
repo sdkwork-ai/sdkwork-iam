@@ -647,6 +647,12 @@ function createAppOAuthResources(createResource?: () => object) {
     miniProgramSessions: Object.assign(resource(), {
       create: vi.fn(),
     }),
+    phoneBindingSessions: Object.assign(resource(), {
+      create: vi.fn(),
+      verificationCodeRequests: Object.assign(resource(), {
+        create: vi.fn(),
+      }),
+    }),
     sessions: Object.assign(resource(), {
       create: vi.fn(),
     }),

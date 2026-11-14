@@ -7,6 +7,7 @@ import {
   createSdkworkIamOfficialAccountsClient,
   SDKWORK_IAM_OFFICIAL_ACCOUNTS_I18N_CATALOG,
   SdkworkIamOfficialAccountsController,
+  SdkworkIamOfficialAccountsPage,
   SdkworkIamOfficialAccountsPanel,
   type SdkworkIamOfficialAccountsApi,
 } from "../src";
@@ -22,7 +23,10 @@ const RECORD = {
   customMenu: { buttons: [] },
 };
 
-function bench(overrides: Partial<SdkworkIamOfficialAccountsApi> = {}) {
+function bench(
+  overrides: Partial<SdkworkIamOfficialAccountsApi> = {},
+  { page = false }: { page?: boolean } = {},
+) {
   const api: SdkworkIamOfficialAccountsApi = {
     list: vi.fn(async () => ({
       items: [RECORD],
@@ -42,7 +46,9 @@ function bench(overrides: Partial<SdkworkIamOfficialAccountsApi> = {}) {
         catalogs={[SDKWORK_IAM_OFFICIAL_ACCOUNTS_I18N_CATALOG]}
         locale="en-US"
       >
-        <SdkworkIamOfficialAccountsPanel controller={controller} />
+        {page
+          ? <SdkworkIamOfficialAccountsPage controller={controller} />
+          : <SdkworkIamOfficialAccountsPanel controller={controller} />}
       </SdkworkI18nProvider>
     </SdkworkThemeProvider>,
   );
@@ -55,7 +61,13 @@ describe("official-account panel", () => {
     expect(await screen.findByText("BirdCoder")).toBeTruthy();
     expect(screen.getByText("wx1234567890abcdef")).toBeTruthy();
     expect(screen.getByText("1 total")).toBeTruthy();
+  });
+
+  it("leaves the heading to the page wrapper", async () => {
+    bench({}, { page: true });
+    expect(await screen.findByText("BirdCoder")).toBeTruthy();
     expect(screen.getByText("Official Accounts")).toBeTruthy();
+    expect(screen.getByLabelText("Search name or AppID")).toBeTruthy();
   });
 
   it("opens the create drawer and validates before submitting", async () => {
@@ -78,7 +90,7 @@ describe("official-account panel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => {
       expect(api.create).toHaveBeenCalledWith(
-        expect.objectContaining({ appId: "wxnew123456", displayName: "New channel" }),
+        expect.objectContaining({ wechatAppId: "wxnew123456", displayName: "New channel" }),
       );
     });
   });

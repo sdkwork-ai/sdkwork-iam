@@ -53,6 +53,71 @@ pub fn discover_modules(
     Ok(discovered)
 }
 
+/// Resolves the module ids that must be materialized for `app_root`.
+///
+/// A manifest shipped at `iam/modules/<id>/iam.module.manifest.json` is enabled
+/// by default, so a newly shipped module takes effect on deploy without editing
+/// a hand-maintained list. `optionalModules` opts a shipped module out, and
+/// listing that id in `enabledModules` opts it back in. Ids are sorted and
+/// deduplicated so materialization is deterministic
+/// (AUTHORIZATION_STATE_SPEC 3.8).
+pub fn enabled_module_ids(
+    app_root: &Path,
+    config: &IamRegistryConfig,
+) -> Result<Vec<String>, String> {
+    let explicit = config
+        .enabled_modules
+        .iter()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let optional = config
+        .optional_modules
+        .iter()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let modules_root = app_root.join("iam/modules");
+    let mut ids = BTreeSet::new();
+    let entries = std::fs::read_dir(&modules_root)
+        .map_err(|error| format!("read module directory {modules_root:?} failed: {error}"))?;
+    for entry in entries {
+        let entry =
+            entry.map_err(|error| format!("read module directory entry failed: {error}"))?;
+        let path = entry.path();
+        if !path.join("iam.module.manifest.json").is_file() {
+            continue;
+        }
+        let module_id = entry.file_name().to_string_lossy().into_owned();
+        if optional.contains(&module_id) && !explicit.contains(&module_id) {
+            continue;
+        }
+        ids.insert(module_id);
+    }
+    ids.extend(explicit);
+    Ok(ids.into_iter().collect())
+}
+
+/// Discovers the materializable modules for a registry config: every shipped
+/// manifest plus the explicit enable list, minus optional modules that were not
+/// explicitly enabled.
+pub fn discover_registry_modules(
+    app_root: &Path,
+    config: &IamRegistryConfig,
+) -> Result<Vec<DiscoveredModule>, String> {
+    let ids = enabled_module_ids(app_root, config)?;
+    discover_modules(app_root, &ids)
+}
+
+/// [`discover_registry_modules`] plus consumer-owned manifests contributed by
+/// the hosting application.
+pub fn discover_registry_modules_with_manifests(
+    app_root: &Path,
+    config: &IamRegistryConfig,
+    additional_manifest_paths: &[PathBuf],
+) -> Result<Vec<DiscoveredModule>, String> {
+    let ids = enabled_module_ids(app_root, config)?;
+    discover_modules_with_manifests(app_root, &ids, additional_manifest_paths)
+}
+
 pub fn discover_modules_with_manifests(
     app_root: &Path,
     enabled_modules: &[String],

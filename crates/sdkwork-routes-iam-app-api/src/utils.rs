@@ -55,6 +55,35 @@ pub(crate) fn list_page_params_for_directory(
     }
 }
 
+/// Clamping variant of [`list_page_params_for_directory`].
+///
+/// Offset pages are clamped into the supported `page >= 1`, `1..=200`
+/// `page_size` window instead of being rejected, so a roster read never fails
+/// on a client that asks for a wider page. `page` + `cursor` together, and a
+/// lone `cursor`, still fail as an invalid list query because these handlers
+/// only implement offset pagination.
+pub(crate) fn clamped_list_page_params_for_directory(
+    query: &HashMap<String, String>,
+) -> Result<ListPageParams, sqlx::Error> {
+    let cursor = query
+        .get("cursor")
+        .map(String::as_str)
+        .filter(|value| !value.trim().is_empty());
+    if cursor.is_some() {
+        return Err(sqlx::Error::Protocol(
+            "cursor pagination is not supported by this list operation".into(),
+        ));
+    }
+    let page = query
+        .get("page")
+        .and_then(|value| value.trim().parse::<i64>().ok());
+    let page_size = query
+        .get("page_size")
+        .and_then(|value| value.trim().parse::<i32>().ok())
+        .map(i64::from);
+    Ok(OffsetListPageParams::parse(page, page_size))
+}
+
 pub(crate) fn total_from_rows(rows: &[sqlx::postgres::PgRow]) -> i64 {
     rows.first()
         .and_then(|row| row.try_get::<i64, _>(LIST_TOTAL_SQL_COLUMN).ok())
@@ -76,6 +105,31 @@ pub(crate) fn list_search_pattern(query: &HashMap<String, String>) -> Option<Str
         .map(String::as_str)
         .filter(|value| !value.trim().is_empty())
         .map(|value| format!("%{}%", value.trim().to_ascii_lowercase()))
+}
+
+/// Escaped `q` search pattern for a `LIKE $n ESCAPE '\'` predicate.
+///
+/// A search term is user input, so `%`, `_`, and the escape character itself are
+/// escaped before the pattern is wrapped in `%...%`: otherwise a term containing
+/// `%` would widen the match to the whole roster.
+pub(crate) fn escaped_list_search_pattern(query: &HashMap<String, String>) -> Option<String> {
+    query
+        .get("q")
+        .map(|value| value.trim())
+        .filter(|value| !value.is_empty())
+        .map(|value| {
+            let lowered = value.to_ascii_lowercase();
+            let mut pattern = String::with_capacity(lowered.len() + 2);
+            pattern.push('%');
+            for character in lowered.chars() {
+                if matches!(character, '\\' | '%' | '_') {
+                    pattern.push('\\');
+                }
+                pattern.push(character);
+            }
+            pattern.push('%');
+            pattern
+        })
 }
 
 /// SQL fragment: `AND ($N::text IS NULL OR LOWER(col) LIKE $N OR ...)`.

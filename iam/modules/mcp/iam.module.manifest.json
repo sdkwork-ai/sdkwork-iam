@@ -9,17 +9,17 @@
   "permissions": {
     "catalog": [
       {
-        "code": "mcp.marketplace.read",
-        "name": "Read the tenant MCP marketplace catalog",
-        "resource": "marketplace",
-        "action": "read",
+        "code": "mcp.admin.category.manage",
+        "name": "Manage MCP marketplace categories",
+        "resource": "categories",
+        "action": "manage",
         "status": "active",
         "since": "1.0.0",
         "replacementCode": null
       },
       {
-        "code": "mcp.invocations.read",
-        "name": "Read tenant MCP invocation activity",
+        "code": "mcp.admin.invocation.read",
+        "name": "Read MCP invocation audit logs",
         "resource": "invocations",
         "action": "read",
         "status": "active",
@@ -27,28 +27,19 @@
         "replacementCode": null
       },
       {
-        "code": "mcp.servers.create",
-        "name": "Create MCP servers owned by the authenticated user",
-        "resource": "servers",
-        "action": "create",
+        "code": "mcp.admin.marketplace.read",
+        "name": "Read MCP marketplace admin metadata",
+        "resource": "marketplace",
+        "action": "read",
         "status": "active",
         "since": "1.0.0",
         "replacementCode": null
       },
       {
-        "code": "mcp.servers.update",
-        "name": "Update MCP servers owned by the authenticated user",
+        "code": "mcp.admin.server.manage",
+        "name": "Manage MCP servers, connectors, tools, resources, and prompts",
         "resource": "servers",
-        "action": "update",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "mcp.servers.delete",
-        "name": "Delete MCP servers owned by the authenticated user",
-        "resource": "servers",
-        "action": "delete",
+        "action": "manage",
         "status": "active",
         "since": "1.0.0",
         "replacementCode": null
@@ -72,26 +63,8 @@
         "replacementCode": null
       },
       {
-        "code": "mcp.admin.server.manage",
-        "name": "Manage MCP servers, connectors, tools, resources, and prompts",
-        "resource": "servers",
-        "action": "manage",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "mcp.admin.category.manage",
-        "name": "Manage MCP marketplace categories",
-        "resource": "categories",
-        "action": "manage",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
-        "code": "mcp.admin.invocation.read",
-        "name": "Read MCP invocation audit logs",
+        "code": "mcp.invocations.read",
+        "name": "Read tenant MCP invocation activity",
         "resource": "invocations",
         "action": "read",
         "status": "active",
@@ -99,10 +72,37 @@
         "replacementCode": null
       },
       {
-        "code": "mcp.admin.marketplace.read",
-        "name": "Read MCP marketplace admin metadata",
+        "code": "mcp.marketplace.read",
+        "name": "Read the tenant MCP marketplace catalog",
         "resource": "marketplace",
         "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "mcp.servers.create",
+        "name": "Create MCP servers owned by the authenticated user",
+        "resource": "servers",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "mcp.servers.delete",
+        "name": "Delete MCP servers owned by the authenticated user",
+        "resource": "servers",
+        "action": "delete",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "mcp.servers.update",
+        "name": "Update MCP servers owned by the authenticated user",
+        "resource": "servers",
+        "action": "update",
         "status": "active",
         "since": "1.0.0",
         "replacementCode": null
@@ -152,13 +152,13 @@
       {
         "roleCode": "app_user",
         "patterns": [
-          "mcp.marketplace.read",
-          "mcp.invocations.read",
-          "mcp.servers.create",
-          "mcp.servers.update",
-          "mcp.servers.delete",
           "mcp.connectors.create",
-          "mcp.connectors.delete"
+          "mcp.connectors.delete",
+          "mcp.invocations.read",
+          "mcp.marketplace.read",
+          "mcp.servers.create",
+          "mcp.servers.delete",
+          "mcp.servers.update"
         ]
       },
       {

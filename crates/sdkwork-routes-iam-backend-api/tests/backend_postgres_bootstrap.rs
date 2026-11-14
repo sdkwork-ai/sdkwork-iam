@@ -226,13 +226,16 @@ async fn ensure_integration_organization_and_tenant_application(
             format!("clear stale integration organization tenant/code rows failed: {error}")
         })?;
 
+    // The organization primary key is tenant-scoped since migration
+    // `0027_iam_organization_tenant_scoped_identity`; a bare
+    // `ON CONFLICT (id)` no longer matches any unique constraint.
     sqlx::query(
         "INSERT INTO iam_organization (id, tenant_id, parent_organization_id, code, name, path, status, \
          organization_kind, tenant_boundary_kind, data_boundary_kind, app_boundary_enabled, verification_status, \
          created_at, updated_at) \
          VALUES ($1, $2, $3, $4, 'Backend Integration Organization', $5, 'active', 'team', 'exclusive', 'tenant', 0, \
          'verified', $6, $6) \
-         ON CONFLICT (id) DO UPDATE SET status = 'active', updated_at = EXCLUDED.updated_at",
+         ON CONFLICT (tenant_id, id) DO UPDATE SET status = 'active', updated_at = EXCLUDED.updated_at",
     )
     .bind(INTEGRATION_ORGANIZATION_ID)
     .bind(DEFAULT_IAM_TENANT_ID)

@@ -47,19 +47,33 @@ pub(crate) async fn bind_contact_for_user(
     user: &LocalIamUser,
     kind: ContactBindingKind,
     target: &str,
-    verification_code: &str,
+    verification_code: Option<&str>,
+    require_verification: bool,
 ) -> Result<LocalIamUser, String> {
     let normalized_target = normalize_contact_target(kind, target)?;
-    validate_bind_verification_code(
-        pg,
-        config,
-        &user.tenant_id,
-        None,
-        kind,
-        &normalized_target,
-        verification_code,
-    )
-    .await?;
+    // The tenant's `contactBinding.requireVerification` switch is the floor: a
+    // supplied code is always honoured (and marks the contact verified), while
+    // an absent code is accepted only when the operator turned the requirement
+    // off. Unverified contacts stay usable for ordinary sign-in but can never
+    // satisfy code login or OAuth phone association, both of which test the
+    // verified flag.
+    let verified = match verification_code.map(str::trim).filter(|code| !code.is_empty()) {
+        Some(code) => {
+            validate_bind_verification_code(
+                pg,
+                config,
+                &user.tenant_id,
+                None,
+                kind,
+                &normalized_target,
+                code,
+            )
+            .await?;
+            true
+        }
+        None if !require_verification => false,
+        None => return Err("verification code is required".to_string()),
+    };
 
     if contact_identity_taken(
         pg,
@@ -78,14 +92,14 @@ pub(crate) async fn bind_contact_for_user(
         ContactBindingKind::Email => (
             Some(normalized_target.clone()),
             user.phone.clone(),
-            1,
+            verified as i32,
             user.phone_verified as i32,
         ),
         ContactBindingKind::Phone => (
             user.email.clone(),
             Some(normalized_target.clone()),
             user.email_verified as i32,
-            1,
+            verified as i32,
         ),
     };
 
@@ -108,6 +122,32 @@ pub(crate) async fn bind_contact_for_user(
     load_user_by_id(pg, &user.tenant_id, &user.id)
         .await?
         .ok_or_else(|| "user not found after contact binding".to_string())
+}
+
+/// Marks an account's phone as verified after an out-of-band ownership proof.
+///
+/// Used by the OAuth phone-binding step: the person proved control of the
+/// number with a verification code, so a phone the account already carried
+/// becomes verified without rewriting the number itself.
+pub(crate) async fn mark_phone_verified(
+    pg: &PgPool,
+    tenant_id: &str,
+    user_id: &str,
+    phone: &str,
+) -> Result<(), String> {
+    sqlx::query(
+        "UPDATE iam_user SET phone_verified = 1, updated_at = $4 \
+         WHERE tenant_id = $1 AND id = $2 AND phone = $3 \
+           AND status = 'active' AND is_deleted = 0",
+    )
+    .bind(tenant_id)
+    .bind(user_id)
+    .bind(phone)
+    .bind(current_timestamp_utc())
+    .execute(pg)
+    .await
+    .map_err(|error| format!("mark phone verified failed: {error}"))?;
+    Ok(())
 }
 
 pub(crate) async fn unbind_contact_for_user(
@@ -275,11 +315,19 @@ async fn contact_identity_taken(
     Ok(row.map(|value| value.get::<bool, _>(0)).unwrap_or(false))
 }
 
-async fn ensure_contact_can_be_removed(
+/// Counts the sign-in methods a user keeps once one method is removed.
+///
+/// Every removable credential — a contact, an OAuth link — must leave at least
+/// one working sign-in path, otherwise the person locks themselves out of an
+/// account that still holds data. Password login matches `email`/`phone`
+/// regardless of the verified flag, so a present contact counts here; the
+/// stricter verified-only rule belongs to code login, not to this guard.
+pub(crate) async fn count_remaining_login_methods(
     pg: &PgPool,
     user: &LocalIamUser,
-    kind: ContactBindingKind,
-) -> Result<(), String> {
+    exclude_contact: Option<ContactBindingKind>,
+    exclude_account_link_id: Option<&str>,
+) -> Result<usize, String> {
     let has_password = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM iam_credential \
          WHERE tenant_id = $1 AND user_id = $2 AND credential_type = 'password' AND status = 'active'",
@@ -291,12 +339,39 @@ async fn ensure_contact_can_be_removed(
     .map_err(|error| format!("check password credential failed: {error}"))?
         > 0;
 
-    let remaining_email = kind != ContactBindingKind::Email && user.email.is_some();
-    let remaining_phone = kind != ContactBindingKind::Phone && user.phone.is_some();
+    let mut remaining = usize::from(has_password);
+    if exclude_contact != Some(ContactBindingKind::Email) && user.email.is_some() {
+        remaining += 1;
+    }
+    if exclude_contact != Some(ContactBindingKind::Phone) && user.phone.is_some() {
+        remaining += 1;
+    }
 
-    if !has_password && !remaining_email && !remaining_phone {
+    let active_links = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM iam_oauth_account_link \
+         WHERE tenant_id = $1 AND user_id = $2 AND status = 'active' AND unlinked_at IS NULL \
+           AND ($3::text IS NULL OR id <> $3)",
+    )
+    .bind(&user.tenant_id)
+    .bind(&user.id)
+    .bind(exclude_account_link_id)
+    .fetch_one(pg)
+    .await
+    .map_err(|error| format!("check oauth account links failed: {error}"))?;
+
+    remaining += usize::try_from(active_links.max(0)).unwrap_or(0);
+    Ok(remaining)
+}
+
+async fn ensure_contact_can_be_removed(
+    pg: &PgPool,
+    user: &LocalIamUser,
+    kind: ContactBindingKind,
+) -> Result<(), String> {
+    let remaining = count_remaining_login_methods(pg, user, Some(kind), None).await?;
+    if remaining == 0 {
         return Err(
-            "cannot remove the last login contact without a password credential".to_string(),
+            "cannot remove the last login contact without another sign-in method".to_string(),
         );
     }
 
@@ -358,7 +433,10 @@ pub(crate) async fn load_user_by_id(
     }))
 }
 
-fn normalize_contact_target(kind: ContactBindingKind, target: &str) -> Result<String, String> {
+pub(crate) fn normalize_contact_target(
+    kind: ContactBindingKind,
+    target: &str,
+) -> Result<String, String> {
     let normalized = canonical_identity(target);
     if normalized.is_empty() {
         return Err("contact target is required".to_string());

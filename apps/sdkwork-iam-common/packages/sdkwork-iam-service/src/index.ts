@@ -61,6 +61,10 @@ export interface IamSessionCommitOptions {
 }
 
 export interface IamCreateSessionInput {
+  /** Opaque client device identity. Sessions are replaced per application per
+   * device, so re-signing in on the same device revokes only its own previous
+   * session instead of every session of the application. */
+  deviceId?: string;
   password?: string;
   username?: string;
   [key: string]: unknown;
@@ -72,7 +76,26 @@ export interface IamRefreshSessionInput {
 
 export interface IamWechatMiniProgramSessionCreateInput {
   jsCode: string;
+  /** `getPhoneNumber` grant code. WeChat verified the SIM, so the resulting
+   * phone may associate the WeChat identity with an existing account. */
+  phoneCode?: string;
   providerCode?: "wechat_mini_program";
+  surfaceCode?: string;
+  deviceId?: string;
+}
+
+/** Requests the ownership-proof code for a pending OAuth account association. */
+export interface IamOauthPhoneBindingVerificationCodeRequestInput {
+  continuationToken: string;
+  phone: string;
+}
+
+/** Completes a pending OAuth account association after the ownership proof. */
+export interface IamOauthPhoneBindingSessionCreateInput {
+  continuationToken: string;
+  deviceId?: string;
+  phone: string;
+  verificationCode: string;
   surfaceCode?: string;
 }
 
@@ -152,6 +175,12 @@ export interface SdkworkIamService {
     };
     miniProgramSessions: {
       create(body: IamWechatMiniProgramSessionCreateInput): Promise<IamSession>;
+    };
+    phoneBindingSessions: {
+      create(body: IamOauthPhoneBindingSessionCreateInput): Promise<IamSession>;
+      verificationCodeRequests: {
+        create(body: IamOauthPhoneBindingVerificationCodeRequestInput): Promise<unknown>;
+      };
     };
     authorizations: {
       completions: {
@@ -556,6 +585,28 @@ export function createSdkworkIamService(input: CreateSdkworkIamServiceInput): Sd
             ),
             input,
           );
+        },
+      },
+      phoneBindingSessions: {
+        create: async (body) => {
+          await input.clearSession?.();
+          return handleSession(
+            await callResourceMethod(
+              appOauth?.phoneBindingSessions,
+              "create",
+              "appbaseAppClient.oauth.phoneBindingSessions.create",
+              body,
+            ),
+            input,
+          );
+        },
+        verificationCodeRequests: {
+          create: (body) => callRaw(
+            appOauth?.phoneBindingSessions?.verificationCodeRequests,
+            "create",
+            "appbaseAppClient.oauth.phoneBindingSessions.verificationCodeRequests.create",
+            body,
+          ),
         },
       },
       authorizations: {

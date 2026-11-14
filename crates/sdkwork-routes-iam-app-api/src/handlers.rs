@@ -203,6 +203,14 @@ fn build_sdkwork_iam_app_api_core_router(state: LocalIamState) -> Router {
         )
         .route("/app/v3/api/oauth/sessions", post(create_oauth_session))
         .route(
+            "/app/v3/api/oauth/phone_binding_sessions",
+            post(create_oauth_phone_binding_session),
+        )
+        .route(
+            "/app/v3/api/oauth/phone_binding_sessions/verification_code_requests",
+            post(create_oauth_phone_binding_verification_code_request),
+        )
+        .route(
             "/app/v3/api/oauth/account_links",
             get(list_oauth_account_links),
         )
@@ -247,6 +255,10 @@ fn build_sdkwork_iam_app_api_core_router(state: LocalIamState) -> Router {
         .route(
             "/app/v3/api/iam/organizations/tree",
             get(retrieve_organization_tree),
+        )
+        .route(
+            "/app/v3/api/iam/organizations/{organization_id}/members",
+            get(list_organization_members),
         )
         .route(
             "/app/v3/api/iam/organization_memberships",
@@ -557,7 +569,14 @@ async fn create_password_login_session(
     match authenticate_password(pg, tenant_id, &username, &password, &state.config).await {
         PasswordAuthenticationOutcome::Authenticated(user) => {
             record_successful_password_login(pg, &state.config, &user, &username).await;
-            create_authenticated_session_response(state, &user, &runtime_app_id).await
+            let device_id = resolve_request_device_id(body);
+            create_authenticated_session_response(
+                state,
+                &user,
+                &runtime_app_id,
+                device_id.as_deref(),
+            )
+            .await
         }
         PasswordAuthenticationOutcome::AccountLocked => account_locked_error(),
         PasswordAuthenticationOutcome::InvalidCredentials => {
@@ -712,7 +731,8 @@ async fn create_code_login_session(
         &grant_type,
     )
     .await;
-    create_authenticated_session_response(state, &user, &runtime_app_id).await
+    let device_id = resolve_request_device_id(body);
+    create_authenticated_session_response(state, &user, &runtime_app_id, device_id.as_deref()).await
 }
 
 async fn create_session_organization_selection(
@@ -1025,12 +1045,13 @@ async fn issue_login_continuation_session(
     continuation: LocalLoginContinuation,
     organization_id: Option<String>,
 ) -> Response {
-    let session = match create_session_record(
+    let session = match create_session_record_with_device(
         pg,
         &state.config,
         &continuation.user,
         organization_id,
         continuation.runtime_app_id.as_str(),
+        continuation.device_id.as_deref(),
     )
     .await
     {
@@ -1334,12 +1355,17 @@ async fn refresh_session(State(state): State<LocalIamState>, Json(body): Json<Va
     match claim_session_for_refresh(pg, &refresh_token).await {
         Ok(Some(existing_session)) => {
             let previous_session_id = existing_session.session_id.clone();
-            match create_session_record(
+            // The rotation must keep the device binding: the "one session per
+            // application per device" invariant is enforced by revoking sessions
+            // that carry the same device id, so dropping it here would let a
+            // rotated session survive the next sign-in on that device.
+            match create_session_record_with_device(
                 pg,
                 &state.config,
                 &existing_session.user,
                 existing_session.context.organization_id.clone(),
                 existing_session.context.app_id.as_str(),
+                existing_session.device_id.as_deref(),
             )
             .await
             {
@@ -1600,7 +1626,8 @@ async fn create_registration(
     )
     .await;
     record_successful_password_login(pg, &state.config, &user, &username).await;
-    create_authenticated_session_response(&state, &user, &runtime_app_id).await
+    let device_id = resolve_request_device_id(&body);
+    create_authenticated_session_response(&state, &user, &runtime_app_id, device_id.as_deref()).await
 }
 
 async fn create_password_reset_request(
@@ -1626,7 +1653,10 @@ async fn create_password_reset_request(
     if let Some(response) = enforce_rate_limit(
         &state,
         LOCAL_EPHEMERAL_SCOPE,
-        &format!("auth:password_reset:{account}"),
+        // The bucket must use the canonical identity: keying on the raw input
+        // let `User@Example.com` and `user@example.com` occupy separate buckets
+        // and bypass the reset-request limit for the same account.
+        &format!("auth:password_reset:{}", canonical_identity(&account)),
     )
     .await
     {
@@ -2304,25 +2334,18 @@ async fn create_oauth_session(
     )
     .await
     {
-        Ok(user) => {
-            crate::security_events::record_login_success(
+        Ok(resolution) => {
+            let device_id = resolve_request_device_id(&body);
+            respond_oauth_login_resolution(
+                &state,
                 pg,
-                &user.tenant_id,
-                &user.id,
+                resolution,
+                &tenant_id,
+                &runtime_app_id,
                 &format!("oauth:{provider}"),
-                "oauth",
+                device_id.as_deref(),
             )
-            .await;
-            crate::audit_events::record_login_success(
-                pg,
-                &state.config,
-                &user.id,
-                &format!("oauth:{provider}"),
-                "oauth",
-                &user.tenant_id,
-            )
-            .await;
-            create_authenticated_session_response(&state, &user, &runtime_app_id).await
+            .await
         }
         Err(error) if error.contains("not configured") || error.contains("exchange") => {
             oauth_unavailable_error()
@@ -2336,6 +2359,75 @@ async fn create_oauth_session(
             StatusCode::BAD_REQUEST,
             "iam_oauth_session_create_failed",
             &error,
+        ),
+    }
+}
+
+/// Turns an OAuth identity resolution into an HTTP response.
+///
+/// A resolved identity records the login audit trail and issues the session; a
+/// pending phone association is persisted as a one-time ticket and answered
+/// with a challenge body that carries no session tokens at all.
+async fn respond_oauth_login_resolution(
+    state: &LocalIamState,
+    pg: &PgPool,
+    resolution: crate::oauth_login::OAuthLoginResolution,
+    tenant_id: &str,
+    runtime_app_id: &str,
+    login_channel: &str,
+    device_id: Option<&str>,
+) -> Response {
+    let challenge = match resolution {
+        crate::oauth_login::OAuthLoginResolution::User(user) => {
+            crate::security_events::record_login_success(
+                pg,
+                &user.tenant_id,
+                &user.id,
+                login_channel,
+                "oauth",
+            )
+            .await;
+            crate::audit_events::record_login_success(
+                pg,
+                &state.config,
+                &user.id,
+                login_channel,
+                "oauth",
+                &user.tenant_id,
+            )
+            .await;
+            return create_authenticated_session_response(
+                state,
+                &user,
+                runtime_app_id,
+                device_id,
+            )
+            .await;
+        }
+        crate::oauth_login::OAuthLoginResolution::PhoneBindingRequired(challenge) => challenge,
+    };
+
+    let binding = crate::oauth_phone_binding::PendingOAuthPhoneBinding::new(
+        tenant_id,
+        runtime_app_id,
+        &challenge.profile,
+        &challenge.integration_id,
+        challenge.reason.as_str(),
+        challenge.masked_phone.clone(),
+        crate::ephemeral::OAUTH_PHONE_BINDING_TTL_MILLIS,
+        device_id,
+    );
+    match crate::oauth_phone_binding::issue_ticket(pg, &binding).await {
+        Ok(token) => appbase_ok(crate::oauth_phone_binding::challenge_json(&token, &binding)),
+        Err(crate::oauth_phone_binding::OAuthPhoneBindingError::Storage(error)) => appbase_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "iam_ephemeral_unavailable",
+            &error,
+        ),
+        Err(_) => appbase_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "iam_oauth_phone_binding_unavailable",
+            "OAuth phone binding is temporarily unavailable",
         ),
     }
 }
@@ -2412,6 +2504,11 @@ async fn create_oauth_mini_program_session(
     };
     let surface_code = optional_string(body.get("surfaceCode"))
         .or_else(|| optional_string(body.get("surface_code")));
+    // The mini program may attach a `getPhoneNumber` grant. WeChat minted that
+    // code only after the person confirmed the phone prompt, so the resulting
+    // number is verified and may anchor the account association.
+    let phone_code =
+        optional_string(body.get("phoneCode")).or_else(|| optional_string(body.get("phone_code")));
     let tenant_id = match require_credential_entry_tenant_id(&ctx) {
         Ok(tenant_id) => tenant_id.to_owned(),
         Err(response) => return response,
@@ -2437,28 +2534,22 @@ async fn create_oauth_mini_program_session(
         &runtime_app_id,
         surface_code.as_deref(),
         &code,
+        phone_code.as_deref(),
     )
     .await
     {
-        Ok(user) => {
-            crate::security_events::record_login_success(
+        Ok(resolution) => {
+            let device_id = resolve_request_device_id(&body);
+            respond_oauth_login_resolution(
+                &state,
                 pg,
-                &user.tenant_id,
-                &user.id,
+                resolution,
+                &tenant_id,
+                &runtime_app_id,
                 "wechat_mini_program",
-                "oauth",
+                device_id.as_deref(),
             )
-            .await;
-            crate::audit_events::record_login_success(
-                pg,
-                &state.config,
-                &user.id,
-                "wechat_mini_program",
-                "oauth",
-                &user.tenant_id,
-            )
-            .await;
-            create_authenticated_session_response(&state, &user, &runtime_app_id).await
+            .await
         }
         Err(error) if error.contains("not configured") => appbase_error(
             StatusCode::SERVICE_UNAVAILABLE,
@@ -2480,6 +2571,246 @@ async fn create_oauth_mini_program_session(
             "iam_wechat_mini_program_session_create_failed",
             &error,
         ),
+    }
+}
+
+/// Requests the ownership-proof verification code for a pending OAuth phone
+/// binding.
+///
+/// The ticket proves an OAuth identity is mid-association; it carries no
+/// session. Only a phone the person can receive a code on is accepted, which is
+/// exactly the proof that makes phone-based account association safe.
+async fn create_oauth_phone_binding_verification_code_request(
+    State(state): State<LocalIamState>,
+    ctx: WebRequestContext,
+    headers: HeaderMap,
+    Json(body): Json<Value>,
+) -> Response {
+    if let Some(response) = reject_login_credential_headers(&headers) {
+        return response;
+    }
+    let Some(token) = oauth_phone_binding_token(&body) else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_oauth_phone_binding_token_required",
+            "OAuth phone binding token is required",
+        );
+    };
+    let Some(phone) = oauth_phone_binding_phone(&body) else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_phone_required",
+            "phone number is required",
+        );
+    };
+    let tenant_id = match require_credential_entry_tenant_id(&ctx) {
+        Ok(tenant_id) => tenant_id.to_owned(),
+        Err(response) => return response,
+    };
+    let pg = match postgres_pool_or_error(&state) {
+        Ok(pg) => pg,
+        Err(response) => return response,
+    };
+    if let Some(response) = enforce_rate_limit(
+        &state,
+        &tenant_id,
+        &format!("oauth:phone_binding:code:{}", canonical_identity(&phone)),
+    )
+    .await
+    {
+        return response;
+    }
+
+    match crate::oauth_phone_binding::request_code(pg, &state.config, &tenant_id, &token, &phone)
+        .await
+    {
+        Ok(dev_code) => {
+            let mut payload = serde_json::Map::new();
+            payload.insert("accepted".to_string(), json!(true));
+            payload.insert(
+                "scene".to_string(),
+                json!(sdkwork_iam_web_adapter::MESSAGING_VERIFICATION_SCENE_OAUTH_PHONE_BINDING),
+            );
+            payload.insert("channel".to_string(), json!("sms"));
+            if let Some(code) = dev_code {
+                payload.insert("devCode".to_string(), json!(code));
+            }
+            appbase_ok(Value::Object(payload))
+        }
+        Err(error) => oauth_phone_binding_error_response(error),
+    }
+}
+
+/// Completes a pending OAuth phone binding and issues the session.
+async fn create_oauth_phone_binding_session(
+    State(state): State<LocalIamState>,
+    ctx: WebRequestContext,
+    headers: HeaderMap,
+    Json(body): Json<Value>,
+) -> Response {
+    if let Some(response) = reject_login_credential_headers(&headers) {
+        return response;
+    }
+    let Some(token) = oauth_phone_binding_token(&body) else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_oauth_phone_binding_token_required",
+            "OAuth phone binding token is required",
+        );
+    };
+    let Some(phone) = oauth_phone_binding_phone(&body) else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_phone_required",
+            "phone number is required",
+        );
+    };
+    let Some(code) = optional_string(body.get("verificationCode"))
+        .or_else(|| optional_string(body.get("verification_code")))
+        .or_else(|| optional_string(body.get("code")))
+    else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_verification_code_required",
+            "verification code is required",
+        );
+    };
+    let tenant_id = match require_credential_entry_tenant_id(&ctx) {
+        Ok(tenant_id) => tenant_id.to_owned(),
+        Err(response) => return response,
+    };
+    let pg = match postgres_pool_or_error(&state) {
+        Ok(pg) => pg,
+        Err(response) => return response,
+    };
+    if let Some(response) = enforce_rate_limit(
+        &state,
+        &tenant_id,
+        &format!(
+            "oauth:phone_binding:complete:{}",
+            canonical_identity(&phone)
+        ),
+    )
+    .await
+    {
+        return response;
+    }
+
+    let policy = effective_account_binding_policy(&state, pg, Some(&tenant_id)).await;
+    match crate::oauth_phone_binding::complete(
+        pg,
+        &state.config,
+        &policy,
+        &tenant_id,
+        &token,
+        &phone,
+        &code,
+    )
+    .await
+    {
+        Ok(completed) => {
+            if let Err(error) = sdkwork_iam_web_adapter::validate_enabled_tenant_runtime_app(
+                pg,
+                &completed.tenant_id,
+                &completed.runtime_app_id,
+            )
+            .await
+            {
+                return appbase_error(
+                    StatusCode::UNAUTHORIZED,
+                    "iam_runtime_app_id_invalid",
+                    &error,
+                );
+            }
+            crate::security_events::record_login_success(
+                pg,
+                &completed.user.tenant_id,
+                &completed.user.id,
+                &format!("oauth:{}", completed.provider),
+                "oauth_phone_binding",
+            )
+            .await;
+            crate::audit_events::record_login_success(
+                pg,
+                &state.config,
+                &completed.user.id,
+                &format!("oauth:{}", completed.provider),
+                "oauth_phone_binding",
+                &completed.user.tenant_id,
+            )
+            .await;
+            create_authenticated_session_response(
+                &state,
+                &completed.user,
+                &completed.runtime_app_id,
+                completed.device_id.as_deref(),
+            )
+            .await
+        }
+        Err(error) => oauth_phone_binding_error_response(error),
+    }
+}
+
+fn oauth_phone_binding_token(body: &Value) -> Option<String> {
+    optional_string(body.get("continuationToken"))
+        .or_else(|| optional_string(body.get("continuation_token")))
+        .or_else(|| optional_string(body.get("oauthPhoneBindingToken")))
+        .or_else(|| optional_string(body.get("oauth_phone_binding_token")))
+}
+
+fn oauth_phone_binding_phone(body: &Value) -> Option<String> {
+    optional_string(body.get("phone"))
+        .or_else(|| optional_string(body.get("phoneNumber")))
+        .or_else(|| optional_string(body.get("phone_number")))
+        .or_else(|| optional_string(body.get("target")))
+}
+
+fn oauth_phone_binding_error_response(
+    error: crate::oauth_phone_binding::OAuthPhoneBindingError,
+) -> Response {
+    use crate::oauth_phone_binding::OAuthPhoneBindingError as Error;
+    match error {
+        Error::TicketInvalid => appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_oauth_phone_binding_invalid",
+            "OAuth phone binding is invalid or expired",
+        ),
+        Error::PhoneInvalid(message) => {
+            appbase_error(StatusCode::BAD_REQUEST, "iam_phone_invalid", &message)
+        }
+        Error::CodeInvalid => appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_verification_code_invalid",
+            "verification code is invalid or expired",
+        ),
+        Error::VerificationUnavailable => appbase_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "iam_oauth_phone_binding_verification_unavailable",
+            "phone verification is not configured on this deployment",
+        ),
+        Error::RegistrationDisabled => appbase_error(
+            StatusCode::FORBIDDEN,
+            "iam_oauth_auto_registration_disabled",
+            "OAuth auto registration is disabled for this tenant",
+        ),
+        Error::AccountUnavailable => appbase_error(
+            StatusCode::FORBIDDEN,
+            "iam_oauth_account_unavailable",
+            "the phone number belongs to an account that is not available for sign-in",
+        ),
+        Error::Storage(message) => appbase_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "iam_ephemeral_unavailable",
+            &message,
+        ),
+        Error::Resolution(message) => {
+            tracing::error!(%message, "oauth phone binding resolution failed");
+            appbase_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "iam_oauth_phone_binding_failed",
+                "OAuth phone binding could not be completed",
+            )
+        }
     }
 }
 
@@ -2615,6 +2946,33 @@ async fn delete_oauth_account_link(
             "iam_oauth_provider_unlink_disabled",
             "OAuth unlink is disabled for this provider",
         );
+    }
+
+    // Unlinking the last sign-in method would strand the account: the person
+    // keeps their data but has no way left to authenticate.
+    match crate::contacts::count_remaining_login_methods(
+        pg,
+        &session.user,
+        None,
+        Some(&account_link_id),
+    )
+    .await
+    {
+        Ok(0) => {
+            return appbase_error(
+                StatusCode::CONFLICT,
+                "iam_last_login_method_required",
+                "cannot unlink the last sign-in method of the account",
+            );
+        }
+        Ok(_) => {}
+        Err(error) => {
+            return appbase_error(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "iam_oauth_account_link_lookup_failed",
+                &error,
+            );
+        }
     }
 
     let now = chrono::Utc::now().to_rfc3339();
@@ -2878,7 +3236,33 @@ async fn update_current_user_password(
     )
     .await
     {
-        Ok(()) => appbase_ok(json!({ "updated": true })),
+        Ok(()) => {
+            // A password change invalidates every other credential holder: a
+            // stolen session must not outlive the rotation. The session that
+            // performed the change keeps working so the caller is not logged
+            // out of the device it just used.
+            if let Err(error) = revoke_sessions_except(
+                pg,
+                &session.user.tenant_id,
+                &session.user.id,
+                Some(&session.session_id),
+            )
+            .await
+            {
+                return appbase_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "iam_session_revoke_failed",
+                    &error,
+                );
+            }
+            crate::security_events::record_password_changed(
+                pg,
+                &session.user.tenant_id,
+                &session.user.id,
+            )
+            .await;
+            appbase_ok(json!({ "updated": true }))
+        }
         Err(error) if error.contains("invalid") => appbase_error(
             StatusCode::UNAUTHORIZED,
             "iam_current_password_invalid",
@@ -2959,16 +3343,23 @@ async fn create_current_user_contact_binding(
             "contact target is required",
         );
     };
-    let Some(verification_code) = optional_string(body.get("verificationCode"))
+    let verification_code = optional_string(body.get("verificationCode"))
         .or_else(|| optional_string(body.get("verification_code")))
-        .or_else(|| optional_string(body.get("code")))
-    else {
+        .or_else(|| optional_string(body.get("code")));
+    let require_verification = policy.contact_binding.require_verification;
+    if require_verification
+        && verification_code
+            .as_deref()
+            .map(str::trim)
+            .filter(|code| !code.is_empty())
+            .is_none()
+    {
         return appbase_error(
             StatusCode::BAD_REQUEST,
             "iam_verification_code_required",
             "verification code is required",
         );
-    };
+    }
 
     match bind_contact_for_user(
         pg,
@@ -2976,7 +3367,8 @@ async fn create_current_user_contact_binding(
         &session.user,
         kind,
         &target,
-        &verification_code,
+        verification_code.as_deref(),
+        require_verification,
     )
     .await
     {
@@ -4150,6 +4542,7 @@ async fn complete_follow_login_scan(
         name: None,
         open_id: Some(openid.clone()),
         phone: None,
+        phone_verified: false,
         provider,
         subject: openid,
         union_id: None,
@@ -4198,6 +4591,7 @@ async fn complete_follow_login_scan(
         &user,
         Some(device_authorization_id.to_string()),
         &app_id,
+        None,
     )
     .await
     {
@@ -4539,6 +4933,7 @@ async fn create_oauth_device_authorization_session_completion(
         &session.user,
         Some(device_authorization_id.clone()),
         &runtime_app_id,
+        None,
     )
     .await
     {
@@ -4767,6 +5162,7 @@ async fn resolve_password_login_session_outcome(
                     &user,
                     qr_session_key,
                     runtime_app_id,
+                    None,
                 )
                 .await
                 {
@@ -4936,6 +5332,84 @@ async fn list_organization_memberships(
         total,
         &params,
     ))
+}
+
+/// Membership kinds an organization roster `role` filter may address.
+const ORGANIZATION_MEMBER_ROLES: &[&str] = &["owner", "admin", "member"];
+
+/// `GET /app/v3/api/iam/organizations/{organizationId}/members`.
+///
+/// Organization roster facts are owned by IAM: product surfaces compose them
+/// from this operation instead of receiving a copy from another module. Two
+/// rules decide what the caller may see:
+///
+/// 1. The caller must hold an active membership in the addressed organization
+///    inside the session tenant, otherwise the roster is a 403 — the operation
+///    is organization-scoped, not a directory-wide read.
+/// 2. `email` is projected only when the caller's own membership in that
+///    organization is `owner` or `admin`. A `member` caller still sees
+///    `displayName`/`username` (needed to render a team page) but never the
+///    contact address of colleagues.
+async fn list_organization_members(
+    State(state): State<LocalIamState>,
+    ctx: WebRequestContext,
+    Path(organization_id): Path<String>,
+    Query(query): Query<HashMap<String, String>>,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+    let Some(session) = require_session_from_context(pg, &ctx).await else {
+        return iam_session_required_error();
+    };
+    if let Some(response) = ensure_directory_permission(&session, &["iam.memberships.read"]) {
+        return response;
+    }
+    let role = match optional_query_string(&query, &["role"]) {
+        Some(role) if !ORGANIZATION_MEMBER_ROLES.contains(&role.as_str()) => {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_organization_member_role_invalid",
+                "role must be one of owner, admin, or member",
+            );
+        }
+        role => role,
+    };
+    let caller_membership_kind =
+        match active_organization_membership_kind(pg, &session, &organization_id).await {
+            Ok(value) => value,
+            Err(error) => return directory_query_error(error),
+        };
+    let Some(caller_membership_kind) = caller_membership_kind else {
+        return appbase_error(
+            StatusCode::FORBIDDEN,
+            "iam_organization_membership_required",
+            "an active membership in the addressed organization is required",
+        );
+    };
+    let include_email = organization_member_contact_reader(&caller_membership_kind);
+    let (members, total, params) =
+        match paged_organization_members(pg, &session, &organization_id, role.as_deref(), &query)
+            .await
+        {
+            Ok(value) => value,
+            Err(error) => return directory_query_error(error),
+        };
+    appbase_ok(list_page_json(
+        members
+            .iter()
+            .map(|member| organization_member_to_json(member, include_email))
+            .collect(),
+        total,
+        &params,
+    ))
+}
+
+/// Whether the caller's own organization membership may read roster emails.
+fn organization_member_contact_reader(caller_membership_kind: &str) -> bool {
+    matches!(caller_membership_kind, "owner" | "admin")
 }
 
 async fn list_departments(
@@ -5119,12 +5593,27 @@ async fn create_authenticated_session_response(
     state: &LocalIamState,
     user: &LocalIamUser,
     runtime_app_id: &str,
+    device_id: Option<&str>,
 ) -> Response {
-    match create_authenticated_session_or_challenge(state, user, None, runtime_app_id).await {
+    match create_authenticated_session_or_challenge(state, user, None, runtime_app_id, device_id)
+        .await
+    {
         AuthenticatedSessionOutcome::Session(session) => appbase_ok(session_to_json(&session)),
         AuthenticatedSessionOutcome::Challenge(challenge) => appbase_ok(challenge),
         AuthenticatedSessionOutcome::Error(response) => response,
     }
+}
+
+/// Reads the optional opaque client device identity from a login command.
+///
+/// Every interactive login surface accepts `deviceId`; the session factory uses
+/// it to replace only the previous session of that application on that device
+/// instead of every session of the application.
+fn resolve_request_device_id(body: &Value) -> Option<String> {
+    let raw = optional_string(body.get("deviceId"))
+        .or_else(|| optional_string(body.get("device_id")))
+        .or_else(|| optional_string(body.get("deviceID")));
+    normalize_session_device_id(raw.as_deref()).ok().flatten()
 }
 
 async fn record_successful_password_login(
@@ -5164,6 +5653,7 @@ async fn create_authenticated_session_or_challenge(
     user: &LocalIamUser,
     qr_session_key: Option<String>,
     runtime_app_id: &str,
+    device_id: Option<&str>,
 ) -> AuthenticatedSessionOutcome {
     let Ok(pg) = postgres_pool_or_error(&state) else {
         return AuthenticatedSessionOutcome::Error(
@@ -5179,23 +5669,35 @@ async fn create_authenticated_session_or_challenge(
         };
     let eligible_memberships = login_eligible_organization_memberships(memberships);
     match eligible_memberships.len() {
-        0 => match create_session_record(pg, &state.config, user, None, runtime_app_id).await {
-            Ok(session) => AuthenticatedSessionOutcome::Session(session),
-            Err(error) => {
-                tracing::error!(%error, "authenticated session creation failed");
-                AuthenticatedSessionOutcome::Error(appbase_error(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "iam_session_create_failed",
-                    &error,
-                ))
+        0 => {
+            match create_session_record_with_device(
+                pg,
+                &state.config,
+                user,
+                None,
+                runtime_app_id,
+                device_id,
+            )
+            .await
+            {
+                Ok(session) => AuthenticatedSessionOutcome::Session(session),
+                Err(error) => {
+                    tracing::error!(%error, "authenticated session creation failed");
+                    AuthenticatedSessionOutcome::Error(appbase_error(
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "iam_session_create_failed",
+                        &error,
+                    ))
+                }
             }
-        },
+        }
         _ => match login_context_selection_challenge_json(
             state,
             user,
             eligible_memberships,
             qr_session_key,
             runtime_app_id,
+            device_id,
         )
         .await
         {
@@ -5260,6 +5762,43 @@ async fn active_organization_memberships_for_user(
         .collect())
 }
 
+/// Resolves the caller's effective `membership_kind` in one organization.
+///
+/// Returns `None` when the caller holds no active membership there, which is
+/// what turns the roster into a 403. A person can hold several active rows in
+/// the same organization (the uniqueness key includes the kind), so the rows
+/// are ranked and the highest privilege wins: an `owner` row must never be
+/// shadowed by the person's own `member` row.
+async fn active_organization_membership_kind(
+    pg: &PgPool,
+    session: &LocalSession,
+    organization_id: &str,
+) -> Result<Option<String>, sqlx::Error> {
+    let row = sqlx::query(
+        "SELECT membership_kind FROM iam_organization_membership \
+         WHERE tenant_id = $1 AND organization_id = $2 AND user_id = $3 \
+           AND (status = 'active' OR status = '1') \
+         ORDER BY CASE membership_kind WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, id \
+         LIMIT 1",
+    )
+    .bind(&session.context.tenant_id)
+    .bind(organization_id)
+    .bind(&session.context.user_id)
+    .fetch_optional(pg)
+    .await?;
+    Ok(row.map(|row| row.get(0)))
+}
+
+/// Legacy membership rows store `status = '1'`; the roster contract reports
+/// `active` so a legacy row cannot leak its storage encoding onto the wire.
+fn organization_membership_status(raw: String) -> String {
+    if raw == "1" {
+        "active".to_owned()
+    } else {
+        raw
+    }
+}
+
 async fn has_active_organization_membership(
     pg: &PgPool,
     tenant_id: &str,
@@ -5320,6 +5859,7 @@ async fn login_context_selection_challenge_json(
     memberships: Vec<LocalOrganizationMembership>,
     qr_session_key: Option<String>,
     runtime_app_id: &str,
+    device_id: Option<&str>,
 ) -> Result<Value, String> {
     let organization_ids = memberships
         .iter()
@@ -5353,6 +5893,7 @@ async fn login_context_selection_challenge_json(
     let expire_time = current_millis() + LOGIN_CONTINUATION_TTL_MILLIS;
     let continuation = LocalLoginContinuation {
         continuation_kind: "login_context".to_string(),
+        device_id: device_id.map(str::to_string),
         expire_time,
         organization_ids,
         qr_session_key,
@@ -5630,6 +6171,61 @@ async fn paged_organization_memberships(
         })
         .collect();
     Ok((memberships, total, params))
+}
+
+/// Reads one page of the roster of a single organization.
+///
+/// Rows come from `iam_organization_membership` joined with `iam_user`, scoped
+/// to the session tenant and the addressed organization, and restricted to
+/// membership rows that are active (`'active'`, or the legacy `'1'` encoding).
+/// All ids stay bound as text; nothing is interpolated into the statement.
+async fn paged_organization_members(
+    pg: &PgPool,
+    session: &LocalSession,
+    organization_id: &str,
+    role: Option<&str>,
+    query: &HashMap<String, String>,
+) -> DirectoryPagedResult<LocalOrganizationMember> {
+    let params = clamped_list_page_params_for_directory(query)?;
+    let search_pattern = escaped_list_search_pattern(query);
+    let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
+        "SELECT m.id, m.user_id, m.membership_kind, m.status, m.is_primary, \
+                u.display_name, u.username, u.email, \
+                COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
+         FROM iam_organization_membership m \
+         JOIN iam_user u ON u.id = m.user_id AND u.tenant_id = m.tenant_id \
+         WHERE m.tenant_id = $1 AND m.organization_id = $2 \
+           AND (m.status = 'active' OR m.status = '1') \
+           AND ($3::text IS NULL OR m.membership_kind = $3) \
+           AND ($4::text IS NULL OR LOWER(u.username) LIKE $4 ESCAPE '\\' \
+                OR LOWER(u.display_name) LIKE $4 ESCAPE '\\' \
+                OR LOWER(COALESCE(u.email, '')) LIKE $4 ESCAPE '\\') \
+         ORDER BY m.is_primary DESC, u.display_name, m.id \
+         LIMIT $5 OFFSET $6"
+    )))
+    .bind(&session.context.tenant_id)
+    .bind(organization_id)
+    .bind(role)
+    .bind(&search_pattern)
+    .bind(params.page_size)
+    .bind(params.offset)
+    .fetch_all(pg)
+    .await?;
+    let total = total_from_rows(&rows);
+    let members = rows
+        .into_iter()
+        .map(|row| LocalOrganizationMember {
+            membership_id: row.get(0),
+            user_id: row.get(1),
+            membership_kind: row.get(2),
+            status: organization_membership_status(row.get(3)),
+            primary: row.get::<i32, _>(4) != 0,
+            display_name: row.get(5),
+            username: row.get(6),
+            email: row.get(7),
+        })
+        .collect();
+    Ok((members, total, params))
 }
 
 async fn scoped_departments_for_session(

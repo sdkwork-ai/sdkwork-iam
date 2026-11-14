@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "documents",
+  "domain": "documents",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "documents.admin.delete",
+        "description": "Permission documents.admin.delete",
+        "source": "openapi",
+        "name": "documents.admin.delete",
+        "resource": "documents.admin",
+        "action": "delete",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "documents.admin.read",
+        "description": "Permission documents.admin.read",
+        "source": "openapi",
+        "name": "documents.admin.read",
+        "resource": "documents.admin",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "documents.admin.write",
+        "description": "Permission documents.admin.write",
+        "source": "openapi",
+        "name": "documents.admin.write",
+        "resource": "documents.admin",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "documents.capabilities.read",
+        "description": "Permission documents.capabilities.read",
+        "source": "openapi",
+        "name": "documents.capabilities.read",
+        "resource": "documents.capabilities",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "documents.read",
+        "description": "Permission documents.read",
+        "source": "openapi",
+        "name": "documents.read",
+        "resource": "documents",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "documents.write",
+        "description": "Permission documents.write",
+        "source": "openapi",
+        "name": "documents.write",
+        "resource": "documents",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": []
+  },
+  "catalogVersion": "1.0.0",
+  "owner": "sdkwork-documents",
+  "displayName": "documents",
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

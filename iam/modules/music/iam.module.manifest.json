@@ -1,0 +1,650 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "music",
+  "domain": "music",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "music.albums",
+        "description": "Permission music.albums",
+        "source": "openapi",
+        "name": "music.albums",
+        "resource": "music",
+        "action": "albums",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.albums.management",
+        "description": "Permission music.albums.management",
+        "source": "openapi",
+        "name": "music.albums.management",
+        "resource": "music.albums",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.artists",
+        "description": "Permission music.artists",
+        "source": "openapi",
+        "name": "music.artists",
+        "resource": "music",
+        "action": "artists",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.artists.management",
+        "description": "Permission music.artists.management",
+        "source": "openapi",
+        "name": "music.artists.management",
+        "resource": "music.artists",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.audio.assets",
+        "description": "Permission music.audio.assets",
+        "source": "openapi",
+        "name": "music.audio.assets",
+        "resource": "music.audio",
+        "action": "assets",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.audio.assets.management",
+        "description": "Permission music.audio.assets.management",
+        "source": "openapi",
+        "name": "music.audio.assets.management",
+        "resource": "music.audio.assets",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.charts",
+        "description": "Permission music.charts",
+        "source": "openapi",
+        "name": "music.charts",
+        "resource": "music",
+        "action": "charts",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.charts.entries",
+        "description": "Permission music.charts.entries",
+        "source": "openapi",
+        "name": "music.charts.entries",
+        "resource": "music.charts",
+        "action": "entries",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.charts.management",
+        "description": "Permission music.charts.management",
+        "source": "openapi",
+        "name": "music.charts.management",
+        "resource": "music.charts",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.comments.read",
+        "description": "Permission music.comments.read",
+        "source": "openapi",
+        "name": "music.comments.read",
+        "resource": "music.comments",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.comments.write",
+        "description": "Permission music.comments.write",
+        "source": "openapi",
+        "name": "music.comments.write",
+        "resource": "music.comments",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.contentReports",
+        "description": "Permission music.contentReports",
+        "source": "openapi",
+        "name": "music.contentReports",
+        "resource": "music",
+        "action": "contentReports",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.contentReports.create",
+        "description": "Permission music.contentReports.create",
+        "source": "openapi",
+        "name": "music.contentReports.create",
+        "resource": "music.contentReports",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.contentReports.management",
+        "description": "Permission music.contentReports.management",
+        "source": "openapi",
+        "name": "music.contentReports.management",
+        "resource": "music.contentReports",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.downloads.read",
+        "description": "Permission music.downloads.read",
+        "source": "openapi",
+        "name": "music.downloads.read",
+        "resource": "music.downloads",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations",
+        "description": "Permission music.generations",
+        "source": "openapi",
+        "name": "music.generations",
+        "resource": "music",
+        "action": "generations",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.attempts",
+        "description": "Permission music.generations.attempts",
+        "source": "openapi",
+        "name": "music.generations.attempts",
+        "resource": "music.generations",
+        "action": "attempts",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.create",
+        "description": "Permission music.generations.create",
+        "source": "openapi",
+        "name": "music.generations.create",
+        "resource": "music.generations",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.creditLedger",
+        "description": "Permission music.generations.creditLedger",
+        "source": "openapi",
+        "name": "music.generations.creditLedger",
+        "resource": "music.generations",
+        "action": "creditLedger",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.events.management",
+        "description": "Permission music.generations.events.management",
+        "source": "openapi",
+        "name": "music.generations.events.management",
+        "resource": "music.generations.events",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.management",
+        "description": "Permission music.generations.management",
+        "source": "openapi",
+        "name": "music.generations.management",
+        "resource": "music.generations",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.notifications.read",
+        "description": "Permission music.generations.notifications.read",
+        "source": "openapi",
+        "name": "music.generations.notifications.read",
+        "resource": "music.generations.notifications",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.notifications.write",
+        "description": "Permission music.generations.notifications.write",
+        "source": "openapi",
+        "name": "music.generations.notifications.write",
+        "resource": "music.generations.notifications",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.promptTemplates",
+        "description": "Permission music.generations.promptTemplates",
+        "source": "openapi",
+        "name": "music.generations.promptTemplates",
+        "resource": "music.generations",
+        "action": "promptTemplates",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.promptTemplates.management",
+        "description": "Permission music.generations.promptTemplates.management",
+        "source": "openapi",
+        "name": "music.generations.promptTemplates.management",
+        "resource": "music.generations.promptTemplates",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.providerModels",
+        "description": "Permission music.generations.providerModels",
+        "source": "openapi",
+        "name": "music.generations.providerModels",
+        "resource": "music.generations",
+        "action": "providerModels",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.providerModels.management",
+        "description": "Permission music.generations.providerModels.management",
+        "source": "openapi",
+        "name": "music.generations.providerModels.management",
+        "resource": "music.generations.providerModels",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.providers",
+        "description": "Permission music.generations.providers",
+        "source": "openapi",
+        "name": "music.generations.providers",
+        "resource": "music.generations",
+        "action": "providers",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.providers.management",
+        "description": "Permission music.generations.providers.management",
+        "source": "openapi",
+        "name": "music.generations.providers.management",
+        "resource": "music.generations.providers",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.read",
+        "description": "Permission music.generations.read",
+        "source": "openapi",
+        "name": "music.generations.read",
+        "resource": "music.generations",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.stylePresets",
+        "description": "Permission music.generations.stylePresets",
+        "source": "openapi",
+        "name": "music.generations.stylePresets",
+        "resource": "music.generations",
+        "action": "stylePresets",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.stylePresets.management",
+        "description": "Permission music.generations.stylePresets.management",
+        "source": "openapi",
+        "name": "music.generations.stylePresets.management",
+        "resource": "music.generations.stylePresets",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.generations.webhook",
+        "description": "Permission music.generations.webhook",
+        "source": "openapi",
+        "name": "music.generations.webhook",
+        "resource": "music.generations",
+        "action": "webhook",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.history.read",
+        "description": "Permission music.history.read",
+        "source": "openapi",
+        "name": "music.history.read",
+        "resource": "music.history",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.home.read",
+        "description": "Permission music.home.read",
+        "source": "openapi",
+        "name": "music.home.read",
+        "resource": "music.home",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.library.read",
+        "description": "Permission music.library.read",
+        "source": "openapi",
+        "name": "music.library.read",
+        "resource": "music.library",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.library.write",
+        "description": "Permission music.library.write",
+        "source": "openapi",
+        "name": "music.library.write",
+        "resource": "music.library",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.moderation.signals",
+        "description": "Permission music.moderation.signals",
+        "source": "openapi",
+        "name": "music.moderation.signals",
+        "resource": "music.moderation",
+        "action": "signals",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.playback.read",
+        "description": "Permission music.playback.read",
+        "source": "openapi",
+        "name": "music.playback.read",
+        "resource": "music.playback",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.playback.write",
+        "description": "Permission music.playback.write",
+        "source": "openapi",
+        "name": "music.playback.write",
+        "resource": "music.playback",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.playlists",
+        "description": "Permission music.playlists",
+        "source": "openapi",
+        "name": "music.playlists",
+        "resource": "music",
+        "action": "playlists",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.playlists.follow",
+        "description": "Permission music.playlists.follow",
+        "source": "openapi",
+        "name": "music.playlists.follow",
+        "resource": "music.playlists",
+        "action": "follow",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.playlists.management",
+        "description": "Permission music.playlists.management",
+        "source": "openapi",
+        "name": "music.playlists.management",
+        "resource": "music.playlists",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.playlists.write",
+        "description": "Permission music.playlists.write",
+        "source": "openapi",
+        "name": "music.playlists.write",
+        "resource": "music.playlists",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.recommendation.feedback.management",
+        "description": "Permission music.recommendation.feedback.management",
+        "source": "openapi",
+        "name": "music.recommendation.feedback.management",
+        "resource": "music.recommendation.feedback",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.recommendation.shelves",
+        "description": "Permission music.recommendation.shelves",
+        "source": "openapi",
+        "name": "music.recommendation.shelves",
+        "resource": "music.recommendation",
+        "action": "shelves",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.recommendation.shelves.management",
+        "description": "Permission music.recommendation.shelves.management",
+        "source": "openapi",
+        "name": "music.recommendation.shelves.management",
+        "resource": "music.recommendation.shelves",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.recommendationFeedback.create",
+        "description": "Permission music.recommendationFeedback.create",
+        "source": "openapi",
+        "name": "music.recommendationFeedback.create",
+        "resource": "music.recommendationFeedback",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.releases",
+        "description": "Permission music.releases",
+        "source": "openapi",
+        "name": "music.releases",
+        "resource": "music",
+        "action": "releases",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.releases.channels",
+        "description": "Permission music.releases.channels",
+        "source": "openapi",
+        "name": "music.releases.channels",
+        "resource": "music.releases",
+        "action": "channels",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.rights.policies",
+        "description": "Permission music.rights.policies",
+        "source": "openapi",
+        "name": "music.rights.policies",
+        "resource": "music.rights",
+        "action": "policies",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.rights.policies.management",
+        "description": "Permission music.rights.policies.management",
+        "source": "openapi",
+        "name": "music.rights.policies.management",
+        "resource": "music.rights.policies",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.rights.policies.territories",
+        "description": "Permission music.rights.policies.territories",
+        "source": "openapi",
+        "name": "music.rights.policies.territories",
+        "resource": "music.rights.policies",
+        "action": "territories",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.search.read",
+        "description": "Permission music.search.read",
+        "source": "openapi",
+        "name": "music.search.read",
+        "resource": "music.search",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.tracks",
+        "description": "Permission music.tracks",
+        "source": "openapi",
+        "name": "music.tracks",
+        "resource": "music",
+        "action": "tracks",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "music.tracks.management",
+        "description": "Permission music.tracks.management",
+        "source": "openapi",
+        "name": "music.tracks.management",
+        "resource": "music.tracks",
+        "action": "management",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": []
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": []
+  },
+  "catalogVersion": "1.0.0",
+  "owner": "sdkwork-music",
+  "displayName": "music",
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

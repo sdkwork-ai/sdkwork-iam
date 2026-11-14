@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "birdcoder",
+  "catalogVersion": "1.0.0",
+  "domain": "birdcoder",
+  "owner": "sdkwork-birdcoder",
+  "displayName": "SDKWork BirdCoder Application Module",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "birdcoder.system-descriptor.read",
+        "name": "Read system descriptor",
+        "resource": "birdcoder.system-descriptor",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "birdcoder.system-health.read",
+        "name": "Read system health",
+        "resource": "birdcoder.system-health",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "birdcoder.system-routes.read",
+        "name": "Read system routes",
+        "resource": "birdcoder.system-routes",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "birdcoder.system-runtime.read",
+        "name": "Read system runtime",
+        "resource": "birdcoder.system-runtime",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": [
+      "sdks/sdkwork-birdcoder-app-sdk/openapi/sdkwork-birdcoder-app-api.openapi.json"
+    ]
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": [],
+    "assignability": [],
+    "bootstrapDefaults": []
+  },
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}

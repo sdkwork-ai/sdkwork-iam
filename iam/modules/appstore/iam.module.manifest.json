@@ -5,7 +5,7 @@
   "catalogVersion": "1.0.0",
   "domain": "appstore",
   "owner": "sdkwork-appstore",
-  "displayName": "SDKWork App Store Module",
+  "displayName": "appstore",
   "permissions": {
     "catalog": [
       {
@@ -134,7 +134,8 @@
         "since": "1.0.0",
         "replacementCode": null
       }
-    ]
+    ],
+    "openapiAuthorities": []
   },
   "roles": {
     "domainStandardRoles": [
@@ -175,7 +176,9 @@
           "appstore.analytics.publisher"
         ]
       }
-    ]
+    ],
+    "roleGrantExtensions": [],
+    "roleExclusions": []
   },
   "directory": {
     "organizationTemplates": [],
@@ -188,6 +191,8 @@
   },
   "oauthScopeMappings": [],
   "dependencies": {
-    "requiresModules": ["iam-kernel"]
+    "requiresModules": [
+      "iam-kernel"
+    ]
   }
 }

@@ -151,6 +151,12 @@ export interface IamAppOAuthResourceClient {
   miniProgramSessions?: {
     create?: IamSdkMethod;
   };
+  phoneBindingSessions?: {
+    create?: IamSdkMethod;
+    verificationCodeRequests?: {
+      create?: IamSdkMethod;
+    };
+  };
   sessions?: {
     create?: IamSdkMethod;
   };

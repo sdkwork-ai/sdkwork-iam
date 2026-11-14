@@ -1,0 +1,431 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "edu",
+  "domain": "edu",
+  "displayName": "SDKWork Edu",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "edu.assessments.publish",
+        "description": "Permission edu.assessments.publish",
+        "source": "openapi",
+        "name": "edu.assessments.publish",
+        "resource": "edu.assessments",
+        "action": "publish",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.assessments.read",
+        "description": "Permission edu.assessments.read",
+        "source": "openapi",
+        "name": "edu.assessments.read",
+        "resource": "edu.assessments",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.assessments.write",
+        "description": "Permission edu.assessments.write",
+        "source": "openapi",
+        "name": "edu.assessments.write",
+        "resource": "edu.assessments",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.assignments.grade",
+        "description": "Permission edu.assignments.grade",
+        "source": "openapi",
+        "name": "edu.assignments.grade",
+        "resource": "edu.assignments",
+        "action": "grade",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.assignments.read",
+        "description": "Permission edu.assignments.read",
+        "source": "openapi",
+        "name": "edu.assignments.read",
+        "resource": "edu.assignments",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.assignments.write",
+        "description": "Permission edu.assignments.write",
+        "source": "openapi",
+        "name": "edu.assignments.write",
+        "resource": "edu.assignments",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.attendance.read",
+        "description": "Permission edu.attendance.read",
+        "source": "openapi",
+        "name": "edu.attendance.read",
+        "resource": "edu.attendance",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.attendance.review",
+        "description": "Permission edu.attendance.review",
+        "source": "openapi",
+        "name": "edu.attendance.review",
+        "resource": "edu.attendance",
+        "action": "review",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.attendance.write",
+        "description": "Permission edu.attendance.write",
+        "source": "openapi",
+        "name": "edu.attendance.write",
+        "resource": "edu.attendance",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.audit_logs.read",
+        "description": "Permission edu.audit_logs.read",
+        "source": "openapi",
+        "name": "edu.audit_logs.read",
+        "resource": "edu.audit_logs",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.classes.archive",
+        "description": "Permission edu.classes.archive",
+        "source": "openapi",
+        "name": "edu.classes.archive",
+        "resource": "edu.classes",
+        "action": "archive",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.classes.read",
+        "description": "Permission edu.classes.read",
+        "source": "openapi",
+        "name": "edu.classes.read",
+        "resource": "edu.classes",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.classes.write",
+        "description": "Permission edu.classes.write",
+        "source": "openapi",
+        "name": "edu.classes.write",
+        "resource": "edu.classes",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.enrollments.read",
+        "description": "Permission edu.enrollments.read",
+        "source": "openapi",
+        "name": "edu.enrollments.read",
+        "resource": "edu.enrollments",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.enrollments.review",
+        "description": "Permission edu.enrollments.review",
+        "source": "openapi",
+        "name": "edu.enrollments.review",
+        "resource": "edu.enrollments",
+        "action": "review",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.enrollments.write",
+        "description": "Permission edu.enrollments.write",
+        "source": "openapi",
+        "name": "edu.enrollments.write",
+        "resource": "edu.enrollments",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.guardians.read",
+        "description": "Permission edu.guardians.read",
+        "source": "openapi",
+        "name": "edu.guardians.read",
+        "resource": "edu.guardians",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.guardians.write",
+        "description": "Permission edu.guardians.write",
+        "source": "openapi",
+        "name": "edu.guardians.write",
+        "resource": "edu.guardians",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.materials.read",
+        "description": "Permission edu.materials.read",
+        "source": "openapi",
+        "name": "edu.materials.read",
+        "resource": "edu.materials",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.materials.write",
+        "description": "Permission edu.materials.write",
+        "source": "openapi",
+        "name": "edu.materials.write",
+        "resource": "edu.materials",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.reports.export",
+        "description": "Permission edu.reports.export",
+        "source": "openapi",
+        "name": "edu.reports.export",
+        "resource": "edu.reports",
+        "action": "export",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.reports.read",
+        "description": "Permission edu.reports.read",
+        "source": "openapi",
+        "name": "edu.reports.read",
+        "resource": "edu.reports",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.schedules.read",
+        "description": "Permission edu.schedules.read",
+        "source": "openapi",
+        "name": "edu.schedules.read",
+        "resource": "edu.schedules",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.schedules.write",
+        "description": "Permission edu.schedules.write",
+        "source": "openapi",
+        "name": "edu.schedules.write",
+        "resource": "edu.schedules",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.scores.publish",
+        "description": "Permission edu.scores.publish",
+        "source": "openapi",
+        "name": "edu.scores.publish",
+        "resource": "edu.scores",
+        "action": "publish",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.scores.read",
+        "description": "Permission edu.scores.read",
+        "source": "openapi",
+        "name": "edu.scores.read",
+        "resource": "edu.scores",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.scores.write",
+        "description": "Permission edu.scores.write",
+        "source": "openapi",
+        "name": "edu.scores.write",
+        "resource": "edu.scores",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.students.export",
+        "description": "Permission edu.students.export",
+        "source": "openapi",
+        "name": "edu.students.export",
+        "resource": "edu.students",
+        "action": "export",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.students.read",
+        "description": "Permission edu.students.read",
+        "source": "openapi",
+        "name": "edu.students.read",
+        "resource": "edu.students",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.students.write",
+        "description": "Permission edu.students.write",
+        "source": "openapi",
+        "name": "edu.students.write",
+        "resource": "edu.students",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.submissions.read",
+        "description": "Permission edu.submissions.read",
+        "source": "openapi",
+        "name": "edu.submissions.read",
+        "resource": "edu.submissions",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.submissions.review",
+        "description": "Permission edu.submissions.review",
+        "source": "openapi",
+        "name": "edu.submissions.review",
+        "resource": "edu.submissions",
+        "action": "review",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.teachers.read",
+        "description": "Permission edu.teachers.read",
+        "source": "openapi",
+        "name": "edu.teachers.read",
+        "resource": "edu.teachers",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.teachers.write",
+        "description": "Permission edu.teachers.write",
+        "source": "openapi",
+        "name": "edu.teachers.write",
+        "resource": "edu.teachers",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.terms.read",
+        "description": "Permission edu.terms.read",
+        "source": "openapi",
+        "name": "edu.terms.read",
+        "resource": "edu.terms",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "edu.terms.write",
+        "description": "Permission edu.terms.write",
+        "source": "openapi",
+        "name": "edu.terms.write",
+        "resource": "edu.terms",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": [
+      "sdkwork-edu-app-api",
+      "sdkwork-edu-backend-api"
+    ]
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleGrantExtensions": [],
+    "roleExclusions": []
+  },
+  "dependencies": {
+    "requiresModules": []
+  },
+  "catalogVersion": "1.0.0",
+  "owner": "sdkwork-edu",
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": []
+}

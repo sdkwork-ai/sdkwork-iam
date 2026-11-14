@@ -38,6 +38,7 @@ const body = {
   providerKey: 'providerKey',
   tenantId: 'tenantId',
   organizationId: 'organizationId',
+  deviceId: 'deviceId',
 };
 const result = await client.auth.sessions.create(body);
 ```
@@ -88,6 +89,7 @@ const body = {
   providerKey: 'providerKey',
   tenantId: 'tenantId',
   organizationId: 'organizationId',
+  deviceId: 'deviceId',
 };
 const result = await client.auth.sessions.create(body);
 ```
@@ -114,6 +116,7 @@ const body = {
   providerKey: 'providerKey',
   tenantId: 'tenantId',
   organizationId: 'organizationId',
+  deviceId: 'deviceId',
 };
 const result = await client.oauth.sessions.create(body);
 ```
@@ -142,6 +145,7 @@ try {
     providerKey: 'providerKey',
     tenantId: 'tenantId',
     organizationId: 'organizationId',
+    deviceId: 'deviceId',
   };
   const result = await client.auth.sessions.create(body);
 } catch (error) {

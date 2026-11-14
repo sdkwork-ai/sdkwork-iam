@@ -734,6 +734,11 @@ pub(crate) fn session_to_json(session: &LocalSession) -> Value {
     if !session.refresh_token.is_empty() {
         v["refreshToken"] = json!(session.refresh_token);
     }
+    if let Some(device_id) = session.device_id.as_deref() {
+        // Echo the bound device so a client can verify which device slot its
+        // session occupies, and so QR/continuation round trips keep it.
+        v["deviceId"] = json!(device_id);
+    }
     v
 }
 
@@ -867,6 +872,33 @@ pub(crate) fn organization_membership_to_json(m: &LocalOrganizationMembership) -
         v["email"] = json!(e);
     }
     v
+}
+
+/// Organization roster item (`IamOrganizationMember`).
+///
+/// The roster exposes directory facts about other people, so `email` is
+/// projected only when `include_email` is true. The caller derives that flag
+/// from its own membership kind in the same organization: only `owner` and
+/// `admin` callers see contact data, a `member` caller never does.
+pub(crate) fn organization_member_to_json(
+    m: &LocalOrganizationMember,
+    include_email: bool,
+) -> Value {
+    let mut value = json!({
+        "displayName": m.display_name,
+        "isPrimary": m.primary,
+        "membershipId": m.membership_id,
+        "membershipKind": m.membership_kind,
+        "status": m.status,
+        "userId": m.user_id,
+        "username": m.username
+    });
+    if include_email {
+        if let Some(email) = m.email.as_ref().filter(|value| !value.is_empty()) {
+            value["email"] = json!(email);
+        }
+    }
+    value
 }
 
 pub(crate) fn department_to_json(d: &LocalDepartment) -> Value {

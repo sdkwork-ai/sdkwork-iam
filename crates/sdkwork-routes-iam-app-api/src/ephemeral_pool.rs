@@ -286,15 +286,20 @@ async fn mutate_qr_session_sqlite(
 
 #[cfg(feature = "sqlite")]
 fn qr_session_to_payload(session: &LocalQrSession) -> Value {
+    // Must stay field-for-field with the PostgreSQL payload in `ephemeral.rs`:
+    // dropping `followLogin`/`qrImageUrl` here silently broke official-account
+    // follow-login and the server-rendered QR image in the SQLite runtime.
     json!({
         "completedSession": session.completed_session.as_ref().map(session_to_json),
         "expireTimeMs": session.expire_time,
         "fallbackUrl": session.fallback_url,
+        "followLogin": session.follow_login.clone(),
         "organizationSelection": session.organization_selection.clone(),
         "pollSecret": session.poll_secret,
         "purpose": session.purpose,
         "qrContent": session.qr_content,
         "qrContentMode": session.qr_content_mode,
+        "qrImageUrl": session.qr_image_url,
         "sessionExchanged": session.session_exchanged,
         "sessionKey": session.session_key,
         "status": session.status,
@@ -308,11 +313,13 @@ fn qr_session_from_payload(payload: &Value, session_key: &str) -> Option<LocalQr
         completed_session,
         expire_time: payload["expireTimeMs"].as_u64()? as u128,
         fallback_url: optional_string(payload.get("fallbackUrl"))?,
+        follow_login: payload.get("followLogin").cloned(),
         organization_selection: payload.get("organizationSelection").cloned(),
         poll_secret: optional_string(payload.get("pollSecret"))?,
         purpose: optional_string(payload.get("purpose"))?,
         qr_content: optional_string(payload.get("qrContent"))?,
         qr_content_mode: optional_string(payload.get("qrContentMode"))?,
+        qr_image_url: optional_string(payload.get("qrImageUrl")),
         session_exchanged: payload["sessionExchanged"].as_bool().unwrap_or(false),
         session_key: optional_string(payload.get("sessionKey"))
             .unwrap_or_else(|| session_key.to_string()),
@@ -394,6 +401,8 @@ fn session_from_json(value: &Value) -> Option<LocalSession> {
         refresh_token,
         session_id,
         user,
+        device_id: optional_string(value.get("deviceId"))
+            .or_else(|| optional_string(value.get("device_id"))),
     })
 }
 

@@ -20,4 +20,6 @@ export interface AppbaseSessionCreateCommand {
   tenantId?: string;
   /** Verified organization id supplied by an external user-center session exchange when the upstream identity resolved an organization scope. */
   organizationId?: string;
+  /** Opaque client device identity. Sessions are replaced per application per device; omitting it keeps the legacy single-slot behaviour where only sessions without a device are revoked. */
+  deviceId?: string;
 }
