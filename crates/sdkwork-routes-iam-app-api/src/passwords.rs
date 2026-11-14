@@ -807,7 +807,10 @@ mod tests {
         // The plaintext is process-local random entropy, so no candidate can
         // authenticate against it.
         assert!(!verify_password(hash, ""));
-        assert!(!verify_password(hash, "sdkwork-iam-timing-equalizer-not-a-user-password"));
+        assert!(!verify_password(
+            hash,
+            "sdkwork-iam-timing-equalizer-not-a-user-password"
+        ));
         assert!(!verify_password(hash, "any-candidate-password"));
     }
 

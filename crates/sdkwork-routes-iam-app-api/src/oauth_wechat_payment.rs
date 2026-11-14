@@ -1,4 +1,4 @@
-﻿//! WeChat payment-scoped lightweight OAuth flow.
+//! WeChat payment-scoped lightweight OAuth flow.
 //!
 //! The H5 cashier needs the payer's WeChat `openid` to run JSAPI payment
 //! inside the WeChat app. This flow performs a silent `snsapi_base`
@@ -211,20 +211,18 @@ pub(crate) async fn start_wechat_payment_oauth_for_cashier(
     };
     let state_token = generate_opaque_token("wpoauth");
     let callback_url = payment_oauth_callback_url(&headers);
-    let authorize_url =
-        build_wechat_authorize_url(&provider_ctx.provider_client_id, &callback_url, &state_token);
+    let authorize_url = build_wechat_authorize_url(
+        &provider_ctx.provider_client_id,
+        &callback_url,
+        &state_token,
+    );
 
     let mut response = appbase_ok(json!({
         "authorizeUrl": authorize_url,
         "state": state_token,
         "redirectUri": callback_url,
     }));
-    append_payment_oauth_cookie(
-        &mut response,
-        STATE_COOKIE,
-        &state_token,
-        STATE_TTL_SECONDS,
-    );
+    append_payment_oauth_cookie(&mut response, STATE_COOKIE, &state_token, STATE_TTL_SECONDS);
     append_payment_oauth_cookie(&mut response, REDIRECT_COOKIE, &redirect, STATE_TTL_SECONDS);
     append_payment_oauth_cookie(
         &mut response,
@@ -256,7 +254,8 @@ fn verify_cashier_token_for_cashier(token: &str) -> Option<sdkwork_utils_rust::C
         tenant_id: String,
     }
     let peeked: Peeked = serde_json::from_slice(&bytes).ok()?;
-    let key = sdkwork_utils_rust::derive_cashier_token_key(&secret, peeked.tenant_id.trim()).ok()?;
+    let key =
+        sdkwork_utils_rust::derive_cashier_token_key(&secret, peeked.tenant_id.trim()).ok()?;
     let now = sdkwork_utils_rust::now().timestamp();
     sdkwork_utils_rust::verify_cashier_token(
         token,
@@ -365,7 +364,9 @@ pub(crate) async fn handle_wechat_payment_oauth_callback(
 /// The order service recomputes the same HMAC from the same deployment secret, so
 /// an openid cannot be replayed onto another cashier link and cannot be invented.
 fn sign_openid_binding(tenant_id: &str, token_id: &str, openid: &str) -> Option<String> {
-    let secret = sdkwork_utils_rust::cashier_token_secret_from_env().ok().flatten()?;
+    let secret = sdkwork_utils_rust::cashier_token_secret_from_env()
+        .ok()
+        .flatten()?;
     let key = sdkwork_utils_rust::derive_cashier_token_key(&secret, tenant_id).ok()?;
     Some(sdkwork_utils_rust::hmac_sha256_base64url(
         sdkwork_utils_rust::cashier_openid_binding_message(token_id, openid).as_bytes(),

@@ -57,7 +57,10 @@ pub(crate) async fn bind_contact_for_user(
     // off. Unverified contacts stay usable for ordinary sign-in but can never
     // satisfy code login or OAuth phone association, both of which test the
     // verified flag.
-    let verified = match verification_code.map(str::trim).filter(|code| !code.is_empty()) {
+    let verified = match verification_code
+        .map(str::trim)
+        .filter(|code| !code.is_empty())
+    {
         Some(code) => {
             validate_bind_verification_code(
                 pg,
