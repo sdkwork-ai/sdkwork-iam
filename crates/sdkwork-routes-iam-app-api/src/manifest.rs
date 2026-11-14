@@ -220,6 +220,15 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
         "oauth",
         "wechatPaymentOauth.start",
     ),
+    // Anonymous cashier: a scanned cashier link has no session, so the payer's
+    // WeChat openid must be obtained through a capability-token-authenticated
+    // start. It creates no session and is authorized by the signed token alone.
+    HttpRoute::public(
+        HttpMethod::Get,
+        "/app/v3/api/oauth/wechat/payment/cashier/start",
+        "oauth",
+        "wechatPaymentOauth.cashierStart",
+    ),
     // WeChat redirects the payer's browser back here after authorize with
     // `code` + `state` only — never with platform credentials. The handler
     // restores tenant scope from its own state cookie, so the callback must
@@ -434,6 +443,7 @@ pub const IAM_ANONYMOUS_OPERATION_IDS: &[&str] = &[
     "deviceAuthorizations.sessionExchanges.create",
     "authorizations.create",
     "desktopSessions.create",
+    "wechatPaymentOauth.cashierStart",
     "wechatPaymentOauth.callback",
 ];
 
