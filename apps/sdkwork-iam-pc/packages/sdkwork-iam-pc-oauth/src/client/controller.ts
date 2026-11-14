@@ -11,6 +11,7 @@
 import type {
   SdkworkIamOfficialAccount,
   SdkworkIamOfficialAccountDraft,
+  SdkworkIamOfficialAccountEncryptMode,
   SdkworkIamOfficialAccountMenu,
   SdkworkIamOfficialAccountMenuButton,
   SdkworkIamOfficialAccountsClient,
@@ -40,6 +41,25 @@ function readString(record: Record<string, unknown>, key: string): string | unde
 
 function readBoolean(record: Record<string, unknown>, key: string): boolean {
   return record[key] === true;
+}
+
+/** Reads a stored domain array, ignoring non-string entries and blank values. */
+function readDomains(record: Record<string, unknown>, key: string): string[] {
+  const value = record[key];
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((entry): entry is string => typeof entry === "string")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry !== "");
+}
+
+/** Reads the message-push encryption mode, defaulting to plaintext. */
+function readEncryptMode(
+  record: Record<string, unknown>,
+  key: string,
+): SdkworkIamOfficialAccountEncryptMode {
+  const value = readString(record, key);
+  return value === "compatible" || value === "safe" ? value : "plaintext";
 }
 
 /** Parses one menu button from a stored menu document. */
@@ -108,6 +128,10 @@ export function toOfficialAccount(value: Record<string, unknown>): SdkworkIamOff
       : { notifyUrl: readString(value, "notifyUrl") }),
     hasNotifyToken: readBoolean(value, "hasNotifyToken"),
     hasEncodingAesKey: readBoolean(value, "hasEncodingAesKey"),
+    notifyEncryptMode: readEncryptMode(value, "notifyEncryptMode"),
+    jsSecureDomains: readDomains(value, "jsSecureDomains"),
+    webAuthDomains: readDomains(value, "webAuthDomains"),
+    businessDomains: readDomains(value, "businessDomains"),
     customMenu: readOfficialAccountMenu(value.customMenu),
     enabled: value.enabled !== false,
     status: readString(value, "status") ?? "active",
@@ -144,6 +168,18 @@ export function toOfficialAccountCommand(
   }
   if (draft.notifyEncodingAesKey !== undefined && draft.notifyEncodingAesKey.trim() !== "") {
     command.notifyEncodingAesKey = draft.notifyEncodingAesKey.trim();
+  }
+  if (draft.notifyEncryptMode !== undefined) {
+    command.notifyEncryptMode = draft.notifyEncryptMode;
+  }
+  if (draft.jsSecureDomains !== undefined) {
+    command.jsSecureDomains = [...draft.jsSecureDomains];
+  }
+  if (draft.webAuthDomains !== undefined) {
+    command.webAuthDomains = [...draft.webAuthDomains];
+  }
+  if (draft.businessDomains !== undefined) {
+    command.businessDomains = [...draft.businessDomains];
   }
   if (draft.customMenu !== undefined) command.customMenu = draft.customMenu;
   if (draft.enabled !== undefined) command.enabled = draft.enabled;

@@ -21,6 +21,10 @@ const RECORD = {
   notifyUrl: "https://example.test/notify",
   hasNotifyToken: true,
   hasEncodingAesKey: false,
+  notifyEncryptMode: "safe",
+  jsSecureDomains: ["api.example.com"],
+  webAuthDomains: ["auth.example.com"],
+  businessDomains: ["h5.example.com"],
   customMenu: {
     buttons: [
       { name: "产品", type: "view", url: "https://example.test/product" },
@@ -56,6 +60,10 @@ describe("official-account adapter", () => {
     expect(account.appId).toBe("wx1234567890abcdef");
     expect(account.hasAppSecret).toBe(true);
     expect(account.hasEncodingAesKey).toBe(false);
+    expect(account.notifyEncryptMode).toBe("safe");
+    expect(account.jsSecureDomains).toEqual(["api.example.com"]);
+    expect(account.webAuthDomains).toEqual(["auth.example.com"]);
+    expect(account.businessDomains).toEqual(["h5.example.com"]);
     expect(account.customMenu.buttons).toHaveLength(2);
     expect(account.customMenu.buttons[1]?.subButtons?.[0]).toMatchObject({
       name: "帮助",
@@ -84,6 +92,26 @@ describe("official-account adapter", () => {
     expect(toOfficialAccountCommand({ displayName: "N", appSecret: " s3cret " })).toMatchObject({
       appSecret: "s3cret",
     });
+  });
+
+  it("carries the WeChat domain sets and encryption mode into the command", () => {
+    const command = toOfficialAccountCommand({
+      displayName: "Name",
+      notifyEncryptMode: "compatible",
+      jsSecureDomains: ["api.example.com"],
+      webAuthDomains: ["auth.example.com"],
+      businessDomains: ["h5.example.com"],
+    });
+    expect(command).toMatchObject({
+      displayName: "Name",
+      notifyEncryptMode: "compatible",
+      jsSecureDomains: ["api.example.com"],
+      webAuthDomains: ["auth.example.com"],
+      businessDomains: ["h5.example.com"],
+    });
+    // A patch that does not mention them leaves the stored sets untouched.
+    expect(toOfficialAccountCommand({ displayName: "Name" })).not.toHaveProperty("jsSecureDomains");
+    expect(toOfficialAccountCommand({ displayName: "Name" })).not.toHaveProperty("notifyEncryptMode");
   });
 
   it("names the WeChat AppID wechatAppId on create and leaves it out of updates", () => {

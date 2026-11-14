@@ -22,6 +22,10 @@ const RECORD = {
   enabled: true,
   status: "active",
   customMenu: { buttons: [] },
+  notifyEncryptMode: "compatible",
+  jsSecureDomains: ["api.example.com"],
+  webAuthDomains: ["auth.example.com"],
+  businessDomains: ["h5.example.com"],
 };
 
 const DRIVE_LOGO_URI = "drive://spaces/space-1/nodes/node-1";
@@ -86,6 +90,23 @@ function logoPicker(): HTMLInputElement {
   const input = document.querySelector<HTMLInputElement>('input[type="file"]');
   if (input === null) throw new Error("logo picker not rendered");
   return input;
+}
+
+/** The domain editor input for one protected-domain set. */
+function domainInput(label: string): HTMLInputElement {
+  return screen.getByLabelText(label) as HTMLInputElement;
+}
+
+/** Types one domain into a protected-domain editor and commits it with Enter. */
+function addDomain(label: string, value: string): void {
+  const input = domainInput(label);
+  fireEvent.change(input, { target: { value } });
+  fireEvent.keyDown(input, { key: "Enter" });
+}
+
+/** Activates the drawer's domain tab the way Radix selects a tab. */
+function openDomainsTab(): void {
+  fireEvent.mouseDown(screen.getByRole("tab", { name: "Domains" }), { button: 0 });
 }
 
 describe("official-account panel", () => {
@@ -187,6 +208,108 @@ describe("official-account panel", () => {
     });
   });
 
+});
+
+describe("official-account drawer tabs", () => {
+  it("pairs basic info with the WeChat domain configuration in tabs", async () => {
+    bench({}, { drive: driveService() });
+    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+    expect(
+      screen.getByRole("tab", { name: "Basic info" }).getAttribute("aria-selected"),
+    ).toBe("true");
+    openDomainsTab();
+    expect(screen.getByText("JS interface security domains")).toBeTruthy();
+    expect(screen.getByText("Web-authorization domains")).toBeTruthy();
+    expect(screen.getByText("Business domains")).toBeTruthy();
+    expect(screen.getByText("0/5")).toBeTruthy();
+    expect(screen.getByText("0/2")).toBeTruthy();
+    expect(screen.getByText("0/3")).toBeTruthy();
+    expect(screen.getByText("Server configuration (message push)")).toBeTruthy();
+  });
+
+  it("normalizes domains and rejects invalid or duplicate entries", async () => {
+    bench();
+    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+    openDomainsTab();
+    addDomain("JS interface security domains", "  API.Example.com ");
+    expect(screen.getByText("api.example.com")).toBeTruthy();
+    expect(screen.getByText("1/5")).toBeTruthy();
+
+    addDomain("JS interface security domains", "https://bad.example.com");
+    expect(screen.getByText("Enter a valid domain such as api.example.com.")).toBeTruthy();
+
+    addDomain("JS interface security domains", "api.example.com");
+    expect(screen.getByText("That domain is already in the list.")).toBeTruthy();
+  });
+
+  it("opens the domain tab when the callback URL is invalid", async () => {
+    const { api } = bench();
+    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+    fireEvent.change(screen.getByLabelText("Account name"), {
+      target: { value: "New channel" },
+    });
+    fireEvent.change(screen.getByLabelText("AppID"), {
+      target: { value: "wxnew123456" },
+    });
+    openDomainsTab();
+    fireEvent.change(screen.getByLabelText("Callback URL"), {
+      target: { value: "ftp://api.example.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(
+      await screen.findByText(
+        "The callback URL must start with http:// (port 80) or https:// (port 443).",
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("tab", { name: "Domains" }).getAttribute("aria-selected"),
+    ).toBe("true");
+    expect(api.create).not.toHaveBeenCalled();
+  });
+
+  it("persists the domain sets and encryption mode of an edited account", async () => {
+    const { api } = bench();
+    fireEvent.click(await screen.findByRole("button", { name: "BirdCoder" }));
+    openDomainsTab();
+    expect(screen.getByText("api.example.com")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => {
+      expect(api.update).toHaveBeenCalledWith(
+        "acc-1",
+        expect.objectContaining({
+          jsSecureDomains: ["api.example.com"],
+          webAuthDomains: ["auth.example.com"],
+          businessDomains: ["h5.example.com"],
+          notifyEncryptMode: "compatible",
+        }),
+      );
+    });
+  });
+
+  it("carries an added domain and the default encryption mode into create", async () => {
+    const { api } = bench();
+    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+    fireEvent.change(screen.getByLabelText("Account name"), {
+      target: { value: "New channel" },
+    });
+    fireEvent.change(screen.getByLabelText("AppID"), {
+      target: { value: "wxnew123456" },
+    });
+    openDomainsTab();
+    addDomain("JS interface security domains", "api.example.com");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => {
+      expect(api.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          jsSecureDomains: ["api.example.com"],
+          notifyEncryptMode: "plaintext",
+        }),
+      );
+    });
+  });
+});
+
+describe("official-account panel actions", () => {
   it("opens the menu draft editor for one account", async () => {
     bench();
     fireEvent.click(await screen.findByRole("button", { name: "Custom menu" }));

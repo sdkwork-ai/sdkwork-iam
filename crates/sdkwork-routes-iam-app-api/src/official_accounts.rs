@@ -1089,4 +1089,89 @@ mod tests {
             json!({ "button": [] })
         );
     }
+
+    #[test]
+    fn normalizes_wechat_domains_and_rejects_console_invalid_values() {
+        assert_eq!(
+            normalized_domain("  API.Example.COM  ").as_deref(),
+            Some("api.example.com")
+        );
+        assert_eq!(normalized_domain("example.com").as_deref(), Some("example.com"));
+        for invalid in [
+            "https://example.com",
+            "example.com:8080",
+            "example.com/path",
+            "192.168.1.1",
+            "*.example.com",
+            "localhost",
+            "-example.com",
+            "example..com",
+        ] {
+            assert!(normalized_domain(invalid).is_none(), "{invalid} must be rejected");
+        }
+
+        let domains = normalized_domains(
+            Some(&[
+                "A.example.com".to_owned(),
+                "a.example.com".to_owned(),
+                " ".to_owned(),
+                "b.example.com".to_owned(),
+            ]),
+            JS_SECURE_DOMAIN_LIMIT,
+            "jsSecureDomains",
+        )
+        .expect("valid domain list");
+        assert_eq!(domains, vec!["a.example.com", "b.example.com"]);
+
+        let too_many: Vec<String> = (0..=JS_SECURE_DOMAIN_LIMIT)
+            .map(|index| format!("d{index}.example.com"))
+            .collect();
+        assert!(
+            normalized_domains(Some(&too_many), JS_SECURE_DOMAIN_LIMIT, "jsSecureDomains").is_err()
+        );
+    }
+
+    #[test]
+    fn validates_the_wechat_server_configuration_fields() {
+        assert_eq!(
+            normalized_notify_url(Some(" https://api.example.com/wechat/notify "))
+                .unwrap()
+                .as_deref(),
+            Some("https://api.example.com/wechat/notify")
+        );
+        assert!(normalized_notify_url(Some("http://api.example.com:80/notify")).is_ok());
+        assert!(normalized_notify_url(Some("https://api.example.com:443/notify")).is_ok());
+        assert!(normalized_notify_url(Some("https://api.example.com:8443/notify")).is_err());
+        assert!(normalized_notify_url(Some("http://api.example.com:443/notify")).is_err());
+        assert!(normalized_notify_url(Some("api.example.com/notify")).is_err());
+        assert!(normalized_notify_url(Some("")).unwrap().is_none());
+
+        assert_eq!(
+            normalized_notify_token(Some("Token123")).unwrap().as_deref(),
+            Some("Token123")
+        );
+        assert!(normalized_notify_token(Some("ab")).is_err());
+        assert!(normalized_notify_token(Some(&"a".repeat(33))).is_err());
+        assert!(normalized_notify_token(Some("token-with-dash")).is_err());
+
+        let key = "A".repeat(NOTIFY_AES_KEY_LEN);
+        assert_eq!(
+            normalized_aes_key(Some(key.as_str())).unwrap(),
+            Some(key.clone())
+        );
+        assert!(normalized_aes_key(Some("short")).is_err());
+        assert!(normalized_aes_key(Some(&format!("{}!", "A".repeat(42)))).is_err());
+    }
+
+    #[test]
+    fn defaults_the_notify_encrypt_mode_to_plaintext() {
+        assert_eq!(normalized_encrypt_mode(None).unwrap(), "plaintext");
+        assert_eq!(normalized_encrypt_mode(Some(" ")).unwrap(), "plaintext");
+        assert_eq!(normalized_encrypt_mode(Some("SAFE")).unwrap(), "safe");
+        assert_eq!(
+            normalized_encrypt_mode(Some("compatible")).unwrap(),
+            "compatible"
+        );
+        assert!(normalized_encrypt_mode(Some("aes")).is_err());
+    }
 }

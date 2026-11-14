@@ -49,6 +49,7 @@ export interface SdkworkIamOfficialAccountsMessages {
     appIdPlaceholder: string;
     displayName: string;
     displayNamePlaceholder: string;
+    displayNameHint: string;
     appSecret: string;
     appSecretPlaceholder: string;
     appSecretKeep: string;
@@ -68,6 +69,37 @@ export interface SdkworkIamOfficialAccountsMessages {
     logoTooLargeDetail: string;
     logoEmptyFile: string;
     logoUnavailable: string;
+    tabBasic: string;
+    tabDomains: string;
+    appIdHint: string;
+    appSecretHint: string;
+    originalIdHint: string;
+    enabledHint: string;
+    ipWhitelistHint: string;
+    domainsHint: string;
+    domainsMonthlyHint: string;
+    jsSecureDomains: string;
+    jsSecureDomainsHint: string;
+    webAuthDomains: string;
+    webAuthDomainsHint: string;
+    businessDomains: string;
+    businessDomainsHint: string;
+    domainAdd: string;
+    domainRemove: string;
+    domainInvalid: string;
+    domainDuplicate: string;
+    domainPlaceholder: string;
+    serverConfigHint: string;
+    notifyUrlHint: string;
+    notifyTokenHint: string;
+    notifyEncodingAesKeyHint: string;
+    notifyEncryptMode: string;
+    encryptPlaintext: string;
+    encryptCompatible: string;
+    encryptSafe: string;
+    encryptPlaintextHint: string;
+    encryptCompatibleHint: string;
+    encryptSafeHint: string;
     notifySection: string;
     notifyUrl: string;
     notifyUrlPlaceholder: string;
@@ -104,6 +136,10 @@ export interface SdkworkIamOfficialAccountsMessages {
     appIdRequired: string;
     appIdInvalid: string;
     displayNameRequired: string;
+    domainInvalid: string;
+    notifyUrlInvalid: string;
+    notifyTokenInvalid: string;
+    notifyEncodingAesKeyInvalid: string;
     menuNameRequired: string;
     menuUrlRequired: string;
   };
@@ -160,6 +196,7 @@ const zhCN: SdkworkIamOfficialAccountsMessages = {
     appIdPlaceholder: "wx1234567890abcdef",
     displayName: "账号名称",
     displayNamePlaceholder: "例如：BirdCoder 官方公众号",
+    displayNameHint: "仅用于本列表与配置展示，不会修改微信后台的公众号资料。",
     appSecret: "AppSecret",
     appSecretPlaceholder: "输入公众号 AppSecret",
     appSecretKeep: "已保存 AppSecret；留空表示保持不变。",
@@ -179,7 +216,38 @@ const zhCN: SdkworkIamOfficialAccountsMessages = {
     logoTooLargeDetail: "Logo 不能超过 {max}。",
     logoEmptyFile: "该文件为空。",
     logoUnavailable: "当前环境未启用 Logo 上传。",
-    notifySection: "消息推送",
+    tabBasic: "基础信息",
+    tabDomains: "域名配置",
+    appIdHint: "在公众平台「开发 → 开发管理 → 开发者 ID」中查看；创建后不可修改。",
+    appSecretHint: "用于获取 access_token 的开发者密码；请确保服务端出口 IP 已加入白名单。",
+    originalIdHint: "公众号「账号详情」中的原始 ID，例如 gh_xxxxxxxxxxxx。",
+    enabledHint: "停用后，该账号的菜单草稿与消息推送配置不会被使用。",
+    ipWhitelistHint: "提示：请将服务端出口 IP 加入公众平台「开发 → 基本配置 → IP 白名单」，否则获取 access_token 会失败。",
+    domainsHint: "与公众平台「设置与开发 → 公众号设置 → 功能设置」保持一致；域名须已 ICP 备案，不支持 IP、端口、协议前缀和短链接。",
+    domainsMonthlyHint: "提示：JS 接口安全域名、网页授权域名和业务域名的修改均受微信公众平台每月次数限制。",
+    jsSecureDomains: "JS 接口安全域名",
+    jsSecureDomainsHint: "微信 JS-SDK 调用页面所在的域名；填写父级域名后，其合法子域名同样生效。",
+    webAuthDomains: "网页授权域名",
+    webAuthDomainsHint: "网页授权回调页所在域名，回调页必须位于该域名下。",
+    businessDomains: "业务域名",
+    businessDomainsHint: "配置后微信内打开该域名页面不会被重新排版；需按公众平台提示上传 MP_verify_*.txt 校验文件。",
+    domainAdd: "添加",
+    domainRemove: "移除域名",
+    domainInvalid: "请填写合法域名，例如 api.example.com。",
+    domainDuplicate: "该域名已添加。",
+    domainPlaceholder: "api.example.com",
+    serverConfigHint: "对应公众平台「开发 → 基本配置 → 服务器配置」，用于接收微信消息与事件推送。",
+    notifyUrlHint: "仅支持 http（80 端口）或 https（443 端口），需正确响应微信的 Token 校验。",
+    notifyTokenHint: "3–32 位字母或数字，用于校验消息来源。",
+    notifyEncodingAesKeyHint: "43 位字母或数字；安全模式和兼容模式下使用。",
+    notifyEncryptMode: "消息加解密方式",
+    encryptPlaintext: "明文模式",
+    encryptCompatible: "兼容模式",
+    encryptSafe: "安全模式（推荐）",
+    encryptPlaintextHint: "不使用消息体加解密，安全系数较低。",
+    encryptCompatibleHint: "明文与密文共存，便于调试与灰度迁移。",
+    encryptSafeHint: "消息包为纯密文，需要自行加解密，安全系数最高。",
+    notifySection: "服务器配置（消息推送）",
     notifyUrl: "回调地址",
     notifyUrlPlaceholder: "https://…/wechat/notify",
     notifyToken: "Token",
@@ -215,6 +283,10 @@ const zhCN: SdkworkIamOfficialAccountsMessages = {
     appIdRequired: "请填写 AppID。",
     appIdInvalid: "AppID 只能包含字母、数字、下划线和连字符。",
     displayNameRequired: "请填写账号名称。",
+    domainInvalid: "请填写合法域名，例如 api.example.com。",
+    notifyUrlInvalid: "回调地址必须以 http://（80 端口）或 https://（443 端口）开头。",
+    notifyTokenInvalid: "Token 必须为 3–32 位字母或数字。",
+    notifyEncodingAesKeyInvalid: "EncodingAESKey 必须为 43 位字母或数字。",
     menuNameRequired: "请填写菜单名称。",
     menuUrlRequired: "跳转网页的菜单需要填写网页地址。",
   },
@@ -268,6 +340,7 @@ const enUS: SdkworkIamOfficialAccountsMessages = {
     appIdPlaceholder: "wx1234567890abcdef",
     displayName: "Account name",
     displayNamePlaceholder: "e.g. BirdCoder official account",
+    displayNameHint: "Shown only in this list and configuration; it does not change the WeChat profile.",
     appSecret: "AppSecret",
     appSecretPlaceholder: "Enter the AppSecret",
     appSecretKeep: "An AppSecret is stored; leave blank to keep it.",
@@ -287,7 +360,38 @@ const enUS: SdkworkIamOfficialAccountsMessages = {
     logoTooLargeDetail: "The logo must be {max} or smaller.",
     logoEmptyFile: "This file is empty.",
     logoUnavailable: "Logo uploads are not available in this environment.",
-    notifySection: "Message push",
+    tabBasic: "Basic info",
+    tabDomains: "Domains",
+    appIdHint: "Find it under Developer ID in the WeChat console; it cannot change after creation.",
+    appSecretHint: "The developer secret used to obtain access_token; keep the server egress IP on the allowlist.",
+    originalIdHint: "The account's original ID from its profile page, e.g. gh_xxxxxxxxxxxx.",
+    enabledHint: "A disabled account stops using its menu draft and message-push configuration.",
+    ipWhitelistHint: "Tip: add the server egress IP to the WeChat console's IP allowlist, or access_token requests will fail.",
+    domainsHint: "Mirrors Settings → Account settings → Function settings in the WeChat console; domains must pass ICP filing and cannot be IPs, ports, schemes, or short links.",
+    domainsMonthlyHint: "Tip: the WeChat console limits how often the JS secure, web-authorization, and business domain sets may change per month.",
+    jsSecureDomains: "JS interface security domains",
+    jsSecureDomainsHint: "Domains of pages that call the WeChat JS-SDK; a parent domain covers its valid subdomains.",
+    webAuthDomains: "Web-authorization domains",
+    webAuthDomainsHint: "Domains of the web-authorization callback pages; the callback must live on one of them.",
+    businessDomains: "Business domains",
+    businessDomainsHint: "Pages on these domains open without WeChat re-layout; upload the MP_verify_*.txt file the console provides.",
+    domainAdd: "Add",
+    domainRemove: "Remove domain",
+    domainInvalid: "Enter a valid domain such as api.example.com.",
+    domainDuplicate: "That domain is already in the list.",
+    domainPlaceholder: "api.example.com",
+    serverConfigHint: "Mirrors Developer configuration → Server configuration; it receives WeChat messages and events.",
+    notifyUrlHint: "Only http (port 80) or https (port 443), and it must answer WeChat's Token verification.",
+    notifyTokenHint: "3-32 letters or digits, used to verify message origin.",
+    notifyEncodingAesKeyHint: "43 letters or digits, used by the safe and compatible modes.",
+    notifyEncryptMode: "Message encryption mode",
+    encryptPlaintext: "Plaintext",
+    encryptCompatible: "Compatible",
+    encryptSafe: "Safe (recommended)",
+    encryptPlaintextHint: "No message encryption; the weakest security posture.",
+    encryptCompatibleHint: "Plaintext and ciphertext coexist, which eases debugging and staged migration.",
+    encryptSafeHint: "Messages are ciphertext only; you decrypt them yourself for the highest security.",
+    notifySection: "Server configuration (message push)",
     notifyUrl: "Callback URL",
     notifyUrlPlaceholder: "https://…/wechat/notify",
     notifyToken: "Token",
@@ -323,6 +427,10 @@ const enUS: SdkworkIamOfficialAccountsMessages = {
     appIdRequired: "Enter the AppID.",
     appIdInvalid: "The AppID may contain letters, digits, underscores, and hyphens only.",
     displayNameRequired: "Enter the account name.",
+    domainInvalid: "Enter a valid domain such as api.example.com.",
+    notifyUrlInvalid: "The callback URL must start with http:// (port 80) or https:// (port 443).",
+    notifyTokenInvalid: "The Token must be 3-32 letters or digits.",
+    notifyEncodingAesKeyInvalid: "The EncodingAESKey must be 43 letters or digits.",
     menuNameRequired: "Enter the menu name.",
     menuUrlRequired: "A URL-opening menu needs a URL.",
   },
