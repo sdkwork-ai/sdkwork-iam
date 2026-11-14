@@ -565,9 +565,13 @@ function toRole(value: unknown): SdkworkIamRole | undefined {
 
   return {
     code: optionalString(record.code),
+    descriptions: optionalLocaleMap(record.descriptions) ?? optionalLocaleMap(record.description_i18n),
     id: optionalString(record.id) || roleId,
+    labels: optionalLocaleMap(record.labels) ?? optionalLocaleMap(record.label_i18n),
     name: optionalString(record.name) || optionalString(record.roleName) || roleId,
+    roleClass: optionalString(record.roleClass) || optionalString(record.role_class),
     roleId,
+    standard: optionalBoolean(record.standard),
     status: optionalString(record.status),
     tenantId: optionalString(record.tenantId) || optionalString(record.tenant_id),
   };
@@ -646,6 +650,29 @@ function toRecord(value: unknown): Record<string, unknown> {
 function optionalString(value: unknown): string | undefined {
   const normalized = typeof value === "string" ? value.trim() : value === undefined || value === null ? "" : String(value).trim();
   return normalized || undefined;
+}
+
+/** Reads a persisted locale map, keeping only non-empty string entries. */
+function optionalLocaleMap(value: unknown): Readonly<Record<string, string>> | undefined {
+  const record = toRecord(value);
+  const entries = Object.entries(record)
+    .map(([tag, label]) => [tag.trim(), typeof label === "string" ? label.trim() : ""] as const)
+    .filter(([tag, label]) => tag.length > 0 && label.length > 0);
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+function optionalBoolean(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  const normalized = optionalString(value)?.toLowerCase();
+  if (normalized === "true" || normalized === "1") {
+    return true;
+  }
+  if (normalized === "false" || normalized === "0") {
+    return false;
+  }
+  return undefined;
 }
 
 function normalizeRequiredCode(value: unknown): string {

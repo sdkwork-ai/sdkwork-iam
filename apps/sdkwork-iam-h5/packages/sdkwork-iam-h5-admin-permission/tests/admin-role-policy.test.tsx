@@ -45,9 +45,9 @@ function createServiceMock(options: { policies?: readonly unknown[]; roles?: rea
   return port;
 }
 
-function renderRoles(port: SdkworkIamH5AdminPermissionServicePort) {
+function renderRoles(port: SdkworkIamH5AdminPermissionServicePort, locale = "en-US") {
   return render(
-    <SdkworkIamH5I18nProvider catalogs={[IAM_H5_ADMIN_PERMISSION_I18N_CATALOG]} locale="en-US">
+    <SdkworkIamH5I18nProvider catalogs={[IAM_H5_ADMIN_PERMISSION_I18N_CATALOG]} locale={locale}>
       <SdkworkIamH5AdminRoleScreen controller={createSdkworkIamH5AdminRoleController(port)} />
     </SdkworkIamH5I18nProvider>,
   );
@@ -80,6 +80,39 @@ describe("admin role catalog", () => {
     renderRoles(createServiceMock({ roles: [] }));
 
     expect(await screen.findByText("This tenant has no role yet.")).toBeTruthy();
+  });
+
+  it("renders the catalog label for the active locale instead of the stored name", async () => {
+    const roles = [
+      {
+        labels: { "en-US": "Organization Admin", "zh-CN": "组织管理员" },
+        code: "org_admin",
+        id: "role-3",
+        name: "Organization Admin",
+      },
+    ];
+
+    const { unmount } = renderRoles(createServiceMock({ roles }), "zh-CN");
+    expect(await screen.findByText("组织管理员")).toBeTruthy();
+    unmount();
+
+    renderRoles(createServiceMock({ roles }), "en-US");
+    expect(await screen.findByText("Organization Admin")).toBeTruthy();
+  });
+
+  it("falls back to the stored name when no map entry covers the locale", async () => {
+    const roles = [
+      {
+        labels: { "ja-JP": "組織管理者" },
+        code: "custom_role",
+        id: "role-4",
+        name: "Regional operator",
+      },
+    ];
+
+    renderRoles(createServiceMock({ roles }), "de-DE");
+
+    expect(await screen.findByText("Regional operator")).toBeTruthy();
   });
 });
 

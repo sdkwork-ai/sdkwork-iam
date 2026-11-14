@@ -2342,3 +2342,19 @@ ALTER TABLE iam_user_official_account
     CHECK (jsonb_typeof(business_domains::jsonb) = 'array'),
   ADD CONSTRAINT ck_iam_user_official_account_notify_encrypt_mode
     CHECK (notify_encrypt_mode IN ('plaintext', 'compatible', 'safe'));
+
+-- folded migration: migrations/postgres/0032_iam_role_catalog_localization.up.sql
+ALTER TABLE iam_role
+  ADD COLUMN IF NOT EXISTS label_i18n TEXT NOT NULL DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS description_i18n TEXT NOT NULL DEFAULT '{}';
+
+ALTER TABLE iam_role
+  DROP CONSTRAINT IF EXISTS ck_iam_role_label_i18n;
+ALTER TABLE iam_role
+  DROP CONSTRAINT IF EXISTS ck_iam_role_description_i18n;
+
+ALTER TABLE iam_role
+  ADD CONSTRAINT ck_iam_role_label_i18n
+    CHECK (jsonb_typeof(label_i18n::jsonb) = 'object'),
+  ADD CONSTRAINT ck_iam_role_description_i18n
+    CHECK (jsonb_typeof(description_i18n::jsonb) = 'object');

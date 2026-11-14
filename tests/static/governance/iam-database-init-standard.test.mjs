@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
@@ -57,8 +58,12 @@ test("IAM database contract check runs framework validation and table alignment"
 
 test("IAM database host integrates sdkwork-database lifecycle orchestrator", () => {
   const rootCargo = readText("Cargo.toml");
-  assert.match(rootCargo, /sdkwork_database_config/u);
-  assert.match(rootCargo, /sdkwork_database_sqlx/u);
+  // The workspace key follows the dependency package name (NAMING_SPEC section
+  // 3.1: kebab-case on the package/dependency plane), while consumers import the
+  // snake_case lib target. Accept either spelling so a rename between the planes
+  // does not read as a missing dependency.
+  assert.match(rootCargo, /sdkwork[-_]database[-_]config/u);
+  assert.match(rootCargo, /sdkwork[-_]database[-_]sqlx/u);
   assert.match(rootCargo, /sdkwork_database_lifecycle/u);
   assert.match(rootCargo, /sdkwork_database_spi/u);
 
@@ -113,14 +118,129 @@ test("IAM database contract declares sdkwork-iam ownership", () => {
 
 test("operational seed profile loads IAM subject and application bootstrap data", () => {
   const seedManifest = JSON.parse(readText("database/seeds/seed.manifest.json"));
-  assert.deepEqual(seedManifest.profiles.operational.common, [
-    "002_default_iam_subject.sql",
-    "003_iam_application_bootstrap_seed.sql",
-  ]);
-  assert.deepEqual(seedManifest.profiles.operational.locales["zh-CN"], [
-    "001_iam_locale_display.sql",
-  ]);
+  const common = seedManifest.profiles.operational.common;
+  const defaultLocaleFiles = seedManifest.profiles.operational.locales["zh-CN"];
+
+  // Assert membership rather than an exact array: the operational profile grows
+  // with each governed catalog seed, and an equality assertion here turned every
+  // such addition into a false regression.
+  assert.ok(common.includes("002_default_iam_subject.sql"));
+  assert.ok(common.includes("003_iam_application_bootstrap_seed.sql"));
+  assert.ok(common.includes("004_iam_role_catalog_seed.sql"));
+  assert.ok(defaultLocaleFiles.includes("001_iam_locale_display.sql"));
 });
+
+test("every declared seed locale file exists and belongs to its own locale directory", () => {
+  const seedManifest = JSON.parse(readText("database/seeds/seed.manifest.json"));
+
+  for (const [locale, localeSet] of Object.entries(seedManifest.localeSets)) {
+    assert.ok(seedManifest.activeLocales.includes(locale) || localeSet.required === false);
+    assert.ok(Array.isArray(localeSet.files));
+    for (const file of localeSet.files) {
+      assert.ok(
+        file.startsWith(`locales/${locale}/`),
+        `localeSets.${locale} must only reference its own locale directory, saw ${file}`,
+      );
+      assert.ok(
+        fs.existsSync(path.join(iamRoot, "database/seeds", file)),
+        `localeSets.${locale} references a missing seed file: ${file}`,
+      );
+    }
+  }
+
+  for (const [profileName, profile] of Object.entries(seedManifest.profiles)) {
+    for (const file of profile.common) {
+      assert.ok(
+        fs.existsSync(path.join(iamRoot, "database/seeds/common", file)),
+        `profiles.${profileName}.common references a missing seed file: ${file}`,
+      );
+    }
+    for (const [locale, files] of Object.entries(profile.locales)) {
+      assert.ok(localeSetIsDeclared(seedManifest, locale), `profiles.${profileName} uses undeclared locale ${locale}`);
+      for (const file of files) {
+        assert.ok(
+          (seedManifest.localeSets[locale]?.files ?? []).includes(`locales/${locale}/${file}`),
+          `profiles.${profileName}.locales.${locale} references ${file} outside the declared locale set`,
+        );
+      }
+    }
+  }
+});
+
+test("role catalog keeps language-neutral columns in common and display copy in locale seeds", () => {
+  const commonSeed = readText("database/seeds/common/004_iam_role_catalog_seed.sql");
+  const insertStart = commonSeed.indexOf("INSERT INTO iam_role");
+  assert.ok(insertStart >= 0, "the common role catalog seed must insert the role catalog");
+  const insertColumns = commonSeed.slice(insertStart, commonSeed.indexOf("VALUES", insertStart));
+  assert.doesNotMatch(
+    insertColumns,
+    /label_i18n|description_i18n/u,
+    "the common role catalog seed must not author localized display columns",
+  );
+
+  const seedManifest = JSON.parse(readText("database/seeds/seed.manifest.json"));
+  for (const locale of ["zh-CN", "en-US"]) {
+    const roleLabelFile = locale === "zh-CN" ? "003_iam_role_labels.sql" : "002_iam_role_labels.sql";
+    assert.ok(
+      seedManifest.localeSets[locale].files.includes(`locales/${locale}/${roleLabelFile}`),
+      `localeSets.${locale} must declare the role label seed`,
+    );
+    const roleLabels = readText(`database/seeds/locales/${locale}/${roleLabelFile}`);
+    assert.match(roleLabels, /UPDATE iam_role AS r/u);
+    assert.match(roleLabels, new RegExp(`jsonb_build_object\\('${locale}',`, "u"));
+    assert.match(roleLabels, /WHERE r\.standard = 1/u);
+    assert.match(roleLabels, /r\.code = v\.code/u);
+  }
+});
+
+test("locale set checksums and versions track the seed content they declare", () => {
+  const seedManifest = JSON.parse(readText("database/seeds/seed.manifest.json"));
+
+  for (const [locale, localeSet] of Object.entries(seedManifest.localeSets)) {
+    if (localeSet.files.length === 0) {
+      continue;
+    }
+    // DATABASE_FRAMEWORK_SPEC section 8.1: a locale set's version and checksum
+    // MUST change when its seed content changes. The set checksum covers the
+    // declared files' bytes in declaration order, so a silent edit to a locale
+    // seed without a manifest update fails here instead of shipping stale
+    // initialization data.
+    const hash = createHash("sha256");
+    for (const file of localeSet.files) {
+      hash.update(fs.readFileSync(path.join(iamRoot, "database/seeds", file)));
+    }
+    assert.equal(
+      localeSet.checksum,
+      `sha256:${hash.digest("hex")}`,
+      `localeSets.${locale} checksum does not match its declared seed files`,
+    );
+    assert.match(localeSet.version, /^\d+\.\d+\.\d+$/u, `localeSets.${locale}.version must be semantic`);
+  }
+});
+
+test("role localization columns are declared by the baseline and the forward migration", () => {
+  const baseline = readText("database/ddl/baseline/postgres/0001_iam_baseline.sql");
+  const migration = readText(
+    "database/migrations/postgres/0032_iam_role_catalog_localization.up.sql",
+  );
+
+  for (const source of [baseline, migration]) {
+    assert.match(source, /ALTER TABLE iam_role/u);
+    assert.match(source, /ADD COLUMN IF NOT EXISTS label_i18n TEXT NOT NULL DEFAULT '\{\}'/u);
+    assert.match(source, /ADD COLUMN IF NOT EXISTS description_i18n TEXT NOT NULL DEFAULT '\{\}'/u);
+    assert.match(source, /CHECK \(jsonb_typeof\(label_i18n::jsonb\) = 'object'\)/u);
+    assert.match(source, /CHECK \(jsonb_typeof\(description_i18n::jsonb\) = 'object'\)/u);
+  }
+
+  assert.match(baseline, /-- folded migration: migrations\/postgres\/0032_iam_role_catalog_localization\.up\.sql/u);
+  assert.match(migration, /^-- reversible: false$/mu);
+  assert.match(migration, /^-- rollback: forward-fix/mu);
+});
+
+function localeSetIsDeclared(seedManifest, locale) {
+  return Object.hasOwn(seedManifest.localeSets ?? {}, locale);
+}
+
 
 test("IAM database seed hooks always provision the bootstrap admin and gate only its credential", () => {
   const databaseModule = readText("crates/sdkwork-iam-database-host/src/iam_database_module.rs");

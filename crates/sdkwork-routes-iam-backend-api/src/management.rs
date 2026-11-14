@@ -462,11 +462,13 @@ async fn list_roles(
     };
     let search_pattern = list_search_pattern(&query);
     let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
-        "SELECT id, tenant_id, code, name, status, \
+        "SELECT id, tenant_id, code, name, status, label_i18n, description_i18n, \
+                role_class, standard, \
                 COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
          FROM iam_role \
          WHERE tenant_id = $1 \
-           AND ($4::text IS NULL OR LOWER(code) LIKE $4 OR LOWER(name) LIKE $4) \
+           AND ($4::text IS NULL OR LOWER(code) LIKE $4 OR LOWER(name) LIKE $4 \
+                OR LOWER(label_i18n) LIKE $4) \
          ORDER BY code, id \
          LIMIT $2 OFFSET $3"
     )))
@@ -1418,7 +1420,8 @@ async fn fetch_role_row<'e>(
     role_id: &str,
 ) -> Result<Option<sqlx::postgres::PgRow>, sqlx::Error> {
     sqlx::query(
-        "SELECT id, tenant_id, code, name, status \
+        "SELECT id, tenant_id, code, name, status, label_i18n, description_i18n, \
+                role_class, standard \
          FROM iam_role \
          WHERE tenant_id = $1 AND (id = $2 OR code = $2) \
          LIMIT 1",
@@ -1482,12 +1485,34 @@ fn media_delivery_url(image: &Value) -> Option<String> {
         .filter(|url| !url.starts_with("drive://"))
 }
 
+/// Reads one locale-map column into a JSON object.
+///
+/// A role's display text is machine vocabulary on the wire: `labels` and
+/// `descriptions` carry the locale maps verbatim (`{"zh-CN": "组织管理员"}`), and
+/// the caller renders the sentence in its own locale. The server never picks a
+/// language for the client, so the response body does not vary by
+/// `Accept-Language` and no `Content-Language` / `Vary` negotiation is involved.
+/// Display resolution is map[locale] -> `name`, where `name` stays the fallback
+/// for an uncovered locale and for tenant-authored roles. A damaged or absent
+/// map degrades to `{}` rather than failing the read.
+fn role_i18n_map(row: &sqlx::postgres::PgRow, index: usize) -> Value {
+    row.try_get::<String, _>(index)
+        .ok()
+        .and_then(|raw| serde_json::from_str::<Value>(&raw).ok())
+        .filter(Value::is_object)
+        .unwrap_or_else(|| json!({}))
+}
+
 fn role_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
     json!({
         "code": row.get::<String, _>(2),
+        "descriptions": role_i18n_map(row, 6),
         "id": row.get::<String, _>(0),
+        "labels": role_i18n_map(row, 5),
         "name": row.get::<String, _>(3),
+        "roleClass": row.try_get::<String, _>(7).unwrap_or_default(),
         "roleId": row.get::<String, _>(0),
+        "standard": row.try_get::<i32, _>(8).unwrap_or(0) != 0,
         "status": row.get::<String, _>(4),
         "tenantId": row.get::<String, _>(1),
     })

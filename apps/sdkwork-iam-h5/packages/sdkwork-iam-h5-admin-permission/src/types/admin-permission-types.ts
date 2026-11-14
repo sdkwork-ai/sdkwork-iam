@@ -26,6 +26,11 @@ export interface SdkworkIamH5AdminRole {
   readonly id: string;
   readonly code: string;
   readonly name?: string;
+  /**
+   * Locale map of role labels keyed by BCP 47 tag, served verbatim as machine
+   * vocabulary. Render through `resolveLocalizedLabel(labels, locale, name)`.
+   */
+  readonly labels?: Readonly<Record<string, string>>;
 }
 
 /** One policy row, flattened for the screen. */

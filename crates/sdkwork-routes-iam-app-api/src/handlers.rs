@@ -22,7 +22,10 @@ use std::collections::HashMap;
 use crate::{
     contacts::*,
     directory::*,
-    oauth_wechat_payment::{handle_wechat_payment_oauth_callback, start_wechat_payment_oauth},
+    oauth_wechat_payment::{
+        handle_wechat_payment_oauth_callback, start_wechat_payment_oauth,
+        start_wechat_payment_oauth_for_cashier,
+    },
     password_session_bridge::PasswordSessionBridgeResult,
     passwords::*,
     responses::*,
@@ -192,6 +195,10 @@ fn build_sdkwork_iam_app_api_core_router(state: LocalIamState) -> Router {
         .route(
             "/app/v3/api/oauth/wechat/payment/start",
             get(start_wechat_payment_oauth),
+        )
+        .route(
+            "/app/v3/api/oauth/wechat/payment/cashier/start",
+            get(start_wechat_payment_oauth_for_cashier),
         )
         .route(
             "/app/v3/api/oauth/wechat/payment/callback",

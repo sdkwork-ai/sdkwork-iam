@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Pencil, Plus, Search, Trash2, UserCog } from "lucide-react";
 import {
   Button,
@@ -36,7 +36,7 @@ import type {
   SdkworkIamRoleDraft,
 } from "../types/permission-admin-types";
 import { RoleBindingDrawer } from "../components/RoleBindingDrawer";
-import { CatalogField, CatalogSelect, formatMessage, toErrorMessage } from "../components/catalog-form";
+import { CatalogField, CatalogSelect, formatMessage, localizedLabel, toErrorMessage } from "../components/catalog-form";
 import { CatalogPagination } from "@sdkwork/iam-pc-admin-core";
 
 const emptyRoleDraft = (): SdkworkIamRoleDraft => ({ name: "" });
@@ -204,6 +204,19 @@ export function SdkworkIamRoleAdminWorkspace({
   permissions = readOnlyPermissions,
 }: SdkworkIamRoleAdminWorkspaceProps) {
   const copy = resolveCopy(locale);
+  // Catalog display text arrives as a locale map (machine vocabulary on the
+  // wire); the stored `name` is the fallback for an uncovered locale and the
+  // operator-entered copy of a tenant-authored role.
+  const roleDisplayName = useCallback(
+    (role: SdkworkIamRole) => localizedLabel(role.labels, locale, role.name),
+    [locale],
+  );
+  // An untranslated or tenant-authored role has no description; `""` keeps the
+  // details drawer from reserving a line for it.
+  const roleDescription = useCallback(
+    (role: SdkworkIamRole) => localizedLabel(role.descriptions, locale, ""),
+    [locale],
+  );
   const [roles, setRoles] = useState(controller.getState().roles);
   const [listPageInfo, setListPageInfo] = useState(controller.getState().listPageInfo);
   const [selectedRole, setSelectedRole] = useState<SdkworkIamRole>();
@@ -371,10 +384,10 @@ export function SdkworkIamRoleAdminWorkspace({
   };
 
   const columns = useMemo<DataTableColumn<SdkworkIamRole>[]>(() => [
-    { id: "name", header: copy.role, cell: (item) => item.name },
+    { id: "name", header: copy.role, cell: (item) => roleDisplayName(item) },
     { id: "code", header: copy.code, cell: (item) => item.code || "—" },
     { id: "status", header: copy.status, cell: (item) => item.status ? <StatusBadge label={statusLabel(copy.statuses, item.status)} showIcon status={item.status} /> : "—" },
-  ], [copy]);
+  ], [copy, roleDisplayName]);
 
   const permissionColumns = useMemo<DataTableColumn<SdkworkIamPermission>[]>(() => [
     { id: "code", header: copy.code, cell: (item) => item.code },
@@ -461,12 +474,12 @@ export function SdkworkIamRoleAdminWorkspace({
           rowActions={(item) => (
             <div className="flex items-center gap-1">
               {permissions.roles.update ? (
-                <Button aria-label={`${copy.edit}: ${item.name}`} onClick={() => openEditDrawer(item)} size="icon" title={copy.edit} type="button" variant="ghost">
+                <Button aria-label={`${copy.edit}: ${roleDisplayName(item)}`} onClick={() => openEditDrawer(item)} size="icon" title={copy.edit} type="button" variant="ghost">
                   <Pencil aria-hidden="true" className="h-4 w-4" />
                 </Button>
               ) : null}
               {permissions.roles.delete ? (
-                <Button aria-label={`${copy.delete}: ${item.name}`} onClick={() => setDeleteTarget(item)} size="icon" title={copy.delete} type="button" variant="ghost">
+                <Button aria-label={`${copy.delete}: ${roleDisplayName(item)}`} onClick={() => setDeleteTarget(item)} size="icon" title={copy.delete} type="button" variant="ghost">
                   <Trash2 aria-hidden="true" className="h-4 w-4" />
                 </Button>
               ) : null}
@@ -507,7 +520,7 @@ export function SdkworkIamRoleAdminWorkspace({
         closeOnConfirm={false}
         confirmLabel={copy.delete}
         confirmLoading={busy}
-        description={deleteTarget ? formatMessage(copy.deleteDescription, { name: deleteTarget.name }) : undefined}
+        description={deleteTarget ? formatMessage(copy.deleteDescription, { name: roleDisplayName(deleteTarget) }) : undefined}
         onConfirm={() => {
           if (!deleteTarget) return;
           void runAction(async () => {
@@ -539,7 +552,10 @@ export function SdkworkIamRoleAdminWorkspace({
                     <UserCog aria-hidden="true" className="h-5 w-5 text-[var(--sdk-color-text-muted)]" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{detailRole.name}</p>
+                    <p className="text-sm font-medium">{roleDisplayName(detailRole)}</p>
+                    {roleDescription(detailRole) ? (
+                      <p className="mt-1 text-xs text-[var(--sdk-color-text-muted)]">{roleDescription(detailRole)}</p>
+                    ) : null}
                     <p className="text-xs text-[var(--sdk-color-text-muted)]">
                       {copy.code}: {detailRole.code || "—"}
                       {detailRole.tenantId ? ` · ${copy.tenant}: ${detailRole.tenantId}` : ""}
@@ -697,6 +713,7 @@ export function SdkworkIamRoleAdminWorkspace({
           }, copy.createBindingSuccess);
         }}
         open={bindingOpen}
+        roleLabel={roleDisplayName}
         roles={[...roles]}
       />
 

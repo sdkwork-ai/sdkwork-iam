@@ -8,8 +8,10 @@
 import { useCallback, type ReactElement } from "react";
 
 import {
+  resolveLocalizedLabel,
   SdkworkIamH5PagedListSection,
   SdkworkIamH5Screen,
+  useSdkworkIamH5Locale,
   useSdkworkIamH5PagedList,
 } from "@sdkwork/iam-h5-commons";
 
@@ -29,6 +31,7 @@ export function SdkworkIamH5AdminRoleScreen({
   onBack,
 }: SdkworkIamH5AdminRoleScreenProps): ReactElement {
   const messages = useIamH5AdminPermissionMessages();
+  const locale = useSdkworkIamH5Locale();
   const roles = useSdkworkIamH5PagedList<SdkworkIamH5AdminRole>(
     useCallback((query) => controller.fetchRolesPage(query), [controller]),
   );
@@ -48,11 +51,16 @@ export function SdkworkIamH5AdminRoleScreen({
   return (
     <SdkworkIamH5Screen {...(onBack ? { onBack } : {})} title={messages.roles.title}>
       <SdkworkIamH5PagedListSection<SdkworkIamH5AdminRole>
-        buildRow={(role) => ({
-          id: role.id,
-          primary: role.name ?? role.code,
-          secondary: role.name === undefined ? role.id : role.code,
-        })}
+        buildRow={(role) => {
+          // The catalog label is a locale map on the wire; the stored `name` is
+          // the fallback for an uncovered locale and for tenant-authored roles.
+          const label = resolveLocalizedLabel(role.labels, locale, role.name ?? role.code);
+          return {
+            id: role.id,
+            primary: label,
+            secondary: label === role.code ? role.id : role.code,
+          };
+        }}
         list={roles}
         messages={listMessages}
         searchLabel={messages.roles.searchRoles}

@@ -42,6 +42,12 @@ const PAYMENT_OAUTH_COOKIE_PATH: &str = "/app/v3/api/oauth/wechat/payment";
 const STATE_COOKIE: &str = "sdkwork_wpoauth_state";
 const REDIRECT_COOKIE: &str = "sdkwork_wpoauth_redirect";
 const TENANT_COOKIE: &str = "sdkwork_wpoauth_tenant";
+/// Capability-token id of the anonymous cashier flow that started this OAuth.
+///
+/// Present only when the payer paid through a scanned cashier link: it is what
+/// lets the callback return a signature bound to that token instead of a bare
+/// openid that any client could claim.
+const CASHIER_COOKIE: &str = "sdkwork_wpoauth_cashier";
 const STATE_TTL_SECONDS: i64 = 10 * 60;
 /// Silent authorization scope: only the openid is returned, no consent page.
 const WECHAT_PAYMENT_SCOPE: &str = "snsapi_base";
@@ -126,9 +132,142 @@ pub(crate) async fn start_wechat_payment_oauth(
     response
 }
 
+/// Starts the WeChat payment OAuth for an anonymous cashier link.
+///
+/// The scanned QR carries a capability token, not a session, so the payer cannot
+/// authorize through the session-bound `/payment/start`. This entry verifies the
+/// token itself, restores the tenant from its claims, and records the token id in
+/// an HttpOnly cookie so the callback can return an openid **bound to that token**
+/// rather than a bare value the cashier would have to trust.
+///
+/// It creates no IAM session: `snsapi_base` only yields the payer openid.
+pub(crate) async fn start_wechat_payment_oauth_for_cashier(
+    State(state): State<LocalIamState>,
+    headers: HeaderMap,
+    Query(query): Query<HashMap<String, String>>,
+) -> Response {
+    let pg = match postgres_pool_or_error(&state) {
+        Ok(pg) => pg,
+        Err(response) => return response,
+    };
+    let Some(cashier_token) = query
+        .get("cashierToken")
+        .map(String::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_wechat_payment_oauth_cashier_token_required",
+            "cashier token is required",
+        );
+    };
+    let Some(claims) = verify_cashier_token_for_cashier(cashier_token) else {
+        // Same observable result for unknown/tampered/expired links.
+        return appbase_error(
+            StatusCode::NOT_FOUND,
+            "iam_wechat_payment_oauth_cashier_invalid",
+            "cashier link is not payable",
+        );
+    };
+    let redirect = match query
+        .get("redirect")
+        .map(String::as_str)
+        .and_then(|value| normalize_payment_oauth_redirect(value).ok())
+    {
+        Some(redirect) => redirect,
+        None => {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_wechat_payment_oauth_redirect_invalid",
+                "wechat payment oauth redirect must be a non-empty relative path",
+            );
+        }
+    };
+    let provider_ctx = match load_oauth_integration_exchange_context_for_app(
+        pg,
+        &claims.tenant_id,
+        "wechat",
+        None,
+        None,
+    )
+    .await
+    {
+        Ok(Some(ctx)) => ctx,
+        Ok(None) => {
+            return appbase_error(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "iam_wechat_payment_oauth_not_configured",
+                "WeChat OAuth is not configured for this tenant",
+            );
+        }
+        Err(error) => {
+            return appbase_error(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "iam_wechat_payment_oauth_lookup_failed",
+                &error,
+            );
+        }
+    };
+    let state_token = generate_opaque_token("wpoauth");
+    let callback_url = payment_oauth_callback_url(&headers);
+    let authorize_url =
+        build_wechat_authorize_url(&provider_ctx.provider_client_id, &callback_url, &state_token);
+
+    let mut response = appbase_ok(json!({
+        "authorizeUrl": authorize_url,
+        "state": state_token,
+        "redirectUri": callback_url,
+    }));
+    append_payment_oauth_cookie(
+        &mut response,
+        STATE_COOKIE,
+        &state_token,
+        STATE_TTL_SECONDS,
+    );
+    append_payment_oauth_cookie(&mut response, REDIRECT_COOKIE, &redirect, STATE_TTL_SECONDS);
+    append_payment_oauth_cookie(
+        &mut response,
+        TENANT_COOKIE,
+        &claims.tenant_id,
+        STATE_TTL_SECONDS,
+    );
+    append_payment_oauth_cookie(
+        &mut response,
+        CASHIER_COOKIE,
+        &claims.token_id,
+        STATE_TTL_SECONDS,
+    );
+    response
+}
+
+/// Verifies a cashier capability token with its tenant key.
+fn verify_cashier_token_for_cashier(token: &str) -> Option<sdkwork_utils_rust::CashierTokenClaims> {
+    let secret = sdkwork_utils_rust::cashier_token_secret_from_env()
+        .ok()
+        .flatten()?;
+    // The tenant is peeked only to select the derivation key; the signature must
+    // then validate under that tenant's key, so a foreign tenant cannot pass.
+    let payload = token.split('.').nth(1)?;
+    let bytes = sdkwork_utils_rust::base64url_decode(payload)?;
+    #[derive(serde::Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct Peeked {
+        tenant_id: String,
+    }
+    let peeked: Peeked = serde_json::from_slice(&bytes).ok()?;
+    let key = sdkwork_utils_rust::derive_cashier_token_key(&secret, peeked.tenant_id.trim()).ok()?;
+    let now = sdkwork_utils_rust::now().timestamp();
+    sdkwork_utils_rust::verify_cashier_token(
+        token,
+        &key,
+        now,
+        sdkwork_utils_rust::CASHIER_TOKEN_AUDIENCE,
+    )
+    .ok()
+}
+
 /// Handles the WeChat authorize redirect: verifies the CSRF state,
-/// exchanges the code for the payer's openid and redirects the payer back
-/// to the cashier URL with `openid` appended.
 pub(crate) async fn handle_wechat_payment_oauth_callback(
     State(state): State<LocalIamState>,
     headers: HeaderMap,
@@ -203,7 +342,35 @@ pub(crate) async fn handle_wechat_payment_oauth_callback(
                 return payment_oauth_redirect_response(&redirect, "error", "exchange_failed");
             }
         };
+    // Anonymous cashier: the payer has no session, so the openid must be returned
+    // in a form the order service can verify against the capability token instead
+    // of trusting a client-supplied value.
+    if let Some(cashier_token_id) = read_payment_oauth_cookie(&headers, CASHIER_COOKIE)
+        .map(|value| value.trim().to_owned())
+        .filter(|value| !value.is_empty())
+    {
+        let Some(binding) = sign_openid_binding(&tenant_id, &cashier_token_id, &profile.subject)
+        else {
+            return payment_oauth_redirect_response(&redirect, "error", "context_missing");
+        };
+        let target = append_query_component(&redirect, "openid", &profile.subject);
+        let target = append_query_component(&target, "openidBinding", &binding);
+        return payment_oauth_redirect_to(&target);
+    }
     payment_oauth_redirect_response(&redirect, "openid", &profile.subject)
+}
+
+/// Signs the payer openid against the cashier token id.
+///
+/// The order service recomputes the same HMAC from the same deployment secret, so
+/// an openid cannot be replayed onto another cashier link and cannot be invented.
+fn sign_openid_binding(tenant_id: &str, token_id: &str, openid: &str) -> Option<String> {
+    let secret = sdkwork_utils_rust::cashier_token_secret_from_env().ok().flatten()?;
+    let key = sdkwork_utils_rust::derive_cashier_token_key(&secret, tenant_id).ok()?;
+    Some(sdkwork_utils_rust::hmac_sha256_base64url(
+        sdkwork_utils_rust::cashier_openid_binding_message(token_id, openid).as_bytes(),
+        &key,
+    ))
 }
 
 /// Builds the WeChat web authorization URL with silent `snsapi_base` scope.
@@ -320,16 +487,23 @@ fn read_payment_oauth_cookie(headers: &HeaderMap, name: &str) -> Option<String> 
 /// 302 back to the cashier with the openid (or an `error` code) appended,
 /// clearing the state cookies.
 fn payment_oauth_redirect_response(location: &str, key: &str, value: &str) -> Response {
-    let target = append_query_component(location, key, value);
+    payment_oauth_redirect_to(&append_query_component(location, key, value))
+}
+
+/// 302 to an already-assembled cashier URL, clearing every state cookie.
+///
+/// Used by the anonymous cashier flow, which appends both the openid and its
+/// token binding before redirecting.
+fn payment_oauth_redirect_to(target: &str) -> Response {
     let mut response = (
         StatusCode::FOUND,
         [
-            (header::LOCATION, target),
+            (header::LOCATION, target.to_owned()),
             (header::CACHE_CONTROL, "no-store".to_string()),
         ],
     )
         .into_response();
-    for name in [STATE_COOKIE, REDIRECT_COOKIE, TENANT_COOKIE] {
+    for name in [STATE_COOKIE, REDIRECT_COOKIE, TENANT_COOKIE, CASHIER_COOKIE] {
         append_payment_oauth_cookie(&mut response, name, "", 0);
     }
     response

@@ -39,6 +39,7 @@ export function RoleBindingDrawer({
   onOpenChange,
   onSubmit,
   open,
+  roleLabel,
   roles,
 }: {
   busy: boolean;
@@ -49,6 +50,8 @@ export function RoleBindingDrawer({
   onOpenChange: (open: boolean) => void;
   onSubmit: () => void;
   open: boolean;
+  /** Localized display name resolver for a role; defaults to the stored `name`. */
+  roleLabel?: (role: SdkworkIamRole) => string;
   roles: readonly SdkworkIamRole[];
 }) {
   const set = (patch: Partial<SdkworkIamRoleBindingDraft>) => onDraftChange({ ...draft, ...patch });
@@ -73,7 +76,7 @@ export function RoleBindingDrawer({
                 <SelectItem value={ROLE_SELECT_EMPTY}>{copy.role}</SelectItem>
                 {roles.map((role) => (
                   <SelectItem key={role.roleId} value={role.roleId}>
-                    {role.name} ({role.code || role.roleId})
+                    {(roleLabel ? roleLabel(role) : role.name)} ({role.code || role.roleId})
                   </SelectItem>
                 ))}
               </SelectContent>

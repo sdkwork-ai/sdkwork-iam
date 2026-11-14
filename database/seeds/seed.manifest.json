@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "sdkwork.database.seed",
-  "i18nVersion": "1.1.0",
+  "i18nVersion": "1.2.0",
   "defaultLocale": "zh-CN",
   "fallbackLocale": "zh-CN",
   "supportedLocales": [
@@ -19,20 +19,22 @@
   ],
   "localeSets": {
     "zh-CN": {
-      "version": "1.1.0",
+      "version": "1.2.0",
       "required": true,
-      "checksum": "sha256:947510602a40b27ad536a23488db4dc567a8858a4028e6953613a88fa2e5d3ca",
+      "checksum": "sha256:f2cff3dc50ca9291e78c939ff66388ef0d8293eb3abcfbdbe28349c81bf0300c",
       "files": [
         "locales/zh-CN/001_iam_locale_display.sql",
-        "locales/zh-CN/002_iam_persona_labels.sql"
+        "locales/zh-CN/002_iam_persona_labels.sql",
+        "locales/zh-CN/003_iam_role_labels.sql"
       ]
     },
     "en-US": {
-      "version": "1.1.0",
+      "version": "1.2.0",
       "required": false,
-      "checksum": "sha256:c0674bee659cf60f554f2f410651a595fb3968889602cd241efe6aa6febb55a3",
+      "checksum": "sha256:6e1bcab9ccf489876fea1be354d1bda63421fcc246e9a775ec1e75a819d85e3d",
       "files": [
-        "locales/en-US/001_iam_persona_labels.sql"
+        "locales/en-US/001_iam_persona_labels.sql",
+        "locales/en-US/002_iam_role_labels.sql"
       ]
     }
   },
@@ -52,10 +54,12 @@
       ],
       "locales": {
         "zh-CN": [
-          "002_iam_persona_labels.sql"
+          "002_iam_persona_labels.sql",
+          "003_iam_role_labels.sql"
         ],
         "en-US": [
-          "001_iam_persona_labels.sql"
+          "001_iam_persona_labels.sql",
+          "002_iam_role_labels.sql"
         ]
       }
     },
@@ -69,10 +73,12 @@
       "locales": {
         "zh-CN": [
           "001_iam_locale_display.sql",
-          "002_iam_persona_labels.sql"
+          "002_iam_persona_labels.sql",
+          "003_iam_role_labels.sql"
         ],
         "en-US": [
-          "001_iam_persona_labels.sql"
+          "001_iam_persona_labels.sql",
+          "002_iam_role_labels.sql"
         ]
       }
     }
