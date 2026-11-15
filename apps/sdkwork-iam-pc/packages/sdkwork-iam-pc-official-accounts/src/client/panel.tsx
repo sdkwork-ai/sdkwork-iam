@@ -48,6 +48,7 @@ import type {
 import { useOfficialAccountsMessages } from "./messages";
 import type { OfficialAccountsMessages } from "./messages";
 import type { OfficialAccountsController } from "./controller";
+import { SdkworkOfficialAccountsMenuDialog } from "./menu/dialog";
 
 /** Maximum top-level menu buttons (WeChat limit). */
 const MAX_TOP_LEVEL_BUTTONS = 3;
@@ -457,6 +458,7 @@ export function SdkworkOfficialAccountsPanel({
   const [activeTab, setActiveTab] = useState<DrawerTab>("basic");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [pendingDelete, setPendingDelete] = useState<OfficialAccount>();
+  const [menuAccount, setMenuAccount] = useState<OfficialAccount>();
   const [followQr, setFollowQr] = useState<FollowQrState>();
   // Create mode has no account id at pick time: the field parks the pick and
   // the submit flushes it once `controller.create` returns an id.
@@ -494,8 +496,9 @@ export function SdkworkOfficialAccountsPanel({
       onOpenCustomMenu(account.id);
       return;
     }
-    resetDrawerState();
-    setForm({ mode: "menu", account, draft: draftOf(account), menu: account.customMenu });
+    // Every surface edits the menu through the one shared workspace dialog
+    // (the same component the IAM admin full-screen editor mounts).
+    setMenuAccount(account);
   };
   /**
    * Requests the account's follow (parameterized) QR and shows it in its own
@@ -949,6 +952,33 @@ export function SdkworkOfficialAccountsPanel({
         open={pendingDelete !== undefined}
         title={messages.actions.confirmDelete}
         tone="danger"
+      />
+
+      <SdkworkOfficialAccountsMenuDialog
+        canPublish={capabilities.publishMenu}
+        canUpdate={capabilities.editCredentials}
+        context={menuAccount === undefined ? undefined : {
+          accountId: menuAccount.id,
+          menu: menuAccount.customMenu,
+          displayName: menuAccount.displayName,
+          logoUrl: menuAccount.logoUrl,
+        }}
+        messages={messages.menuEditor}
+        onClose={() => setMenuAccount(undefined)}
+        onPublish={capabilities.publishMenu
+          ? async (menu) => {
+            if (menuAccount === undefined) return undefined;
+            await controller.saveMenu(menuAccount, menu);
+            return await controller.publishMenu(menuAccount, menu);
+          }
+          : undefined}
+        onSave={async (menu) => {
+          if (menuAccount === undefined) return undefined;
+          await controller.saveMenu(menuAccount, menu);
+          setMenuAccount((current) => current === undefined ? current : { ...current, customMenu: menu });
+          return menu;
+        }}
+        open={menuAccount !== undefined}
       />
     </div>
   );
