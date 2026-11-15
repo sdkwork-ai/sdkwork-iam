@@ -275,6 +275,28 @@ test("official-account unification migration is folded, irreversible, and forwar
     baseline,
     /-- folded migration: migrations\/postgres\/0034_drop_iam_user_official_account\.up\.sql/u,
   );
+
+  // The 0033 defect the real-database rehearsal exposed: it created the WeChat
+  // client (and its web surface) before isolating a provider-identity conflict,
+  // leaving an enabled client no account references. 0035 is the forward fix;
+  // it must stay irreversible and forward-fix, and never drop a table.
+  const cleanupMigration = readText(
+    "database/migrations/postgres/0035_official_account_orphan_client_cleanup.up.sql",
+  );
+  assert.match(cleanupMigration, /^-- reversible: false$/mu);
+  assert.match(cleanupMigration, /^-- rollback: forward-fix/mu);
+  assert.doesNotMatch(cleanupMigration, /DROP\s+TABLE/iu);
+  assert.match(cleanupMigration, /DELETE FROM iam_oauth_surface/u);
+  assert.match(cleanupMigration, /DELETE FROM iam_oauth_client/u);
+  assert.match(
+    cleanupMigration,
+    /NOT EXISTS \(\s*SELECT 1 FROM iam_oauth_resource_account ra\s*WHERE ra\.oauth_client_id = c\.id\s*\)/u,
+    "0035 must only delete clients no resource account references",
+  );
+  assert.match(
+    baseline,
+    /-- folded migration: migrations\/postgres\/0035_official_account_orphan_client_cleanup\.up\.sql/u,
+  );
 });
 
 test("official-account migration orphan ledger is written by 0033 only", () => {

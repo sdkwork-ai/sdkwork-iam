@@ -2954,3 +2954,81 @@ $$;
 
 -- folded migration: migrations/postgres/0034_drop_iam_user_official_account.up.sql
 DROP TABLE IF EXISTS iam_user_official_account;
+
+-- folded migration: migrations/postgres/0035_official_account_orphan_client_cleanup.up.sql
+-- 1. Web surfaces bound to a stray client. Deleted first so no surface is left
+--    pointing at a client that no longer exists.
+DELETE FROM iam_oauth_surface s
+USING iam_oauth_client c
+WHERE s.oauth_client_id = c.id
+  AND s.tenant_id = c.tenant_id
+  AND c.provider_code = 'wechat'
+  AND c.client_code LIKE 'official-account-%-client'
+  AND NOT EXISTS (
+    SELECT 1 FROM iam_oauth_resource_account ra
+    WHERE ra.oauth_client_id = c.id
+  )
+  AND EXISTS (
+    SELECT 1 FROM iam_oauth_resource_account occ
+    WHERE occ.tenant_id = c.tenant_id
+      AND occ.organization_id = c.organization_id
+      AND occ.provider_code = 'wechat'
+      AND occ.resource_account_kind = 'official_account'
+      AND occ.provider_account_id = c.provider_client_id
+      AND occ.oauth_client_id IS DISTINCT FROM c.id
+  )
+  AND NOT EXISTS (SELECT 1 FROM iam_oauth_grant g WHERE g.oauth_client_id = c.id)
+  AND NOT EXISTS (SELECT 1 FROM iam_oauth_flow_config f WHERE f.oauth_client_id = c.id);
+
+-- 2. The stray client rows themselves.
+DELETE FROM iam_oauth_client c
+WHERE c.provider_code = 'wechat'
+  AND c.client_code LIKE 'official-account-%-client'
+  AND NOT EXISTS (
+    SELECT 1 FROM iam_oauth_resource_account ra
+    WHERE ra.oauth_client_id = c.id
+  )
+  AND EXISTS (
+    SELECT 1 FROM iam_oauth_resource_account occ
+    WHERE occ.tenant_id = c.tenant_id
+      AND occ.organization_id = c.organization_id
+      AND occ.provider_code = 'wechat'
+      AND occ.resource_account_kind = 'official_account'
+      AND occ.provider_account_id = c.provider_client_id
+      AND occ.oauth_client_id IS DISTINCT FROM c.id
+  )
+  AND NOT EXISTS (SELECT 1 FROM iam_oauth_grant g WHERE g.oauth_client_id = c.id)
+  AND NOT EXISTS (SELECT 1 FROM iam_oauth_flow_config f WHERE f.oauth_client_id = c.id);
+
+-- 3. Report the cleanup without blocking the deployment.
+DO $$
+DECLARE
+  stray_clients BIGINT;
+  stray_surfaces BIGINT;
+BEGIN
+  SELECT COUNT(1) INTO stray_clients
+    FROM iam_oauth_client c
+   WHERE c.provider_code = 'wechat'
+     AND c.client_code LIKE 'official-account-%-client'
+     AND NOT EXISTS (SELECT 1 FROM iam_oauth_resource_account ra WHERE ra.oauth_client_id = c.id)
+     AND EXISTS (
+       SELECT 1 FROM iam_oauth_resource_account occ
+       WHERE occ.tenant_id = c.tenant_id
+         AND occ.organization_id = c.organization_id
+         AND occ.provider_code = 'wechat'
+         AND occ.resource_account_kind = 'official_account'
+         AND occ.provider_account_id = c.provider_client_id
+         AND occ.oauth_client_id IS DISTINCT FROM c.id
+     );
+  SELECT COUNT(1) INTO stray_surfaces
+    FROM iam_oauth_surface s
+   WHERE s.surface_code LIKE 'official-account-%-client-web'
+     AND NOT EXISTS (SELECT 1 FROM iam_oauth_client c WHERE c.id = s.oauth_client_id);
+  IF stray_clients > 0 OR stray_surfaces > 0 THEN
+    RAISE WARNING 'official account orphan client cleanup (0035): % unbound official-account client(s) and % orphaned surface(s) remain after cleanup; inspect them against the 0033 preflight',
+      stray_clients, stray_surfaces;
+  ELSE
+    RAISE NOTICE 'official account orphan client cleanup (0035): no 0033 artifact client or surface remained';
+  END IF;
+END
+$$;
