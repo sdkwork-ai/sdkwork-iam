@@ -1,4 +1,4 @@
-﻿import type { IamBackendOAuthResourceClient } from "@sdkwork/iam-sdk-ports";
+import type { IamBackendOAuthResourceClient } from "@sdkwork/iam-sdk-ports";
 import { resolveSdkWorkListQuery } from "@sdkwork/iam-contracts";
 
 function iamOauthListQuery(params?: Record<string, unknown>): Record<string, string | number> {
@@ -83,6 +83,8 @@ export type IamBackendOauthService = {
         retrieve(...args: unknown[]): Promise<unknown>;
         update(...args: unknown[]): Promise<unknown>;
         publish(...args: unknown[]): Promise<unknown>;
+        sync(...args: unknown[]): Promise<unknown>;
+        rollback(...args: unknown[]): Promise<unknown>;
       };
       delete(...args: unknown[]): Promise<unknown>;
       followQrCodes: {
@@ -222,6 +224,8 @@ export function createIamBackendOauthService(
           retrieve: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.resourceAccounts?.customMenus, "retrieve", "iam.oauth.resourceAccounts.customMenus.retrieve", ...args),
           update: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.resourceAccounts?.customMenus, "update", "iam.oauth.resourceAccounts.customMenus.update", ...args),
           publish: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.resourceAccounts?.customMenus, "publish", "iam.oauth.resourceAccounts.customMenus.publish", ...args),
+          sync: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.resourceAccounts?.customMenus, "sync", "iam.oauth.resourceAccounts.customMenus.sync", ...args),
+          rollback: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.resourceAccounts?.customMenus, "rollback", "iam.oauth.resourceAccounts.customMenus.rollback", ...args),
         },
         delete: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.resourceAccounts, "delete", "iam.oauth.resourceAccounts.delete", ...args),
         followQrCodes: {

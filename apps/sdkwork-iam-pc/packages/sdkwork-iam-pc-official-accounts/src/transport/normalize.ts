@@ -12,6 +12,7 @@ import type {
   OfficialAccountsAccessMode,
   OfficialAccountsEncryptMode,
   OfficialAccountsMenu,
+  OfficialAccountsMenuVersion,
   OfficialAccountsMenuButton,
   OfficialAccountsProviderConfig,
   OfficialAccountsResourceAccountKind,
@@ -63,23 +64,53 @@ function readEncryptMode(
   return value === "compatible" || value === "safe" ? value : "plaintext";
 }
 
-/** Parses one menu button from a stored menu document. */
-function readMenuButton(value: unknown): OfficialAccountsMenuButton | undefined {
+/**
+ * Parses one menu button from a stored menu document.
+ *
+ * Stored drafts carry the editor's stable id under `key` and the WeChat
+ * EventKey under `message`. Drafts written by the earlier single-purpose
+ * editor put the EventKey in `key`; those migrate to `message` plus a generated
+ * stable id. Imported provider actions keep their original payload so the
+ * editor can show them and refuse to publish losslessly.
+ * @param value - the stored button document.
+ * @param path - the button's position in the tree, used for a stable fallback id.
+ * @returns the normalized button, or undefined when it has no name.
+ */
+function readMenuButton(value: unknown, path: string): OfficialAccountsMenuButton | undefined {
   if (typeof value !== "object" || value === null) return undefined;
   const record = value as Record<string, unknown>;
   const name = readRecordString(record, "name");
   if (name === undefined) return undefined;
   const type = readRecordString(record, "type");
+  const knownType = type === "view" || type === "click" || type === "miniprogram";
+  const message = readRecordString(record, "message");
+  const storedKey = readRecordString(record, "key");
+  // The legacy editor wrote a click's EventKey into `key`; a draft with an
+  // explicit `message` already separates the stable id from the EventKey.
+  const legacyEventKey = message === undefined && type === "click" ? storedKey : undefined;
+  const stableKey = message === undefined && legacyEventKey !== undefined ? undefined : storedKey;
+  const eventKey = message ?? legacyEventKey;
+  const url = readRecordString(record, "url");
+  const appId = readRecordString(record, "appId");
+  const pagePath = readRecordString(record, "pagePath");
+  const providerAction = typeof record.providerAction === "object" && record.providerAction !== null
+    ? record.providerAction as Record<string, unknown>
+    : undefined;
   const subButtons = Array.isArray(record.subButtons)
     ? record.subButtons
-      .map(readMenuButton)
+      .map((entry, index) => readMenuButton(entry, `${path}.${String(index)}`))
       .filter((button): button is OfficialAccountsMenuButton => button !== undefined)
     : undefined;
   return {
+    key: stableKey ?? `menu-${path}`,
     name,
-    ...(type === "view" || type === "click" ? { type } : {}),
-    ...(readRecordString(record, "url") === undefined ? {} : { url: readRecordString(record, "url") }),
-    ...(readRecordString(record, "key") === undefined ? {} : { key: readRecordString(record, "key") }),
+    ...(knownType ? { type } : {}),
+    ...(type !== undefined && !knownType ? { unsupportedType: type } : {}),
+    ...(url === undefined ? {} : { url }),
+    ...(appId === undefined ? {} : { appId }),
+    ...(pagePath === undefined ? {} : { pagePath }),
+    ...(eventKey === undefined ? {} : { message: eventKey }),
+    ...(providerAction === undefined ? {} : { providerAction }),
     ...(subButtons === undefined || subButtons.length === 0 ? {} : { subButtons }),
   };
 }
@@ -89,10 +120,43 @@ export function readOfficialAccountMenu(value: unknown): OfficialAccountsMenu {
   if (typeof value !== "object" || value === null) return { buttons: [] };
   const record = value as Record<string, unknown>;
   const raw = Array.isArray(record.buttons) ? record.buttons : [];
+  const updatedAt = readRecordString(record, "updatedAt") ?? readRecordString(record, "updated_at");
+  const publishedAt = readRecordString(record, "publishedAt") ?? readRecordString(record, "published_at");
+  const source = record.source === "database" || record.source === "wechat" ? record.source : undefined;
+  const version = typeof record.version === "number" ? record.version : undefined;
+  const history = Array.isArray(record.history)
+    ? record.history
+      .map((entry, index) => readMenuVersion(entry, String(index)))
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== undefined)
+    : undefined;
   return {
     buttons: raw
-      .map(readMenuButton)
+      .map((entry, index) => readMenuButton(entry, String(index)))
       .filter((button): button is OfficialAccountsMenuButton => button !== undefined),
+    ...(updatedAt === undefined ? {} : { updatedAt }),
+    ...(publishedAt === undefined ? {} : { publishedAt }),
+    ...(source === undefined ? {} : { source }),
+    ...(version === undefined ? {} : { version }),
+    ...(history === undefined ? {} : { history }),
+  };
+}
+
+/** Parses one retained menu revision. */
+function readMenuVersion(value: unknown, path: string): OfficialAccountsMenuVersion | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const record = value as Record<string, unknown>;
+  if (typeof record.version !== "number" || !Array.isArray(record.buttons)) return undefined;
+  const savedAt = readRecordString(record, "savedAt");
+  const publishedAt = readRecordString(record, "publishedAt");
+  const source = record.source === "database" || record.source === "wechat" ? record.source : undefined;
+  return {
+    version: record.version,
+    buttons: record.buttons
+      .map((entry, index) => readMenuButton(entry, `${path}.${String(index)}`))
+      .filter((button): button is OfficialAccountsMenuButton => button !== undefined),
+    ...(savedAt === undefined ? {} : { savedAt }),
+    ...(publishedAt === undefined ? {} : { publishedAt }),
+    ...(source === undefined ? {} : { source }),
   };
 }
 
@@ -207,6 +271,28 @@ export function toOfficialAccount(value: Record<string, unknown>): OfficialAccou
     status: readRecordString(value, "status") ?? "active",
     ...(accessMode === undefined ? {} : { accessMode }),
     ...(maintainerUserId === undefined ? {} : { maintainerUserId }),
+    ...(readRecordString(
+      value,
+      "maintainerDisplayName",
+      "maintainer_display_name",
+    ) === undefined
+      ? {}
+      : {
+        maintainerDisplayName: readRecordString(
+          value,
+          "maintainerDisplayName",
+          "maintainer_display_name",
+        ),
+      }),
+    ...(readRecordString(value, "maintainerUsername", "maintainer_username") === undefined
+      ? {}
+      : { maintainerUsername: readRecordString(value, "maintainerUsername", "maintainer_username") }),
+    ...(readRecordString(value, "organizationId", "organization_id") === undefined
+      ? {}
+      : { organizationId: readRecordString(value, "organizationId", "organization_id") }),
+    ...(readRecordString(value, "organizationName", "organization_name") === undefined
+      ? {}
+      : { organizationName: readRecordString(value, "organizationName", "organization_name") }),
     ...(typeof qrDefaultRaw === "boolean"
       ? { qrDefaultEnabled: qrDefaultRaw }
       : qrDefaultRaw === "1" || qrDefaultRaw === 1

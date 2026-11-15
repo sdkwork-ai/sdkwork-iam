@@ -45,6 +45,8 @@ function memoryTransport(
     loadCustomMenu: vi.fn(async (id) => ({ accountId: id, menu: { buttons: [] } })),
     saveCustomMenu: vi.fn(async (id, menu) => ({ accountId: id, menu })),
     publishCustomMenu: vi.fn(async (id) => ({ accountId: id, published: true })),
+    syncCustomMenu: vi.fn(async (id) => ({ accountId: id, menu: { buttons: [], version: 3 } })),
+    rollbackCustomMenu: vi.fn(async (id) => ({ accountId: id, menu: { buttons: [], version: 4 } })),
     setEnabled: vi.fn(async () => undefined),
     setQrLogin: vi.fn(async () => undefined),
     createFollowQrCode: vi.fn(async () => ({
@@ -129,27 +131,104 @@ describe("official accounts panel", () => {
     expect(await screen.findByText(/does not allow changing the AppID or AppSecret/)).toBeTruthy();
   });
 
-  it("renders the operator posture without the self-service server tab", async () => {
+  it("renders the same account tabs on the operator posture", async () => {
     bench(DEFAULT_OPERATOR_CAPABILITIES);
     fireEvent.click(await screen.findByRole("button", { name: "Example Account" }));
-    expect(screen.queryByRole("tab", { name: "Server info" })).toBeNull();
+    expect(screen.getByRole("tab", { name: "Server info" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Domains" })).toBeTruthy();
     expect(screen.getByText("Default account for scan login")).toBeTruthy();
   });
 
-  it("publishes the menu draft on an operator surface only", async () => {
-    const operator = bench(DEFAULT_OPERATOR_CAPABILITIES);
-    fireEvent.click(await screen.findByRole("button", { name: "Custom menu" }));
-    const publish = await screen.findByRole("button", { name: "Publish to official account" });
-    fireEvent.click(publish);
+  it("lists the maintained server IPs and saves the allowlist", async () => {
+    const onSave = vi.fn(async (ips: string[]) => ips);
+    const transport = memoryTransport();
+    const controller = createOfficialAccountsController(transport, DEFAULT_OPERATOR_CAPABILITIES);
+    render(
+      <SdkworkThemeProvider themeColor="tech-blue" themeSelection="dark">
+        <SdkworkI18nProvider catalogs={[SDKWORK_OFFICIAL_ACCOUNTS_I18N_CATALOG]} locale="en-US">
+          <SdkworkOfficialAccountsPanel
+            capabilities={DEFAULT_OPERATOR_CAPABILITIES}
+            controller={controller}
+            onSaveServerIps={onSave}
+            serverIps={["203.0.113.10", "203.0.113.11"]}
+          />
+        </SdkworkI18nProvider>
+      </SdkworkThemeProvider>,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Example Account" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Server info" }));
+    expect(await screen.findByText("203.0.113.10")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Maintain" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Maintain server public IPs" }), {
+      target: { value: "203.0.113.10\n198.51.100.7" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save IP list" }));
     await waitFor(() => {
-      expect(operator.transport.publishCustomMenu).toHaveBeenCalledWith("acc-1", { buttons: [] });
+      expect(onSave).toHaveBeenCalledWith(["203.0.113.10", "198.51.100.7"]);
+    });
+  });
+
+  it("opens the shared menu workspace and gates publishing by capability", async () => {
+    const menuAccount: OfficialAccount = {
+      ...ACCOUNT,
+      customMenu: { buttons: [{ key: "menu-0", name: "Help", type: "click", message: "HELP" }] },
+    };
+    const menuTransport = (): Partial<OfficialAccountsTransport> => ({
+      list: vi.fn(async () => ({ items: [menuAccount], totalItems: 1, page: 1, pageSize: 20 })),
+      loadCustomMenu: vi.fn(async (id) => ({
+        accountId: id,
+        menu: { buttons: [{ key: "menu-0", name: "Help", type: "click" as const, message: "HELP" }] },
+      })),
+    });
+    const operator = bench(DEFAULT_OPERATOR_CAPABILITIES, menuTransport());
+    fireEvent.click(await screen.findByRole("button", { name: "Custom menu" }));
+    expect(await screen.findByTestId("custom-menu-modal")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await waitFor(() => {
+      expect(operator.transport.update).toHaveBeenCalledWith("acc-1", expect.objectContaining({
+        customMenu: { buttons: [{ key: "menu-0", name: "Help", type: "click", message: "HELP" }] },
+      }));
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save & publish" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Publish menu" }));
+    await waitFor(() => {
+      expect(operator.transport.publishCustomMenu).toHaveBeenCalledWith("acc-1", {
+        buttons: [{ key: "menu-0", name: "Help", type: "click", message: "HELP" }],
+      });
     });
     operator.unmount();
 
-    bench(DEFAULT_SELF_SERVICE_CAPABILITIES);
+    bench(DEFAULT_SELF_SERVICE_CAPABILITIES, menuTransport());
     fireEvent.click(await screen.findByRole("button", { name: "Custom menu" }));
-    expect(screen.queryByRole("button", { name: "Publish to official account" })).toBeNull();
+    const publish = screen.getByRole("button", { name: "Save & publish" }) as HTMLButtonElement;
+    expect(publish.disabled).toBe(true);
+  });
+
+  it("refreshes and rolls back the live menu on an operator surface", async () => {
+    const menuAccount: OfficialAccount = {
+      ...ACCOUNT,
+      customMenu: {
+        buttons: [{ key: "menu-0", name: "Help", type: "click", message: "HELP" }],
+        version: 2,
+        history: [{ version: 1, buttons: [], savedAt: "2026-01-01T00:00:00Z" }],
+      },
+    };
+    const operator = bench(DEFAULT_OPERATOR_CAPABILITIES, {
+      list: vi.fn(async () => ({ items: [menuAccount], totalItems: 1, page: 1, pageSize: 20 })),
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Custom menu" }));
+    fireEvent.click(screen.getByRole("button", { name: "Roll back" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Roll back to version 1" }));
+    const confirm = await screen.findByTestId("custom-menu-rollback-confirmation");
+    fireEvent.click(confirm.querySelectorAll("button")[1] as HTMLButtonElement);
+    await waitFor(() => {
+      expect(operator.transport.rollbackCustomMenu).toHaveBeenCalledWith("acc-1", 1, 2);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+    await waitFor(() => {
+      expect(operator.transport.syncCustomMenu).toHaveBeenCalledWith("acc-1", 4);
+    });
+    operator.unmount();
   });
 
   it("annotates a self-managed account on an operator surface", async () => {
@@ -162,6 +241,53 @@ describe("official accounts panel", () => {
       })),
     });
     expect(await screen.findByText("Self-managed")).toBeTruthy();
+  });
+
+  it("shows organization and maintainer columns on an operator surface", async () => {
+    bench(DEFAULT_OPERATOR_CAPABILITIES, {
+      list: vi.fn(async () => ({
+        items: [{
+          ...ACCOUNT,
+          originalId: "gh_1234567890ab",
+          organizationId: "iamorg-1",
+          organizationName: "Acme Org",
+          maintainerUserId: "iamu-1",
+          maintainerDisplayName: "Li Ming",
+          maintainerUsername: "liming",
+        }],
+        totalItems: 1,
+        page: 1,
+        pageSize: 20,
+      })),
+    });
+    // The identifiers column distinguishes two channels with the same name.
+    expect(await screen.findByText("gh_1234567890ab")).toBeTruthy();
+    expect(screen.getByText("Account identifiers")).toBeTruthy();
+    expect(screen.getByText("Organization")).toBeTruthy();
+    expect(screen.getByText("Acme Org")).toBeTruthy();
+    expect(screen.getByText("Maintainer")).toBeTruthy();
+    expect(screen.getByText("Li Ming")).toBeTruthy();
+  });
+
+  it("falls back to the platform organization and the maintainer id", async () => {
+    bench(DEFAULT_OPERATOR_CAPABILITIES, {
+      list: vi.fn(async () => ({
+        items: [{ ...ACCOUNT, organizationId: "0", maintainerUserId: "iamu-77" }],
+        totalItems: 1,
+        page: 1,
+        pageSize: 20,
+      })),
+    });
+    expect(await screen.findByText("Platform")).toBeTruthy();
+    expect(screen.getByText("iamu-77")).toBeTruthy();
+  });
+
+  it("omits the owner columns on a self-service surface", async () => {
+    bench(DEFAULT_SELF_SERVICE_CAPABILITIES);
+    expect(await screen.findByText("Example Account")).toBeTruthy();
+    expect(screen.queryByText("Organization")).toBeNull();
+    expect(screen.queryByText("Maintainer")).toBeNull();
+    expect(screen.queryByText("Acme Org")).toBeNull();
   });
 
   it("generates the follow QR from the operator row action", async () => {

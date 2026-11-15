@@ -1,132 +1,91 @@
-import { useState } from "react";
-
-import {
-  Button,
-  Modal,
-  ModalContent,
-  ModalDescription,
-  ModalFooter,
-  ModalHeader,
-  ModalTitle,
-} from "@sdkwork/ui-pc-react";
+/**
+ * Backend-admin host chrome for the shared custom-menu dialog.
+ *
+ * The editor, the rules, the phone preview and the persistence boundary live in
+ * `@sdkwork/iam-pc-official-accounts`; this module only maps the backend-admin
+ * controller onto that dialog's callbacks, so the IAM admin page and every
+ * product host mount one menu implementation.
+ */
+import { SdkworkOfficialAccountsMenuDialog } from "@sdkwork/iam-pc-official-accounts";
+import type {
+  OfficialAccountsCustomMenuContext,
+  OfficialAccountsDeployedMiniProgramAppLoader,
+  OfficialAccountsMenu,
+  OfficialAccountsMenuMessages,
+} from "@sdkwork/iam-pc-official-accounts";
 
 import { useSdkworkIamOauthAdminMessages } from "../../i18n";
 import type {
   SdkworkIamOauthAdminController,
+  SdkworkIamOauthCustomMenuContext,
+  SdkworkIamOauthCustomMenuDraft,
   SdkworkIamOauthCustomMenuPermissions,
 } from "../../types/oauth-admin-types";
-import { SdkworkIamOauthOfficialAccountCustomMenuPage } from "../../pages/OauthOfficialAccountCustomMenuPage";
 
 export interface SdkworkIamOauthCustomMenuFullscreenModalProps {
   accountId: string;
   controller: SdkworkIamOauthAdminController;
+  /**
+   * Host-injected deployed mini program inventory for the "open mini program"
+   * action; omitted hosts keep the plain AppID field.
+   */
+  loadDeployedMiniProgramApps?: OfficialAccountsDeployedMiniProgramAppLoader;
   onClose: () => void;
   /** UI discovery of the server-side mutation permissions (REQ-2026-0107); every member defaults to true. */
   permissions?: SdkworkIamOauthCustomMenuPermissions;
 }
 
-/** Large, viewport-aware menu workspace hosted by the shared modal portal. */
+/** Viewport-aware menu workspace hosted by the shared dialog. */
 export function SdkworkIamOauthCustomMenuFullscreenModal({
   accountId,
   controller,
+  loadDeployedMiniProgramApps,
   onClose,
   permissions,
 }: SdkworkIamOauthCustomMenuFullscreenModalProps) {
   const messages = useSdkworkIamOauthAdminMessages().quickSetup.customMenus;
-  const [busy, setBusy] = useState(false);
-  const [dirty, setDirty] = useState(false);
-  const [closeConfirmationOpen, setCloseConfirmationOpen] = useState(false);
-  const requestClose = () => {
-    if (busy) {
-      return;
-    }
-    if (dirty) {
-      setCloseConfirmationOpen(true);
-    } else {
-      onClose();
-    }
-  };
-
+  const toShared = (context: SdkworkIamOauthCustomMenuContext): OfficialAccountsCustomMenuContext => ({
+    accountId,
+    menu: context.draft,
+    displayName: context.displayName,
+    logoUrl: context.logoUrl,
+    source: context.source,
+    version: context.version ?? context.draft.version,
+  });
   return (
-    <>
-      <Modal
-        open
-        onOpenChange={(open) => {
-          if (!open && !closeConfirmationOpen) {
-            requestClose();
-          }
-        }}
-      >
-      <ModalContent
-        aria-describedby={undefined}
-        aria-labelledby="sdkwork-iam-custom-menu-dialog-title"
-        className="left-1/2 top-1/2 flex h-dvh max-h-none w-screen max-w-none -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-none border-0 !bg-white p-0 opacity-100 shadow-2xl dark:!bg-[#18181b] sm:h-[min(94dvh,68rem)] sm:w-[min(96vw,100rem)] sm:rounded-[8px] sm:border sm:border-[#d9d9d9] dark:sm:border-[#3f3f46]"
-        data-testid="custom-menu-modal"
-        onEscapeKeyDown={(event) => {
-          if (closeConfirmationOpen || busy) {
-            event.preventDefault();
-          }
-        }}
-        onInteractOutside={(event) => {
-          if (closeConfirmationOpen || busy) {
-            event.preventDefault();
-          }
-        }}
-        showCloseButton={false}
-        style={{ opacity: 1 }}
-      >
-        <div className="h-full min-h-0 overflow-hidden bg-white dark:bg-[#18181b]">
-          <SdkworkIamOauthOfficialAccountCustomMenuPage
-            controller={controller}
-            onClose={requestClose}
-            onBusyChange={setBusy}
-            onDirtyChange={setDirty}
-            permissions={permissions}
-            resourceAccountId={accountId}
-          />
-        </div>
-      </ModalContent>
-      </Modal>
-
-      <Modal
-        open={closeConfirmationOpen}
-        onOpenChange={(open) => {
-          // The confirmation is a sibling dialog, so dismissing it must never
-          // re-enter the outer workspace's close handler.
-          setCloseConfirmationOpen(open);
-        }}
-      >
-        <ModalContent
-          className="z-[251] !bg-white text-[#353535] opacity-100 dark:!border-[#52525b] dark:!bg-[#27272a] dark:text-[#f4f4f5]"
-          data-testid="custom-menu-unsaved-confirmation"
-          showCloseButton={false}
-          size="sm"
-          style={{ opacity: 1 }}
-        >
-          <ModalHeader className="border-[#e1e1e1] dark:border-[#3f3f46]">
-            <ModalTitle>{messages.unsavedTitle}</ModalTitle>
-            <ModalDescription className="text-[#8d8d8d] dark:text-[#a1a1aa]">
-              {messages.unsavedDescription}
-            </ModalDescription>
-          </ModalHeader>
-          <ModalFooter className="border-[#e1e1e1] dark:border-[#3f3f46]">
-            <Button onClick={() => setCloseConfirmationOpen(false)} type="button" variant="secondary">
-              {messages.cancel}
-            </Button>
-            <Button
-              onClick={() => {
-                setCloseConfirmationOpen(false);
-                setDirty(false);
-                onClose();
-              }}
-              type="button"
-              variant="danger"
-            >
-              {messages.discardChanges}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </>
+    <SdkworkOfficialAccountsMenuDialog
+      canPublish={permissions?.publish ?? true}
+      canUpdate={permissions?.update ?? true}
+      load={async () => toShared(await controller.loadAccountCustomMenu(accountId))}
+      loadDeployedMiniProgramApps={loadDeployedMiniProgramApps}
+      messages={messages as OfficialAccountsMenuMessages}
+      onClose={onClose}
+      onPublish={async (menu) => {
+        const result = await controller.publishAccountCustomMenu(
+          accountId,
+          menu as SdkworkIamOauthCustomMenuDraft,
+        );
+        return {
+          published: result.published,
+          saved: result.saved,
+          reason: result.reason,
+          errorMessage: result.errorMessage,
+        };
+      }}
+      onRefresh={async (baseVersion) => toShared(
+        await controller.syncAccountCustomMenu(accountId, baseVersion),
+      )}
+      onRollback={async (version, baseVersion) => toShared(
+        await controller.rollbackAccountCustomMenu(accountId, version, baseVersion),
+      )}
+      onSave={async (menu) => {
+        const stored = await controller.saveAccountCustomMenu(
+          accountId,
+          menu as SdkworkIamOauthCustomMenuDraft,
+        );
+        return stored.draft as OfficialAccountsMenu;
+      }}
+      open
+    />
   );
 }

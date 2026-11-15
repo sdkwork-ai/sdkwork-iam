@@ -603,6 +603,18 @@ export interface SdkworkIamOauthAdminMessages {
       fallbackUrlLabel: string;
       fallbackUrlPlaceholder: string;
       fallbackUrlHint: string;
+      /** Link label that opens the deployed-application mini program picker. */
+      pickFromDeployedApps: string;
+      pickerTitle: string;
+      pickerDescription: string;
+      pickerLoading: string;
+      pickerEmpty: string;
+      pickerLoadFailed: string;
+      pickerRetry: string;
+      /** Shown on a deployed application that links no mini program account. */
+      pickerNoAccount: string;
+      /** Environment badge template with an {environment} placeholder. */
+      pickerEnvironmentTemplate: string;
       rules: string;
       rulesText: string;
       rulesText2: string;

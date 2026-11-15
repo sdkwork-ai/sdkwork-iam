@@ -29,23 +29,63 @@ export type OfficialAccountsResourceAccountKind = "official_account" | "mini_pro
 /** What a verification run checks. */
 export type OfficialAccountsVerificationKind = "domain" | "webhook" | "authorization"
 
+/** What a custom-menu button does when tapped. */
+export type OfficialAccountsMenuActionKind = "click" | "view" | "miniprogram"
+
 /** One custom-menu button (WeChat `button` / `sub_button` shape). */
 export interface OfficialAccountsMenuButton {
+  /**
+   * Stable editor id so selection and React keys survive renames and reorders.
+   * It is not the WeChat event key; `click` uses {@link message}.
+   */
+  key?: string
   /** Button label as displayed in the WeChat official-account menu. */
   name: string
-  /** `view` opens `url`; `click` reports `key`; omitted for a parent button. */
-  type?: "view" | "click"
-  /** Target URL for `type: "view"`. */
+  /** Tap action; omitted for a parent button that only opens sub-buttons. */
+  type?: OfficialAccountsMenuActionKind
+  /** Target URL for `view`, and the fallback URL for `miniprogram`. */
   url?: string
-  /** Event key for `type: "click"`. */
-  key?: string
+  /** `miniprogram`: target mini-program AppID. */
+  appId?: string
+  /** `miniprogram`: required path inside the target mini program. */
+  pagePath?: string
+  /** `click`: provider EventKey pushed to the server callback. */
+  message?: string
+  /** Imported WeChat action this editor cannot publish losslessly yet. */
+  unsupportedType?: string
+  /** Original provider payload retained until the operator converts it. */
+  providerAction?: Record<string, unknown>
   /** Second-level buttons; a parent button with sub-buttons has no type. */
-  subButtons?: readonly OfficialAccountsMenuButton[]
+  subButtons?: OfficialAccountsMenuButton[]
+}
+
+/** One stored revision of a custom-menu draft, kept for rollback. */
+export interface OfficialAccountsMenuVersion {
+  /** Monotonic version number; the live draft carries the highest one. */
+  version: number
+  /** The top-level buttons of that revision. */
+  buttons: OfficialAccountsMenuButton[]
+  /** When the revision was saved locally. */
+  savedAt?: string
+  /** When the revision was published to the WeChat console. */
+  publishedAt?: string
+  /** Whether the revision came from the local draft or the WeChat console. */
+  source?: "database" | "wechat"
 }
 
 /** The editable custom-menu draft. */
 export interface OfficialAccountsMenu {
-  buttons: readonly OfficialAccountsMenuButton[]
+  buttons: OfficialAccountsMenuButton[]
+  /** Monotonic version of this draft; absent for legacy documents (treated as 0). */
+  version?: number
+  /** Timestamp of the stored draft, when reported. */
+  updatedAt?: string
+  /** Timestamp of the last successful WeChat publication, when reported. */
+  publishedAt?: string
+  /** Whether the live draft came from the local store or the WeChat console. */
+  source?: "database" | "wechat"
+  /** Older revisions kept for conflict resolution and rollback (newest first). */
+  history?: OfficialAccountsMenuVersion[]
 }
 
 /**
@@ -123,8 +163,16 @@ export interface OfficialAccount {
   updatedAt?: string
   /** Administration mode (`D1`); operator lists annotate `self_managed_account`. */
   accessMode?: OfficialAccountsAccessMode
+  /** Organization the account belongs to (`'0'` is the platform sentinel). */
+  organizationId?: string
+  /** Resolved organization name, when the directory reports one. */
+  organizationName?: string
   /** Maintainer of a self-managed account (`D2`), when reported. */
   maintainerUserId?: string
+  /** Resolved maintainer display name, when the directory reports one. */
+  maintainerDisplayName?: string
+  /** Resolved maintainer username, when the directory reports one. */
+  maintainerUsername?: string
   /** Whether the account is the scan-login default (operator accounts only, `D4`). */
   qrDefaultEnabled?: boolean
   /** Channel kind of the unified resource account. */
@@ -244,6 +292,14 @@ export interface OfficialAccountsCustomMenuContext {
   accountId: string
   /** The stored draft. */
   menu: OfficialAccountsMenu
+  /** Display name the editor header shows, when the surface knows it. */
+  displayName?: string
+  /** Logo the editor preview shows, when the surface knows it. */
+  logoUrl?: string
+  /** Whether the live draft came from the local store or the WeChat console. */
+  source?: "database" | "wechat" | "empty"
+  /** The live draft version, repeated for callers that ignore the menu body. */
+  version?: number
 }
 
 /** Result of pushing a menu draft to the WeChat console. */
@@ -252,6 +308,14 @@ export interface OfficialAccountsCustomMenuPublishResult {
   accountId: string
   /** Whether the channel accepted the draft. */
   published: boolean
+  /** Whether the draft was persisted before publishing. */
+  saved?: boolean
+  /** Why publication did not happen, when it did not. */
+  reason?: "backend_unavailable" | "publish_failed"
+  /** Provider error text for `publish_failed`. */
+  errorMessage?: string
+  /** The draft as stored after the operation. */
+  context?: OfficialAccountsCustomMenuContext
   /** Publication timestamp, when reported. */
   publishedAt?: string
 }
@@ -307,6 +371,24 @@ export interface OfficialAccountsTransport {
     id: string,
     draft: OfficialAccountsMenu,
   ): Promise<OfficialAccountsCustomMenuPublishResult>
+  /**
+   * Pull the live WeChat menu into the stored draft (a new version).
+   * @param id - account id.
+   * @param baseVersion - the version the caller last saw, for conflict checks.
+   */
+  syncCustomMenu?(id: string, baseVersion?: number): Promise<OfficialAccountsCustomMenuContext>
+  /**
+   * Restore a stored revision as the new live draft (and publish it, when the
+   * host supports publishing).
+   * @param id - account id.
+   * @param version - the revision to restore.
+   * @param baseVersion - the version the caller last saw, for conflict checks.
+   */
+  rollbackCustomMenu?(
+    id: string,
+    version: number,
+    baseVersion?: number,
+  ): Promise<OfficialAccountsCustomMenuContext>
   /** @param id - account id. @param enabled - target value. */
   setEnabled(id: string, enabled: boolean): Promise<void>
   /** @param id - account id. @param enabled - whether it is the scan-login default. */
@@ -344,6 +426,16 @@ export interface OfficialAccountsCapabilities {
    * self-service app transport does not, so it defaults off there.
    */
   manageFollowQrCode: boolean
+  /**
+   * The live WeChat menu may be pulled into the draft. Requires a transport
+   * that implements `syncCustomMenu` and the provider credentials.
+   */
+  refreshMenu?: boolean
+  /**
+   * Older menu revisions may be restored and published. Requires a transport
+   * that implements `rollbackCustomMenu`.
+   */
+  rollbackMenu?: boolean
 }
 
 /** Panel/controller state. */

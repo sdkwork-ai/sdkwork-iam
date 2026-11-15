@@ -34,6 +34,7 @@ import {
   StatusBadge,
   StatusNotice,
   Switch,
+  Textarea,
 } from "@sdkwork/ui-pc-react";
 
 import type {
@@ -48,6 +49,7 @@ import type {
 import { useOfficialAccountsMessages } from "./messages";
 import type { OfficialAccountsMessages } from "./messages";
 import type { OfficialAccountsController } from "./controller";
+import { SdkworkOfficialAccountsMenuDialog } from "./menu/dialog";
 
 /** Maximum top-level menu buttons (WeChat limit). */
 const MAX_TOP_LEVEL_BUTTONS = 3;
@@ -65,6 +67,22 @@ const LOGO_ACCEPT = ["image/png", "image/jpeg", "image/webp"] as const;
 const JS_SECURE_DOMAIN_LIMIT = 5;
 const WEB_AUTH_DOMAIN_LIMIT = 2;
 const BUSINESS_DOMAIN_LIMIT = 3;
+
+/**
+ * Operator list grid: name, identifiers, type, organization, maintainer,
+ * status, menu, and actions. The owner columns only exist on an operator
+ * surface — a self-service list only ever shows the caller's own accounts.
+ */
+const OPERATOR_ROW_GRID =
+  "grid-cols-[minmax(0,1.5fr)_minmax(0,1.2fr)_5.5rem_minmax(0,1fr)_minmax(0,1fr)_8.5rem_7rem_auto]";
+
+/** Self-service list grid: the operator-only owner columns are omitted. */
+const SELF_SERVICE_ROW_GRID =
+  "grid-cols-[minmax(0,1.5fr)_minmax(0,1.2fr)_5.5rem_8.5rem_7rem_auto]";
+
+/** Minimum list width, so identity and owner columns never collapse to slivers. */
+const OPERATOR_LIST_MIN_WIDTH = "min-w-[68rem]";
+const SELF_SERVICE_LIST_MIN_WIDTH = "min-w-[52rem]";
 
 /** Drawer tabs: account credentials and the WeChat domain/server configuration. */
 type DrawerTab = "basic" | "domains" | "server";
@@ -228,30 +246,50 @@ function AccountRow({
       ? messages.accountType.subscription
       : messages.accountType.unset;
   const menuCount = account.customMenu.buttons.length;
+  const operator = capabilities.mode === "operator";
+  const originalId = account.originalId?.trim() ?? "";
+  // An account always belongs to the platform or to one organization; the
+  // sentinel `0` names the platform itself, and an unresolved directory row
+  // falls back to the raw id instead of inventing a name.
+  const organizationId = account.organizationId?.trim() ?? "";
+  const organizationLabel = account.organizationName?.trim()
+    || (organizationId === "0"
+      ? messages.account.platformOrganization
+      : organizationId || messages.account.noOrganization);
+  const organizationTitle = organizationId === ""
+    || organizationId === "0"
+    || organizationLabel === organizationId
+    ? undefined
+    : `${messages.columns.organization}: ${organizationId}`;
+  const maintainerLabel = account.maintainerDisplayName?.trim()
+    || account.maintainerUsername?.trim()
+    || account.maintainerUserId?.trim()
+    || messages.account.noMaintainer;
+  const maintainerHint = [
+    account.maintainerDisplayName?.trim(),
+    account.maintainerUsername?.trim(),
+    account.maintainerUserId?.trim(),
+  ].filter((value): value is string => value !== undefined && value !== "")
+    .join(" · ") || undefined;
+  const maintainerTitle = maintainerHint === maintainerLabel ? undefined : maintainerHint;
   return (
     <div
-      className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1.4fr)_8rem_9rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--sdk-color-border-subtle)] px-3 py-3 text-sm last:border-b-0"
+      className={`grid ${operator ? OPERATOR_ROW_GRID : SELF_SERVICE_ROW_GRID} items-center gap-3 border-b border-[var(--sdk-color-border-subtle)] px-3 py-3 text-sm last:border-b-0`}
       data-official-account-row={account.id}
     >
-      <div className="min-w-0">
+      <div className="min-w-0 space-y-1">
         <button
           className="block w-full truncate text-left font-medium text-[var(--sdk-color-text-primary)] hover:underline"
           onClick={onEdit}
+          title={account.displayName}
           type="button"
         >
           {account.displayName}
         </button>
-        {account.originalId !== undefined
-          ? (
-            <span className="block truncate text-xs text-[var(--sdk-color-text-muted)]">
-              {account.originalId}
-            </span>
-          )
-          : null}
-        {capabilities.mode === "operator" && account.accessMode === "self_managed_account"
+        {operator && account.accessMode === "self_managed_account"
           ? (
             <span
-              className="mt-1 inline-block rounded-full border border-[var(--sdk-color-border-default)] px-2 py-0.5 text-xs text-[var(--sdk-color-text-secondary)]"
+              className="inline-block rounded-full border border-[var(--sdk-color-border-default)] px-2 py-0.5 text-xs text-[var(--sdk-color-text-secondary)]"
               title={messages.account.selfManagedHint}
             >
               {messages.account.selfManaged}
@@ -259,10 +297,39 @@ function AccountRow({
           )
           : null}
       </div>
-      <span className="truncate font-mono text-xs text-[var(--sdk-color-text-secondary)]">
-        {account.appId}
-      </span>
+      <div className="min-w-0 space-y-0.5">
+        <span
+          className="block truncate font-mono text-xs text-[var(--sdk-color-text-secondary)]"
+          title={account.appId}
+        >
+          {account.appId}
+        </span>
+        <span
+          className="block truncate font-mono text-xs text-[var(--sdk-color-text-muted)]"
+          title={originalId === "" ? undefined : originalId}
+        >
+          {originalId === "" ? messages.account.unset : originalId}
+        </span>
+      </div>
       <span className="truncate text-xs text-[var(--sdk-color-text-secondary)]">{typeLabel}</span>
+      {operator
+        ? (
+          <>
+            <span
+              className="min-w-0 truncate text-xs text-[var(--sdk-color-text-secondary)]"
+              title={organizationTitle}
+            >
+              {organizationLabel}
+            </span>
+            <span
+              className="min-w-0 truncate text-xs text-[var(--sdk-color-text-primary)]"
+              title={maintainerTitle}
+            >
+              {maintainerLabel}
+            </span>
+          </>
+        )
+        : null}
       <div className="flex items-center gap-2">
         <Switch
           aria-label={`${messages.actions.edit} ${account.displayName}`}
@@ -278,6 +345,7 @@ function AccountRow({
         aria-label={messages.columns.menu}
         className="truncate text-left text-xs text-[var(--sdk-color-text-secondary)] hover:underline"
         onClick={onMenu}
+        title={menuCount === 0 ? messages.menu.empty : `${messages.columns.menu} · ${menuCount}`}
         type="button"
       >
         {menuCount === 0 ? messages.menu.empty : `${messages.columns.menu} · ${menuCount}`}
@@ -326,6 +394,7 @@ export function SdkworkOfficialAccountsPanel({
   messages: messagesOverride,
   notifyBaseUrl,
   onOpenCustomMenu,
+  onSaveServerIps,
   serverIps = [],
 }: {
   /** What the host allows; see {@link OfficialAccountsCapabilities}. */
@@ -366,6 +435,12 @@ export function SdkworkOfficialAccountsPanel({
    */
   notifyBaseUrl?: string;
   /**
+   * Persists the operator-maintained server egress IP allowlist. Present on an
+   * operator surface whose host stores the tenant-level list; the server-info
+   * tab then offers a maintenance action in addition to copy-per-IP.
+   */
+  onSaveServerIps?: (ips: string[]) => Promise<readonly string[]>;
+  /**
    * The deployment's published server egress IPs, listed in the 服务器信息 tab
    * for the WeChat 公众号 IP allowlist. Empty means the deployment publishes no
    * list and the tab states that instead.
@@ -391,6 +466,7 @@ export function SdkworkOfficialAccountsPanel({
   const [activeTab, setActiveTab] = useState<DrawerTab>("basic");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [pendingDelete, setPendingDelete] = useState<OfficialAccount>();
+  const [menuAccount, setMenuAccount] = useState<OfficialAccount>();
   const [followQr, setFollowQr] = useState<FollowQrState>();
   // Create mode has no account id at pick time: the field parks the pick and
   // the submit flushes it once `controller.create` returns an id.
@@ -428,8 +504,9 @@ export function SdkworkOfficialAccountsPanel({
       onOpenCustomMenu(account.id);
       return;
     }
-    resetDrawerState();
-    setForm({ mode: "menu", account, draft: draftOf(account), menu: account.customMenu });
+    // Every surface edits the menu through the one shared workspace dialog
+    // (the same component the IAM admin full-screen editor mounts).
+    setMenuAccount(account);
   };
   /**
    * Requests the account's follow (parameterized) QR and shows it in its own
@@ -633,34 +710,48 @@ export function SdkworkOfficialAccountsPanel({
 
       {state.error !== undefined ? <StatusNotice tone="danger">{state.error}</StatusNotice> : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto rounded-[1rem] border border-[var(--sdk-color-border-default)]">
-        <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1.4fr)_8rem_9rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--sdk-color-border-default)] px-3 py-2 text-xs font-medium text-[var(--sdk-color-text-muted)]">
-          <span>{messages.columns.name}</span>
-          <span>{messages.columns.appId}</span>
-          <span>{messages.columns.type}</span>
-          <span>{messages.columns.status}</span>
-          <span>{messages.columns.menu}</span>
-          <span className="text-right">{messages.columns.actions}</span>
+      <div className="min-h-0 flex-1 overflow-auto rounded-[1rem] border border-[var(--sdk-color-border-default)]">
+        <div className={capabilities.mode === "operator" ? OPERATOR_LIST_MIN_WIDTH : SELF_SERVICE_LIST_MIN_WIDTH}>
+          <div
+            className={`sticky top-0 z-10 grid ${capabilities.mode === "operator" ? OPERATOR_ROW_GRID : SELF_SERVICE_ROW_GRID} items-center gap-3 border-b border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-panel)] px-3 py-2 text-xs font-medium text-[var(--sdk-color-text-muted)]`}
+          >
+            <span>{messages.columns.name}</span>
+            <span title={`${messages.columns.appId} / ${messages.columns.originalId}`}>
+              {messages.columns.identifier}
+            </span>
+            <span>{messages.columns.type}</span>
+            {capabilities.mode === "operator"
+              ? (
+                <>
+                  <span>{messages.columns.organization}</span>
+                  <span>{messages.columns.maintainer}</span>
+                </>
+              )
+              : null}
+            <span>{messages.columns.status}</span>
+            <span>{messages.columns.menu}</span>
+            <span className="text-right">{messages.columns.actions}</span>
+          </div>
+          {state.accounts.length === 0
+            ? (
+              <p className="px-3 py-12 text-center text-sm text-[var(--sdk-color-text-muted)]">
+                {state.status === "loading" ? messages.panel.loading : messages.panel.empty}
+              </p>
+            )
+            : state.accounts.map((account) => (
+              <AccountRow
+                account={account}
+                capabilities={capabilities}
+                key={account.id}
+                messages={messages}
+                onDelete={() => setPendingDelete(account)}
+                onEdit={() => openEdit(account)}
+                onFollowQrCode={() => openFollowQrCode(account)}
+                onMenu={() => openMenu(account)}
+                onToggle={(enabled) => { void controller.setEnabled(account, enabled); }}
+              />
+            ))}
         </div>
-        {state.accounts.length === 0
-          ? (
-            <p className="px-3 py-12 text-center text-sm text-[var(--sdk-color-text-muted)]">
-              {state.status === "loading" ? messages.panel.loading : messages.panel.empty}
-            </p>
-          )
-          : state.accounts.map((account) => (
-            <AccountRow
-              account={account}
-              capabilities={capabilities}
-              key={account.id}
-              messages={messages}
-              onDelete={() => setPendingDelete(account)}
-              onEdit={() => openEdit(account)}
-              onFollowQrCode={() => openFollowQrCode(account)}
-              onMenu={() => openMenu(account)}
-              onToggle={(enabled) => { void controller.setEnabled(account, enabled); }}
-            />
-          ))}
       </div>
 
       <footer className="flex items-center justify-end gap-2 text-xs text-[var(--sdk-color-text-muted)]">
@@ -763,7 +854,7 @@ export function SdkworkOfficialAccountsPanel({
                         </div>
                       )
                       : null}
-                    {capabilities.mode === "self-service"
+                    {capabilities.mode === "self-service" || capabilities.mode === "operator"
                       ? (
                         <div
                           aria-labelledby="official-account-tab-server"
@@ -771,7 +862,12 @@ export function SdkworkOfficialAccountsPanel({
                           id="official-account-panel-server"
                           role="tabpanel"
                         >
-                          <ServerInfoTab messages={messages} serverIps={serverIps} />
+                          <ServerInfoTab
+                            canMaintain={capabilities.mode === "operator" && onSaveServerIps !== undefined}
+                            messages={messages}
+                            onSave={onSaveServerIps}
+                            serverIps={serverIps}
+                          />
                         </div>
                       )
                       : null}
@@ -869,6 +965,62 @@ export function SdkworkOfficialAccountsPanel({
         open={pendingDelete !== undefined}
         title={messages.actions.confirmDelete}
         tone="danger"
+      />
+
+      <SdkworkOfficialAccountsMenuDialog
+        canPublish={capabilities.publishMenu}
+        canUpdate={capabilities.editCredentials}
+        context={menuAccount === undefined ? undefined : {
+          accountId: menuAccount.id,
+          menu: menuAccount.customMenu,
+          displayName: menuAccount.displayName,
+          logoUrl: menuAccount.logoUrl,
+        }}
+        messages={messages.menuEditor}
+        onClose={() => setMenuAccount(undefined)}
+        onPublish={capabilities.publishMenu
+          ? async (menu) => {
+            if (menuAccount === undefined) return undefined;
+            await controller.saveMenu(menuAccount, menu);
+            // Publish the stored revision, so the transport can send the
+            // version it just saved and the server can reject a concurrent edit.
+            let stored = menu;
+            try {
+              stored = (await controller.loadMenu(menuAccount.id)).menu;
+              setMenuAccount((current) => current === undefined ? current : { ...current, customMenu: stored });
+            } catch {
+              // The publish request still carries the caller's draft.
+            }
+            return await controller.publishMenu(menuAccount, stored);
+          }
+          : undefined}
+        onRefresh={capabilities.refreshMenu === true
+          ? async (baseVersion) => {
+            if (menuAccount === undefined) throw new Error("official account menu dialog has no account");
+            return await controller.syncMenu(menuAccount, baseVersion);
+          }
+          : undefined}
+        onRollback={capabilities.rollbackMenu === true
+          ? async (version, baseVersion) => {
+            if (menuAccount === undefined) throw new Error("official account menu dialog has no account");
+            return await controller.rollbackMenu(menuAccount, version, baseVersion);
+          }
+          : undefined}
+        onSave={async (menu) => {
+          if (menuAccount === undefined) return undefined;
+          await controller.saveMenu(menuAccount, menu);
+          // The store advances the menu revision on save; read it back so the
+          // dialog's refresh/publish/rollback carry the current baseVersion.
+          try {
+            const refreshed = await controller.loadMenu(menuAccount.id);
+            setMenuAccount((current) => current === undefined ? current : { ...current, customMenu: refreshed.menu });
+            return refreshed.menu;
+          } catch {
+            setMenuAccount((current) => current === undefined ? current : { ...current, customMenu: menu });
+            return menu;
+          }
+        }}
+        open={menuAccount !== undefined}
       />
     </div>
   );
@@ -1536,7 +1688,7 @@ function AccountTabBar({
     {
       id: "server" as const,
       label: messages.form.tabServer,
-      visible: capabilities.mode === "self-service",
+      visible: true,
     },
   ].filter((tab) => tab.visible);
   const order = tabs.map((tab) => tab.id);
@@ -1988,14 +2140,24 @@ async function copyText(value: string): Promise<boolean> {
  * so an operator can paste them into the WeChat 公众号 IP allowlist.
  */
 function ServerInfoTab({
+  canMaintain = false,
   messages,
+  onSave,
   serverIps,
 }: {
+  canMaintain?: boolean;
   messages: OfficialAccountsMessages;
+  onSave?: (ips: string[]) => Promise<readonly string[]>;
   serverIps: readonly string[];
 }): ReactNode {
   const [copied, setCopied] = useState<string>();
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [localIps, setLocalIps] = useState<readonly string[]>();
+  const [maintainOpen, setMaintainOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string>();
+  const ips = localIps ?? serverIps;
   useEffect(() => () => {
     if (timer.current !== undefined) clearTimeout(timer.current);
   }, []);
@@ -2005,32 +2167,78 @@ function ServerInfoTab({
     if (timer.current !== undefined) clearTimeout(timer.current);
     timer.current = setTimeout(() => setCopied(undefined), 1500);
   };
+  const openMaintain = (): void => {
+    setDraft(ips.join("\n"));
+    setError(undefined);
+    setMaintainOpen(true);
+  };
+  const saveMaintain = async (): Promise<void> => {
+    if (onSave === undefined) return;
+    const entries = draft
+      .split(/\r?\n/u)
+      .map((entry) => entry.trim())
+      .filter((entry) => entry !== "");
+    const unique = [...new Set(entries)];
+    if (unique.some((entry) => /\s/u.test(entry))) {
+      setError(messages.form.serverIpsInvalid);
+      return;
+    }
+    setSaving(true);
+    setError(undefined);
+    try {
+      const saved = await onSave(unique);
+      setLocalIps(saved);
+      setMaintainOpen(false);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : messages.form.serverIpsInvalid);
+    } finally {
+      setSaving(false);
+    }
+  };
   return (
     <div className="space-y-4">
       <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.serverIpsHint}</p>
       <StatusNotice tone="default">{messages.form.serverIpsNote}</StatusNotice>
-      {serverIps.length === 0
+      {ips.length === 0
         ? (
-          <p className="text-sm text-[var(--sdk-color-text-muted)]">
-            {messages.form.serverIpsEmpty}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-[var(--sdk-color-text-muted)]">
+              {canMaintain ? messages.form.serverIpsEmptyMaintain : messages.form.serverIpsEmpty}
+            </p>
+            {canMaintain
+              ? (
+                <Button onClick={openMaintain} size="sm" variant="outline">
+                  {messages.form.serverIpsMaintain}
+                </Button>
+              )
+              : null}
+          </div>
         )
         : (
           <div className="overflow-hidden rounded-[1rem] border border-[var(--sdk-color-border-default)]">
             <div className="flex items-center justify-between gap-3 border-b border-[var(--sdk-color-border-default)] px-3 py-2">
               <span className="text-xs font-medium text-[var(--sdk-color-text-muted)]">
-                {messages.form.serverIpsCount.replace("{count}", String(serverIps.length))}
+                {messages.form.serverIpsCount.replace("{count}", String(ips.length))}
               </span>
-              <Button
-                onClick={() => { void copy(serverIps.join("\n"), "all"); }}
-                size="sm"
-                variant="outline"
-              >
-                {copied === "all" ? messages.form.serverIpCopied : messages.form.serverIpCopyAll}
-              </Button>
+              <div className="flex items-center gap-2">
+                {canMaintain
+                  ? (
+                    <Button onClick={openMaintain} size="sm" variant="outline">
+                      {messages.form.serverIpsMaintain}
+                    </Button>
+                  )
+                  : null}
+                <Button
+                  onClick={() => { void copy(ips.join("\n"), "all"); }}
+                  size="sm"
+                  variant="outline"
+                >
+                  {copied === "all" ? messages.form.serverIpCopied : messages.form.serverIpCopyAll}
+                </Button>
+              </div>
             </div>
             <ul>
-              {serverIps.map((ip) => (
+              {ips.map((ip) => (
                 <li
                   className="flex items-center justify-between gap-3 border-b border-[var(--sdk-color-border-subtle)] px-3 py-2 last:border-b-0"
                   key={ip}
@@ -2048,6 +2256,33 @@ function ServerInfoTab({
             </ul>
           </div>
         )}
+
+      <Modal open={maintainOpen} onOpenChange={setMaintainOpen}>
+        <ModalContent size="md">
+          <ModalHeader>
+            <ModalTitle>{messages.form.serverIpsMaintainTitle}</ModalTitle>
+            <ModalDescription>{messages.form.serverIpsMaintainDescription}</ModalDescription>
+          </ModalHeader>
+          <ModalBody className="space-y-3">
+            {error === undefined ? null : <StatusNotice tone="danger">{error}</StatusNotice>}
+            <Textarea
+              aria-label={messages.form.serverIpsMaintainTitle}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder={messages.form.serverIpsPlaceholder}
+              rows={6}
+              value={draft}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={() => setMaintainOpen(false)} variant="outline">
+              {messages.form.cancel}
+            </Button>
+            <Button loading={saving} onClick={() => { void saveMaintain(); }}>
+              {messages.form.serverIpsSave}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

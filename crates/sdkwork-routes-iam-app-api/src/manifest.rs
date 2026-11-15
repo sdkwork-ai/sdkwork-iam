@@ -305,6 +305,13 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
     // resource is a different, tenant-level surface.
     HttpRoute::dual_token(
         HttpMethod::Get,
+        "/app/v3/api/iam/oauth/official_account_settings",
+        "iam",
+        "iam.oauth.officialAccountSettings.retrieve",
+    )
+    .with_required_permission("iam:self"),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
         "/app/v3/api/iam/oauth/official_accounts",
         "iam",
         "iam.oauth.officialAccounts.list",
@@ -329,6 +336,27 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
         "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}",
         "iam",
         "iam.oauth.officialAccounts.update",
+    )
+    .with_required_permission("iam.profile.update"),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}/custom_menus/sync",
+        "iam",
+        "iam.oauth.officialAccounts.customMenus.sync",
+    )
+    .with_required_permission("iam.profile.update"),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}/custom_menus/publish",
+        "iam",
+        "iam.oauth.officialAccounts.customMenus.publish",
+    )
+    .with_required_permission("iam.profile.update"),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}/custom_menus/rollback",
+        "iam",
+        "iam.oauth.officialAccounts.customMenus.rollback",
     )
     .with_required_permission("iam.profile.update"),
     HttpRoute::dual_token(

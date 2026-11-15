@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { StatusNotice } from "@sdkwork/ui-pc-react";
+import {
+  SdkworkOfficialAccountsMenuWorkspace,
+  type OfficialAccountsDeployedMiniProgramAppLoader,
+  type OfficialAccountsMenu,
+  type OfficialAccountsMenuMessages,
+} from "@sdkwork/iam-pc-official-accounts";
 
 import type {
   SdkworkIamOauthCustomMenuContext,
@@ -10,7 +16,6 @@ import type {
 import type { SdkworkIamOauthAdminController } from "../types/oauth-admin-types";
 import { useSdkworkIamOauthAdminMessages } from "../i18n";
 import { templateMessage } from "../utils/oauth-admin-utils";
-import { SdkworkIamOauthCustomMenuManagementSection } from "../components/custom-menu/custom-menu-management-section";
 
 interface CustomMenuNotice {
   text: string;
@@ -31,6 +36,7 @@ type CustomMenuPendingAction = "saving" | "publishing";
  */
 export function SdkworkIamOauthOfficialAccountCustomMenuPage({
   controller,
+  loadDeployedMiniProgramApps,
   onBusyChange,
   onDirtyChange,
   onClose,
@@ -38,6 +44,11 @@ export function SdkworkIamOauthOfficialAccountCustomMenuPage({
   resourceAccountId,
 }: {
   controller: SdkworkIamOauthAdminController;
+  /**
+   * Host-injected deployed mini program inventory for the "open mini program"
+   * action; omitted hosts keep the plain AppID field.
+   */
+  loadDeployedMiniProgramApps?: OfficialAccountsDeployedMiniProgramAppLoader;
   onBusyChange?: (busy: boolean) => void;
   onDirtyChange?: (dirty: boolean) => void;
   onClose?: () => void;
@@ -160,17 +171,39 @@ export function SdkworkIamOauthOfficialAccountCustomMenuPage({
           {notice ? <StatusNotice tone={notice.tone}>{notice.text}</StatusNotice> : null}
         </div>
       ) : null}
-      <SdkworkIamOauthCustomMenuManagementSection
+      <SdkworkOfficialAccountsMenuWorkspace
         key={resourceAccountId}
         busy={busy}
         canPublish={canPublish}
         canUpdate={canUpdate}
-        context={context}
-        messages={messages.quickSetup.customMenus}
+        context={context === undefined ? undefined : {
+          accountId: resourceAccountId,
+          menu: context.draft,
+          displayName: context.displayName,
+          logoUrl: context.logoUrl,
+          source: context.source,
+          version: context.version ?? context.draft.version,
+        }}
+        history={context?.draft.history}
+        loadDeployedMiniProgramApps={loadDeployedMiniProgramApps}
+        messages={messages.quickSetup.customMenus as OfficialAccountsMenuMessages}
         onDirtyChange={onDirtyChange}
         onClose={onClose}
-        onPublish={handlePublish}
-        onSaveDraft={handleSaveDraft}
+        onPublish={(menu) => handlePublish(menu as SdkworkIamOauthCustomMenuDraft)}
+        onRefresh={async (baseVersion) => {
+          const next = await controller.syncAccountCustomMenu(resourceAccountId, baseVersion ?? context?.version);
+          setContext(next);
+        }}
+        onRollback={async (version, baseVersion) => {
+          const next = await controller.rollbackAccountCustomMenu(
+            resourceAccountId,
+            version,
+            baseVersion ?? context?.version,
+          );
+          setContext(next);
+        }}
+        onSaveDraft={(menu) => handleSaveDraft(menu as SdkworkIamOauthCustomMenuDraft)}
+        version={context?.version ?? context?.draft.version}
       />
     </div>
   );

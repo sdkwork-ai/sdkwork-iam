@@ -1,3 +1,5 @@
+import type { OfficialAccountsMenuMessages } from "./menu/messages";
+import { OFFICIAL_ACCOUNTS_MENU_MESSAGES_EN_US, OFFICIAL_ACCOUNTS_MENU_MESSAGES_ZH_CN } from "./menu/messages";
 import { createSdkworkMessageCatalog, useSdkworkModuleMessages } from "@sdkwork/i18n-pc-react";
 
 /**
@@ -23,8 +25,12 @@ export interface OfficialAccountsMessages {
   };
   columns: {
     name: string;
+    identifier: string;
     appId: string;
+    originalId: string;
     type: string;
+    organization: string;
+    maintainer: string;
     status: string;
     menu: string;
     actions: string;
@@ -41,6 +47,10 @@ export interface OfficialAccountsMessages {
   account: {
     selfManaged: string;
     selfManagedHint: string;
+    platformOrganization: string;
+    noOrganization: string;
+    noMaintainer: string;
+    unset: string;
   };
   actions: {
     edit: string;
@@ -100,6 +110,13 @@ export interface OfficialAccountsMessages {
     serverIpCopy: string;
     serverIpCopied: string;
     serverIpCopyAll: string;
+    serverIpsMaintain: string;
+    serverIpsMaintainTitle: string;
+    serverIpsMaintainDescription: string;
+    serverIpsPlaceholder: string;
+    serverIpsInvalid: string;
+    serverIpsSave: string;
+    serverIpsEmptyMaintain: string;
     appIdHint: string;
     appSecretHint: string;
     originalIdHint: string;
@@ -197,6 +214,8 @@ export interface OfficialAccountsMessages {
     menuNameRequired: string;
     menuUrlRequired: string;
   };
+  /** Full custom-menu workspace copy. */
+  menuEditor: OfficialAccountsMenuMessages;
 }
 
 /** Namespace of the official-account message catalog. */
@@ -206,7 +225,7 @@ const zhCN: OfficialAccountsMessages = {
   panel: {
     title: "公众号账号",
     description: "维护当前账号自己的公众号配置，供后续菜单管理与文章发布使用。",
-    searchPlaceholder: "搜索名称或 AppID",
+    searchPlaceholder: "搜索名称、AppID 或原始 ID",
     search: "搜索",
     refresh: "刷新",
     add: "添加公众号账号",
@@ -218,9 +237,13 @@ const zhCN: OfficialAccountsMessages = {
     next: "下一页",
   },
   columns: {
-    name: "名称",
+    name: "公众号",
+    identifier: "公众号标识",
     appId: "AppID",
+    originalId: "原始 ID",
     type: "类型",
+    organization: "所属组织",
+    maintainer: "维护人",
     status: "状态",
     menu: "自定义菜单",
     actions: "操作",
@@ -237,6 +260,10 @@ const zhCN: OfficialAccountsMessages = {
   account: {
     selfManaged: "自助维护",
     selfManagedHint: "该账号由用户自助维护，运营侧不可改其凭据。",
+    platformOrganization: "平台",
+    noOrganization: "未归属组织",
+    noMaintainer: "未指定",
+    unset: "—",
   },
   actions: {
     edit: "编辑",
@@ -296,6 +323,13 @@ const zhCN: OfficialAccountsMessages = {
     serverIpCopy: "复制",
     serverIpCopied: "已复制",
     serverIpCopyAll: "复制全部",
+    serverIpsMaintain: "维护",
+    serverIpsMaintainTitle: "维护服务器公网 IP",
+    serverIpsMaintainDescription: "每行一个 IP，支持多个；保存后服务器信息页签会展示并可复制。",
+    serverIpsPlaceholder: "例如 203.0.113.10",
+    serverIpsInvalid: "IP 中不能包含空格。",
+    serverIpsSave: "保存 IP 列表",
+    serverIpsEmptyMaintain: "当前还没有维护服务器 IP，点击「维护」添加。",
     appIdHint: "在公众平台「开发 → 开发管理 → 开发者 ID」中查看；创建后不可修改。",
     appSecretHint: "用于获取 access_token 的开发者密码；请确保服务端出口 IP 已加入白名单。",
     originalIdHint: "公众号「账号详情」中的原始 ID，例如 gh_xxxxxxxxxxxx。",
@@ -393,13 +427,14 @@ const zhCN: OfficialAccountsMessages = {
     menuNameRequired: "请填写菜单名称。",
     menuUrlRequired: "跳转网页的菜单需要填写网页地址。",
   },
+  menuEditor: OFFICIAL_ACCOUNTS_MENU_MESSAGES_ZH_CN,
 };
 
 const enUS: OfficialAccountsMessages = {
   panel: {
     title: "Official Accounts",
     description: "Maintain this account's own official-account configuration for menu management and article publishing.",
-    searchPlaceholder: "Search name or AppID",
+    searchPlaceholder: "Search name, AppID, or original ID",
     search: "Search",
     refresh: "Refresh",
     add: "Add official account",
@@ -411,9 +446,13 @@ const enUS: OfficialAccountsMessages = {
     next: "Next",
   },
   columns: {
-    name: "Name",
+    name: "Official account",
+    identifier: "Account identifiers",
     appId: "AppID",
+    originalId: "Original ID",
     type: "Type",
+    organization: "Organization",
+    maintainer: "Maintainer",
     status: "Status",
     menu: "Custom menu",
     actions: "Actions",
@@ -430,6 +469,10 @@ const enUS: OfficialAccountsMessages = {
   account: {
     selfManaged: "Self-managed",
     selfManagedHint: "This account is maintained by its user; operators cannot change its credentials.",
+    platformOrganization: "Platform",
+    noOrganization: "No organization",
+    noMaintainer: "Unassigned",
+    unset: "—",
   },
   actions: {
     edit: "Edit",
@@ -489,6 +532,13 @@ const enUS: OfficialAccountsMessages = {
     serverIpCopy: "Copy",
     serverIpCopied: "Copied",
     serverIpCopyAll: "Copy all",
+    serverIpsMaintain: "Maintain",
+    serverIpsMaintainTitle: "Maintain server public IPs",
+    serverIpsMaintainDescription: "One IP per line; multiple entries are supported. The server-info tab lists and copies them after saving.",
+    serverIpsPlaceholder: "e.g. 203.0.113.10",
+    serverIpsInvalid: "An IP entry cannot contain whitespace.",
+    serverIpsSave: "Save IP list",
+    serverIpsEmptyMaintain: "No server IPs are maintained yet. Choose Maintain to add them.",
     appIdHint: "Find it under Developer ID in the WeChat console; it cannot change after creation.",
     appSecretHint: "The developer secret used to obtain access_token; keep the server egress IP on the allowlist.",
     originalIdHint: "The account's original ID from its profile page, e.g. gh_xxxxxxxxxxxx.",
@@ -586,6 +636,7 @@ const enUS: OfficialAccountsMessages = {
     menuNameRequired: "Enter the menu name.",
     menuUrlRequired: "A URL-opening menu needs a URL.",
   },
+  menuEditor: OFFICIAL_ACCOUNTS_MENU_MESSAGES_EN_US,
 };
 
 /** Message catalog the panel and its host provider register. */

@@ -46,6 +46,8 @@ function memoryTransport(
     loadCustomMenu: vi.fn(async (id) => ({ accountId: id, menu: { buttons: [] } })),
     saveCustomMenu: vi.fn(async (id, menu) => ({ accountId: id, menu })),
     publishCustomMenu: vi.fn(async (id) => ({ accountId: id, published: true })),
+    syncCustomMenu: vi.fn(async (id) => ({ accountId: id, menu: { buttons: [{ key: "menu-0", name: "Live" }], version: 2 } })),
+    rollbackCustomMenu: vi.fn(async (id) => ({ accountId: id, menu: { buttons: [], version: 3 } })),
     setEnabled: vi.fn(async () => undefined),
     setQrLogin: vi.fn(async () => undefined),
     createFollowQrCode: vi.fn(async () => ({ qrCode: "https://example.test/qr" })),
@@ -137,6 +139,14 @@ describe("official accounts controller", () => {
     await controller.publishMenu(ACCOUNT, { buttons: [] });
     expect(transport.publishCustomMenu).toHaveBeenCalledWith("acc-1", { buttons: [] });
 
+    const synced = await controller.syncMenu(ACCOUNT, 1);
+    expect(transport.syncCustomMenu).toHaveBeenCalledWith("acc-1", 1);
+    expect(synced.menu.version).toBe(2);
+
+    const restored = await controller.rollbackMenu(ACCOUNT, 1, 2);
+    expect(transport.rollbackCustomMenu).toHaveBeenCalledWith("acc-1", 1, 2);
+    expect(restored.menu.version).toBe(3);
+
     await controller.setQrLogin(ACCOUNT, true);
     expect(transport.setQrLogin).toHaveBeenCalledWith("acc-1", true);
 
@@ -154,10 +164,14 @@ describe("official accounts controller", () => {
   it("refuses the actions a host capability disables", async () => {
     const controller = createOfficialAccountsController(
       memoryTransport(),
-      capabilities({ deleteAccount: false, publishMenu: false, manageQrLogin: false }),
+      capabilities({ deleteAccount: false, publishMenu: false, manageQrLogin: false, refreshMenu: false, rollbackMenu: false }),
     );
     await expect(controller.remove("acc-1")).rejects.toBeInstanceOf(OfficialAccountsCapabilityError);
     await expect(controller.publishMenu(ACCOUNT, { buttons: [] }))
+      .rejects.toBeInstanceOf(OfficialAccountsCapabilityError);
+    await expect(controller.syncMenu(ACCOUNT))
+      .rejects.toBeInstanceOf(OfficialAccountsCapabilityError);
+    await expect(controller.rollbackMenu(ACCOUNT, 1))
       .rejects.toBeInstanceOf(OfficialAccountsCapabilityError);
     await expect(controller.setQrLogin(ACCOUNT, true))
       .rejects.toBeInstanceOf(OfficialAccountsCapabilityError);

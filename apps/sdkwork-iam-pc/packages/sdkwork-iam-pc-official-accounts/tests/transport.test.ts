@@ -107,6 +107,40 @@ describe("self-service transport", () => {
     const transport = createSelfServiceTransport(memoryApi());
     await expect(transport.loadCustomMenu("acc-1")).rejects.toThrow(/does not support/);
   });
+  it("syncs, publishes and rolls back the app-owned menu through the customMenus slice", async () => {
+    const sync = vi.fn(async (id: string) => ({
+      accountId: id,
+      displayName: "Example",
+      menu: { buttons: [], version: 2 },
+      source: "wechat",
+      version: 2,
+    }));
+    const publish = vi.fn(async (id: string) => ({
+      accountId: id,
+      menu: { buttons: [{ key: "menu-0", name: "Help" }], version: 3 },
+      source: "wechat",
+      version: 3,
+    }));
+    const rollback = vi.fn(async (id: string) => ({
+      accountId: id,
+      menu: { buttons: [], version: 4 },
+      source: "wechat",
+      version: 4,
+    }));
+    const transport = createSelfServiceTransport(memoryApi({ customMenus: { sync, publish, rollback } }));
+    const synced = await transport.syncCustomMenu!("acc-1", 1);
+    expect(sync).toHaveBeenCalledWith("acc-1", { baseVersion: 1 });
+    expect(synced.menu.version).toBe(2);
+    const result = await transport.publishCustomMenu!("acc-1", {
+      buttons: [{ key: "menu-0", name: "Help" }],
+    });
+    expect(publish).toHaveBeenCalledWith("acc-1", { buttons: [{ key: "menu-0", name: "Help" }] });
+    expect(result.published).toBe(true);
+    const restored = await transport.rollbackCustomMenu!("acc-1", 2, 3);
+    expect(rollback).toHaveBeenCalledWith("acc-1", { version: 2, baseVersion: 3 });
+    expect(restored.menu.version).toBe(4);
+  });
+
 });
 
 describe("operator transport", () => {
@@ -227,6 +261,23 @@ describe("operator transport", () => {
     });
   });
 
+  it("reads the owner labels the operator list renders", () => {
+    expect(toOfficialAccount({
+      ...RECORD,
+      organization_id: "iamorg-1",
+      organization_name: "Acme Org",
+      maintainer_user_id: "iamu-1",
+      maintainer_display_name: "Li Ming",
+      maintainer_username: "liming",
+    })).toMatchObject({
+      organizationId: "iamorg-1",
+      organizationName: "Acme Org",
+      maintainerUserId: "iamu-1",
+      maintainerDisplayName: "Li Ming",
+      maintainerUsername: "liming",
+    });
+  });
+
   it("reads the provider configuration document instead of duplicate columns", () => {
     const account: OfficialAccount = toOfficialAccount({
       id: "iamora-9",
@@ -244,6 +295,11 @@ describe("operator transport", () => {
       logoUrl: "drive://logo",
       jsSecureDomains: ["api.example.com"],
     });
-    expect(account.customMenu.buttons[0]).toMatchObject({ name: "Help", key: "HELP" });
+    expect(account.customMenu.buttons[0]).toMatchObject({
+      name: "Help",
+      type: "click",
+      key: "menu-0",
+      message: "HELP",
+    });
   });
 });

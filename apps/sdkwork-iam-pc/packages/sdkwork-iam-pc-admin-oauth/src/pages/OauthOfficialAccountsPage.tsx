@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { SdkworkOfficialAccountsPanel } from "@sdkwork/iam-pc-official-accounts";
+import type { OfficialAccountsDeployedMiniProgramAppLoader } from "@sdkwork/iam-pc-official-accounts";
 import type { DriveUploadImageService } from "@sdkwork/drive-upload-image-core";
 import type {
   SdkworkIamOauthAdminController,
@@ -35,6 +36,7 @@ export function SdkworkIamOauthOfficialAccountsPage({
   controller,
   customMenuPermissions,
   driveUploadImageService,
+  loadDeployedMiniProgramApps,
   onOpenCustomMenu,
   permissions,
 }: {
@@ -52,6 +54,11 @@ export function SdkworkIamOauthOfficialAccountsPage({
    * unavailable.
    */
   driveUploadImageService?: DriveUploadImageService;
+  /**
+   * Host-injected deployed mini program inventory for the custom-menu "open
+   * mini program" action; omitted hosts keep the plain AppID field.
+   */
+  loadDeployedMiniProgramApps?: OfficialAccountsDeployedMiniProgramAppLoader;
   onOpenCustomMenu?: (resourceAccountId: string) => void;
   /** UI discovery of the server-side mutation permissions (REQ-2026-0107); every member defaults to true. */
   permissions?: SdkworkIamOauthPagePermissions;
@@ -67,11 +74,30 @@ export function SdkworkIamOauthOfficialAccountsPage({
   );
   const [initialOpen, setInitialOpen] = useState(false);
   const [activeMenuAccountId, setActiveMenuAccountId] = useState<string | undefined>();
+  const [serverIps, setServerIps] = useState<readonly string[]>([]);
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("open") === "add") {
       setInitialOpen(true);
     }
   }, []);
+  // The operator-maintained egress IP allowlist lives on the tenant OAuth
+  // settings; load it once and let the drawer's server-info tab edit it.
+  useEffect(() => {
+    let cancelled = false;
+    // Partial test doubles and older host controllers may not expose the
+    // settings surface; the drawer then renders the page's `serverIps` prop.
+    if (typeof controller.loadScanLoginSettings !== "function") return;
+    controller.loadScanLoginSettings()
+      .then((settings) => { if (!cancelled) setServerIps(settings.serverIps); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [controller]);
+  const saveServerIps = async (ips: string[]): Promise<readonly string[]> => {
+    if (typeof controller.updateScanLoginSettings !== "function") return serverIps;
+    const updated = await controller.updateScanLoginSettings({ serverIps: ips });
+    setServerIps(updated.serverIps);
+    return updated.serverIps;
+  };
   const handleOpenCustomMenu = (resourceAccountId: string) => {
     // Host-provided navigation wins; otherwise open the full-screen modal.
     if (onOpenCustomMenu) {
@@ -88,11 +114,14 @@ export function SdkworkIamOauthOfficialAccountsPage({
         driveUploadImageService={driveUploadImageService}
         initialOpen={initialOpen}
         onOpenCustomMenu={handleOpenCustomMenu}
+        onSaveServerIps={capabilities.mode === "operator" ? saveServerIps : undefined}
+        serverIps={serverIps}
       />
       {activeMenuAccountId ? (
         <SdkworkIamOauthCustomMenuFullscreenModal
           accountId={activeMenuAccountId}
           controller={controller}
+          loadDeployedMiniProgramApps={loadDeployedMiniProgramApps}
           onClose={() => setActiveMenuAccountId(undefined)}
           permissions={customMenuPermissions}
         />
