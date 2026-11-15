@@ -261,6 +261,11 @@ describe("operator transport", () => {
       logoUrl: "drive://logo",
       jsSecureDomains: ["api.example.com"],
     });
-    expect(account.customMenu.buttons[0]).toMatchObject({ name: "Help", key: "HELP" });
+    expect(account.customMenu.buttons[0]).toMatchObject({
+      name: "Help",
+      type: "click",
+      key: "menu-0",
+      message: "HELP",
+    });
   });
 });

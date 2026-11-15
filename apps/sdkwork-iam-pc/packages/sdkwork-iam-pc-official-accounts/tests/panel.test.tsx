@@ -137,19 +137,36 @@ describe("official accounts panel", () => {
     expect(screen.getByText("Default account for scan login")).toBeTruthy();
   });
 
-  it("publishes the menu draft on an operator surface only", async () => {
-    const operator = bench(DEFAULT_OPERATOR_CAPABILITIES);
+  it("opens the shared menu workspace and gates publishing by capability", async () => {
+    const menuAccount: OfficialAccount = {
+      ...ACCOUNT,
+      customMenu: { buttons: [{ key: "menu-0", name: "Help", type: "click", message: "HELP" }] },
+    };
+    const menuTransport = (): Partial<OfficialAccountsTransport> => ({
+      list: vi.fn(async () => ({ items: [menuAccount], totalItems: 1, page: 1, pageSize: 20 })),
+    });
+    const operator = bench(DEFAULT_OPERATOR_CAPABILITIES, menuTransport());
     fireEvent.click(await screen.findByRole("button", { name: "Custom menu" }));
-    const publish = await screen.findByRole("button", { name: "Publish to official account" });
-    fireEvent.click(publish);
+    expect(await screen.findByTestId("custom-menu-modal")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
     await waitFor(() => {
-      expect(operator.transport.publishCustomMenu).toHaveBeenCalledWith("acc-1", { buttons: [] });
+      expect(operator.transport.update).toHaveBeenCalledWith("acc-1", expect.objectContaining({
+        customMenu: { buttons: [{ key: "menu-0", name: "Help", type: "click", message: "HELP" }] },
+      }));
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save & publish" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Publish menu" }));
+    await waitFor(() => {
+      expect(operator.transport.publishCustomMenu).toHaveBeenCalledWith("acc-1", {
+        buttons: [{ key: "menu-0", name: "Help", type: "click", message: "HELP" }],
+      });
     });
     operator.unmount();
 
-    bench(DEFAULT_SELF_SERVICE_CAPABILITIES);
+    bench(DEFAULT_SELF_SERVICE_CAPABILITIES, menuTransport());
     fireEvent.click(await screen.findByRole("button", { name: "Custom menu" }));
-    expect(screen.queryByRole("button", { name: "Publish to official account" })).toBeNull();
+    const publish = screen.getByRole("button", { name: "Save & publish" }) as HTMLButtonElement;
+    expect(publish.disabled).toBe(true);
   });
 
   it("annotates a self-managed account on an operator surface", async () => {
