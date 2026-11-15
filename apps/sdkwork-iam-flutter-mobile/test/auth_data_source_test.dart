@@ -1,10 +1,8 @@
 // SDKWORK-IAM-FLUTTER: authored auth data-source test.
-/**
- * The auth data source is the boundary that used to infer "signed in" from the
- * token manager. These cases pin the corrected source of truth: `currentSession`
- * comes from the context store, so the public application access token alone
- * never opens the shell, and a real session exposes the restored fields.
- */
+// The auth data source is the boundary that used to infer "signed in" from the
+// token manager. These cases pin the corrected source of truth: `currentSession`
+// comes from the context store, so the public application access token alone
+// never opens the shell, and a real session exposes the restored fields.
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';

@@ -94,9 +94,8 @@ String requireSdkworkFlutterCredentialEntryBootstrapAccessToken(
   if (normalized == null) {
     final String? profileFile =
         sdkworkFlutterCredentialEntryBootstrapProfileFile(profileId);
-    final String source = profileFile == null
-        ? 'the profile file passed with --dart-define-from-file'
-        : profileFile;
+    final String source =
+        profileFile ?? 'the profile file passed with --dart-define-from-file';
     throw StateError(
       '$sdkworkAccessTokenEnvironmentKey is required before Flutter '
       'credential-entry SDK calls; pass it through --dart-define-from-file=$source',

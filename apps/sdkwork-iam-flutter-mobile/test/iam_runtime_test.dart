@@ -1,17 +1,18 @@
 // SDKWORK-IAM-FLUTTER: authored runtime test.
-/**
- * Pins the credential bootstrap contract of the Flutter root:
- *
- * - the public application access token is seeded into the one token manager
- *   before any SDK client exists, and a missing token fails closed naming
- *   `SDKWORK_ACCESS_TOKEN` and the profile file;
- * - a bootstrap token never counts as a signed-in session;
- * - a login session is persisted and restored with every field, and logout
- *   restores the bootstrap token instead of clearing the credential.
- *
- * Secure storage and the token resolver are injected, so nothing here touches a
- * platform channel.
- */
+// Pins the credential bootstrap contract of the Flutter root:
+//
+// - the public application access token is seeded into the one token manager
+//   before any SDK client exists, and a missing token fails closed naming
+//   `SDKWORK_ACCESS_TOKEN` and the profile file;
+// - a bootstrap token never counts as a signed-in session;
+// - a login session is persisted and restored with every field, and logout
+//   restores the bootstrap token instead of clearing the credential.
+//
+// Secure storage and the token resolver are injected, so nothing here touches a
+// platform channel.
+
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -230,6 +231,34 @@ void main() {
     expect(IamRuntime.instance.tokenManager.currentAccessToken, _bootstrapToken);
   });
 
+  test('every committed profile carries a public token the resolver accepts', () {
+    // APP_ACCESS_TOKEN_SPEC sections 1 and 3: the public application token is the
+    // only credential a profile may embed, in staging and production too.
+    final List<FileSystemEntity> entries = Directory('env').listSync()..sort(
+        (FileSystemEntity left, FileSystemEntity right) => left.path.compareTo(right.path));
+    expect(entries, isNotEmpty);
+    for (final FileSystemEntity entity in entries) {
+      if (entity is! File || !entity.path.endsWith('.json')) continue;
+      final Object? decoded = jsonDecode(entity.readAsStringSync());
+      expect(decoded, isA<Map<String, dynamic>>(), reason: entity.path);
+      if (decoded is! Map<String, dynamic>) continue;
+      final String? token = _readString(decoded['SDKWORK_ACCESS_TOKEN']);
+      final String? environment = _readString(decoded['SDKWORK_ENVIRONMENT']);
+      expect(token, isNotNull, reason: '${entity.path} is missing SDKWORK_ACCESS_TOKEN');
+      expect(environment, isNotNull, reason: '${entity.path} is missing SDKWORK_ENVIRONMENT');
+      if (token == null || environment == null) continue;
+      expect(isSdkworkPublicApplicationAccessToken(token), isTrue, reason: entity.path);
+      expect(
+        resolveSdkworkFlutterCredentialEntryBootstrapAccessToken(
+          environment: environment,
+          compileTimeAccessToken: token,
+        ),
+        token,
+        reason: '${entity.path} must be accepted in $environment',
+      );
+    }
+  });
+
   test('bootstrap seeding never overwrites a session credential', () {
     final SdkworkTokenManager tokenManager = SdkworkTokenManager();
     tokenManager.seedBootstrapAccessToken(_bootstrapToken);
@@ -265,4 +294,12 @@ void main() {
 
     expect(applied, <String>[_sessionToken, _sessionToken, _sessionToken]);
   });
+}
+
+String? _readString(Object? value) {
+  if (value is String) {
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+  return null;
 }
