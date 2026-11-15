@@ -299,6 +299,36 @@ test("official-account unification migration is folded, irreversible, and forwar
   );
 });
 
+test("oauth resource-account access mode is canonicalized and constrained (0036)", () => {
+  const baseline = readText("database/ddl/baseline/postgres/0001_iam_baseline.sql");
+  const migration = readText(
+    "database/migrations/postgres/0036_iam_oauth_resource_account_access_mode_canonical.up.sql",
+  );
+
+  assert.match(migration, /^-- reversible: false$/mu);
+  assert.match(migration, /^-- rollback: forward-fix/mu);
+  // The retired spelling is rewritten in place, never dropped or coalesced to a
+  // different posture.
+  assert.match(migration, /SET access_mode = 'operator_authorized_account'/u);
+  assert.match(migration, /WHERE access_mode = 'operator_managed'/u);
+  // The canonical pair is enforced by the database, not only by readers.
+  assert.match(migration, /ADD CONSTRAINT ck_iam_oauth_resource_account_access_mode/u);
+  assert.match(
+    migration,
+    /CHECK \(access_mode IN \('self_managed_account', 'operator_authorized_account'\)\)/u,
+  );
+  assert.match(
+    baseline,
+    /-- folded migration: migrations\/postgres\/0036_iam_oauth_resource_account_access_mode_canonical\.up\.sql/u,
+  );
+
+  // The write boundary must canonicalize before the insert, or older admin
+  // clients would trip the new constraint.
+  const backend = readText("crates/sdkwork-routes-iam-backend-api/src/oauth_handlers.impl.rs");
+  assert.match(backend, /fn canonical_access_mode\(value: &str\) -> Option<&'static str>/u);
+  assert.match(backend, /"operator_authorized_account" \| "operator_managed"/u);
+});
+
 test("official-account migration orphan ledger is written by 0033 only", () => {
   const ledgerTable = "iam_official_account_migration_orphan";
   const migrationName = "0033_official_account_unification.up.sql";

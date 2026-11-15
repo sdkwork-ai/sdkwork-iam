@@ -3490,6 +3490,28 @@ mod oauth_account_patch_tests {
     }
 
     #[test]
+    fn access_mode_accepts_the_retired_operator_spelling_and_rejects_unknown_values() {
+        assert_eq!(
+            canonical_access_mode("self_managed_account"),
+            Some("self_managed_account")
+        );
+        assert_eq!(
+            canonical_access_mode("operator_authorized_account"),
+            Some("operator_authorized_account")
+        );
+        assert_eq!(
+            canonical_access_mode("operator_managed"),
+            Some("operator_authorized_account")
+        );
+        assert_eq!(
+            canonical_access_mode(" operator_managed "),
+            Some("operator_authorized_account")
+        );
+        assert_eq!(canonical_access_mode(""), None);
+        assert_eq!(canonical_access_mode("platform_managed"), None);
+    }
+
+    #[test]
     fn initial_menu_sync_merges_into_the_latest_account_config() {
         let synced = json!({ "buttons": [], "source": "wechat" });
         let InitialCustomMenuMerge::Imported { config, menu } = merge_initial_custom_menu(
@@ -4117,6 +4139,23 @@ async fn create_operator_platform(
     .await
 }
 
+/// Canonical `iam_oauth_resource_account.access_mode` vocabulary (`D1`).
+///
+/// A channel is either caller-maintained (`self_managed_account`) or
+/// operator-managed (`operator_authorized_account`). Older admin clients still
+/// send the retired `operator_managed` spelling; it maps onto the authorized
+/// mode here so the database stores exactly one vocabulary and the `access_mode`
+/// CHECK constraint added by migration 0036 can hold.
+fn canonical_access_mode(value: &str) -> Option<&'static str> {
+    match value.trim() {
+        "self_managed_account" => Some("self_managed_account"),
+        "operator_authorized_account" | "operator_managed" => {
+            Some("operator_authorized_account")
+        }
+        _ => None,
+    }
+}
+
 async fn create_resource_account(
     State(state): State<BackendIamState>,
     ctx: WebRequestContext,
@@ -4173,7 +4212,15 @@ async fn create_resource_account(
     let provider_code_value = provider_code.as_ref().expect("validated").clone();
     let resource_account_code_value = resource_account_code.as_ref().expect("validated").clone();
     let resource_account_kind_value = resource_account_kind.as_ref().expect("validated").clone();
-    let access_mode_value = access_mode.as_ref().expect("validated").clone();
+    let access_mode_value =
+        canonical_access_mode(access_mode.as_deref().unwrap_or_default()).map(str::to_owned);
+    let Some(access_mode_value) = access_mode_value else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_oauth_resource_account_invalid",
+            "accessMode must be self_managed_account or operator_authorized_account (operator_managed is accepted as the retired spelling)",
+        );
+    };
     let display_name_value = display_name.as_ref().expect("validated").clone();
     let provider_account_id_value = provider_account_id.as_ref().expect("validated").clone();
     let config_value = config

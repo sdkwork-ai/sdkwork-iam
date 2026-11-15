@@ -3032,3 +3032,36 @@ BEGIN
   END IF;
 END
 $$;
+
+-- folded migration: migrations/postgres/0036_iam_oauth_resource_account_access_mode_canonical.up.sql
+-- 1. Rewrite the retired spelling. `updated_at` is a TEXT instant in the
+--    canonical API shape; a vocabulary correction is not a user edit, so the
+--    row keeps its recorded timestamp and version.
+UPDATE iam_oauth_resource_account
+   SET access_mode = 'operator_authorized_account'
+ WHERE access_mode = 'operator_managed';
+
+-- 2. Enforce the canonical pair. DROP-if-exists keeps the migration idempotent
+--    for databases where a hand-applied constraint already exists.
+ALTER TABLE iam_oauth_resource_account
+  DROP CONSTRAINT IF EXISTS ck_iam_oauth_resource_account_access_mode;
+ALTER TABLE iam_oauth_resource_account
+  ADD CONSTRAINT ck_iam_oauth_resource_account_access_mode
+  CHECK (access_mode IN ('self_managed_account', 'operator_authorized_account'));
+
+-- 3. Report, so the deployment log records how much drift was collapsed.
+DO $$
+DECLARE
+  rewritten BIGINT;
+  remaining BIGINT;
+BEGIN
+  SELECT count(1) INTO rewritten
+    FROM iam_oauth_resource_account
+   WHERE access_mode = 'operator_authorized_account';
+  SELECT count(1) INTO remaining
+    FROM iam_oauth_resource_account
+   WHERE access_mode NOT IN ('self_managed_account', 'operator_authorized_account');
+  RAISE NOTICE 'access mode canonicalization (0036): % operator-authorized row(s) on the canonical spelling, % row(s) outside the canonical pair',
+    rewritten, remaining;
+END
+$$;
