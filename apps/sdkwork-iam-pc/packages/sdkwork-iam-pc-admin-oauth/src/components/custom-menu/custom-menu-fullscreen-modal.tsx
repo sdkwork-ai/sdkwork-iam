@@ -9,6 +9,7 @@
 import { SdkworkOfficialAccountsMenuDialog } from "@sdkwork/iam-pc-official-accounts";
 import type {
   OfficialAccountsCustomMenuContext,
+  OfficialAccountsDeployedMiniProgramAppLoader,
   OfficialAccountsMenu,
   OfficialAccountsMenuMessages,
 } from "@sdkwork/iam-pc-official-accounts";
@@ -24,6 +25,11 @@ import type {
 export interface SdkworkIamOauthCustomMenuFullscreenModalProps {
   accountId: string;
   controller: SdkworkIamOauthAdminController;
+  /**
+   * Host-injected deployed mini program inventory for the "open mini program"
+   * action; omitted hosts keep the plain AppID field.
+   */
+  loadDeployedMiniProgramApps?: OfficialAccountsDeployedMiniProgramAppLoader;
   onClose: () => void;
   /** UI discovery of the server-side mutation permissions (REQ-2026-0107); every member defaults to true. */
   permissions?: SdkworkIamOauthCustomMenuPermissions;
@@ -33,6 +39,7 @@ export interface SdkworkIamOauthCustomMenuFullscreenModalProps {
 export function SdkworkIamOauthCustomMenuFullscreenModal({
   accountId,
   controller,
+  loadDeployedMiniProgramApps,
   onClose,
   permissions,
 }: SdkworkIamOauthCustomMenuFullscreenModalProps) {
@@ -50,6 +57,7 @@ export function SdkworkIamOauthCustomMenuFullscreenModal({
       canPublish={permissions?.publish ?? true}
       canUpdate={permissions?.update ?? true}
       load={async () => toShared(await controller.loadAccountCustomMenu(accountId))}
+      loadDeployedMiniProgramApps={loadDeployedMiniProgramApps}
       messages={messages as OfficialAccountsMenuMessages}
       onClose={onClose}
       onPublish={async (menu) => {

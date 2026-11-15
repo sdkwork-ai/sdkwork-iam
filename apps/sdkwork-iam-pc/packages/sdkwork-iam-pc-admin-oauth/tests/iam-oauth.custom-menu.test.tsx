@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { SdkworkI18nProvider } from "@sdkwork/i18n-pc-react";
+import type { OfficialAccountsDeployedMiniProgramAppLoader } from "@sdkwork/iam-pc-official-accounts";
 
 import { createSdkworkIamOauthAdminController } from "../src/services/oauth-admin-controller";
 import { createOauthServiceMock } from "./fixtures/oauth-service-mock";
@@ -75,11 +76,15 @@ function customMenuUpdate(service: ReturnType<typeof createOauthServiceMock>) {
   return service.iam.oauth.resourceAccounts.customMenus.update as ReturnType<typeof vi.fn>;
 }
 
-function renderMenuPage(controller: Parameters<typeof createSdkworkIamOauthAdminController>[0]) {
+function renderMenuPage(
+  controller: Parameters<typeof createSdkworkIamOauthAdminController>[0],
+  loadDeployedMiniProgramApps?: OfficialAccountsDeployedMiniProgramAppLoader,
+) {
   return render(
     <SdkworkI18nProvider locale="zh-CN">
       <SdkworkIamOauthOfficialAccountCustomMenuPage
         controller={createSdkworkIamOauthAdminController(controller as never)}
+        loadDeployedMiniProgramApps={loadDeployedMiniProgramApps}
         resourceAccountId="iamora-menu-1"
       />
     </SdkworkI18nProvider>,
@@ -616,6 +621,88 @@ describe("custom menu management page", () => {
         }] },
       );
     });
+  });
+
+  it("fills the mini program AppID from a deployed application's linked account", async () => {
+    const service = serviceWithAccount(createOauthServiceMock(), accountWithMenu({
+      buttons: [{
+        key: "mini",
+        name: "小程序",
+        type: "miniprogram",
+        appId: "",
+        pagePath: "pages/index/index",
+        url: "https://example.com/fallback",
+      }],
+    }));
+    const loader = vi.fn(async () => [
+      {
+        id: "deploy-1",
+        name: "Acme 小程序",
+        reference: "acme-mini",
+        environment: "production",
+        appId: "wx-prod",
+        accountName: "Acme 生产",
+      },
+      { id: "deploy-2", name: "未关联部署应用" },
+    ]);
+    renderMenuPage(service, loader);
+
+    fireEvent.click(await screen.findByRole("button", { name: "从部署应用中选择" }));
+    const dialog = await screen.findByTestId("custom-menu-mini-program-picker");
+    expect(loader).toHaveBeenCalledTimes(1);
+    expect(within(dialog).getByText("未关联小程序账号")).toBeTruthy();
+    expect(within(dialog).getByRole("button", { name: /未关联部署应用/ })).toBeDisabled();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: /Acme 小程序/ }));
+
+    expect(screen.getByLabelText("小程序 AppID")).toHaveValue("wx-prod");
+    expect(screen.queryByTestId("custom-menu-mini-program-picker")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "保存草稿" }));
+    await waitFor(() => expect(customMenuUpdate(service)).toHaveBeenCalled());
+    const body = customMenuUpdate(service).mock.calls.at(-1)![1] as SdkworkIamOauthCustomMenuDraft;
+    expect(body.buttons[0]?.appId).toBe("wx-prod");
+  });
+
+  it("reports a deployed application inventory failure and retries the load", async () => {
+    const service = serviceWithAccount(createOauthServiceMock(), accountWithMenu({
+      buttons: [{
+        key: "mini",
+        name: "小程序",
+        type: "miniprogram",
+        appId: "",
+        pagePath: "pages/index/index",
+        url: "https://example.com/fallback",
+      }],
+    }));
+    const loader = vi.fn()
+      .mockRejectedValueOnce(new Error("deploy inventory unavailable"))
+      .mockResolvedValueOnce([{ id: "deploy-1", name: "Acme 小程序", appId: "wx-prod" }]);
+    renderMenuPage(service, loader);
+
+    fireEvent.click(await screen.findByRole("button", { name: "从部署应用中选择" }));
+    const dialog = await screen.findByTestId("custom-menu-mini-program-picker");
+    expect(await within(dialog).findByText("加载已部署的小程序应用失败。")).toBeTruthy();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "重试" }));
+    expect(await within(dialog).findByRole("button", { name: /Acme 小程序/ })).toBeTruthy();
+    expect(loader).toHaveBeenCalledTimes(2);
+  });
+
+  it("offers no deployed application picker when the host injects no inventory", async () => {
+    const service = serviceWithAccount(createOauthServiceMock(), accountWithMenu({
+      buttons: [{
+        key: "mini",
+        name: "小程序",
+        type: "miniprogram",
+        appId: "wx123",
+        pagePath: "pages/index/index",
+        url: "https://example.com/fallback",
+      }],
+    }));
+    renderMenuPage(service);
+
+    await screen.findByLabelText("小程序 AppID");
+    expect(screen.queryByRole("button", { name: "从部署应用中选择" })).toBeNull();
   });
 
   it("clears fields that do not belong to the selected action type", async () => {

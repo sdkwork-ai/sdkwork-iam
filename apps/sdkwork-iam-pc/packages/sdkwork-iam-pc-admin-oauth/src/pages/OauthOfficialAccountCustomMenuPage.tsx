@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { StatusNotice } from "@sdkwork/ui-pc-react";
 import {
   SdkworkOfficialAccountsMenuWorkspace,
+  type OfficialAccountsDeployedMiniProgramAppLoader,
   type OfficialAccountsMenu,
   type OfficialAccountsMenuMessages,
 } from "@sdkwork/iam-pc-official-accounts";
@@ -35,6 +36,7 @@ type CustomMenuPendingAction = "saving" | "publishing";
  */
 export function SdkworkIamOauthOfficialAccountCustomMenuPage({
   controller,
+  loadDeployedMiniProgramApps,
   onBusyChange,
   onDirtyChange,
   onClose,
@@ -42,6 +44,11 @@ export function SdkworkIamOauthOfficialAccountCustomMenuPage({
   resourceAccountId,
 }: {
   controller: SdkworkIamOauthAdminController;
+  /**
+   * Host-injected deployed mini program inventory for the "open mini program"
+   * action; omitted hosts keep the plain AppID field.
+   */
+  loadDeployedMiniProgramApps?: OfficialAccountsDeployedMiniProgramAppLoader;
   onBusyChange?: (busy: boolean) => void;
   onDirtyChange?: (dirty: boolean) => void;
   onClose?: () => void;
@@ -178,6 +185,7 @@ export function SdkworkIamOauthOfficialAccountCustomMenuPage({
           version: context.version ?? context.draft.version,
         }}
         history={context?.draft.history}
+        loadDeployedMiniProgramApps={loadDeployedMiniProgramApps}
         messages={messages.quickSetup.customMenus as OfficialAccountsMenuMessages}
         onDirtyChange={onDirtyChange}
         onClose={onClose}

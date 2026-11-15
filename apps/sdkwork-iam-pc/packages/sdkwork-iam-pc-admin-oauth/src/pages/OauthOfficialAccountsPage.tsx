@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { SdkworkOfficialAccountsPanel } from "@sdkwork/iam-pc-official-accounts";
+import type { OfficialAccountsDeployedMiniProgramAppLoader } from "@sdkwork/iam-pc-official-accounts";
 import type { DriveUploadImageService } from "@sdkwork/drive-upload-image-core";
 import type {
   SdkworkIamOauthAdminController,
@@ -35,6 +36,7 @@ export function SdkworkIamOauthOfficialAccountsPage({
   controller,
   customMenuPermissions,
   driveUploadImageService,
+  loadDeployedMiniProgramApps,
   onOpenCustomMenu,
   permissions,
 }: {
@@ -52,6 +54,11 @@ export function SdkworkIamOauthOfficialAccountsPage({
    * unavailable.
    */
   driveUploadImageService?: DriveUploadImageService;
+  /**
+   * Host-injected deployed mini program inventory for the custom-menu "open
+   * mini program" action; omitted hosts keep the plain AppID field.
+   */
+  loadDeployedMiniProgramApps?: OfficialAccountsDeployedMiniProgramAppLoader;
   onOpenCustomMenu?: (resourceAccountId: string) => void;
   /** UI discovery of the server-side mutation permissions (REQ-2026-0107); every member defaults to true. */
   permissions?: SdkworkIamOauthPagePermissions;
@@ -114,6 +121,7 @@ export function SdkworkIamOauthOfficialAccountsPage({
         <SdkworkIamOauthCustomMenuFullscreenModal
           accountId={activeMenuAccountId}
           controller={controller}
+          loadDeployedMiniProgramApps={loadDeployedMiniProgramApps}
           onClose={() => setActiveMenuAccountId(undefined)}
           permissions={customMenuPermissions}
         />

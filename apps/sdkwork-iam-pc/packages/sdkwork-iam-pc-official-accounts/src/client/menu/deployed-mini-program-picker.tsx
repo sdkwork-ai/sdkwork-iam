@@ -81,13 +81,20 @@ export function SdkworkOfficialAccountsDeployedMiniProgramPicker({
   const [status, setStatus] = useState<PickerStatus>("idle");
   const [items, setItems] = useState<readonly OfficialAccountsDeployedMiniProgramApp[]>([]);
   const requestId = useRef(0);
+  // A host may pass an inline closure; keeping the loader in a ref means its
+  // identity never restarts the in-flight load of an open dialog.
+  const loaderRef = useRef(loader);
+
+  useEffect(() => {
+    loaderRef.current = loader;
+  }, [loader]);
 
   const load = useCallback(async (): Promise<void> => {
     const current = requestId.current + 1;
     requestId.current = current;
     setStatus("loading");
     try {
-      const next = await loader();
+      const next = await loaderRef.current();
       if (requestId.current !== current) {
         return;
       }
@@ -100,7 +107,7 @@ export function SdkworkOfficialAccountsDeployedMiniProgramPicker({
       setItems([]);
       setStatus("error");
     }
-  }, [loader]);
+  }, []);
 
   useEffect(() => {
     if (!open) {
