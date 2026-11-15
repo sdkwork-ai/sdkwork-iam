@@ -194,7 +194,10 @@ export function createSelfServiceTransport(
           id: string,
           menu: OfficialAccountsMenu,
         ): Promise<OfficialAccountsCustomMenuPublishResult> {
-          const record = await api.customMenus!.publish!(id, { buttons: menu.buttons });
+          const record = await api.customMenus!.publish!(id, {
+            buttons: menu.buttons,
+            ...(menu.version === undefined ? {} : { baseVersion: menu.version }),
+          });
           return {
             accountId: id,
             published: true,

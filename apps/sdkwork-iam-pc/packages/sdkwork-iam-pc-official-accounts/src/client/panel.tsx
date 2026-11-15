@@ -982,7 +982,16 @@ export function SdkworkOfficialAccountsPanel({
           ? async (menu) => {
             if (menuAccount === undefined) return undefined;
             await controller.saveMenu(menuAccount, menu);
-            return await controller.publishMenu(menuAccount, menu);
+            // Publish the stored revision, so the transport can send the
+            // version it just saved and the server can reject a concurrent edit.
+            let stored = menu;
+            try {
+              stored = (await controller.loadMenu(menuAccount.id)).menu;
+              setMenuAccount((current) => current === undefined ? current : { ...current, customMenu: stored });
+            } catch {
+              // The publish request still carries the caller's draft.
+            }
+            return await controller.publishMenu(menuAccount, stored);
           }
           : undefined}
         onRefresh={capabilities.refreshMenu === true
