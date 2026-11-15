@@ -28,15 +28,22 @@ export function resolveIamBackendOperationPermission(operationId: string): strin
 /**
  * Whether a backend operation maintains tenant-owned OAuth channel accounts.
  *
- * Both prefixes cover the nested operations the shared panels call as well
- * (custom menus, follow QR codes, mini-program login checks, verification and
- * authorization-refresh runs).
+ * The resource-account prefix covers the nested operations the shared panels
+ * call as well (custom menus, follow QR codes, mini-program login checks,
+ * verification and authorization-refresh runs). The integration members are
+ * exactly the ones the one-click account setup needs; deleting a login
+ * integration stays privileged because it is tenant-wide login plumbing.
  * @param operationId - the backend operation id.
  * @returns whether the route needs no seeded permission beyond a principal.
  */
 function isOauthAccountMaintenanceOperation(operationId: string): boolean {
-  return operationId.startsWith("iam.oauth.resourceAccounts.")
-    || operationId.startsWith("iam.oauth.integrations.");
+  if (operationId.startsWith("iam.oauth.resourceAccounts.")) {
+    return true;
+  }
+  return operationId === "iam.oauth.integrations.list"
+    || operationId === "iam.oauth.integrations.retrieve"
+    || operationId === "iam.oauth.integrations.create"
+    || operationId === "iam.oauth.integrations.update";
 }
 
 function explicitBootstrapPermission(operationId: string): string | undefined {

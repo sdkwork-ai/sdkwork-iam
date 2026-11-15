@@ -70,12 +70,24 @@ pub fn iam_backend_permission_for_operation(operation_id: &str) -> Option<&'stat
 
 /// Routes that maintain tenant-owned OAuth channel accounts.
 ///
-/// Both prefixes cover the nested operations the shared panels call as well
-/// (custom menus, follow QR codes, mini-program login checks, verification and
-/// authorization-refresh runs).
+/// The resource-account prefix covers the nested operations the shared panels
+/// call as well (custom menus, follow QR codes, mini-program login checks,
+/// verification and authorization-refresh runs). The integration members are
+/// exactly the ones the one-click account setup needs — listing, creating, and
+/// updating the login integration — while deleting a login integration stays a
+/// privileged operation: it is login plumbing for the whole tenant, not account
+/// maintenance.
 fn oauth_account_maintenance_operation(operation_id: &str) -> bool {
-    operation_id.starts_with("iam.oauth.resourceAccounts.")
-        || operation_id.starts_with("iam.oauth.integrations.")
+    if operation_id.starts_with("iam.oauth.resourceAccounts.") {
+        return true;
+    }
+    matches!(
+        operation_id,
+        "iam.oauth.integrations.list"
+            | "iam.oauth.integrations.retrieve"
+            | "iam.oauth.integrations.create"
+            | "iam.oauth.integrations.update"
+    )
 }
 
 fn explicit_bootstrap_permission(operation_id: &str) -> Option<&'static str> {
@@ -358,6 +370,7 @@ mod tests {
             "iam.oauth.resourceAccounts.followQrCodes.create",
             "iam.oauth.resourceAccounts.miniProgramLoginChecks.create",
             "iam.oauth.integrations.list",
+            "iam.oauth.integrations.retrieve",
             "iam.oauth.integrations.create",
             "iam.oauth.integrations.update",
         ] {
@@ -367,6 +380,12 @@ mod tests {
                 "{operation_id} must not require a seeded permission"
             );
         }
+        // Deleting a login integration changes tenant-wide login plumbing and
+        // is not part of account maintenance; it keeps the privileged code.
+        assert_eq!(
+            iam_backend_permission_for_operation("iam.oauth.integrations.delete"),
+            Some("iam.oauth.manage")
+        );
     }
 
     #[test]

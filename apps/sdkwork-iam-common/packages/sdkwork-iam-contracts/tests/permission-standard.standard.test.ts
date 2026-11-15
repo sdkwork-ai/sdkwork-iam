@@ -46,6 +46,11 @@ describe("SDKWork permission standard contracts", () => {
     // Tenant-owned OAuth account maintenance is open to every signed-in member.
     expect(resolveIamBackendOperationPermission("iam.oauth.resourceAccounts.list")).toBeUndefined();
     expect(resolveIamBackendOperationPermission("iam.oauth.integrations.create")).toBeUndefined();
+    expect(resolveIamBackendOperationPermission("iam.oauth.integrations.update")).toBeUndefined();
+    // Deleting a login integration is tenant-wide login plumbing.
+    expect(resolveIamBackendOperationPermission("iam.oauth.integrations.delete")).toBe(
+      "iam.oauth.manage",
+    );
     // Enterprise OAuth configuration keeps its seeded codes.
     expect(resolveIamBackendOperationPermission("iam.oauth.policies.create")).toBe(
       "iam.oauth.manage",

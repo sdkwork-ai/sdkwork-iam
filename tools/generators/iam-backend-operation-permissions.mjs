@@ -20,8 +20,13 @@ export function resolveIamBackendOperationPermission(operationId) {
 }
 
 function isOauthAccountMaintenanceOperation(operationId) {
-  return operationId.startsWith('iam.oauth.resourceAccounts.')
-    || operationId.startsWith('iam.oauth.integrations.');
+  if (operationId.startsWith('iam.oauth.resourceAccounts.')) {
+    return true;
+  }
+  return operationId === 'iam.oauth.integrations.list'
+    || operationId === 'iam.oauth.integrations.retrieve'
+    || operationId === 'iam.oauth.integrations.create'
+    || operationId === 'iam.oauth.integrations.update';
 }
 
 function explicitBootstrapPermission(operationId) {

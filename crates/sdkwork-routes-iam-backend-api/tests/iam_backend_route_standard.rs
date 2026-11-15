@@ -449,6 +449,7 @@ fn oauth_account_maintenance_routes_need_only_a_principal() {
         "iam.oauth.resourceAccounts.update",
         "iam.oauth.resourceAccounts.delete",
         "iam.oauth.integrations.list",
+        "iam.oauth.integrations.retrieve",
         "iam.oauth.integrations.create",
         "iam.oauth.integrations.update",
     ] {
@@ -461,6 +462,14 @@ fn oauth_account_maintenance_routes_need_only_a_principal() {
             "{operation_id} must be reachable by any signed-in member"
         );
     }
+
+    // Deleting a login integration remains privileged: it is tenant-wide
+    // login plumbing, not account maintenance.
+    let delete = routes
+        .iter()
+        .find(|route| route.operation_id == "iam.oauth.integrations.delete")
+        .expect("integration delete route");
+    assert_eq!(delete.required_permission, Some("iam.oauth.manage"));
 
     // Enterprise OAuth configuration (policies, provider catalog, secrets,
     // tenants) keeps its seeded permission codes.

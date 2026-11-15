@@ -7321,6 +7321,7 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
+        "x-sdkwork-permission": "iam.oauth.manage",
         "x-sdkwork-required-surface": "organizationMember"
       },
       "get": {

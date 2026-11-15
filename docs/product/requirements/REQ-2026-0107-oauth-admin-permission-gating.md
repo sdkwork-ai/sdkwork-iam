@@ -63,14 +63,20 @@ Tenant-owned OAuth account maintenance (the unified
 follow QR codes, and login checks the shared official-account / mini-program
 panels use) no longer requires a seeded OAuth permission:
 
-- The backend-api manifest maps `iam.oauth.resourceAccounts.*` and
-  `iam.oauth.integrations.*` to no required permission; those routes require
-  only an authenticated principal. Tenant isolation and the service layer's
+- The backend-api manifest maps `iam.oauth.resourceAccounts.*` and the
+  account-setup integration operations (`iam.oauth.integrations.list`,
+  `.retrieve`, `.create`, `.update`) to no required permission; those routes
+  require only an authenticated principal. `iam.oauth.integrations.delete`
+  stays privileged: deleting the login integration is tenant-wide login
+  plumbing, not account maintenance. Tenant isolation and the service layer's
   ownership checks remain authoritative, and the host no longer needs to seed
-  `iam.oauth.read` / `iam.oauth.manage` before the pages can be used.
+  `iam.oauth.read` / `iam.oauth.manage` before the account pages can be used.
 - The account pages in cloudrouter/webserver stop deriving capabilities from
   `iam.oauth.resourceAccounts.*` scopes; their UI defaults to open, and the
-  server still refuses what the service layer forbids.
+  server still refuses what the service layer forbids. Their admin menu entries
+  and route records answer to the universal `iam:self` code instead of
+  `iam.oauth.read`, so an operator whose only grant is the admin surface can
+  open them.
 - Enterprise OAuth configuration (provider catalog, policies, secrets,
   tenants, scan-login settings) keeps its `iam.oauth.read` / `iam.oauth.manage`
   codes.
