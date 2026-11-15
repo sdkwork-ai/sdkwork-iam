@@ -122,7 +122,12 @@ test('the runtime-env artifact matches the committed profile', () => {
   const profilePath = path.join(appRoot, 'config', 'mini-program', `runtime-env.${profileId}.json`);
   assert.ok(fs.existsSync(profilePath), `no committed profile for ${profileId}`);
   const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8').replace(/^\uFEFF/u, ''));
-  for (const key of ['SDKWORK_APP_API_BASE_URL', 'SDKWORK_PROFILE_ID', 'SDKWORK_RUNTIME_TARGET']) {
+  for (const key of [
+    'SDKWORK_ACCESS_TOKEN',
+    'SDKWORK_APP_API_BASE_URL',
+    'SDKWORK_PROFILE_ID',
+    'SDKWORK_RUNTIME_TARGET',
+  ]) {
     assert.equal(loaded.exports[key], profile[key], `runtime-env.js drifted from ${profileId} for ${key}`);
   }
 });

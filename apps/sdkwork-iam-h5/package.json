@@ -53,6 +53,7 @@
     "@sdkwork/iam-h5-admin-audit": "workspace:*",
     "@sdkwork/app-topology": "workspace:*",
     "@sdkwork/iam-contracts": "workspace:*",
+    "@sdkwork/iam-credential-entry": "workspace:*",
     "@sdkwork/iam-service": "workspace:*",
     "@sdkwork/sdk-common": "workspace:*"
   },

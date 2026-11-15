@@ -1259,13 +1259,19 @@ function coreTokenManagerSource(surface) {
 /// Single access/refresh token owner of the application root.
 class SdkworkTokenManager {
   SdkworkTokenManager({String? accessToken, String? refreshToken})
-      : _accessToken = accessToken,
-        _refreshToken = refreshToken;
+      : _accessToken = normalizeAccessToken(accessToken),
+        _refreshToken = normalizeAccessToken(refreshToken);
 
   String? _accessToken;
   String? _refreshToken;
 
   final List<void Function(String?)> _listeners = <void Function(String?)>[];
+
+  /// Normalized form of one credential value: trimmed, with empty as null.
+  static String? normalizeAccessToken(String? value) {
+    final String trimmed = value?.trim() ?? '';
+    return trimmed.isEmpty ? null : trimmed;
+  }
 
   /// Current access token, or null when the session was cleared.
   String? get currentAccessToken => _accessToken;
@@ -1273,10 +1279,29 @@ class SdkworkTokenManager {
   /// Current refresh token, or null.
   String? get currentRefreshToken => _refreshToken;
 
+  /// True when an access token is held.
+  ///
+  /// This answers "can a credential-entry request be dispatched", not "is a user
+  /// signed in": the public application access token is present before login.
+  bool get hasAccessToken => _accessToken != null;
+
+  /// Seeds the public application access token exactly once.
+  ///
+  /// Bootstrap calls this before any SDK client is constructed. It is
+  /// idempotent and never replaces an existing credential, so a restored or
+  /// signed-in session is not overwritten by the bootstrap token; an empty
+  /// [accessToken] is ignored instead of clearing the manager.
+  void seedBootstrapAccessToken(String accessToken) {
+    if (hasAccessToken) return;
+    final String? normalized = normalizeAccessToken(accessToken);
+    if (normalized == null) return;
+    setTokens(accessToken: normalized);
+  }
+
   /// Replaces the credential pair after a successful login or refresh.
   void setTokens({String? accessToken, String? refreshToken}) {
-    _accessToken = accessToken;
-    _refreshToken = refreshToken;
+    _accessToken = normalizeAccessToken(accessToken);
+    _refreshToken = normalizeAccessToken(refreshToken);
     for (final void Function(String?) listener in List<void Function(String?)>.of(_listeners)) {
       listener(_accessToken);
     }
@@ -1315,6 +1340,7 @@ class ${pascal}SessionContext {
     this.userId,
     this.tenantId,
     this.organizationId,
+    this.sessionId,
     this.accessToken,
     this.refreshToken,
   });
@@ -1327,6 +1353,9 @@ class ${pascal}SessionContext {
 
   /// Active organization id.
   final String? organizationId;
+
+  /// Server-side session id of this session.
+  final String? sessionId;
 
   /// Access token of this session, mirrored from the token manager.
   final String? accessToken;
@@ -2144,17 +2173,36 @@ SdkworkRuntimeEnv resolveEnvironment() => resolveSdkworkRuntimeEnv();
 `;
 }
 
+/**
+ * Bootstrap order of the Flutter root.
+ *
+ * `runtime.dart` is emitted whole like every other root file, but its banner is
+ * the authored bootstrap marker rather than `BANNER`: the order (resolve and seed
+ * the token, restore the session, then build clients) is the policy this file
+ * exists to state. Keep this template byte-identical to the committed file.
+ */
 function rootRuntimeSource() {
-  return `${BANNER}
+  return `// SDKWORK-IAM-FLUTTER-BOOTSTRAP: authored bootstrap order.
 import 'host_adapters.dart';
 import 'iam_runtime.dart';
 import 'routes.dart';
 import 'sdk_clients.dart';
 
-/// Boots the root in the order section 6 requires: token manager, then SDK
-/// clients, then platform adapters, then route assembly.
+/// Boots the root in the order section 6 requires: resolve and seed the public
+/// application access token, restore a persisted session, build the SDK clients,
+/// register the platform adapters, then assemble routes.
+///
+/// \`IamRuntime.createIamRuntime()\` is the static constructor, not a top-level
+/// function: \`createSdkClients()\` reads \`IamRuntime.instance.tokenManager\`, so the
+/// runtime has to exist first and a missing call surfaces as a \`StateError\` naming
+/// the bootstrap step that was skipped.
+///
+/// \`initialize()\` is awaited before \`createSdkClients()\` on purpose: a client
+/// constructed while the token manager is empty caches a null \`Access-Token\`, and
+/// every credential-entry route would then fail before dispatch.
 Future<void> bootstrap() async {
-  createIamRuntime();
+  final IamRuntime runtime = IamRuntime.createIamRuntime();
+  await runtime.initialize();
   createSdkClients();
   await registerHostAdapters();
   createRoutes();
@@ -2189,12 +2237,39 @@ class IamSdkClientFactory<TClient>
 
   final TClient Function(SdkworkRuntimeEnv env, SdkworkTokenManager tokenManager) _build;
 
+  /// Class name the tier contracts require an injected factory to return.
+  ///
+  /// Declared explicitly because all three factory interfaces expose it as an
+  /// abstract getter; without it the class is not concrete and the root does not
+  /// compile.
+  @override
+  String get clientClass => '${APP_SDK_CLIENT}';
+
   @override
   TClient create({
     required SdkworkRuntimeEnv env,
     required SdkworkTokenManager tokenManager,
   }) =>
       _build(env, tokenManager);
+}
+
+/// Applies one access-token change to every constructed SDK client.
+///
+/// Extracted from the token-manager listener so the clearing contract is
+/// testable without a network or a platform channel: the generated clients take
+/// a non-null token, and the empty string is how a cleared token is expressed.
+/// A cleared token makes an access-token-only request fail closed before
+/// dispatch instead of sending a stale \`Access-Token\`.
+void applyIamAccessTokenToClients(
+  String? token, {
+  required void Function(String token) setAppClientAccessToken,
+  required void Function(String token) setConsoleClientAccessToken,
+  required void Function(String token) setAdminClientAccessToken,
+}) {
+  final String accessToken = token ?? '';
+  setAppClientAccessToken(accessToken);
+  setConsoleClientAccessToken(accessToken);
+  setAdminClientAccessToken(accessToken);
 }
 
 /// Every SDK client the root constructed, per tier.
@@ -2221,6 +2296,8 @@ IamSdkClients? _clients;
 ///
 /// Section 6: every authenticated client shares the one token manager, and a
 /// refresh in one tier is pushed to the others so no client keeps a stale token.
+/// Bootstrap calls this only after the token manager holds the bootstrap (or
+/// restored session) token.
 IamSdkClients createSdkClients() {
   final SdkworkRuntimeEnv env = resolveEnvironment();
   final SdkworkTokenManager tokenManager = IamRuntime.instance.tokenManager;
@@ -2239,18 +2316,21 @@ IamSdkClients createSdkClients() {
   );
 
   tokenManager.addListener((String? token) {
-    if (token == null) return;
-    ${appTier}.setAccessToken(token);
-    ${consoleTier}.setAccessToken(token);
-    ${adminTier}.setAccessToken(token);
+    applyIamAccessTokenToClients(
+      token,
+      setAppClientAccessToken: ${appTier}.setAccessToken,
+      setConsoleClientAccessToken: ${consoleTier}.setAccessToken,
+      setAdminClientAccessToken: ${adminTier}.setAccessToken,
+    );
   });
 
-  _clients = IamSdkClients(
+  final IamSdkClients clients = IamSdkClients(
     ${appTier}: ${appTier},
     ${consoleTier}: ${consoleTier},
     ${adminTier}: ${adminTier},
   );
-  return _clients!;
+  _clients = clients;
+  return clients;
 }
 
 /// Active SDK clients, building them on first use.
@@ -2273,10 +2353,43 @@ function rootIamRuntimeSource(surface) {
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:${core}/${core}.dart';
 
+import 'environment.dart';
+
+/// Resolves the public application access token this build carries.
+///
+/// Bootstrap supplies the dart-define implementation; a test supplies a constant
+/// so seed, restore and clear are exercised without platform channels.
+typedef IamBootstrapAccessTokenResolver = String Function();
+
+/// Secure-storage keys of the session fields persisted at login.
+///
+/// The values are session tokens and identifiers, never the public application
+/// access token: that one is rebuilt from the committed profile at launch.
+const String iamSessionAccessTokenStorageKey = 'sdkwork.iam.session.access_token';
+const String iamSessionRefreshTokenStorageKey = 'sdkwork.iam.session.refresh_token';
+const String iamSessionUserIdStorageKey = 'sdkwork.iam.session.user_id';
+const String iamSessionTenantIdStorageKey = 'sdkwork.iam.session.tenant_id';
+const String iamSessionOrganizationIdStorageKey = 'sdkwork.iam.session.organization_id';
+const String iamSessionIdStorageKey = 'sdkwork.iam.session.session_id';
+
+const List<String> iamSessionStorageKeys = <String>[
+  iamSessionAccessTokenStorageKey,
+  iamSessionRefreshTokenStorageKey,
+  iamSessionUserIdStorageKey,
+  iamSessionTenantIdStorageKey,
+  iamSessionOrganizationIdStorageKey,
+  iamSessionIdStorageKey,
+];
+
 /// The root's IAM runtime: one token manager, one context store and the secure
-/// storage the credentials are mirrored into (section 6).
+/// storage the session is mirrored into (section 6).
 class IamRuntime {
-  IamRuntime._();
+  IamRuntime._({
+    FlutterSecureStorage? secureStorage,
+    IamBootstrapAccessTokenResolver? bootstrapAccessTokenResolver,
+  })  : secureStorage = secureStorage ?? const FlutterSecureStorage(),
+        _resolveBootstrapAccessToken =
+            bootstrapAccessTokenResolver ?? _resolveDartDefineBootstrapAccessToken;
 
   static IamRuntime? _instance;
 
@@ -2290,7 +2403,17 @@ class IamRuntime {
   }
 
   /// Creates the runtime instance during bootstrap.
-  static IamRuntime createIamRuntime() => _instance = IamRuntime._();
+  ///
+  /// [secureStorage] and [bootstrapAccessTokenResolver] are injection points for
+  /// tests; production uses the platform keystore and the dart-define profile.
+  static IamRuntime createIamRuntime({
+    FlutterSecureStorage? secureStorage,
+    IamBootstrapAccessTokenResolver? bootstrapAccessTokenResolver,
+  }) =>
+      _instance = IamRuntime._(
+        secureStorage: secureStorage,
+        bootstrapAccessTokenResolver: bootstrapAccessTokenResolver,
+      );
 
   /// Global token manager shared by every tier client.
   final SdkworkTokenManager tokenManager = SdkworkTokenManager();
@@ -2298,21 +2421,167 @@ class IamRuntime {
   /// Session context store of the default app tier.
   final ${corePascal}ContextStore contextStore = ${corePascal}ContextStore();
 
-  /// Secure platform storage, so a token survives a process restart.
-  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
+  /// Secure platform storage, so a session survives a process restart.
+  final FlutterSecureStorage secureStorage;
+
+  final IamBootstrapAccessTokenResolver _resolveBootstrapAccessToken;
+
+  String? _bootstrapAccessToken;
+  bool _initialized = false;
 
   /// True when a complete session is available.
+  ///
+  /// This is the context store's answer, never the token manager's: the public
+  /// application access token is present before anyone signs in.
   bool get hasSession => contextStore.current?.isComplete ?? false;
 
-  /// Clears every credential and the context store.
+  /// Public application access token of this launch, or null before
+  /// [initialize] resolves it.
+  String? get bootstrapAccessToken => _bootstrapAccessToken;
+
+  /// Resolves and seeds the public application access token, then restores a
+  /// persisted session.
   ///
-  /// Section 6: logout and refresh failure must clear the token manager, the
-  /// context store, secure platform storage and the sensitive state together.
+  /// Section 6 order: the token exists in the one token manager before any SDK
+  /// client is constructed, so a credential-entry call cannot dispatch without
+  /// \`Access-Token\`. The public token is not a session: [hasSession] stays false
+  /// until a real login (or a restored one) writes the context store.
+  ///
+  /// Throws [StateError] naming \`SDKWORK_ACCESS_TOKEN\` and the profile file when
+  /// the build carries no application access token.
+  Future<void> initialize() async {
+    if (_initialized) return;
+    final String bootstrapAccessToken = _resolveBootstrapAccessToken();
+    _bootstrapAccessToken = bootstrapAccessToken;
+    tokenManager.seedBootstrapAccessToken(bootstrapAccessToken);
+    await _restorePersistedSession();
+    _initialized = true;
+  }
+
+  /// Replaces the bootstrap credential with a real session and persists it.
+  ///
+  /// Called after a successful login. [userId] is required because the context
+  /// store is what decides [hasSession]; a response without a user id is not a
+  /// complete session.
+  Future<void> establishSession({
+    required String accessToken,
+    String? refreshToken,
+    required String userId,
+    String? tenantId,
+    String? organizationId,
+    String? sessionId,
+  }) async {
+    final String? normalizedAccessToken = sdkworkNormalizeOptionalString(accessToken);
+    final String? normalizedUserId = sdkworkNormalizeOptionalString(userId);
+    if (normalizedAccessToken == null) {
+      throw StateError('A session access token is required to establish a session.');
+    }
+    if (normalizedUserId == null) {
+      throw StateError('A user id is required to establish a session.');
+    }
+    final ${corePascal}SessionContext context = ${corePascal}SessionContext(
+      accessToken: normalizedAccessToken,
+      refreshToken: sdkworkNormalizeOptionalString(refreshToken),
+      organizationId: sdkworkNormalizeOptionalString(organizationId),
+      sessionId: sdkworkNormalizeOptionalString(sessionId),
+      tenantId: sdkworkNormalizeOptionalString(tenantId),
+      userId: normalizedUserId,
+    );
+    await _persistSession(context);
+    tokenManager.setTokens(
+      accessToken: context.accessToken,
+      refreshToken: context.refreshToken,
+    );
+    contextStore.set(context);
+  }
+
+  /// Restores the public application access token after the session ends.
+  ///
+  /// Logout and a refresh failure both call this (through [clearSession]) so the
+  /// sign-in screen keeps a working credential-entry token instead of none.
+  void restoreBootstrapAccessToken() {
+    tokenManager.setTokens(accessToken: _bootstrapAccessToken);
+  }
+
+  /// Clears the session everywhere and restores the bootstrap credential.
+  ///
+  /// Section 6: logout and refresh failure clear the token manager's session
+  /// tokens, the context store and the persisted session together — and leave
+  /// the public application token behind, because credential entry needs it.
   Future<void> clearSession() async {
-    tokenManager.clear();
+    restoreBootstrapAccessToken();
     contextStore.clear();
-    await secureStorage.deleteAll();
-    _instance = null;
+    await _deletePersistedSession();
+  }
+
+  Future<void> _restorePersistedSession() async {
+    final String? accessToken =
+        sdkworkNormalizeOptionalString(await secureStorage.read(key: iamSessionAccessTokenStorageKey));
+    final String? userId =
+        sdkworkNormalizeOptionalString(await secureStorage.read(key: iamSessionUserIdStorageKey));
+    if (accessToken == null || userId == null) {
+      // A partial record is not a session; drop it so the next launch starts from
+      // a clean bootstrap state instead of restoring half a session.
+      await _deletePersistedSession();
+      return;
+    }
+    final ${corePascal}SessionContext context = ${corePascal}SessionContext(
+      accessToken: accessToken,
+      organizationId: sdkworkNormalizeOptionalString(
+        await secureStorage.read(key: iamSessionOrganizationIdStorageKey),
+      ),
+      refreshToken: sdkworkNormalizeOptionalString(
+        await secureStorage.read(key: iamSessionRefreshTokenStorageKey),
+      ),
+      sessionId: sdkworkNormalizeOptionalString(
+        await secureStorage.read(key: iamSessionIdStorageKey),
+      ),
+      tenantId: sdkworkNormalizeOptionalString(
+        await secureStorage.read(key: iamSessionTenantIdStorageKey),
+      ),
+      userId: userId,
+    );
+    tokenManager.setTokens(
+      accessToken: context.accessToken,
+      refreshToken: context.refreshToken,
+    );
+    contextStore.set(context);
+  }
+
+  Future<void> _persistSession(${corePascal}SessionContext context) async {
+    await _writeOrDelete(iamSessionAccessTokenStorageKey, context.accessToken);
+    await _writeOrDelete(iamSessionRefreshTokenStorageKey, context.refreshToken);
+    await _writeOrDelete(iamSessionUserIdStorageKey, context.userId);
+    await _writeOrDelete(iamSessionTenantIdStorageKey, context.tenantId);
+    await _writeOrDelete(iamSessionOrganizationIdStorageKey, context.organizationId);
+    await _writeOrDelete(iamSessionIdStorageKey, context.sessionId);
+  }
+
+  Future<void> _writeOrDelete(String key, String? value) async {
+    final String? normalized = sdkworkNormalizeOptionalString(value);
+    if (normalized == null) {
+      await secureStorage.delete(key: key);
+      return;
+    }
+    await secureStorage.write(key: key, value: normalized);
+  }
+
+  Future<void> _deletePersistedSession() async {
+    for (final String key in iamSessionStorageKeys) {
+      await secureStorage.delete(key: key);
+    }
+  }
+
+  /// Reads the token from the dart-define profile of this build.
+  static String _resolveDartDefineBootstrapAccessToken() {
+    final SdkworkRuntimeEnv env = resolveEnvironment();
+    final String? resolved = resolveSdkworkFlutterCredentialEntryBootstrapAccessToken(
+      environment: env.environment,
+    );
+    return requireSdkworkFlutterCredentialEntryBootstrapAccessToken(
+      resolved,
+      profileId: env.profileId,
+    );
   }
 }
 `;

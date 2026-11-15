@@ -18,6 +18,7 @@
  *    `readDeploymentAuthority` in `emit-arkts.mjs` for why.
  */
 
+import fs from 'node:fs';
 import path from 'node:path';
 
 import { PROFILE_IDS, routeId, routesOfPackage } from './model.mjs';
@@ -478,7 +479,7 @@ signing/
  * tautology — it would prove the generator is deterministic, not that its output is
  * right — and the whole point of the file is to catch a wrong derivation.
  */
-function runtimeConfigTest(surface) {
+export function runtimeConfigTest(surface) {
   return `${BANNER}
 /**
  * Runtime-configuration contract for the ${surface.rootName} root.
@@ -521,6 +522,19 @@ const PROFILE_IDS = [
 const DEFAULT_PROFILE_ID = 'standalone.development';
 const RUNTIME_TARGET = 'harmony-native';
 const CANONICAL_API_PREFIXES = ['/app/v3/api', '/backend/v3/api'];
+const APPLICATION_ACCESS_TOKEN_KEY = 'SDKWORK_ACCESS_TOKEN';
+const CORE_RUNTIME_ENV = path.join(
+  APP_ROOT, 'packages', '${surface.coreDir}', 'src', 'main', 'ets', 'runtime', 'RuntimeEnv.ets',
+);
+/** Keys a committed profile document must never carry: they are session credentials. */
+const PRIVATE_CREDENTIAL_KEYS = [
+  'accessToken',
+  'authToken',
+  'refreshToken',
+  'sessionAccessToken',
+  'apiKey',
+  'password',
+];
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -583,6 +597,16 @@ function readRuntimeDocument(profileId) {
   return readJson(path.join(RUNTIME_DIR, 'runtime-env.' + profileId + '.json'));
 }
 
+function readApplicationAccessToken(profileId) {
+  const document = readRuntimeDocument(profileId);
+  return String(document[APPLICATION_ACCESS_TOKEN_KEY] ?? '').trim();
+}
+
+/** Decodes one base64url JWT segment. The public token has no signature to verify. */
+function decodeJwtSegment(segment) {
+  return JSON.parse(Buffer.from(segment, 'base64url').toString('utf8'));
+}
+
 describe('harmony runtime config', () => {
   it('tracks exactly the ten registered profiles', () => {
     const profiles = fs
@@ -603,6 +627,69 @@ describe('harmony runtime config', () => {
         profileId + ': profileId must be <deploymentProfile>.<environment>',
       );
       assert.equal(document.runtimeTarget, RUNTIME_TARGET, profileId + ': runtimeTarget');
+    }
+  });
+
+  it('carries the public application access token in every profile document', () => {
+    // APP_ACCESS_TOKEN_SPEC.md section 2: the key is mandatory in every profile file of
+    // a manifest-bearing root, and section 3.1 fixes it as one JWT compact string.
+    for (const profileId of PROFILE_IDS) {
+      const document = readRuntimeDocument(profileId);
+      assert.ok(
+        Object.prototype.hasOwnProperty.call(document, APPLICATION_ACCESS_TOKEN_KEY),
+        profileId + ': ' + APPLICATION_ACCESS_TOKEN_KEY + ' is missing',
+      );
+      const token = readApplicationAccessToken(profileId);
+      assert.ok(token.length > 0, profileId + ': ' + APPLICATION_ACCESS_TOKEN_KEY + ' must be non-empty');
+      const segments = token.split('.');
+      assert.equal(segments.length, 3, profileId + ': the token must be a three-part JWT');
+      for (const segment of segments) {
+        assert.ok(segment.length > 0, profileId + ': every JWT segment must be non-empty');
+      }
+    }
+  });
+
+  it('issues the public application token class, not a session credential', () => {
+    // ENVIRONMENT_SPEC.md section 6.1 and APP_ACCESS_TOKEN_SPEC.md section 3: this is
+    // the public pre-login isolation token (alg:none, token_class:application) and it
+    // must match the profile and the root manifest identity it is committed for.
+    const manifest = readJson(path.join(APP_ROOT, 'agent.app.config.json'));
+    for (const profileId of PROFILE_IDS) {
+      const [deploymentProfile, environment] = profileId.split('.');
+      const segments = readApplicationAccessToken(profileId).split('.');
+      const header = decodeJwtSegment(segments[0]);
+      const payload = decodeJwtSegment(segments[1]);
+      assert.equal(header.alg, 'none', profileId + ': a public application token uses alg:none');
+      assert.equal(header.kid, 'public-app-token', profileId + ': public app token kid');
+      assert.equal(payload.token_class, 'application', profileId + ': token_class must be application');
+      assert.equal(payload.token_type, 'access', profileId + ': token_type must be access');
+      assert.equal(payload.environment, environment, profileId + ': environment claim');
+      assert.equal(payload.deployment_profile, deploymentProfile, profileId + ': deployment_profile claim');
+      assert.equal(payload.runtime_target, RUNTIME_TARGET, profileId + ': runtime_target claim');
+      assert.equal(payload.app_id, manifest.backend.appId, profileId + ': app_id claim');
+      assert.equal(payload.aud, manifest.backend.appId, profileId + ': aud claim');
+      assert.equal(
+        String(payload.tenant_id),
+        String(manifest.backend.tenantId),
+        profileId + ': tenant_id claim',
+      );
+      assert.equal(String(payload.user_id), '0', profileId + ': a public token carries no user');
+    }
+  });
+
+  it('keeps private session credentials out of the profile documents', () => {
+    // Only the public application token may be committed (APP_ACCESS_TOKEN_SPEC.md
+    // section 1). A session access token, auth token, refresh token, API key or
+    // password in a profile file would be a committed private credential.
+    for (const profileId of PROFILE_IDS) {
+      const document = readRuntimeDocument(profileId);
+      for (const key of PRIVATE_CREDENTIAL_KEYS) {
+        assert.equal(
+          document[key],
+          undefined,
+          profileId + ': ' + key + ' is a session credential and must not be committed',
+        );
+      }
     }
   });
 
@@ -720,9 +807,40 @@ describe('harmony runtime config', () => {
       generated.includes("from '../bootstrap/EnvironmentContract'"),
       'the generated module must import the document contract, not redeclare it',
     );
+    for (const profileId of PROFILE_IDS) {
+      const token = readApplicationAccessToken(profileId);
+      assert.ok(
+        generated.includes(APPLICATION_ACCESS_TOKEN_KEY + ": '" + token + "'"),
+        'generated RuntimeConfig.ets must project the committed ' + APPLICATION_ACCESS_TOKEN_KEY
+          + ' of ' + profileId,
+      );
+    }
     assert.ok(
       !generated.includes('metadata'),
       'the projection must not carry metadata, which the contract interface does not declare',
+    );
+  });
+
+  it('declares the token in the contract interface and the validated environment', () => {
+    // The HAP cannot read the tracked JSON, so the value reaches the loader through
+    // generated/RuntimeConfig.ets and must be a declared contract field - otherwise
+    // ArkTS rejects the projected literal and the token never arrives at bootstrap.
+    const contract = fs.readFileSync(CORE_RUNTIME_ENV, 'utf8');
+    assert.ok(
+      contract.includes('readonly ' + APPLICATION_ACCESS_TOKEN_KEY + ': string;'),
+      'IamHarmonyRuntimeEnvDocument must declare ' + APPLICATION_ACCESS_TOKEN_KEY,
+    );
+    assert.ok(
+      contract.includes('readonly applicationAccessToken: string;'),
+      'IamHarmonyEnvironment must expose the loaded application token to bootstrap',
+    );
+    assert.ok(
+      contract.includes('IAM_HARMONY_APPLICATION_ACCESS_TOKEN_KEY'),
+      'the loader must name the canonical token key in its fail-closed diagnostics',
+    );
+    assert.ok(
+      contract.includes("'config/app/runtime-env.'"),
+      'a missing-token diagnostic must name the profile document',
     );
   });
 });
@@ -737,7 +855,7 @@ describe('harmony runtime config', () => {
  * raw-SDK-import rules. This suite applies those rules to `.ets` and adds the route
  * and locale alignment the architecture standard requires.
  */
-function surfaceContractTest(surface, packages) {
+export function surfaceContractTest(surface, packages) {
   const family = packages.map((entry) => entry.dir).sort((a, b) => a.localeCompare(b));
   const routeIds = [];
   for (const entry of packages) {
@@ -1097,8 +1215,156 @@ describe('harmony surface contract', () => {
       }
     }
   });
+
+  it('seeds the public application access token before the SDK clients are constructed', () => {
+    // ENVIRONMENT_SPEC.md section 6.1: a client reads the token manager while its own
+    // config is built, so the seed must precede client construction. This is the
+    // ordering defect the root shipped with: ten profile documents carried
+    // SDKWORK_ACCESS_TOKEN and nothing ever read it.
+    const runtime = readText(path.join(ENTRY_ETS, 'bootstrap', 'Runtime.ets'));
+    const resolveAt = runtime.indexOf('resolveIamHarmonyEnvironment(');
+    const seedAt = runtime.indexOf('initializeIamHarmonyBootstrapToken(');
+    const clientsAt = runtime.indexOf('createIamHarmonySdkClients(');
+    assert.ok(resolveAt !== -1, 'bootstrap must resolve the selected profile');
+    assert.ok(seedAt !== -1, 'bootstrap must seed the shared token manager');
+    assert.ok(clientsAt !== -1, 'bootstrap must construct the SDK clients');
+    assert.ok(resolveAt < seedAt, 'the profile must be resolved and validated before the seed');
+    assert.ok(seedAt < clientsAt, 'the token must be seeded before any SDK client is constructed');
+    assert.ok(
+      runtime.includes('environment.applicationAccessToken'),
+      'bootstrap must seed the token loaded from the selected profile',
+    );
+
+    const tokenManager = readText(
+      path.join(PACKAGES_DIR, '${surface.coreDir}', 'src', 'main', 'ets', 'sdk', 'TokenManager.ets'),
+    );
+    assert.ok(
+      tokenManager.includes('initializeIamHarmonyBootstrapToken'),
+      'the token manager must expose the bootstrap seed',
+    );
+    assert.ok(
+      tokenManager.includes('bootstrapAccessToken'),
+      'the token manager must hold the bootstrap token outside the session record',
+    );
+    assert.ok(
+      tokenManager.includes('sessionAccessToken !== undefined ? sessionAccessToken : bootstrapAccessToken'),
+      'a session token must supersede the application token, with the application token as fallback',
+    );
+    // Logout restores the seeded token: the teardown must clear the session record and
+    // leave the bootstrap token field alone (requirement of APP_ACCESS_TOKEN_SPEC.md
+    // section 2: credential entry is never left without Access-Token).
+    const clearAt = tokenManager.indexOf('export function clearIamHarmonyTokens');
+    assert.ok(clearAt !== -1, 'the token manager must expose the session teardown');
+    const clearEnd = tokenManager.indexOf('\\n}', clearAt);
+    const clearBody = tokenManager.slice(clearAt, clearEnd === -1 ? undefined : clearEnd);
+    assert.ok(
+      !clearBody.includes('bootstrapAccessToken'),
+      'clearIamHarmonyTokens must not drop the seeded application token',
+    );
+    assert.ok(
+      clearBody.includes('Session()'),
+      'clearIamHarmonyTokens must clear the session/context store',
+    );
+  });
+
+  it('propagates credentials to the console and admin tier clients', () => {
+    // Section 6: one shared token-manager equivalent across the appbase app SDK, every
+    // authenticated app-api client and the explicit backend-admin client. A tier that
+    // reads its own session store reads a record nothing writes, which is exactly what
+    // the console and admin clients used to do.
+    for (const name of ['${surface.coreDir}', '${surface.consoleCoreDir}', '${surface.adminCoreDir}']) {
+      const client = readText(path.join(PACKAGES_DIR, name, 'src', 'main', 'ets', 'sdk', 'AppSdkClient.ets'));
+      assert.ok(
+        client.includes('currentIamHarmonyTokenSet'),
+        name + ': the client must read the shared token manager',
+      );
+      assert.ok(
+        client.includes('accessToken: config.accessToken'),
+        name + ': the credential must be exposed on the SDK port for a transport',
+      );
+    }
+    for (const name of ['${surface.consoleCoreDir}', '${surface.adminCoreDir}']) {
+      const store = readText(path.join(PACKAGES_DIR, name, 'src', 'main', 'ets', 'session', 'SessionStore.ets'));
+      assert.ok(
+        store.includes("from '@sdkwork/${surface.coreDir}'"),
+        name + ': the session store must re-export the single app-tier record',
+      );
+      assert.ok(
+        !store.includes('let currentSession'),
+        name + ': a tier-local session variable is a second record nothing writes',
+      );
+    }
+    const sdkClients = readText(path.join(ENTRY_ETS, 'bootstrap', 'SdkClients.ets'));
+    assert.ok(sdkClients.includes('consoleClient'), 'bootstrap must construct the console client');
+    assert.ok(sdkClients.includes('adminClient'), 'bootstrap must construct the admin client');
+    assert.ok(
+      sdkClients.includes('accessTokenConfigured'),
+      'the wiring report must state whether a token reached the client',
+    );
+    const iamRuntime = readText(path.join(ENTRY_ETS, 'bootstrap', 'IamRuntime.ets'));
+    assert.ok(
+      iamRuntime.includes('clearOnRefreshFailure'),
+      'a refresh failure must run the same teardown as logout',
+    );
+    assert.ok(
+      iamRuntime.includes('secureStorage.clear'),
+      'teardown must clear secure platform storage',
+    );
+    assert.ok(
+      iamRuntime.includes('reinitialize()'),
+      'teardown must rebuild the clients with the restored bootstrap token',
+    );
+  });
 });
 `;
+}
+
+/**
+ * Reads the committed public application access token of one profile document.
+ *
+ * This generator is a resolve-phase command (`ENVIRONMENT_SPEC.md` section 6.1): it
+ * must not mint, sign or rewrite the public application token. The canonical
+ * materializer owns generation for the native format (`APP_ACCESS_TOKEN_SPEC.md`
+ * section 2), so a regeneration carries the committed value forward verbatim and
+ * fails closed when the document or the token is absent. Before this the emitter
+ * rewrote every `config/app/runtime-env.*.json` without the token, so one generator
+ * run silently dropped the only bootstrap credential the root has.
+ *
+ * @param {string} repoRoot absolute repository root
+ * @param {string} appRoot absolute application root
+ * @param {string} profileId one of `PROFILE_IDS`
+ * @returns {string} the committed JWT compact string
+ */
+function readCommittedApplicationAccessToken(repoRoot, appRoot, profileId) {
+  const file = path.join(appRoot, 'config', 'app', `runtime-env.${profileId}.json`);
+  const relative = toPosix(path.relative(repoRoot, file));
+  let document;
+  try {
+    document = JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (error) {
+    throw new Error(
+      `${relative}: cannot read the profile document (${error.message}); `
+      + 'SDKWORK_ACCESS_TOKEN must be provisioned before this surface is regenerated',
+    );
+  }
+  const token = typeof document.SDKWORK_ACCESS_TOKEN === 'string'
+    ? document.SDKWORK_ACCESS_TOKEN.trim()
+    : '';
+  if (token.length === 0) {
+    throw new Error(
+      `${relative}: missing SDKWORK_ACCESS_TOKEN. Provision the profile with the canonical `
+      + 'materializer (sdkwork-specs/tools/adopt-app-access-token-files.mjs); this generator '
+      + 'never mints or rewrites the public application token.',
+    );
+  }
+  const segments = token.split('.');
+  if (segments.length !== 3 || segments.some((segment) => segment.length === 0)) {
+    throw new Error(
+      `${relative}: SDKWORK_ACCESS_TOKEN must be a three-part JWT compact string `
+      + '(APP_ACCESS_TOKEN_SPEC.md section 3.1)',
+    );
+  }
+  return token;
 }
 
 /**
@@ -1127,11 +1393,16 @@ export function materializeArktsSurface({
   const { write, writeJson, writeEntry } = surfaceWriter;
 
   // Derived once and reused by everything that needs an endpoint, so a document and
-  // its ArkTS projection cannot disagree.
+  // its ArkTS projection cannot disagree. The public application token is carried
+  // forward from the committed profile document, never derived here.
   const authority = readDeploymentAuthority(repoRoot);
   const resolved = resolveRuntimeDocuments(authority, repoRoot);
   const documents = PROFILE_IDS.map((profileId) =>
-    harmonyRuntimeEnvDocument(surface, resolved[profileId]),
+    harmonyRuntimeEnvDocument(
+      surface,
+      resolved[profileId],
+      readCommittedApplicationAccessToken(repoRoot, appRoot, profileId),
+    ),
   );
 
   // ---- root: workspace and docs scaffolding ----
