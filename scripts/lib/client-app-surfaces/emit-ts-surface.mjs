@@ -592,10 +592,15 @@ function contractTestSource(surface) {
       '${surface.runtimeTarget}',
       file + ' runtimeTarget mismatch',
     );
+    assert.match(
+      String(document.SDKWORK_APP_API_BASE_URL ?? ''),
+      /^https?:\\/\\//u,
+      file + ' app API base must be an absolute origin',
+    );
     assert.equal(
       document.SDKWORK_APP_API_BASE_URL,
-      document.SDKWORK_DEPLOYMENT_PROFILE === 'standalone' ? '/' : document.SDKWORK_API_BASE_URL,
-      file + ' standalone must resolve the same-origin root',
+      document.SDKWORK_API_BASE_URL,
+      file + ' app and platform API edges must agree',
     )`;
   return `${BANNER_COMMENT}
 import assert from 'node:assert/strict';

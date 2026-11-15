@@ -511,6 +511,31 @@ function requireBootstrapAccessToken(runtimeEnv: IamMpRuntimeEnv): string {
 }
 
 /**
+ * Pick the primary absolute origin of the profile's app-api base value.
+ *
+ * The canonical materializer may carry the registered API edge family as
+ * `origin1;origin2;...` (`ENVIRONMENT_SPEC.md` section 5.1.0.1). A mini program
+ * has no page host to match the family against, so the first (primary) member is
+ * used; handing the list to the HTTP client would produce an origin no request
+ * can use.
+ * @param runtimeEnv - the materialized runtime document.
+ * @returns one absolute origin, with any trailing slash removed.
+ * @throws when the profile declares no app-api base URL.
+ */
+function requireAppApiBaseUrl(runtimeEnv: IamMpRuntimeEnv): string {
+  const raw = readString(runtimeEnv.SDKWORK_APP_API_BASE_URL);
+  const primary = raw?.split(";")[0]?.trim() ?? "";
+  if (!primary) {
+    throw new Error(
+      `SDKWORK_APP_API_BASE_URL is missing from the selected profile document ` +
+        `config/mini-program/runtime-env.${runtimeEnv.SDKWORK_PROFILE_ID}.json: ` +
+        "the mini program cannot resolve the app-api origin.",
+    );
+  }
+  return primary.replace(/\/+$/u, "");
+}
+
+/**
  * Compose the runtime for this launch.
  * @param input - the materialized runtime document.
  * @returns the bootstrapped runtime.
@@ -527,7 +552,7 @@ export async function bootstrapIamMpApp(input: { runtimeEnv: IamMpRuntimeEnv }):
 
   const session = createIamMpSessionStore();
   const service = createIamMpRuntimeService({
-    baseUrl: runtimeEnv.SDKWORK_APP_API_BASE_URL,
+    baseUrl: requireAppApiBaseUrl(runtimeEnv),
     bootstrapAccessToken,
     ...(session.get()?.accessToken ? { accessToken: session.get()?.accessToken } : {}),
     clearSession: () => session.clear(),

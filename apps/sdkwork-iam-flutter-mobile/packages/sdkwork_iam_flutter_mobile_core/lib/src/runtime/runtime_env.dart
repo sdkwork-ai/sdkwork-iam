@@ -54,16 +54,36 @@ class SdkworkRuntimeEnv {
 }
 
 /// Resolves runtime configuration from the dart-define environment.
+///
+/// Cloud profile documents carry the registered API edge family as
+/// `origin1;origin2;...` (`ENVIRONMENT_SPEC.md` section 5.1.0.1). A native client
+/// has no page host to match that family against, so every endpoint is reduced to
+/// its primary (first) member here: handing the list to the HTTP client would
+/// produce an origin no request can use.
 SdkworkRuntimeEnv resolveSdkworkRuntimeEnv() {
-  return const SdkworkRuntimeEnv(
+  return SdkworkRuntimeEnv(
     environment: String.fromEnvironment('SDKWORK_ENVIRONMENT'),
     deploymentProfile: String.fromEnvironment('SDKWORK_DEPLOYMENT_PROFILE'),
     profileId: String.fromEnvironment('SDKWORK_PROFILE_ID'),
     runtimeTarget: String.fromEnvironment('SDKWORK_RUNTIME_TARGET'),
     appId: String.fromEnvironment('SDKWORK_APP_ID'),
-    apiBaseUrl: String.fromEnvironment('SDKWORK_API_BASE_URL'),
-    appApiBaseUrl: String.fromEnvironment('SDKWORK_APP_API_BASE_URL'),
-    openApiBaseUrl: String.fromEnvironment('SDKWORK_OPEN_API_BASE_URL'),
-    iamIssuer: String.fromEnvironment('SDKWORK_IAM_ISSUER'),
+    apiBaseUrl: sdkworkPrimaryOrigin(String.fromEnvironment('SDKWORK_API_BASE_URL')),
+    appApiBaseUrl: sdkworkPrimaryOrigin(String.fromEnvironment('SDKWORK_APP_API_BASE_URL')),
+    openApiBaseUrl: sdkworkPrimaryOrigin(String.fromEnvironment('SDKWORK_OPEN_API_BASE_URL')),
+    iamIssuer: sdkworkPrimaryOrigin(String.fromEnvironment('SDKWORK_IAM_ISSUER')),
   );
+}
+
+/// The primary absolute origin of a build-time base URL value.
+///
+/// A single-origin value is returned unchanged (minus a trailing slash); a
+/// `;`-joined cloud family yields its first member, which the topology declares
+/// primary.
+String sdkworkPrimaryOrigin(String value) {
+  for (final String candidate in value.split(';')) {
+    final String trimmed = candidate.trim();
+    if (trimmed.isEmpty) continue;
+    return trimmed.replaceFirst(RegExp(r'/+$'), '');
+  }
+  return '';
 }

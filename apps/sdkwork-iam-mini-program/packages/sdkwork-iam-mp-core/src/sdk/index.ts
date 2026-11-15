@@ -17,9 +17,14 @@ export interface IamMpRuntimeEnv {
   SDKWORK_APP_API_BASE_URL: string;
   SDKWORK_OPEN_API_BASE_URL: string;
   SDKWORK_IAM_ISSUER: string;
-  SDKWORK_FEATURE_APP_SURFACE: boolean;
-  SDKWORK_FEATURE_CONSOLE_SURFACE: boolean;
-  SDKWORK_FEATURE_ADMIN_SURFACE: boolean;
+  /**
+   * Surface flags are optional: the canonical per-profile document carries the
+   * identity, the deployed API edges and the public application token
+   * (`APP_ACCESS_TOKEN_SPEC.md` §2) and does not repeat feature switches.
+   */
+  SDKWORK_FEATURE_APP_SURFACE?: boolean;
+  SDKWORK_FEATURE_CONSOLE_SURFACE?: boolean;
+  SDKWORK_FEATURE_ADMIN_SURFACE?: boolean;
   /**
    * Public application access token of the selected profile document
    * (`APP_ACCESS_TOKEN_SPEC.md` §2). Optional on the document type so a test

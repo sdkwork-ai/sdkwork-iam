@@ -2993,6 +2993,10 @@ importers:
         version: 6.0.3
 
   apps/sdkwork-iam-uniappx/packages/sdkwork-iam-uniappx-core:
+    dependencies:
+      '@sdkwork/iam-credential-entry':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-credential-entry
     devDependencies:
       typescript:
         specifier: 'catalog:'

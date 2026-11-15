@@ -15,6 +15,9 @@
     "src",
     "README.md"
   ],
+  "dependencies": {
+    "@sdkwork/iam-credential-entry": "workspace:*"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },

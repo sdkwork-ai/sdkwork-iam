@@ -7349,13 +7349,23 @@ function requireBootstrapAccessToken(runtimeEnv) {
   }
   return token;
 }
+function requireAppApiBaseUrl(runtimeEnv) {
+  const raw = readString(runtimeEnv.SDKWORK_APP_API_BASE_URL);
+  const primary = raw?.split(";")[0]?.trim() ?? "";
+  if (!primary) {
+    throw new Error(
+      `SDKWORK_APP_API_BASE_URL is missing from the selected profile document config/mini-program/runtime-env.${runtimeEnv.SDKWORK_PROFILE_ID}.json: the mini program cannot resolve the app-api origin.`
+    );
+  }
+  return primary.replace(/\/+$/u, "");
+}
 async function bootstrapIamMpApp(input) {
   const { runtimeEnv } = input;
   if (runtime) return runtime;
   const bootstrapAccessToken = requireBootstrapAccessToken(runtimeEnv);
   const session = createIamMpSessionStore();
   const service = createIamMpRuntimeService({
-    baseUrl: runtimeEnv.SDKWORK_APP_API_BASE_URL,
+    baseUrl: requireAppApiBaseUrl(runtimeEnv),
     bootstrapAccessToken,
     ...session.get()?.accessToken ? { accessToken: session.get()?.accessToken } : {},
     clearSession: () => session.clear(),
