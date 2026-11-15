@@ -7055,7 +7055,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.read",
         "x-sdkwork-required-surface": "organizationMember"
       },
       "post": {
@@ -7182,7 +7181,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": true,
@@ -7459,7 +7457,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.read",
         "x-sdkwork-required-surface": "organizationMember"
       },
       "patch": {
@@ -7595,7 +7592,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": false,
@@ -10181,7 +10177,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.read",
         "x-sdkwork-required-surface": "organizationMember"
       },
       "post": {
@@ -10308,7 +10303,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": true,
@@ -10449,7 +10443,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "x-sdkwork-required-surface": "organizationMember"
       },
       "patch": {
@@ -10585,7 +10578,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": false,
@@ -10733,7 +10725,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": true,
@@ -10881,7 +10872,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.read",
         "x-sdkwork-required-surface": "organizationMember"
       },
       "patch": {
@@ -11017,7 +11007,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": false,
@@ -11165,7 +11154,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": true,
@@ -11313,7 +11301,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": true,
@@ -11461,7 +11448,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": true,
@@ -11609,7 +11595,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": true,

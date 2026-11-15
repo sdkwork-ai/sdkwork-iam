@@ -13,6 +13,16 @@ import {
   generateWechatEncodingAesKey,
   generateWechatToken,
 } from "../src/components/oauth-account-setup-section";
+import {
+  buildAccountCallbackUri,
+  buildDomainVerifyFileUrl,
+  findOfficialDomainIssues,
+  isWechatVerifyFileName,
+  normalizeOfficialDomain,
+  normalizeOfficialDomainConfig,
+  readCallbackHost,
+  readOfficialDomainSets,
+} from "../src/utils/official-account-domains";
 
 describe("SDKWork IAM OAuth admin utils", () => {
   describe("templateMessage", () => {
@@ -64,7 +74,7 @@ describe("SDKWork IAM OAuth admin utils", () => {
   });
 
   describe("collectConfiguredDomains", () => {
-    it("collects the web authorization domain and business domains for official accounts", () => {
+    it("collects the legacy primary domain as the web-authorization set for official accounts", () => {
       const domains = collectConfiguredDomains({
         webDomain: "app.example.com",
         domains: {
@@ -78,7 +88,7 @@ describe("SDKWork IAM OAuth admin utils", () => {
         "open.example.com",
       ]);
       const app = domains.find((item) => item.domain === "app.example.com");
-      expect(app?.kinds).toEqual(["web"]);
+      expect(app?.kinds).toEqual(["webAuth"]);
     });
 
     it("normalizes scheme and trailing slashes", () => {
@@ -101,7 +111,7 @@ describe("SDKWork IAM OAuth admin utils", () => {
         "open.example.com",
       ]);
       const app = domains.find((item) => item.domain === "app.example.com");
-      expect(app?.kinds).toContain("web");
+      expect(app?.kinds).toContain("webAuth");
       expect(app?.kinds).toContain("jsSecure");
       const js = domains.find((item) => item.domain === "js.example.com");
       expect(js?.kinds).toEqual(["jsSecure"]);
@@ -135,6 +145,114 @@ describe("SDKWork IAM OAuth admin utils", () => {
         "open.example.com",
       ]);
       expect(domains.some((item) => item.domain === "app.example.com")).toBe(false);
+    });
+  });
+
+  describe("official account protected-domain rules", () => {
+    it("normalizes what the WeChat console stores", () => {
+      expect(normalizeOfficialDomain("  HTTPS://App.Example.com/ ")).toBe("app.example.com");
+      expect(normalizeOfficialDomain("app.example.com")).toBe("app.example.com");
+      expect(normalizeOfficialDomain("sub.app.example.co.uk")).toBe("sub.app.example.co.uk");
+    });
+
+    it("rejects what the console rejects", () => {
+      // Blank, IP literals, ports, query strings, wildcards and relative hosts.
+      expect(normalizeOfficialDomain("")).toBeUndefined();
+      expect(normalizeOfficialDomain("192.168.1.1")).toBeUndefined();
+      expect(normalizeOfficialDomain("app.example.com:8443")).toBeUndefined();
+      expect(normalizeOfficialDomain("app.example.com?x=1")).toBeUndefined();
+      expect(normalizeOfficialDomain("*.example.com")).toBeUndefined();
+      expect(normalizeOfficialDomain("localhost")).toBeUndefined();
+      // A path is only valid on the business-domain set.
+      expect(normalizeOfficialDomain("app.example.com/mp")).toBeUndefined();
+    });
+
+    it("accepts the business-domain path form", () => {
+      expect(normalizeOfficialDomain("app.example.com/mp", { allowPath: true }))
+        .toBe("app.example.com/mp");
+      expect(normalizeOfficialDomain("https://app.example.com/mp/", { allowPath: true }))
+        .toBe("app.example.com/mp");
+    });
+
+    it("folds the legacy shapes into the three console sets", () => {
+      const sets = readOfficialDomainSets({
+        domains: { business: ["open.example.com"] },
+        jsSecureDomains: ["js.example.com"],
+        webDomain: "app.example.com",
+      });
+      expect(sets.webAuthDomains).toEqual(["app.example.com"]);
+      expect(sets.businessDomains).toEqual(["open.example.com"]);
+      expect(sets.jsSecureDomains).toEqual(["js.example.com"]);
+    });
+
+    it("keeps a saved empty set instead of resurrecting the legacy value", () => {
+      const sets = readOfficialDomainSets({
+        businessDomains: [],
+        domains: { business: ["open.example.com"] },
+        webAuthDomains: [],
+        webDomain: "app.example.com",
+      });
+      expect(sets.webAuthDomains).toEqual([]);
+      expect(sets.businessDomains).toEqual([]);
+    });
+
+    it("prefers the dedicated web-authorization set over the legacy primary domain", () => {
+      const sets = readOfficialDomainSets({
+        webAuthDomains: ["auth.example.com"],
+        webDomain: "app.example.com",
+      });
+      expect(sets.webAuthDomains).toEqual(["auth.example.com"]);
+    });
+
+    it("reports every stored value the console would reject", () => {
+      const issues = findOfficialDomainIssues({
+        businessDomains: ["open.example.com"],
+        jsSecureDomains: ["js.example.com", "127.0.0.1"],
+        webAuthDomains: ["https://auth.example.com"],
+      });
+      expect(issues).toHaveLength(1);
+      expect(issues[0]).toMatchObject({ index: 1, key: "jsSecureDomains", value: "127.0.0.1" });
+    });
+
+    it("normalizes, de-duplicates and retires the legacy business array on save", () => {
+      const config = normalizeOfficialDomainConfig({
+        domains: { business: ["open.example.com"] },
+        jsSecureDomains: ["JS.Example.com", "js.example.com"],
+        webDomain: "app.example.com",
+      });
+      expect(config.jsSecureDomains).toEqual(["js.example.com"]);
+      expect(config.webAuthDomains).toEqual(["app.example.com"]);
+      expect(config.businessDomains).toEqual(["open.example.com"]);
+      expect(config.domains).toBeUndefined();
+    });
+
+    it("derives the callback URL from the first web-authorization domain", () => {
+      expect(buildAccountCallbackUri({ webAuthDomains: ["auth.example.com"], webDomain: "app.example.com" }))
+        .toBe("https://auth.example.com/auth/oauth/callback");
+      // Legacy accounts without the dedicated set keep their primary domain.
+      expect(buildAccountCallbackUri({ webDomain: "app.example.com" }))
+        .toBe("https://app.example.com/auth/oauth/callback");
+      expect(buildAccountCallbackUri({})).toBe("");
+    });
+
+    it("builds the console's verification-file address for hosts and paths", () => {
+      expect(buildDomainVerifyFileUrl("app.example.com", "MP_verify_abc.txt"))
+        .toBe("https://app.example.com/MP_verify_abc.txt");
+      expect(buildDomainVerifyFileUrl("app.example.com/mp", "MP_verify_abc.txt"))
+        .toBe("https://app.example.com/mp/MP_verify_abc.txt");
+      expect(buildDomainVerifyFileUrl("app.example.com", "  ")).toBe("");
+    });
+
+    it("recognizes the issued verification-file name", () => {
+      expect(isWechatVerifyFileName("MP_verify_gbyldF3oaEWKmrmn.txt")).toBe(true);
+      expect(isWechatVerifyFileName("MP_verify.txt")).toBe(false);
+      expect(isWechatVerifyFileName("verify.txt")).toBe(false);
+    });
+
+    it("reads the callback host for the console's callback-domain rule", () => {
+      expect(readCallbackHost("https://App.Example.com/auth/oauth/callback")).toBe("app.example.com");
+      expect(readCallbackHost("not a url")).toBe("");
+      expect(readCallbackHost("")).toBe("");
     });
   });
 

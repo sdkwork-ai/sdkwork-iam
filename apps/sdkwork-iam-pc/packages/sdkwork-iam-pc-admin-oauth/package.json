@@ -9,14 +9,16 @@
       "types": "./src/index.tsx",
       "import": "./src/index.tsx",
       "default": "./src/index.tsx"
-    }
+    },
+    "./panel-tailwind.css": "./src/panel-tailwind.css"
   },
   "files": [
     "src",
     "README.md"
   ],
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm --dir ../../../.. exec vitest run apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-admin-oauth/tests --config vitest.config.ts"
   },
   "devDependencies": {
     "@types/react": "catalog:",
@@ -29,6 +31,8 @@
     "@sdkwork/i18n-pc-react": "workspace:*",
     "@sdkwork/iam-contracts": "workspace:*",
     "@sdkwork/iam-pc-admin-core": "workspace:*",
+    "@sdkwork/iam-pc-mini-program": "workspace:*",
+    "@sdkwork/iam-pc-official-accounts": "workspace:*",
     "@sdkwork/iam-service": "workspace:*",
     "@sdkwork/ui-pc-react": "workspace:*",
     "@sdkwork/utils": "workspace:*",

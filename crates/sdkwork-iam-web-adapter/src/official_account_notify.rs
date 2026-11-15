@@ -373,6 +373,9 @@ fn ensure_receive_id_matches(receive_id: &str, app_id: &str) -> Result<(), Wecha
 /// The account's callback configuration, decoded from the write-only secret refs.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct OfficialAccountNotifyConfig {
+    /// The channel the account belongs to, resolved from
+    /// `iam_oauth_resource_account.resource_account_kind`.
+    pub channel: WechatNotifyChannel,
     pub app_id: String,
     pub token: String,
     pub encoding_aes_key: String,
@@ -386,7 +389,34 @@ impl OfficialAccountNotifyConfig {
     }
 }
 
+/// Maps the canonical encryption mode onto the wire decision, tolerating the
+/// legacy `plain` value written by the pre-unification admin surface.
+fn normalize_encrypt_mode(raw: Option<&str>) -> String {
+    match raw.map(str::trim) {
+        Some("safe") => "safe".to_owned(),
+        Some("compatible") => "compatible".to_owned(),
+        _ => ENCRYPT_MODE_PLAINTEXT.to_owned(),
+    }
+}
+
+/// Maps `iam_oauth_resource_account.resource_account_kind` onto the callback
+/// channel. Official accounts and mini programs share one WeChat message-push
+/// wire, so both kinds are addressable through the standard notify URL.
+fn channel_from_resource_account_kind(kind: &str) -> Option<WechatNotifyChannel> {
+    match kind.trim() {
+        "official_account" => Some(WechatNotifyChannel::OfficialAccount),
+        "mini_program" => Some(WechatNotifyChannel::MiniProgram),
+        _ => None,
+    }
+}
+
 /// Loads one account's callback configuration for the standard notify URL.
+///
+/// The configuration is resolved from the unified aggregate: the Channel
+/// AppID and enablement from `iam_oauth_resource_account`, the callback
+/// encryption mode from its `message_push` row in `iam_oauth_webhook_config`,
+/// and the verification Token / EncodingAESKey from the `iam_oauth_secret`
+/// rows owned by that webhook configuration.
 /// @param pool - the IAM PostgreSQL pool.
 /// @param account_id - the account id embedded in the notify URL.
 /// @returns the decoded configuration.
@@ -395,9 +425,38 @@ pub async fn load_official_account_notify_config(
     account_id: &str,
 ) -> Result<OfficialAccountNotifyConfig, String> {
     let row = sqlx::query(
-        "SELECT app_id, notify_token_ref, notify_encoding_aes_key_ref, \
-         notify_encrypt_mode, enabled \
-         FROM iam_user_official_account WHERE id = $1",
+        "SELECT ra.provider_account_id, ra.resource_account_kind, ra.enabled, \
+                wc.encryption_mode, \
+                notify_token.secret_ref AS notify_token_ref, \
+                encoding_aes_key.secret_ref AS notify_encoding_aes_key_ref \
+         FROM iam_oauth_resource_account ra \
+         LEFT JOIN LATERAL ( \
+           SELECT w.id, w.encryption_mode \
+           FROM iam_oauth_webhook_config w \
+           WHERE w.tenant_id = ra.tenant_id AND w.resource_account_id = ra.id \
+             AND w.webhook_kind = 'message_push' AND w.status = 'active' \
+           ORDER BY w.created_at DESC, w.id DESC \
+           LIMIT 1 \
+         ) wc ON TRUE \
+         LEFT JOIN LATERAL ( \
+           SELECT s.secret_ref \
+           FROM iam_oauth_secret s \
+           WHERE s.tenant_id = ra.tenant_id AND s.secret_owner_kind = 'webhook_config' \
+             AND s.secret_owner_id = wc.id AND s.secret_kind = 'verification_token' \
+             AND s.status = 'active' \
+           ORDER BY s.active_from DESC, s.id DESC \
+           LIMIT 1 \
+         ) notify_token ON TRUE \
+         LEFT JOIN LATERAL ( \
+           SELECT s.secret_ref \
+           FROM iam_oauth_secret s \
+           WHERE s.tenant_id = ra.tenant_id AND s.secret_owner_kind = 'webhook_config' \
+             AND s.secret_owner_id = wc.id AND s.secret_kind = 'encoding_aes_key' \
+             AND s.status = 'active' \
+           ORDER BY s.active_from DESC, s.id DESC \
+           LIMIT 1 \
+         ) encoding_aes_key ON TRUE \
+         WHERE ra.id = $1",
     )
     .bind(account_id)
     .fetch_optional(pool)
@@ -409,20 +468,28 @@ pub async fn load_official_account_notify_config(
             Some(secret_ref) if !secret_ref.trim().is_empty() => {
                 let bytes = sdkwork_iam_bootstrap::decode_signing_secret_ref(&secret_ref)
                     .map_err(|error| format!("{label} could not be decoded: {error}"))?;
-                String::from_utf8(bytes)
-                    .map_err(|_| format!("{label} is not UTF-8"))
+                String::from_utf8(bytes).map_err(|_| format!("{label} is not UTF-8"))
             }
             _ => Ok(String::new()),
         }
     };
+    let resource_account_kind: String = row.get("resource_account_kind");
+    let Some(channel) = channel_from_resource_account_kind(&resource_account_kind) else {
+        return Err(format!(
+            "resource account {account_id} is not a WeChat message-push account"
+        ));
+    };
     Ok(OfficialAccountNotifyConfig {
-        app_id: row.get("app_id"),
+        channel,
+        app_id: row.get("provider_account_id"),
         token: decode(row.get("notify_token_ref"), "notify token")?,
         encoding_aes_key: decode(
             row.get("notify_encoding_aes_key_ref"),
             "EncodingAESKey",
         )?,
-        encrypt_mode: row.get("notify_encrypt_mode"),
+        encrypt_mode: normalize_encrypt_mode(
+            row.get::<Option<String>, _>("encryption_mode").as_deref(),
+        ),
         enabled: row.get::<i32, _>("enabled") != 0,
     })
 }
@@ -653,15 +720,12 @@ pub async fn handle_official_account_notify_post(
     guard: &WechatNotifyReplayGuard,
 ) -> Result<WechatNotifyHttpResponse, String> {
     let config = load_official_account_notify_config(pool, account_id).await?;
-    parse_notification(
-        WechatNotifyChannel::OfficialAccount,
-        account_id,
-        &config,
-        query,
-        body,
-        guard,
-    )
-    .map_err(|error| error.to_string())?;
+    // The channel is a property of the stored aggregate
+    // (`resource_account_kind`), not of the caller, so official accounts and
+    // mini programs sharing one callback wire stay distinguishable.
+    let channel = config.channel;
+    parse_notification(channel, account_id, &config, query, body, guard)
+        .map_err(|error| error.to_string())?;
     Ok(WechatNotifyHttpResponse {
         content_type: "text/plain; charset=utf-8",
         body: "success".to_string(),
@@ -713,6 +777,7 @@ mod tests {
 
     fn plaintext_config() -> OfficialAccountNotifyConfig {
         OfficialAccountNotifyConfig {
+            channel: WechatNotifyChannel::OfficialAccount,
             app_id: TEST_APP_ID.to_string(),
             token: TEST_TOKEN.to_string(),
             encoding_aes_key: String::new(),
@@ -723,6 +788,7 @@ mod tests {
 
     fn safe_config() -> OfficialAccountNotifyConfig {
         OfficialAccountNotifyConfig {
+            channel: WechatNotifyChannel::OfficialAccount,
             app_id: TEST_APP_ID.to_string(),
             token: TEST_TOKEN.to_string(),
             encoding_aes_key: TEST_AES_KEY_43.to_string(),
@@ -891,5 +957,30 @@ mod tests {
             ),
             Err(WechatNotifyError::VerificationFailed)
         );
+    }
+
+    #[test]
+    fn resolves_the_channel_from_the_resource_account_kind() {
+        assert_eq!(
+            channel_from_resource_account_kind("official_account"),
+            Some(WechatNotifyChannel::OfficialAccount)
+        );
+        assert_eq!(
+            channel_from_resource_account_kind(" mini_program "),
+            Some(WechatNotifyChannel::MiniProgram)
+        );
+        assert_eq!(channel_from_resource_account_kind("mp"), None);
+        assert_eq!(channel_from_resource_account_kind(""), None);
+    }
+
+    #[test]
+    fn normalizes_the_stored_encryption_mode_and_keeps_the_legacy_plain_value() {
+        assert_eq!(normalize_encrypt_mode(Some("safe")), "safe");
+        assert_eq!(normalize_encrypt_mode(Some("compatible")), "compatible");
+        assert_eq!(normalize_encrypt_mode(Some("plaintext")), "plaintext");
+        // The pre-unification admin surface wrote `plain` for the plaintext mode.
+        assert_eq!(normalize_encrypt_mode(Some("plain")), "plaintext");
+        assert_eq!(normalize_encrypt_mode(Some("  ")), "plaintext");
+        assert_eq!(normalize_encrypt_mode(None), "plaintext");
     }
 }

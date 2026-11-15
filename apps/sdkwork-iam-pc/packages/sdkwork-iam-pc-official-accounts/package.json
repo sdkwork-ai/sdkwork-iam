@@ -1,0 +1,56 @@
+{
+  "name": "@sdkwork/iam-pc-official-accounts",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Transport-agnostic official (service) account CRUD surface shared by the IAM app panel, the IAM backend-admin page, and product hosts (operator and self-service modes).",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./panel-tailwind.css": "./src/panel-tailwind.css"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm --dir ../../../.. exec vitest run apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-official-accounts/tests --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@sdkwork/drive-upload-image-core": "workspace:*",
+    "@sdkwork/i18n-pc-react": "workspace:*",
+    "@sdkwork/ui-pc-react": "workspace:*",
+    "sdkwork-drive-pc-upload-image": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18.2.0 <20.0.0",
+    "react-dom": ">=18.2.0 <20.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@testing-library/react": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "typescript": "^6.0.2",
+    "vitest": "catalog:"
+  },
+  "sdkwork": {
+    "workspace": "sdkwork-iam",
+    "architecture": "pc-react",
+    "surface": "app",
+    "domain": "iam",
+    "capability": "official-accounts",
+    "status": "standard"
+  }
+}

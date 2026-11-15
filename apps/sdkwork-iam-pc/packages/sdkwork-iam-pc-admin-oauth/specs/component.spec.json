@@ -61,7 +61,8 @@
   ],
   "contracts": {
     "publicExports": [
-      "."
+      ".",
+      "./panel-tailwind.css"
     ],
     "runtimeEntrypoints": [
       "package.json#scripts.typecheck"

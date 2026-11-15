@@ -123,6 +123,16 @@ tables:
   - name: iam_oauth_webhook_config
     lifecycle_status: active
     owner: sdkwork-iam
+  # Migration evidence only: written once by 0033_official_account_unification,
+  # never read or written by runtime code. 0034 drops the legacy
+  # iam_user_official_account table but deliberately keeps this ledger so the
+  # isolated rows stay reviewable; an operator retires it in a separate,
+  # explicitly approved step once those rows are re-appended or accepted.
+  # 0033's own provenance header predates that decision and is frozen by the
+  # migration checksum, so this comment is the current lifecycle statement.
+  - name: iam_official_account_migration_orphan
+    lifecycle_status: deprecated
+    owner: sdkwork-iam
   - name: iam_organization
     lifecycle_status: active
     owner: sdkwork-iam
@@ -199,9 +209,6 @@ tables:
     lifecycle_status: active
     owner: sdkwork-iam
   - name: iam_user_identity
-    lifecycle_status: active
-    owner: sdkwork-iam
-  - name: iam_user_official_account
     lifecycle_status: active
     owner: sdkwork-iam
   - name: iam_user_persona

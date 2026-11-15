@@ -4332,6 +4332,9 @@ async fn create_official_account_qr_login(
            AND ra.provider_account_type = 'service' \
            AND ra.enabled = 1 AND ra.status = 'active' \
            AND ra.qr_default_enabled = 1 \
+           -- A self-service channel only participates when an operator
+           -- explicitly promoted it; it is never picked up implicitly.
+           AND (ra.access_mode <> 'self_managed_account' OR ra.qr_default_enabled = 1) \
            AND ($1::text IS NULL OR ra.id = $1) \
            AND ($2::text IS NULL OR ra.tenant_id = $2) \
          ORDER BY ra.updated_at DESC \

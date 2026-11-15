@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { StatusNotice } from "@sdkwork/ui-pc-react";
 
+import { SdkworkOfficialAccountsPanel } from "@sdkwork/iam-pc-official-accounts";
 import type { DriveUploadImageService } from "@sdkwork/drive-upload-image-core";
 import type {
   SdkworkIamOauthAdminController,
   SdkworkIamOauthCustomMenuPermissions,
   SdkworkIamOauthPagePermissions,
 } from "../types/oauth-admin-types";
-import { useOauthAdminPageState } from "../hooks/use-oauth-admin-page-state";
-import { useSdkworkIamOauthAdminMessages } from "../i18n";
-import { OauthAccountSetupSection } from "../components/oauth-account-setup-section";
 import { SdkworkIamOauthCustomMenuFullscreenModal } from "../components/custom-menu/custom-menu-fullscreen-modal";
-import { readResourceAccountKind } from "../utils/oauth-admin-utils";
+import { createIamOauthOfficialAccountController } from "../services/official-account-operator-operations";
+import { officialAccountCapabilitiesOf } from "../services/official-account-capabilities";
 
 /**
  * Official (service) account management.
@@ -21,10 +19,17 @@ import { readResourceAccountKind } from "../utils/oauth-admin-utils";
  * or reuses the `wechat` web-authorization login integration; enabling it
  * shows the WeChat login entry on the login page immediately.
  *
- * `?open=add` in the URL (e.g. jumped from the scan-login settings page)
- * opens the add-account drawer automatically on mount. The custom menu
- * manager opens as a full-screen modal on top of the list; hosts that prefer
- * a dedicated route can provide `onOpenCustomMenu` to take over navigation.
+ * The page is a thin host shell: the CRUD implementation and the panel live in
+ * `@sdkwork/iam-pc-official-accounts`. This module only builds the shared
+ * operator-mode controller over the injected backend controller, derives the
+ * capability set from the page permissions, and supplies the admin-only pieces
+ * the panel accepts from its host (the Drive logo capability, the deep link,
+ * and the full-screen custom-menu takeover).
+ *
+ * `?open=add` in the URL (e.g. jumped from the scan-login settings page) opens
+ * the add-account drawer automatically on mount. The custom menu manager opens
+ * as a full-screen modal on top of the list; hosts that prefer a dedicated
+ * route can provide `onOpenCustomMenu` to take over navigation.
  */
 export function SdkworkIamOauthOfficialAccountsPage({
   controller,
@@ -41,26 +46,27 @@ export function SdkworkIamOauthOfficialAccountsPage({
    */
   customMenuPermissions?: SdkworkIamOauthCustomMenuPermissions;
   /**
-   * Host-injected Drive image-upload capability, threaded to the account
-   * setup section's logo field (shared upload component + bounded preview
-   * resolution). Omitted: the logo field degrades to the external-URL input.
+   * Host-injected Drive image-upload capability, threaded to the shared panel's
+   * logo field (shared upload component + bounded preview resolution). Omitted:
+   * the field keeps a stored logo visible and states that uploads are
+   * unavailable.
    */
   driveUploadImageService?: DriveUploadImageService;
   onOpenCustomMenu?: (resourceAccountId: string) => void;
   /** UI discovery of the server-side mutation permissions (REQ-2026-0107); every member defaults to true. */
   permissions?: SdkworkIamOauthPagePermissions;
 }) {
-  const messages = useSdkworkIamOauthAdminMessages();
-  const { data, disabled, error, listPageInfo, status, sync } = useOauthAdminPageState(controller, [
-    "resourceAccounts",
-    "integrations",
-  ]);
+  // Operator mode: the shared controller owns every official-account mutation.
+  const officialAccounts = useMemo(
+    () => createIamOauthOfficialAccountController(controller),
+    [controller],
+  );
+  const capabilities = useMemo(
+    () => officialAccountCapabilitiesOf(permissions, customMenuPermissions),
+    [customMenuPermissions, permissions],
+  );
   const [initialOpen, setInitialOpen] = useState(false);
   const [activeMenuAccountId, setActiveMenuAccountId] = useState<string | undefined>();
-  const accounts = useMemo(
-    () => data.resourceAccounts.filter((item) => readResourceAccountKind(item) === "official_account"),
-    [data.resourceAccounts],
-  );
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("open") === "add") {
       setInitialOpen(true);
@@ -76,22 +82,12 @@ export function SdkworkIamOauthOfficialAccountsPage({
   };
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      {error ? <StatusNotice tone="danger">{error}</StatusNotice> : null}
-      <OauthAccountSetupSection
-        accounts={accounts}
-        common={messages.common}
-        controller={controller}
-        disabled={disabled}
+      <SdkworkOfficialAccountsPanel
+        capabilities={capabilities}
+        controller={officialAccounts}
         driveUploadImageService={driveUploadImageService}
         initialOpen={initialOpen}
-        kind="official_account"
-        listPageInfo={listPageInfo?.resourceAccounts}
-        messages={messages.quickSetup.officialAccounts}
-        onChanged={sync}
         onOpenCustomMenu={handleOpenCustomMenu}
-        permissions={permissions}
-        status={status}
-        switchMessages={messages.quickSetup.accountSwitch}
       />
       {activeMenuAccountId ? (
         <SdkworkIamOauthCustomMenuFullscreenModal

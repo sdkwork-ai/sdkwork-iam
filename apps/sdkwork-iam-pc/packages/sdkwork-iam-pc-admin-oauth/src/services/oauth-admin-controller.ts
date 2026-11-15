@@ -38,7 +38,6 @@ import type {
   SdkworkIamOauthScanLoginWebhookInfo,
 } from "../types/oauth-admin-types";
 import {
-  buildStandardCallbackUri,
   normalizeList,
   readAccountConfig,
   readAccountIntegrationId,
@@ -51,6 +50,7 @@ import {
   splitMultilineList,
   parseRelyingPartyDraftFromTenantApplication,
 } from "../utils/oauth-admin-utils";
+import { buildAccountCallbackUri } from "../utils/official-account-domains";
 import { validateCustomMenuDraft } from "../utils/custom-menu-rules";
 
 function accountSetupProvider(kind: SdkworkIamOauthAccountKind): {
@@ -282,13 +282,13 @@ export function createSdkworkIamOauthAdminController(
           ? { ...body.config }
           : undefined;
         // The callback URL follows the SDKWork IAM standard
-        // `https://{webDomain}/auth/oauth/callback` shape whenever the primary
-        // domain is configured; a manually provided redirect URI wins. The
-        // resolved URL is also mirrored back into the stored account config so
-        // the developer configuration drawer shows the effective callback.
-        const autoRedirectUri = config?.webDomain
-          ? buildStandardCallbackUri(config.webDomain)
-          : "";
+        // `https://{webAuthDomain}/auth/oauth/callback` shape: WeChat requires
+        // the callback page to live on a 网页授权域名, so the first configured
+        // web-authorization domain owns it and the legacy primary domain stays
+        // the fallback. A manually provided redirect URI wins. The resolved URL
+        // is also mirrored back into the stored account config so the developer
+        // configuration drawer shows the effective callback.
+        const autoRedirectUri = buildAccountCallbackUri(config);
         const redirectUri = (body.redirectUri.trim() || autoRedirectUri).trim();
         if (config && redirectUri) {
           config.redirectUri = redirectUri;
@@ -586,6 +586,23 @@ export function createSdkworkIamOauthAdminController(
         });
         throw error;
       }
+    },
+    /**
+     * Read one page of resource accounts without touching the paged sessions.
+     *
+     * The shared official-account controller refreshes its own list after every
+     * mutation; routing that refresh through `listPageResource` would reset the
+     * page, filters, and status of the page that owns the visible list, so the
+     * transport gets this side-effect-free read instead.
+     */
+    async listResourceAccountPage(params) {
+      // The injected service port types the list call as `unknown`; the
+      // generated SDK returns the standard `{ items, pageInfo }` page.
+      const response = await service.iam.oauth.resourceAccounts.list(params) as {
+        items?: unknown[];
+        pageInfo?: SdkWorkPageInfo;
+      };
+      return { items: [...(response.items ?? [])], pageInfo: response.pageInfo };
     },
     createIntegration(body) {
       return wrapCreate(

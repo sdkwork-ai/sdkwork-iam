@@ -5,6 +5,13 @@ own official (service) account configuration — the WeChat 公众号 AppID,
 display name, account type, original id, logo, message-push endpoint, and the
 custom-menu draft — over the IAM app API (`/app/v3/api/iam/oauth/official_accounts`).
 
+This package is now a **thin shell over `@sdkwork/iam-pc-official-accounts`**:
+the panel, the controller state machine, the transport adapter, the record
+normalizers, and the message catalog are owned by that shared package, and every
+export below re-exports or narrows it to the self-service posture
+(`self_managed_account` rows maintained by their own user). The panel DOM, export
+names, wire contract, and i18n keys are unchanged.
+
 This is the **user** surface: rows are scoped by the session's tenant and user
 and never participate in tenant login. Tenant-level login resource accounts
 remain the backend-admin `iam.oauth.resourceAccounts.*` capability in

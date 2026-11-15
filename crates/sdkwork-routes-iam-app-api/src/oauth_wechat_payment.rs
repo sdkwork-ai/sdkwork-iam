@@ -558,7 +558,9 @@ mod tests {
             percent_encode_component("https://im.sdkwork.com/cb"),
             "https%3A%2F%2Fim.sdkwork.com%2Fcb"
         );
-        assert_eq!(percent_encode_component("o_涓枃"), "o_%E4%B8%AD%E6%96%87");
+        // Restores the UTF-8 original of this literal (it had been transcoded
+        // through GBK); the expected percent-encoding below is unchanged.
+        assert_eq!(percent_encode_component("o_中文"), "o_%E4%B8%AD%E6%96%87");
     }
 
     #[test]

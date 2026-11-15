@@ -10,11 +10,10 @@ import type { SdkworkIamOauthAdminController } from "../src/types/oauth-admin-ty
 /**
  * OAuth account-logo adoption regression (`DRIVE_SPEC.md` §18).
  *
- * The logo field used to persist a locally-read base64 data URL — a fake
- * upload. These tests pin the shared-component adoption: list rows with a
- * `drive://` logo reference resolve their display through the host-injected
- * bounded preview reader, the edit drawer renders the shared
- * `DriveUploadImage` component, and no data-URL read exists anywhere.
+ * The official-account page renders the shared panel; its edit drawer's logo
+ * field is the shared `DriveUploadImage` component. A stored `drive://`
+ * reference resolves through the host-injected bounded preview reader and never
+ * becomes an `<img src>` or a data-URL payload.
  */
 
 function createUploadService() {
@@ -36,7 +35,10 @@ function createController(account: unknown): SdkworkIamOauthAdminController {
       resourceAccounts: [account],
       status: "idle",
     }),
-    listPageResource: () => Promise.resolve([]),
+    listResourceAccountPage: () => Promise.resolve({
+      items: [account],
+      pageInfo: { page: 1, pageSize: 20, totalItems: "1" },
+    }),
     load: () => Promise.resolve(),
   } as never;
 }
@@ -53,24 +55,6 @@ const officialAccount = {
 };
 
 describe("oauth account logo upload adoption", () => {
-  it("resolves a drive-backed row logo through the bounded preview reader", async () => {
-    const uploadService = createUploadService();
-    const { unmount } = render(
-      <SdkworkI18nProvider locale="zh-CN">
-        <SdkworkIamOauthOfficialAccountsPage
-          controller={createController(officialAccount)}
-          driveUploadImageService={uploadService as never}
-        />
-      </SdkworkI18nProvider>,
-    );
-    await screen.findByText("My official account");
-    // Presentation-only resolution: the drive:// reference never becomes an
-    // <img src> directly; the bounded preview URL stands in for display.
-    await waitFor(() => expect(uploadService.resolvePreview).toHaveBeenCalledWith(expect.objectContaining({ uri: "drive://spaces/space-1/nodes/node-1" })));
-    await waitFor(() => expect(document.querySelector("img[src='blob:logo-preview']")).not.toBeNull());
-    unmount();
-  });
-
   it("renders the shared upload component in the edit drawer without any data-URL path", async () => {
     const uploadService = createUploadService();
     const { unmount } = render(
@@ -81,13 +65,14 @@ describe("oauth account logo upload adoption", () => {
         />
       </SdkworkI18nProvider>,
     );
-    await screen.findByText("My official account");
-    fireEvent.click(screen.getByTitle("操作"));
+    fireEvent.click(await screen.findByText("My official account"));
+
     // The edit drawer's logo field is the shared component: the stored drive
-    // reference seeds its bounded preview (never a data: URI), and the
-    // section's pick control disappears in favour of the component's own.
-    await screen.findByText("公众号图标");
-    await waitFor(() => expect(uploadService.resolvePreview).toHaveBeenCalledWith(expect.objectContaining({ uri: "drive://spaces/space-1/nodes/node-1" })));
+    // reference seeds its bounded preview (never a data: URI).
+    await screen.findByText("公众号 Logo");
+    await waitFor(() => expect(uploadService.resolvePreview).toHaveBeenCalledWith(
+      expect.objectContaining({ uri: "drive://spaces/space-1/nodes/node-1" }),
+    ));
     expect(document.querySelector("img[src^='data:image']")).toBeNull();
     unmount();
   });
@@ -95,17 +80,20 @@ describe("oauth account logo upload adoption", () => {
   it("keeps the logo read-only instead of offering a URL field when no upload capability is injected", async () => {
     const { unmount } = render(
       <SdkworkI18nProvider locale="zh-CN">
-        <SdkworkIamOauthOfficialAccountsPage controller={createController({ ...officialAccount, config: {} })} />
+        <SdkworkIamOauthOfficialAccountsPage
+          controller={createController({ ...officialAccount, providerConfigJson: undefined })}
+        />
       </SdkworkI18nProvider>,
     );
-    await screen.findByText("My official account");
-    fireEvent.click(screen.getByTitle("操作"));
-    expect(await screen.findByText("公众号图标")).toBeTruthy();
+    fireEvent.click(await screen.findByText("My official account"));
+
+    expect(await screen.findByText("公众号 Logo")).toBeTruthy();
     // Without a host capability there is no pick control and no URL input:
-    // the current logo stays visible with an unavailability hint.
-    expect(document.querySelector("input[type='file']")).toBeNull();
+    // the field states that uploads are unavailable. (The hidden
+    // domain-verification picker belongs to the domains tab, not the logo.)
+    expect(document.querySelector("[data-official-account-logo] input[type='file']")).toBeNull();
     expect(document.querySelector("input[type='url']")).toBeNull();
-    expect(screen.getByText("当前环境未启用图标上传，已保留现有图标。")).toBeTruthy();
+    expect(screen.getByText("当前环境未启用 Logo 上传。")).toBeTruthy();
     unmount();
   });
 });

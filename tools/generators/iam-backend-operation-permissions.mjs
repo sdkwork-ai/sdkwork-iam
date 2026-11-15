@@ -4,6 +4,12 @@ export function resolveIamBackendOperationPermission(operationId) {
     return explicit;
   }
   if (operationId.startsWith('iam.oauth.')) {
+    // Tenant-owned account maintenance (the shared official-account /
+    // mini-program panels) needs no seeded permission; enterprise OAuth
+    // configuration keeps `iam.oauth.read` / `iam.oauth.manage`.
+    if (isOauthAccountMaintenanceOperation(operationId)) {
+      return undefined;
+    }
     return oauthPermissionForOperation(operationId);
   }
   const parsed = parseCoreOperation(operationId);
@@ -11,6 +17,16 @@ export function resolveIamBackendOperationPermission(operationId) {
     return undefined;
   }
   return permissionCode(parsed.resource, parsed.action);
+}
+
+function isOauthAccountMaintenanceOperation(operationId) {
+  if (operationId.startsWith('iam.oauth.resourceAccounts.')) {
+    return true;
+  }
+  return operationId === 'iam.oauth.integrations.list'
+    || operationId === 'iam.oauth.integrations.retrieve'
+    || operationId === 'iam.oauth.integrations.create'
+    || operationId === 'iam.oauth.integrations.update';
 }
 
 function explicitBootstrapPermission(operationId) {

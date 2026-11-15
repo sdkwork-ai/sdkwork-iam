@@ -16,6 +16,24 @@ function readRegistryTableNames(tableRegistry) {
   return tableRegistry.tables.map((entry) => entry.table_name).sort();
 }
 
+// Tables the database materializes but the IAM ownership catalog does not own.
+//
+// - `iam_user_official_account` was unified into `iam_oauth_resource_account`
+//   by migration 0033: the application has no read or write path to it any
+//   more, while the physical table stays until the separately approved DROP
+//   migration (contract D9). It therefore remains a baseline DDL object and a
+//   declared database-contract table, but it must not be owned by `IamTables`.
+// - `iam_official_account_migration_orphan` is migration evidence only: 0033
+//   writes the legacy rows it could not carry over into it, and no runtime code
+//   may read or write it. It is owned by the migration, not by the runtime
+//   catalog.
+//
+// P4 (the human-approved DROP migration) removes both registry entries, both
+// baseline declarations, and this exception list together.
+const NON_CATALOG_TABLES = [
+  'iam_official_account_migration_orphan',
+];
+
 function readRustCatalogTableNames() {
   const source = fs.readFileSync(rustLibPath, 'utf8');
   return [...source.matchAll(/pub const [A-Z0-9_]+: &'static str = "(iam_[a-z0-9_]+)";/g)]
@@ -82,19 +100,35 @@ assert.deepEqual(
   registryTables,
   'schema.yaml and table-registry.json must declare the same IAM tables',
 );
+for (const nonCatalogTable of NON_CATALOG_TABLES) {
+  assert.ok(
+    registrySet.has(nonCatalogTable),
+    `${nonCatalogTable} must stay declared while it is still materialized`,
+  );
+  assert.ok(
+    !rustTables.includes(nonCatalogTable),
+    `${nonCatalogTable} must not be owned by the IamTables Rust catalog`,
+  );
+}
 assert.deepEqual(
   rustTables,
-  registryTables,
-  'IamTables Rust catalog must match database contract registries',
+  registryTables.filter((tableName) => !NON_CATALOG_TABLES.includes(tableName)),
+  'IamTables Rust catalog must match the active database contract registries',
 );
+// Tables a historical folded block still creates so a replay of the migration
+// history is faithful, but that a later approved migration drops. They must stay
+// out of the active contract registries; the materialized set is compared after
+// removing them because the DDL scan sees the historical CREATE.
+const DROPPED_LEGACY_TABLES = ['iam_user_official_account'];
+
 assert.deepEqual(
-  ddlTables,
+  ddlTables.filter((tableName) => !DROPPED_LEGACY_TABLES.includes(tableName)),
   registryTables,
   'baseline + postgres migrations must materialize the same IAM tables as contract registries',
 );
 assert.equal(registryTables.length, 66, 'IAM database contract must currently own 66 tables');
 
-for (const tableName of foundationTables) {
+for (const tableName of foundationTables.filter((name) => !DROPPED_LEGACY_TABLES.includes(name))) {
   assert.ok(
     registrySet.has(tableName),
     `SDKWORK_IAM_TABLES foundation table ${tableName} must exist in database contract registry`,

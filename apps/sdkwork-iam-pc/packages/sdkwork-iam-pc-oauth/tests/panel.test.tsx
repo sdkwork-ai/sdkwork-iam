@@ -17,7 +17,7 @@ import {
 const RECORD = {
   officialAccountId: "acc-1",
   appId: "wx1234567890abcdef",
-  displayName: "BirdCoder",
+  displayName: "Example Account",
   accountType: "service",
   hasAppSecret: true,
   enabled: true,
@@ -154,14 +154,14 @@ function tabPanelHidden(id: string): boolean {
 describe("official-account panel", () => {
   it("lists the caller's accounts and reports the total", async () => {
     bench();
-    expect(await screen.findByText("BirdCoder")).toBeTruthy();
+    expect(await screen.findByText("Example Account")).toBeTruthy();
     expect(screen.getByText("wx1234567890abcdef")).toBeTruthy();
     expect(screen.getByText("1 total")).toBeTruthy();
   });
 
   it("leaves the heading to the page wrapper", async () => {
     bench({}, { page: true });
-    expect(await screen.findByText("BirdCoder")).toBeTruthy();
+    expect(await screen.findByText("Example Account")).toBeTruthy();
     expect(screen.getByText("Official Accounts")).toBeTruthy();
     expect(screen.getByLabelText("Search name or AppID")).toBeTruthy();
   });
@@ -211,7 +211,7 @@ describe("official-account panel", () => {
   it("uploads an edited account's logo against the account id", async () => {
     const drive = driveService();
     const { api } = bench({}, { drive });
-    fireEvent.click(await screen.findByRole("button", { name: "BirdCoder" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Example Account" }));
     fireEvent.change(logoPicker(), { target: { files: [logoFile()] } });
     await waitFor(() => {
       expect(drive.upload).toHaveBeenCalledWith(
@@ -359,7 +359,7 @@ describe("official-account drawer tabs", () => {
     });
     try {
       bench({}, { notifyBaseUrl: "https://api.example.test/" });
-      fireEvent.click(await screen.findByRole("button", { name: "BirdCoder" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Example Account" }));
       const url = "https://api.example.test/iam/v3/api/iam/oauth/official_accounts/acc-1/wechat/notify";
       expect(screen.getByText(url)).toBeTruthy();
       expect(screen.queryByLabelText("Callback URL")).toBeNull();
@@ -475,7 +475,7 @@ describe("official-account drawer tabs", () => {
 
   it("persists the domain sets and encryption mode of an edited account", async () => {
     const { api } = bench();
-    fireEvent.click(await screen.findByRole("button", { name: "BirdCoder" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Example Account" }));
     openDomainsTab();
     expect(domainRowValue("JS interface security domains")).toBe("api.example.com");
     fireEvent.click(screen.getByRole("button", { name: "Save" }));

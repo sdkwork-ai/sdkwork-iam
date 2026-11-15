@@ -124,10 +124,15 @@ export interface OfficialDomainIssue {
  * normalizing legacy shapes on the way:
  *
  * - a business domain saved under the old mini-program-shaped
- *   `domains.business` array is surfaced in the business set until re-saved;
+ *   `domains.business` array is surfaced in the business set while
+ *   `businessDomains` is still absent;
  * - a legacy single `webDomain` is treated as the web-authorization domain
- *   when the dedicated set is still empty, because that is exactly how the
+ *   while `webAuthDomains` is still absent, because that is exactly how the
  *   account's callback URL was provisioned before this set existed.
+ *
+ * The fallbacks key off the dedicated field being absent, not empty: once the
+ * operator saves the set (even as an empty list), the legacy value no longer
+ * comes back.
  *
  * @param config - the stored account configuration (may be absent).
  * @returns fresh arrays for the three sets, safe to edit in place.
@@ -135,14 +140,13 @@ export interface OfficialDomainIssue {
 export function readOfficialDomainSets(
   config: SdkworkIamOauthAccountConfig | undefined,
 ): Record<OfficialDomainSetKey, string[]> {
-  const legacyBusiness = config?.domains?.business ?? [];
-  const businessDomains = config?.businessDomains?.length
-    ? [...config.businessDomains]
-    : [...legacyBusiness];
   const webDomain = config?.webDomain?.trim() ?? "";
-  const webAuthDomains = config?.webAuthDomains?.length
+  const webAuthDomains = config?.webAuthDomains !== undefined
     ? [...config.webAuthDomains]
     : webDomain ? [webDomain] : [];
+  const businessDomains = config?.businessDomains !== undefined
+    ? [...config.businessDomains]
+    : [...(config?.domains?.business ?? [])];
   return {
     businessDomains,
     jsSecureDomains: [...(config?.jsSecureDomains ?? [])],
@@ -172,6 +176,65 @@ export function findOfficialDomainIssues(
     });
   }
   return issues;
+}
+
+/**
+ * Produces the configuration to persist: every set normalized to the console's
+ * bare-host shape, de-duplicated per set, with the legacy mini-program-shaped
+ * business array folded into `businessDomains`.
+ *
+ * Invalid values are dropped here; call {@link findOfficialDomainIssues} first
+ * to keep them from being discarded silently.
+ *
+ * @param config - the edited account configuration.
+ * @returns a new configuration object safe to send to the backend.
+ */
+export function normalizeOfficialDomainConfig(
+  config: SdkworkIamOauthAccountConfig | undefined,
+): SdkworkIamOauthAccountConfig {
+  const sets = readOfficialDomainSets(config);
+  const next: SdkworkIamOauthAccountConfig = { ...(config ?? {}) };
+  for (const rule of OFFICIAL_DOMAIN_SET_RULES) {
+    const normalized: string[] = [];
+    for (const value of sets[rule.key]) {
+      const domain = normalizeOfficialDomain(value, { allowPath: rule.allowPath });
+      if (domain !== undefined && !normalized.includes(domain)) {
+        normalized.push(domain);
+      }
+    }
+    next[rule.key] = normalized;
+  }
+  if (next.domains !== undefined) {
+    // The legacy mini-program shape no longer feeds the official account; keep
+    // any sibling keys so a mis-classified row is not stripped wholesale.
+    const { business: _legacyBusiness, ...rest } = next.domains;
+    if (Object.keys(rest).length === 0) {
+      delete next.domains;
+    } else {
+      next.domains = rest;
+    }
+  }
+  return next;
+}
+
+/**
+ * Reads the host of a callback URL, for the console's rule that the OAuth
+ * callback page must live on a configured 网页授权域名.
+ *
+ * @param uri - the configured callback URL.
+ * @returns the lower-cased host, or an empty string when the URL is unparsable.
+ */
+export function readCallbackHost(uri: string): string {
+  const value = uri.trim();
+  if (value === "") {
+    return "";
+  }
+  try {
+    const parsed = new URL(value);
+    return parsed.host.toLowerCase();
+  } catch {
+    return "";
+  }
 }
 
 /**
