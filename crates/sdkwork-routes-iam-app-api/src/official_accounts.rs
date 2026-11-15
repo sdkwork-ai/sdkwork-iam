@@ -420,8 +420,7 @@ fn normalized_aes_key(value: Option<&str>) -> Result<Option<String>, ()> {
     if trimmed.is_empty() {
         return Ok(None);
     }
-    if trimmed.len() != NOTIFY_AES_KEY_LEN
-        || !trimmed.chars().all(|ch| ch.is_ascii_alphanumeric())
+    if trimmed.len() != NOTIFY_AES_KEY_LEN || !trimmed.chars().all(|ch| ch.is_ascii_alphanumeric())
     {
         return Err(());
     }
@@ -584,15 +583,14 @@ async fn create_official_account(
         Ok(value) => value,
         Err(()) => return official_account_invalid("logoUrl", "at most 1024 characters"),
     };
-    let notify_url = match normalized_notify_url(body.notify_url.as_deref()) {
-        Ok(value) => value,
-        Err(()) => {
-            return official_account_invalid(
+    let notify_url =
+        match normalized_notify_url(body.notify_url.as_deref()) {
+            Ok(value) => value,
+            Err(()) => return official_account_invalid(
                 "notifyUrl",
                 "a callback URL starting with http:// (port 80) or https:// (port 443) is required",
-            )
-        }
-    };
+            ),
+        };
     let app_secret_ref = match sealed_secret(body.app_secret.as_deref()) {
         Ok(value) => value,
         Err(()) => {
@@ -614,7 +612,8 @@ async fn create_official_account(
             return official_account_invalid("notifyToken", "the token could not be accepted")
         }
     };
-    let notify_encoding_aes_key = match normalized_aes_key(body.notify_encoding_aes_key.as_deref()) {
+    let notify_encoding_aes_key = match normalized_aes_key(body.notify_encoding_aes_key.as_deref())
+    {
         Ok(value) => value,
         Err(()) => {
             return official_account_invalid(
@@ -841,12 +840,10 @@ async fn update_official_account(
         None => current.notify_url.clone(),
         Some(value) => match normalized_notify_url(Some(value)) {
             Ok(value) => value,
-            Err(()) => {
-                return official_account_invalid(
-                    "notifyUrl",
-                    "a callback URL starting with http:// (port 80) or https:// (port 443) is required",
-                )
-            }
+            Err(()) => return official_account_invalid(
+                "notifyUrl",
+                "a callback URL starting with http:// (port 80) or https:// (port 443) is required",
+            ),
         },
     };
     let app_secret_ref = match sealed_secret(body.app_secret.as_deref()) {
@@ -905,36 +902,30 @@ async fn update_official_account(
     };
     let js_secure_domains = match body.js_secure_domains.as_deref() {
         None => current.js_secure_domains.clone(),
-        Some(values) => match normalized_domains(
-            Some(values),
-            JS_SECURE_DOMAIN_LIMIT,
-            "jsSecureDomains",
-        ) {
-            Ok(value) => value,
-            Err(response) => return response,
-        },
+        Some(values) => {
+            match normalized_domains(Some(values), JS_SECURE_DOMAIN_LIMIT, "jsSecureDomains") {
+                Ok(value) => value,
+                Err(response) => return response,
+            }
+        }
     };
     let web_auth_domains = match body.web_auth_domains.as_deref() {
         None => current.web_auth_domains.clone(),
-        Some(values) => match normalized_domains(
-            Some(values),
-            WEB_AUTH_DOMAIN_LIMIT,
-            "webAuthDomains",
-        ) {
-            Ok(value) => value,
-            Err(response) => return response,
-        },
+        Some(values) => {
+            match normalized_domains(Some(values), WEB_AUTH_DOMAIN_LIMIT, "webAuthDomains") {
+                Ok(value) => value,
+                Err(response) => return response,
+            }
+        }
     };
     let business_domains = match body.business_domains.as_deref() {
         None => current.business_domains.clone(),
-        Some(values) => match normalized_domains(
-            Some(values),
-            BUSINESS_DOMAIN_LIMIT,
-            "businessDomains",
-        ) {
-            Ok(value) => value,
-            Err(response) => return response,
-        },
+        Some(values) => {
+            match normalized_domains(Some(values), BUSINESS_DOMAIN_LIMIT, "businessDomains") {
+                Ok(value) => value,
+                Err(response) => return response,
+            }
+        }
     };
     let notify_encrypt_mode = match body.notify_encrypt_mode.as_deref() {
         None => current.notify_encrypt_mode.clone(),
@@ -1096,7 +1087,10 @@ mod tests {
             normalized_domain("  API.Example.COM  ").as_deref(),
             Some("api.example.com")
         );
-        assert_eq!(normalized_domain("example.com").as_deref(), Some("example.com"));
+        assert_eq!(
+            normalized_domain("example.com").as_deref(),
+            Some("example.com")
+        );
         for invalid in [
             "https://example.com",
             "example.com:8080",
@@ -1107,7 +1101,10 @@ mod tests {
             "-example.com",
             "example..com",
         ] {
-            assert!(normalized_domain(invalid).is_none(), "{invalid} must be rejected");
+            assert!(
+                normalized_domain(invalid).is_none(),
+                "{invalid} must be rejected"
+            );
         }
 
         let domains = normalized_domains(
@@ -1147,7 +1144,9 @@ mod tests {
         assert!(normalized_notify_url(Some("")).unwrap().is_none());
 
         assert_eq!(
-            normalized_notify_token(Some("Token123")).unwrap().as_deref(),
+            normalized_notify_token(Some("Token123"))
+                .unwrap()
+                .as_deref(),
             Some("Token123")
         );
         assert!(normalized_notify_token(Some("ab")).is_err());

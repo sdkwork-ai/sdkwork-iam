@@ -2336,6 +2336,72 @@ export interface DeviceInfoAdapter {
 export function coreSessionSource(surface, tier) {
   const dir = coreDirOf(surface, tier);
   const symbol = pascalFromDir(dir);
+  if (tier !== 'app') {
+    // One session/context record per application, owned by the app tier. The console
+    // and admin tiers re-export it under their own symbol names instead of declaring
+    // a second record: login commits only the app-tier store, so a tier-local copy is
+    // a store nothing writes (`HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md` section 6).
+    const coreSymbol = pascalFromDir(surface.coreDir);
+    return `${BANNER}
+/**
+ * Session and context store of \`${dir}\`.
+ *
+ * Authority: \`HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md\` sections 5 and 6. The
+ * application owns exactly one session/context record, in
+ * \`${surface.coreDir}\`; this tier re-exports it under its own symbol names rather
+ * than declaring a second record. A per-tier record is the defect this file used to
+ * have: login commits the app-tier store only, so the console and admin clients read
+ * a session nothing writes.
+ *
+ * The wrapper functions exist instead of an aliased \`export { … } from\` statement so
+ * every binding this tier publishes keeps an explicit, typed signature.
+ */
+import {
+  clear${coreSymbol}Session,
+  commit${coreSymbol}Session,
+  is${coreSymbol}SessionComplete,
+  read${coreSymbol}Session,
+  resolve${coreSymbol}AccessToken,
+  resolve${coreSymbol}AuthToken,
+  write${coreSymbol}Session,
+  type ${coreSymbol}Session,
+} from '@sdkwork/${surface.coreDir}';
+
+export type ${symbol}Session = ${coreSymbol}Session;
+
+export function read${symbol}Session(): ${symbol}Session | undefined {
+  return read${coreSymbol}Session();
+}
+
+export function write${symbol}Session(session: ${symbol}Session | undefined): void {
+  write${coreSymbol}Session(session);
+}
+
+export function commit${symbol}Session(session: ${symbol}Session): ${symbol}Session {
+  return commit${coreSymbol}Session(session);
+}
+
+export function clear${symbol}Session(): void {
+  clear${coreSymbol}Session();
+}
+
+export function resolve${symbol}AccessToken(
+  session: ${symbol}Session | undefined,
+): string | undefined {
+  return resolve${coreSymbol}AccessToken(session);
+}
+
+export function resolve${symbol}AuthToken(
+  session: ${symbol}Session | undefined,
+): string | undefined {
+  return resolve${coreSymbol}AuthToken(session);
+}
+
+export function is${symbol}SessionComplete(session: ${symbol}Session | undefined): boolean {
+  return is${coreSymbol}SessionComplete(session);
+}
+`;
+  }
   return `${BANNER}
 /**
  * Session and context store of \`${dir}\`.
@@ -2422,8 +2488,16 @@ export function coreTokenManagerSource(surface) {
  * manager is how a logout clears one credential set while another stays live, so
  * this module is the only place a token is held.
  *
- * The manager stores nothing itself: it delegates to the session store so there is
- * one credential record rather than two that must agree.
+ * Two credential classes live here and are deliberately not conflated
+ * (\`ENVIRONMENT_SPEC.md\` section 6.1): the public application access token
+ * (\`SDKWORK_ACCESS_TOKEN\`, committed, \`token_class:application\`, \`alg:none\`) that
+ * bootstrap seeds before any SDK client is constructed, and the private session
+ * tokens an interactive login installs later. A session token supersedes the
+ * application token for outbound requests, and clearing the session restores the
+ * application token rather than leaving credential entry with no credential.
+ *
+ * The manager stores no session record itself: it delegates to the session store so
+ * there is one credential record rather than two that must agree.
  *
  * The session store sits in a sibling directory, so the specifier is
  * \`'../session/SessionStore'\` and not \`'./SessionStore'\`: the latter named a file
@@ -2445,6 +2519,17 @@ export interface IamHarmonyTokenSet {
 let authenticated: boolean = false;
 
 /**
+ * Public application access token seeded by runtime bootstrap.
+ *
+ * Held outside the session store because it must survive logout and refresh failure:
+ * credential entry needs \`Access-Token\` for tenant, application and environment
+ * isolation before any interactive session exists (\`ENVIRONMENT_SPEC.md\` section
+ * 6.1). It is public material (\`APP_ACCESS_TOKEN_SPEC.md\` section 1), never a
+ * session credential.
+ */
+let bootstrapAccessToken: string | undefined = undefined;
+
+/**
  * Marks the runtime authenticated.
  *
  * Separate from holding a token because a refresh failure leaves the manager
@@ -2459,11 +2544,59 @@ export function isIamHarmonyAuthenticated(): boolean {
   return authenticated;
 }
 
-/** The token set the SDK clients should be configured with. */
+/**
+ * Seeds the public application access token.
+ *
+ * Called by runtime bootstrap before SDK client construction. A client reads this
+ * manager once while its config is built, so a client constructed before this call
+ * would carry no credential and a transport would send no \`Access-Token\`
+ * (\`ENVIRONMENT_SPEC.md\` section 6.1).
+ *
+ * Empty input is a bootstrap defect, not a value to store: the selected profile
+ * document is validated before this call, and a second silent no-op here would let a
+ * caller skip the seed without noticing.
+ */
+export function initializeIamHarmonyBootstrapToken(accessToken: string): void {
+  const normalized: string = accessToken.trim();
+  if (normalized.length === 0) {
+    throw new Error(
+      'IAM Harmony bootstrap requires a non-empty SDKWORK_ACCESS_TOKEN before SDK client construction',
+    );
+  }
+  bootstrapAccessToken = normalized;
+}
+
+/** Whether bootstrap seeded the public application access token. */
+export function hasIamHarmonyBootstrapToken(): boolean {
+  return bootstrapAccessToken !== undefined;
+}
+
+/**
+ * Drops the seeded token.
+ *
+ * Runtime teardown and tests call this; logout must restore the token, not remove it.
+ */
+export function resetIamHarmonyBootstrapToken(): void {
+  bootstrapAccessToken = undefined;
+}
+
+/** The seeded public application access token, or \`undefined\` before bootstrap. */
+export function readIamHarmonyBootstrapToken(): string | undefined {
+  return bootstrapAccessToken;
+}
+
+/**
+ * The token set the SDK clients should be configured with.
+ *
+ * The session access token wins while a session exists; otherwise the public
+ * application access token is returned, which is what keeps credential entry able to
+ * send \`Access-Token\` before login and after logout.
+ */
 export function currentIamHarmonyTokenSet(): IamHarmonyTokenSet {
   const session = read${sessionSymbol}Session();
+  const sessionAccessToken: string | undefined = resolve${sessionSymbol}AccessToken(session);
   return {
-    accessToken: resolve${sessionSymbol}AccessToken(session),
+    accessToken: sessionAccessToken !== undefined ? sessionAccessToken : bootstrapAccessToken,
     authToken: session === undefined ? undefined : session.authToken,
   };
 }
@@ -2474,10 +2607,12 @@ export function canIamHarmonyRefresh(): boolean {
 }
 
 /**
- * Clears the manager and the session store together.
+ * Clears the session credential set and restores the bootstrap application token.
  *
- * Section 6 pairs them because a caller that clears only one leaves a token the
- * next request will still send.
+ * Section 6 pairs the session store with the token manager because a caller that
+ * clears only one leaves a token the next request will still send. The public
+ * application token is deliberately kept: clearing it would leave credential entry
+ * with no \`Access-Token\` at all (\`APP_ACCESS_TOKEN_SPEC.md\` section 2).
  */
 export function clearIamHarmonyTokens(): void {
   authenticated = false;
@@ -2494,28 +2629,21 @@ export function coreAppSdkClientSource(surface, tier) {
   const isAdmin = tier === 'admin';
   const surfaceApi = isAdmin ? 'backend' : 'app';
   const packageName = isAdmin ? 'sdkwork-iam-backend-sdk' : 'sdkwork-iam-app-sdk';
-  // Credential source. Only the `app` tier ships `TokenManager.ets`; section 3
-  // gives the console and admin tiers the session store and the SDK factory but not
-  // the app-tier token manager, so those tiers read the session record directly.
-  // Importing `./TokenManager` here would be a dangling module specifier in a tier
-  // that never emits it.
-  const sessionSymbol = pascalFromDir(dir);
+  // Credential source. Every tier reads the one global token manager generated in
+  // the app core (`sdk/TokenManager.ets`), which holds both the bootstrap
+  // application token and the session tokens. A tier-local session read is what the
+  // console and admin clients used to do, and it saw a store nothing writes:
+  // bootstrap and login commit the app-tier record only, while
+  // `HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md` section 6 requires one manager shared
+  // by every client rather than a copy per tier.
   const credentialImport = tier === 'app'
     ? "import { currentIamHarmonyTokenSet, type IamHarmonyTokenSet } from './TokenManager';"
-    : `import { read${sessionSymbol}Session, resolve${sessionSymbol}AccessToken } from '../session/SessionStore';`;
-  const credentialBlock = tier === 'app'
-    ? `  const tokens: IamHarmonyTokenSet = currentIamHarmonyTokenSet();
+    : `import { currentIamHarmonyTokenSet, type IamHarmonyTokenSet } from '@sdkwork/${surface.coreDir}';`;
+  const credentialBlock = `  const tokens: IamHarmonyTokenSet = currentIamHarmonyTokenSet();
   return {
     baseUrl: assertIamHarmonyOrigin(baseUrl),
     accessToken: tokens.accessToken,
     authToken: tokens.authToken,
-    platform: IAM_HARMONY_PLATFORM,
-  };`
-    : `  const session = read${sessionSymbol}Session();
-  return {
-    baseUrl: assertIamHarmonyOrigin(baseUrl),
-    accessToken: resolve${sessionSymbol}AccessToken(session),
-    authToken: session === undefined ? undefined : session.authToken,
     platform: IAM_HARMONY_PLATFORM,
   };`;
   return `${BANNER}
@@ -2555,10 +2683,19 @@ export interface IamHarmonySdkClientConfig {
  *
  * Structurally satisfied by the generated \`${packageName}\` client once an ArkTS
  * target lands; feature services depend on this port, never on the generated module.
+ *
+ * The credential fields are on the port, not only in the config: a transport built
+ * from this object must be able to send \`Access-Token\` (and \`Authorization\` once a
+ * session exists) without reaching back into a store
+ * (\`ENVIRONMENT_SPEC.md\` section 6.1).
  */
 export interface IamHarmonySdkClient {
   readonly baseUrl: string;
   readonly platform: string;
+  /** Credential a transport sends as \`Access-Token\`; \`undefined\` only before bootstrap. */
+  readonly accessToken?: string;
+  /** Credential a transport sends as \`Authorization: Bearer\` after login. */
+  readonly authToken?: string;
 }
 
 /** HarmonyOS platform tag reported to the backend. */
@@ -2595,7 +2732,7 @@ export function assertIamHarmonyOrigin(origin: string): string {
   return normalized.join(';');
 }
 
-/** Builds the client config, resolving credentials from this tier's credential store. */
+/** Builds the client config, resolving credentials from the shared token manager. */
 export function createIamHarmonySdkClientConfig(baseUrl: string): IamHarmonySdkClientConfig {
 ${credentialBlock}
 }
@@ -2608,12 +2745,21 @@ let client: IamHarmonySdkClient | undefined = undefined;
  * Idempotent on purpose: the root page and the bootstrap both ask for the client,
  * and a second construction would silently drop the credentials the first one
  * installed.
+ *
+ * The credential is copied onto the port here. A transport must therefore be built
+ * after runtime bootstrap seeded the token manager; \`bootstrap/SdkClients.ets\`
+ * enforces that order and \`describe()\` reports whether a token actually arrived.
  */
 export function getIamHarmonySdkClient(baseUrl: string): IamHarmonySdkClient {
   const existing: IamHarmonySdkClient | undefined = client;
   if (existing !== undefined) return existing;
   const config: IamHarmonySdkClientConfig = createIamHarmonySdkClientConfig(baseUrl);
-  const created: IamHarmonySdkClient = { baseUrl: config.baseUrl, platform: config.platform };
+  const created: IamHarmonySdkClient = {
+    baseUrl: config.baseUrl,
+    platform: config.platform,
+    accessToken: config.accessToken,
+    authToken: config.authToken,
+  };
   client = created;
   return created;
 }
@@ -2669,6 +2815,15 @@ export interface IamHarmonyRuntimeEnvDocument {
   readonly platform: {
     readonly apiGatewayHttpUrl: string;
   };
+  /**
+   * Public application access token of this profile.
+   *
+   * \`APP_ACCESS_TOKEN_SPEC.md\` section 2 requires a non-empty value in every
+   * profile document and section 3.1 fixes it as one JWT compact string, never the
+   * generator's \`accessToken\` input object. The key is uppercase because it is the
+   * canonical env key, and the tracked JSON document carries the same spelling.
+   */
+  readonly SDKWORK_ACCESS_TOKEN: string;
 }
 
 /** A validated environment ready for SDK construction. */
@@ -2682,10 +2837,65 @@ export interface IamHarmonyEnvironment {
   readonly appbaseAppApiBaseUrl: string;
   readonly appbaseLoginUrl: string;
   readonly platformApiGatewayHttpUrl: string;
+  /**
+   * The public application access token bootstrap seeds into the global token
+   * manager before any SDK client is constructed.
+   */
+  readonly applicationAccessToken: string;
 }
 
 /** Runtime target every document in this root must declare. */
 export const IAM_HARMONY_RUNTIME_TARGET: string = 'harmony-native';
+
+/** Canonical key of the public application access token in a profile document. */
+export const IAM_HARMONY_APPLICATION_ACCESS_TOKEN_KEY: string = 'SDKWORK_ACCESS_TOKEN';
+
+/**
+ * Relative path of one packaged profile document.
+ *
+ * Used only to name the document in a fail-closed diagnostic: a message that says
+ * "the token is missing" without naming the profile cannot be repaired from the app.
+ */
+function applicationAccessTokenDocumentPath(profileId: string): string {
+  return 'config/app/runtime-env.' + profileId + '.json';
+}
+
+/**
+ * Validates the public application access token of one document.
+ *
+ * \`APP_ACCESS_TOKEN_SPEC.md\` section 2 requires a non-empty value and section 3.1
+ * requires one three-part JWT compact string. Structural validation stops here
+ * because this module must not depend on a base64 or crypto platform API to read
+ * claims; the claim-level contract (\`alg:none\`, \`token_class:application\`, profile
+ * coherence) is asserted by \`tests/harmony-runtime-config.test.mjs\` against the
+ * committed documents, which are the values this loader receives.
+ */
+function requireApplicationAccessToken(
+  document: IamHarmonyRuntimeEnvDocument,
+  profileId: string,
+): string {
+  const documentPath: string = applicationAccessTokenDocumentPath(profileId);
+  const accessToken: string = requireNonEmpty(
+    document.SDKWORK_ACCESS_TOKEN,
+    IAM_HARMONY_APPLICATION_ACCESS_TOKEN_KEY + ' in ' + documentPath,
+  );
+  const segments: string[] = accessToken.split('.');
+  let wellFormed: boolean = segments.length === 3;
+  if (wellFormed) {
+    for (const segment of segments) {
+      if (segment.length === 0) {
+        wellFormed = false;
+      }
+    }
+  }
+  if (!wellFormed) {
+    throw new Error(
+      'Harmony runtime config ' + IAM_HARMONY_APPLICATION_ACCESS_TOKEN_KEY + ' in ' + documentPath
+      + ' must be a three-part JWT compact string (APP_ACCESS_TOKEN_SPEC.md section 3.1)',
+    );
+  }
+  return accessToken;
+}
 
 function requireNonEmpty(value: string | undefined, key: string): string {
   const normalized: string = value === undefined ? '' : value.trim();
@@ -2772,6 +2982,10 @@ export function createIamHarmonyEnvironment(
     || document.platform === undefined) {
     throw new Error('Harmony runtime config requires application, appbase and platform groups');
   }
+  // Fails closed on a missing or malformed public application token, naming the key
+  // and the profile document. Bootstrap depends on this: it seeds the token manager
+  // from this value and must never construct a client without one.
+  const applicationAccessToken: string = requireApplicationAccessToken(document, profileId);
   return {
     environment,
     deploymentProfile,
@@ -2792,6 +3006,7 @@ export function createIamHarmonyEnvironment(
     platformApiGatewayHttpUrl: normalizeIamHarmonyOrigin(
       document.platform.apiGatewayHttpUrl, 'platform.apiGatewayHttpUrl', ['http', 'https'],
     ),
+    applicationAccessToken,
   };
 }
 `;
@@ -2814,8 +3029,15 @@ export function createIamHarmonyEnvironment(
  * `generated/RuntimeConfig.ets`: `IamHarmonyRuntimeEnvDocument` declares no
  * `metadata` field, and ArkTS rejects an object literal carrying a property the
  * target type does not declare.
+ *
+ * `SDKWORK_ACCESS_TOKEN` is the opposite case: it is part of the contract interface,
+ * so it is both written here and projected by `runtimeConfigSource`. The value is
+ * passed in rather than derived, because this generator is a resolve-phase command:
+ * `ENVIRONMENT_SPEC.md` section 6.1 forbids it from minting, signing or rewriting the
+ * committed public token, and the canonical materializer owns generation
+ * (`APP_ACCESS_TOKEN_SPEC.md` section 2).
  */
-export function harmonyRuntimeEnvDocument(surface, resolved) {
+export function harmonyRuntimeEnvDocument(surface, resolved, applicationAccessToken) {
   return {
     ...resolved,
     runtimeTarget: surface.runtimeTarget,
@@ -2824,6 +3046,7 @@ export function harmonyRuntimeEnvDocument(surface, resolved) {
       applicationCode: APP_CODE,
       namespace: surface.rootName,
     },
+    SDKWORK_ACCESS_TOKEN: applicationAccessToken,
   };
 }
 
@@ -2838,6 +3061,10 @@ export function harmonyRuntimeEnvDocument(surface, resolved) {
  * The projection is written field by field rather than by `JSON.stringify` of the
  * tracked document, because the two are not the same object: the tracked document
  * carries `metadata`, which the contract interface does not declare.
+ *
+ * `SDKWORK_ACCESS_TOKEN` **is** projected: the HAP cannot read the tracked JSON, so a
+ * token that stayed in the JSON alone could never reach the loader, and the packaged
+ * profile would resolve to an environment with no credential at all.
  */
 export function runtimeConfigSource(surface, documents) {
   const entries = documents
@@ -2859,6 +3086,7 @@ export function runtimeConfigSource(surface, documents) {
         '    platform: {',
         `      apiGatewayHttpUrl: ${JSON.stringify(document.platform.apiGatewayHttpUrl)},`,
         '    },',
+        `    SDKWORK_ACCESS_TOKEN: ${JSON.stringify(document.SDKWORK_ACCESS_TOKEN)},`,
         '  },',
       ].join('\n'),
     )
@@ -3328,6 +3556,7 @@ export function environmentContractSource(surface) {
  * both reach the core through this module instead of each importing it directly.
  */
 export {
+  IAM_HARMONY_APPLICATION_ACCESS_TOKEN_KEY,
   IAM_HARMONY_RUNTIME_TARGET,
   type IamHarmonyEnvironment,
   type IamHarmonyRuntimeEnvDocument,
@@ -3367,12 +3596,14 @@ import {
   IAM_HARMONY_RUNTIME_ENV_DOCUMENTS,
 } from '../generated/RuntimeConfig';
 import {
+  IAM_HARMONY_APPLICATION_ACCESS_TOKEN_KEY,
   IAM_HARMONY_RUNTIME_TARGET,
   type IamHarmonyEnvironment,
   type IamHarmonyRuntimeEnvDocument,
 } from './EnvironmentContract';
 
 export {
+  IAM_HARMONY_APPLICATION_ACCESS_TOKEN_KEY,
   IAM_HARMONY_DEFAULT_PROFILE_ID,
   IAM_HARMONY_RUNTIME_TARGET,
   type IamHarmonyEnvironment,
@@ -3412,6 +3643,21 @@ export function resolveIamHarmonyEnvironment(
 ): IamHarmonyEnvironment {
   return createIamHarmonyEnvironment(selectIamHarmonyRuntimeEnvDocument(profileId));
 }
+
+/**
+ * The public application access token of one selected profile.
+ *
+ * A dedicated reader because runtime bootstrap needs exactly this value before it
+ * constructs any SDK client, and reading it from the same validated environment keeps
+ * the credential and the endpoints from being selected from two different documents.
+ * A missing or malformed token fails closed inside
+ * \`createIamHarmonyEnvironment\` with the key and the profile document named.
+ */
+export function resolveIamHarmonyApplicationAccessToken(
+  profileId: string = IAM_HARMONY_DEFAULT_PROFILE_ID,
+): string {
+  return resolveIamHarmonyEnvironment(profileId).applicationAccessToken;
+}
 `;
 }
 
@@ -3426,6 +3672,8 @@ export function resolveIamHarmonyEnvironment(
  */
 export function bootstrapSdkClientsSource(surface) {
   const coreDir = surface.coreDir;
+  const consoleCoreDir = surface.consoleCoreDir;
+  const adminCoreDir = surface.adminCoreDir;
   return `${BANNER}
 /**
  * SDK client construction for the ${APP_LABEL} HarmonyOS root.
@@ -3435,10 +3683,21 @@ export function bootstrapSdkClientsSource(surface) {
  * constructed here and nowhere else; capability packages receive theirs through the
  * injected port each declares and must not construct one themselves.
  *
+ * Bootstrap order is part of the contract: the public application access token
+ * (\`SDKWORK_ACCESS_TOKEN\`) is seeded into the shared token manager before this module
+ * constructs a client. Every tier reads that one manager while its config is built, so
+ * a client built before the seed would carry no credential and a transport would send
+ * no \`Access-Token\` (\`ENVIRONMENT_SPEC.md\` section 6.1).
+ *
+ * All three tiers are constructed together because section 6 requires one shared
+ * manager across the appbase app SDK, every authenticated app-api client and the
+ * explicit backend-admin client. Constructing only the app client is how the console
+ * and admin tiers ended up reading a session module nothing writes.
+ *
  * PREREQUISITE, stated rather than hidden: the SDK generation chain emits
  * TypeScript, Dart, Kotlin, Swift, C#, Go, Java, Python and Rust targets of
  * \`sdkwork-iam-app-sdk\` and \`sdkwork-iam-backend-sdk\`; no ArkTS target exists yet
- * (see \`sdks/README.md\`). What this module can construct today is the core's typed
+ * (see \`sdks/README.md\`). What this module can construct today is each core's typed
  * port over the configured origin, which is what the capability services resolve.
  * Registering a real transport is a change to this file and to each
  * \`services/<Capability>SdkPort.ets\`, and nothing else.
@@ -3449,6 +3708,16 @@ import {
   resetIamHarmonySdkClient,
   type IamHarmonySdkClient,
 } from '@sdkwork/${coreDir}';
+import {
+  getIamHarmonySdkClient as getIamHarmonyConsoleSdkClient,
+  resetIamHarmonySdkClient as resetIamHarmonyConsoleSdkClient,
+  type IamHarmonySdkClient as IamHarmonyConsoleSdkClient,
+} from '@sdkwork/${consoleCoreDir}';
+import {
+  getIamHarmonySdkClient as getIamHarmonyAdminSdkClient,
+  resetIamHarmonySdkClient as resetIamHarmonyAdminSdkClient,
+  type IamHarmonySdkClient as IamHarmonyAdminSdkClient,
+} from '@sdkwork/${adminCoreDir}';
 
 import { type IamHarmonyEnvironment } from './EnvironmentContract';
 
@@ -3458,10 +3727,14 @@ import { type IamHarmonyEnvironment } from './EnvironmentContract';
  * Returned rather than logged so the root page can render it and a test can assert
  * it. "The SDK target has not landed" and "the bootstrap forgot to configure it" are
  * different defects and need different fixes; a report that conflated them would
- * make the second look like the first.
+ * make the second look like the first. \`accessTokenConfigured\` is the third fact:
+ * a client can exist while carrying no credential at all.
  */
 export interface IamHarmonySdkWiringReport {
   readonly appClientInitialized: boolean;
+  readonly consoleClientInitialized: boolean;
+  readonly adminClientInitialized: boolean;
+  readonly accessTokenConfigured: boolean;
   readonly baseUrl: string;
   readonly platform: string;
 }
@@ -3469,27 +3742,34 @@ export interface IamHarmonySdkWiringReport {
 export class IamHarmonySdkClients {
   private environment: IamHarmonyEnvironment | null = null;
   private appClient: IamHarmonySdkClient | null = null;
+  private consoleClient: IamHarmonyConsoleSdkClient | null = null;
+  private adminClient: IamHarmonyAdminSdkClient | null = null;
 
   /**
-   * Constructs the client for one environment.
+   * Constructs one client per tier for one environment.
    *
-   * No access token is passed: bootstrap runs before login, and the core's token
-   * manager is the one place a credential is read from at request time
-   * (\`core/sdk/TokenManager.ets\`), so threading a token through here would create a
-   * second path for a credential to reach a request.
+   * The access token is not passed in: bootstrap has already seeded it into the
+   * shared token manager, which is the one place a credential is read from
+   * (\`core/sdk/TokenManager.ets\`). Threading it through here would create a second
+   * path for a credential to reach a request.
    */
   initialize(environment: IamHarmonyEnvironment): void {
     this.appClient = getIamHarmonySdkClient(environment.appbaseAppApiBaseUrl);
+    this.consoleClient = getIamHarmonyConsoleSdkClient(environment.appbaseAppApiBaseUrl);
+    this.adminClient = getIamHarmonyAdminSdkClient(environment.platformApiGatewayHttpUrl);
     this.environment = environment;
   }
 
   /**
-   * Rebuilds the client after a credential change.
+   * Rebuilds every client after a credential or context change.
    *
    * The environment is remembered rather than re-supplied: login happens in the
    * session route, which has no business knowing the runtime environment, and
    * re-deriving it there is how a client ends up pointed at a profile other than the
    * one bootstrap validated.
+   *
+   * All tiers are rebuilt, not just the app client: a console or admin client left
+   * over from the previous session would keep sending its previous \`Access-Token\`.
    */
   reinitialize(): void {
     const environment: IamHarmonyEnvironment | null = this.environment;
@@ -3509,17 +3789,38 @@ export class IamHarmonySdkClients {
     return client;
   }
 
+  /** The console-tier app-api client. */
+  consoleApiClient(): IamHarmonyConsoleSdkClient {
+    const client: IamHarmonyConsoleSdkClient | null = this.consoleClient;
+    if (client === null) {
+      throw new Error('IAM console app SDK client must be initialized by bootstrap before use');
+    }
+    return client;
+  }
+
+  /** The backend-admin client. */
+  adminApiClient(): IamHarmonyAdminSdkClient {
+    const client: IamHarmonyAdminSdkClient | null = this.adminClient;
+    if (client === null) {
+      throw new Error('IAM admin backend SDK client must be initialized by bootstrap before use');
+    }
+    return client;
+  }
+
   describe(): IamHarmonySdkWiringReport {
     const client: IamHarmonySdkClient | null = this.appClient;
     return {
       appClientInitialized: client !== null,
+      consoleClientInitialized: this.consoleClient !== null,
+      adminClientInitialized: this.adminClient !== null,
+      accessTokenConfigured: client !== null && client.accessToken !== undefined,
       baseUrl: client === null ? '' : client.baseUrl,
       platform: IAM_HARMONY_PLATFORM,
     };
   }
 
   /**
-   * Tears the client down.
+   * Tears every client down.
    *
    * Logout and refresh failure must clear this together with the session store and
    * the token manager (section 6); leaving a configured base URL alive across an
@@ -3527,7 +3828,11 @@ export class IamHarmonySdkClients {
    */
   reset(): void {
     resetIamHarmonySdkClient();
+    resetIamHarmonyConsoleSdkClient();
+    resetIamHarmonyAdminSdkClient();
     this.appClient = null;
+    this.consoleClient = null;
+    this.adminClient = null;
   }
 }
 
@@ -3559,10 +3864,18 @@ export function bootstrapIamRuntimeSource(surface) {
 /**
  * IAM runtime wiring for the ${APP_LABEL} HarmonyOS root.
  *
- * Authority: \`APP_SDK_INTEGRATION_SPEC.md\`, \`IAM_LOGIN_INTEGRATION_SPEC.md\` and
+ * Authority: \`APP_SDK_INTEGRATION_SPEC.md\`, \`IAM_LOGIN_INTEGRATION_SPEC.md\`,
+ * \`ENVIRONMENT_SPEC.md\` section 6.1 and
  * \`HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md\` section 6. Logout and refresh failure
- * must clear the token manager, the session store and the SDK clients together;
- * clearing any one of them alone leaves a credential the next request still sends.
+ * must clear the token manager, the session/context store, secure platform storage and
+ * the SDK clients together; clearing any one of them alone leaves a credential the
+ * next request still sends.
+ *
+ * The teardown restores the public application access token (\`SDKWORK_ACCESS_TOKEN\`)
+ * instead of leaving credential entry with nothing: after logout the app is still
+ * below login and still needs \`Access-Token\` for tenant, application and environment
+ * isolation. The bootstrap token lives in the token manager outside the session
+ * record, so clearing the session cannot remove it (\`TokenManager.ets\`).
  *
  * The exchange of an authorization code for a session is \`sdkwork-iam-app-sdk\`'s
  * job and needs an ArkTS target that does not exist yet (see \`sdks/README.md\`).
@@ -3573,20 +3886,30 @@ import {
   clear${coreSymbol}Session,
   clearIamHarmonyTokens,
   commit${coreSymbol}Session,
+  currentIamHarmonyTokenSet,
   is${coreSymbol}SessionComplete,
   markIamHarmonyAuthenticated,
   read${coreSymbol}Session,
   type ${coreSymbol}Session,
 } from '@sdkwork/${coreDir}';
 
+import { getIamHarmonyHostAdapters } from './HostAdapters';
 import { getIamHarmonySdkClients } from './SdkClients';
 
 export interface IamHarmonyIamRuntime {
   isAuthenticated(): boolean;
   /** Signed-in account id, for anything that has to render who is acting. */
   currentUserId(): string | undefined;
+  /**
+   * Whether an \`Access-Token\` is configured for outbound requests — the bootstrap
+   * application token before login, the session token after it.
+   */
+  hasAccessToken(): boolean;
   commitSession(session: ${coreSymbol}Session): ${coreSymbol}Session;
-  clearOnLogout(): void;
+  /** Clears every credential store and restores the bootstrap application token. */
+  clearOnLogout(): Promise<void>;
+  /** Same teardown for a failed refresh (section 6). */
+  clearOnRefreshFailure(): Promise<void>;
 }
 
 /**
@@ -3601,6 +3924,29 @@ function hasUsableSession(): boolean {
   return is${coreSymbol}SessionComplete(read${coreSymbol}Session());
 }
 
+/**
+ * Clears the session, the context store and the persisted credential.
+ *
+ * The public application token is deliberately not cleared with the session:
+ * \`clearIamHarmonyTokens\` drops the session record only, so the manager still holds
+ * the seeded application token. Rebuilding the clients in \`finally\` then configures
+ * every tier with that token again, which is what keeps credential entry usable.
+ *
+ * Async because the secure-storage adapter is async (section 7). The rebuild runs in
+ * \`finally\` so a storage failure cannot leave the clients holding the old session
+ * credential.
+ */
+async function clearSessionAndRestoreBootstrapToken(): Promise<void> {
+  clearIamHarmonyTokens();
+  clear${coreSymbol}Session();
+  markIamHarmonyAuthenticated(false);
+  try {
+    await getIamHarmonyHostAdapters().secureStorage.clear();
+  } finally {
+    getIamHarmonySdkClients().reinitialize();
+  }
+}
+
 export function createIamHarmonyIamRuntime(): IamHarmonyIamRuntime {
   return {
     isAuthenticated(): boolean {
@@ -3612,11 +3958,17 @@ export function createIamHarmonyIamRuntime(): IamHarmonyIamRuntime {
       return session === undefined ? undefined : session.userId;
     },
 
+    hasAccessToken(): boolean {
+      return currentIamHarmonyTokenSet().accessToken !== undefined;
+    },
+
     /**
      * Commits an exchanged session and rebuilds the SDK clients in one tick.
      *
      * Rebuilding here is what makes the post-login redirect unable to observe an
-     * authenticated session store next to an unauthenticated SDK client.
+     * authenticated session store next to an unauthenticated SDK client. It also
+     * propagates the session to the console and admin clients, which read the same
+     * manager through their own cores.
      */
     commitSession(session: ${coreSymbol}Session): ${coreSymbol}Session {
       const committed: ${coreSymbol}Session = commit${coreSymbol}Session(session);
@@ -3625,11 +3977,12 @@ export function createIamHarmonyIamRuntime(): IamHarmonyIamRuntime {
       return committed;
     },
 
-    clearOnLogout(): void {
-      clearIamHarmonyTokens();
-      clear${coreSymbol}Session();
-      markIamHarmonyAuthenticated(false);
-      getIamHarmonySdkClients().reset();
+    clearOnLogout(): Promise<void> {
+      return clearSessionAndRestoreBootstrapToken();
+    },
+
+    clearOnRefreshFailure(): Promise<void> {
+      return clearSessionAndRestoreBootstrapToken();
     },
   };
 }
@@ -3729,9 +4082,16 @@ export function bootstrapRuntimeSource(surface) {
 /**
  * Root composition entry.
  *
- * Authority: \`HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md\` sections 1 and 6. This
- * module assembles the environment, the SDK client, the IAM runtime, the host
+ * Authority: \`HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md\` sections 1 and 6, and
+ * \`ENVIRONMENT_SPEC.md\` section 6.1. This module assembles the environment, the
+ * public application access token, the SDK clients, the IAM runtime, the host
  * adapters and the route registry. It owns no product business logic.
+ *
+ * Bootstrap order is normative here: the selected profile is validated (which fails
+ * closed on a missing or malformed \`SDKWORK_ACCESS_TOKEN\`), the token is seeded into
+ * the shared token manager, and only then are the SDK clients constructed. A client
+ * reads the manager while its config is built, so the reverse order yields clients
+ * that cannot send \`Access-Token\` on the credential-entry route.
  *
  * It is also the one layer allowed to depend on both the shell and the capability
  * packages (section 5), which is why the route registry is assembled here rather
@@ -3744,6 +4104,7 @@ import {
   resolveErrorMessage,
 } from '@sdkwork/${commons}';
 import { type ${shellSymbol}RouteRegistration } from '@sdkwork/${shellDir}';
+import { initializeIamHarmonyBootstrapToken } from '@sdkwork/${surface.coreDir}';
 
 import { IAM_HARMONY_DEFAULT_PROFILE_ID } from '../generated/RuntimeConfig';
 import { resolveIamHarmonyEnvironment, type IamHarmonyEnvironment } from './Environment';
@@ -3785,6 +4146,11 @@ let bootstrapError: string | null = null;
  * Throws on a configuration defect. The caller is \`EntryAbility\`, which records the
  * message so the root page can render it; swallowing it here would produce an app
  * that launches into a blank screen with no explanation.
+ *
+ * Order is the contract: resolve and validate the profile, seed the public
+ * application access token into the shared token manager, then construct the clients.
+ * \`resolveIamHarmonyEnvironment\` is what fails closed, naming \`SDKWORK_ACCESS_TOKEN\`
+ * and the profile document, when the token is missing or malformed.
  */
 export function bootstrapIamHarmonyApp(
   options: IamHarmonyBootstrapOptions = {},
@@ -3792,6 +4158,11 @@ export function bootstrapIamHarmonyApp(
   const profileId: string = options.profileId ?? IAM_HARMONY_DEFAULT_PROFILE_ID;
   const environment: IamHarmonyEnvironment = resolveIamHarmonyEnvironment(profileId);
 
+  // Step 1: seed the single global token manager with the public application token.
+  initializeIamHarmonyBootstrapToken(environment.applicationAccessToken);
+
+  // Step 2: construct the clients. Every tier reads the seeded token while its
+  // config is built, so this call must stay after the seed.
   const sdk: IamHarmonySdkClients = createIamHarmonySdkClients();
   sdk.initialize(environment);
 
@@ -4271,6 +4642,17 @@ export default function iamHarmonyContractTest() {
         const environment = resolveIamHarmonyEnvironment(profileId);
         expect(environment.appbaseAppApiBaseUrl.indexOf('/app/v3/api')).assertEqual(-1);
         expect(environment.platformApiGatewayHttpUrl.indexOf('/backend/v3/api')).assertEqual(-1);
+      }
+    });
+
+    it('loads the public application access token of every profile', 0, () => {
+      // APP_ACCESS_TOKEN_SPEC.md section 2: every packaged profile carries a
+      // non-empty three-part public token, and the loader must yield it so bootstrap
+      // can seed the shared token manager before SDK client construction.
+      for (const profileId of listIamHarmonyProfileIds()) {
+        const environment = resolveIamHarmonyEnvironment(profileId);
+        expect(environment.applicationAccessToken.length > 0).assertTrue();
+        expect(environment.applicationAccessToken.split('.').length).assertEqual(3);
       }
     });
 

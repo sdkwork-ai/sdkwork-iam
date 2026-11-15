@@ -9,6 +9,7 @@
 
 import 'package:sdkwork_iam_app_sdk/sdkwork_iam_app_sdk.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
+import 'package:sdkwork_iam_flutter_mobile_core/sdkwork_iam_flutter_mobile_core.dart';
 
 import '../bootstrap/iam_runtime.dart';
 import '../bootstrap/sdk_clients.dart';
@@ -25,11 +26,15 @@ class IamAuthAppSdkDataSource implements IamFlutterMobileAuthDataSource {
 
   @override
   IamFlutterMobileAuthSession? get currentSession {
-    final String? token = _runtime.tokenManager.currentAccessToken;
-    if (token == null || token.isEmpty) return null;
+    // The context store, not the token manager, decides whether someone is signed
+    // in: the public application access token is present before login.
+    final IamFlutterMobileCoreSessionContext? context = _runtime.contextStore.current;
+    if (context == null || !context.isComplete) return null;
     return IamFlutterMobileAuthSession(
-      accessToken: token,
-      refreshToken: _runtime.tokenManager.currentRefreshToken,
+      accessToken: context.accessToken,
+      refreshToken: context.refreshToken,
+      sessionId: context.sessionId,
+      userId: context.userId,
     );
   }
 
@@ -51,13 +56,43 @@ class IamAuthAppSdkDataSource implements IamFlutterMobileAuthDataSource {
     if (accessToken == null) {
       throw StateError('The sign-in response carried no access token.');
     }
+    final Map<String, dynamic> context = _readMap(data['context']);
+    final Map<String, dynamic> user = _readMap(data['user']);
+    final String? userId = _readString(context['userId']) ??
+        _readString(context['user_id']) ??
+        _readString(user['userId']) ??
+        _readString(user['id']);
+    if (userId == null) {
+      throw StateError('The sign-in response carried no user id.');
+    }
     final String? refreshToken =
         _readString(data['refreshToken']) ?? _readString(data['refresh_token']);
-    _runtime.tokenManager.setTokens(accessToken: accessToken, refreshToken: refreshToken);
-    _client.setAccessToken(accessToken);
+    final String? tenantId = _readString(context['tenantId']) ??
+        _readString(context['tenant_id']) ??
+        _readString(user['tenantId']) ??
+        _readString(user['tenant_id']);
+    final String? organizationId =
+        _readString(context['organizationId']) ?? _readString(context['organization_id']);
+    final String? sessionId = _readString(context['sessionId']) ??
+        _readString(context['session_id']) ??
+        _readString(data['sessionId']) ??
+        _readString(data['session_id']);
+    // The runtime replaces the bootstrap token, writes the context store and
+    // mirrors the session into secure storage; the token-manager listener then
+    // pushes the new access token into every tier client.
+    await _runtime.establishSession(
+      accessToken: accessToken,
+      organizationId: organizationId,
+      refreshToken: refreshToken,
+      sessionId: sessionId,
+      tenantId: tenantId,
+      userId: userId,
+    );
     return IamFlutterMobileAuthSession(
       accessToken: accessToken,
       refreshToken: refreshToken,
+      sessionId: sessionId,
+      userId: userId,
     );
   }
 
@@ -94,6 +129,11 @@ Map<String, dynamic> _sessionData(SdkWorkResourceResponse? response) {
   final Object? data = response?.data;
   if (data is Map) return Map<String, dynamic>.from(data);
   throw StateError('The sign-in response carried no data object.');
+}
+
+Map<String, dynamic> _readMap(Object? value) {
+  if (value is Map) return Map<String, dynamic>.from(value);
+  return <String, dynamic>{};
 }
 
 String? _readString(Object? value) {

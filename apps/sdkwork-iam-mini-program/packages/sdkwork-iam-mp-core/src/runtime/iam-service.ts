@@ -18,6 +18,15 @@ export interface CreateIamMpAppServiceInput {
   baseUrl: string;
   /** Access token for a restored session, when one exists. */
   accessToken?: string;
+  /**
+   * Public application access token of the selected profile document
+   * (`SDKWORK_ACCESS_TOKEN`, `APP_ACCESS_TOKEN_SPEC.md` §2).
+   *
+   * It is the credential every pre-login call needs — `POST /auth/sessions` is
+   * `access-token-only` — and the credential a cleared session falls back to.
+   * The session token supersedes it after login; it never becomes the session.
+   */
+  bootstrapAccessToken?: string;
   /** Clears the host session before a new one is established. */
   clearSession?: () => Promise<unknown> | unknown;
   /** Commits a freshly established session to the host store. */
@@ -26,9 +35,15 @@ export interface CreateIamMpAppServiceInput {
   timeoutMs?: number;
 }
 
+/** Trimmed credential, or `undefined` for "not configured". */
+function normalizeAccessToken(value: string | undefined): string | undefined {
+  const token = typeof value === "string" ? value.trim() : "";
+  return token === "" ? undefined : token;
+}
+
 /**
  * Build the generated app SDK client.
- * @param input - base URL plus optional token and timeout.
+ * @param input - base URL plus optional session/bootstrap token and timeout.
  * @returns the generated client.
  */
 export function createIamMpAppClient(input: CreateIamMpAppServiceInput): SdkworkAppClient {
@@ -36,9 +51,15 @@ export function createIamMpAppClient(input: CreateIamMpAppServiceInput): Sdkwork
   if (!baseUrl) {
     throw new Error("sdkwork-iam-mini-program: app-api base url is required to build the IAM client");
   }
+  // Seed the client's own TokenManager in its constructor: the generated client
+  // reads `Access-Token` from that manager (never from the plain config field
+  // alone), so a token handed over after construction would be too late for an
+  // `accessTokenOnly` operation.
+  const accessToken =
+    normalizeAccessToken(input.accessToken) ?? normalizeAccessToken(input.bootstrapAccessToken);
   return createIamAppSdkClient({
     baseUrl,
-    ...(input.accessToken ? { accessToken: input.accessToken } : {}),
+    ...(accessToken ? { accessToken } : {}),
     ...(input.timeoutMs !== undefined ? { timeout: input.timeoutMs } : {}),
   });
 }
@@ -48,8 +69,18 @@ export interface IamMpRuntimeService {
   readonly client: SdkworkAppClient;
   readonly service: SdkworkIamService;
   /**
+   * The credential the next request will carry: the session access token while a
+   * session exists, otherwise the bootstrap application access token.
+   * @returns the active access token, or `undefined` when none is configured.
+   */
+  getAccessToken(): string | undefined;
+  /**
    * Push the current access token onto the client.
-   * @param token - bearer token, or `undefined` to clear it on sign-out.
+   *
+   * `undefined` means "the session is gone", not "no credential": the bootstrap
+   * application access token is restored so the login screen and every
+   * credential-entry call still work after sign-out or a failed refresh.
+   * @param token - session access token, or `undefined` to fall back.
    */
   setAccessToken(token: string | undefined): void;
 }
@@ -60,6 +91,7 @@ export interface IamMpRuntimeService {
  * @returns the runtime triple.
  */
 export function createIamMpRuntimeService(input: CreateIamMpAppServiceInput): IamMpRuntimeService {
+  const bootstrapAccessToken = normalizeAccessToken(input.bootstrapAccessToken);
   const client = createIamMpAppClient(input);
   const service = createSdkworkIamService({
     appbaseAppClient: client,
@@ -68,9 +100,12 @@ export function createIamMpRuntimeService(input: CreateIamMpAppServiceInput): Ia
   });
   return {
     client,
+    getAccessToken() {
+      return normalizeAccessToken(client.http.getTokenManager()?.getAccessToken());
+    },
     service,
     setAccessToken(token: string | undefined) {
-      client.setAccessToken(token ?? "");
+      client.setAccessToken(normalizeAccessToken(token) ?? bootstrapAccessToken ?? "");
     },
   };
 }

@@ -399,6 +399,142 @@ export interface IamMpRuntime {
 
 let runtime: IamMpRuntime | undefined;
 
+/** Issuer of the public application access token (`APP_ACCESS_TOKEN_SPEC.md` §3). */
+const PUBLIC_APPLICATION_TOKEN_ISSUER = "sdkwork-iam-public";
+
+/** Token class of the public application access token; session credentials differ. */
+const PUBLIC_APPLICATION_TOKEN_CLASS = "application";
+
+/** Base64 alphabet, indexed to decode a JWT payload segment by hand. */
+const BASE64_ALPHABET =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+/**
+ * Decode one base64 or base64url segment of a JWT into text.
+ *
+ * The decoder is local because `atob` is not part of the WeChat mini program base
+ * library: reading the token claims on the device must not depend on a browser
+ * global, or the credential check would silently fail open there.
+ * @param segment - base64url payload segment.
+ * @returns the decoded text, or `undefined` when the segment is not base64 or is
+ *   not valid UTF-8.
+ */
+function decodeBase64Url(segment: string): string | undefined {
+  const normalized = segment.replace(/-/gu, "+").replace(/_/gu, "/");
+  const bytes: number[] = [];
+  let accumulator = 0;
+  let bits = 0;
+  for (const character of normalized) {
+    if (character === "=") continue;
+    const index = BASE64_ALPHABET.indexOf(character);
+    if (index < 0) return undefined;
+    accumulator = (accumulator << 6) | index;
+    bits += 6;
+    if (bits < 8) continue;
+    bits -= 8;
+    bytes.push((accumulator >> bits) & 0xff);
+  }
+  // Percent-encoding each byte delegates UTF-8 decoding to the engine instead of
+  // carrying a second decoder here.
+  let encoded = "";
+  for (const byte of bytes) {
+    encoded += `%${byte.toString(16).padStart(2, "0")}`;
+  }
+  try {
+    return decodeURIComponent(encoded);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Read the claims of a public application access token.
+ *
+ * `APP_ACCESS_TOKEN_SPEC.md` §3 defines the credential the client may hold before
+ * login: a three-part JWT compact string with `token_class: application` and
+ * `iss: sdkwork-iam-public`. Anything else — notably a session credential — is
+ * not a bootstrap token and must not be used as one.
+ * @param token - candidate token value.
+ * @returns the claims when the token is a public application token, otherwise
+ *   `undefined`.
+ */
+function readPublicApplicationTokenClaims(
+  token: string,
+): Record<string, unknown> | undefined {
+  const segments = token.split(".");
+  if (segments.length !== 3) return undefined;
+  if (segments.some((segment) => segment === "")) return undefined;
+  const payload = decodeBase64Url(segments[1]);
+  if (!payload) return undefined;
+  let claims: unknown;
+  try {
+    claims = JSON.parse(payload);
+  } catch {
+    return undefined;
+  }
+  if (claims === null || typeof claims !== "object" || Array.isArray(claims)) {
+    return undefined;
+  }
+  const record = claims as Record<string, unknown>;
+  if (record.token_class !== PUBLIC_APPLICATION_TOKEN_CLASS) return undefined;
+  if (record.iss !== PUBLIC_APPLICATION_TOKEN_ISSUER) return undefined;
+  return record;
+}
+
+/**
+ * Resolve the public application access token the selected profile document
+ * carries, failing closed when it is absent or is not a public application token.
+ * @param runtimeEnv - the materialized runtime document.
+ * @returns the validated token, ready to seed the client's token manager.
+ * @throws when `SDKWORK_ACCESS_TOKEN` is missing, malformed, or a session
+ *   credential. The message names the key and the selected profile document so
+ *   the failure is actionable from the login screen.
+ */
+function requireBootstrapAccessToken(runtimeEnv: IamMpRuntimeEnv): string {
+  const document = `config/mini-program/runtime-env.${runtimeEnv.SDKWORK_PROFILE_ID}.json`;
+  const token = readString(runtimeEnv.SDKWORK_ACCESS_TOKEN);
+  if (!token) {
+    throw new Error(
+      `SDKWORK_ACCESS_TOKEN is missing from the selected profile document ${document}: ` +
+        "the mini program cannot call app-api without its public application access token.",
+    );
+  }
+  if (!readPublicApplicationTokenClaims(token)) {
+    throw new Error(
+      `SDKWORK_ACCESS_TOKEN in the selected profile document ${document} is not a valid ` +
+        `public application token: expected a three-part JWT with ` +
+        `token_class=${PUBLIC_APPLICATION_TOKEN_CLASS} and iss=${PUBLIC_APPLICATION_TOKEN_ISSUER}; ` +
+        "a session credential is not accepted.",
+    );
+  }
+  return token;
+}
+
+/**
+ * Pick the primary absolute origin of the profile's app-api base value.
+ *
+ * The canonical materializer may carry the registered API edge family as
+ * `origin1;origin2;...` (`ENVIRONMENT_SPEC.md` section 5.1.0.1). A mini program
+ * has no page host to match the family against, so the first (primary) member is
+ * used; handing the list to the HTTP client would produce an origin no request
+ * can use.
+ * @param runtimeEnv - the materialized runtime document.
+ * @returns one absolute origin, with any trailing slash removed.
+ * @throws when the profile declares no app-api base URL.
+ */
+function requireAppApiBaseUrl(runtimeEnv: IamMpRuntimeEnv): string {
+  const raw = readString(runtimeEnv.SDKWORK_APP_API_BASE_URL);
+  const primary = raw?.split(";")[0]?.trim() ?? "";
+  if (!primary) {
+    throw new Error(
+      `SDKWORK_APP_API_BASE_URL is missing from the selected profile document ` +
+        `config/mini-program/runtime-env.${runtimeEnv.SDKWORK_PROFILE_ID}.json: ` +
+        "the mini program cannot resolve the app-api origin.",
+    );
+  }
+  return primary.replace(/\/+$/u, "");
+}
+
 /**
  * Compose the runtime for this launch.
  * @param input - the materialized runtime document.
@@ -408,15 +544,27 @@ export async function bootstrapIamMpApp(input: { runtimeEnv: IamMpRuntimeEnv }):
   const { runtimeEnv } = input;
   if (runtime) return runtime;
 
+  // The credential is resolved before anything is constructed, so a missing or
+  // non-public token fails here with the profile document named instead of
+  // surfacing as "access-token-only request requires Access-Token" inside the
+  // first credential-entry call.
+  const bootstrapAccessToken = requireBootstrapAccessToken(runtimeEnv);
+
   const session = createIamMpSessionStore();
   const service = createIamMpRuntimeService({
-    baseUrl: runtimeEnv.SDKWORK_APP_API_BASE_URL,
+    baseUrl: requireAppApiBaseUrl(runtimeEnv),
+    bootstrapAccessToken,
     ...(session.get()?.accessToken ? { accessToken: session.get()?.accessToken } : {}),
     clearSession: () => session.clear(),
     commitSession: (next) => {
       session.set(toSnapshot(next));
     },
   });
+  // A restored session wins; otherwise the client keeps the bootstrap token that
+  // `createIamMpRuntimeService` seeded in its constructor. A cleared session
+  // (sign-out, failed refresh, or the login hand-off that clears stale
+  // credentials first) must restore that token rather than empty the credential,
+  // or the login screen loses its own `access-token-only` calls.
   const applySession = (snapshot: IamMpSessionSnapshot | undefined) => {
     service.setAccessToken(snapshot?.accessToken);
   };

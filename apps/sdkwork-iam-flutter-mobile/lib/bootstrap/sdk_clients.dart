@@ -31,6 +31,25 @@ class IamSdkClientFactory<TClient>
       _build(env, tokenManager);
 }
 
+/// Applies one access-token change to every constructed SDK client.
+///
+/// Extracted from the token-manager listener so the clearing contract is
+/// testable without a network or a platform channel: the generated clients take
+/// a non-null token, and the empty string is how a cleared token is expressed.
+/// A cleared token makes an access-token-only request fail closed before
+/// dispatch instead of sending a stale `Access-Token`.
+void applyIamAccessTokenToClients(
+  String? token, {
+  required void Function(String token) setAppClientAccessToken,
+  required void Function(String token) setConsoleClientAccessToken,
+  required void Function(String token) setAdminClientAccessToken,
+}) {
+  final String accessToken = token ?? '';
+  setAppClientAccessToken(accessToken);
+  setConsoleClientAccessToken(accessToken);
+  setAdminClientAccessToken(accessToken);
+}
+
 /// Every SDK client the root constructed, per tier.
 class IamSdkClients {
   const IamSdkClients({
@@ -55,6 +74,8 @@ IamSdkClients? _clients;
 ///
 /// Section 6: every authenticated client shares the one token manager, and a
 /// refresh in one tier is pushed to the others so no client keeps a stale token.
+/// Bootstrap calls this only after the token manager holds the bootstrap (or
+/// restored session) token.
 IamSdkClients createSdkClients() {
   final SdkworkRuntimeEnv env = resolveEnvironment();
   final SdkworkTokenManager tokenManager = IamRuntime.instance.tokenManager;
@@ -73,18 +94,21 @@ IamSdkClients createSdkClients() {
   );
 
   tokenManager.addListener((String? token) {
-    if (token == null) return;
-    iamFlutterMobileCore.setAccessToken(token);
-    iamFlutterMobileConsoleCore.setAccessToken(token);
-    iamFlutterMobileAdminCore.setAccessToken(token);
+    applyIamAccessTokenToClients(
+      token,
+      setAppClientAccessToken: iamFlutterMobileCore.setAccessToken,
+      setConsoleClientAccessToken: iamFlutterMobileConsoleCore.setAccessToken,
+      setAdminClientAccessToken: iamFlutterMobileAdminCore.setAccessToken,
+    );
   });
 
-  _clients = IamSdkClients(
+  final IamSdkClients clients = IamSdkClients(
     iamFlutterMobileCore: iamFlutterMobileCore,
     iamFlutterMobileConsoleCore: iamFlutterMobileConsoleCore,
     iamFlutterMobileAdminCore: iamFlutterMobileAdminCore,
   );
-  return _clients!;
+  _clients = clients;
+  return clients;
 }
 
 /// Active SDK clients, building them on first use.

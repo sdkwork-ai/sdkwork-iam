@@ -154,6 +154,15 @@ pub use oauth_integration_exchange::{
     seed_builtin_oauth_provider_catalog, OAuthIntegrationExchangeContext,
 };
 pub use oauth_login_local::{LocalOAuthAuthority, LocalOAuthProviderProfile};
+#[path = "official_account_notify.rs"]
+mod official_account_notify;
+pub use official_account_notify::{
+    callback_signature, decrypt_wechat_blob, extract_encrypted_payload,
+    handle_official_account_notify_get, handle_official_account_notify_post,
+    load_official_account_notify_config, parse_notification, verify_callback_signature,
+    verify_notify_url, OfficialAccountNotifyConfig, WechatNotification, WechatNotifyChannel,
+    WechatNotifyError, WechatNotifyHttpResponse, WechatNotifyReplayGuard,
+};
 pub use oauth_provider_callback::{
     handle_provider_callback_get, handle_provider_callback_post, ProviderCallbackHttpResponse,
     ProviderCallbackRequestMeta,

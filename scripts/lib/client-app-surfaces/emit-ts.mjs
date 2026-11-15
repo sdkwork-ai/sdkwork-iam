@@ -6,6 +6,7 @@
  * generated files carry the `SDKWORK-CLIENT-APP-SURFACES-GENERATED` banner.
  */
 
+import fs from 'node:fs';
 import path from 'node:path';
 
 import { APP_ID, ENVIRONMENTS, PROFILE_IDS, ROUTES, permissionCompositionFor, routeId, routesOfPackage, routesOfTier } from './model.mjs';
@@ -399,6 +400,80 @@ function deploymentIndex(surface) {
 }
 
 /**
+ * Public application access token already committed in a profile document.
+ *
+ * `APP_ACCESS_TOKEN_SPEC.md` §2 makes `SDKWORK_ACCESS_TOKEN` mandatory in every
+ * profile document, and §3 makes rotation an explicit, reviewed act. The
+ * generator therefore may not drop it: a regeneration that emitted only the
+ * identity/SDK fields would silently strip the credential the mini program
+ * bootstraps from, and every `dev`/`build` would fail closed afterwards. Reading
+ * the committed value and re-emitting it unchanged keeps the document a pure
+ * function of the model plus its own credential, so
+ * `materialize-client-app-surfaces.mjs` is idempotent for these files and a
+ * rotation diff stays a rotation diff.
+ *
+ * @param {object} surface surface descriptor
+ * @param {string} profileId canonical profile id
+ * @param {string} repoRoot absolute path of the repository root
+ * @returns {string | undefined} the committed token, or `undefined` when the
+ *   document or the key is absent (or the JSON cannot be read)
+ */
+function committedAccessToken(surface, profileId, repoRoot) {
+  const documentPath = path.join(
+    repoRoot,
+    'apps',
+    surface.rootName,
+    surface.runtimeEnvDir,
+    `${surface.runtimeEnvFileBase}.${profileId}.json`,
+  );
+  try {
+    const document = JSON.parse(fs.readFileSync(documentPath, 'utf8').replace(/^\uFEFF/u, ''));
+    const token = document.SDKWORK_ACCESS_TOKEN;
+    return typeof token === 'string' ? token.trim() || undefined : undefined;
+  } catch {
+    // A missing or unreadable document is not an emitter failure: the profile is
+    // then written without a token and the root's own token gate reports it.
+    return undefined;
+  }
+}
+
+/**
+ * The committed runtime document of one profile, or `{}` when it does not exist.
+ *
+ * Non-browser (Flutter / mini program) documents are owned by the canonical
+ * `materialize-client-env.mjs` flow (`APP_ACCESS_TOKEN_SPEC.md` section 2): that
+ * flow is the only writer that projects the deployed API edges and mints the
+ * profile's public application token. The surface emitter therefore preserves
+ * the committed values (identity fields included) and only fills a key the
+ * document does not declare yet. Re-deriving the base URLs here instead would
+ * rewrite a marketed cloud edge family back to a browser-only `'/'` origin and
+ * strand a native client with no absolute endpoint.
+ *
+ * @param {object} surface surface descriptor
+ * @param {string} profileId canonical profile id
+ * @param {string} repoRoot repository root that owns `apps/`
+ * @returns {Record<string, unknown>} the committed document, `{}` when absent
+ */
+function readCommittedRuntimeDocument(surface, profileId, repoRoot) {
+  const documentPath = path.join(
+    repoRoot,
+    'apps',
+    surface.rootName,
+    surface.runtimeEnvDir,
+    `${surface.runtimeEnvFileBase}.${profileId}.json`,
+  );
+  try {
+    const document = JSON.parse(fs.readFileSync(documentPath, 'utf8').replace(/^\uFEFF/u, ''));
+    return document !== null && typeof document === 'object' && !Array.isArray(document) ? document : {};
+  } catch {
+    // A missing or unreadable document is not an emitter failure: the defaults
+    // below still describe the profile, and the root's token gate reports the
+    // absent credential.
+    return {};
+  }
+}
+
+/**
  * One profile's runtime document.
  *
  * Two field vocabularies coexist because the spec gives the two runtime classes
@@ -421,7 +496,10 @@ function deploymentIndex(surface) {
  *   `config/mini-program/` (and `config/app/`) templates to declare
  *   `SDKWORK_ENVIRONMENT`, `SDKWORK_DEPLOYMENT_PROFILE`, `SDKWORK_PROFILE_ID`
  *   and `SDKWORK_RUNTIME_TARGET`, and those documents are read by platform code
- *   that looks up those exact names.
+ *   that looks up those exact names. The mini program document also carries the
+ *   committed public application access token (`SDKWORK_ACCESS_TOKEN`,
+ *   `APP_ACCESS_TOKEN_SPEC.md` §2) that the bootstrap seeds before the first
+ *   request; the generator preserves it instead of stripping it.
  *
  * Within the browser shape, two *value* shapes coexist deliberately:
  *
@@ -458,7 +536,7 @@ function runtimeEnvDocument(surface, profileId, repoRoot) {
   const issuer = isStandalone ? '/' : cloudPrimaryOrigin(repoRoot, environment);
   if (surface.runtimeTarget !== 'browser') {
     const apiBase = isStandalone ? '/' : cloudApiBaseForProfile(repoRoot, profileId);
-    return {
+    const defaults = {
       SDKWORK_ENVIRONMENT: environment,
       SDKWORK_DEPLOYMENT_PROFILE: deploymentProfile,
       SDKWORK_PROFILE_ID: profileId,
@@ -468,10 +546,29 @@ function runtimeEnvDocument(surface, profileId, repoRoot) {
       SDKWORK_APP_API_BASE_URL: apiBase,
       SDKWORK_OPEN_API_BASE_URL: apiBase,
       SDKWORK_IAM_ISSUER: issuer,
-      SDKWORK_FEATURE_APP_SURFACE: true,
-      SDKWORK_FEATURE_CONSOLE_SURFACE: true,
-      SDKWORK_FEATURE_ADMIN_SURFACE: true,
     };
+    // The committed document wins for every key it declares: the canonical
+    // materializer owns these files, and its values (absolute single origins,
+    // identity, runtime target) are the ones a native build must bake in.
+    const document = { ...readCommittedRuntimeDocument(surface, profileId, repoRoot) };
+    delete document.SDKWORK_ACCESS_TOKEN;
+    for (const [key, value] of Object.entries(defaults)) {
+      const current = document[key];
+      if (current === undefined || (typeof current === 'string' && current.trim().length === 0)) {
+        document[key] = value;
+      }
+    }
+    const accessToken = committedAccessToken(surface, profileId, repoRoot);
+    if (accessToken) {
+      document.SDKWORK_ACCESS_TOKEN = accessToken;
+    }
+    // The canonical `serializeJson` order is the plain code-unit sort of the
+    // keys; emitting the same order keeps a surface regeneration a no-op diff.
+    return Object.fromEntries(
+      Object.entries(document)
+        .filter(([, value]) => !(typeof value === 'string' && value.trim().length === 0))
+        .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0)),
+    );
   }
   const apiBase = isStandalone ? '/' : cloudSdkBaseUrlFamily(repoRoot, environment);
   const origins = cloudBrowserApiOrigins(repoRoot, profileId);
@@ -659,9 +756,21 @@ function coreSdkSource(surface, tier = 'app') {
   SDKWORK_APP_API_BASE_URL: string;
   SDKWORK_OPEN_API_BASE_URL: string;
   SDKWORK_IAM_ISSUER: string;
-  SDKWORK_FEATURE_APP_SURFACE: boolean;
-  SDKWORK_FEATURE_CONSOLE_SURFACE: boolean;
-  SDKWORK_FEATURE_ADMIN_SURFACE: boolean;
+  /**
+   * Surface flags are optional: the canonical per-profile document carries the
+   * identity, the deployed API edges and the public application token
+   * (\`APP_ACCESS_TOKEN_SPEC.md\` 搂2) and does not repeat feature switches.
+   */
+  SDKWORK_FEATURE_APP_SURFACE?: boolean;
+  SDKWORK_FEATURE_CONSOLE_SURFACE?: boolean;
+  SDKWORK_FEATURE_ADMIN_SURFACE?: boolean;
+  /**
+   * Public application access token of the selected profile document
+   * (\`APP_ACCESS_TOKEN_SPEC.md\` §2). Optional on the document type so a test
+   * fixture may omit it, but the mini program bootstrap fails closed without a
+   * valid public application token.
+   */
+  SDKWORK_ACCESS_TOKEN?: string;
 }`;
   const sdkCommonImport = isBrowser
     ? `import { resolveBaseUrlWithAlignProtocol } from '@sdkwork/sdk-common';\n\n`

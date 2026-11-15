@@ -158,10 +158,8 @@ pub(crate) async fn authenticate_password_and_create_session(
     if !password_valid {
         // An expired lock restarts the run of attempts; see
         // `failed_attempt_baseline` for why the stale counter must not carry.
-        let attempt_baseline = crate::passwords::failed_attempt_baseline(
-            failed_attempts,
-            locked_until.is_some(),
-        );
+        let attempt_baseline =
+            crate::passwords::failed_attempt_baseline(failed_attempts, locked_until.is_some());
         record_failed_password_attempt(sqlite, config, &user, attempt_baseline).await;
         return SqlitePasswordSessionOutcome::InvalidCredentials;
     }

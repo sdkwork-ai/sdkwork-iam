@@ -82,7 +82,35 @@
       "root": "apps/sdkwork-iam-flutter-mobile",
       "format": "flutter",
       "runtimeTarget": "flutter-android",
-      "bindings": {},
+      "bindings": {
+        "SDKWORK_API_BASE_URL": {
+          "sources": [
+            "SDKWORK_IAM_APPLICATION_PUBLIC_HTTP_URL"
+          ],
+          "required": true
+        },
+        "SDKWORK_APP_API_BASE_URL": {
+          "sources": [
+            "SDKWORK_IAM_APPLICATION_PUBLIC_HTTP_URL"
+          ],
+          "required": true
+        },
+        "SDKWORK_OPEN_API_BASE_URL": {
+          "sources": [
+            "SDKWORK_IAM_APPLICATION_PUBLIC_HTTP_URL"
+          ],
+          "required": true
+        },
+        "SDKWORK_IAM_ISSUER": {
+          "sources": [
+            "SDKWORK_IAM_APPLICATION_PUBLIC_HTTP_URL"
+          ],
+          "required": true
+        }
+      },
+      "constants": {
+        "SDKWORK_APP_ID": "sdkwork-iam"
+      },
       "accessToken": {
         "appId": "sdkwork-iam",
         "tenantId": "100001",
@@ -97,7 +125,35 @@
       "root": "apps/sdkwork-iam-mini-program",
       "format": "mini-program",
       "runtimeTarget": "mini-program",
-      "bindings": {},
+      "bindings": {
+        "SDKWORK_API_BASE_URL": {
+          "sources": [
+            "SDKWORK_IAM_APPLICATION_PUBLIC_HTTP_URL"
+          ],
+          "required": true
+        },
+        "SDKWORK_APP_API_BASE_URL": {
+          "sources": [
+            "SDKWORK_IAM_APPLICATION_PUBLIC_HTTP_URL"
+          ],
+          "required": true
+        },
+        "SDKWORK_OPEN_API_BASE_URL": {
+          "sources": [
+            "SDKWORK_IAM_APPLICATION_PUBLIC_HTTP_URL"
+          ],
+          "required": true
+        },
+        "SDKWORK_IAM_ISSUER": {
+          "sources": [
+            "SDKWORK_IAM_APPLICATION_PUBLIC_HTTP_URL"
+          ],
+          "required": true
+        }
+      },
+      "constants": {
+        "SDKWORK_APP_ID": "sdkwork-iam"
+      },
       "accessToken": {
         "appId": "sdkwork-iam",
         "tenantId": "100001",

@@ -3,6 +3,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type ChangeEvent,
   type ReactNode,
   type RefObject,
 } from "react";
@@ -23,18 +24,9 @@ import {
   DrawerTitle,
   Input,
   Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   StatusBadge,
   StatusNotice,
   Switch,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
 } from "@sdkwork/ui-pc-react";
 
 import type {
@@ -66,7 +58,7 @@ const WEB_AUTH_DOMAIN_LIMIT = 2;
 const BUSINESS_DOMAIN_LIMIT = 3;
 
 /** Drawer tabs: account credentials and the WeChat domain/server configuration. */
-type DrawerTab = "basic" | "domains";
+type DrawerTab = "basic" | "domains" | "server";
 
 /** Field keys that can carry an inline validation message. */
 type FieldKey =
@@ -96,6 +88,42 @@ const NOTIFY_TOKEN_PATTERN = /^[A-Za-z0-9]{3,32}$/u;
 /** EncodingAESKey from the WeChat console (letters and digits, exactly 43). */
 const NOTIFY_AES_KEY_PATTERN = /^[A-Za-z0-9]{43}$/u;
 
+/** Token length the 生成 action writes (WeChat accepts 3 to 32 letters/digits). */
+const GENERATED_TOKEN_LENGTH = 24;
+
+/** EncodingAESKey length the 生成 action writes (WeChat requires exactly 43). */
+const GENERATED_AES_KEY_LENGTH = 43;
+
+/** The WeChat console's Token/EncodingAESKey alphabet. */
+const WECHAT_SECRET_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+/**
+ * Generates a random alphanumeric secret with the WeChat console alphabet.
+ * Bytes at or above 248 are rejected so the modulo distribution stays uniform.
+ * @param length - the number of characters to produce.
+ * @returns a fresh secret of exactly `length` letters/digits.
+ */
+function randomWechatSecret(length: number): string {
+  const buffer = new Uint8Array(length + 8);
+  let secret = "";
+  while (secret.length < length) {
+    if (globalThis.crypto !== undefined
+      && typeof globalThis.crypto.getRandomValues === "function") {
+      globalThis.crypto.getRandomValues(buffer);
+    } else {
+      for (let index = 0; index < buffer.length; index += 1) {
+        buffer[index] = Math.floor(Math.random() * 256);
+      }
+    }
+    for (const byte of buffer) {
+      if (byte >= 248) continue;
+      secret += WECHAT_SECRET_ALPHABET[byte % WECHAT_SECRET_ALPHABET.length];
+      if (secret.length === length) break;
+    }
+  }
+  return secret;
+}
+
 /**
  * Normalizes one domain typed into the protected-domain editors.
  * @param input - the raw editor value.
@@ -108,26 +136,9 @@ function normalizeDomainInput(input: string): string | undefined {
 }
 
 /**
- * Validates the message-push callback URL the WeChat console accepts.
- * @param value - the raw URL (empty means "not configured").
- * @returns whether the URL is acceptable.
+ * The message-push callback URL is server-owned now (the standard notify path),
+ * so there is no client URL validator; the drawer displays the generated URL.
  */
-function isValidNotifyUrl(value: string): boolean {
-  const raw = value.trim();
-  if (raw === "") return true;
-  let url: URL;
-  try {
-    url = new URL(raw);
-  } catch {
-    return false;
-  }
-  if (url.protocol !== "http:" && url.protocol !== "https:") return false;
-  if (url.username !== "" || url.password !== "") return false;
-  const expectedPort = url.protocol === "http:" ? "80" : "443";
-  const port = url.port === "" ? expectedPort : url.port;
-  if (port !== expectedPort) return false;
-  return WECHAT_DOMAIN_PATTERN.test(url.hostname.toLowerCase());
-}
 
 /** Maps the persisted logo value (a `drive://` uri, a legacy delivery url, or
  * empty) onto the shared upload field's value shape. */
@@ -269,10 +280,20 @@ function AccountRow({
  */
 export function SdkworkIamOfficialAccountsPanel({
   controller,
+  domainVerification,
   driveUploadImageService,
   messages: messagesOverride,
+  notifyBaseUrl,
+  serverIps = [],
 }: {
   controller: SdkworkIamOfficialAccountsController;
+  /**
+   * Host-injected WeChat verification-file capability for configured domains.
+   * Present: each protected-domain row can upload the `MP_verify_*.txt` the
+   * WeChat console issues, and the platform serves it at the domain root.
+   * Absent: the domain rows keep only add/remove.
+   */
+  domainVerification?: SdkworkIamDomainVerification;
   /**
    * Host-injected Drive image-upload capability (`createDriveUploadImageService`).
    *
@@ -286,6 +307,20 @@ export function SdkworkIamOfficialAccountsPanel({
    * fake upload.
    */
   driveUploadImageService?: DriveUploadImageService;
+  /**
+   * The gateway origin the standard WeChat callback URL is built from. The URL
+   * is deterministic: `{notifyBaseUrl}/iam/v3/api/iam/oauth/official_accounts/
+   * {id}/wechat/notify`. Absent means the host cannot tell the panel where it is
+   * reachable, so the drawer states the URL is generated after saving instead of
+   * guessing one.
+   */
+  notifyBaseUrl?: string;
+  /**
+   * The deployment's published server egress IPs, listed in the 服务器信息 tab
+   * for the WeChat 公众号 IP allowlist. Empty means the deployment publishes no
+   * list and the tab states that instead.
+   */
+  serverIps?: readonly string[];
   /** Override copy (hosts and tests); defaults to the module catalog. */
   messages?: SdkworkIamOfficialAccountsMessages;
 }): ReactNode {
@@ -383,6 +418,12 @@ export function SdkworkIamOfficialAccountsPanel({
         : messages.form.logoUploadFailed;
     }
   };
+  // The standard notify URL is server-owned: the account id and the gateway
+  // origin fully determine it, so the drawer never accepts a hand-typed one.
+  const notifyBase = notifyBaseUrl?.trim().replace(/\/+$/u, "") ?? "";
+  const standardNotifyUrl = form?.account === undefined || notifyBase === ""
+    ? undefined
+    : `${notifyBase}/iam/v3/api/iam/oauth/official_accounts/${form.account.id}/wechat/notify`;
   const submit = async (): Promise<void> => {
     if (form === undefined) return;
     if (form.mode === "menu") {
@@ -427,6 +468,11 @@ export function SdkworkIamOfficialAccountsPanel({
   };
 
   const totalPages = Math.max(1, Math.ceil(state.totalItems / Math.max(1, state.pageSize)));
+  const basicFieldError = fieldErrors.displayName !== undefined
+    || fieldErrors.appId !== undefined
+    || fieldErrors.notifyUrl !== undefined
+    || fieldErrors.notifyToken !== undefined
+    || fieldErrors.notifyEncodingAesKey !== undefined;
   return (
     <div className="flex h-full min-h-0 w-full flex-col gap-4 p-1" data-sdkwork-iam-official-accounts="">
       <header className="flex flex-wrap items-center gap-2">
@@ -513,7 +559,9 @@ export function SdkworkIamOfficialAccountsPanel({
       </footer>
 
       <Drawer onOpenChange={(open) => { if (!open) closeForm(); }} open={form !== undefined}>
-        <DrawerContent side="right" size="xl">
+        {/* One sixth wider than the xl size (48rem → 56rem) so the credential grid
+          and the server configuration block fit without wrapping. */}
+      <DrawerContent className="w-[min(92vw,56rem)]" side="right" size="xl">
           <DrawerHeader>
             <DrawerTitle>
               {form?.mode === "create"
@@ -525,6 +573,16 @@ export function SdkworkIamOfficialAccountsPanel({
             <DrawerDescription>
               {form?.mode === "menu" ? messages.menu.description : messages.panel.description}
             </DrawerDescription>
+            {form !== undefined && form.mode !== "menu"
+              ? (
+                <AccountTabBar
+                  activeTab={activeTab}
+                  basicError={basicFieldError}
+                  messages={messages}
+                  onTabChange={setActiveTab}
+                />
+              )
+              : null}
           </DrawerHeader>
           <DrawerBody className="space-y-3">
             {formError !== undefined ? <StatusNotice tone="danger">{formError}</StatusNotice> : null}
@@ -538,19 +596,48 @@ export function SdkworkIamOfficialAccountsPanel({
               )
               : form !== undefined
                 ? (
-                  <AccountForm
-                    accountId={form.account?.id}
-                    activeTab={activeTab}
-                    draft={form.draft}
-                    driveUploadImageService={driveUploadImageService}
-                    editing={form.mode === "edit"}
-                    fieldErrors={fieldErrors}
-                    logoFieldRef={logoFieldRef}
-                    messages={messages}
-                    onDraftChange={updateDraft}
-                    onLogoUploadingChange={setLogoUploading}
-                    onTabChange={setActiveTab}
-                  />
+                  <>
+                    <div
+                      aria-labelledby="official-account-tab-basic"
+                      hidden={activeTab !== "basic"}
+                      id="official-account-panel-basic"
+                      role="tabpanel"
+                    >
+                      <BasicInfoTab
+                        accountId={form.account?.id}
+                        draft={form.draft}
+                        driveUploadImageService={driveUploadImageService}
+                        editing={form.mode === "edit"}
+                        fieldErrors={fieldErrors}
+                        logoFieldRef={logoFieldRef}
+                        messages={messages}
+                        notifyUrl={standardNotifyUrl}
+                        onDraftChange={updateDraft}
+                        onLogoUploadingChange={setLogoUploading}
+                      />
+                    </div>
+                    <div
+                      aria-labelledby="official-account-tab-domains"
+                      hidden={activeTab !== "domains"}
+                      id="official-account-panel-domains"
+                      role="tabpanel"
+                    >
+                      <DomainsTab
+                        domainVerification={domainVerification}
+                        draft={form.draft}
+                        messages={messages}
+                        onDraftChange={updateDraft}
+                      />
+                    </div>
+                    <div
+                      aria-labelledby="official-account-tab-server"
+                      hidden={activeTab !== "server"}
+                      id="official-account-panel-server"
+                      role="tabpanel"
+                    >
+                      <ServerInfoTab messages={messages} serverIps={serverIps} />
+                    </div>
+                  </>
                 )
                 : null}
           </DrawerBody>
@@ -728,17 +815,10 @@ function validateForm(
       issues.push({ tab: "basic", field: "appId", message: messages.validation.appIdInvalid });
     }
   }
-  if (!isValidNotifyUrl(form.draft.notifyUrl)) {
-    issues.push({
-      tab: "domains",
-      field: "notifyUrl",
-      message: messages.validation.notifyUrlInvalid,
-    });
-  }
   const token = form.draft.notifyToken.trim();
   if (token !== "" && !NOTIFY_TOKEN_PATTERN.test(token)) {
     issues.push({
-      tab: "domains",
+      tab: "basic",
       field: "notifyToken",
       message: messages.validation.notifyTokenInvalid,
     });
@@ -746,7 +826,7 @@ function validateForm(
   const aesKey = form.draft.notifyEncodingAesKey.trim();
   if (aesKey !== "" && !NOTIFY_AES_KEY_PATTERN.test(aesKey)) {
     issues.push({
-      tab: "domains",
+      tab: "basic",
       field: "notifyEncodingAesKey",
       message: messages.validation.notifyEncodingAesKeyInvalid,
     });
@@ -764,12 +844,137 @@ function FieldError({ message }: { message?: string }): ReactNode {
   );
 }
 
+/** One option of a {@link PanelSelect}. */
+interface PanelSelectOption {
+  value: string;
+  label: string;
+}
+
 /**
- * One protected-domain set: chips for the current entries plus an inline
- * editor, its WeChat limit, and the console rule the values must satisfy.
+ * Native select for the drawer's enumerated controls.
+ *
+ * The shared Radix select renders its options through a `document.body` portal,
+ * outside the embedding dialog's layer: inside the Harness management modal the
+ * options painted behind the drawer and a click never reached an item. A native
+ * `<select>` renders its options in the platform's own top layer, inherits this
+ * field's stacking context, and keeps keyboard/screen-reader behaviour without
+ * portal or layer bookkeeping. Only used for small fixed enumerations.
+ */
+function PanelSelect({
+  ariaLabel,
+  id,
+  onChange,
+  options,
+  value,
+}: {
+  ariaLabel: string;
+  id?: string;
+  onChange: (value: string) => void;
+  options: readonly PanelSelectOption[];
+  value: string;
+}): ReactNode {
+  return (
+    <div className="relative">
+      <select
+        aria-label={ariaLabel}
+        className="h-10 w-full appearance-none rounded-[var(--sdk-radius-field)] border border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-panel)] px-3 py-2 pr-9 text-sm text-[var(--sdk-color-text-primary)] shadow-[var(--sdk-shadow-sm)] outline-none focus:ring-2 focus:ring-[var(--sdk-color-border-focus)] disabled:cursor-not-allowed disabled:opacity-60"
+        id={id}
+        onChange={(event) => onChange(event.target.value)}
+        value={value}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-[var(--sdk-color-text-muted)]"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+      >
+        <path d="m6 9 6 6 6-6" />
+      </svg>
+    </div>
+  );
+}
+
+/** One domain's WeChat verification-file state, as reported by the host capability. */
+export interface SdkworkIamDomainVerificationStatus {
+  /** Whether the deployment manages the domain's DNS zone. */
+  managed: boolean
+  /** The uploaded WeChat verification file name, when one exists. */
+  fileName?: string
+  /** Last upload time, when reported. */
+  updatedAt?: string
+}
+
+/**
+ * Host capability that stores the WeChat `MP_verify_*.txt` file for a domain
+ * the deployment manages. The platform serves that file verbatim at the domain
+ * root, so WeChat can fetch it when the operator saves the domain in the
+ * console; a domain outside the managed zones cannot be verified this way.
+ */
+export interface SdkworkIamDomainVerification {
+  /** @param domain - the configured domain. */
+  read(domain: string): Promise<SdkworkIamDomainVerificationStatus>
+  /** Replaces the domain's verification file with the picked one. */
+  upload(
+    domain: string,
+    file: { fileName: string; content: string },
+  ): Promise<SdkworkIamDomainVerificationStatus>
+}
+
+/** One managed domain's verification UI state. */
+interface DomainVerificationState {
+  status?: SdkworkIamDomainVerificationStatus
+  loading: boolean
+  uploading: boolean
+  error?: string
+}
+
+/** WeChat verification names: a token-like stem plus the `.txt` suffix. */
+const VERIFICATION_FILE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*\.txt$/u;
+
+/** The Deploy service caps verification content at 2048 bytes. */
+const VERIFICATION_FILE_MAX_BYTES = 2048;
+
+/**
+ * Reads a picked WeChat verification file, enforcing the console and Deploy
+ * service rules (`.txt` name, non-empty content no larger than 2048 bytes).
+ * @param file - the picked file.
+ * @returns the file name and verbatim content, or undefined when it is invalid.
+ */
+async function toVerificationFile(
+  file: File,
+): Promise<{ fileName: string; content: string } | undefined> {
+  if (
+    !VERIFICATION_FILE_PATTERN.test(file.name)
+    || file.size === 0
+    || file.size > VERIFICATION_FILE_MAX_BYTES
+  ) {
+    return undefined;
+  }
+  try {
+    const content = await file.text();
+    return content === "" ? undefined : { fileName: file.name, content };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * One protected-domain set: every entry stays editable inline, the add field
+ * remains available even at the WeChat limit (so a full set explains itself
+ * instead of quietly disappearing), and each row carries the verification-file
+ * state when the host provides that capability.
  */
 function DomainListField({
   addLabel,
+  domainVerification,
   hint,
   label,
   max,
@@ -779,6 +984,7 @@ function DomainListField({
   value,
 }: {
   addLabel: string;
+  domainVerification?: SdkworkIamDomainVerification;
   hint: string;
   label: string;
   max: number;
@@ -789,7 +995,55 @@ function DomainListField({
 }): ReactNode {
   const [input, setInput] = useState("");
   const [error, setError] = useState<string>();
+  const [edits, setEdits] = useState<Record<string, string>>({});
+  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  const [states, setStates] = useState<Record<string, DomainVerificationState>>({});
+  const picker = useRef<HTMLInputElement | null>(null);
+  const pendingDomain = useRef<string | undefined>(undefined);
   const full = value.length >= max;
+  const limitMessage = messages.form.domainLimitReached.replace("{max}", String(max));
+
+  // Read every listed domain's stored verification file whenever the set or the
+  // capability changes, so an entry added or loaded from the API shows its real
+  // state instead of a guess.
+  useEffect(() => {
+    if (domainVerification === undefined) {
+      setStates({});
+      return;
+    }
+    let active = true;
+    const domains = [...value];
+    setStates((current) => {
+      const next: Record<string, DomainVerificationState> = {};
+      for (const domain of domains) {
+        next[domain] = current[domain]?.status === undefined
+          ? { loading: true, uploading: false }
+          : current[domain] as DomainVerificationState;
+      }
+      return next;
+    });
+    for (const domain of domains) {
+      void domainVerification.read(domain).then((status) => {
+        if (!active) return;
+        setStates((current) => ({
+          ...current,
+          [domain]: { loading: false, uploading: false, status },
+        }));
+      }).catch((cause: unknown) => {
+        if (!active) return;
+        setStates((current) => ({
+          ...current,
+          [domain]: {
+            loading: false,
+            uploading: false,
+            error: cause instanceof Error ? cause.message : String(cause),
+          },
+        }));
+      });
+    }
+    return () => { active = false; };
+  }, [domainVerification, value]);
+
   const add = (): void => {
     const domain = normalizeDomainInput(input);
     if (domain === undefined) {
@@ -800,11 +1054,123 @@ function DomainListField({
       setError(messages.form.domainDuplicate);
       return;
     }
-    if (full) return;
+    if (full) {
+      setError(limitMessage);
+      return;
+    }
     onChange([...value, domain]);
     setInput("");
     setError(undefined);
   };
+
+  const clearRowError = (domain: string): void => {
+    setRowErrors((current) => {
+      if (current[domain] === undefined) return current;
+      const next = { ...current };
+      delete next[domain];
+      return next;
+    });
+  };
+
+  const commitEdit = (original: string): void => {
+    const raw = edits[original];
+    if (raw === undefined) return;
+    const revertToCommitted = (): void => {
+      setEdits((current) => {
+        const next = { ...current };
+        delete next[original];
+        return next;
+      });
+    };
+    const domain = normalizeDomainInput(raw);
+    if (domain === undefined) {
+      setRowErrors((current) => ({ ...current, [original]: messages.form.domainInvalid }));
+      revertToCommitted();
+      return;
+    }
+    if (value.some((entry) => entry !== original && entry === domain)) {
+      setRowErrors((current) => ({ ...current, [original]: messages.form.domainDuplicate }));
+      revertToCommitted();
+      return;
+    }
+    clearRowError(original);
+    revertToCommitted();
+    if (domain !== original) {
+      onChange(value.map((entry) => (entry === original ? domain : entry)));
+    }
+  };
+
+  const revertEdit = (domain: string): void => {
+    clearRowError(domain);
+    setEdits((current) => {
+      const next = { ...current };
+      delete next[domain];
+      return next;
+    });
+  };
+
+  const chooseFile = (domain: string): void => {
+    pendingDomain.current = domain;
+    picker.current?.click();
+  };
+  const uploadPicked = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    const domain = pendingDomain.current;
+    if (domain === undefined || file === undefined || domainVerification === undefined) return;
+    const parsed = await toVerificationFile(file);
+    if (parsed === undefined) {
+      setStates((current) => ({
+        ...current,
+        [domain]: {
+          ...(current[domain] ?? { loading: false, uploading: false }),
+          error: messages.form.domainVerificationInvalid,
+        },
+      }));
+      return;
+    }
+    setStates((current) => ({
+      ...current,
+      [domain]: {
+        ...(current[domain] ?? { loading: false }),
+        uploading: true,
+        error: undefined,
+      },
+    }));
+    try {
+      const status = await domainVerification.upload(domain, parsed);
+      setStates((current) => ({
+        ...current,
+        [domain]: { loading: false, uploading: false, status },
+      }));
+    } catch (cause) {
+      setStates((current) => ({
+        ...current,
+        [domain]: {
+          loading: false,
+          uploading: false,
+          error: cause instanceof Error && cause.message !== ""
+            ? `${messages.form.domainVerificationFailed}: ${cause.message}`
+            : messages.form.domainVerificationFailed,
+        },
+      }));
+    }
+  };
+
+  const verificationText = (domain: string): ReactNode => {
+    const state = states[domain];
+    if (state === undefined) return null;
+    if (state.error !== undefined) {
+      return <span className="text-[var(--sdk-color-state-danger)]">{state.error}</span>;
+    }
+    if (state.loading) return messages.form.domainVerificationLoading;
+    const status = state.status;
+    if (status === undefined) return null;
+    if (!status.managed) return messages.form.domainVerificationUnmanaged;
+    if (status.fileName === undefined) return messages.form.domainVerificationMissing;
+    return messages.form.domainVerificationUploaded.replace("{file}", status.fileName);
+  };
+
   return (
     <div className="space-y-2">
       <div className="flex items-baseline justify-between gap-2">
@@ -815,351 +1181,620 @@ function DomainListField({
       </div>
       {value.length > 0
         ? (
-          <div className="flex flex-wrap gap-2">
-            {value.map((domain) => (
-              <span
-                key={domain}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-panel-muted)] px-2.5 py-1 font-mono text-xs text-[var(--sdk-color-text-primary)]"
-              >
-                {domain}
-                <button
-                  aria-label={`${messages.form.domainRemove}: ${domain}`}
-                  className="text-[var(--sdk-color-text-muted)] transition-colors hover:text-[var(--sdk-color-state-danger)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--sdk-color-border-focus)]"
-                  onClick={() => onChange(value.filter((entry) => entry !== domain))}
-                  type="button"
+          <ul className="overflow-hidden rounded-[0.75rem] border border-[var(--sdk-color-border-default)]">
+            {value.map((domain, index) => {
+              const state = states[domain];
+              const managed = state?.status?.managed !== false;
+              return (
+                <li
+                  className="space-y-1 border-b border-[var(--sdk-color-border-subtle)] px-3 py-2 last:border-b-0"
+                  key={domain}
                 >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      aria-label={`${label} ${index + 1}`}
+                      className={`${FIELD_CLASS_NAME} font-mono`}
+                      onBlur={(event) => {
+                        const next = event.relatedTarget;
+                        if (next instanceof Node && event.currentTarget.closest("li")?.contains(next)) {
+                          return;
+                        }
+                        commitEdit(domain);
+                      }}
+                      onChange={(event) => {
+                        const next = event.target.value;
+                        setEdits((current) => ({ ...current, [domain]: next }));
+                        clearRowError(domain);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          commitEdit(domain);
+                        }
+                      }}
+                      value={edits[domain] ?? domain}
+                    />
+                    <div className="flex shrink-0 items-center gap-1">
+                      {domainVerification !== undefined && managed && state?.loading !== true
+                        ? (
+                          <Button
+                            disabled={state?.uploading === true}
+                            onClick={() => chooseFile(domain)}
+                            size="sm"
+                            variant="ghost"
+                          >
+                            {state?.status?.fileName === undefined
+                              ? messages.form.domainVerificationUpload
+                              : messages.form.domainVerificationReplace}
+                          </Button>
+                        )
+                        : null}
+                      <button
+                        aria-label={`${messages.form.domainRemove}: ${domain}`}
+                        className="px-1 text-base text-[var(--sdk-color-text-muted)] transition-colors hover:text-[var(--sdk-color-state-danger)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--sdk-color-border-focus)]"
+                        onClick={() => {
+                          revertEdit(domain);
+                          onChange(value.filter((entry) => entry !== domain));
+                        }}
+                        type="button"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                  {domainVerification === undefined
+                    ? null
+                    : (
+                      <p className="text-xs text-[var(--sdk-color-text-muted)]">
+                        {verificationText(domain)}
+                      </p>
+                    )}
+                  <FieldError message={rowErrors[domain]} />
+                </li>
+              );
+            })}
+          </ul>
         )
         : null}
-      {full
-        ? null
-        : (
-          <div className="flex items-start gap-2">
-            <Input
-              aria-invalid={error !== undefined}
-              aria-label={label}
-              className={FIELD_CLASS_NAME}
-              onChange={(event) => {
-                setInput(event.target.value);
-                if (error !== undefined) setError(undefined);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  add();
-                } else if (event.key === "Backspace" && input === "" && value.length > 0) {
-                  onChange(value.slice(0, -1));
-                }
-              }}
-              placeholder={placeholder}
-              value={input}
-            />
-            <Button onClick={add} size="sm" variant="outline">{addLabel}</Button>
-          </div>
-        )}
+      <div className="flex items-center gap-2">
+        <Input
+          aria-invalid={error !== undefined}
+          aria-label={label}
+          className={FIELD_CLASS_NAME}
+          onChange={(event) => {
+            setInput(event.target.value);
+            if (error !== undefined) setError(undefined);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              add();
+            } else if (event.key === "Backspace" && input === "" && value.length > 0) {
+              onChange(value.slice(0, -1));
+            }
+          }}
+          placeholder={placeholder}
+          value={input}
+        />
+        <Button className="h-10 shrink-0 px-4 text-sm" onClick={add} variant="outline">
+          {addLabel}
+        </Button>
+      </div>
       <FieldError message={error} />
       <p className="text-xs text-[var(--sdk-color-text-muted)]">{hint}</p>
+      {domainVerification === undefined
+        ? null
+        : <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.domainVerificationHint}</p>}
+      <input
+        accept=".txt,text/plain"
+        aria-hidden="true"
+        className="hidden"
+        data-domain-verification-input=""
+        onChange={(event) => { void uploadPicked(event); }}
+        ref={picker}
+        tabIndex={-1}
+        type="file"
+      />
     </div>
   );
 }
 
 /**
- * The create/edit form body: a 基础信息 / 域名配置 tab pair that mirrors the
- * WeChat console. Credentials and the logo live on the first tab; the three
- * protected-domain sets and the server-configuration block live on the second.
+ * The drawer's tab bar. The two account surfaces are independent components;
+ * this bar only decides which panel the drawer body shows, and it carries the
+ * validation marker of the tab that owns the submit errors.
  */
-function AccountForm({
-  accountId,
+function AccountTabBar({
   activeTab,
+  basicError,
+  messages,
+  onTabChange,
+}: {
+  activeTab: DrawerTab;
+  basicError: boolean;
+  messages: SdkworkIamOfficialAccountsMessages;
+  onTabChange: (tab: DrawerTab) => void;
+}): ReactNode {
+  const tabs = [
+    { id: "basic" as const, label: messages.form.tabBasic },
+    { id: "domains" as const, label: messages.form.tabDomains },
+    { id: "server" as const, label: messages.form.tabServer },
+  ];
+  const order = tabs.map((tab) => tab.id);
+  const select = (tab: DrawerTab): void => {
+    onTabChange(tab);
+    document.getElementById(`official-account-tab-${tab}`)?.focus();
+  };
+  return (
+    <div
+      className="mt-3 inline-flex h-10 items-center gap-1 rounded-[var(--sdk-radius-control)] bg-[var(--sdk-color-surface-panel-muted)] p-1"
+      onKeyDown={(event) => {
+        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+        event.preventDefault();
+        const step = event.key === "ArrowRight" ? 1 : -1;
+        const current = order.indexOf(activeTab);
+        const next = order[(current + step + order.length) % order.length];
+        if (next !== undefined) select(next);
+      }}
+      role="tablist"
+    >
+      {tabs.map((tab) => (
+        <button
+          aria-controls={`official-account-panel-${tab.id}`}
+          aria-selected={activeTab === tab.id}
+          className={`inline-flex min-w-[6rem] items-center justify-center rounded-[var(--sdk-radius-control)] px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sdk-color-border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--sdk-color-surface-panel)] ${
+            activeTab === tab.id
+              ? "bg-[var(--sdk-color-surface-panel)] text-[var(--sdk-color-text-primary)] shadow-[var(--sdk-shadow-sm)]"
+              : "text-[var(--sdk-color-text-secondary)] hover:text-[var(--sdk-color-text-primary)]"
+          }`}
+          id={`official-account-tab-${tab.id}`}
+          key={tab.id}
+          onClick={() => onTabChange(tab.id)}
+          role="tab"
+          tabIndex={activeTab === tab.id ? 0 : -1}
+          type="button"
+        >
+          {tab.label}
+          {tab.id === "basic" && basicError
+            ? (
+              <span
+                aria-hidden="true"
+                className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[var(--sdk-color-state-danger)]"
+              />
+            )
+            : null}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** The 基础信息 surface: logo, credentials, account type, enable switch, and the
+ * message-push server configuration. */
+function BasicInfoTab({
+  accountId,
   draft,
   driveUploadImageService,
   editing,
   fieldErrors,
   logoFieldRef,
   messages,
+  notifyUrl,
   onDraftChange,
   onLogoUploadingChange,
-  onTabChange,
 }: {
   /** Edit-mode upload attribution anchor: the account id. */
   accountId?: string;
-  activeTab: DrawerTab;
   draft: FormDraft;
   driveUploadImageService?: DriveUploadImageService;
   editing: boolean;
   fieldErrors: Partial<Record<FieldKey, string>>;
   logoFieldRef: RefObject<DriveUploadImageHandle | null>;
   messages: SdkworkIamOfficialAccountsMessages;
+  /** The standard callback URL, generated once the account has an id. */
+  notifyUrl?: string;
   onDraftChange: (patch: Partial<FormDraft>) => void;
   onLogoUploadingChange: (uploading: boolean) => void;
-  onTabChange: (tab: DrawerTab) => void;
 }): ReactNode {
   const encryptModeHint = draft.notifyEncryptMode === "safe"
     ? messages.form.encryptSafeHint
     : draft.notifyEncryptMode === "compatible"
       ? messages.form.encryptCompatibleHint
       : messages.form.encryptPlaintextHint;
-  const basicError = Object.keys(fieldErrors).some(
-    (key) => key === "displayName" || key === "appId",
-  );
-  const domainError = Object.keys(fieldErrors).some(
-    (key) => key === "notifyUrl" || key === "notifyToken" || key === "notifyEncodingAesKey",
-  );
+  type CopyAction = "url" | "token" | "aes";
+  const [copiedAction, setCopiedAction] = useState<CopyAction>();
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => {
+    if (copyTimer.current !== undefined) clearTimeout(copyTimer.current);
+  }, []);
+  const copyValue = async (value: string, action: CopyAction): Promise<void> => {
+    if (value === "" || !(await copyText(value))) return;
+    setCopiedAction(action);
+    if (copyTimer.current !== undefined) clearTimeout(copyTimer.current);
+    copyTimer.current = setTimeout(() => setCopiedAction(undefined), 1500);
+  };
   return (
-    <Tabs
-      onValueChange={(value) => onTabChange(value === "domains" ? "domains" : "basic")}
-      value={activeTab}
-    >
-      <TabsList className="sticky top-0 z-10 w-full justify-start">
-        <TabsTrigger className="flex-1" value="basic">
-          {messages.form.tabBasic}
-          {basicError
-            ? (
-              <span
-                aria-hidden="true"
-                className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[var(--sdk-color-state-danger)]"
-              />
-            )
-            : null}
-        </TabsTrigger>
-        <TabsTrigger className="flex-1" value="domains">
-          {messages.form.tabDomains}
-          {domainError
-            ? (
-              <span
-                aria-hidden="true"
-                className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[var(--sdk-color-state-danger)]"
-              />
-            )
-            : null}
-        </TabsTrigger>
-      </TabsList>
+    <div className="space-y-5">
+      <OfficialAccountLogoField
+        accountId={editing ? accountId : undefined}
+        copy={messages.form}
+        driveUploadImageService={driveUploadImageService}
+        fieldRef={logoFieldRef}
+        onChange={(logoUrl) => onDraftChange({ logoUrl })}
+        onUploadingChange={onLogoUploadingChange}
+        value={draft.logoUrl}
+      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="official-account-name">{messages.form.displayName}</Label>
+          <Input
+            aria-invalid={fieldErrors.displayName !== undefined}
+            id="official-account-name"
+            className={FIELD_CLASS_NAME}
+            onChange={(event) => onDraftChange({ displayName: event.target.value })}
+            placeholder={messages.form.displayNamePlaceholder}
+            value={draft.displayName}
+          />
+          <FieldError message={fieldErrors.displayName} />
+          <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.displayNameHint}</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="official-account-app-id">{messages.form.appId}</Label>
+          <Input
+            aria-invalid={fieldErrors.appId !== undefined}
+            disabled={editing}
+            id="official-account-app-id"
+            className={`${FIELD_CLASS_NAME} font-mono disabled:opacity-60`}
+            onChange={(event) => onDraftChange({ appId: event.target.value })}
+            placeholder={messages.form.appIdPlaceholder}
+            value={draft.appId}
+          />
+          <FieldError message={fieldErrors.appId} />
+          <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.appIdHint}</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="official-account-secret">{messages.form.appSecret}</Label>
+          <Input
+            autoComplete="off"
+            id="official-account-secret"
+            className={`${FIELD_CLASS_NAME} font-mono`}
+            onChange={(event) => onDraftChange({ appSecret: event.target.value })}
+            placeholder={editing ? messages.form.appSecretKeep : messages.form.appSecretPlaceholder}
+            type="password"
+            value={draft.appSecret}
+          />
+          <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.appSecretHint}</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="official-account-original-id">{messages.form.originalId}</Label>
+          <Input
+            id="official-account-original-id"
+            className={`${FIELD_CLASS_NAME} font-mono`}
+            onChange={(event) => onDraftChange({ originalId: event.target.value })}
+            placeholder={messages.form.originalIdPlaceholder}
+            value={draft.originalId}
+          />
+          <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.originalIdHint}</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="official-account-type">{messages.form.accountType}</Label>
+          <PanelSelect
+            ariaLabel={messages.form.accountType}
+            id="official-account-type"
+            onChange={(value) => onDraftChange({ accountType: value })}
+            options={[
+              { value: "service", label: messages.accountType.service },
+              { value: "subscription", label: messages.accountType.subscription },
+            ]}
+            value={draft.accountType}
+          />
+        </div>
+        {editing
+          ? (
+            <div className="space-y-1.5">
+              <label className="flex h-full items-center justify-between gap-3 rounded-[0.75rem] border border-[var(--sdk-color-border-default)] px-3 py-2.5 text-sm text-[var(--sdk-color-text-primary)]">
+                <span className="flex flex-col">
+                  <span>{messages.form.enabled}</span>
+                  <span className="text-xs text-[var(--sdk-color-text-muted)]">
+                    {messages.form.enabledHint}
+                  </span>
+                </span>
+                <Switch
+                  checked={draft.enabled}
+                  onCheckedChange={(enabled) => onDraftChange({ enabled })}
+                />
+              </label>
+            </div>
+          )
+          : null}
+      </div>
 
-      <TabsContent
-        className="mt-3 space-y-5 border-0 bg-transparent p-0 shadow-none"
-        forceMount
-        value="basic"
-      >
+      <fieldset className="space-y-4 rounded-[1rem] border border-[var(--sdk-color-border-default)] p-4">
+        <legend className="px-1 text-sm font-medium text-[var(--sdk-color-text-primary)]">
+          {messages.form.notifySection}
+        </legend>
+        <p className="text-xs text-[var(--sdk-color-text-muted)]">
+          {messages.form.serverConfigHint}
+        </p>
+        <div className="space-y-1.5">
+          <Label>{messages.form.notifyUrlStandard}</Label>
+          {notifyUrl === undefined
+            ? (
+              <p className="rounded-[0.75rem] border border-dashed border-[var(--sdk-color-border-default)] px-3 py-2 text-xs text-[var(--sdk-color-text-muted)]">
+                {messages.form.notifyUrlPending}
+              </p>
+            )
+            : (
+              <div className="flex items-center gap-2">
+                <code className="min-w-0 flex-1 break-all rounded-[0.75rem] border border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-panel-muted)] px-3 py-2 font-mono text-xs text-[var(--sdk-color-text-primary)]">
+                  {notifyUrl}
+                </code>
+                <Button
+                  className="shrink-0"
+                  onClick={() => { void copyValue(notifyUrl, "url"); }}
+                  size="sm"
+                  variant="outline"
+                >
+                  {copiedAction === "url" ? messages.form.notifyUrlCopied : messages.form.notifyUrlCopy}
+                </Button>
+              </div>
+            )}
+          <p className="text-xs text-[var(--sdk-color-text-muted)]">
+            {messages.form.notifyUrlStandardHint}
+          </p>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="official-account-name">{messages.form.displayName}</Label>
+            <Label htmlFor="official-account-notify-token">{messages.form.notifyToken}</Label>
             <Input
-              aria-invalid={fieldErrors.displayName !== undefined}
-              id="official-account-name"
-              className={FIELD_CLASS_NAME}
-              onChange={(event) => onDraftChange({ displayName: event.target.value })}
-              placeholder={messages.form.displayNamePlaceholder}
-              value={draft.displayName}
-            />
-            <FieldError message={fieldErrors.displayName} />
-            <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.displayNameHint}</p>
-          </div>
-          <OfficialAccountLogoField
-            accountId={editing ? accountId : undefined}
-            copy={messages.form}
-            driveUploadImageService={driveUploadImageService}
-            fieldRef={logoFieldRef}
-            onChange={(logoUrl) => onDraftChange({ logoUrl })}
-            onUploadingChange={onLogoUploadingChange}
-            value={draft.logoUrl}
-          />
-          <div className="space-y-1.5">
-            <Label htmlFor="official-account-app-id">{messages.form.appId}</Label>
-            <Input
-              aria-invalid={fieldErrors.appId !== undefined}
-              disabled={editing}
-              id="official-account-app-id"
-              className={`${FIELD_CLASS_NAME} font-mono disabled:opacity-60`}
-              onChange={(event) => onDraftChange({ appId: event.target.value })}
-              placeholder={messages.form.appIdPlaceholder}
-              value={draft.appId}
-            />
-            <FieldError message={fieldErrors.appId} />
-            <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.appIdHint}</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="official-account-secret">{messages.form.appSecret}</Label>
-            <Input
+              aria-invalid={fieldErrors.notifyToken !== undefined}
               autoComplete="off"
-              id="official-account-secret"
+              id="official-account-notify-token"
               className={`${FIELD_CLASS_NAME} font-mono`}
-              onChange={(event) => onDraftChange({ appSecret: event.target.value })}
-              placeholder={editing ? messages.form.appSecretKeep : messages.form.appSecretPlaceholder}
-              type="password"
-              value={draft.appSecret}
+              onChange={(event) => onDraftChange({ notifyToken: event.target.value })}
+              placeholder={messages.form.notifyTokenPlaceholder}
+              value={draft.notifyToken}
             />
-            <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.appSecretHint}</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="official-account-original-id">{messages.form.originalId}</Label>
-            <Input
-              id="official-account-original-id"
-              className={`${FIELD_CLASS_NAME} font-mono`}
-              onChange={(event) => onDraftChange({ originalId: event.target.value })}
-              placeholder={messages.form.originalIdPlaceholder}
-              value={draft.originalId}
-            />
-            <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.originalIdHint}</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="official-account-type">{messages.form.accountType}</Label>
-            <Select
-              onValueChange={(value) => onDraftChange({ accountType: value })}
-              value={draft.accountType}
-            >
-              <SelectTrigger aria-label={messages.form.accountType} id="official-account-type">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="service">{messages.accountType.service}</SelectItem>
-                <SelectItem value="subscription">{messages.accountType.subscription}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {editing
-            ? (
-              <div className="space-y-1.5 sm:col-span-2">
-                <label className="flex items-center justify-between gap-3 rounded-[0.75rem] border border-[var(--sdk-color-border-default)] px-3 py-2.5 text-sm text-[var(--sdk-color-text-primary)]">
-                  <span className="flex flex-col">
-                    <span>{messages.form.enabled}</span>
-                    <span className="text-xs text-[var(--sdk-color-text-muted)]">
-                      {messages.form.enabledHint}
-                    </span>
-                  </span>
-                  <Switch
-                    checked={draft.enabled}
-                    onCheckedChange={(enabled) => onDraftChange({ enabled })}
-                  />
-                </label>
-              </div>
-            )
-            : null}
-        </div>
-        <StatusNotice tone="default">{messages.form.ipWhitelistHint}</StatusNotice>
-      </TabsContent>
-
-      <TabsContent
-        className="mt-3 space-y-5 border-0 bg-transparent p-0 shadow-none"
-        forceMount
-        value="domains"
-      >
-        <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.domainsHint}</p>
-        <DomainListField
-          addLabel={messages.form.domainAdd}
-          hint={messages.form.jsSecureDomainsHint}
-          label={messages.form.jsSecureDomains}
-          max={JS_SECURE_DOMAIN_LIMIT}
-          messages={messages}
-          onChange={(value) => onDraftChange({ jsSecureDomains: value })}
-          placeholder={messages.form.domainPlaceholder}
-          value={draft.jsSecureDomains}
-        />
-        <DomainListField
-          addLabel={messages.form.domainAdd}
-          hint={messages.form.webAuthDomainsHint}
-          label={messages.form.webAuthDomains}
-          max={WEB_AUTH_DOMAIN_LIMIT}
-          messages={messages}
-          onChange={(value) => onDraftChange({ webAuthDomains: value })}
-          placeholder={messages.form.domainPlaceholder}
-          value={draft.webAuthDomains}
-        />
-        <DomainListField
-          addLabel={messages.form.domainAdd}
-          hint={messages.form.businessDomainsHint}
-          label={messages.form.businessDomains}
-          max={BUSINESS_DOMAIN_LIMIT}
-          messages={messages}
-          onChange={(value) => onDraftChange({ businessDomains: value })}
-          placeholder={messages.form.domainPlaceholder}
-          value={draft.businessDomains}
-        />
-
-        <fieldset className="space-y-4 rounded-[1rem] border border-[var(--sdk-color-border-default)] p-4">
-          <legend className="px-1 text-sm font-medium text-[var(--sdk-color-text-primary)]">
-            {messages.form.notifySection}
-          </legend>
-          <p className="text-xs text-[var(--sdk-color-text-muted)]">
-            {messages.form.serverConfigHint}
-          </p>
-          <div className="space-y-1.5">
-            <Label htmlFor="official-account-notify-url">{messages.form.notifyUrl}</Label>
-            <Input
-              aria-invalid={fieldErrors.notifyUrl !== undefined}
-              id="official-account-notify-url"
-              className={FIELD_CLASS_NAME}
-              onChange={(event) => onDraftChange({ notifyUrl: event.target.value })}
-              placeholder={messages.form.notifyUrlPlaceholder}
-              value={draft.notifyUrl}
-            />
-            <FieldError message={fieldErrors.notifyUrl} />
-            <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.notifyUrlHint}</p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="official-account-notify-token">{messages.form.notifyToken}</Label>
-              <Input
-                aria-invalid={fieldErrors.notifyToken !== undefined}
-                autoComplete="off"
-                id="official-account-notify-token"
-                className={`${FIELD_CLASS_NAME} font-mono`}
-                onChange={(event) => onDraftChange({ notifyToken: event.target.value })}
-                placeholder={messages.form.notifyTokenPlaceholder}
-                value={draft.notifyToken}
-              />
-              <FieldError message={fieldErrors.notifyToken} />
+            <FieldError message={fieldErrors.notifyToken} />
+            <div className="flex items-center justify-between gap-2">
               <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.notifyTokenHint}</p>
+              <span className="flex shrink-0 items-center gap-3">
+                <button
+                  aria-label={`${messages.form.notifyCopy} ${messages.form.notifyToken}`}
+                  className="text-xs font-medium text-[var(--sdk-color-text-primary)] underline underline-offset-2 transition-colors hover:text-[var(--sdk-color-text-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sdk-color-border-focus)] disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={draft.notifyToken === ""}
+                  onClick={() => { void copyValue(draft.notifyToken, "token"); }}
+                  type="button"
+                >
+                  {copiedAction === "token" ? messages.form.notifyCopied : messages.form.notifyCopy}
+                </button>
+                <button
+                  aria-label={`${messages.form.notifyGenerate} ${messages.form.notifyToken}`}
+                  className="text-xs font-medium text-[var(--sdk-color-text-primary)] underline underline-offset-2 transition-colors hover:text-[var(--sdk-color-text-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sdk-color-border-focus)]"
+                  onClick={() => onDraftChange({ notifyToken: randomWechatSecret(GENERATED_TOKEN_LENGTH) })}
+                  type="button"
+                >
+                  {messages.form.notifyGenerate}
+                </button>
+              </span>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="official-account-aes-key">{messages.form.notifyEncodingAesKey}</Label>
-              <Input
-                aria-invalid={fieldErrors.notifyEncodingAesKey !== undefined}
-                autoComplete="off"
-                id="official-account-aes-key"
-                className={`${FIELD_CLASS_NAME} font-mono`}
-                onChange={(event) => onDraftChange({ notifyEncodingAesKey: event.target.value })}
-                placeholder={messages.form.notifyEncodingAesKeyPlaceholder}
-                value={draft.notifyEncodingAesKey}
-              />
-              <FieldError message={fieldErrors.notifyEncodingAesKey} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="official-account-aes-key">{messages.form.notifyEncodingAesKey}</Label>
+            <Input
+              aria-invalid={fieldErrors.notifyEncodingAesKey !== undefined}
+              autoComplete="off"
+              id="official-account-aes-key"
+              className={`${FIELD_CLASS_NAME} font-mono`}
+              onChange={(event) => onDraftChange({ notifyEncodingAesKey: event.target.value })}
+              placeholder={messages.form.notifyEncodingAesKeyPlaceholder}
+              value={draft.notifyEncodingAesKey}
+            />
+            <FieldError message={fieldErrors.notifyEncodingAesKey} />
+            <div className="flex items-center justify-between gap-2">
               <p className="text-xs text-[var(--sdk-color-text-muted)]">
                 {messages.form.notifyEncodingAesKeyHint}
               </p>
+              <span className="flex shrink-0 items-center gap-3">
+                <button
+                  aria-label={`${messages.form.notifyCopy} ${messages.form.notifyEncodingAesKey}`}
+                  className="text-xs font-medium text-[var(--sdk-color-text-primary)] underline underline-offset-2 transition-colors hover:text-[var(--sdk-color-text-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sdk-color-border-focus)] disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={draft.notifyEncodingAesKey === ""}
+                  onClick={() => { void copyValue(draft.notifyEncodingAesKey, "aes"); }}
+                  type="button"
+                >
+                  {copiedAction === "aes" ? messages.form.notifyCopied : messages.form.notifyCopy}
+                </button>
+                <button
+                  aria-label={`${messages.form.notifyGenerate} ${messages.form.notifyEncodingAesKey}`}
+                  className="text-xs font-medium text-[var(--sdk-color-text-primary)] underline underline-offset-2 transition-colors hover:text-[var(--sdk-color-text-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sdk-color-border-focus)]"
+                  onClick={() => onDraftChange({
+                    notifyEncodingAesKey: randomWechatSecret(GENERATED_AES_KEY_LENGTH),
+                  })}
+                  type="button"
+                >
+                  {messages.form.notifyGenerate}
+                </button>
+              </span>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="official-account-encrypt-mode">{messages.form.notifyEncryptMode}</Label>
-            <Select
-              onValueChange={(value) => onDraftChange({
-                notifyEncryptMode: value === "safe"
-                  ? "safe"
-                  : value === "compatible" ? "compatible" : "plaintext",
-              })}
-              value={draft.notifyEncryptMode}
-            >
-              <SelectTrigger
-                aria-label={messages.form.notifyEncryptMode}
-                id="official-account-encrypt-mode"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="plaintext">{messages.form.encryptPlaintext}</SelectItem>
-                <SelectItem value="compatible">{messages.form.encryptCompatible}</SelectItem>
-                <SelectItem value="safe">{messages.form.encryptSafe}</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-[var(--sdk-color-text-muted)]">{encryptModeHint}</p>
-          </div>
-        </fieldset>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="official-account-encrypt-mode">{messages.form.notifyEncryptMode}</Label>
+          <PanelSelect
+            ariaLabel={messages.form.notifyEncryptMode}
+            id="official-account-encrypt-mode"
+            onChange={(value) => onDraftChange({
+              notifyEncryptMode: value === "safe"
+                ? "safe"
+                : value === "compatible" ? "compatible" : "plaintext",
+            })}
+            options={[
+              { value: "plaintext", label: messages.form.encryptPlaintext },
+              { value: "compatible", label: messages.form.encryptCompatible },
+              { value: "safe", label: messages.form.encryptSafe },
+            ]}
+            value={draft.notifyEncryptMode}
+          />
+          <p className="text-xs text-[var(--sdk-color-text-muted)]">{encryptModeHint}</p>
+        </div>
+      </fieldset>
 
-        <StatusNotice tone="default">{messages.form.domainsMonthlyHint}</StatusNotice>
-      </TabsContent>
-    </Tabs>
+      <StatusNotice tone="default">{messages.form.ipWhitelistHint}</StatusNotice>
+    </div>
+  );
+}
+
+/** The 域名配置 surface: the three WeChat protected-domain sets. */
+function DomainsTab({
+  domainVerification,
+  draft,
+  messages,
+  onDraftChange,
+}: {
+  domainVerification?: SdkworkIamDomainVerification;
+  draft: FormDraft;
+  messages: SdkworkIamOfficialAccountsMessages;
+  onDraftChange: (patch: Partial<FormDraft>) => void;
+}): ReactNode {
+  return (
+    <div className="space-y-5">
+      <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.domainsHint}</p>
+      <DomainListField
+        addLabel={messages.form.domainAdd}
+        domainVerification={domainVerification}
+        hint={messages.form.jsSecureDomainsHint}
+        label={messages.form.jsSecureDomains}
+        max={JS_SECURE_DOMAIN_LIMIT}
+        messages={messages}
+        onChange={(value) => onDraftChange({ jsSecureDomains: value })}
+        placeholder={messages.form.domainPlaceholder}
+        value={draft.jsSecureDomains}
+      />
+      <DomainListField
+        addLabel={messages.form.domainAdd}
+        domainVerification={domainVerification}
+        hint={messages.form.webAuthDomainsHint}
+        label={messages.form.webAuthDomains}
+        max={WEB_AUTH_DOMAIN_LIMIT}
+        messages={messages}
+        onChange={(value) => onDraftChange({ webAuthDomains: value })}
+        placeholder={messages.form.domainPlaceholder}
+        value={draft.webAuthDomains}
+      />
+      <DomainListField
+        addLabel={messages.form.domainAdd}
+        domainVerification={domainVerification}
+        hint={messages.form.businessDomainsHint}
+        label={messages.form.businessDomains}
+        max={BUSINESS_DOMAIN_LIMIT}
+        messages={messages}
+        onChange={(value) => onDraftChange({ businessDomains: value })}
+        placeholder={messages.form.domainPlaceholder}
+        value={draft.businessDomains}
+      />
+
+      <StatusNotice tone="default">{messages.form.domainsMonthlyHint}</StatusNotice>
+    </div>
+  );
+}
+
+/**
+ * Copies text through the async clipboard API, falling back to a transient
+ * textarea for hosts that only expose the legacy copy command.
+ * @param value - the text to copy.
+ * @returns whether a copy command reported success.
+ */
+async function copyText(value: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch {
+    try {
+      const area = document.createElement("textarea");
+      area.value = value;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      const copied = typeof document.execCommand === "function"
+        ? document.execCommand("copy")
+        : false;
+      area.remove();
+      return copied;
+    } catch {
+      return false;
+    }
+  }
+}
+
+/**
+ * The 服务器信息 surface: the deployment's published egress IPs, each copyable,
+ * so an operator can paste them into the WeChat 公众号 IP allowlist.
+ */
+function ServerInfoTab({
+  messages,
+  serverIps,
+}: {
+  messages: SdkworkIamOfficialAccountsMessages;
+  serverIps: readonly string[];
+}): ReactNode {
+  const [copied, setCopied] = useState<string>();
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => {
+    if (timer.current !== undefined) clearTimeout(timer.current);
+  }, []);
+  const copy = async (value: string, id: string): Promise<void> => {
+    if (!(await copyText(value))) return;
+    setCopied(id);
+    if (timer.current !== undefined) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setCopied(undefined), 1500);
+  };
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.serverIpsHint}</p>
+      <StatusNotice tone="default">{messages.form.serverIpsNote}</StatusNotice>
+      {serverIps.length === 0
+        ? (
+          <p className="text-sm text-[var(--sdk-color-text-muted)]">
+            {messages.form.serverIpsEmpty}
+          </p>
+        )
+        : (
+          <div className="overflow-hidden rounded-[1rem] border border-[var(--sdk-color-border-default)]">
+            <div className="flex items-center justify-between gap-3 border-b border-[var(--sdk-color-border-default)] px-3 py-2">
+              <span className="text-xs font-medium text-[var(--sdk-color-text-muted)]">
+                {messages.form.serverIpsCount.replace("{count}", String(serverIps.length))}
+              </span>
+              <Button
+                onClick={() => { void copy(serverIps.join("\n"), "all"); }}
+                size="sm"
+                variant="outline"
+              >
+                {copied === "all" ? messages.form.serverIpCopied : messages.form.serverIpCopyAll}
+              </Button>
+            </div>
+            <ul>
+              {serverIps.map((ip) => (
+                <li
+                  className="flex items-center justify-between gap-3 border-b border-[var(--sdk-color-border-subtle)] px-3 py-2 last:border-b-0"
+                  key={ip}
+                >
+                  <span className="font-mono text-sm text-[var(--sdk-color-text-primary)]">{ip}</span>
+                  <Button
+                    onClick={() => { void copy(ip, ip); }}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    {copied === ip ? messages.form.serverIpCopied : messages.form.serverIpCopy}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+    </div>
   );
 }
 
@@ -1196,51 +1831,61 @@ function OfficialAccountLogoField({
 }): ReactNode {
   const previewSrc = value !== "" && !value.startsWith("drive://") ? value : undefined;
   return (
-    <div className="space-y-1.5" data-official-account-logo="">
+    <div className="space-y-2" data-official-account-logo="">
       <span className="block text-sm font-medium text-[var(--sdk-color-text-primary)]">
         {copy.logo}
       </span>
-      {driveUploadImageService === undefined
-        ? (
-          <div className="flex items-center gap-3">
-            {previewSrc === undefined ? null : (
-              <img
-                alt={copy.logo}
-                className="h-14 w-14 rounded-xl border border-[var(--sdk-color-border-default)] object-cover"
-                src={previewSrc}
-              />
+      <div className="flex flex-wrap items-start gap-4">
+        {driveUploadImageService === undefined
+          ? (
+            previewSrc === undefined
+              ? null
+              : (
+                <img
+                  alt={copy.logo}
+                  className="h-24 w-24 rounded-xl border border-[var(--sdk-color-border-default)] object-cover"
+                  src={previewSrc}
+                />
+              )
+          )
+          : (
+            <DriveUploadImage
+              accept={LOGO_ACCEPT}
+              alt={copy.logo}
+              appResourceId={accountId ?? (() => null)}
+              copy={{
+                pickImage: copy.logoChoose,
+                replaceImage: copy.logoReplace,
+                removeImage: copy.logoRemove,
+                retryUpload: copy.logoRetry,
+                uploading: copy.logoUploading,
+                uploadFailed: copy.logoUploadFailed,
+                invalidFileType: copy.logoInvalidType,
+                fileTooLarge: copy.logoTooLarge,
+                fileTooLargeDetail: copy.logoTooLargeDetail,
+                emptyFile: copy.logoEmptyFile,
+              }}
+              maxSizeBytes={LOGO_MAX_BYTES}
+              onChange={(uploaded) => onChange(uploaded?.uri ?? "")}
+              onUploadingChange={onUploadingChange}
+              ref={fieldRef}
+              service={driveUploadImageService}
+              shape="rounded"
+              sizePx={96}
+              value={toLogoUploadValue(value)}
+            />
+          )}
+        <div className="min-w-0 space-y-1 pt-1">
+          {driveUploadImageService === undefined
+            ? <p className="text-xs text-[var(--sdk-color-text-muted)]">{copy.logoUnavailable}</p>
+            : (
+              <>
+                <p className="text-xs text-[var(--sdk-color-text-muted)]">{copy.logoHint}</p>
+                <p className="text-xs text-[var(--sdk-color-text-muted)]">{copy.logoNote}</p>
+              </>
             )}
-            <p className="text-xs text-[var(--sdk-color-text-muted)]">{copy.logoUnavailable}</p>
-          </div>
-        )
-        : (
-          <DriveUploadImage
-            accept={LOGO_ACCEPT}
-            alt={copy.logo}
-            appResourceId={accountId ?? (() => null)}
-            copy={{
-              pickImage: copy.logoChoose,
-              replaceImage: copy.logoReplace,
-              removeImage: copy.logoRemove,
-              retryUpload: copy.logoRetry,
-              uploading: copy.logoUploading,
-              uploadFailed: copy.logoUploadFailed,
-              invalidFileType: copy.logoInvalidType,
-              fileTooLarge: copy.logoTooLarge,
-              fileTooLargeDetail: copy.logoTooLargeDetail,
-              emptyFile: copy.logoEmptyFile,
-            }}
-            description={copy.logoHint}
-            maxSizeBytes={LOGO_MAX_BYTES}
-            onChange={(uploaded) => onChange(uploaded?.uri ?? "")}
-            onUploadingChange={onUploadingChange}
-            ref={fieldRef}
-            service={driveUploadImageService}
-            shape="rounded"
-            sizePx={72}
-            value={toLogoUploadValue(value)}
-          />
-        )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1290,22 +1935,19 @@ function MenuEditor({
             </div>
             <div className="space-y-1.5">
               <Label>{messages.menu.buttonType}</Label>
-              <Select
-                onValueChange={(value) => updateButton(index, {
+              <PanelSelect
+                ariaLabel={messages.menu.buttonType}
+                onChange={(value) => updateButton(index, {
                   ...button,
                   type: value === "click" ? "click" : value === "parent" ? "parent" : "view",
                 })}
+                options={[
+                  { value: "view", label: messages.menu.typeView },
+                  { value: "click", label: messages.menu.typeClick },
+                  { value: "parent", label: messages.menu.addSubButton },
+                ]}
                 value={button.type}
-              >
-                <SelectTrigger aria-label={messages.menu.buttonType}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="view">{messages.menu.typeView}</SelectItem>
-                  <SelectItem value="click">{messages.menu.typeClick}</SelectItem>
-                  <SelectItem value="parent">{messages.menu.addSubButton}</SelectItem>
-                </SelectContent>
-              </Select>
+              />
             </div>
             {button.type === "view"
               ? (
@@ -1353,24 +1995,21 @@ function MenuEditor({
                     </div>
                     <div className="space-y-1.5">
                       <Label>{messages.menu.buttonType}</Label>
-                      <Select
-                        onValueChange={(value) => updateButton(index, {
+                      <PanelSelect
+                        ariaLabel={messages.menu.buttonType}
+                        onChange={(value) => updateButton(index, {
                           ...button,
                           subButtons: button.subButtons.map((current, currentIndex) =>
                             currentIndex === subIndex
                               ? { ...current, type: value === "click" ? "click" : "view" }
                               : current),
                         })}
+                        options={[
+                          { value: "view", label: messages.menu.typeView },
+                          { value: "click", label: messages.menu.typeClick },
+                        ]}
                         value={sub.type}
-                      >
-                        <SelectTrigger aria-label={messages.menu.buttonType}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="view">{messages.menu.typeView}</SelectItem>
-                          <SelectItem value="click">{messages.menu.typeClick}</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      />
                     </div>
                     <div className="space-y-1.5">
                       <Label>{sub.type === "click" ? messages.menu.key : messages.menu.url}</Label>

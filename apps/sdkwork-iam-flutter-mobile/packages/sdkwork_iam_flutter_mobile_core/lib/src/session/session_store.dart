@@ -12,6 +12,7 @@ class IamFlutterMobileCoreSessionContext {
     this.userId,
     this.tenantId,
     this.organizationId,
+    this.sessionId,
     this.accessToken,
     this.refreshToken,
   });
@@ -24,6 +25,9 @@ class IamFlutterMobileCoreSessionContext {
 
   /// Active organization id.
   final String? organizationId;
+
+  /// Server-side session id of this session.
+  final String? sessionId;
 
   /// Access token of this session, mirrored from the token manager.
   final String? accessToken;

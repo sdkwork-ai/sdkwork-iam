@@ -84,6 +84,7 @@ const CROSS_CLIENT_ROUTE_IDS = [
   'app.iam.auth.login',
   'app.iam.auth.oauth-callback',
   'app.iam.auth.register',
+  'app.iam.oauth.official-accounts',
   'app.iam.oauth.providers',
   'app.iam.organization.directory',
   'app.iam.tenant.overview',
@@ -399,5 +400,105 @@ describe('harmony surface contract', () => {
         );
       }
     }
+  });
+
+  it('seeds the public application access token before the SDK clients are constructed', () => {
+    // ENVIRONMENT_SPEC.md section 6.1: a client reads the token manager while its own
+    // config is built, so the seed must precede client construction. This is the
+    // ordering defect the root shipped with: ten profile documents carried
+    // SDKWORK_ACCESS_TOKEN and nothing ever read it.
+    const runtime = readText(path.join(ENTRY_ETS, 'bootstrap', 'Runtime.ets'));
+    const resolveAt = runtime.indexOf('resolveIamHarmonyEnvironment(');
+    const seedAt = runtime.indexOf('initializeIamHarmonyBootstrapToken(');
+    const clientsAt = runtime.indexOf('createIamHarmonySdkClients(');
+    assert.ok(resolveAt !== -1, 'bootstrap must resolve the selected profile');
+    assert.ok(seedAt !== -1, 'bootstrap must seed the shared token manager');
+    assert.ok(clientsAt !== -1, 'bootstrap must construct the SDK clients');
+    assert.ok(resolveAt < seedAt, 'the profile must be resolved and validated before the seed');
+    assert.ok(seedAt < clientsAt, 'the token must be seeded before any SDK client is constructed');
+    assert.ok(
+      runtime.includes('environment.applicationAccessToken'),
+      'bootstrap must seed the token loaded from the selected profile',
+    );
+
+    const tokenManager = readText(
+      path.join(PACKAGES_DIR, 'sdkwork-iam-harmony-mobile-core', 'src', 'main', 'ets', 'sdk', 'TokenManager.ets'),
+    );
+    assert.ok(
+      tokenManager.includes('initializeIamHarmonyBootstrapToken'),
+      'the token manager must expose the bootstrap seed',
+    );
+    assert.ok(
+      tokenManager.includes('bootstrapAccessToken'),
+      'the token manager must hold the bootstrap token outside the session record',
+    );
+    assert.ok(
+      tokenManager.includes('sessionAccessToken !== undefined ? sessionAccessToken : bootstrapAccessToken'),
+      'a session token must supersede the application token, with the application token as fallback',
+    );
+    // Logout restores the seeded token: the teardown must clear the session record and
+    // leave the bootstrap token field alone (requirement of APP_ACCESS_TOKEN_SPEC.md
+    // section 2: credential entry is never left without Access-Token).
+    const clearAt = tokenManager.indexOf('export function clearIamHarmonyTokens');
+    assert.ok(clearAt !== -1, 'the token manager must expose the session teardown');
+    const clearEnd = tokenManager.indexOf('\n}', clearAt);
+    const clearBody = tokenManager.slice(clearAt, clearEnd === -1 ? undefined : clearEnd);
+    assert.ok(
+      !clearBody.includes('bootstrapAccessToken'),
+      'clearIamHarmonyTokens must not drop the seeded application token',
+    );
+    assert.ok(
+      clearBody.includes('Session()'),
+      'clearIamHarmonyTokens must clear the session/context store',
+    );
+  });
+
+  it('propagates credentials to the console and admin tier clients', () => {
+    // Section 6: one shared token-manager equivalent across the appbase app SDK, every
+    // authenticated app-api client and the explicit backend-admin client. A tier that
+    // reads its own session store reads a record nothing writes, which is exactly what
+    // the console and admin clients used to do.
+    for (const name of ['sdkwork-iam-harmony-mobile-core', 'sdkwork-iam-harmony-mobile-console-core', 'sdkwork-iam-harmony-mobile-admin-core']) {
+      const client = readText(path.join(PACKAGES_DIR, name, 'src', 'main', 'ets', 'sdk', 'AppSdkClient.ets'));
+      assert.ok(
+        client.includes('currentIamHarmonyTokenSet'),
+        name + ': the client must read the shared token manager',
+      );
+      assert.ok(
+        client.includes('accessToken: config.accessToken'),
+        name + ': the credential must be exposed on the SDK port for a transport',
+      );
+    }
+    for (const name of ['sdkwork-iam-harmony-mobile-console-core', 'sdkwork-iam-harmony-mobile-admin-core']) {
+      const store = readText(path.join(PACKAGES_DIR, name, 'src', 'main', 'ets', 'session', 'SessionStore.ets'));
+      assert.ok(
+        store.includes("from '@sdkwork/sdkwork-iam-harmony-mobile-core'"),
+        name + ': the session store must re-export the single app-tier record',
+      );
+      assert.ok(
+        !store.includes('let currentSession'),
+        name + ': a tier-local session variable is a second record nothing writes',
+      );
+    }
+    const sdkClients = readText(path.join(ENTRY_ETS, 'bootstrap', 'SdkClients.ets'));
+    assert.ok(sdkClients.includes('consoleClient'), 'bootstrap must construct the console client');
+    assert.ok(sdkClients.includes('adminClient'), 'bootstrap must construct the admin client');
+    assert.ok(
+      sdkClients.includes('accessTokenConfigured'),
+      'the wiring report must state whether a token reached the client',
+    );
+    const iamRuntime = readText(path.join(ENTRY_ETS, 'bootstrap', 'IamRuntime.ets'));
+    assert.ok(
+      iamRuntime.includes('clearOnRefreshFailure'),
+      'a refresh failure must run the same teardown as logout',
+    );
+    assert.ok(
+      iamRuntime.includes('secureStorage.clear'),
+      'teardown must clear secure platform storage',
+    );
+    assert.ok(
+      iamRuntime.includes('reinitialize()'),
+      'teardown must rebuild the clients with the restored bootstrap token',
+    );
   });
 });

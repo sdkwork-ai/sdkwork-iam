@@ -3395,6 +3395,10 @@ var AuthSessionsCurrentApi = class {
   async update(body, requestOptions) {
     return this.client.request(appApiPath(`/auth/sessions/current`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "PATCH", ...body !== void 0 ? { body, contentType: "application/json" } : {}, sdkworkUnwrapKind: "item" });
   }
+  /** Sessions current logout. */
+  async logout(body, requestOptions) {
+    return this.client.request(appApiPath(`/auth/sessions/current/logout`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", skipAuth: true });
+  }
 };
 var AuthSessionsApi = class {
   constructor(client) {
@@ -3625,11 +3629,31 @@ var IamOrganizationsTreeApi = class {
     return this.client.request(appApiPath(`/iam/organizations/tree`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", sdkworkUnwrapKind: "item" });
   }
 };
+var IamOrganizationsMembersApi = class {
+  constructor(client) {
+    __publicField(this, "client");
+    this.client = client;
+  }
+  /** Organizations members list. */
+  async list(organizationId, params, requestOptions) {
+    const query = buildQueryString([
+      { name: "page", value: params?.page, style: "form", explode: true, allowReserved: false },
+      { name: "page_size", value: params?.pageSize, style: "form", explode: true, allowReserved: false },
+      { name: "cursor", value: params?.cursor, style: "form", explode: true, allowReserved: false },
+      { name: "sort", value: params?.sort, style: "form", explode: true, allowReserved: false },
+      { name: "q", value: params?.q, style: "form", explode: true, allowReserved: false },
+      { name: "role", value: params?.role, style: "form", explode: true, allowReserved: false }
+    ]);
+    return this.client.request(appendQueryString(appApiPath(`/iam/organizations/${serializePathParameter(organizationId, { name: "organizationId", style: "simple", explode: false })}/members`), query), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", sdkworkUnwrapKind: "page" });
+  }
+};
 var IamOrganizationsApi = class {
   constructor(client) {
     __publicField(this, "client");
+    __publicField(this, "members");
     __publicField(this, "tree");
     this.client = client;
+    this.members = new IamOrganizationsMembersApi(client);
     this.tree = new IamOrganizationsTreeApi(client);
   }
   /** Organizations list. */
@@ -3659,6 +3683,45 @@ var IamOrganizationMembershipsApi = class {
       { name: "q", value: params?.q, style: "form", explode: true, allowReserved: false }
     ]);
     return this.client.request(appendQueryString(appApiPath(`/iam/organization_memberships`), query), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", sdkworkUnwrapKind: "page" });
+  }
+};
+var IamOauthOfficialAccountsApi = class {
+  constructor(client) {
+    __publicField(this, "client");
+    this.client = client;
+  }
+  /** Iam oauth official Accounts list. */
+  async list(params, requestOptions) {
+    const query = buildQueryString([
+      { name: "page", value: params?.page, style: "form", explode: true, allowReserved: false },
+      { name: "page_size", value: params?.pageSize, style: "form", explode: true, allowReserved: false },
+      { name: "cursor", value: params?.cursor, style: "form", explode: true, allowReserved: false },
+      { name: "sort", value: params?.sort, style: "form", explode: true, allowReserved: false },
+      { name: "q", value: params?.q, style: "form", explode: true, allowReserved: false }
+    ]);
+    return this.client.request(appendQueryString(appApiPath(`/iam/oauth/official_accounts`), query), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", sdkworkUnwrapKind: "page" });
+  }
+  /** Iam oauth official Accounts create. */
+  async create(body, requestOptions) {
+    return this.client.request(appApiPath(`/iam/oauth/official_accounts`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", sdkworkUnwrapKind: "item" });
+  }
+  /** Iam oauth official Accounts delete. */
+  async delete(officialAccountId, requestOptions) {
+    return this.client.request(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: "officialAccountId", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "DELETE" });
+  }
+  /** Iam oauth official Accounts retrieve. */
+  async retrieve(officialAccountId, requestOptions) {
+    return this.client.request(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: "officialAccountId", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", sdkworkUnwrapKind: "item" });
+  }
+  /** Iam oauth official Accounts update. */
+  async update(officialAccountId, body, requestOptions) {
+    return this.client.request(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: "officialAccountId", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "PATCH", ...body !== void 0 ? { body, contentType: "application/json" } : {}, sdkworkUnwrapKind: "item" });
+  }
+};
+var IamOauthApi = class {
+  constructor(client) {
+    __publicField(this, "officialAccounts");
+    this.officialAccounts = new IamOauthOfficialAccountsApi(client);
   }
 };
 var IamDepartmentsTreeApi = class {
@@ -3711,6 +3774,7 @@ var IamApi = class {
   constructor(client) {
     __publicField(this, "departmentAssignments");
     __publicField(this, "departments");
+    __publicField(this, "oauth");
     __publicField(this, "organizationMemberships");
     __publicField(this, "organizations");
     __publicField(this, "personaCatalog");
@@ -3720,6 +3784,7 @@ var IamApi = class {
     __publicField(this, "users");
     this.departmentAssignments = new IamDepartmentAssignmentsApi(client);
     this.departments = new IamDepartmentsApi(client);
+    this.oauth = new IamOauthApi(client);
     this.organizationMemberships = new IamOrganizationMembershipsApi(client);
     this.organizations = new IamOrganizationsApi(client);
     this.personaCatalog = new IamPersonaCatalogApi(client);
@@ -3738,6 +3803,57 @@ function appendQueryString(path, rawQueryString) {
     return path;
   }
   return path.includes("?") ? `${path}&${query}` : `${path}?${query}`;
+}
+function serializePathParameter(value, spec) {
+  if (value === void 0 || value === null) {
+    return "";
+  }
+  const style = spec.style || "simple";
+  if (Array.isArray(value)) {
+    return serializePathArray(spec.name, value, style, spec.explode);
+  }
+  if (typeof value === "object") {
+    return serializePathObject(spec.name, value, style, spec.explode);
+  }
+  return pathPrefix(spec.name, style, false) + encodePathValue(serializePathPrimitive(value));
+}
+function serializePathArray(name, values, style, explode) {
+  const serialized = values.filter((item) => item !== void 0 && item !== null).map((item) => encodePathValue(serializePathPrimitive(item)));
+  if (serialized.length === 0) {
+    return pathPrefix(name, style, false);
+  }
+  if (style === "matrix") {
+    return explode ? serialized.map((item) => `;${name}=${item}`).join("") : `;${name}=${serialized.join(",")}`;
+  }
+  return pathPrefix(name, style, false) + serialized.join(explode ? "." : ",");
+}
+function serializePathObject(name, value, style, explode) {
+  const entries = Object.entries(value).filter(([, entryValue]) => entryValue !== void 0 && entryValue !== null);
+  if (entries.length === 0) {
+    return pathPrefix(name, style, true);
+  }
+  if (style === "matrix") {
+    return explode ? entries.map(([key, entryValue]) => `;${encodePathValue(key)}=${encodePathValue(serializePathPrimitive(entryValue))}`).join("") : `;${name}=${entries.flatMap(([key, entryValue]) => [encodePathValue(key), encodePathValue(serializePathPrimitive(entryValue))]).join(",")}`;
+  }
+  const serialized = explode ? entries.map(([key, entryValue]) => `${encodePathValue(key)}=${encodePathValue(serializePathPrimitive(entryValue))}`).join(style === "label" ? "." : ",") : entries.flatMap(([key, entryValue]) => [encodePathValue(key), encodePathValue(serializePathPrimitive(entryValue))]).join(",");
+  return pathPrefix(name, style, true) + serialized;
+}
+function pathPrefix(name, style, _objectValue) {
+  if (style === "label") return ".";
+  if (style === "matrix") return `;${name}`;
+  return "";
+}
+function encodePathValue(value) {
+  return encodeURIComponent(value);
+}
+function serializePathPrimitive(value) {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (typeof value === "object") {
+    return JSON.stringify(value);
+  }
+  return String(value);
 }
 function buildQueryString(parameters) {
   const pairs = [];
@@ -3890,6 +4006,28 @@ var OauthProvidersApi = class {
     return this.client.request(appendQueryString2(appApiPath(`/oauth/providers`), query), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", accessTokenOnly: true, sdkworkUnwrapKind: "page" });
   }
 };
+var OauthPhoneBindingSessionsVerificationCodeRequestsApi = class {
+  constructor(client) {
+    __publicField(this, "client");
+    this.client = client;
+  }
+  /** Phone Binding Sessions verification Code Requests create. */
+  async create(body, requestOptions) {
+    return this.client.request(appApiPath(`/oauth/phone_binding_sessions/verification_code_requests`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", accessTokenOnly: true, sdkworkUnwrapKind: "item" });
+  }
+};
+var OauthPhoneBindingSessionsApi = class {
+  constructor(client) {
+    __publicField(this, "client");
+    __publicField(this, "verificationCodeRequests");
+    this.client = client;
+    this.verificationCodeRequests = new OauthPhoneBindingSessionsVerificationCodeRequestsApi(client);
+  }
+  /** Phone Binding Sessions create. */
+  async create(body, requestOptions) {
+    return this.client.request(appApiPath(`/oauth/phone_binding_sessions`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", accessTokenOnly: true, sdkworkUnwrapKind: "item" });
+  }
+};
 var OauthMiniProgramSessionsApi = class {
   constructor(client) {
     __publicField(this, "client");
@@ -3918,7 +4056,7 @@ var OauthGrantsApi = class {
   }
   /** Grants delete. */
   async delete(grantId, requestOptions) {
-    return this.client.request(appApiPath(`/oauth/grants/${serializePathParameter(grantId, { name: "grantId", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "DELETE" });
+    return this.client.request(appApiPath(`/oauth/grants/${serializePathParameter2(grantId, { name: "grantId", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "DELETE" });
   }
 };
 var OauthDeviceAuthorizationsSessionExchangesApi = class {
@@ -3928,7 +4066,7 @@ var OauthDeviceAuthorizationsSessionExchangesApi = class {
   }
   /** Device Authorizations session Exchanges create. */
   async create(deviceAuthorizationId, body, requestOptions) {
-    return this.client.request(appApiPath(`/oauth/device_authorizations/${serializePathParameter(deviceAuthorizationId, { name: "deviceAuthorizationId", style: "simple", explode: false })}/session_exchanges`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", skipAuth: true, sdkworkUnwrapKind: "item" });
+    return this.client.request(appApiPath(`/oauth/device_authorizations/${serializePathParameter2(deviceAuthorizationId, { name: "deviceAuthorizationId", style: "simple", explode: false })}/session_exchanges`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", skipAuth: true, sdkworkUnwrapKind: "item" });
   }
 };
 var OauthDeviceAuthorizationsSessionCompletionsApi = class {
@@ -3938,7 +4076,7 @@ var OauthDeviceAuthorizationsSessionCompletionsApi = class {
   }
   /** Device Authorizations session Completions create. */
   async create(deviceAuthorizationId, body, requestOptions) {
-    return this.client.request(appApiPath(`/oauth/device_authorizations/${serializePathParameter(deviceAuthorizationId, { name: "deviceAuthorizationId", style: "simple", explode: false })}/session_completions`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", accessTokenOnly: true, sdkworkUnwrapKind: "item" });
+    return this.client.request(appApiPath(`/oauth/device_authorizations/${serializePathParameter2(deviceAuthorizationId, { name: "deviceAuthorizationId", style: "simple", explode: false })}/session_completions`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", accessTokenOnly: true, sdkworkUnwrapKind: "item" });
   }
 };
 var OauthDeviceAuthorizationsScansApi = class {
@@ -3948,7 +4086,7 @@ var OauthDeviceAuthorizationsScansApi = class {
   }
   /** Device Authorizations scans create. */
   async create(deviceAuthorizationId, body, requestOptions) {
-    return this.client.request(appApiPath(`/oauth/device_authorizations/${serializePathParameter(deviceAuthorizationId, { name: "deviceAuthorizationId", style: "simple", explode: false })}/scans`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", accessTokenOnly: true, sdkworkUnwrapKind: "item" });
+    return this.client.request(appApiPath(`/oauth/device_authorizations/${serializePathParameter2(deviceAuthorizationId, { name: "deviceAuthorizationId", style: "simple", explode: false })}/scans`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", accessTokenOnly: true, sdkworkUnwrapKind: "item" });
   }
 };
 var OauthDeviceAuthorizationsPasswordCompletionsApi = class {
@@ -3958,7 +4096,7 @@ var OauthDeviceAuthorizationsPasswordCompletionsApi = class {
   }
   /** Device Authorizations password Completions create. */
   async create(deviceAuthorizationId, body, requestOptions) {
-    return this.client.request(appApiPath(`/oauth/device_authorizations/${serializePathParameter(deviceAuthorizationId, { name: "deviceAuthorizationId", style: "simple", explode: false })}/password_completions`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", accessTokenOnly: true, sdkworkUnwrapKind: "item" });
+    return this.client.request(appApiPath(`/oauth/device_authorizations/${serializePathParameter2(deviceAuthorizationId, { name: "deviceAuthorizationId", style: "simple", explode: false })}/password_completions`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", accessTokenOnly: true, sdkworkUnwrapKind: "item" });
   }
 };
 var OauthDeviceAuthorizationsApi = class {
@@ -3980,7 +4118,7 @@ var OauthDeviceAuthorizationsApi = class {
   }
   /** Device Authorizations retrieve. */
   async retrieve(deviceAuthorizationId, requestOptions) {
-    return this.client.request(appApiPath(`/oauth/device_authorizations/${serializePathParameter(deviceAuthorizationId, { name: "deviceAuthorizationId", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", skipAuth: true, sdkworkUnwrapKind: "item" });
+    return this.client.request(appApiPath(`/oauth/device_authorizations/${serializePathParameter2(deviceAuthorizationId, { name: "deviceAuthorizationId", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", skipAuth: true, sdkworkUnwrapKind: "item" });
   }
 };
 var OauthDesktopSessionsApi = class {
@@ -4000,11 +4138,11 @@ var OauthCallbacksApi = class {
   }
   /** Callbacks retrieve. */
   async retrieve(providerCode, requestOptions) {
-    return this.client.request(appApiPath(`/oauth/callbacks/${serializePathParameter(providerCode, { name: "providerCode", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", accessTokenOnly: true, sdkworkUnwrapKind: "item" });
+    return this.client.request(appApiPath(`/oauth/callbacks/${serializePathParameter2(providerCode, { name: "providerCode", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", accessTokenOnly: true, sdkworkUnwrapKind: "item" });
   }
   /** Callbacks create. */
   async create(providerCode, body, requestOptions) {
-    return this.client.request(appApiPath(`/oauth/callbacks/${serializePathParameter(providerCode, { name: "providerCode", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", accessTokenOnly: true, sdkworkUnwrapKind: "item" });
+    return this.client.request(appApiPath(`/oauth/callbacks/${serializePathParameter2(providerCode, { name: "providerCode", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", accessTokenOnly: true, sdkworkUnwrapKind: "item" });
   }
 };
 var OauthAuthorizationsCompletionsApi = class {
@@ -4014,13 +4152,19 @@ var OauthAuthorizationsCompletionsApi = class {
   }
   /** Authorizations completions create. */
   async create(authorizationStateId, body, requestOptions) {
-    return this.client.request(appApiPath(`/oauth/authorizations/${serializePathParameter(authorizationStateId, { name: "authorizationStateId", style: "simple", explode: false })}/completions`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", sdkworkUnwrapKind: "data" });
+    return this.client.request(appApiPath(`/oauth/authorizations/${serializePathParameter2(authorizationStateId, { name: "authorizationStateId", style: "simple", explode: false })}/completions`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", sdkworkUnwrapKind: "data" });
   }
 };
 var OauthAuthorizationsApi = class {
   constructor(client) {
+    __publicField(this, "client");
     __publicField(this, "completions");
+    this.client = client;
     this.completions = new OauthAuthorizationsCompletionsApi(client);
+  }
+  /** Authorizations create. */
+  async create(body, requestOptions) {
+    return this.client.request(appApiPath(`/oauth/authorizations`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", skipAuth: true, sdkworkUnwrapKind: "data" });
   }
 };
 var OauthAuthorizationUrlsApi = class {
@@ -4051,7 +4195,7 @@ var OauthAccountLinksApi = class {
   }
   /** Account Links delete. */
   async delete(accountLinkId, requestOptions) {
-    return this.client.request(appApiPath(`/oauth/account_links/${serializePathParameter(accountLinkId, { name: "accountLinkId", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "DELETE" });
+    return this.client.request(appApiPath(`/oauth/account_links/${serializePathParameter2(accountLinkId, { name: "accountLinkId", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "DELETE" });
   }
 };
 var OauthApi = class {
@@ -4064,6 +4208,7 @@ var OauthApi = class {
     __publicField(this, "deviceAuthorizations");
     __publicField(this, "grants");
     __publicField(this, "miniProgramSessions");
+    __publicField(this, "phoneBindingSessions");
     __publicField(this, "providers");
     __publicField(this, "scanLoginModes");
     __publicField(this, "sessions");
@@ -4076,6 +4221,7 @@ var OauthApi = class {
     this.deviceAuthorizations = new OauthDeviceAuthorizationsApi(client);
     this.grants = new OauthGrantsApi(client);
     this.miniProgramSessions = new OauthMiniProgramSessionsApi(client);
+    this.phoneBindingSessions = new OauthPhoneBindingSessionsApi(client);
     this.providers = new OauthProvidersApi(client);
     this.scanLoginModes = new OauthScanLoginModesApi(client);
     this.sessions = new OauthSessionsApi(client);
@@ -4092,49 +4238,49 @@ function appendQueryString2(path, rawQueryString) {
   }
   return path.includes("?") ? `${path}&${query}` : `${path}?${query}`;
 }
-function serializePathParameter(value, spec) {
+function serializePathParameter2(value, spec) {
   if (value === void 0 || value === null) {
     return "";
   }
   const style = spec.style || "simple";
   if (Array.isArray(value)) {
-    return serializePathArray(spec.name, value, style, spec.explode);
+    return serializePathArray2(spec.name, value, style, spec.explode);
   }
   if (typeof value === "object") {
-    return serializePathObject(spec.name, value, style, spec.explode);
+    return serializePathObject2(spec.name, value, style, spec.explode);
   }
-  return pathPrefix(spec.name, style, false) + encodePathValue(serializePathPrimitive(value));
+  return pathPrefix2(spec.name, style, false) + encodePathValue2(serializePathPrimitive2(value));
 }
-function serializePathArray(name, values, style, explode) {
-  const serialized = values.filter((item) => item !== void 0 && item !== null).map((item) => encodePathValue(serializePathPrimitive(item)));
+function serializePathArray2(name, values, style, explode) {
+  const serialized = values.filter((item) => item !== void 0 && item !== null).map((item) => encodePathValue2(serializePathPrimitive2(item)));
   if (serialized.length === 0) {
-    return pathPrefix(name, style, false);
+    return pathPrefix2(name, style, false);
   }
   if (style === "matrix") {
     return explode ? serialized.map((item) => `;${name}=${item}`).join("") : `;${name}=${serialized.join(",")}`;
   }
-  return pathPrefix(name, style, false) + serialized.join(explode ? "." : ",");
+  return pathPrefix2(name, style, false) + serialized.join(explode ? "." : ",");
 }
-function serializePathObject(name, value, style, explode) {
+function serializePathObject2(name, value, style, explode) {
   const entries = Object.entries(value).filter(([, entryValue]) => entryValue !== void 0 && entryValue !== null);
   if (entries.length === 0) {
-    return pathPrefix(name, style, true);
+    return pathPrefix2(name, style, true);
   }
   if (style === "matrix") {
-    return explode ? entries.map(([key, entryValue]) => `;${encodePathValue(key)}=${encodePathValue(serializePathPrimitive(entryValue))}`).join("") : `;${name}=${entries.flatMap(([key, entryValue]) => [encodePathValue(key), encodePathValue(serializePathPrimitive(entryValue))]).join(",")}`;
+    return explode ? entries.map(([key, entryValue]) => `;${encodePathValue2(key)}=${encodePathValue2(serializePathPrimitive2(entryValue))}`).join("") : `;${name}=${entries.flatMap(([key, entryValue]) => [encodePathValue2(key), encodePathValue2(serializePathPrimitive2(entryValue))]).join(",")}`;
   }
-  const serialized = explode ? entries.map(([key, entryValue]) => `${encodePathValue(key)}=${encodePathValue(serializePathPrimitive(entryValue))}`).join(style === "label" ? "." : ",") : entries.flatMap(([key, entryValue]) => [encodePathValue(key), encodePathValue(serializePathPrimitive(entryValue))]).join(",");
-  return pathPrefix(name, style, true) + serialized;
+  const serialized = explode ? entries.map(([key, entryValue]) => `${encodePathValue2(key)}=${encodePathValue2(serializePathPrimitive2(entryValue))}`).join(style === "label" ? "." : ",") : entries.flatMap(([key, entryValue]) => [encodePathValue2(key), encodePathValue2(serializePathPrimitive2(entryValue))]).join(",");
+  return pathPrefix2(name, style, true) + serialized;
 }
-function pathPrefix(name, style, _objectValue) {
+function pathPrefix2(name, style, _objectValue) {
   if (style === "label") return ".";
   if (style === "matrix") return `;${name}`;
   return "";
 }
-function encodePathValue(value) {
+function encodePathValue2(value) {
   return encodeURIComponent(value);
 }
-function serializePathPrimitive(value) {
+function serializePathPrimitive2(value) {
   if (value instanceof Date) {
     return value.toISOString();
   }
@@ -4959,6 +5105,7 @@ var SDKWORK_IAM_TABLES = {
   tenant: "iam_tenant",
   user: "iam_user",
   userIdentity: "iam_user_identity",
+  userOfficialAccount: "iam_user_official_account",
   userPersona: "iam_user_persona",
   personaRole: "iam_persona_role",
   personaInterest: "iam_persona_interest",
@@ -5385,6 +5532,24 @@ var SDKWORK_IAM_API_ROUTES = {
       create: operation("POST", `${app}/oauth/mini_program_sessions`, "oauth", "oauth.miniProgramSessions.create", "public", {
         forbidCredentialHeaders: true
       })
+    },
+    // Ownership proof that finishes an OAuth account association started on a
+    // different surface. Both calls run before any session exists, so they use
+    // the same credential-entry bootstrap shape as the provider exchanges.
+    phoneBindingSessions: {
+      create: operation("POST", `${app}/oauth/phone_binding_sessions`, "oauth", "oauth.phoneBindingSessions.create", "public", {
+        forbidCredentialHeaders: true
+      }),
+      verificationCodeRequests: {
+        create: operation(
+          "POST",
+          `${app}/oauth/phone_binding_sessions/verification_code_requests`,
+          "oauth",
+          "oauth.phoneBindingSessions.verificationCodeRequests.create",
+          "public",
+          { forbidCredentialHeaders: true }
+        )
+      }
     },
     sessions: {
       create: operation("POST", `${app}/oauth/sessions`, "oauth", "oauth.sessions.create", "public", {
@@ -5830,6 +5995,8 @@ var SDKWORK_IAM_CAPABILITIES = [
       "oauth.grants.delete",
       "oauth.grants.list",
       "oauth.miniProgramSessions.create",
+      "oauth.phoneBindingSessions.create",
+      "oauth.phoneBindingSessions.verificationCodeRequests.create",
       "oauth.providers.list",
       "oauth.scanLoginModes.list",
       "oauth.sessions.create",
@@ -6425,6 +6592,28 @@ function createSdkworkIamService(input) {
           );
         }
       },
+      phoneBindingSessions: {
+        create: async (body) => {
+          await input.clearSession?.();
+          return handleSession(
+            await callResourceMethod(
+              appOauth?.phoneBindingSessions,
+              "create",
+              "appbaseAppClient.oauth.phoneBindingSessions.create",
+              body
+            ),
+            input
+          );
+        },
+        verificationCodeRequests: {
+          create: (body) => callRaw(
+            appOauth?.phoneBindingSessions?.verificationCodeRequests,
+            "create",
+            "appbaseAppClient.oauth.phoneBindingSessions.verificationCodeRequests.create",
+            body
+          )
+        }
+      },
       authorizations: {
         completions: {
           create: (authorizationStateId, body) => callRaw(
@@ -6784,18 +6973,24 @@ function normalizeCurrentSessionUpdateBody(body) {
 }
 
 // packages/sdkwork-iam-mp-core/src/runtime/iam-service.ts
+function normalizeAccessToken(value) {
+  const token = typeof value === "string" ? value.trim() : "";
+  return token === "" ? void 0 : token;
+}
 function createIamMpAppClient(input) {
   const baseUrl = input.baseUrl.trim();
   if (!baseUrl) {
     throw new Error("sdkwork-iam-mini-program: app-api base url is required to build the IAM client");
   }
+  const accessToken = normalizeAccessToken(input.accessToken) ?? normalizeAccessToken(input.bootstrapAccessToken);
   return createClient2({
     baseUrl,
-    ...input.accessToken ? { accessToken: input.accessToken } : {},
+    ...accessToken ? { accessToken } : {},
     ...input.timeoutMs !== void 0 ? { timeout: input.timeoutMs } : {}
   });
 }
 function createIamMpRuntimeService(input) {
+  const bootstrapAccessToken = normalizeAccessToken(input.bootstrapAccessToken);
   const client = createIamMpAppClient(input);
   const service = createSdkworkIamService({
     appbaseAppClient: client,
@@ -6804,9 +6999,12 @@ function createIamMpRuntimeService(input) {
   });
   return {
     client,
+    getAccessToken() {
+      return normalizeAccessToken(client.http.getTokenManager()?.getAccessToken());
+    },
     service,
     setAccessToken(token) {
-      client.setAccessToken(token ?? "");
+      client.setAccessToken(normalizeAccessToken(token) ?? bootstrapAccessToken ?? "");
     }
   };
 }
@@ -7088,12 +7286,87 @@ function resolveIamMpMessage(locale, key) {
   return /^zh/iu.test(locale ?? "") ? entry["zh-CN"] : entry["en-US"];
 }
 var runtime;
+var PUBLIC_APPLICATION_TOKEN_ISSUER = "sdkwork-iam-public";
+var PUBLIC_APPLICATION_TOKEN_CLASS = "application";
+var BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+function decodeBase64Url(segment) {
+  const normalized = segment.replace(/-/gu, "+").replace(/_/gu, "/");
+  const bytes = [];
+  let accumulator = 0;
+  let bits = 0;
+  for (const character of normalized) {
+    if (character === "=") continue;
+    const index = BASE64_ALPHABET.indexOf(character);
+    if (index < 0) return void 0;
+    accumulator = accumulator << 6 | index;
+    bits += 6;
+    if (bits < 8) continue;
+    bits -= 8;
+    bytes.push(accumulator >> bits & 255);
+  }
+  let encoded = "";
+  for (const byte of bytes) {
+    encoded += `%${byte.toString(16).padStart(2, "0")}`;
+  }
+  try {
+    return decodeURIComponent(encoded);
+  } catch {
+    return void 0;
+  }
+}
+function readPublicApplicationTokenClaims(token) {
+  const segments = token.split(".");
+  if (segments.length !== 3) return void 0;
+  if (segments.some((segment) => segment === "")) return void 0;
+  const payload = decodeBase64Url(segments[1]);
+  if (!payload) return void 0;
+  let claims;
+  try {
+    claims = JSON.parse(payload);
+  } catch {
+    return void 0;
+  }
+  if (claims === null || typeof claims !== "object" || Array.isArray(claims)) {
+    return void 0;
+  }
+  const record = claims;
+  if (record.token_class !== PUBLIC_APPLICATION_TOKEN_CLASS) return void 0;
+  if (record.iss !== PUBLIC_APPLICATION_TOKEN_ISSUER) return void 0;
+  return record;
+}
+function requireBootstrapAccessToken(runtimeEnv) {
+  const document = `config/mini-program/runtime-env.${runtimeEnv.SDKWORK_PROFILE_ID}.json`;
+  const token = readString(runtimeEnv.SDKWORK_ACCESS_TOKEN);
+  if (!token) {
+    throw new Error(
+      `SDKWORK_ACCESS_TOKEN is missing from the selected profile document ${document}: the mini program cannot call app-api without its public application access token.`
+    );
+  }
+  if (!readPublicApplicationTokenClaims(token)) {
+    throw new Error(
+      `SDKWORK_ACCESS_TOKEN in the selected profile document ${document} is not a valid public application token: expected a three-part JWT with token_class=${PUBLIC_APPLICATION_TOKEN_CLASS} and iss=${PUBLIC_APPLICATION_TOKEN_ISSUER}; a session credential is not accepted.`
+    );
+  }
+  return token;
+}
+function requireAppApiBaseUrl(runtimeEnv) {
+  const raw = readString(runtimeEnv.SDKWORK_APP_API_BASE_URL);
+  const primary = raw?.split(";")[0]?.trim() ?? "";
+  if (!primary) {
+    throw new Error(
+      `SDKWORK_APP_API_BASE_URL is missing from the selected profile document config/mini-program/runtime-env.${runtimeEnv.SDKWORK_PROFILE_ID}.json: the mini program cannot resolve the app-api origin.`
+    );
+  }
+  return primary.replace(/\/+$/u, "");
+}
 async function bootstrapIamMpApp(input) {
   const { runtimeEnv } = input;
   if (runtime) return runtime;
+  const bootstrapAccessToken = requireBootstrapAccessToken(runtimeEnv);
   const session = createIamMpSessionStore();
   const service = createIamMpRuntimeService({
-    baseUrl: runtimeEnv.SDKWORK_APP_API_BASE_URL,
+    baseUrl: requireAppApiBaseUrl(runtimeEnv),
+    bootstrapAccessToken,
     ...session.get()?.accessToken ? { accessToken: session.get()?.accessToken } : {},
     clearSession: () => session.clear(),
     commitSession: (next) => {

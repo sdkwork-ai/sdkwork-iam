@@ -2,8 +2,8 @@
 //!
 //! The H5 cashier needs the payer's WeChat `openid` to run JSAPI payment
 //! inside the WeChat app. This flow performs a silent `snsapi_base`
-//! authorization (`code` → `openid`) without creating an IAM session or
-//! linking an OAuth identity — unlike the full login OAuth flow.
+//! authorization (`code` 鈫?`openid`) without creating an IAM session or
+//! linking an OAuth identity 鈥?unlike the full login OAuth flow.
 //!
 //! Flow:
 //!   1. `GET /app/v3/api/oauth/wechat/payment/start?redirect=...`
@@ -166,7 +166,7 @@ pub(crate) async fn start_wechat_payment_oauth_for_cashier(
         // Same observable result for unknown/tampered/expired links.
         return appbase_error(
             StatusCode::NOT_FOUND,
-            "iam_wechat_payment_oauth_cashier_invalid",
+            "iam_wechat_payment_oauth_cashier_not_found",
             "cashier link is not payable",
         );
     };
@@ -211,20 +211,18 @@ pub(crate) async fn start_wechat_payment_oauth_for_cashier(
     };
     let state_token = generate_opaque_token("wpoauth");
     let callback_url = payment_oauth_callback_url(&headers);
-    let authorize_url =
-        build_wechat_authorize_url(&provider_ctx.provider_client_id, &callback_url, &state_token);
+    let authorize_url = build_wechat_authorize_url(
+        &provider_ctx.provider_client_id,
+        &callback_url,
+        &state_token,
+    );
 
     let mut response = appbase_ok(json!({
         "authorizeUrl": authorize_url,
         "state": state_token,
         "redirectUri": callback_url,
     }));
-    append_payment_oauth_cookie(
-        &mut response,
-        STATE_COOKIE,
-        &state_token,
-        STATE_TTL_SECONDS,
-    );
+    append_payment_oauth_cookie(&mut response, STATE_COOKIE, &state_token, STATE_TTL_SECONDS);
     append_payment_oauth_cookie(&mut response, REDIRECT_COOKIE, &redirect, STATE_TTL_SECONDS);
     append_payment_oauth_cookie(
         &mut response,
@@ -256,7 +254,8 @@ fn verify_cashier_token_for_cashier(token: &str) -> Option<sdkwork_utils_rust::C
         tenant_id: String,
     }
     let peeked: Peeked = serde_json::from_slice(&bytes).ok()?;
-    let key = sdkwork_utils_rust::derive_cashier_token_key(&secret, peeked.tenant_id.trim()).ok()?;
+    let key =
+        sdkwork_utils_rust::derive_cashier_token_key(&secret, peeked.tenant_id.trim()).ok()?;
     let now = sdkwork_utils_rust::now().timestamp();
     sdkwork_utils_rust::verify_cashier_token(
         token,
@@ -365,7 +364,9 @@ pub(crate) async fn handle_wechat_payment_oauth_callback(
 /// The order service recomputes the same HMAC from the same deployment secret, so
 /// an openid cannot be replayed onto another cashier link and cannot be invented.
 fn sign_openid_binding(tenant_id: &str, token_id: &str, openid: &str) -> Option<String> {
-    let secret = sdkwork_utils_rust::cashier_token_secret_from_env().ok().flatten()?;
+    let secret = sdkwork_utils_rust::cashier_token_secret_from_env()
+        .ok()
+        .flatten()?;
     let key = sdkwork_utils_rust::derive_cashier_token_key(&secret, tenant_id).ok()?;
     Some(sdkwork_utils_rust::hmac_sha256_base64url(
         sdkwork_utils_rust::cashier_openid_binding_message(token_id, openid).as_bytes(),
@@ -404,8 +405,8 @@ fn payment_oauth_callback_url(headers: &HeaderMap) -> String {
     format!("https://{host}{PAYMENT_OAUTH_COOKIE_PATH}/callback")
 }
 
-/// Host values must be a plain `host[:port]` pair — no path, credentials
-/// or whitespace — so they cannot smuggle an external target into the
+/// Host values must be a plain `host[:port]` pair 鈥?no path, credentials
+/// or whitespace 鈥?so they cannot smuggle an external target into the
 /// authorize redirect_uri.
 fn is_safe_host(value: &str) -> bool {
     let value = value.trim();
@@ -557,7 +558,7 @@ mod tests {
             percent_encode_component("https://im.sdkwork.com/cb"),
             "https%3A%2F%2Fim.sdkwork.com%2Fcb"
         );
-        assert_eq!(percent_encode_component("o_中文"), "o_%E4%B8%AD%E6%96%87");
+        assert_eq!(percent_encode_component("o_涓枃"), "o_%E4%B8%AD%E6%96%87");
     }
 
     #[test]

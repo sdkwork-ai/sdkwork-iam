@@ -393,21 +393,31 @@ export interface SdkworkIamOauthAdminMessages {
         appSecretPlaceholder: string;
         callbackUrl: string;
         callbackUrlHint: string;
+        callbackUrlMismatch: string;
         displayName: string;
         miniCallbackHint: string;
         webDomain: string;
+        webDomainHint: string;
         webDomainPlaceholder: string;
       };
       domains: {
         addDomain: string;
         business: string;
         businessDomains: string;
+        businessDomainsHint: string;
         businessHint: string;
         description: string;
+        domainCountTemplate: string;
+        domainDuplicate: string;
+        domainInvalid: string;
+        domainLimitReached: string;
+        domainListEmpty: string;
         domainPlaceholder: string;
         downloadFile: string;
         jsSecureDomains: string;
+        jsSecureDomainsHint: string;
         miniDescription: string;
+        monthlyLimitHint: string;
         officialDescription: string;
         officialTitle: string;
         request: string;
@@ -415,6 +425,8 @@ export interface SdkworkIamOauthAdminMessages {
         socket: string;
         title: string;
         uploadFile: string;
+        webAuthDomains: string;
+        webAuthDomainsHint: string;
       };
       editDescription: string;
       editTitle: string;
@@ -449,6 +461,7 @@ export interface SdkworkIamOauthAdminMessages {
       };
       notices: {
         copied: string;
+        domainInvalid: string;
         saveError: string;
         saveSuccess: string;
         verifyQueued: string;
@@ -457,14 +470,20 @@ export interface SdkworkIamOauthAdminMessages {
       verifyFile: {
         content: string;
         contentPlaceholder: string;
+        contentRequired: string;
         copyContent: string;
+        copyFileName: string;
         deployHint: string;
+        deployTargetsTitle: string;
         description: string;
         download: string;
         fileName: string;
+        fileNameInvalid: string;
         fileNamePlaceholder: string;
         invalidType: string;
         noDomains: string;
+        openVerifyUrl: string;
+        sharedHint: string;
         status: string;
         statusFailed: string;
         statusPending: string;

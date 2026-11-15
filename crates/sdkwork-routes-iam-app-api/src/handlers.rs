@@ -1634,7 +1634,8 @@ async fn create_registration(
     .await;
     record_successful_password_login(pg, &state.config, &user, &username).await;
     let device_id = resolve_request_device_id(&body);
-    create_authenticated_session_response(&state, &user, &runtime_app_id, device_id.as_deref()).await
+    create_authenticated_session_response(&state, &user, &runtime_app_id, device_id.as_deref())
+        .await
 }
 
 async fn create_password_reset_request(
@@ -2403,13 +2404,8 @@ async fn respond_oauth_login_resolution(
                 &user.tenant_id,
             )
             .await;
-            return create_authenticated_session_response(
-                state,
-                &user,
-                runtime_app_id,
-                device_id,
-            )
-            .await;
+            return create_authenticated_session_response(state, &user, runtime_app_id, device_id)
+                .await;
         }
         crate::oauth_login::OAuthLoginResolution::PhoneBindingRequired(challenge) => challenge,
     };

@@ -197,6 +197,20 @@ export interface SdkworkIamOauthAccountDomainVerifyFile {
   fileName: string;
 }
 
+/**
+ * Official account (公众号) protected-domain sets, mirroring 公众平台 →
+ * 设置与开发 → 公众号设置 → 功能设置:
+ *
+ * - `jsSecureDomains` — JS 接口安全域名, at most 5; pages that call the JS-SDK.
+ * - `webAuthDomains` — 网页授权域名, at most 2; the OAuth 网页授权 callback must
+ *   live on one of them, so this set owns the account's callback URL.
+ * - `businessDomains` — 业务域名, at most 3; pages that open inside WeChat
+ *   without re-layout, optionally configured with a path.
+ *
+ * Values are stored as normalized hosts (no scheme, port, or trailing slash).
+ * `SdkworkIamOauthAccountDomainsConfig.business` is the legacy mini-program
+ * shape and is only read as a migration source.
+ */
 export interface SdkworkIamOauthAccountConfig {
   businessDomains?: string[];
   domains?: SdkworkIamOauthAccountDomainsConfig;
@@ -205,7 +219,19 @@ export interface SdkworkIamOauthAccountConfig {
   notify?: SdkworkIamOauthAccountNotifyConfig;
   redirectUri?: string;
   verifyFile?: SdkworkIamOauthAccountVerifyFileConfig;
+  /**
+   * Legacy per-domain verification files (pre single-file storage). WeChat
+   * issues one `MP_verify_*.txt` per account and expects that same file at
+   * every domain root, so new saves write `verifyFile` instead; existing
+   * entries stay readable until the account is re-saved.
+   */
   verifyFiles?: SdkworkIamOauthAccountDomainVerifyFile[];
+  webAuthDomains?: string[];
+  /**
+   * Legacy primary domain. Kept as the fallback callback domain for accounts
+   * provisioned before the dedicated 网页授权域名 set existed; the drawer now
+   * prefers the first `webAuthDomains` entry.
+   */
   webDomain?: string;
   /**
    * Official account custom menu draft. Persisted inside the account's
@@ -219,8 +245,9 @@ export interface SdkworkIamOauthAccountConfig {
  * Quick-setup draft for a mini program or official account. Saving creates
  * (or reuses) the matching WeChat integration and a resource account, so the
  * account is usable immediately. `redirectUri` is optional: when `config`
- * carries a `webDomain`, the standardized callback URL is derived as
- * `https://{webDomain}/auth/oauth/callback`.
+ * carries a `webAuthDomains` entry (or the legacy `webDomain`), the
+ * standardized callback URL is derived as
+ * `https://{webAuthDomain}/auth/oauth/callback`.
  */
 export interface SdkworkIamOauthAccountSetupDraft {
   accountType?: string;

@@ -33,6 +33,7 @@ export const IAM_HARMONY_RUNTIME_ENV_DOCUMENTS: IamHarmonyRuntimeEnvDocument[] =
     platform: {
       apiGatewayHttpUrl: "http://127.0.0.1:3901",
     },
+    SDKWORK_ACCESS_TOKEN: "eyJhbGciOiJub25lIiwia2lkIjoicHVibGljLWFwcC10b2tlbiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiJzZGt3b3JrLWlhbSIsImF1ZCI6InNka3dvcmstaWFtIiwiZGVwbG95bWVudF9tb2RlIjoicHJpdmF0ZSIsImRlcGxveW1lbnRfcHJvZmlsZSI6InN0YW5kYWxvbmUiLCJlbnZpcm9ubWVudCI6ImRldmVsb3BtZW50IiwiZXhwIjo0MTAyNDQ0ODAwLCJpYXQiOjE3NjcyMjU2MDAsImlzcyI6InNka3dvcmstaWFtLXB1YmxpYyIsImxvZ2luX3Njb3BlIjoiVEVOQU5UIiwib3JnYW5pemF0aW9uX2lkIjoiMCIsInBlcm1pc3Npb25fc2NvcGUiOlsiaWFtOnNlbGYiXSwicnVudGltZV90YXJnZXQiOiJoYXJtb255LW5hdGl2ZSIsInNlc3Npb25faWQiOiJib290c3RyYXAtcHVibGljLXNka3dvcmstaWFtLXN0YW5kYWxvbmUuZGV2ZWxvcG1lbnQiLCJ0ZW5hbnRfaWQiOiIxMDAwMDEiLCJ0b2tlbl9jbGFzcyI6ImFwcGxpY2F0aW9uIiwidG9rZW5fdHlwZSI6ImFjY2VzcyIsInRva2VuX3ZlcnNpb24iOjEsInVzZXJfaWQiOiIwIn0.public",
   },
   {
     environment: "test",
@@ -50,6 +51,7 @@ export const IAM_HARMONY_RUNTIME_ENV_DOCUMENTS: IamHarmonyRuntimeEnvDocument[] =
     platform: {
       apiGatewayHttpUrl: "https://iam-test.sdkwork.com",
     },
+    SDKWORK_ACCESS_TOKEN: "eyJhbGciOiJub25lIiwia2lkIjoicHVibGljLWFwcC10b2tlbiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiJzZGt3b3JrLWlhbSIsImF1ZCI6InNka3dvcmstaWFtIiwiZGVwbG95bWVudF9tb2RlIjoicHJpdmF0ZSIsImRlcGxveW1lbnRfcHJvZmlsZSI6InN0YW5kYWxvbmUiLCJlbnZpcm9ubWVudCI6InRlc3QiLCJleHAiOjQxMDI0NDQ4MDAsImlhdCI6MTc2NzIyNTYwMCwiaXNzIjoic2Rrd29yay1pYW0tcHVibGljIiwibG9naW5fc2NvcGUiOiJURU5BTlQiLCJvcmdhbml6YXRpb25faWQiOiIwIiwicGVybWlzc2lvbl9zY29wZSI6WyJpYW06c2VsZiJdLCJydW50aW1lX3RhcmdldCI6Imhhcm1vbnktbmF0aXZlIiwic2Vzc2lvbl9pZCI6ImJvb3RzdHJhcC1wdWJsaWMtc2Rrd29yay1pYW0tc3RhbmRhbG9uZS50ZXN0IiwidGVuYW50X2lkIjoiMTAwMDAxIiwidG9rZW5fY2xhc3MiOiJhcHBsaWNhdGlvbiIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJ0b2tlbl92ZXJzaW9uIjoxLCJ1c2VyX2lkIjoiMCJ9.public",
   },
   {
     environment: "staging",
@@ -67,6 +69,7 @@ export const IAM_HARMONY_RUNTIME_ENV_DOCUMENTS: IamHarmonyRuntimeEnvDocument[] =
     platform: {
       apiGatewayHttpUrl: "https://iam-staging.sdkwork.com",
     },
+    SDKWORK_ACCESS_TOKEN: "eyJhbGciOiJub25lIiwia2lkIjoicHVibGljLWFwcC10b2tlbiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiJzZGt3b3JrLWlhbSIsImF1ZCI6InNka3dvcmstaWFtIiwiZGVwbG95bWVudF9tb2RlIjoicHJpdmF0ZSIsImRlcGxveW1lbnRfcHJvZmlsZSI6InN0YW5kYWxvbmUiLCJlbnZpcm9ubWVudCI6InN0YWdpbmciLCJleHAiOjQxMDI0NDQ4MDAsImlhdCI6MTc2NzIyNTYwMCwiaXNzIjoic2Rrd29yay1pYW0tcHVibGljIiwibG9naW5fc2NvcGUiOiJURU5BTlQiLCJvcmdhbml6YXRpb25faWQiOiIwIiwicGVybWlzc2lvbl9zY29wZSI6WyJpYW06c2VsZiJdLCJydW50aW1lX3RhcmdldCI6Imhhcm1vbnktbmF0aXZlIiwic2Vzc2lvbl9pZCI6ImJvb3RzdHJhcC1wdWJsaWMtc2Rrd29yay1pYW0tc3RhbmRhbG9uZS5zdGFnaW5nIiwidGVuYW50X2lkIjoiMTAwMDAxIiwidG9rZW5fY2xhc3MiOiJhcHBsaWNhdGlvbiIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJ0b2tlbl92ZXJzaW9uIjoxLCJ1c2VyX2lkIjoiMCJ9.public",
   },
   {
     environment: "demo",
@@ -84,6 +87,7 @@ export const IAM_HARMONY_RUNTIME_ENV_DOCUMENTS: IamHarmonyRuntimeEnvDocument[] =
     platform: {
       apiGatewayHttpUrl: "https://iam-demo.sdkwork.com",
     },
+    SDKWORK_ACCESS_TOKEN: "eyJhbGciOiJub25lIiwia2lkIjoicHVibGljLWFwcC10b2tlbiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiJzZGt3b3JrLWlhbSIsImF1ZCI6InNka3dvcmstaWFtIiwiZGVwbG95bWVudF9tb2RlIjoicHJpdmF0ZSIsImRlcGxveW1lbnRfcHJvZmlsZSI6InN0YW5kYWxvbmUiLCJlbnZpcm9ubWVudCI6ImRlbW8iLCJleHAiOjQxMDI0NDQ4MDAsImlhdCI6MTc2NzIyNTYwMCwiaXNzIjoic2Rrd29yay1pYW0tcHVibGljIiwibG9naW5fc2NvcGUiOiJURU5BTlQiLCJvcmdhbml6YXRpb25faWQiOiIwIiwicGVybWlzc2lvbl9zY29wZSI6WyJpYW06c2VsZiJdLCJydW50aW1lX3RhcmdldCI6Imhhcm1vbnktbmF0aXZlIiwic2Vzc2lvbl9pZCI6ImJvb3RzdHJhcC1wdWJsaWMtc2Rrd29yay1pYW0tc3RhbmRhbG9uZS5kZW1vIiwidGVuYW50X2lkIjoiMTAwMDAxIiwidG9rZW5fY2xhc3MiOiJhcHBsaWNhdGlvbiIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJ0b2tlbl92ZXJzaW9uIjoxLCJ1c2VyX2lkIjoiMCJ9.public",
   },
   {
     environment: "production",
@@ -101,6 +105,7 @@ export const IAM_HARMONY_RUNTIME_ENV_DOCUMENTS: IamHarmonyRuntimeEnvDocument[] =
     platform: {
       apiGatewayHttpUrl: "http://127.0.0.1:3901",
     },
+    SDKWORK_ACCESS_TOKEN: "eyJhbGciOiJub25lIiwia2lkIjoicHVibGljLWFwcC10b2tlbiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiJzZGt3b3JrLWlhbSIsImF1ZCI6InNka3dvcmstaWFtIiwiZGVwbG95bWVudF9tb2RlIjoicHJpdmF0ZSIsImRlcGxveW1lbnRfcHJvZmlsZSI6InN0YW5kYWxvbmUiLCJlbnZpcm9ubWVudCI6InByb2R1Y3Rpb24iLCJleHAiOjQxMDI0NDQ4MDAsImlhdCI6MTc2NzIyNTYwMCwiaXNzIjoic2Rrd29yay1pYW0tcHVibGljIiwibG9naW5fc2NvcGUiOiJURU5BTlQiLCJvcmdhbml6YXRpb25faWQiOiIwIiwicGVybWlzc2lvbl9zY29wZSI6WyJpYW06c2VsZiJdLCJydW50aW1lX3RhcmdldCI6Imhhcm1vbnktbmF0aXZlIiwic2Vzc2lvbl9pZCI6ImJvb3RzdHJhcC1wdWJsaWMtc2Rrd29yay1pYW0tc3RhbmRhbG9uZS5wcm9kdWN0aW9uIiwidGVuYW50X2lkIjoiMTAwMDAxIiwidG9rZW5fY2xhc3MiOiJhcHBsaWNhdGlvbiIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJ0b2tlbl92ZXJzaW9uIjoxLCJ1c2VyX2lkIjoiMCJ9.public",
   },
   {
     environment: "development",
@@ -118,6 +123,7 @@ export const IAM_HARMONY_RUNTIME_ENV_DOCUMENTS: IamHarmonyRuntimeEnvDocument[] =
     platform: {
       apiGatewayHttpUrl: "http://127.0.0.1:3900",
     },
+    SDKWORK_ACCESS_TOKEN: "eyJhbGciOiJub25lIiwia2lkIjoicHVibGljLWFwcC10b2tlbiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiJzZGt3b3JrLWlhbSIsImF1ZCI6InNka3dvcmstaWFtIiwiZGVwbG95bWVudF9tb2RlIjoic2FhcyIsImRlcGxveW1lbnRfcHJvZmlsZSI6ImNsb3VkIiwiZW52aXJvbm1lbnQiOiJkZXZlbG9wbWVudCIsImV4cCI6NDEwMjQ0NDgwMCwiaWF0IjoxNzY3MjI1NjAwLCJpc3MiOiJzZGt3b3JrLWlhbS1wdWJsaWMiLCJsb2dpbl9zY29wZSI6IlRFTkFOVCIsIm9yZ2FuaXphdGlvbl9pZCI6IjAiLCJwZXJtaXNzaW9uX3Njb3BlIjpbImlhbTpzZWxmIl0sInJ1bnRpbWVfdGFyZ2V0IjoiaGFybW9ueS1uYXRpdmUiLCJzZXNzaW9uX2lkIjoiYm9vdHN0cmFwLXB1YmxpYy1zZGt3b3JrLWlhbS1jbG91ZC5kZXZlbG9wbWVudCIsInRlbmFudF9pZCI6IjEwMDAwMSIsInRva2VuX2NsYXNzIjoiYXBwbGljYXRpb24iLCJ0b2tlbl90eXBlIjoiYWNjZXNzIiwidG9rZW5fdmVyc2lvbiI6MSwidXNlcl9pZCI6IjAifQ.public",
   },
   {
     environment: "test",
@@ -135,6 +141,7 @@ export const IAM_HARMONY_RUNTIME_ENV_DOCUMENTS: IamHarmonyRuntimeEnvDocument[] =
     platform: {
       apiGatewayHttpUrl: "https://api-test.sdkwork.com;https://api-test.birdcoder.com;https://api-test.dtupay.com;https://api-test.noaper.com;https://api-test.sdkwork.cn;https://api-test.birdcoder.cn;https://api-test.dtupay.cn;https://api-test.noaper.cn;https://api-test.skubc.com;https://api-test.skubc.cn;https://api-test.zowalk.com;https://api-test.zowalk.cn;https://api-test.offer86.com;https://api-test.offer86.cn;https://api-test.86offer.com;https://api-test.86offer.cn",
     },
+    SDKWORK_ACCESS_TOKEN: "eyJhbGciOiJub25lIiwia2lkIjoicHVibGljLWFwcC10b2tlbiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiJzZGt3b3JrLWlhbSIsImF1ZCI6InNka3dvcmstaWFtIiwiZGVwbG95bWVudF9tb2RlIjoic2FhcyIsImRlcGxveW1lbnRfcHJvZmlsZSI6ImNsb3VkIiwiZW52aXJvbm1lbnQiOiJ0ZXN0IiwiZXhwIjo0MTAyNDQ0ODAwLCJpYXQiOjE3NjcyMjU2MDAsImlzcyI6InNka3dvcmstaWFtLXB1YmxpYyIsImxvZ2luX3Njb3BlIjoiVEVOQU5UIiwib3JnYW5pemF0aW9uX2lkIjoiMCIsInBlcm1pc3Npb25fc2NvcGUiOlsiaWFtOnNlbGYiXSwicnVudGltZV90YXJnZXQiOiJoYXJtb255LW5hdGl2ZSIsInNlc3Npb25faWQiOiJib290c3RyYXAtcHVibGljLXNka3dvcmstaWFtLWNsb3VkLnRlc3QiLCJ0ZW5hbnRfaWQiOiIxMDAwMDEiLCJ0b2tlbl9jbGFzcyI6ImFwcGxpY2F0aW9uIiwidG9rZW5fdHlwZSI6ImFjY2VzcyIsInRva2VuX3ZlcnNpb24iOjEsInVzZXJfaWQiOiIwIn0.public",
   },
   {
     environment: "staging",
@@ -152,6 +159,7 @@ export const IAM_HARMONY_RUNTIME_ENV_DOCUMENTS: IamHarmonyRuntimeEnvDocument[] =
     platform: {
       apiGatewayHttpUrl: "https://api-staging.sdkwork.com;https://api-staging.birdcoder.com;https://api-staging.dtupay.com;https://api-staging.noaper.com;https://api-staging.sdkwork.cn;https://api-staging.birdcoder.cn;https://api-staging.dtupay.cn;https://api-staging.noaper.cn;https://api-staging.skubc.com;https://api-staging.skubc.cn;https://api-staging.zowalk.com;https://api-staging.zowalk.cn;https://api-staging.offer86.com;https://api-staging.offer86.cn;https://api-staging.86offer.com;https://api-staging.86offer.cn",
     },
+    SDKWORK_ACCESS_TOKEN: "eyJhbGciOiJub25lIiwia2lkIjoicHVibGljLWFwcC10b2tlbiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiJzZGt3b3JrLWlhbSIsImF1ZCI6InNka3dvcmstaWFtIiwiZGVwbG95bWVudF9tb2RlIjoic2FhcyIsImRlcGxveW1lbnRfcHJvZmlsZSI6ImNsb3VkIiwiZW52aXJvbm1lbnQiOiJzdGFnaW5nIiwiZXhwIjo0MTAyNDQ0ODAwLCJpYXQiOjE3NjcyMjU2MDAsImlzcyI6InNka3dvcmstaWFtLXB1YmxpYyIsImxvZ2luX3Njb3BlIjoiVEVOQU5UIiwib3JnYW5pemF0aW9uX2lkIjoiMCIsInBlcm1pc3Npb25fc2NvcGUiOlsiaWFtOnNlbGYiXSwicnVudGltZV90YXJnZXQiOiJoYXJtb255LW5hdGl2ZSIsInNlc3Npb25faWQiOiJib290c3RyYXAtcHVibGljLXNka3dvcmstaWFtLWNsb3VkLnN0YWdpbmciLCJ0ZW5hbnRfaWQiOiIxMDAwMDEiLCJ0b2tlbl9jbGFzcyI6ImFwcGxpY2F0aW9uIiwidG9rZW5fdHlwZSI6ImFjY2VzcyIsInRva2VuX3ZlcnNpb24iOjEsInVzZXJfaWQiOiIwIn0.public",
   },
   {
     environment: "demo",
@@ -169,6 +177,7 @@ export const IAM_HARMONY_RUNTIME_ENV_DOCUMENTS: IamHarmonyRuntimeEnvDocument[] =
     platform: {
       apiGatewayHttpUrl: "https://api-demo.sdkwork.com;https://api-demo.birdcoder.com;https://api-demo.dtupay.com;https://api-demo.noaper.com;https://api-demo.sdkwork.cn;https://api-demo.birdcoder.cn;https://api-demo.dtupay.cn;https://api-demo.noaper.cn;https://api-demo.skubc.com;https://api-demo.skubc.cn;https://api-demo.zowalk.com;https://api-demo.zowalk.cn;https://api-demo.offer86.com;https://api-demo.offer86.cn;https://api-demo.86offer.com;https://api-demo.86offer.cn",
     },
+    SDKWORK_ACCESS_TOKEN: "eyJhbGciOiJub25lIiwia2lkIjoicHVibGljLWFwcC10b2tlbiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiJzZGt3b3JrLWlhbSIsImF1ZCI6InNka3dvcmstaWFtIiwiZGVwbG95bWVudF9tb2RlIjoic2FhcyIsImRlcGxveW1lbnRfcHJvZmlsZSI6ImNsb3VkIiwiZW52aXJvbm1lbnQiOiJkZW1vIiwiZXhwIjo0MTAyNDQ0ODAwLCJpYXQiOjE3NjcyMjU2MDAsImlzcyI6InNka3dvcmstaWFtLXB1YmxpYyIsImxvZ2luX3Njb3BlIjoiVEVOQU5UIiwib3JnYW5pemF0aW9uX2lkIjoiMCIsInBlcm1pc3Npb25fc2NvcGUiOlsiaWFtOnNlbGYiXSwicnVudGltZV90YXJnZXQiOiJoYXJtb255LW5hdGl2ZSIsInNlc3Npb25faWQiOiJib290c3RyYXAtcHVibGljLXNka3dvcmstaWFtLWNsb3VkLmRlbW8iLCJ0ZW5hbnRfaWQiOiIxMDAwMDEiLCJ0b2tlbl9jbGFzcyI6ImFwcGxpY2F0aW9uIiwidG9rZW5fdHlwZSI6ImFjY2VzcyIsInRva2VuX3ZlcnNpb24iOjEsInVzZXJfaWQiOiIwIn0.public",
   },
   {
     environment: "production",
@@ -186,5 +195,6 @@ export const IAM_HARMONY_RUNTIME_ENV_DOCUMENTS: IamHarmonyRuntimeEnvDocument[] =
     platform: {
       apiGatewayHttpUrl: "https://api.sdkwork.com;https://api.birdcoder.com;https://api.dtupay.com;https://api.noaper.com;https://api.sdkwork.cn;https://api.birdcoder.cn;https://api.dtupay.cn;https://api.noaper.cn;https://api.skubc.com;https://api.skubc.cn;https://api.zowalk.com;https://api.zowalk.cn;https://api.offer86.com;https://api.offer86.cn;https://api.86offer.com;https://api.86offer.cn",
     },
+    SDKWORK_ACCESS_TOKEN: "eyJhbGciOiJub25lIiwia2lkIjoicHVibGljLWFwcC10b2tlbiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiJzZGt3b3JrLWlhbSIsImF1ZCI6InNka3dvcmstaWFtIiwiZGVwbG95bWVudF9tb2RlIjoic2FhcyIsImRlcGxveW1lbnRfcHJvZmlsZSI6ImNsb3VkIiwiZW52aXJvbm1lbnQiOiJwcm9kdWN0aW9uIiwiZXhwIjo0MTAyNDQ0ODAwLCJpYXQiOjE3NjcyMjU2MDAsImlzcyI6InNka3dvcmstaWFtLXB1YmxpYyIsImxvZ2luX3Njb3BlIjoiVEVOQU5UIiwib3JnYW5pemF0aW9uX2lkIjoiMCIsInBlcm1pc3Npb25fc2NvcGUiOlsiaWFtOnNlbGYiXSwicnVudGltZV90YXJnZXQiOiJoYXJtb255LW5hdGl2ZSIsInNlc3Npb25faWQiOiJib290c3RyYXAtcHVibGljLXNka3dvcmstaWFtLWNsb3VkLnByb2R1Y3Rpb24iLCJ0ZW5hbnRfaWQiOiIxMDAwMDEiLCJ0b2tlbl9jbGFzcyI6ImFwcGxpY2F0aW9uIiwidG9rZW5fdHlwZSI6ImFjY2VzcyIsInRva2VuX3ZlcnNpb24iOjEsInVzZXJfaWQiOiIwIn0.public",
   },
 ];
