@@ -177,7 +177,7 @@ describe("official accounts panel", () => {
       list: vi.fn(async () => ({ items: [menuAccount], totalItems: 1, page: 1, pageSize: 20 })),
       loadCustomMenu: vi.fn(async (id) => ({
         accountId: id,
-        menu: { buttons: [{ key: "menu-0", name: "Help", type: "click", message: "HELP" }] },
+        menu: { buttons: [{ key: "menu-0", name: "Help", type: "click" as const, message: "HELP" }] },
       })),
     });
     const operator = bench(DEFAULT_OPERATOR_CAPABILITIES, menuTransport());
