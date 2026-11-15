@@ -2,9 +2,16 @@
 /**
  * Root composition entry.
  *
- * Authority: `HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md` sections 1 and 6. This
- * module assembles the environment, the SDK client, the IAM runtime, the host
+ * Authority: `HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md` sections 1 and 6, and
+ * `ENVIRONMENT_SPEC.md` section 6.1. This module assembles the environment, the
+ * public application access token, the SDK clients, the IAM runtime, the host
  * adapters and the route registry. It owns no product business logic.
+ *
+ * Bootstrap order is normative here: the selected profile is validated (which fails
+ * closed on a missing or malformed `SDKWORK_ACCESS_TOKEN`), the token is seeded into
+ * the shared token manager, and only then are the SDK clients constructed. A client
+ * reads the manager while its config is built, so the reverse order yields clients
+ * that cannot send `Access-Token` on the credential-entry route.
  *
  * It is also the one layer allowed to depend on both the shell and the capability
  * packages (section 5), which is why the route registry is assembled here rather
@@ -17,6 +24,7 @@ import {
   resolveErrorMessage,
 } from '@sdkwork/sdkwork-iam-harmony-mobile-commons';
 import { type IamHarmonyRouteRegistration } from '@sdkwork/sdkwork-iam-harmony-mobile-shell';
+import { initializeIamHarmonyBootstrapToken } from '@sdkwork/sdkwork-iam-harmony-mobile-core';
 
 import { IAM_HARMONY_DEFAULT_PROFILE_ID } from '../generated/RuntimeConfig';
 import { resolveIamHarmonyEnvironment, type IamHarmonyEnvironment } from './Environment';
@@ -58,6 +66,11 @@ let bootstrapError: string | null = null;
  * Throws on a configuration defect. The caller is `EntryAbility`, which records the
  * message so the root page can render it; swallowing it here would produce an app
  * that launches into a blank screen with no explanation.
+ *
+ * Order is the contract: resolve and validate the profile, seed the public
+ * application access token into the shared token manager, then construct the clients.
+ * `resolveIamHarmonyEnvironment` is what fails closed, naming `SDKWORK_ACCESS_TOKEN`
+ * and the profile document, when the token is missing or malformed.
  */
 export function bootstrapIamHarmonyApp(
   options: IamHarmonyBootstrapOptions = {},
@@ -65,6 +78,11 @@ export function bootstrapIamHarmonyApp(
   const profileId: string = options.profileId ?? IAM_HARMONY_DEFAULT_PROFILE_ID;
   const environment: IamHarmonyEnvironment = resolveIamHarmonyEnvironment(profileId);
 
+  // Step 1: seed the single global token manager with the public application token.
+  initializeIamHarmonyBootstrapToken(environment.applicationAccessToken);
+
+  // Step 2: construct the clients. Every tier reads the seeded token while its
+  // config is built, so this call must stay after the seed.
   const sdk: IamHarmonySdkClients = createIamHarmonySdkClients();
   sdk.initialize(environment);
 

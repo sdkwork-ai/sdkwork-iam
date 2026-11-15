@@ -16,6 +16,7 @@
  * both reach the core through this module instead of each importing it directly.
  */
 export {
+  IAM_HARMONY_APPLICATION_ACCESS_TOKEN_KEY,
   IAM_HARMONY_RUNTIME_TARGET,
   type IamHarmonyEnvironment,
   type IamHarmonyRuntimeEnvDocument,

@@ -38,9 +38,20 @@ export default function iamHarmonyContractTest() {
       }
     });
 
+    it('loads the public application access token of every profile', 0, () => {
+      // APP_ACCESS_TOKEN_SPEC.md section 2: every packaged profile carries a
+      // non-empty three-part public token, and the loader must yield it so bootstrap
+      // can seed the shared token manager before SDK client construction.
+      for (const profileId of listIamHarmonyProfileIds()) {
+        const environment = resolveIamHarmonyEnvironment(profileId);
+        expect(environment.applicationAccessToken.length > 0).assertTrue();
+        expect(environment.applicationAccessToken.split('.').length).assertEqual(3);
+      }
+    });
+
     it('registers a validated route registry', 0, () => {
       const routes = createIamHarmonyRoutes();
-      expect(routes.length).assertEqual(26);
+      expect(routes.length).assertEqual(27);
     });
   });
 }

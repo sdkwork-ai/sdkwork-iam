@@ -29,6 +29,15 @@ export interface IamHarmonyRuntimeEnvDocument {
   readonly platform: {
     readonly apiGatewayHttpUrl: string;
   };
+  /**
+   * Public application access token of this profile.
+   *
+   * `APP_ACCESS_TOKEN_SPEC.md` section 2 requires a non-empty value in every
+   * profile document and section 3.1 fixes it as one JWT compact string, never the
+   * generator's `accessToken` input object. The key is uppercase because it is the
+   * canonical env key, and the tracked JSON document carries the same spelling.
+   */
+  readonly SDKWORK_ACCESS_TOKEN: string;
 }
 
 /** A validated environment ready for SDK construction. */
@@ -42,10 +51,65 @@ export interface IamHarmonyEnvironment {
   readonly appbaseAppApiBaseUrl: string;
   readonly appbaseLoginUrl: string;
   readonly platformApiGatewayHttpUrl: string;
+  /**
+   * The public application access token bootstrap seeds into the global token
+   * manager before any SDK client is constructed.
+   */
+  readonly applicationAccessToken: string;
 }
 
 /** Runtime target every document in this root must declare. */
 export const IAM_HARMONY_RUNTIME_TARGET: string = 'harmony-native';
+
+/** Canonical key of the public application access token in a profile document. */
+export const IAM_HARMONY_APPLICATION_ACCESS_TOKEN_KEY: string = 'SDKWORK_ACCESS_TOKEN';
+
+/**
+ * Relative path of one packaged profile document.
+ *
+ * Used only to name the document in a fail-closed diagnostic: a message that says
+ * "the token is missing" without naming the profile cannot be repaired from the app.
+ */
+function applicationAccessTokenDocumentPath(profileId: string): string {
+  return 'config/app/runtime-env.' + profileId + '.json';
+}
+
+/**
+ * Validates the public application access token of one document.
+ *
+ * `APP_ACCESS_TOKEN_SPEC.md` section 2 requires a non-empty value and section 3.1
+ * requires one three-part JWT compact string. Structural validation stops here
+ * because this module must not depend on a base64 or crypto platform API to read
+ * claims; the claim-level contract (`alg:none`, `token_class:application`, profile
+ * coherence) is asserted by `tests/harmony-runtime-config.test.mjs` against the
+ * committed documents, which are the values this loader receives.
+ */
+function requireApplicationAccessToken(
+  document: IamHarmonyRuntimeEnvDocument,
+  profileId: string,
+): string {
+  const documentPath: string = applicationAccessTokenDocumentPath(profileId);
+  const accessToken: string = requireNonEmpty(
+    document.SDKWORK_ACCESS_TOKEN,
+    IAM_HARMONY_APPLICATION_ACCESS_TOKEN_KEY + ' in ' + documentPath,
+  );
+  const segments: string[] = accessToken.split('.');
+  let wellFormed: boolean = segments.length === 3;
+  if (wellFormed) {
+    for (const segment of segments) {
+      if (segment.length === 0) {
+        wellFormed = false;
+      }
+    }
+  }
+  if (!wellFormed) {
+    throw new Error(
+      'Harmony runtime config ' + IAM_HARMONY_APPLICATION_ACCESS_TOKEN_KEY + ' in ' + documentPath
+      + ' must be a three-part JWT compact string (APP_ACCESS_TOKEN_SPEC.md section 3.1)',
+    );
+  }
+  return accessToken;
+}
 
 function requireNonEmpty(value: string | undefined, key: string): string {
   const normalized: string = value === undefined ? '' : value.trim();
@@ -132,6 +196,10 @@ export function createIamHarmonyEnvironment(
     || document.platform === undefined) {
     throw new Error('Harmony runtime config requires application, appbase and platform groups');
   }
+  // Fails closed on a missing or malformed public application token, naming the key
+  // and the profile document. Bootstrap depends on this: it seeds the token manager
+  // from this value and must never construct a client without one.
+  const applicationAccessToken: string = requireApplicationAccessToken(document, profileId);
   return {
     environment,
     deploymentProfile,
@@ -152,5 +220,6 @@ export function createIamHarmonyEnvironment(
     platformApiGatewayHttpUrl: normalizeIamHarmonyOrigin(
       document.platform.apiGatewayHttpUrl, 'platform.apiGatewayHttpUrl', ['http', 'https'],
     ),
+    applicationAccessToken,
   };
 }

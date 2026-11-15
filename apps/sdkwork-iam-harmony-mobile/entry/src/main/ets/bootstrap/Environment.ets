@@ -20,12 +20,14 @@ import {
   IAM_HARMONY_RUNTIME_ENV_DOCUMENTS,
 } from '../generated/RuntimeConfig';
 import {
+  IAM_HARMONY_APPLICATION_ACCESS_TOKEN_KEY,
   IAM_HARMONY_RUNTIME_TARGET,
   type IamHarmonyEnvironment,
   type IamHarmonyRuntimeEnvDocument,
 } from './EnvironmentContract';
 
 export {
+  IAM_HARMONY_APPLICATION_ACCESS_TOKEN_KEY,
   IAM_HARMONY_DEFAULT_PROFILE_ID,
   IAM_HARMONY_RUNTIME_TARGET,
   type IamHarmonyEnvironment,
@@ -64,4 +66,19 @@ export function resolveIamHarmonyEnvironment(
   profileId: string = IAM_HARMONY_DEFAULT_PROFILE_ID,
 ): IamHarmonyEnvironment {
   return createIamHarmonyEnvironment(selectIamHarmonyRuntimeEnvDocument(profileId));
+}
+
+/**
+ * The public application access token of one selected profile.
+ *
+ * A dedicated reader because runtime bootstrap needs exactly this value before it
+ * constructs any SDK client, and reading it from the same validated environment keeps
+ * the credential and the endpoints from being selected from two different documents.
+ * A missing or malformed token fails closed inside
+ * `createIamHarmonyEnvironment` with the key and the profile document named.
+ */
+export function resolveIamHarmonyApplicationAccessToken(
+  profileId: string = IAM_HARMONY_DEFAULT_PROFILE_ID,
+): string {
+  return resolveIamHarmonyEnvironment(profileId).applicationAccessToken;
 }

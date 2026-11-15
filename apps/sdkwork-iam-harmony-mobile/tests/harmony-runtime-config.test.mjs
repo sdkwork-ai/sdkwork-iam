@@ -40,6 +40,19 @@ const PROFILE_IDS = [
 const DEFAULT_PROFILE_ID = 'standalone.development';
 const RUNTIME_TARGET = 'harmony-native';
 const CANONICAL_API_PREFIXES = ['/app/v3/api', '/backend/v3/api'];
+const APPLICATION_ACCESS_TOKEN_KEY = 'SDKWORK_ACCESS_TOKEN';
+const CORE_RUNTIME_ENV = path.join(
+  APP_ROOT, 'packages', 'sdkwork-iam-harmony-mobile-core', 'src', 'main', 'ets', 'runtime', 'RuntimeEnv.ets',
+);
+/** Keys a committed profile document must never carry: they are session credentials. */
+const PRIVATE_CREDENTIAL_KEYS = [
+  'accessToken',
+  'authToken',
+  'refreshToken',
+  'sessionAccessToken',
+  'apiKey',
+  'password',
+];
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -102,6 +115,16 @@ function readRuntimeDocument(profileId) {
   return readJson(path.join(RUNTIME_DIR, 'runtime-env.' + profileId + '.json'));
 }
 
+function readApplicationAccessToken(profileId) {
+  const document = readRuntimeDocument(profileId);
+  return String(document[APPLICATION_ACCESS_TOKEN_KEY] ?? '').trim();
+}
+
+/** Decodes one base64url JWT segment. The public token has no signature to verify. */
+function decodeJwtSegment(segment) {
+  return JSON.parse(Buffer.from(segment, 'base64url').toString('utf8'));
+}
+
 describe('harmony runtime config', () => {
   it('tracks exactly the ten registered profiles', () => {
     const profiles = fs
@@ -122,6 +145,69 @@ describe('harmony runtime config', () => {
         profileId + ': profileId must be <deploymentProfile>.<environment>',
       );
       assert.equal(document.runtimeTarget, RUNTIME_TARGET, profileId + ': runtimeTarget');
+    }
+  });
+
+  it('carries the public application access token in every profile document', () => {
+    // APP_ACCESS_TOKEN_SPEC.md section 2: the key is mandatory in every profile file of
+    // a manifest-bearing root, and section 3.1 fixes it as one JWT compact string.
+    for (const profileId of PROFILE_IDS) {
+      const document = readRuntimeDocument(profileId);
+      assert.ok(
+        Object.prototype.hasOwnProperty.call(document, APPLICATION_ACCESS_TOKEN_KEY),
+        profileId + ': ' + APPLICATION_ACCESS_TOKEN_KEY + ' is missing',
+      );
+      const token = readApplicationAccessToken(profileId);
+      assert.ok(token.length > 0, profileId + ': ' + APPLICATION_ACCESS_TOKEN_KEY + ' must be non-empty');
+      const segments = token.split('.');
+      assert.equal(segments.length, 3, profileId + ': the token must be a three-part JWT');
+      for (const segment of segments) {
+        assert.ok(segment.length > 0, profileId + ': every JWT segment must be non-empty');
+      }
+    }
+  });
+
+  it('issues the public application token class, not a session credential', () => {
+    // ENVIRONMENT_SPEC.md section 6.1 and APP_ACCESS_TOKEN_SPEC.md section 3: this is
+    // the public pre-login isolation token (alg:none, token_class:application) and it
+    // must match the profile and the root manifest identity it is committed for.
+    const manifest = readJson(path.join(APP_ROOT, 'agent.app.config.json'));
+    for (const profileId of PROFILE_IDS) {
+      const [deploymentProfile, environment] = profileId.split('.');
+      const segments = readApplicationAccessToken(profileId).split('.');
+      const header = decodeJwtSegment(segments[0]);
+      const payload = decodeJwtSegment(segments[1]);
+      assert.equal(header.alg, 'none', profileId + ': a public application token uses alg:none');
+      assert.equal(header.kid, 'public-app-token', profileId + ': public app token kid');
+      assert.equal(payload.token_class, 'application', profileId + ': token_class must be application');
+      assert.equal(payload.token_type, 'access', profileId + ': token_type must be access');
+      assert.equal(payload.environment, environment, profileId + ': environment claim');
+      assert.equal(payload.deployment_profile, deploymentProfile, profileId + ': deployment_profile claim');
+      assert.equal(payload.runtime_target, RUNTIME_TARGET, profileId + ': runtime_target claim');
+      assert.equal(payload.app_id, manifest.backend.appId, profileId + ': app_id claim');
+      assert.equal(payload.aud, manifest.backend.appId, profileId + ': aud claim');
+      assert.equal(
+        String(payload.tenant_id),
+        String(manifest.backend.tenantId),
+        profileId + ': tenant_id claim',
+      );
+      assert.equal(String(payload.user_id), '0', profileId + ': a public token carries no user');
+    }
+  });
+
+  it('keeps private session credentials out of the profile documents', () => {
+    // Only the public application token may be committed (APP_ACCESS_TOKEN_SPEC.md
+    // section 1). A session access token, auth token, refresh token, API key or
+    // password in a profile file would be a committed private credential.
+    for (const profileId of PROFILE_IDS) {
+      const document = readRuntimeDocument(profileId);
+      for (const key of PRIVATE_CREDENTIAL_KEYS) {
+        assert.equal(
+          document[key],
+          undefined,
+          profileId + ': ' + key + ' is a session credential and must not be committed',
+        );
+      }
     }
   });
 
@@ -239,9 +325,40 @@ describe('harmony runtime config', () => {
       generated.includes("from '../bootstrap/EnvironmentContract'"),
       'the generated module must import the document contract, not redeclare it',
     );
+    for (const profileId of PROFILE_IDS) {
+      const token = readApplicationAccessToken(profileId);
+      assert.ok(
+        generated.includes(APPLICATION_ACCESS_TOKEN_KEY + ": '" + token + "'"),
+        'generated RuntimeConfig.ets must project the committed ' + APPLICATION_ACCESS_TOKEN_KEY
+          + ' of ' + profileId,
+      );
+    }
     assert.ok(
       !generated.includes('metadata'),
       'the projection must not carry metadata, which the contract interface does not declare',
+    );
+  });
+
+  it('declares the token in the contract interface and the validated environment', () => {
+    // The HAP cannot read the tracked JSON, so the value reaches the loader through
+    // generated/RuntimeConfig.ets and must be a declared contract field - otherwise
+    // ArkTS rejects the projected literal and the token never arrives at bootstrap.
+    const contract = fs.readFileSync(CORE_RUNTIME_ENV, 'utf8');
+    assert.ok(
+      contract.includes('readonly ' + APPLICATION_ACCESS_TOKEN_KEY + ': string;'),
+      'IamHarmonyRuntimeEnvDocument must declare ' + APPLICATION_ACCESS_TOKEN_KEY,
+    );
+    assert.ok(
+      contract.includes('readonly applicationAccessToken: string;'),
+      'IamHarmonyEnvironment must expose the loaded application token to bootstrap',
+    );
+    assert.ok(
+      contract.includes('IAM_HARMONY_APPLICATION_ACCESS_TOKEN_KEY'),
+      'the loader must name the canonical token key in its fail-closed diagnostics',
+    );
+    assert.ok(
+      contract.includes("'config/app/runtime-env.'"),
+      'a missing-token diagnostic must name the profile document',
     );
   });
 });

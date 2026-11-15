@@ -20,7 +20,7 @@
  * to the generated transport, so this module must not pre-strip or pre-append
  * `/app/v3/api`.
  */
-import { readIamHarmonyMobileConsoleCoreSession, resolveIamHarmonyMobileConsoleCoreAccessToken } from '../session/SessionStore';
+import { currentIamHarmonyTokenSet, type IamHarmonyTokenSet } from '@sdkwork/sdkwork-iam-harmony-mobile-core';
 
 /** Configuration handed to the generated app SDK client. */
 export interface IamHarmonySdkClientConfig {
@@ -35,10 +35,19 @@ export interface IamHarmonySdkClientConfig {
  *
  * Structurally satisfied by the generated `sdkwork-iam-app-sdk` client once an ArkTS
  * target lands; feature services depend on this port, never on the generated module.
+ *
+ * The credential fields are on the port, not only in the config: a transport built
+ * from this object must be able to send `Access-Token` (and `Authorization` once a
+ * session exists) without reaching back into a store
+ * (`ENVIRONMENT_SPEC.md` section 6.1).
  */
 export interface IamHarmonySdkClient {
   readonly baseUrl: string;
   readonly platform: string;
+  /** Credential a transport sends as `Access-Token`; `undefined` only before bootstrap. */
+  readonly accessToken?: string;
+  /** Credential a transport sends as `Authorization: Bearer` after login. */
+  readonly authToken?: string;
 }
 
 /** HarmonyOS platform tag reported to the backend. */
@@ -75,13 +84,13 @@ export function assertIamHarmonyOrigin(origin: string): string {
   return normalized.join(';');
 }
 
-/** Builds the client config, resolving credentials from this tier's credential store. */
+/** Builds the client config, resolving credentials from the shared token manager. */
 export function createIamHarmonySdkClientConfig(baseUrl: string): IamHarmonySdkClientConfig {
-  const session = readIamHarmonyMobileConsoleCoreSession();
+  const tokens: IamHarmonyTokenSet = currentIamHarmonyTokenSet();
   return {
     baseUrl: assertIamHarmonyOrigin(baseUrl),
-    accessToken: resolveIamHarmonyMobileConsoleCoreAccessToken(session),
-    authToken: session === undefined ? undefined : session.authToken,
+    accessToken: tokens.accessToken,
+    authToken: tokens.authToken,
     platform: IAM_HARMONY_PLATFORM,
   };
 }
@@ -94,12 +103,21 @@ let client: IamHarmonySdkClient | undefined = undefined;
  * Idempotent on purpose: the root page and the bootstrap both ask for the client,
  * and a second construction would silently drop the credentials the first one
  * installed.
+ *
+ * The credential is copied onto the port here. A transport must therefore be built
+ * after runtime bootstrap seeded the token manager; `bootstrap/SdkClients.ets`
+ * enforces that order and `describe()` reports whether a token actually arrived.
  */
 export function getIamHarmonySdkClient(baseUrl: string): IamHarmonySdkClient {
   const existing: IamHarmonySdkClient | undefined = client;
   if (existing !== undefined) return existing;
   const config: IamHarmonySdkClientConfig = createIamHarmonySdkClientConfig(baseUrl);
-  const created: IamHarmonySdkClient = { baseUrl: config.baseUrl, platform: config.platform };
+  const created: IamHarmonySdkClient = {
+    baseUrl: config.baseUrl,
+    platform: config.platform,
+    accessToken: config.accessToken,
+    authToken: config.authToken,
+  };
   client = created;
   return created;
 }
