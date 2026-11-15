@@ -61,14 +61,22 @@ unavailable — there is no URL input and no data-URL fallback.
 The create/edit drawer mirrors the WeChat 公众号 console in two tabs:
 
 - **基础信息** — logo, account name, AppID, AppSecret, original id, account type,
-  and the enable switch, each with the console rule it must satisfy and an inline
+  the enable switch, and the message-push server configuration (callback URL
+  restricted to http:80 / https:443, Token 3–32 letters or digits,
+  EncodingAESKey exactly 43 letters or digits, and the 明文/兼容/安全 encryption
+  mode). Each control carries the console rule it must satisfy, plus an inline
   reminder about the IP allowlist.
 - **域名配置** — the three protected-domain sets (JS 接口安全域名 ≤5, 网页授权域名
-  ≤2, 业务域名 ≤3) as normalized chip lists, plus the server configuration
-  (callback URL restricted to http:80 / https:443, Token 3–32 letters or digits,
-  EncodingAESKey exactly 43 letters or digits, and the 明文/兼容/安全 encryption
-  mode). Domain edits are validated as they are added; a failed submit opens the
-  tab that owns the first invalid field.
+  ≤2, 业务域名 ≤3) as removable rows. Domain edits are validated as they are
+  added; submit-time errors render inline on the basic tab. When the host
+  injects the domain-verification capability, each row also uploads the WeChat
+  `MP_verify_*.txt` that the platform serves at the domain root, and reports
+  whether the domain belongs to a managed zone.
+- **服务器信息** — the deployment's published server egress IPs, each copyable,
+  so an operator can paste them into the 公众号 IP allowlist. The host supplies
+  the list (the Harness adapter reads `SDKWORK_OFFICIAL_ACCOUNT_SERVER_IPS` from
+  its active environment profile); an empty list states that the deployment
+  publishes none instead of inventing addresses.
 
 Secrets are write-only: the panel never receives an AppSecret, message token,
 or EncodingAESKey back from the API, and leaving the field blank keeps the

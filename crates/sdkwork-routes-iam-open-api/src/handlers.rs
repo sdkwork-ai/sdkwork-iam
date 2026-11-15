@@ -7,9 +7,11 @@ use axum::{
     Router,
 };
 use sdkwork_iam_web_adapter::{
+    handle_official_account_notify_get as process_official_account_notify_get,
+    handle_official_account_notify_post as process_official_account_notify_post,
     handle_provider_callback_get as process_provider_callback_get,
     handle_provider_callback_post as process_provider_callback_post, iam_api_error,
-    ProviderCallbackHttpResponse, ProviderCallbackRequestMeta,
+    ProviderCallbackHttpResponse, ProviderCallbackRequestMeta, WechatNotifyHttpResponse,
 };
 use std::collections::HashMap;
 
@@ -57,6 +59,10 @@ pub(crate) fn build_sdkwork_iam_open_api_routes(state: OpenIamState) -> Router {
         .route(
             "/iam/v3/api/oauth/provider_callbacks/{callback_public_id}",
             get(handle_provider_callback_get).post(handle_provider_callback_post),
+        )
+        .route(
+            "/iam/v3/api/iam/oauth/official_accounts/{account_id}/wechat/notify",
+            get(handle_official_account_notify_get).post(handle_official_account_notify_post),
         )
         .with_state(state)
 }
@@ -190,5 +196,84 @@ fn oauth_provider_callback_unavailable_error() -> Response {
         StatusCode::SERVICE_UNAVAILABLE,
         "iam_oauth_provider_callback_unavailable",
         "OAuth provider callback processing is not configured",
+    )
+}
+
+async fn handle_official_account_notify_get(
+    State(state): State<OpenIamState>,
+    Path(account_id): Path<String>,
+    Query(query): Query<HashMap<String, String>>,
+) -> Response {
+    let Ok(pg) = state.require_pool() else {
+        return official_account_notify_unavailable_error();
+    };
+    match process_official_account_notify_get(pg, &account_id, &query).await {
+        Ok(response) => official_account_notify_response(response),
+        Err(message) => official_account_notify_error(message),
+    }
+}
+
+async fn handle_official_account_notify_post(
+    State(state): State<OpenIamState>,
+    Path(account_id): Path<String>,
+    Query(query): Query<HashMap<String, String>>,
+    body: Bytes,
+) -> Response {
+    let Ok(pg) = state.require_pool() else {
+        return official_account_notify_unavailable_error();
+    };
+    let Ok(body) = std::str::from_utf8(&body) else {
+        return iam_api_error(
+            StatusCode::BAD_REQUEST,
+            "iam_oauth_official_account_notify_invalid",
+            "wechat notify body is not UTF-8",
+        );
+    };
+    match process_official_account_notify_post(pg, &account_id, &query, body, &state.notify_replay)
+        .await
+    {
+        Ok(response) => official_account_notify_response(response),
+        Err(message) => official_account_notify_error(message),
+    }
+}
+
+fn official_account_notify_response(response: WechatNotifyHttpResponse) -> Response {
+    axum::response::Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, response.content_type)
+        .body(axum::body::Body::from(response.body))
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
+fn official_account_notify_error(message: String) -> Response {
+    let (status, code) = if message.contains("not found") {
+        (
+            StatusCode::NOT_FOUND,
+            "iam_oauth_official_account_notify_not_found",
+        )
+    } else if message.contains("verification failed") {
+        (
+            StatusCode::FORBIDDEN,
+            "iam_oauth_official_account_notify_verification_failed",
+        )
+    } else if message.contains("is not configured") || message.contains("is disabled") {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            "iam_oauth_official_account_notify_unavailable",
+        )
+    } else {
+        (
+            StatusCode::BAD_REQUEST,
+            "iam_oauth_official_account_notify_invalid",
+        )
+    };
+    iam_api_error(status, code, &message)
+}
+
+fn official_account_notify_unavailable_error() -> Response {
+    iam_api_error(
+        StatusCode::SERVICE_UNAVAILABLE,
+        "iam_oauth_official_account_notify_unavailable",
+        "Official-account WeChat notify processing is not configured",
     )
 }

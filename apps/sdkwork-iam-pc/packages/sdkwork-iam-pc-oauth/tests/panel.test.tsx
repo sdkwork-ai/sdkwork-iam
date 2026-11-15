@@ -10,6 +10,7 @@ import {
   SdkworkIamOfficialAccountsController,
   SdkworkIamOfficialAccountsPage,
   SdkworkIamOfficialAccountsPanel,
+  type SdkworkIamDomainVerification,
   type SdkworkIamOfficialAccountsApi,
 } from "../src";
 
@@ -45,7 +46,19 @@ function logoFile(): File {
 
 function bench(
   overrides: Partial<SdkworkIamOfficialAccountsApi> = {},
-  { page = false, drive }: { page?: boolean; drive?: DriveUploadImageService } = {},
+  {
+    page = false,
+    drive,
+    domainVerification,
+    notifyBaseUrl,
+    serverIps,
+  }: {
+    page?: boolean;
+    drive?: DriveUploadImageService;
+    domainVerification?: SdkworkIamDomainVerification;
+    notifyBaseUrl?: string;
+    serverIps?: readonly string[];
+  } = {},
 ) {
   const api: SdkworkIamOfficialAccountsApi = {
     list: vi.fn(async () => ({
@@ -70,13 +83,19 @@ function bench(
           ? (
             <SdkworkIamOfficialAccountsPage
               controller={controller}
+              domainVerification={domainVerification}
               driveUploadImageService={drive}
+              notifyBaseUrl={notifyBaseUrl}
+              serverIps={serverIps}
             />
           )
           : (
             <SdkworkIamOfficialAccountsPanel
               controller={controller}
+              domainVerification={domainVerification}
               driveUploadImageService={drive}
+              notifyBaseUrl={notifyBaseUrl}
+              serverIps={serverIps}
             />
           )}
       </SdkworkI18nProvider>
@@ -104,9 +123,26 @@ function addDomain(label: string, value: string): void {
   fireEvent.keyDown(input, { key: "Enter" });
 }
 
-/** Activates the drawer's domain tab the way Radix selects a tab. */
+/** Activates the drawer's domain tab. */
 function openDomainsTab(): void {
-  fireEvent.mouseDown(screen.getByRole("tab", { name: "Domains" }), { button: 0 });
+  fireEvent.click(screen.getByRole("tab", { name: "Domains" }));
+}
+
+/** Activates the drawer's server-information tab. */
+function openServerTab(): void {
+  fireEvent.click(screen.getByRole("tab", { name: "Server info" }));
+}
+
+/** The text of the visible tab panel. */
+function activeTabPanelText(): string {
+  const panel = Array.from(document.querySelectorAll('[role="tabpanel"]'))
+    .find((candidate) => !candidate.hasAttribute("hidden"));
+  return panel?.textContent ?? "";
+}
+
+/** The hidden state of one tab panel. */
+function tabPanelHidden(id: string): boolean {
+  return document.getElementById(id)?.hasAttribute("hidden") ?? false;
 }
 
 describe("official-account panel", () => {
@@ -219,14 +255,24 @@ describe("official-account drawer tabs", () => {
     expect(
       screen.getByRole("tab", { name: "Basic info" }).getAttribute("aria-selected"),
     ).toBe("true");
+    expect(activeTabPanelText()).toContain("Official-account logo");
+    expect(activeTabPanelText()).toContain("Server configuration (message push)");
+    expect(tabPanelHidden("official-account-panel-basic")).toBe(false);
+    expect(tabPanelHidden("official-account-panel-domains")).toBe(true);
     openDomainsTab();
+    expect(
+      screen.getByRole("tab", { name: "Domains" }).getAttribute("aria-selected"),
+    ).toBe("true");
+    expect(tabPanelHidden("official-account-panel-basic")).toBe(true);
+    expect(tabPanelHidden("official-account-panel-domains")).toBe(false);
+    expect(activeTabPanelText()).toContain("JS interface security domains");
     expect(screen.getByText("JS interface security domains")).toBeTruthy();
     expect(screen.getByText("Web-authorization domains")).toBeTruthy();
     expect(screen.getByText("Business domains")).toBeTruthy();
     expect(screen.getByText("0/5")).toBeTruthy();
     expect(screen.getByText("0/2")).toBeTruthy();
     expect(screen.getByText("0/3")).toBeTruthy();
-    expect(screen.getByText("Server configuration (message push)")).toBeTruthy();
+    expect(activeTabPanelText()).not.toContain("Server configuration (message push)");
   });
 
   it("normalizes domains and rejects invalid or duplicate entries", async () => {
@@ -244,29 +290,49 @@ describe("official-account drawer tabs", () => {
     expect(screen.getByText("That domain is already in the list.")).toBeTruthy();
   });
 
-  it("opens the domain tab when the callback URL is invalid", async () => {
-    const { api } = bench();
-    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
-    fireEvent.change(screen.getByLabelText("Account name"), {
-      target: { value: "New channel" },
+  it("shows the platform-standard callback URL and copies it", async () => {
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
     });
-    fireEvent.change(screen.getByLabelText("AppID"), {
-      target: { value: "wxnew123456" },
-    });
-    openDomainsTab();
-    fireEvent.change(screen.getByLabelText("Callback URL"), {
-      target: { value: "ftp://api.example.com" },
-    });
+    try {
+      bench({}, { notifyBaseUrl: "https://api.example.test/" });
+      fireEvent.click(await screen.findByRole("button", { name: "BirdCoder" }));
+      const url = "https://api.example.test/iam/v3/api/iam/oauth/official_accounts/acc-1/wechat/notify";
+      expect(screen.getByText(url)).toBeTruthy();
+      expect(screen.queryByLabelText("Callback URL")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+      await waitFor(() => {
+        expect(writeText).toHaveBeenCalledWith(url);
+      });
+      expect(await screen.findByText("Copied")).toBeTruthy();
+    } finally {
+      Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+
+  it("saves the standard callback URL with the account", async () => {
+    const { api } = bench({}, { notifyBaseUrl: "https://api.example.test" });
+    fireEvent.click(await screen.findByRole("button", { name: "BirdCoder" }));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => {
+      expect(api.update).toHaveBeenCalledWith(
+        "acc-1",
+        expect.objectContaining({
+          notifyUrl: "https://api.example.test/iam/v3/api/iam/oauth/official_accounts/acc-1/wechat/notify",
+        }),
+      );
+    });
+  });
+
+  it("defers the callback URL until the new account is saved", async () => {
+    bench({}, { notifyBaseUrl: "https://api.example.test" });
+    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
     expect(
-      await screen.findByText(
-        "The callback URL must start with http:// (port 80) or https:// (port 443).",
-      ),
+      screen.getByText("The standard callback URL appears once the account is saved."),
     ).toBeTruthy();
-    expect(
-      screen.getByRole("tab", { name: "Domains" }).getAttribute("aria-selected"),
-    ).toBe("true");
-    expect(api.create).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Copy" })).toBeNull();
   });
 
   it("persists the domain sets and encryption mode of an edited account", async () => {
@@ -308,6 +374,118 @@ describe("official-account drawer tabs", () => {
         }),
       );
     });
+  });
+});
+
+describe("official-account domain verification files", () => {
+  function verificationPort(
+    overrides: Partial<SdkworkIamDomainVerification> = {},
+  ): SdkworkIamDomainVerification {
+    return {
+      read: vi.fn(async () => ({ managed: true })),
+      upload: vi.fn(async (_domain: string, file: { fileName: string }) => ({
+        managed: true,
+        fileName: file.fileName,
+      })),
+      ...overrides,
+    };
+  }
+
+  function pickVerificationFile(file: File): void {
+    const input = document.querySelector(
+      "input[data-domain-verification-input]",
+    ) as HTMLInputElement | null;
+    if (input === null) throw new Error("verification picker not rendered");
+    fireEvent.change(input, { target: { files: [file] } });
+  }
+
+  it("uploads the WeChat verification file for a managed domain", async () => {
+    const verification = verificationPort();
+    bench({}, { domainVerification: verification });
+    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+    openDomainsTab();
+    addDomain("JS interface security domains", "api.example.com");
+    await waitFor(() => {
+      expect(verification.read).toHaveBeenCalledWith("api.example.com");
+    });
+    expect(await screen.findByText("No verification file uploaded")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Upload verification file" }));
+    pickVerificationFile(
+      new File(["verify-token"], "MP_verify_abc123.txt", { type: "text/plain" }),
+    );
+    await waitFor(() => {
+      expect(verification.upload).toHaveBeenCalledWith("api.example.com", {
+        fileName: "MP_verify_abc123.txt",
+        content: "verify-token",
+      });
+    });
+    expect(await screen.findByText("Uploaded MP_verify_abc123.txt")).toBeTruthy();
+  });
+
+  it("states that an unmanaged domain cannot host the verification file", async () => {
+    const verification = verificationPort({
+      read: vi.fn(async () => ({ managed: false })),
+    });
+    bench({}, { domainVerification: verification });
+    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+    openDomainsTab();
+    addDomain("JS interface security domains", "api.example.com");
+    expect(
+      await screen.findByText(/not managed by this platform/),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Upload verification file" })).toBeNull();
+  });
+
+  it("rejects a picked file that is not a WeChat verification txt", async () => {
+    const verification = verificationPort();
+    bench({}, { domainVerification: verification });
+    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+    openDomainsTab();
+    addDomain("JS interface security domains", "api.example.com");
+    await screen.findByText("No verification file uploaded");
+    fireEvent.click(screen.getByRole("button", { name: "Upload verification file" }));
+    pickVerificationFile(new File(["verify-token"], "verify.html", { type: "text/html" }));
+    expect(await screen.findByText(/Choose the .txt file WeChat generated/)).toBeTruthy();
+    expect(verification.upload).not.toHaveBeenCalled();
+  });
+});
+
+describe("official-account server info tab", () => {
+  it("lists the deployment server IPs and copies them", async () => {
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    try {
+      bench({}, { serverIps: ["1.2.3.4", "5.6.7.8"] });
+      fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+      openServerTab();
+      expect(screen.getByText("2 IPs")).toBeTruthy();
+      expect(screen.getByText("1.2.3.4")).toBeTruthy();
+      expect(screen.getByText("5.6.7.8")).toBeTruthy();
+
+      fireEvent.click(screen.getByRole("button", { name: "Copy all" }));
+      await waitFor(() => {
+        expect(writeText).toHaveBeenCalledWith("1.2.3.4\n5.6.7.8");
+      });
+
+      fireEvent.click(screen.getAllByRole("button", { name: "Copy" })[0] as HTMLElement);
+      await waitFor(() => {
+        expect(writeText).toHaveBeenCalledWith("1.2.3.4");
+      });
+      expect(await screen.findByText("Copied")).toBeTruthy();
+    } finally {
+      Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+
+  it("explains an unpublished server IP list", async () => {
+    bench();
+    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+    openServerTab();
+    expect(screen.getByText(/publishes no server IPs/)).toBeTruthy();
   });
 });
 

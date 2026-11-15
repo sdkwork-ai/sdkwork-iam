@@ -74,6 +74,18 @@ const IAM_OPEN_API_ROUTES: &[HttpRoute] = &[
         "iam.oauth",
         "iam.oauth.providerCallbacks.create",
     ),
+    HttpRoute::public(
+        HttpMethod::Get,
+        "/iam/v3/api/iam/oauth/official_accounts/{accountId}/wechat/notify",
+        "iam.oauth",
+        "iam.oauth.officialAccounts.wechatNotify.verify",
+    ),
+    HttpRoute::public(
+        HttpMethod::Post,
+        "/iam/v3/api/iam/oauth/official_accounts/{accountId}/wechat/notify",
+        "iam.oauth",
+        "iam.oauth.officialAccounts.wechatNotify.receive",
+    ),
 ];
 
 /// Returns the current IAM-owned `sdkwork-iam-open-api` route metadata.

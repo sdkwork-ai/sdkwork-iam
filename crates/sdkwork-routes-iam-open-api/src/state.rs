@@ -1,3 +1,4 @@
+use sdkwork_iam_web_adapter::WechatNotifyReplayGuard;
 use sqlx::PgPool;
 use std::sync::Arc;
 
@@ -6,6 +7,8 @@ pub struct OpenIamState {
     pub pool: Option<Arc<PgPool>>,
     pub rate_limit_max_requests: u32,
     pub rate_limit_window_seconds: u32,
+    /// Per-router replay seen-set for WeChat official-account callbacks.
+    pub notify_replay: Arc<WechatNotifyReplayGuard>,
 }
 
 impl OpenIamState {
@@ -14,6 +17,7 @@ impl OpenIamState {
             pool: None,
             rate_limit_max_requests: 20,
             rate_limit_window_seconds: 60,
+            notify_replay: Arc::new(WechatNotifyReplayGuard::default()),
         }
     }
 
@@ -28,6 +32,7 @@ impl OpenIamState {
             pool,
             rate_limit_max_requests,
             rate_limit_window_seconds,
+            notify_replay: Arc::new(WechatNotifyReplayGuard::default()),
         }
     }
 
@@ -42,6 +47,7 @@ impl OpenIamState {
             pool: Some(pool),
             rate_limit_max_requests,
             rate_limit_window_seconds,
+            notify_replay: Arc::new(WechatNotifyReplayGuard::default()),
         })
     }
 

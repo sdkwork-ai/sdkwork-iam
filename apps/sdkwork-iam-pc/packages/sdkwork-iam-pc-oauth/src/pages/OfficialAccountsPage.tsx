@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { DriveUploadImageService } from "@sdkwork/drive-upload-image-core";
 
 import { SdkworkIamOfficialAccountsPanel } from "../client/panel";
+import type { SdkworkIamDomainVerification } from "../client/panel";
 import { useSdkworkIamOfficialAccountsMessages } from "../client/messages";
 import type { SdkworkIamOfficialAccountsController } from "../client/controller";
 
@@ -17,11 +18,20 @@ import type { SdkworkIamOfficialAccountsController } from "../client/controller"
  */
 export function SdkworkIamOfficialAccountsPage({
   controller,
+  domainVerification,
   driveUploadImageService,
+  notifyBaseUrl,
+  serverIps,
 }: {
   controller: SdkworkIamOfficialAccountsController;
+  /** Host-injected WeChat verification-file capability for managed domains. */
+  domainVerification?: SdkworkIamDomainVerification;
   /** Host-injected Drive image-upload service (`createDriveUploadImageService`). */
   driveUploadImageService?: DriveUploadImageService;
+  /** Gateway origin the standard WeChat callback URL is built from. */
+  notifyBaseUrl?: string;
+  /** Deployment-published server egress IPs for the WeChat IP allowlist. */
+  serverIps?: readonly string[];
 }): ReactNode {
   const messages = useSdkworkIamOfficialAccountsMessages();
   return (
@@ -34,7 +44,10 @@ export function SdkworkIamOfficialAccountsPage({
       </header>
       <SdkworkIamOfficialAccountsPanel
         controller={controller}
+        domainVerification={domainVerification}
         driveUploadImageService={driveUploadImageService}
+        notifyBaseUrl={notifyBaseUrl}
+        serverIps={serverIps}
       />
     </div>
   );

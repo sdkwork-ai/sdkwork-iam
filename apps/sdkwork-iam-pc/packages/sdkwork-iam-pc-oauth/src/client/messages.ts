@@ -72,6 +72,14 @@ export interface SdkworkIamOfficialAccountsMessages {
     logoUnavailable: string;
     tabBasic: string;
     tabDomains: string;
+    tabServer: string;
+    serverIpsHint: string;
+    serverIpsNote: string;
+    serverIpsEmpty: string;
+    serverIpsCount: string;
+    serverIpCopy: string;
+    serverIpCopied: string;
+    serverIpCopyAll: string;
     appIdHint: string;
     appSecretHint: string;
     originalIdHint: string;
@@ -90,6 +98,15 @@ export interface SdkworkIamOfficialAccountsMessages {
     domainInvalid: string;
     domainDuplicate: string;
     domainPlaceholder: string;
+    domainVerificationHint: string;
+    domainVerificationMissing: string;
+    domainVerificationUpload: string;
+    domainVerificationReplace: string;
+    domainVerificationUploaded: string;
+    domainVerificationUnmanaged: string;
+    domainVerificationLoading: string;
+    domainVerificationInvalid: string;
+    domainVerificationFailed: string;
     serverConfigHint: string;
     notifyUrlHint: string;
     notifyTokenHint: string;
@@ -104,6 +121,11 @@ export interface SdkworkIamOfficialAccountsMessages {
     notifySection: string;
     notifyUrl: string;
     notifyUrlPlaceholder: string;
+    notifyUrlStandard: string;
+    notifyUrlStandardHint: string;
+    notifyUrlPending: string;
+    notifyUrlCopy: string;
+    notifyUrlCopied: string;
     notifyToken: string;
     notifyTokenPlaceholder: string;
     notifyEncodingAesKey: string;
@@ -220,6 +242,14 @@ const zhCN: SdkworkIamOfficialAccountsMessages = {
     logoUnavailable: "当前环境未启用 Logo 上传。",
     tabBasic: "基础信息",
     tabDomains: "域名配置",
+    tabServer: "服务器信息",
+    serverIpsHint: "以下服务器 IP 用于调用微信接口；请全部加入公众平台「开发 → 基本配置 → IP 白名单」，否则获取 access_token 会失败。",
+    serverIpsNote: "提示：微信只允许白名单内的 IP 调用接口，IP 变更后需同步更新白名单。",
+    serverIpsEmpty: "当前部署未公布服务器 IP。请在部署环境变量 SDKWORK_OFFICIAL_ACCOUNT_SERVER_IPS 中配置后重启。",
+    serverIpsCount: "共 {count} 个 IP",
+    serverIpCopy: "复制",
+    serverIpCopied: "已复制",
+    serverIpCopyAll: "复制全部",
     appIdHint: "在公众平台「开发 → 开发管理 → 开发者 ID」中查看；创建后不可修改。",
     appSecretHint: "用于获取 access_token 的开发者密码；请确保服务端出口 IP 已加入白名单。",
     originalIdHint: "公众号「账号详情」中的原始 ID，例如 gh_xxxxxxxxxxxx。",
@@ -238,6 +268,15 @@ const zhCN: SdkworkIamOfficialAccountsMessages = {
     domainInvalid: "请填写合法域名，例如 api.example.com。",
     domainDuplicate: "该域名已添加。",
     domainPlaceholder: "api.example.com",
+    domainVerificationHint: "上传微信公众平台下载的 MP_verify_*.txt；本平台会在该域名根路径原样提供该文件，供微信校验。",
+    domainVerificationMissing: "未上传验证文件",
+    domainVerificationUpload: "上传验证文件",
+    domainVerificationReplace: "替换验证文件",
+    domainVerificationUploaded: "已上传 {file}",
+    domainVerificationUnmanaged: "该域名未托管在本平台，无法代托管验证文件",
+    domainVerificationLoading: "读取验证文件…",
+    domainVerificationInvalid: "请选择微信生成的 .txt 验证文件（文件名以 .txt 结尾，内容不超过 2048 字节）",
+    domainVerificationFailed: "验证文件上传失败",
     serverConfigHint: "对应公众平台「开发 → 基本配置 → 服务器配置」，用于接收微信消息与事件推送。",
     notifyUrlHint: "仅支持 http（80 端口）或 https（443 端口），需正确响应微信的 Token 校验。",
     notifyTokenHint: "3–32 位字母或数字，用于校验消息来源。",
@@ -252,6 +291,11 @@ const zhCN: SdkworkIamOfficialAccountsMessages = {
     notifySection: "服务器配置（消息推送）",
     notifyUrl: "回调地址",
     notifyUrlPlaceholder: "https://…/wechat/notify",
+    notifyUrlStandard: "回调地址（平台标准）",
+    notifyUrlStandardHint: "该地址由平台按账号自动生成，请粘贴到公众平台 → 设置与开发 → 基本配置 → 服务器配置（URL）；Token 与 EncodingAESKey 使用上方填写的值。",
+    notifyUrlPending: "保存账号后自动生成标准回调地址。",
+    notifyUrlCopy: "复制",
+    notifyUrlCopied: "已复制",
     notifyToken: "Token",
     notifyTokenPlaceholder: "消息推送校验 Token",
     notifyEncodingAesKey: "EncodingAESKey",
@@ -365,6 +409,14 @@ const enUS: SdkworkIamOfficialAccountsMessages = {
     logoUnavailable: "Logo uploads are not available in this environment.",
     tabBasic: "Basic info",
     tabDomains: "Domains",
+    tabServer: "Server info",
+    serverIpsHint: "These server IPs call the WeChat API. Add all of them to Developer configuration → IP allowlist in the WeChat console, or access_token requests will fail.",
+    serverIpsNote: "WeChat only accepts API calls from allowlisted IPs; update the allowlist whenever these addresses change.",
+    serverIpsEmpty: "This deployment publishes no server IPs. Set SDKWORK_OFFICIAL_ACCOUNT_SERVER_IPS in the deployment environment and restart.",
+    serverIpsCount: "{count} IPs",
+    serverIpCopy: "Copy",
+    serverIpCopied: "Copied",
+    serverIpCopyAll: "Copy all",
     appIdHint: "Find it under Developer ID in the WeChat console; it cannot change after creation.",
     appSecretHint: "The developer secret used to obtain access_token; keep the server egress IP on the allowlist.",
     originalIdHint: "The account's original ID from its profile page, e.g. gh_xxxxxxxxxxxx.",
@@ -383,6 +435,15 @@ const enUS: SdkworkIamOfficialAccountsMessages = {
     domainInvalid: "Enter a valid domain such as api.example.com.",
     domainDuplicate: "That domain is already in the list.",
     domainPlaceholder: "api.example.com",
+    domainVerificationHint: "Upload the MP_verify_*.txt file from the WeChat console; this platform serves it verbatim at the domain root for WeChat verification.",
+    domainVerificationMissing: "No verification file uploaded",
+    domainVerificationUpload: "Upload verification file",
+    domainVerificationReplace: "Replace verification file",
+    domainVerificationUploaded: "Uploaded {file}",
+    domainVerificationUnmanaged: "This domain is not managed by this platform, so its verification file cannot be hosted here",
+    domainVerificationLoading: "Reading verification file…",
+    domainVerificationInvalid: "Choose the .txt file WeChat generated (name ends with .txt, content up to 2048 bytes)",
+    domainVerificationFailed: "Verification file upload failed",
     serverConfigHint: "Mirrors Developer configuration → Server configuration; it receives WeChat messages and events.",
     notifyUrlHint: "Only http (port 80) or https (port 443), and it must answer WeChat's Token verification.",
     notifyTokenHint: "3-32 letters or digits, used to verify message origin.",
@@ -397,6 +458,11 @@ const enUS: SdkworkIamOfficialAccountsMessages = {
     notifySection: "Server configuration (message push)",
     notifyUrl: "Callback URL",
     notifyUrlPlaceholder: "https://…/wechat/notify",
+    notifyUrlStandard: "Callback URL (platform standard)",
+    notifyUrlStandardHint: "The platform generates this URL from the account. Paste it into WeChat → Development → Basic configuration → Server configuration (URL); use the Token and EncodingAESKey entered above.",
+    notifyUrlPending: "The standard callback URL appears once the account is saved.",
+    notifyUrlCopy: "Copy",
+    notifyUrlCopied: "Copied",
     notifyToken: "Token",
     notifyTokenPlaceholder: "Message verification token",
     notifyEncodingAesKey: "EncodingAESKey",

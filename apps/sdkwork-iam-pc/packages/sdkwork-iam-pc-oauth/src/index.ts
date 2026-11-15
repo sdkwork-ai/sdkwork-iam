@@ -36,4 +36,8 @@ export {
   type SdkworkIamOfficialAccountsMessages,
 } from "./client/messages";
 export { SdkworkIamOfficialAccountsPanel } from "./client/panel";
+export type {
+  SdkworkIamDomainVerification,
+  SdkworkIamDomainVerificationStatus,
+} from "./client/panel";
 export { SdkworkIamOfficialAccountsPage } from "./pages/OfficialAccountsPage";
