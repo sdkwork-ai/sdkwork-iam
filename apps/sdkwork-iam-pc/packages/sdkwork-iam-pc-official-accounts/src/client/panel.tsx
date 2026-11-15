@@ -1000,8 +1000,16 @@ export function SdkworkOfficialAccountsPanel({
         onSave={async (menu) => {
           if (menuAccount === undefined) return undefined;
           await controller.saveMenu(menuAccount, menu);
-          setMenuAccount((current) => current === undefined ? current : { ...current, customMenu: menu });
-          return menu;
+          // The store advances the menu revision on save; read it back so the
+          // dialog's refresh/publish/rollback carry the current baseVersion.
+          try {
+            const refreshed = await controller.loadMenu(menuAccount.id);
+            setMenuAccount((current) => current === undefined ? current : { ...current, customMenu: refreshed.menu });
+            return refreshed.menu;
+          } catch {
+            setMenuAccount((current) => current === undefined ? current : { ...current, customMenu: menu });
+            return menu;
+          }
         }}
         open={menuAccount !== undefined}
       />

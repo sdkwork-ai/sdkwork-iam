@@ -2139,7 +2139,22 @@ async fn update_official_account(
         },
     };
     let custom_menu = match normalized_custom_menu(body.custom_menu.as_ref()) {
-        Ok(value) if body.custom_menu.is_some() => value,
+        Ok(value) if body.custom_menu.is_some() => {
+            // The app-API update is also the self-service menu save. Advance the
+            // stored revision and retain the prior draft so sync/publish/rollback
+            // share the same version contract as the backend-admin surface.
+            let current_menu = config_object(&current.provider_config, CONFIG_CUSTOM_MENU);
+            let previous = current_menu
+                .get("buttons")
+                .is_some_and(Value::is_array)
+                .then_some(&current_menu);
+            app_menu_next(
+                value.get("buttons").cloned().unwrap_or_else(|| json!([])),
+                "database",
+                None,
+                previous,
+            )
+        }
         Ok(_) => config_object(&current.provider_config, CONFIG_CUSTOM_MENU),
         Err(()) => return official_account_invalid("customMenu", "a JSON object is required"),
     };

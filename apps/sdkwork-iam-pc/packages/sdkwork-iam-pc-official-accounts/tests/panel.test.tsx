@@ -175,6 +175,10 @@ describe("official accounts panel", () => {
     };
     const menuTransport = (): Partial<OfficialAccountsTransport> => ({
       list: vi.fn(async () => ({ items: [menuAccount], totalItems: 1, page: 1, pageSize: 20 })),
+      loadCustomMenu: vi.fn(async (id) => ({
+        accountId: id,
+        menu: { buttons: [{ key: "menu-0", name: "Help", type: "click", message: "HELP" }] },
+      })),
     });
     const operator = bench(DEFAULT_OPERATOR_CAPABILITIES, menuTransport());
     fireEvent.click(await screen.findByRole("button", { name: "Custom menu" }));

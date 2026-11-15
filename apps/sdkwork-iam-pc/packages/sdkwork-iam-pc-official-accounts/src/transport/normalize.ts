@@ -12,6 +12,7 @@ import type {
   OfficialAccountsAccessMode,
   OfficialAccountsEncryptMode,
   OfficialAccountsMenu,
+  OfficialAccountsMenuVersion,
   OfficialAccountsMenuButton,
   OfficialAccountsProviderConfig,
   OfficialAccountsResourceAccountKind,
@@ -120,11 +121,42 @@ export function readOfficialAccountMenu(value: unknown): OfficialAccountsMenu {
   const record = value as Record<string, unknown>;
   const raw = Array.isArray(record.buttons) ? record.buttons : [];
   const updatedAt = readRecordString(record, "updatedAt") ?? readRecordString(record, "updated_at");
+  const publishedAt = readRecordString(record, "publishedAt") ?? readRecordString(record, "published_at");
+  const source = record.source === "database" || record.source === "wechat" ? record.source : undefined;
+  const version = typeof record.version === "number" ? record.version : undefined;
+  const history = Array.isArray(record.history)
+    ? record.history
+      .map((entry, index) => readMenuVersion(entry, String(index)))
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== undefined)
+    : undefined;
   return {
     buttons: raw
       .map((entry, index) => readMenuButton(entry, String(index)))
       .filter((button): button is OfficialAccountsMenuButton => button !== undefined),
     ...(updatedAt === undefined ? {} : { updatedAt }),
+    ...(publishedAt === undefined ? {} : { publishedAt }),
+    ...(source === undefined ? {} : { source }),
+    ...(version === undefined ? {} : { version }),
+    ...(history === undefined ? {} : { history }),
+  };
+}
+
+/** Parses one retained menu revision. */
+function readMenuVersion(value: unknown, path: string): OfficialAccountsMenuVersion | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const record = value as Record<string, unknown>;
+  if (typeof record.version !== "number" || !Array.isArray(record.buttons)) return undefined;
+  const savedAt = readRecordString(record, "savedAt");
+  const publishedAt = readRecordString(record, "publishedAt");
+  const source = record.source === "database" || record.source === "wechat" ? record.source : undefined;
+  return {
+    version: record.version,
+    buttons: record.buttons
+      .map((entry, index) => readMenuButton(entry, `${path}.${String(index)}`))
+      .filter((button): button is OfficialAccountsMenuButton => button !== undefined),
+    ...(savedAt === undefined ? {} : { savedAt }),
+    ...(publishedAt === undefined ? {} : { publishedAt }),
+    ...(source === undefined ? {} : { source }),
   };
 }
 
