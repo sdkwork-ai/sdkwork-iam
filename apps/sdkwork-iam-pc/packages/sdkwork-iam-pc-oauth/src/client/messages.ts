@@ -58,6 +58,7 @@ export interface SdkworkIamOfficialAccountsMessages {
     originalIdPlaceholder: string;
     logo: string;
     logoHint: string;
+    logoNote: string;
     logoChoose: string;
     logoReplace: string;
     logoRemove: string;
@@ -205,7 +206,8 @@ const zhCN: SdkworkIamOfficialAccountsMessages = {
     originalIdPlaceholder: "gh_xxxxxxxxxxxx",
     logo: "公众号 Logo",
     logoHint: "支持 JPG、PNG、WebP，不超过 5 MB。",
-    logoChoose: "上传 Logo",
+    logoNote: "建议使用不小于 300×300 的方形图片。",
+    logoChoose: "上传",
     logoReplace: "更换",
     logoRemove: "移除",
     logoRetry: "重试",
@@ -349,7 +351,8 @@ const enUS: SdkworkIamOfficialAccountsMessages = {
     originalIdPlaceholder: "gh_xxxxxxxxxxxx",
     logo: "Official-account logo",
     logoHint: "JPG, PNG, or WebP up to 5 MB.",
-    logoChoose: "Upload logo",
+    logoNote: "Use a square image of at least 300×300.",
+    logoChoose: "Upload",
     logoReplace: "Replace",
     logoRemove: "Remove",
     logoRetry: "Retry",

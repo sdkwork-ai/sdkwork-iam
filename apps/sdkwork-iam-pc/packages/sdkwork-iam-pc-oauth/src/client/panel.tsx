@@ -944,6 +944,15 @@ function AccountForm({
         forceMount
         value="basic"
       >
+        <OfficialAccountLogoField
+          accountId={editing ? accountId : undefined}
+          copy={messages.form}
+          driveUploadImageService={driveUploadImageService}
+          fieldRef={logoFieldRef}
+          onChange={(logoUrl) => onDraftChange({ logoUrl })}
+          onUploadingChange={onLogoUploadingChange}
+          value={draft.logoUrl}
+        />
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="official-account-name">{messages.form.displayName}</Label>
@@ -958,15 +967,6 @@ function AccountForm({
             <FieldError message={fieldErrors.displayName} />
             <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.displayNameHint}</p>
           </div>
-          <OfficialAccountLogoField
-            accountId={editing ? accountId : undefined}
-            copy={messages.form}
-            driveUploadImageService={driveUploadImageService}
-            fieldRef={logoFieldRef}
-            onChange={(logoUrl) => onDraftChange({ logoUrl })}
-            onUploadingChange={onLogoUploadingChange}
-            value={draft.logoUrl}
-          />
           <div className="space-y-1.5">
             <Label htmlFor="official-account-app-id">{messages.form.appId}</Label>
             <Input
@@ -1022,8 +1022,8 @@ function AccountForm({
           </div>
           {editing
             ? (
-              <div className="space-y-1.5 sm:col-span-2">
-                <label className="flex items-center justify-between gap-3 rounded-[0.75rem] border border-[var(--sdk-color-border-default)] px-3 py-2.5 text-sm text-[var(--sdk-color-text-primary)]">
+              <div className="space-y-1.5">
+                <label className="flex h-full items-center justify-between gap-3 rounded-[0.75rem] border border-[var(--sdk-color-border-default)] px-3 py-2.5 text-sm text-[var(--sdk-color-text-primary)]">
                   <span className="flex flex-col">
                     <span>{messages.form.enabled}</span>
                     <span className="text-xs text-[var(--sdk-color-text-muted)]">
@@ -1196,51 +1196,61 @@ function OfficialAccountLogoField({
 }): ReactNode {
   const previewSrc = value !== "" && !value.startsWith("drive://") ? value : undefined;
   return (
-    <div className="space-y-1.5" data-official-account-logo="">
+    <div className="space-y-2" data-official-account-logo="">
       <span className="block text-sm font-medium text-[var(--sdk-color-text-primary)]">
         {copy.logo}
       </span>
-      {driveUploadImageService === undefined
-        ? (
-          <div className="flex items-center gap-3">
-            {previewSrc === undefined ? null : (
-              <img
-                alt={copy.logo}
-                className="h-14 w-14 rounded-xl border border-[var(--sdk-color-border-default)] object-cover"
-                src={previewSrc}
-              />
+      <div className="flex flex-wrap items-start gap-4">
+        {driveUploadImageService === undefined
+          ? (
+            previewSrc === undefined
+              ? null
+              : (
+                <img
+                  alt={copy.logo}
+                  className="h-[5.5rem] w-[5.5rem] rounded-xl border border-[var(--sdk-color-border-default)] object-cover"
+                  src={previewSrc}
+                />
+              )
+          )
+          : (
+            <DriveUploadImage
+              accept={LOGO_ACCEPT}
+              alt={copy.logo}
+              appResourceId={accountId ?? (() => null)}
+              copy={{
+                pickImage: copy.logoChoose,
+                replaceImage: copy.logoReplace,
+                removeImage: copy.logoRemove,
+                retryUpload: copy.logoRetry,
+                uploading: copy.logoUploading,
+                uploadFailed: copy.logoUploadFailed,
+                invalidFileType: copy.logoInvalidType,
+                fileTooLarge: copy.logoTooLarge,
+                fileTooLargeDetail: copy.logoTooLargeDetail,
+                emptyFile: copy.logoEmptyFile,
+              }}
+              maxSizeBytes={LOGO_MAX_BYTES}
+              onChange={(uploaded) => onChange(uploaded?.uri ?? "")}
+              onUploadingChange={onUploadingChange}
+              ref={fieldRef}
+              service={driveUploadImageService}
+              shape="rounded"
+              sizePx={88}
+              value={toLogoUploadValue(value)}
+            />
+          )}
+        <div className="min-w-0 space-y-1 pt-1">
+          {driveUploadImageService === undefined
+            ? <p className="text-xs text-[var(--sdk-color-text-muted)]">{copy.logoUnavailable}</p>
+            : (
+              <>
+                <p className="text-xs text-[var(--sdk-color-text-muted)]">{copy.logoHint}</p>
+                <p className="text-xs text-[var(--sdk-color-text-muted)]">{copy.logoNote}</p>
+              </>
             )}
-            <p className="text-xs text-[var(--sdk-color-text-muted)]">{copy.logoUnavailable}</p>
-          </div>
-        )
-        : (
-          <DriveUploadImage
-            accept={LOGO_ACCEPT}
-            alt={copy.logo}
-            appResourceId={accountId ?? (() => null)}
-            copy={{
-              pickImage: copy.logoChoose,
-              replaceImage: copy.logoReplace,
-              removeImage: copy.logoRemove,
-              retryUpload: copy.logoRetry,
-              uploading: copy.logoUploading,
-              uploadFailed: copy.logoUploadFailed,
-              invalidFileType: copy.logoInvalidType,
-              fileTooLarge: copy.logoTooLarge,
-              fileTooLargeDetail: copy.logoTooLargeDetail,
-              emptyFile: copy.logoEmptyFile,
-            }}
-            description={copy.logoHint}
-            maxSizeBytes={LOGO_MAX_BYTES}
-            onChange={(uploaded) => onChange(uploaded?.uri ?? "")}
-            onUploadingChange={onUploadingChange}
-            ref={fieldRef}
-            service={driveUploadImageService}
-            shape="rounded"
-            sizePx={72}
-            value={toLogoUploadValue(value)}
-          />
-        )}
+        </div>
+      </div>
     </div>
   );
 }
