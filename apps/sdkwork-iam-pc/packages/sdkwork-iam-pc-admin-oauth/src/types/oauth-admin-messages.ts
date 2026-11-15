@@ -396,9 +396,6 @@ export interface SdkworkIamOauthAdminMessages {
         callbackUrlMismatch: string;
         displayName: string;
         miniCallbackHint: string;
-        webDomain: string;
-        webDomainHint: string;
-        webDomainPlaceholder: string;
       };
       domains: {
         addDomain: string;

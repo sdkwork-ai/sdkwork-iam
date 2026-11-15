@@ -37,15 +37,14 @@ import { downloadRemoteImageAsFile } from "../runtime/oauth-image-download";
 
 import type {
   SdkworkIamOauthAccountConfig,
-  SdkworkIamOauthAccountDomainVerifyFile,
   SdkworkIamOauthAccountFollowQrCode,
   SdkworkIamOauthAccountKind,
+  SdkworkIamOauthAccountVerifyFileConfig,
   SdkworkIamOauthAdminController,
   SdkworkIamOauthPagePermissions,
 } from "../types/oauth-admin-types";
 import type { SdkworkIamOauthAdminMessages } from "../types/oauth-admin-messages";
 import {
-  buildStandardCallbackUri,
   readAccountConfig,
   readAccountIntegrationId,
   readAccountOriginalId,
@@ -62,6 +61,20 @@ import {
   templateMessage,
 } from "../utils/oauth-admin-utils";
 import { useSdkworkIamOauthAdminMessages } from "../i18n";
+import {
+  buildAccountCallbackUri,
+  buildDomainVerifyFileUrl,
+  BUSINESS_DOMAIN_LIMIT,
+  findOfficialDomainIssues,
+  isWechatVerifyFileName,
+  JS_SECURE_DOMAIN_LIMIT,
+  normalizeOfficialDomain,
+  normalizeOfficialDomainConfig,
+  readCallbackHost,
+  readOfficialDomainSets,
+  WEB_AUTH_DOMAIN_LIMIT,
+  type OfficialDomainSetKey,
+} from "../utils/official-account-domains";
 import {
   OauthAdminField,
   OauthAdminSelectField,
@@ -372,7 +385,11 @@ export function OauthAccountSetupSection({
     // Mini programs sign in through `jscode2session` and never need an OAuth
     // callback; the redirect URL stays optional for them.
     && (kind === "mini_program"
-      || Boolean(form.config.redirectUri?.trim() || form.config.webDomain?.trim())),
+      || Boolean(
+        form.config.redirectUri?.trim()
+        || form.config.webDomain?.trim()
+        || (form.config.webAuthDomains?.length ?? 0) > 0,
+      )),
   );
 
   // List loading is owned by this section so search and filter state can be
@@ -660,16 +677,27 @@ export function OauthAccountSetupSection({
         onCancel={() => setForm(createEmptyForm(kind))}
         onConfirm={() => {
           setAttachError(undefined);
+          if (kind === "official_account") {
+            const problem = findOfficialConfigProblem(form.config);
+            if (problem) {
+              setAttachError(officialConfigProblemMessage(
+                paginationMessages.quickSetup.accountConfig,
+                problem,
+              ));
+              return;
+            }
+          }
+          const submitConfig = buildAccountConfigForSave(form.config, kind);
           setAttachBusy(true);
           void controller.createAccountSetup(kind, {
             accountType: form.accountType,
             appId: form.appId,
             appSecret: form.appSecret,
-            config: form.config,
+            config: submitConfig,
             displayName: form.displayName,
             enabled: form.enabled,
             originalId: form.originalId,
-            redirectUri: form.config.redirectUri ?? "",
+            redirectUri: submitConfig.redirectUri ?? "",
           })
             // Persist first, upload second (DRIVE_SPEC.md section 18.3): the
             // parked create-mode logo uploads against the freshly created
@@ -686,7 +714,7 @@ export function OauthAccountSetupSection({
                   file: pendingLogoFile,
                 });
                 await controller.updateAccountConfig(accountId, {
-                  ...form.config,
+                  ...submitConfig,
                   logoUrl: uploaded.uri,
                 });
               } catch {
@@ -759,6 +787,114 @@ export function OauthAccountSetupSection({
   );
 }
 
+/**
+ * Builds the edit-drawer configuration from the stored account.
+ *
+ * WeChat issues one `MP_verify_*.txt` per official account, so a legacy
+ * per-domain `verifyFiles` entry is adopted as the account's single file on
+ * open; saving then rewrites the configuration in the current shape.
+ *
+ * @param config - the stored `provider_config_json` document.
+ * @returns a configuration safe to edit (never the stored object itself).
+ */
+function accountConfigForForm(
+  config: SdkworkIamOauthAccountConfig | undefined,
+): SdkworkIamOauthAccountConfig {
+  if (!config) {
+    return {};
+  }
+  const next: SdkworkIamOauthAccountConfig = { ...config };
+  if (!next.verifyFile?.fileName?.trim() && !next.verifyFile?.content?.trim()) {
+    const [legacy] = next.verifyFiles ?? [];
+    if (legacy) {
+      next.verifyFile = { content: legacy.content, fileName: legacy.fileName };
+    }
+  }
+  return next;
+}
+
+/** A save-blocking problem in an official account's developer configuration. */
+type OfficialConfigProblem =
+  | "callbackMismatch"
+  | "domainInvalid"
+  | "verifyFileContent"
+  | "verifyFileName";
+
+/**
+ * Validates an official account's developer configuration against the rules the
+ * WeChat console enforces (domain shapes and caps, the callback living on a
+ * web-authorization domain, and the account-level verification file).
+ *
+ * The console only allows three domain saves per calendar month, so the drawer
+ * refuses to write a configuration the console would reject.
+ *
+ * @param config - the configuration about to be saved.
+ * @returns the first problem found, or `undefined` when the configuration is
+ *   acceptable.
+ */
+function findOfficialConfigProblem(
+  config: SdkworkIamOauthAccountConfig,
+): OfficialConfigProblem | undefined {
+  if (findOfficialDomainIssues(config).length > 0) {
+    return "domainInvalid";
+  }
+  const fileName = config.verifyFile?.fileName?.trim() ?? "";
+  const content = config.verifyFile?.content?.trim() ?? "";
+  if (fileName !== "" || content !== "") {
+    if (!isWechatVerifyFileName(fileName)) {
+      return "verifyFileName";
+    }
+    if (content === "") {
+      return "verifyFileContent";
+    }
+  }
+  const redirect = config.redirectUri?.trim() ?? "";
+  const webAuthHosts = readOfficialDomainSets(config).webAuthDomains
+    .map((value) => normalizeOfficialDomain(value))
+    .filter((value): value is string => value !== undefined);
+  if (redirect !== "" && webAuthHosts.length > 0) {
+    const host = readCallbackHost(redirect);
+    if (host === "" || !webAuthHosts.includes(host)) {
+      return "callbackMismatch";
+    }
+  }
+  return undefined;
+}
+
+/** Localizes a {@link OfficialConfigProblem} for an inline error banner. */
+function officialConfigProblemMessage(
+  copy: AccountConfigCopy,
+  problem: OfficialConfigProblem,
+): string {
+  switch (problem) {
+    case "domainInvalid":
+      return copy.notices.domainInvalid;
+    case "verifyFileName":
+      return copy.verifyFile.fileNameInvalid;
+    case "verifyFileContent":
+      return copy.verifyFile.contentRequired;
+    case "callbackMismatch":
+      return copy.basic.callbackUrlMismatch;
+  }
+}
+
+/**
+ * The configuration actually sent to the backend: domain sets normalized to
+ * the console's bare-host shape, deduplicated per set, with the legacy
+ * per-domain verification-file array retired (WeChat issues one verification
+ * file per account, and the drawer now stores it as `verifyFile`).
+ */
+function buildAccountConfigForSave(
+  config: SdkworkIamOauthAccountConfig,
+  kind: string,
+): SdkworkIamOauthAccountConfig {
+  const next = kind === "official_account"
+    ? normalizeOfficialDomainConfig(config)
+    : { ...config };
+  delete next.verifyFiles;
+  return next;
+}
+
 function AccountConfigDrawer({
   configCopy,
   controller,
@@ -797,7 +933,7 @@ function AccountConfigDrawer({
       // shows the complete record; an untouched secret is not re-submitted
       // on save (see the dirty check in `save`).
       appSecret: row.appSecret ?? "",
-      config: row.config ? { ...row.config } : {},
+      config: accountConfigForForm(row.config),
       displayName: row.label ?? "",
       enabled: row.enabled ?? false,
       originalId: row.originalId ?? "",
@@ -812,6 +948,16 @@ function AccountConfigDrawer({
     }
     setError(undefined);
     setNotice(undefined);
+    const accountKind = row.kind === "mini_program" ? "mini_program" : "official_account";
+    // WeChat allows only three domain saves per calendar month, so a
+    // configuration the console would reject is refused here instead.
+    if (accountKind === "official_account") {
+      const problem = findOfficialConfigProblem(form.config);
+      if (problem) {
+        setError(officialConfigProblemMessage(configCopy, problem));
+        return;
+      }
+    }
     const nextDisplayName = form.displayName.trim() || (row.label ?? "");
     const previousType = row.accountType ?? "service";
     const previousOriginalId = row.originalId ?? "";
@@ -846,7 +992,10 @@ function AccountConfigDrawer({
       : Promise.resolve();
     void profileStep
       .then(() => credentialsStep)
-      .then(() => controller.updateAccountConfig(row.accountId, form.config))
+      .then(() => controller.updateAccountConfig(
+        row.accountId,
+        buildAccountConfigForSave(form.config, accountKind),
+      ))
       .then(() => enabledStep)
       .then(() => {
         setNotice(configCopy.notices.saveSuccess);
@@ -1115,6 +1264,14 @@ function OauthAccountFormTabs({
   const quickSetup = allMessages.quickSetup;
   const configCopy = quickSetup.accountConfig;
 
+  const [copiedVerifyValue, setCopiedVerifyValue] = useState<"content" | "name">();
+  const copyVerifyValue = async (value: string, which: "content" | "name") => {
+    if (!(await copyToClipboard(value))) {
+      return;
+    }
+    setCopiedVerifyValue(which);
+  };
+
   const setDomains = (key: DomainKey, values: string[]) => {
     onChange({
       config: { ...form.config, domains: { ...form.config.domains, [key]: values } },
@@ -1127,46 +1284,45 @@ function OauthAccountFormTabs({
     });
   };
 
-  const setVerifyFiles = (verifyFiles: SdkworkIamOauthAccountDomainVerifyFile[]) => {
-    onChange({
-      config: { ...form.config, verifyFiles, verifyFile: undefined },
-    });
+  const setVerifyFile = (patch: Partial<SdkworkIamOauthAccountVerifyFileConfig>) => {
+    const next: SdkworkIamOauthAccountVerifyFileConfig = {
+      ...(form.config.verifyFile ?? {}),
+      ...patch,
+    };
+    const configured = Boolean(next.fileName?.trim() || next.content?.trim());
+    onChange({ config: { ...form.config, verifyFile: configured ? next : undefined } });
   };
 
-  const upsertVerifyFile = (domain: string, file: SdkworkIamOauthAccountDomainVerifyFile) => {
-    const files = (form.config.verifyFiles ?? []).filter((item) => item.domain !== domain);
-    setVerifyFiles([...files, file]);
+  const clearVerifyFile = () => {
+    onChange({ config: { ...form.config, verifyFile: undefined } });
   };
 
-  const removeVerifyFile = (domain: string) => {
-    setVerifyFiles((form.config.verifyFiles ?? []).filter((item) => item.domain !== domain));
-  };
+  // The three protected-domain sets drive the callback URL: WeChat requires the
+  // OAuth callback page to live on a 网页授权域名, so the first web-authorization
+  // domain owns it and the former primary domain stays the fallback. A manually
+  // edited callback URL always wins.
+  const domainSets = readOfficialDomainSets(form.config);
 
-  const setJsSecureDomains = (jsSecureDomains: string[]) => {
-    onChange({ config: { ...form.config, jsSecureDomains } });
-  };
-
-  const setBusinessDomains = (businessDomains: string[]) => {
-    onChange({ config: { ...form.config, businessDomains } });
-  };
-
-  // The callback URL follows the standardized `/auth/oauth/callback` path
-  // whenever the primary domain is configured; a manually edited URL wins.
-  // The configured domains (web authorization domain + legal domains) drive
-  // the per-domain verification file rows.
-  const effectiveVerifyFiles = collectConfiguredDomains(form.config, kind);
-
-  const setWebDomain = (webDomain: string) => {
-    const previousAuto = form.config.webDomain
-      ? buildStandardCallbackUri(form.config.webDomain)
-      : "";
-    const next = { ...form.config, webDomain };
-    const autoUri = buildStandardCallbackUri(webDomain);
-    if (autoUri && (!next.redirectUri || next.redirectUri === previousAuto)) {
+  const setDomainSet = (key: OfficialDomainSetKey, values: string[]) => {
+    const previousAuto = buildAccountCallbackUri(form.config);
+    const next: SdkworkIamOauthAccountConfig = { ...form.config };
+    next[key] = values;
+    const autoUri = buildAccountCallbackUri(next);
+    const current = next.redirectUri?.trim() ?? "";
+    if (autoUri && (current === "" || current === previousAuto)) {
       next.redirectUri = autoUri;
     }
     onChange({ config: next });
   };
+
+  /**
+   * Every configured domain that needs the account's single WeChat
+   * verification file deployed, with the sets it belongs to.
+   */
+  const verifyDomains = collectConfiguredDomains(form.config, kind);
+  const verifyFile = form.config.verifyFile;
+  const verifyFileName = verifyFile?.fileName?.trim() ?? "";
+  const verifyFileContent = verifyFile?.content ?? "";
 
   return (
     <Tabs defaultValue="basic">
@@ -1236,60 +1392,41 @@ function OauthAccountFormTabs({
         {kind === "official_account" ? (
           <section className="space-y-4">
             <h3 className="text-sm font-semibold text-[var(--sdk-color-text-primary)]">
-              {configCopy.basic.webDomain}
-            </h3>
-            <OauthAdminField
-              label={configCopy.basic.webDomain}
-              onChange={setWebDomain}
-              placeholder={configCopy.basic.webDomainPlaceholder}
-              value={form.config.webDomain ?? ""}
-            />
-            <OauthAdminField
-              label={configCopy.basic.callbackUrl}
-              onChange={(redirectUri) => onChange({ config: { ...form.config, redirectUri } })}
-              type="url"
-              value={form.config.redirectUri ?? ""}
-            />
-            <StatusNotice tone="default">{configCopy.basic.callbackUrlHint}</StatusNotice>
-          </section>
-        ) : (
-          <section className="space-y-4">
-            <h3 className="text-sm font-semibold text-[var(--sdk-color-text-primary)]">
-              {copy.redirectUriLabel}
-            </h3>
-            <OauthAdminField
-              label={copy.redirectUriLabel}
-              onChange={(redirectUri) => onChange({ config: { ...form.config, redirectUri } })}
-              placeholder={copy.redirectUriPlaceholder}
-              type="url"
-              value={form.config.redirectUri ?? ""}
-            />
-            <StatusNotice tone="default">{configCopy.basic.miniCallbackHint}</StatusNotice>
-          </section>
-        )}
-
-        {kind === "official_account" ? (
-          <section className="space-y-4">
-            <h3 className="text-sm font-semibold text-[var(--sdk-color-text-primary)]">
               {configCopy.domains.officialTitle}
             </h3>
             <StatusNotice tone="default">{configCopy.domains.officialDescription}</StatusNotice>
-            <OauthDomainListField
+            <OauthDomainSetField
               addLabel={configCopy.domains.addDomain}
+              hint={configCopy.domains.jsSecureDomainsHint}
               label={configCopy.domains.jsSecureDomains}
-              onChange={setJsSecureDomains}
-              placeholder={configCopy.domains.domainPlaceholder}
+              limit={JS_SECURE_DOMAIN_LIMIT}
+              messages={configCopy.domains}
+              onChange={(values) => setDomainSet("jsSecureDomains", values)}
               removeLabel={allMessages.common.delete}
-              values={form.config.jsSecureDomains ?? []}
+              values={domainSets.jsSecureDomains}
             />
-            <OauthDomainListField
+            <OauthDomainSetField
               addLabel={configCopy.domains.addDomain}
-              label={configCopy.domains.businessDomains}
-              onChange={setBusinessDomains}
-              placeholder={configCopy.domains.domainPlaceholder}
+              hint={configCopy.domains.webAuthDomainsHint}
+              label={configCopy.domains.webAuthDomains}
+              limit={WEB_AUTH_DOMAIN_LIMIT}
+              messages={configCopy.domains}
+              onChange={(values) => setDomainSet("webAuthDomains", values)}
               removeLabel={allMessages.common.delete}
-              values={form.config.businessDomains ?? legacyBusinessDomains(form.config)}
+              values={domainSets.webAuthDomains}
             />
+            <OauthDomainSetField
+              addLabel={configCopy.domains.addDomain}
+              allowPath
+              hint={configCopy.domains.businessDomainsHint}
+              label={configCopy.domains.businessDomains}
+              limit={BUSINESS_DOMAIN_LIMIT}
+              messages={configCopy.domains}
+              onChange={(values) => setDomainSet("businessDomains", values)}
+              removeLabel={allMessages.common.delete}
+              values={domainSets.businessDomains}
+            />
+            <StatusNotice tone="default">{configCopy.domains.monthlyLimitHint}</StatusNotice>
           </section>
         ) : (
           <section className="space-y-4">
@@ -1340,66 +1477,161 @@ function OauthAccountFormTabs({
           </section>
         )}
 
+        {kind === "official_account" ? (
+          <section className="space-y-4">
+            <h3 className="text-sm font-semibold text-[var(--sdk-color-text-primary)]">
+              {configCopy.basic.callbackUrl}
+            </h3>
+            <OauthAdminField
+              label={configCopy.basic.callbackUrl}
+              onChange={(redirectUri) => onChange({ config: { ...form.config, redirectUri } })}
+              type="url"
+              value={form.config.redirectUri ?? ""}
+            />
+            <StatusNotice tone="default">{configCopy.basic.callbackUrlHint}</StatusNotice>
+          </section>
+        ) : (
+          <section className="space-y-4">
+            <h3 className="text-sm font-semibold text-[var(--sdk-color-text-primary)]">
+              {copy.redirectUriLabel}
+            </h3>
+            <OauthAdminField
+              label={copy.redirectUriLabel}
+              onChange={(redirectUri) => onChange({ config: { ...form.config, redirectUri } })}
+              placeholder={copy.redirectUriPlaceholder}
+              type="url"
+              value={form.config.redirectUri ?? ""}
+            />
+            <StatusNotice tone="default">{configCopy.basic.miniCallbackHint}</StatusNotice>
+          </section>
+        )}
+
         <section className="space-y-4">
           <h3 className="text-sm font-semibold text-[var(--sdk-color-text-primary)]">
             {configCopy.verifyFile.title}
           </h3>
           <StatusNotice tone="default">{configCopy.verifyFile.description}</StatusNotice>
-          {effectiveVerifyFiles.length === 0 ? (
+          <div className="space-y-3 rounded-md border border-[var(--sdk-color-border-default)] p-3">
+            <div className="space-y-1.5">
+              <Label htmlFor={`oauth-verify-file-name-${kind}`}>
+                {configCopy.verifyFile.fileName}
+              </Label>
+              <Input
+                id={`oauth-verify-file-name-${kind}`}
+                onChange={(event) => setVerifyFile({ fileName: event.target.value })}
+                placeholder={configCopy.verifyFile.fileNamePlaceholder}
+                value={verifyFileName}
+              />
+              {verifyFileName !== "" && !isWechatVerifyFileName(verifyFileName) ? (
+                <p className="text-xs text-[var(--sdk-color-state-danger)]">
+                  {configCopy.verifyFile.fileNameInvalid}
+                </p>
+              ) : null}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor={`oauth-verify-file-content-${kind}`}>
+                {configCopy.verifyFile.content}
+              </Label>
+              <Input
+                id={`oauth-verify-file-content-${kind}`}
+                onChange={(event) => setVerifyFile({ content: event.target.value })}
+                placeholder={configCopy.verifyFile.contentPlaceholder}
+                value={verifyFileContent}
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <OauthDomainVerifyFileUploader
+                copy={configCopy.verifyFile}
+                onUploaded={(uploaded) => setVerifyFile({
+                  content: uploaded.content,
+                  fileName: uploaded.fileName,
+                })}
+              />
+              <OauthDownloadVerifyButton
+                content={verifyFileContent}
+                copy={configCopy.verifyFile}
+                fileName={verifyFileName || undefined}
+              />
+              <Button
+                disabled={!verifyFileName}
+                onClick={() => { void copyVerifyValue(verifyFileName, "name"); }}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {copiedVerifyValue === "name"
+                  ? allMessages.common.copied
+                  : configCopy.verifyFile.copyFileName}
+              </Button>
+              <Button
+                disabled={!verifyFileContent}
+                onClick={() => { void copyVerifyValue(verifyFileContent, "content"); }}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {copiedVerifyValue === "content"
+                  ? allMessages.common.copied
+                  : configCopy.verifyFile.copyContent}
+              </Button>
+              <Button
+                disabled={!verifyFileName && !verifyFileContent}
+                onClick={clearVerifyFile}
+                size="sm"
+                type="button"
+                variant="danger"
+              >
+                {allMessages.common.delete}
+              </Button>
+            </div>
+            <p className="text-xs text-[var(--sdk-color-text-muted)]">
+              {configCopy.verifyFile.sharedHint}
+            </p>
+          </div>
+
+          {verifyDomains.length === 0 ? (
             <StatusNotice tone="default">{configCopy.verifyFile.noDomains}</StatusNotice>
           ) : (
-            <div className="space-y-3">
-              {effectiveVerifyFiles.map((item) => {
-                const file = form.config.verifyFiles?.find((entry) => entry.domain === item.domain)
-                  ?? legacyVerifyFileForDomain(form.config, item.domain);
-                return (
-                  <div key={item.domain} className="rounded-md border border-[var(--sdk-color-border-default)] p-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <code className="text-xs text-[var(--sdk-color-text-primary)]">{item.domain}</code>
-                      {item.kinds.map((kind) => (
+            <div className="space-y-1.5">
+              <Label>{configCopy.verifyFile.deployTargetsTitle}</Label>
+              <ul className="divide-y divide-[var(--sdk-color-border-subtle)] rounded-md border border-[var(--sdk-color-border-default)]">
+                {verifyDomains.map((item) => {
+                  const verifyUrl = verifyFileName
+                    ? buildDomainVerifyFileUrl(item.domain, verifyFileName)
+                    : "";
+                  return (
+                    <li
+                      className="flex flex-wrap items-center gap-2 px-3 py-2"
+                      key={item.domain}
+                    >
+                      <code className="text-xs text-[var(--sdk-color-text-primary)]">
+                        {item.domain}
+                      </code>
+                      {item.kinds.map((domainKind) => (
                         <span
-                          key={kind}
                           className="rounded-full border border-[var(--sdk-color-border-default)] px-2 py-0.5 text-xs text-[var(--sdk-color-text-secondary)]"
+                          key={domainKind}
                         >
-                          {domainKindLabel(configCopy, kind)}
+                          {domainKindLabel(configCopy, domainKind)}
                         </span>
                       ))}
-                    </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      {file ? (
-                        <>
-                          <span className="text-xs font-medium text-[var(--sdk-color-text-primary)]">
-                            {configCopy.verifyFile.uploaded}: {file.fileName}
-                          </span>
-                          <OauthDownloadVerifyButton
-                            copy={configCopy.verifyFile}
-                            content={file.content}
-                            fileName={file.fileName}
-                          />
-                          <Button
-                            onClick={() => removeVerifyFile(item.domain)}
-                            size="sm"
-                            type="button"
-                            variant="danger"
-                          >
-                            {allMessages.common.delete}
-                          </Button>
-                        </>
+                      {verifyUrl ? (
+                        <a
+                          className="ml-auto text-xs font-medium text-blue-600 underline-offset-2 hover:underline"
+                          href={verifyUrl}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          {configCopy.verifyFile.openVerifyUrl}
+                        </a>
                       ) : null}
-                      <OauthDomainVerifyFileUploader
-                        copy={configCopy.verifyFile}
-                        onUploaded={(uploaded) => upsertVerifyFile(item.domain, {
-                          content: uploaded.content,
-                          domain: item.domain,
-                          fileName: uploaded.fileName,
-                        })}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           )}
+
           <div className="flex flex-wrap items-center gap-3">
             <Label>{configCopy.verifyFile.status}</Label>
             <StatusBadge
@@ -1413,6 +1645,7 @@ function OauthAccountFormTabs({
               </Button>
             ) : null}
           </div>
+          <StatusNotice tone="default">{configCopy.verifyFile.verifyHint}</StatusNotice>
           <StatusNotice tone="default">{configCopy.verifyFile.deployHint}</StatusNotice>
         </section>
       </TabsContent>
@@ -1718,8 +1951,13 @@ type ConfiguredDomain = {
 };
 
 /**
- * Collects every configured root domain (web authorization domain plus legal
- * domains) and the kinds it appears under, deduplicated per domain.
+ * Collects every configured domain and the protected-domain sets it appears
+ * under, deduplicated per domain.
+ *
+ * Official accounts contribute the three console sets; a legacy `webDomain`
+ * folds into the web-authorization set exactly as {@link readOfficialDomainSets}
+ * does, so the account's verification-file checklist never lists the same host
+ * twice or shows a set the drawer no longer renders.
  */
 export function collectConfiguredDomains(
   config: SdkworkIamOauthAccountConfig,
@@ -1747,53 +1985,25 @@ export function collectConfiguredDomains(
     }
     return [...byDomain.entries()].map(([domain, kinds]) => ({ domain, kinds }));
   }
-  // Official account domains: the single web authorization domain, JS SDK
-  // secure domains and business domains (web-view), each carrying its own
-  // verification file. Legacy mini-program-shaped business domains stay
-  // visible until re-saved.
-  if (config.webDomain?.trim()) {
-    add(config.webDomain, "web");
+  // Official account domains: the three WeChat console sets. All three share
+  // the account's single verification file.
+  const sets = readOfficialDomainSets(config);
+  for (const value of sets.webAuthDomains) {
+    add(value, "webAuth");
   }
-  for (const value of config.jsSecureDomains ?? []) {
+  for (const value of sets.jsSecureDomains) {
     add(value, "jsSecure");
   }
-  for (const value of config.businessDomains ?? []) {
-    add(value, "business");
-  }
-  for (const value of config.domains?.business ?? []) {
+  for (const value of sets.businessDomains) {
     add(value, "business");
   }
   return [...byDomain.entries()].map(([domain, kinds]) => ({ domain, kinds }));
 }
 
-/**
- * Legacy single `verifyFile` entries (pre-per-domain storage) are presented
- * on the web authorization domain row until the account is re-saved, which
- * migrates them into `verifyFiles`.
- */
-function legacyVerifyFileForDomain(
-  config: SdkworkIamOauthAccountConfig,
-  domain: string,
-): SdkworkIamOauthAccountDomainVerifyFile | undefined {
-  const legacy = config.verifyFile;
-  if (!legacy?.fileName && !legacy?.content) {
-    return undefined;
-  }
-  const legacyDomain = config.webDomain ?? "";
-  if (domain !== legacyDomain) {
-    return undefined;
-  }
-  return {
-    content: legacy.content ?? "",
-    domain,
-    fileName: legacy.fileName ?? "MP_verify.txt",
-  };
-}
-
 function domainKindLabel(configCopy: AccountConfigCopy, kind: string): string {
   switch (kind) {
-    case "web":
-      return configCopy.basic.webDomain;
+    case "webAuth":
+      return configCopy.domains.webAuthDomains;
     case "jsSecure":
       return configCopy.domains.jsSecureDomains;
     case "request":
@@ -1882,13 +2092,248 @@ function OauthDomainVerifyFileUploader({
 }
 
 /**
- * Business domains written under the old mini-program-shaped `domains`
- * object are surfaced on the official account form until re-saved.
+ * Copies text through the async clipboard API, falling back to a transient
+ * textarea for hosts that only expose the legacy copy command.
+ *
+ * @param value - the text to copy.
+ * @returns whether a copy command reported success.
  */
-function legacyBusinessDomains(config: SdkworkIamOauthAccountConfig): string[] {
-  return config.businessDomains && config.businessDomains.length > 0
-    ? []
-    : [...(config.domains?.business ?? [])];
+async function copyToClipboard(value: string): Promise<boolean> {
+  if (value === "") {
+    return false;
+  }
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch {
+    try {
+      const area = document.createElement("textarea");
+      area.value = value;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.append(area);
+      area.select();
+      const copied = typeof document.execCommand === "function"
+        ? document.execCommand("copy")
+        : false;
+      area.remove();
+      return copied;
+    } catch {
+      return false;
+    }
+  }
+}
+
+type DomainSetMessages = {
+  domainCountTemplate: string;
+  domainDuplicate: string;
+  domainInvalid: string;
+  domainLimitReached: string;
+  domainListEmpty: string;
+  domainPlaceholder: string;
+};
+
+/**
+ * One WeChat protected-domain set (JS 接口安全域名 / 网页授权域名 / 业务域名).
+ *
+ * Mirrors the console's editor: every entry stays inline-editable (blur or
+ * Enter commits, an invalid or duplicate edit reverts with an inline error),
+ * the row count is shown against the set's cap, and the add field stays
+ * available at the cap so a full set explains itself instead of silently
+ * disappearing. Values are stored in the console's bare-host shape; the business
+ * set additionally accepts the console's `domain/path` form.
+ */
+function OauthDomainSetField({
+  addLabel,
+  allowPath = false,
+  disabled = false,
+  hint,
+  label,
+  limit,
+  messages,
+  onChange,
+  removeLabel,
+  values,
+}: {
+  addLabel: string;
+  /** Accept the console's `example.com/path` form (业务域名 only). */
+  allowPath?: boolean;
+  disabled?: boolean;
+  hint: string;
+  label: string;
+  limit: number;
+  messages: DomainSetMessages;
+  onChange: (values: string[]) => void;
+  removeLabel: string;
+  values: string[];
+}) {
+  const [draft, setDraft] = useState("");
+  const [addError, setAddError] = useState<string>();
+  const [edits, setEdits] = useState<Record<number, string>>({});
+  const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
+  const full = values.length >= limit;
+  const limitMessage = templateMessage(messages.domainLimitReached, { max: String(limit) });
+
+  const clearRowError = (index: number) => {
+    setRowErrors((current) => {
+      if (current[index] === undefined) {
+        return current;
+      }
+      const next = { ...current };
+      delete next[index];
+      return next;
+    });
+  };
+
+  const discardEdit = (index: number) => {
+    setEdits((current) => {
+      const next = { ...current };
+      delete next[index];
+      return next;
+    });
+  };
+
+  const add = () => {
+    if (full) {
+      setAddError(limitMessage);
+      return;
+    }
+    const domain = normalizeOfficialDomain(draft, { allowPath });
+    if (domain === undefined) {
+      setAddError(messages.domainInvalid);
+      return;
+    }
+    if (values.some((value) => normalizeOfficialDomain(value, { allowPath }) === domain)) {
+      setAddError(messages.domainDuplicate);
+      return;
+    }
+    onChange([...values, domain]);
+    setDraft("");
+    setAddError(undefined);
+  };
+
+  const commit = (index: number, original: string) => {
+    const raw = edits[index];
+    if (raw === undefined) {
+      return;
+    }
+    const domain = normalizeOfficialDomain(raw, { allowPath });
+    if (domain === undefined) {
+      setRowErrors((current) => ({ ...current, [index]: messages.domainInvalid }));
+      discardEdit(index);
+      return;
+    }
+    const duplicate = values.some(
+      (value, valueIndex) => valueIndex !== index
+        && normalizeOfficialDomain(value, { allowPath }) === domain,
+    );
+    if (duplicate) {
+      setRowErrors((current) => ({ ...current, [index]: messages.domainDuplicate }));
+      discardEdit(index);
+      return;
+    }
+    clearRowError(index);
+    discardEdit(index);
+    if (domain !== original) {
+      onChange(values.map((value, valueIndex) => (valueIndex === index ? domain : value)));
+    }
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <Label>{label}</Label>
+        <span className="font-mono text-xs text-[var(--sdk-color-text-muted)]">
+          {templateMessage(messages.domainCountTemplate, {
+            count: String(values.length),
+            max: String(limit),
+          })}
+        </span>
+      </div>
+      {values.length === 0 ? (
+        <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.domainListEmpty}</p>
+      ) : (
+        <ul className="divide-y divide-[var(--sdk-color-border-subtle)] overflow-hidden rounded-[0.5rem] border border-[var(--sdk-color-border-default)]">
+          {values.map((value, index) => (
+            <li className="space-y-1 px-3 py-2" key={index}>
+              <div className="flex items-center gap-2">
+                <Input
+                  aria-label={`${label} ${index + 1}`}
+                  className="h-8 flex-1 font-mono text-xs"
+                  disabled={disabled}
+                  onBlur={(event) => {
+                    const next = event.relatedTarget;
+                    if (next instanceof Node && event.currentTarget.closest("li")?.contains(next)) {
+                      return;
+                    }
+                    commit(index, value);
+                  }}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setEdits((current) => ({ ...current, [index]: next }));
+                    clearRowError(index);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      commit(index, value);
+                    }
+                  }}
+                  value={edits[index] ?? value}
+                />
+                <IconButton
+                  aria-label={`${removeLabel}: ${value}`}
+                  disabled={disabled}
+                  onClick={() => {
+                    discardEdit(index);
+                    onChange(values.filter((_, valueIndex) => valueIndex !== index));
+                  }}
+                  title={removeLabel}
+                  variant="ghost"
+                >
+                  <X aria-hidden="true" className="h-4 w-4" />
+                </IconButton>
+              </div>
+              {rowErrors[index] ? (
+                <p className="text-xs text-[var(--sdk-color-state-danger)]">{rowErrors[index]}</p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex items-center gap-2">
+        <Input
+          aria-label={`${label} ${addLabel}`}
+          aria-invalid={addError !== undefined}
+          className="h-9 flex-1"
+          disabled={disabled}
+          onChange={(event) => {
+            setDraft(event.target.value);
+            if (addError !== undefined) {
+              setAddError(undefined);
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              add();
+            }
+          }}
+          placeholder={messages.domainPlaceholder}
+          value={draft}
+        />
+        <Button disabled={disabled} onClick={add} size="sm" type="button" variant="outline">
+          <Plus aria-hidden="true" className="h-3.5 w-3.5" />
+          {addLabel}
+        </Button>
+      </div>
+      {addError ? (
+        <p className="text-xs text-[var(--sdk-color-state-danger)]">{addError}</p>
+      ) : null}
+      <p className="text-xs text-[var(--sdk-color-text-muted)]">{hint}</p>
+    </div>
+  );
 }
 
 /**

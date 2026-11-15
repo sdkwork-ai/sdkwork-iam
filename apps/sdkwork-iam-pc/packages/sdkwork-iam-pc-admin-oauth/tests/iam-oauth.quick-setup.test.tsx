@@ -464,7 +464,8 @@ describe("SDKWork IAM OAuth quick setup pages", () => {
     expect(screen.getByDisplayValue("https://api.example.com")).toBeTruthy();
     // One dynamic add button per domain category (5 server-domain lists).
     expect(screen.getAllByText("添加域名").length).toBeGreaterThan(0);
-    expect(screen.getByText(/MP_verify_api\.txt/)).toBeTruthy();
+    // The single WeChat verification file is prefilled from the stored entry.
+    expect(screen.getByDisplayValue("MP_verify_api.txt")).toBeTruthy();
     expect(screen.getByDisplayValue("https://app.example.com/auth/oauth/callback")).toBeTruthy();
 
     // Status tab: read-only connection/verification/enabled badges.
@@ -548,17 +549,131 @@ describe("SDKWork IAM OAuth quick setup pages", () => {
     expect(tokenInputs.length).toBeGreaterThan(0);
     fireEvent.mouseDown(screen.getByRole("tab", { name: "开发配置" }));
 
-    // Official account domains: JS SDK secure + business domains, dynamic rows.
+    // Official account domains: the three WeChat console sets, dynamic rows.
     fireEvent.mouseDown(screen.getByRole("tab", { name: "开发配置" }));
     expect(screen.getByText("域名配置")).toBeTruthy();
-    // The label also appears as the kind badge on the verification file rows.
+    // The label also appears as the kind badge on the verification deploy rows.
     expect(screen.getAllByText("JS 接口安全域名").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("网页授权域名").length).toBeGreaterThan(0);
     expect(screen.getAllByText("业务域名").length).toBeGreaterThan(0);
     expect(screen.getByDisplayValue("js.example.com")).toBeTruthy();
     expect(screen.getByDisplayValue("open.example.com")).toBeTruthy();
-    expect(screen.getAllByText("添加域名").length).toBe(2);
-    // Per-domain verification rows cover the official domains.
-    expect(screen.getByText(/MP_verify_js\.txt/)).toBeTruthy();
+    // The legacy primary domain folds into the web-authorization set.
+    expect(screen.getByDisplayValue("app.example.com")).toBeTruthy();
+    // One add control per protected-domain set.
+    expect(screen.getAllByText("添加域名").length).toBe(3);
+    // The console's per-set caps are shown next to each label.
+    expect(screen.getAllByText("1/5").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1/2").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1/3").length).toBeGreaterThan(0);
+    // The account-level verification file is prefilled from the first legacy
+    // per-domain entry and drives the deploy addresses.
+    expect(screen.getByDisplayValue("MP_verify_app.txt")).toBeTruthy();
+    expect(screen.getByText("需部署到以下地址")).toBeTruthy();
+    expect(screen.getAllByText("app.example.com").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("js.example.com").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("open.example.com").length).toBeGreaterThan(0);
+    unmount();
+  });
+
+  it("validates official account domains against the WeChat console rules", async () => {
+    const configuredState = {
+      ...EMPTY_STATE,
+      resourceAccounts: [{
+        id: "iamora-3",
+        integrationId: "iamoi-3",
+        providerCode: "wechat",
+        resourceAccountCode: "oa-wx-test-2",
+        resourceAccountKind: "official_account",
+        displayName: "Domain validation account",
+        providerAccountId: "wx-test-oa-003",
+        enabled: true,
+        providerConfigJson: JSON.stringify({
+          redirectUri: "https://app.example.com/auth/oauth/callback",
+          webAuthDomains: ["app.example.com"],
+        }),
+      }],
+    };
+    const updateAccountConfig = vi.fn(() => Promise.resolve({}));
+    const configuredController = {
+      getState: () => configuredState,
+      load: () => Promise.resolve(configuredState),
+      updateAccountConfig,
+      runResourceAccountVerification: () => Promise.resolve({}),
+      setResourceAccountEnabled: () => Promise.resolve({}),
+      deleteResourceAccount: () => Promise.resolve({}),
+      listPageResource: () => Promise.resolve([]),
+    } as unknown as SdkworkIamOauthAdminController;
+    const { unmount } = render(
+      <SdkworkI18nProvider locale="zh-CN">
+        <SdkworkIamOauthOfficialAccountsPage controller={configuredController} />
+      </SdkworkI18nProvider>,
+    );
+    await screen.findByText("Domain validation account");
+    fireEvent.click(screen.getByTitle("操作"));
+    await screen.findByRole("tab", { name: "开发配置" });
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "开发配置" }));
+
+    // An IP literal is rejected by the console, so it never becomes a row; the
+    // typed value stays in the add field so it can be corrected.
+    const jsAddInput = screen.getByLabelText("JS 接口安全域名 添加域名");
+    fireEvent.change(jsAddInput, { target: { value: "192.168.1.10" } });
+    fireEvent.click(screen.getAllByText("添加域名")[0]);
+    expect(screen.getByText(/请填写域名，如 app\.example\.com/u)).toBeTruthy();
+    expect(screen.getByLabelText("JS 接口安全域名 添加域名")).toHaveProperty("value", "192.168.1.10");
+    expect(screen.getAllByText("0/5").length).toBeGreaterThan(0);
+    expect(screen.queryByLabelText("删除: 192.168.1.10")).toBeNull();
+
+    // A valid host is normalized and appended.
+    fireEvent.change(screen.getByLabelText("JS 接口安全域名 添加域名"), {
+      target: { value: "HTTPS://JS.Example.com/" },
+    });
+    fireEvent.click(screen.getAllByText("添加域名")[0]);
+    expect(screen.getByDisplayValue("js.example.com")).toBeTruthy();
+    expect(screen.getAllByText("1/5").length).toBeGreaterThan(0);
+    unmount();
+  });
+
+  it("refuses to save a callback URL outside every web-authorization domain", async () => {
+    const configuredState = {
+      ...EMPTY_STATE,
+      resourceAccounts: [{
+        id: "iamora-4",
+        integrationId: "iamoi-4",
+        providerCode: "wechat",
+        resourceAccountCode: "oa-wx-test-3",
+        resourceAccountKind: "official_account",
+        displayName: "Callback mismatch account",
+        providerAccountId: "wx-test-oa-004",
+        enabled: true,
+        providerConfigJson: JSON.stringify({
+          redirectUri: "https://other.example.com/auth/oauth/callback",
+          webAuthDomains: ["app.example.com"],
+        }),
+      }],
+    };
+    const updateAccountConfig = vi.fn(() => Promise.resolve({}));
+    const configuredController = {
+      getState: () => configuredState,
+      load: () => Promise.resolve(configuredState),
+      updateAccountConfig,
+      runResourceAccountVerification: () => Promise.resolve({}),
+      setResourceAccountEnabled: () => Promise.resolve({}),
+      deleteResourceAccount: () => Promise.resolve({}),
+      listPageResource: () => Promise.resolve([]),
+    } as unknown as SdkworkIamOauthAdminController;
+    const { unmount } = render(
+      <SdkworkI18nProvider locale="zh-CN">
+        <SdkworkIamOauthOfficialAccountsPage controller={configuredController} />
+      </SdkworkI18nProvider>,
+    );
+    await screen.findByText("Callback mismatch account");
+    fireEvent.click(screen.getByTitle("操作"));
+    await screen.findByRole("tab", { name: "开发配置" });
+
+    fireEvent.click(screen.getByText("保存配置"));
+    expect(await screen.findByText("回调地址必须位于已配置的网页授权域名下。")).toBeTruthy();
+    expect(updateAccountConfig).not.toHaveBeenCalled();
     unmount();
   });
 
