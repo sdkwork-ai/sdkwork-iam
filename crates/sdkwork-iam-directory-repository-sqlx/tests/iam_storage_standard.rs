@@ -50,8 +50,27 @@ fn exposes_complete_iam_table_catalog() {
     assert!(tables.contains(&"iam_persona_role"));
     assert!(tables.contains(&"iam_persona_interest"));
     assert!(tables.contains(&"iam_user_persona"));
-    assert_eq!(64, tables.len(), "IAM catalog must own 64 canonical tables");
+    assert_eq!(
+        65,
+        tables.len(),
+        "IAM catalog must own 65 canonical tables (the deprecated \
+         iam_user_official_account row is unified into iam_oauth_resource_account and \
+         remains only as a physical, read-only database-contract table)"
+    );
     assert!(!tables.contains(&"iam_user_role"));
+    // The per-user official account table was unified into
+    // `iam_oauth_resource_account` (migration 0033): the ownership catalog must
+    // never list the legacy aggregate again.
+    assert!(
+        !tables.contains(&"iam_user_official_account"),
+        "iam_user_official_account is unified into iam_oauth_resource_account and must not be an owned IAM table",
+    );
+    // The migration orphan ledger is migration evidence only: the runtime
+    // catalog must never own (and therefore never read) it.
+    assert!(
+        !tables.contains(&"iam_official_account_migration_orphan"),
+        "iam_official_account_migration_orphan is written by migration 0033 only and must not be an owned IAM table",
+    );
 
     for table in tables {
         assert!(table.starts_with("iam_"));
@@ -745,6 +764,14 @@ fn database_baseline_declares_oauth_resource_account_and_mini_program_fields() {
         );
     }
 
+    // The unified official-account aggregate adds the maintainer anchor and the
+    // provider identity uniqueness through the forward migration, which the
+    // baseline folds verbatim.
+    assert!(
+        sql.contains("ADD COLUMN IF NOT EXISTS maintainer_user_id TEXT"),
+        "iam_oauth_resource_account must declare the maintainer_user_id ownership anchor",
+    );
+
     for column in [
         "surface_kind",
         "mini_program_app_id",
@@ -779,14 +806,55 @@ fn database_baseline_declares_oauth_resource_account_and_mini_program_fields() {
     for index_name in [
         "idx_iam_oauth_resource_account_operator",
         "idx_iam_oauth_resource_account_readiness",
+        "idx_iam_oauth_resource_account_maintainer",
+        "uk_iam_oauth_resource_account_provider_id",
         "idx_iam_oauth_surface_mini_program_channel",
         "idx_iam_oauth_flow_config_surface",
     ] {
         assert!(
-            sql.contains(&format!("CREATE INDEX IF NOT EXISTS {index_name}")),
+            sql.contains(&format!("CREATE INDEX IF NOT EXISTS {index_name}"))
+                || sql.contains(&format!("CREATE UNIQUE INDEX IF NOT EXISTS {index_name}")),
             "missing OAuth resource account or mini-program index {index_name}",
         );
     }
+}
+
+#[test]
+fn database_baseline_declares_the_official_account_migration_orphan_ledger() {
+    let sql = iam_database_baseline_sql();
+    let ledger = table_definition(sql, "iam_official_account_migration_orphan")
+        .expect("official account migration orphan ledger");
+
+    // Migration 0033 isolates every legacy channel it cannot carry over instead
+    // of silently skipping it, so the ledger must be a real, enumerable table.
+    for column in [
+        "id",
+        "tenant_id",
+        "organization_id",
+        "source_account_id",
+        "user_id",
+        "app_id",
+        "reason",
+        "payload_json",
+        "created_at",
+    ] {
+        assert!(
+            ledger.contains(column),
+            "iam_official_account_migration_orphan must declare {column}",
+        );
+    }
+    assert!(
+        sql.contains("CREATE INDEX IF NOT EXISTS idx_iam_official_account_migration_orphan_tenant"),
+        "iam_official_account_migration_orphan must be queryable per tenant and AppID for review",
+    );
+    assert!(
+        ledger.contains("organization_id TEXT NOT NULL DEFAULT '0'"),
+        "iam_official_account_migration_orphan must carry the platform organization sentinel",
+    );
+    assert!(
+        !iam_database_tables().contains(&"iam_official_account_migration_orphan"),
+        "the migration orphan ledger is migration evidence only and must not be owned by the runtime catalog",
+    );
 }
 
 #[test]

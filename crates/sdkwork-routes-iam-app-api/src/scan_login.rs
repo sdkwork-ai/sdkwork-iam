@@ -328,6 +328,10 @@ pub(crate) async fn default_scan_login_modes(
 }
 
 /// Whether an enabled official account with QR scan login exists.
+///
+/// Self-service channels (`access_mode = 'self_managed_account'`) are excluded
+/// from login by default: a caller-managed channel may only participate when an
+/// operator explicitly promoted it with `qr_default_enabled = 1`.
 pub(crate) async fn scan_login_official_account_available(
     pg: &PgPool,
     tenant_id: &str,
@@ -341,6 +345,8 @@ pub(crate) async fn scan_login_official_account_available(
                  AND ra.resource_account_kind = 'official_account' \
                  AND ra.enabled = 1 AND ra.status = 'active' \
                  AND ra.qr_default_enabled = 1 \
+                 AND (ra.access_mode <> 'self_managed_account' \
+                      OR ra.qr_default_enabled = 1) \
              )",
         )
         .fetch_one(pg)
@@ -353,6 +359,8 @@ pub(crate) async fn scan_login_official_account_available(
                  AND ra.resource_account_kind = 'official_account' \
                  AND ra.enabled = 1 AND ra.status = 'active' \
                  AND ra.qr_default_enabled = 1 \
+                 AND (ra.access_mode <> 'self_managed_account' \
+                      OR ra.qr_default_enabled = 1) \
              )",
         )
         .bind(tenant_id)

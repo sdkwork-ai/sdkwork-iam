@@ -676,7 +676,7 @@ export const sdkworkIamOauthAdminMessages: SdkworkIamOauthAdminMessages = {
       allowedScopes: "允许的作用域",
       allowedScopesPlaceholder: "openid\nprofile\nemail",
       clientId: "OAuth client_id",
-      clientIdPlaceholder: "birdcoder",
+      clientIdPlaceholder: "example-client",
       clientSecretHash: "客户端密钥（明文或 argon2id 哈希）",
       redirectUris: "回调地址（每行一个或用逗号分隔）",
       redirectUrisPlaceholder: "https://forum.example.com/auth/oauth/callback",

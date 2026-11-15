@@ -33,7 +33,12 @@ import { DriveUploadImage } from "sdkwork-drive-pc-upload-image";
 import type { DriveUploadImageService, DriveUploadImageValue } from "@sdkwork/drive-upload-image-core";
 import { CatalogPagination } from "@sdkwork/iam-pc-admin-core";
 import type { SdkWorkPageInfo } from "@sdkwork/iam-contracts";
+import type {
+  OfficialAccountsController,
+  OfficialAccountsProviderConfig,
+} from "@sdkwork/iam-pc-official-accounts";
 import { downloadRemoteImageAsFile } from "../runtime/oauth-image-download";
+import { createIamOauthOfficialAccountController } from "../services/official-account-operator-operations";
 
 import type {
   SdkworkIamOauthAccountConfig,
@@ -167,6 +172,7 @@ export function OauthAccountSetupSection({
   kind,
   listPageInfo,
   messages,
+  officialAccounts,
   onChanged,
   onOpenCustomMenu,
   permissions,
@@ -193,6 +199,15 @@ export function OauthAccountSetupSection({
   kind: SdkworkIamOauthAccountKind;
   listPageInfo?: SdkWorkPageInfo;
   messages: AccountCopy;
+  /**
+   * The shared official-account controller in operator mode.
+   *
+   * Every mutation of this section goes through it (the CRUD implementation is
+   * owned by `@sdkwork/iam-pc-official-accounts`); the section itself owns only
+   * presentation state. Absent: the section builds the operator controller over
+   * the injected `controller`.
+   */
+  officialAccounts?: OfficialAccountsController;
   onChanged: () => void;
   /**
    * Custom menu manager entry for official accounts: the owner decides whether
@@ -207,6 +222,13 @@ export function OauthAccountSetupSection({
   const canCreate = permissions?.create ?? true;
   const canUpdate = permissions?.update ?? true;
   const canDelete = permissions?.delete ?? true;
+  // One shared controller owns every official-account mutation of this surface;
+  // the page injects it in operator mode, and the mini-program page (which
+  // renders this section for its own channel) gets the same operator wiring.
+  const sharedAccounts = useMemo(
+    () => officialAccounts ?? createIamOauthOfficialAccountController(controller),
+    [controller, officialAccounts],
+  );
   const [form, setForm] = useState<AccountFormValues>(() => createEmptyForm(kind));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<AccountRow>();
@@ -436,7 +458,7 @@ export function OauthAccountSetupSection({
       return;
     }
     setPendingDelete(undefined);
-    void controller.deleteResourceAccount(row.accountId)
+    void sharedAccounts.remove(row.accountId)
       .then(onChanged)
       .catch(onChanged);
   };
@@ -445,7 +467,7 @@ export function OauthAccountSetupSection({
     if (!row.accountId) {
       return;
     }
-    void controller.setResourceAccountEnabled(row.accountId, row.integrationId, enabled)
+    void sharedAccounts.setEnabled(row.accountId, enabled)
       .then(onChanged)
       .catch(onChanged);
   };
@@ -458,9 +480,17 @@ export function OauthAccountSetupSection({
     setQrCode(undefined);
     setQrError(undefined);
     setQrLoading(true);
-    void controller.createAccountFollowQrCode(row.accountId)
+    void sharedAccounts.createFollowQrCode(row.accountId)
       .then((detail) => {
-        setQrCode(detail);
+        setQrCode({
+          expireSeconds: detail.expireSeconds ?? 0,
+          permanent: detail.permanent ?? false,
+          qrCode: detail.qrCode,
+          qrContent: detail.qrContent ?? detail.qrCode,
+          qrMode: detail.qrMode ?? "official_account",
+          scene: detail.scene ?? "",
+          ticket: detail.ticket ?? "",
+        });
         setQrLoading(false);
       })
       .catch((error) => {
@@ -647,9 +677,9 @@ export function OauthAccountSetupSection({
 
       <AccountConfigDrawer
         configCopy={paginationMessages.quickSetup.accountConfig}
-        controller={controller}
         disabled={disabled}
         driveUploadImageService={driveUploadImageService}
+        officialAccounts={sharedAccounts}
         onChanged={onChanged}
         row={editingRow}
         status={status}
@@ -689,22 +719,23 @@ export function OauthAccountSetupSection({
           }
           const submitConfig = buildAccountConfigForSave(form.config, kind);
           setAttachBusy(true);
-          void controller.createAccountSetup(kind, {
+          void sharedAccounts.create({
             accountType: form.accountType,
             appId: form.appId,
             appSecret: form.appSecret,
-            config: submitConfig,
+            config: toProviderConfig(submitConfig),
             displayName: form.displayName,
             enabled: form.enabled,
             originalId: form.originalId,
             redirectUri: submitConfig.redirectUri ?? "",
+            resourceAccountKind: kind,
           })
             // Persist first, upload second (DRIVE_SPEC.md section 18.3): the
             // parked create-mode logo uploads against the freshly created
             // account id, then a follow-up config update attaches the
             // drive:// reference.
             .then(async (account) => {
-              const accountId = readResourceAccountId(account);
+              const accountId = account.id;
               if (!(pendingLogoFile && driveUploadImageService && accountId)) {
                 return account;
               }
@@ -713,30 +744,27 @@ export function OauthAccountSetupSection({
                   appResourceId: accountId,
                   file: pendingLogoFile,
                 });
-                await controller.updateAccountConfig(accountId, {
+                await sharedAccounts.updateConfig(accountId, toProviderConfig({
                   ...submitConfig,
                   logoUrl: uploaded.uri,
-                });
+                }));
               } catch {
                 // The account exists; a second confirm would only hit the
                 // appId dedupe. Flip to the created account's edit drawer so
                 // the retry is non-destructive, and say what failed instead
                 // of refreshing as if nothing happened.
                 setEditingRow({
-                  accountId: readResourceAccountId(account),
-                  accountType: readAccountType(account),
-                  appId: readProviderClientId(account),
-                  appSecret: readProviderClientSecret(account) || undefined,
-                  authorizationStatus: readAuthorizationStatus(account),
-                  config: readAccountConfig(account),
-                  enabled: readEnabled(account),
-                  integrationId: readAccountIntegrationId(account),
-                  kind: readResourceAccountKind(account),
-                  label: readDisplayName(account),
-                  logoUrl: readAccountConfig(account)?.logoUrl,
-                  originalId: readAccountOriginalId(account),
-                  verifyStatus: readDomainVerifyStatus(account),
-                  webhookVerifyStatus: readWebhookVerifyStatus(account),
+                  accountId,
+                  accountType: account.accountType ?? form.accountType,
+                  appId: account.appId,
+                  authorizationStatus: account.authorizationStatus,
+                  config: submitConfig,
+                  enabled: account.enabled,
+                  integrationId: "",
+                  kind: account.resourceAccountKind ?? kind,
+                  label: account.displayName,
+                  logoUrl: account.logoUrl,
+                  originalId: account.originalId,
                 });
                 setDrawerOpen(false);
                 setAttachError(paginationMessages.quickSetup.logoAttachFailed);
@@ -895,20 +923,33 @@ function buildAccountConfigForSave(
   return next;
 }
 
+/**
+ * The backend account document and the shared provider-configuration model
+ * describe the same `provider_config_json` document. The backend model names
+ * the operator-owned menu draft (including `miniprogram` button actions), which
+ * the shared model treats as provider-owned data it does not interpret, so the
+ * shared port accepts the document as-is.
+ * @param config - the backend account configuration.
+ * @returns the provider configuration document handed to the shared controller.
+ */
+function toProviderConfig(config: SdkworkIamOauthAccountConfig): OfficialAccountsProviderConfig {
+  return config as unknown as OfficialAccountsProviderConfig;
+}
+
 function AccountConfigDrawer({
   configCopy,
-  controller,
   disabled,
   driveUploadImageService,
+  officialAccounts,
   onChanged,
   onClose,
   row,
   status,
 }: {
   configCopy: AccountConfigCopy;
-  controller: SdkworkIamOauthAdminController;
   disabled: boolean;
   driveUploadImageService?: DriveUploadImageService;
+  officialAccounts: OfficialAccountsController;
   onChanged: () => void;
   onClose: () => void;
   row?: AccountRow;
@@ -973,30 +1014,31 @@ function AccountConfigDrawer({
     const enabledChanged = form.enabled !== (row.enabled ?? false);
     // Persist in dependency order — profile, credentials, developer
     // configuration, then the enabled state — so a partial failure never
-    // stores half of an edit.
-    const profileStep = profileChanged
-      ? controller.updateAccountProfile(row.accountId, row.integrationId, {
-        displayName: nextDisplayName,
-        ...(form.accountType !== previousType ? { accountType: form.accountType } : {}),
-        ...(form.originalId.trim() !== previousOriginalId ? { originalId: form.originalId } : {}),
-      })
-      : Promise.resolve();
-    const credentialsStep = (appIdChanged || secretProvided)
-      ? controller.updateAccountCredentials(row.accountId, {
-        ...(appIdChanged ? { appId: form.appId } : {}),
-        ...(secretProvided ? { appSecret: form.appSecret } : {}),
-      })
-      : Promise.resolve();
-    const enabledStep = enabledChanged
-      ? controller.setResourceAccountEnabled(row.accountId, row.integrationId, form.enabled)
-      : Promise.resolve();
-    void profileStep
-      .then(() => credentialsStep)
-      .then(() => controller.updateAccountConfig(
-        row.accountId,
-        buildAccountConfigForSave(form.config, accountKind),
-      ))
-      .then(() => enabledStep)
+    // stores half of an edit. The shared operator transport applies the groups
+    // in exactly that order.
+    void officialAccounts.update(row.accountId, {
+      ...(profileChanged
+        ? {
+          profile: {
+            displayName: nextDisplayName,
+            ...(form.accountType !== previousType ? { accountType: form.accountType } : {}),
+            ...(form.originalId.trim() !== previousOriginalId
+              ? { originalId: form.originalId }
+              : {}),
+          },
+        }
+        : {}),
+      ...(appIdChanged || secretProvided
+        ? {
+          credentials: {
+            ...(appIdChanged ? { appId: form.appId } : {}),
+            ...(secretProvided ? { appSecret: form.appSecret } : {}),
+          },
+        }
+        : {}),
+      config: toProviderConfig(buildAccountConfigForSave(form.config, accountKind)),
+      ...(enabledChanged ? { enabled: form.enabled } : {}),
+    })
       .then(() => {
         setNotice(configCopy.notices.saveSuccess);
         onChanged();
@@ -1010,7 +1052,7 @@ function AccountConfigDrawer({
     }
     setError(undefined);
     setNotice(undefined);
-    void controller.runResourceAccountVerification(row.accountId)
+    void officialAccounts.runVerification(row.accountId, "domain")
       .then(() => {
         setNotice(configCopy.notices.verifyQueued);
         onChanged();

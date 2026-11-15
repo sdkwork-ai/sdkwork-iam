@@ -587,6 +587,23 @@ export function createSdkworkIamOauthAdminController(
         throw error;
       }
     },
+    /**
+     * Read one page of resource accounts without touching the paged sessions.
+     *
+     * The shared official-account controller refreshes its own list after every
+     * mutation; routing that refresh through `listPageResource` would reset the
+     * page, filters, and status of the page that owns the visible list, so the
+     * transport gets this side-effect-free read instead.
+     */
+    async listResourceAccountPage(params) {
+      // The injected service port types the list call as `unknown`; the
+      // generated SDK returns the standard `{ items, pageInfo }` page.
+      const response = await service.iam.oauth.resourceAccounts.list(params) as {
+        items?: unknown[];
+        pageInfo?: SdkWorkPageInfo;
+      };
+      return { items: [...(response.items ?? [])], pageInfo: response.pageInfo };
+    },
     createIntegration(body) {
       return wrapCreate(
         () => {

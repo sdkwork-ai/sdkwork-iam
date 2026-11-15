@@ -17,11 +17,12 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "pnpm --dir ../../../.. exec vitest run apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-oauth/tests --config vitest.config.ts"
   },
   "dependencies": {
     "@sdkwork/drive-upload-image-core": "workspace:*",
     "@sdkwork/i18n-pc-react": "workspace:*",
+    "@sdkwork/iam-pc-official-accounts": "workspace:*",
     "@sdkwork/ui-pc-react": "workspace:*",
     "sdkwork-drive-pc-upload-image": "workspace:*"
   },

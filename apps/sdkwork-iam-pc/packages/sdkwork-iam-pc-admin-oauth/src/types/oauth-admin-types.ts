@@ -491,6 +491,15 @@ export interface SdkworkIamOauthAdminController {
     resourceKey: keyof SdkworkIamOauthAdminResourceSnapshot,
     params: Record<string, unknown>,
   ): Promise<unknown[]>;
+  /**
+   * Read one page of resource accounts without touching the paged resource
+   * sessions, so a shared official-account transport can list accounts without
+   * resetting the page, filters, or status of the page that owns the list.
+   */
+  listResourceAccountPage(params: Record<string, unknown>): Promise<{
+    items: unknown[];
+    pageInfo?: SdkWorkPageInfo;
+  }>;
   createAccountSetup(
     kind: SdkworkIamOauthAccountKind,
     body: SdkworkIamOauthAccountSetupDraft,

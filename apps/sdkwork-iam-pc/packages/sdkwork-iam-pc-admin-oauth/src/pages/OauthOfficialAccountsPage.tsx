@@ -11,6 +11,7 @@ import { useOauthAdminPageState } from "../hooks/use-oauth-admin-page-state";
 import { useSdkworkIamOauthAdminMessages } from "../i18n";
 import { OauthAccountSetupSection } from "../components/oauth-account-setup-section";
 import { SdkworkIamOauthCustomMenuFullscreenModal } from "../components/custom-menu/custom-menu-fullscreen-modal";
+import { createIamOauthOfficialAccountController } from "../services/official-account-operator-operations";
 import { readResourceAccountKind } from "../utils/oauth-admin-utils";
 
 /**
@@ -20,6 +21,12 @@ import { readResourceAccountKind } from "../utils/oauth-admin-utils";
  * `resourceAccountKind = "official_account"`. Saving an account auto-creates
  * or reuses the `wechat` web-authorization login integration; enabling it
  * shows the WeChat login entry on the login page immediately.
+ *
+ * The surface is a thin shell: it builds the shared operator-mode controller
+ * from `@sdkwork/iam-pc-official-accounts` over this package's backend
+ * controller (whose generated `iam.oauth.resourceAccounts.*` slice is injected)
+ * and lets the section render it. The CRUD implementation lives in the shared
+ * package; nothing here re-implements it.
  *
  * `?open=add` in the URL (e.g. jumped from the scan-login settings page)
  * opens the add-account drawer automatically on mount. The custom menu
@@ -55,6 +62,11 @@ export function SdkworkIamOauthOfficialAccountsPage({
     "resourceAccounts",
     "integrations",
   ]);
+  // Operator mode: the shared controller owns every official-account mutation.
+  const officialAccounts = useMemo(
+    () => createIamOauthOfficialAccountController(controller),
+    [controller],
+  );
   const [initialOpen, setInitialOpen] = useState(false);
   const [activeMenuAccountId, setActiveMenuAccountId] = useState<string | undefined>();
   const accounts = useMemo(
@@ -87,6 +99,7 @@ export function SdkworkIamOauthOfficialAccountsPage({
         kind="official_account"
         listPageInfo={listPageInfo?.resourceAccounts}
         messages={messages.quickSetup.officialAccounts}
+        officialAccounts={officialAccounts}
         onChanged={sync}
         onOpenCustomMenu={handleOpenCustomMenu}
         permissions={permissions}

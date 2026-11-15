@@ -11,10 +11,11 @@ import type { SdkworkIamOfficialAccountsController } from "../client/controller"
  *
  * The IAM PC app mounts this on its app-tier route; product clients that embed
  * the same surface render {@link SdkworkIamOfficialAccountsPanel} directly.
- * The page owns the heading, so an embedding dialog that already states the
- * title and description does not receive a second copy from the panel. The host
- * service layer injects the Drive image-upload capability the logo field uses;
- * without it the field states that uploads are unavailable.
+ * The page owns only the heading (the panel is a workspace and renders none),
+ * so an embedding dialog that already states the title and description does not
+ * receive a second copy. The host service layer injects the Drive image-upload
+ * capability the logo field uses; without it the field states that uploads are
+ * unavailable.
  */
 export function SdkworkIamOfficialAccountsPage({
   controller,

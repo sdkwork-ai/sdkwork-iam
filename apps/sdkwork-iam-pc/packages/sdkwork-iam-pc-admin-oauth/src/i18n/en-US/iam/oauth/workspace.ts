@@ -676,7 +676,7 @@ export const sdkworkIamOauthAdminMessages: SdkworkIamOauthAdminMessages = {
       allowedScopes: "Allowed scopes",
       allowedScopesPlaceholder: "openid\nprofile\nemail",
       clientId: "OAuth client_id",
-      clientIdPlaceholder: "birdcoder",
+      clientIdPlaceholder: "example-client",
       clientSecretHash: "Client secret (plaintext or argon2id hash)",
       redirectUris: "Redirect URIs (one per line or comma-separated)",
       redirectUrisPlaceholder: "https://forum.example.com/auth/oauth/callback",

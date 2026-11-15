@@ -123,6 +123,12 @@ tables:
   - name: iam_oauth_webhook_config
     lifecycle_status: active
     owner: sdkwork-iam
+  # Migration evidence only: written once by 0033_official_account_unification,
+  # never read or written by runtime code. Retired together with
+  # iam_user_official_account by the separately approved DROP migration.
+  - name: iam_official_account_migration_orphan
+    lifecycle_status: deprecated
+    owner: sdkwork-iam
   - name: iam_organization
     lifecycle_status: active
     owner: sdkwork-iam
@@ -199,9 +205,6 @@ tables:
     lifecycle_status: active
     owner: sdkwork-iam
   - name: iam_user_identity
-    lifecycle_status: active
-    owner: sdkwork-iam
-  - name: iam_user_official_account
     lifecycle_status: active
     owner: sdkwork-iam
   - name: iam_user_persona

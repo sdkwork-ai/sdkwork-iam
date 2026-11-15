@@ -241,6 +241,96 @@ function localeSetIsDeclared(seedManifest, locale) {
   return Object.hasOwn(seedManifest.localeSets ?? {}, locale);
 }
 
+test("official-account unification migration is folded, irreversible, and forward-fix only", () => {
+  const baseline = readText("database/ddl/baseline/postgres/0001_iam_baseline.sql");
+  const migration = readText(
+    "database/migrations/postgres/0033_official_account_unification.up.sql",
+  );
+
+  assert.match(migration, /^-- reversible: false$/mu);
+  assert.match(migration, /^-- rollback: forward-fix/mu);
+  assert.match(
+    baseline,
+    /-- folded migration: migrations\/postgres\/0033_official_account_unification\.up\.sql/u,
+  );
+
+  for (const source of [baseline, migration]) {
+    assert.match(source, /ADD COLUMN IF NOT EXISTS maintainer_user_id TEXT/u);
+    assert.match(source, /idx_iam_oauth_resource_account_maintainer/u);
+    assert.match(source, /uk_iam_oauth_resource_account_provider_id/u);
+    assert.match(source, /access_mode = 'self_managed_account'|'self_managed_account'/u);
+  }
+
+  // The legacy aggregate is retired in two steps: 0033 never drops it, and the
+  // DROP only exists inside the separately approved 0034 block (which must stay
+  // irreversible + forward-fix, exactly like 0033).
+  assert.doesNotMatch(migration, /DROP\s+TABLE/iu);
+  const dropMigration = readText(
+    "database/migrations/postgres/0034_drop_iam_user_official_account.up.sql",
+  );
+  assert.match(dropMigration, /^-- reversible: false$/mu);
+  assert.match(dropMigration, /^-- rollback: forward-fix/mu);
+  assert.match(dropMigration, /DROP TABLE IF EXISTS iam_user_official_account/u);
+  assert.match(
+    baseline,
+    /-- folded migration: migrations\/postgres\/0034_drop_iam_user_official_account\.up\.sql/u,
+  );
+});
+
+test("official-account migration orphan ledger is written by 0033 only", () => {
+  const ledgerTable = "iam_official_account_migration_orphan";
+  const migrationName = "0033_official_account_unification.up.sql";
+  const migrationDir = "database/migrations/postgres";
+  const baseline = readText("database/ddl/baseline/postgres/0001_iam_baseline.sql");
+
+  // Every legacy row the unification cannot carry over is isolated, not silently
+  // skipped: 0033 must create the ledger, insert into it, and report the count.
+  const migration = readText(`${migrationDir}/${migrationName}`);
+  assert.match(migration, new RegExp(`CREATE TABLE IF NOT EXISTS ${ledgerTable}`, "u"));
+  assert.match(migration, new RegExp(`INSERT INTO ${ledgerTable}`, "u"));
+  assert.match(migration, /reason/u);
+  assert.match(migration, /RAISE NOTICE/u);
+  assert.match(migration, /provider_account_conflict/u);
+
+  // No other migration may know about it.
+  for (const file of fs.readdirSync(path.join(iamRoot, migrationDir)).filter((name) => name.endsWith(".up.sql"))) {
+    if (file === migrationName || file.startsWith("0034_")) {
+      continue;
+    }
+    assert.doesNotMatch(
+      readText(`${migrationDir}/${file}`),
+      new RegExp(ledgerTable, "u"),
+      `${file} must not reference the migration orphan ledger`,
+    );
+  }
+
+  // The baseline only carries it inside the folded 0033 block.
+  const foldedMarker = baseline.indexOf(`-- folded migration: migrations/postgres/${migrationName}`);
+  assert.ok(foldedMarker >= 0, "baseline must carry the folded 0033 block");
+  assert.ok(
+    baseline.indexOf(ledgerTable) > foldedMarker,
+    "the orphan ledger may only appear in the baseline through the folded 0033 block",
+  );
+
+  // No runtime handler may read or write it: it is migration evidence.
+  const runtimeDirs = [
+    "crates/sdkwork-routes-iam-app-api/src",
+    "crates/sdkwork-routes-iam-backend-api/src",
+    "crates/sdkwork-routes-iam-open-api/src",
+    "crates/sdkwork-iam-web-adapter/src",
+    "crates/sdkwork-iam-directory-repository-sqlx/src",
+  ];
+  for (const dir of runtimeDirs) {
+    for (const file of fs.readdirSync(path.join(iamRoot, dir)).filter((name) => name.endsWith(".rs"))) {
+      assert.doesNotMatch(
+        readText(`${dir}/${file}`),
+        new RegExp(ledgerTable, "u"),
+        `${dir}/${file} must not read or write the migration orphan ledger`,
+      );
+    }
+  }
+});
+
 
 test("IAM database seed hooks always provision the bootstrap admin and gate only its credential", () => {
   const databaseModule = readText("crates/sdkwork-iam-database-host/src/iam_database_module.rs");

@@ -851,13 +851,22 @@ async fn tenant_patch(
                     // `qr_default_enabled = 1`; enabling one official account
                     // clears the flag on every other one in the same
                     // transaction, so exactly one account is active at a time.
+                    // The exclusivity window is per access mode: promoting a
+                    // self-service channel must not switch off the
+                    // operator-authorized account the tenant logs in with (and
+                    // the other way round), so the scope is grouped by the
+                    // patched row's own access mode.
                     if assignments.iter().any(|(column, value)| {
                         column == "qr_default_enabled" && matches!(value, PatchValue::Int(1))
                     }) {
                         sqlx::query(
                             "UPDATE iam_oauth_resource_account SET qr_default_enabled = 0, updated_at = $1 \
                              WHERE tenant_id = $2 AND resource_account_kind = 'official_account' \
-                               AND id <> $3 AND qr_default_enabled = 1",
+                               AND id <> $3 AND qr_default_enabled = 1 \
+                               AND access_mode = ( \
+                                 SELECT access_mode FROM iam_oauth_resource_account \
+                                 WHERE tenant_id = $2 AND id = $3 \
+                               )",
                         )
                         .bind(&now)
                         .bind(&tenant_id)
@@ -3244,8 +3253,13 @@ async fn verify_oauth_resource_account_diagnostic(
         read_string_field(body, &["resourceAccountId", "resource_account_id"])
             .filter(|value| !value.is_empty())
             .ok_or_else(|| "resourceAccountId is required".to_string())?;
-    let count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(1)::bigint FROM iam_oauth_resource_account \
+    // The readiness result is grouped by `access_mode`: a self-service channel
+    // is reported as such instead of being counted as an operator-authorized
+    // login resource, so an operator reading the diagnostic never mistakes one
+    // for the other.
+    let row = sqlx::query(
+        "SELECT COUNT(1)::bigint, COALESCE(MIN(access_mode), '') \
+         FROM iam_oauth_resource_account \
          WHERE tenant_id = $1 AND id = $2 AND status = 'active'",
     )
     .bind(tenant_id)
@@ -3253,10 +3267,14 @@ async fn verify_oauth_resource_account_diagnostic(
     .fetch_one(pg)
     .await
     .map_err(|error| format!("oauth resource account diagnostic failed: {error}"))?;
+    let count: i64 = row.get(0);
     if count != 1 {
         return Err("oauth resource account is not active for this tenant".to_string());
     }
-    Ok(format!("resource account {resource_account_id} is active"))
+    let access_mode: String = row.get(1);
+    Ok(format!(
+        "resource account {resource_account_id} is active (access mode: {access_mode})"
+    ))
 }
 
 async fn verify_oauth_surface_diagnostic(
@@ -3274,6 +3292,9 @@ async fn verify_oauth_surface_diagnostic(
          JOIN iam_oauth_integration i ON i.id = r.integration_id AND i.tenant_id = r.tenant_id \
          WHERE r.tenant_id = $1 AND r.id = $2 AND r.provider_code = 'wechat_mini_program' \
            AND r.enabled = 1 AND r.status = 'active' AND i.enabled = 1 AND i.status = 'active' \
+           -- A self-service mini program is not a login channel unless an
+           -- operator explicitly promoted it for scan login.
+           AND (r.access_mode <> 'self_managed_account' OR r.qr_default_enabled = 1) \
          LIMIT 1",
     )
     .bind(tenant_id)
@@ -4674,15 +4695,23 @@ async fn scan_login_settings_json(pg: &PgPool, tenant_id: &str) -> Result<Value,
                 ra.integration_id, \
                 c.provider_client_id, \
                 w.callback_url, w.verification_token_status, w.encoding_aes_key_status, \
-                w.enabled AS webhook_enabled, w.callback_public_id \
+                w.enabled AS webhook_enabled, w.callback_public_id, \
+                ra.access_mode, ra.maintainer_user_id \
          FROM iam_oauth_resource_account ra \
          LEFT JOIN iam_oauth_client c \
            ON c.tenant_id = ra.tenant_id AND c.integration_id = ra.integration_id \
           AND c.id = ra.oauth_client_id AND c.provider_code = ra.provider_code \
           AND c.provider_client_id = ra.provider_account_id \
           AND c.enabled = 1 AND c.status = 'active' \
-         LEFT JOIN iam_oauth_webhook_config w \
-           ON w.resource_account_id = ra.id AND w.status = 'active' \
+         LEFT JOIN LATERAL ( \
+           SELECT w.callback_url, w.verification_token_status, w.encoding_aes_key_status, \
+                  w.enabled, w.callback_public_id \
+           FROM iam_oauth_webhook_config w \
+           WHERE w.tenant_id = ra.tenant_id AND w.resource_account_id = ra.id \
+             AND w.status = 'active' AND w.webhook_kind = 'message_push' \
+           ORDER BY w.created_at DESC, w.id DESC \
+           LIMIT 1 \
+         ) w ON TRUE \
          WHERE ra.tenant_id = $1 AND ra.provider_code = 'wechat' \
            AND ra.resource_account_kind = 'official_account' \
            -- Scan login renders a WeChat parameterized QR (qrcode/create),
@@ -4711,12 +4740,19 @@ async fn scan_login_settings_json(pg: &PgPool, tenant_id: &str) -> Result<Value,
             let encoding_aes_key_status: Option<String> = row.get(9);
             let webhook_enabled: Option<i32> = row.get(10);
             let callback_public_id: Option<String> = row.get(11);
+            // Self-service channels are listed so an operator can see and
+            // diagnose them, but the row carries its management mode and
+            // maintainer so the console can label it as caller-maintained.
+            let access_mode: String = row.get(12);
+            let maintainer_user_id: Option<String> = row.get(13);
             json!({
+                "accessMode": access_mode,
                 "accountId": id,
                 "appId": app_id,
                 "displayName": display_name,
                 "enabled": enabled != 0,
                 "integrationId": integration_id,
+                "maintainerUserId": maintainer_user_id,
                 "qrLoginEnabled": qr_login_enabled != 0,
                 "verificationStatus": verification_status,
                 "webhook": {
@@ -4900,6 +4936,9 @@ async fn create_scan_login_preview(
                AND ra.enabled = 1 AND ra.status = 'active' \
                AND ($2::text IS NULL OR ra.id = $2) \
                AND ($2::text IS NOT NULL OR ra.qr_default_enabled = 1) \
+               -- Implicit selection (no explicit account) never promotes a
+               -- self-service channel into the tenant login QR.
+               AND ($2::text IS NOT NULL OR ra.access_mode <> 'self_managed_account') \
              ORDER BY ra.updated_at DESC LIMIT 1",
         )
         .bind(&tenant_id)

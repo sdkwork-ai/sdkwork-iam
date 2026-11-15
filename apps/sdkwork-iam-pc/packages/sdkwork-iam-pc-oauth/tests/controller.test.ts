@@ -13,7 +13,7 @@ import {
 const RECORD = {
   officialAccountId: "acc-1",
   appId: "wx1234567890abcdef",
-  displayName: "BirdCoder",
+  displayName: "Example Account",
   accountType: "service",
   originalId: "gh_123",
   logoUrl: "https://example.test/logo.png",
@@ -129,7 +129,7 @@ describe("official-account adapter", () => {
     const client = createSdkworkIamOfficialAccountsClient(memoryApi());
     const page = await client.list({ q: " bird " });
     expect(page).toMatchObject({ totalItems: 1, page: 1, pageSize: 20 });
-    expect(page.items[0]?.displayName).toBe("BirdCoder");
+    expect(page.items[0]?.displayName).toBe("Example Account");
   });
 });
 
@@ -177,7 +177,7 @@ describe("official-account controller", () => {
 
     await controller.setEnabled(toOfficialAccount(RECORD), false);
     expect(api.update).toHaveBeenCalledWith("acc-1", {
-      displayName: "BirdCoder",
+      displayName: "Example Account",
       enabled: false,
     });
 
@@ -185,7 +185,7 @@ describe("official-account controller", () => {
       buttons: [{ name: "帮助", type: "click", key: "HELP" }],
     });
     expect(api.update).toHaveBeenCalledWith("acc-1", {
-      displayName: "BirdCoder",
+      displayName: "Example Account",
       customMenu: { buttons: [{ name: "帮助", type: "click", key: "HELP" }] },
     });
 

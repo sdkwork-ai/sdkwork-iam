@@ -17,6 +17,18 @@ Enabling an integration (or a mini program / official account, which syncs its
 integration) makes `oauth.providers.list` return the provider code, so the
 login page renders the matching OAuth entry immediately.
 
+### Official account CRUD delegation
+
+Official-account CRUD is owned by `@sdkwork/iam-pc-official-accounts`.
+`SdkworkIamOauthOfficialAccountsPage` is a thin shell: it builds that package's
+operator-mode controller over this package's backend controller
+(`createOperatorTransport` + `DEFAULT_OPERATOR_CAPABILITIES`, see
+`src/services/official-account-operator-operations.ts`) and threads it through
+`OauthAccountSetupSection`. Every create (one-click integration setup), profile /
+credential / configuration write, enable toggle, delete, follow-QR generation,
+and verification run is issued by the shared controller; the section keeps only
+presentation state and the WeChat console validation rules.
+
 ### Official account domain configuration
 
 The official-account drawer's 开发配置 tab mirrors 公众平台 → 设置与开发 →
