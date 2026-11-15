@@ -12,6 +12,8 @@
  * never performs raw HTTP, and never assembles authentication headers.
  */
 import type {
+  OfficialAccountsCustomMenuContext,
+  OfficialAccountsCustomMenuPublishResult,
   OfficialAccountsMenu,
   OfficialAccountsPatch,
   OfficialAccountsProviderConfig,
@@ -22,6 +24,7 @@ import type {
 } from "../types";
 import { OfficialAccountsUnsupportedError } from "../client/controller";
 import {
+  readOfficialAccountMenu,
   toOfficialAccount,
   toOfficialAccountCommand,
   toOfficialAccountCreateCommand,
@@ -49,6 +52,19 @@ export interface OfficialAccountsSelfServiceApi {
   delete(id: string): Promise<void>;
   /** Optional single-record read; improves partial updates and menu reads. */
   retrieve?(id: string): Promise<Record<string, unknown>>;
+  /**
+   * Optional menu maintenance actions the app API exposes for the caller's own
+   * account. Present from the menu-versioned app API onward; absent on older
+   * SDK slices, in which case the controller reports the action unsupported.
+   */
+  customMenus?: {
+    /** Pull the live WeChat menu into the stored draft. */
+    sync?(id: string, body?: Record<string, unknown>): Promise<Record<string, unknown>>;
+    /** Publish the stored draft to the WeChat console. */
+    publish?(id: string, body?: Record<string, unknown>): Promise<Record<string, unknown>>;
+    /** Restore a retained revision and publish it. */
+    rollback?(id: string, body?: Record<string, unknown>): Promise<Record<string, unknown>>;
+  };
 }
 
 /**
@@ -89,6 +105,20 @@ export function createSelfServiceTransport(
       }
     }
     return command;
+  };
+  /** Normalizes one menu-maintenance response into the shared context. */
+  const menuContext = (id: string, record: Record<string, unknown>): OfficialAccountsCustomMenuContext => {
+    const source = record.source === "database" || record.source === "wechat" ? record.source : undefined;
+    const displayName = typeof record.displayName === "string" ? record.displayName : undefined;
+    const version = typeof record.version === "number" ? record.version : undefined;
+    const menu = readOfficialAccountMenu(record.menu);
+    return {
+      accountId: id,
+      menu,
+      ...(displayName === undefined ? {} : { displayName }),
+      ...(source === undefined ? {} : { source }),
+      ...(version === undefined && menu.version === undefined ? {} : { version: version ?? menu.version }),
+    };
   };
 
   return {
@@ -147,5 +177,46 @@ export function createSelfServiceTransport(
     async setEnabled(id: string, enabled: boolean): Promise<void> {
       await api.update(id, await commandFor(id, { enabled }));
     },
+    ...(api.customMenus?.sync === undefined
+      ? {}
+      : {
+        async syncCustomMenu(id: string, baseVersion?: number): Promise<OfficialAccountsCustomMenuContext> {
+          const record = await api.customMenus!.sync!(id, {
+            ...(baseVersion === undefined ? {} : { baseVersion }),
+          });
+          return menuContext(id, record);
+        },
+      }),
+    ...(api.customMenus?.publish === undefined
+      ? {}
+      : {
+        async publishCustomMenu(
+          id: string,
+          menu: OfficialAccountsMenu,
+        ): Promise<OfficialAccountsCustomMenuPublishResult> {
+          const record = await api.customMenus!.publish!(id, { buttons: menu.buttons });
+          return {
+            accountId: id,
+            published: true,
+            saved: true,
+            context: menuContext(id, record),
+          };
+        },
+      }),
+    ...(api.customMenus?.rollback === undefined
+      ? {}
+      : {
+        async rollbackCustomMenu(
+          id: string,
+          version: number,
+          baseVersion?: number,
+        ): Promise<OfficialAccountsCustomMenuContext> {
+          const record = await api.customMenus!.rollback!(id, {
+            version,
+            ...(baseVersion === undefined ? {} : { baseVersion }),
+          });
+          return menuContext(id, record);
+        },
+      }),
   };
 }

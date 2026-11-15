@@ -21,6 +21,8 @@ import type {
   OfficialAccountsMenuButton,
 } from "../../types";
 import type { OfficialAccountsMenuMessages } from "./messages";
+import { SdkworkOfficialAccountsDeployedMiniProgramPicker } from "./deployed-mini-program-picker";
+import type { OfficialAccountsDeployedMiniProgramAppLoader } from "./deployed-mini-program-picker";
 import {
   clampCustomMenuName,
   CUSTOM_MENU_SUB_NAME_UNIT_LIMIT,
@@ -39,6 +41,12 @@ export interface SdkworkOfficialAccountsMenuEditorProps {
   };
   isSubMenu: boolean;
   issues: OfficialAccountsMenuValidationIssue[];
+  /**
+   * Host-injected deployed mini program inventory. When present, the "open mini
+   * program" action offers a link that fills the AppID from the application the
+   * operator picks; hosts without the capability render the plain field.
+   */
+  loadDeployedMiniProgramApps?: OfficialAccountsDeployedMiniProgramAppLoader;
   messages: OfficialAccountsMenuMessages;
   moveDisabled: { down: boolean; up: boolean };
   onChangeField: (field: "message" | "url" | "appId" | "pagePath", value: string) => void;
@@ -67,6 +75,7 @@ export function SdkworkOfficialAccountsMenuEditor({
   focusRequest,
   isSubMenu,
   issues,
+  loadDeployedMiniProgramApps,
   messages,
   moveDisabled,
   onChangeField,
@@ -237,6 +246,7 @@ export function SdkworkOfficialAccountsMenuEditor({
                 button={button}
                 fieldId={fieldId}
                 issues={issues}
+                loadDeployedMiniProgramApps={loadDeployedMiniProgramApps}
                 messages={messages}
                 onChangeField={onChangeField}
               />
@@ -252,9 +262,10 @@ function ActionContentEditor({
   button,
   fieldId,
   issues,
+  loadDeployedMiniProgramApps,
   messages,
   onChangeField,
-}: Pick<SdkworkOfficialAccountsMenuEditorProps, "button" | "issues" | "messages" | "onChangeField"> & {
+}: Pick<SdkworkOfficialAccountsMenuEditorProps, "button" | "issues" | "loadDeployedMiniProgramApps" | "messages" | "onChangeField"> & {
   fieldId: (field: string) => string;
 }) {
   if (!button.type) {
@@ -320,7 +331,16 @@ function ActionContentEditor({
         <div className="space-y-5">
           <p className="text-xs text-[#8d8d8d] dark:text-[#a1a1aa]">{messages.actionTypes.miniprogramDescription}</p>
           <div className="space-y-2">
-            <label className="block text-sm" htmlFor={fieldId("appid")}>{messages.appIdLabel}</label>
+            <div className="flex items-center justify-between gap-2">
+              <label className="block text-sm" htmlFor={fieldId("appid")}>{messages.appIdLabel}</label>
+              {loadDeployedMiniProgramApps === undefined ? null : (
+                <SdkworkOfficialAccountsDeployedMiniProgramPicker
+                  loader={loadDeployedMiniProgramApps}
+                  messages={messages}
+                  onSelect={(appId) => onChangeField("appId", appId)}
+                />
+              )}
+            </div>
             <Input
               data-validation-focus="appId"
               aria-describedby={issues.some((issue) => issue.kind === "appIdRequired") ? fieldId("appid-hint") : undefined}

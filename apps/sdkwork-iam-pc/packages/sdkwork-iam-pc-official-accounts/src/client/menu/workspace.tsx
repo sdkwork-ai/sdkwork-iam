@@ -29,6 +29,7 @@ import {
   type OfficialAccountsMenuValidationIssue,
 } from "./rules";
 import { SdkworkOfficialAccountsMenuEditor } from "./editor";
+import type { OfficialAccountsDeployedMiniProgramAppLoader } from "./deployed-mini-program-picker";
 import { SdkworkOfficialAccountsMenuPhonePreview } from "./phone-preview";
 
 
@@ -42,6 +43,11 @@ export interface SdkworkOfficialAccountsMenuWorkspaceProps {
   context?: OfficialAccountsCustomMenuContext;
   /** Earlier revisions the rollback dialog offers (newest first). */
   history?: OfficialAccountsMenuVersion[];
+  /**
+   * Host-injected deployed mini program inventory for the "open mini program"
+   * action; omitted hosts keep the plain AppID field.
+   */
+  loadDeployedMiniProgramApps?: OfficialAccountsDeployedMiniProgramAppLoader;
   messages: OfficialAccountsMenuMessages;
   onDirtyChange?: (dirty: boolean) => void;
   onClose?: () => void;
@@ -85,6 +91,7 @@ export function SdkworkOfficialAccountsMenuWorkspace({
   canUpdate = true,
   context,
   history = [],
+  loadDeployedMiniProgramApps,
   messages,
   onDirtyChange,
   onClose,
@@ -482,6 +489,7 @@ export function SdkworkOfficialAccountsMenuWorkspace({
                 focusRequest={focusRequest?.path === selectedPath ? focusRequest : undefined}
                 isSubMenu={selectedIsSub}
                 issues={selectedIssues}
+                loadDeployedMiniProgramApps={loadDeployedMiniProgramApps}
                 messages={messages}
                 moveDisabled={moveDisabled}
                 onChangeField={(field, value) => commit(mutateAtPath(buttons, selectedPath, (button) => ({ ...button, [field]: value })))}

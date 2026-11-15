@@ -60,6 +60,18 @@ export interface OfficialAccountsMenuMessages {
     "fallbackUrlLabel": string;
     "fallbackUrlPlaceholder": string;
     "fallbackUrlHint": string;
+    /** Link label that opens the deployed-application mini program picker. */
+    "pickFromDeployedApps": string;
+    "pickerTitle": string;
+    "pickerDescription": string;
+    "pickerLoading": string;
+    "pickerEmpty": string;
+    "pickerLoadFailed": string;
+    "pickerRetry": string;
+    /** Shown on a deployed application that links no mini program account. */
+    "pickerNoAccount": string;
+    /** Environment badge template with an {environment} placeholder. */
+    "pickerEnvironmentTemplate": string;
     "rules": string;
     "rulesText": string;
     "rulesText2": string;
@@ -174,6 +186,15 @@ export const OFFICIAL_ACCOUNTS_MENU_MESSAGES_ZH_CN: OfficialAccountsMenuMessages
   "fallbackUrlLabel": "备用网页",
   "fallbackUrlPlaceholder": "https://example.com/fallback",
   "fallbackUrlHint": "旧版微信客户端无法打开小程序时，将跳转到此网页",
+  "pickFromDeployedApps": "从部署应用中选择",
+  "pickerTitle": "选择已部署的小程序应用",
+  "pickerDescription": "列表来自当前租户的部署应用；选择后自动填入该应用关联小程序账号的 AppID。",
+  "pickerLoading": "正在加载已部署的小程序应用…",
+  "pickerEmpty": "暂无已部署的小程序应用。",
+  "pickerLoadFailed": "加载已部署的小程序应用失败。",
+  "pickerRetry": "重试",
+  "pickerNoAccount": "未关联小程序账号",
+  "pickerEnvironmentTemplate": "环境：{environment}",
   "rules": "菜单规则",
   "rulesText": "一级菜单最多 3 个，每个一级菜单最多可添加 5 个子菜单；",
   "rulesText2": "含有子菜单的一级菜单本身不可设置动作，仅作为子菜单的入口展示。",
@@ -276,6 +297,15 @@ export const OFFICIAL_ACCOUNTS_MENU_MESSAGES_EN_US: OfficialAccountsMenuMessages
   "fallbackUrlLabel": "Fallback webpage",
   "fallbackUrlPlaceholder": "https://example.com/fallback",
   "fallbackUrlHint": "Older WeChat clients open this webpage when the mini program cannot be opened",
+  "pickFromDeployedApps": "Select from deployed apps",
+  "pickerTitle": "Select a deployed mini program app",
+  "pickerDescription": "Lists this tenant's deployed applications. Choosing one fills in the AppID of its linked mini program account.",
+  "pickerLoading": "Loading deployed mini program apps…",
+  "pickerEmpty": "No deployed mini program apps yet.",
+  "pickerLoadFailed": "Failed to load deployed mini program apps.",
+  "pickerRetry": "Retry",
+  "pickerNoAccount": "No mini program account linked",
+  "pickerEnvironmentTemplate": "Environment: {environment}",
   "rules": "Menu rules",
   "rulesText": "At most 3 top-level menus, each expanding into up to 5 sub-menus;",
   "rulesText2": "a top-level menu with sub-menus is display-only and cannot carry an action itself.",

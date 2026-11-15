@@ -65,6 +65,12 @@ export {
   type SdkworkOfficialAccountsMenuWorkspaceProps,
 } from "./client/menu/workspace";
 export {
+  SdkworkOfficialAccountsDeployedMiniProgramPicker,
+  type OfficialAccountsDeployedMiniProgramApp,
+  type OfficialAccountsDeployedMiniProgramAppLoader,
+  type SdkworkOfficialAccountsDeployedMiniProgramPickerProps,
+} from "./client/menu/deployed-mini-program-picker";
+export {
   OFFICIAL_ACCOUNTS_MENU_MESSAGES_EN_US,
   OFFICIAL_ACCOUNTS_MENU_MESSAGES_ZH_CN,
   type OfficialAccountsMenuMessages,

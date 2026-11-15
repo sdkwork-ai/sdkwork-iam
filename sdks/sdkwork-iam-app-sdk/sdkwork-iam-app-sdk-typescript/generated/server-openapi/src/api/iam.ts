@@ -334,6 +334,30 @@ export class IamOrganizationMembershipsApi {
   }
 }
 
+export class IamOauthOfficialAccountsCustomMenusApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Iam oauth official Accounts custom Menus publish. */
+  async publish(officialAccountId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: 'officialAccountId', style: 'simple', explode: false })}/custom_menus/publish`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Iam oauth official Accounts custom Menus rollback. */
+  async rollback(officialAccountId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: 'officialAccountId', style: 'simple', explode: false })}/custom_menus/rollback`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Iam oauth official Accounts custom Menus sync. */
+  async sync(officialAccountId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: 'officialAccountId', style: 'simple', explode: false })}/custom_menus/sync`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export interface IamOauthOfficialAccountsListParams {
   page?: number;
   pageSize?: number;
@@ -344,9 +368,11 @@ export interface IamOauthOfficialAccountsListParams {
 
 export class IamOauthOfficialAccountsApi {
   private client: HttpClient;
+  public readonly customMenus: IamOauthOfficialAccountsCustomMenusApi;
 
   constructor(client: HttpClient) {
     this.client = client;
+    this.customMenus = new IamOauthOfficialAccountsCustomMenusApi(client);
   }
 
 

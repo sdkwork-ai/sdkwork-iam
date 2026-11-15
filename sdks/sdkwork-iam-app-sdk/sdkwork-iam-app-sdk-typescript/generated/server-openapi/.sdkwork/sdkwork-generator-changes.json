@@ -9,12 +9,11 @@
     "protocol": "http",
     "packageName": "@sdkwork/iam-app-sdk"
   },
-  "changeFingerprint": "644a1c5ccd5663a0fcaa87b992e6de5a68a4bb3165968fbf990ab26a55386a82",
+  "changeFingerprint": "ae78cc39f2bf133b55974e6dd9b82e88f1aaee015b3dccc9f051b2a3b4946d0c",
   "changes": {
     "createdGeneratedFiles": [],
     "updatedGeneratedFiles": [
-      "src/api/iam.ts",
-      "src/api/oauth.ts"
+      "src/api/iam.ts"
     ],
     "unchangedGeneratedFiles": [
       "bin/publish-core.mjs",
@@ -30,6 +29,7 @@
       "src/api/auth.ts",
       "src/api/base.ts",
       "src/api/index.ts",
+      "src/api/oauth.ts",
       "src/api/paths.ts",
       "src/api/system.ts",
       "src/auth/index.ts",
@@ -74,76 +74,40 @@
       "src/types/wechat-mini-program-session-create-command.ts",
       "tsconfig.json"
     ],
-    "deletedGeneratedFiles": [
-      "src/api/iam.d.ts",
-      "src/api/oauth.d.ts",
-      "src/types/appbase-session-create-command.d.ts",
-      "src/types/iam-organization-member-list-response.d.ts",
-      "src/types/iam-organization-member.d.ts",
-      "src/types/index.d.ts",
-      "src/types/oauth-phone-binding-session-create-command.d.ts",
-      "src/types/oauth-phone-binding-verification-code-request-command.d.ts",
-      "src/types/wechat-mini-program-session-create-command.d.ts"
-    ],
+    "deletedGeneratedFiles": [],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/build-runtime.mjs",
       "custom/README.md"
     ],
-    "backedUpFiles": [
-      "src/api/iam.d.ts",
-      "src/api/oauth.d.ts",
-      "src/types/appbase-session-create-command.d.ts",
-      "src/types/iam-organization-member-list-response.d.ts",
-      "src/types/iam-organization-member.d.ts",
-      "src/types/index.d.ts",
-      "src/types/oauth-phone-binding-session-create-command.d.ts",
-      "src/types/oauth-phone-binding-verification-code-request-command.d.ts",
-      "src/types/wechat-mini-program-session-create-command.d.ts"
-    ]
+    "backedUpFiles": []
   },
   "impact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface",
-      "models"
+      "api-surface"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "src/api/iam.d.ts",
-          "src/api/iam.ts",
-          "src/api/oauth.d.ts",
-          "src/api/oauth.ts"
-        ]
-      },
-      {
-        "area": "models",
-        "paths": [
-          "src/types/appbase-session-create-command.d.ts",
-          "src/types/iam-organization-member-list-response.d.ts",
-          "src/types/iam-organization-member.d.ts",
-          "src/types/index.d.ts",
-          "src/types/oauth-phone-binding-session-create-command.d.ts",
-          "src/types/oauth-phone-binding-verification-code-request-command.d.ts",
-          "src/types/wechat-mini-program-session-create-command.d.ts"
+          "src/api/iam.ts"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models. Verification is required."
+    "summary": "Detected impact areas: api-surface. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -161,7 +125,7 @@
         "id": "build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -179,15 +143,12 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "backed-up-generated-files",
-      "deleted-generated-files",
-      "manual-review-required",
       "verification-required"
     ]
   },

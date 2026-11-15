@@ -28,6 +28,7 @@ import type {
   OfficialAccountsMenu,
 } from "../../types";
 import type { OfficialAccountsMenuMessages } from "./messages";
+import type { OfficialAccountsDeployedMiniProgramAppLoader } from "./deployed-mini-program-picker";
 import { SdkworkOfficialAccountsMenuWorkspace } from "./workspace";
 
 /** Publication outcome the dialog maps onto the workspace notice. */
@@ -54,6 +55,11 @@ export interface SdkworkOfficialAccountsMenuDialogProps {
   context?: OfficialAccountsCustomMenuContext;
   /** Loads the stored context; used when `context` is absent. */
   load?: () => Promise<OfficialAccountsCustomMenuContext>;
+  /**
+   * Host-injected deployed mini program inventory for the "open mini program"
+   * action; omitted hosts keep the plain AppID field.
+   */
+  loadDeployedMiniProgramApps?: OfficialAccountsDeployedMiniProgramAppLoader;
   /** Copy for the workspace and its notices. */
   messages: OfficialAccountsMenuMessages;
   /** Whether the surface may edit; defaults to true. */
@@ -91,6 +97,7 @@ export function SdkworkOfficialAccountsMenuDialog(
     canUpdate = true,
     context: initialContext,
     load,
+    loadDeployedMiniProgramApps,
     messages,
     onBusyChange,
     onClose,
@@ -245,6 +252,7 @@ export function SdkworkOfficialAccountsMenuDialog(
                 canUpdate={canUpdate}
                 context={context}
                 history={context?.menu.history}
+                loadDeployedMiniProgramApps={loadDeployedMiniProgramApps}
                 messages={messages}
                 onClose={requestClose}
                 onDirtyChange={setDirty}
