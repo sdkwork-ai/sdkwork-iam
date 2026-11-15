@@ -24,7 +24,10 @@ own SDK slice and injects it.
 | `OfficialAccountsCapabilities` | `mode` plus the six switches that decide which sections and actions exist. |
 | `createOfficialAccountsController(transport, capabilities)` | The single state machine: list/query state, mutation commit points, and every account action. |
 | `OfficialAccountsController` | The controller class (also constructible directly; `pc-oauth` subclasses it). |
-| `SdkworkOfficialAccountsPanel` | Capability-gated panel: list, create/edit drawer, the three WeChat domain sets, message-push configuration, custom-menu draft, operator publish, scan-login default switch. |
+| `SdkworkOfficialAccountsPanel` | Capability-gated panel: list, create/edit drawer, the three WeChat domain sets, message-push configuration, operator publish, scan-login default switch. Its menu entry opens the shared menu dialog below. |
+| `SdkworkOfficialAccountsMenuWorkspace` | The one custom-menu editor: phone preview, draft history, WeChat rules (`click` / `view` / `miniprogram`, unsupported provider actions), save and optional publish. Inline variant for a host page. |
+| `SdkworkOfficialAccountsMenuDialog` | Modal shell around the workspace with load/save/publish callbacks and the unsaved-changes guard. The IAM admin full-screen editor, the panel and product hosts (birdcoder2) all mount this same dialog. |
+| `OFFICIAL_ACCOUNTS_MENU_MESSAGES_ZH_CN` / `OFFICIAL_ACCOUNTS_MENU_MESSAGES_EN_US` | Default copy of the menu workspace; hosts that already carry their own copy may pass it as the dialog `messages` prop. |
 | `createOperatorTransport(operations)` | Adapts backend `iam.oauth.resourceAccounts.*` actions (or a backend-admin controller that owns them) to the port. |
 | `createSelfServiceTransport(api)` | Adapts the app SDK slice `iam.oauth.officialAccounts` (wire unchanged, `wechatAppId` on create) to the port. |
 | `SDKWORK_OFFICIAL_ACCOUNTS_I18N_CATALOG` | zh-CN / en-US copy; wrap the panel in `SdkworkI18nProvider` to localize. |
