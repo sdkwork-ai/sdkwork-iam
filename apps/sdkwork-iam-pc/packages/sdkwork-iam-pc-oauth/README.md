@@ -67,16 +67,53 @@ The create/edit drawer mirrors the WeChat 公众号 console in two tabs:
   mode). Each control carries the console rule it must satisfy, plus an inline
   reminder about the IP allowlist.
 - **域名配置** — the three protected-domain sets (JS 接口安全域名 ≤5, 网页授权域名
-  ≤2, 业务域名 ≤3) as removable rows. Domain edits are validated as they are
-  added; submit-time errors render inline on the basic tab. When the host
-  injects the domain-verification capability, each row also uploads the WeChat
-  `MP_verify_*.txt` that the platform serves at the domain root, and reports
-  whether the domain belongs to a managed zone.
+  ≤2, 业务域名 ≤3) as inline-editable rows: every added domain stays editable
+  (blur or Enter commits, an invalid or duplicate edit reverts with an inline
+  error), and the add field stays available at the WeChat limit, where adding
+  past it explains the cap instead of hiding the control. Domain edits are
+  validated as they are added; submit-time errors render inline on the basic tab.
+  When the host injects the domain-verification capability, each row also
+  uploads the WeChat `MP_verify_*.txt` that the platform serves at the domain
+  root, and reports whether the domain belongs to a managed zone.
 - **服务器信息** — the deployment's published server egress IPs, each copyable,
   so an operator can paste them into the 公众号 IP allowlist. The host supplies
   the list (the Harness adapter reads `SDKWORK_OFFICIAL_ACCOUNT_SERVER_IPS` from
   its active environment profile); an empty list states that the deployment
   publishes none instead of inventing addresses.
+
+### Enumerated controls use a native select
+
+Account type, message encryption mode, and menu button type render through a
+native `<select>` instead of the shared Radix select. The Radix options panel
+portals to `document.body`, and inside the Harness management modal that portal
+lands outside the dialog's stacking band — the options painted behind the
+drawer and a click never reached an item. Native options render in the
+platform's own layer and inherit the field's stacking context, which keeps the
+drawer operable wherever the panel is embedded.
+
+### Standard WeChat notify URL
+
+The callback URL is server-owned and derived, never typed:
+
+```
+{gateway}/iam/v3/api/iam/oauth/official_accounts/{accountId}/wechat/notify
+```
+
+The IAM open API (`crates/sdkwork-iam-web-adapter/src/official_account_notify.rs`)
+answers the GET URL verification and receives POSTed messages. It verifies the
+three-value `signature` (明文模式) or the four-value `msg_signature` over the
+`Encrypt` element (安全模式/兼容模式), decrypts with the stored
+EncodingAESKey, requires the decrypted receive id to equal the account's AppID,
+enforces the five-minute timestamp window and a bounded duplicate seen-set owned
+by the router, normalizes the XML into one channel-neutral notification, and acks
+`success`. Official accounts and mini programs share the wire and the normalized
+shape, so both channels are handled by one engine. The basic tab shows the URL
+read-only with a copy action and defers it until a new account has an id. Token
+and EncodingAESKey expose 生成 and 复制 links that write a console-accepted value
+— a 24-character alphanumeric token (rule: 3–32 letters/digits) and a
+43-character EncodingAESKey (rule: exactly 43), drawn from the WeChat alphabet
+with `crypto.getRandomValues` and an unbiased modulo — and copy the current
+value so the same string can be pasted into the WeChat console.
 
 Secrets are write-only: the panel never receives an AppSecret, message token,
 or EncodingAESKey back from the API, and leaving the field blank keeps the

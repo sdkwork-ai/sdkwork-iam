@@ -24,11 +24,6 @@ import {
   DrawerTitle,
   Input,
   Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   StatusBadge,
   StatusNotice,
   Switch,
@@ -92,6 +87,42 @@ const NOTIFY_TOKEN_PATTERN = /^[A-Za-z0-9]{3,32}$/u;
 
 /** EncodingAESKey from the WeChat console (letters and digits, exactly 43). */
 const NOTIFY_AES_KEY_PATTERN = /^[A-Za-z0-9]{43}$/u;
+
+/** Token length the 生成 action writes (WeChat accepts 3 to 32 letters/digits). */
+const GENERATED_TOKEN_LENGTH = 24;
+
+/** EncodingAESKey length the 生成 action writes (WeChat requires exactly 43). */
+const GENERATED_AES_KEY_LENGTH = 43;
+
+/** The WeChat console's Token/EncodingAESKey alphabet. */
+const WECHAT_SECRET_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+/**
+ * Generates a random alphanumeric secret with the WeChat console alphabet.
+ * Bytes at or above 248 are rejected so the modulo distribution stays uniform.
+ * @param length - the number of characters to produce.
+ * @returns a fresh secret of exactly `length` letters/digits.
+ */
+function randomWechatSecret(length: number): string {
+  const buffer = new Uint8Array(length + 8);
+  let secret = "";
+  while (secret.length < length) {
+    if (globalThis.crypto !== undefined
+      && typeof globalThis.crypto.getRandomValues === "function") {
+      globalThis.crypto.getRandomValues(buffer);
+    } else {
+      for (let index = 0; index < buffer.length; index += 1) {
+        buffer[index] = Math.floor(Math.random() * 256);
+      }
+    }
+    for (const byte of buffer) {
+      if (byte >= 248) continue;
+      secret += WECHAT_SECRET_ALPHABET[byte % WECHAT_SECRET_ALPHABET.length];
+      if (secret.length === length) break;
+    }
+  }
+  return secret;
+}
 
 /**
  * Normalizes one domain typed into the protected-domain editors.
@@ -416,7 +447,6 @@ export function SdkworkIamOfficialAccountsPanel({
     setFormError(undefined);
     try {
       const draft = { ...toDraft(form.draft), customMenu: form.menu };
-      if (standardNotifyUrl !== undefined) draft.notifyUrl = standardNotifyUrl;
       if (form.mode === "create") {
         const created = await controller.create(draft);
         const attachError = await attachPendingLogo(created);
@@ -529,7 +559,9 @@ export function SdkworkIamOfficialAccountsPanel({
       </footer>
 
       <Drawer onOpenChange={(open) => { if (!open) closeForm(); }} open={form !== undefined}>
-        <DrawerContent side="right" size="xl">
+        {/* One sixth wider than the xl size (48rem → 56rem) so the credential grid
+          and the server configuration block fit without wrapping. */}
+      <DrawerContent className="w-[min(92vw,56rem)]" side="right" size="xl">
           <DrawerHeader>
             <DrawerTitle>
               {form?.mode === "create"
@@ -812,6 +844,64 @@ function FieldError({ message }: { message?: string }): ReactNode {
   );
 }
 
+/** One option of a {@link PanelSelect}. */
+interface PanelSelectOption {
+  value: string;
+  label: string;
+}
+
+/**
+ * Native select for the drawer's enumerated controls.
+ *
+ * The shared Radix select renders its options through a `document.body` portal,
+ * outside the embedding dialog's layer: inside the Harness management modal the
+ * options painted behind the drawer and a click never reached an item. A native
+ * `<select>` renders its options in the platform's own top layer, inherits this
+ * field's stacking context, and keeps keyboard/screen-reader behaviour without
+ * portal or layer bookkeeping. Only used for small fixed enumerations.
+ */
+function PanelSelect({
+  ariaLabel,
+  id,
+  onChange,
+  options,
+  value,
+}: {
+  ariaLabel: string;
+  id?: string;
+  onChange: (value: string) => void;
+  options: readonly PanelSelectOption[];
+  value: string;
+}): ReactNode {
+  return (
+    <div className="relative">
+      <select
+        aria-label={ariaLabel}
+        className="h-10 w-full appearance-none rounded-[var(--sdk-radius-field)] border border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-panel)] px-3 py-2 pr-9 text-sm text-[var(--sdk-color-text-primary)] shadow-[var(--sdk-shadow-sm)] outline-none focus:ring-2 focus:ring-[var(--sdk-color-border-focus)] disabled:cursor-not-allowed disabled:opacity-60"
+        id={id}
+        onChange={(event) => onChange(event.target.value)}
+        value={value}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-[var(--sdk-color-text-muted)]"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+      >
+        <path d="m6 9 6 6 6-6" />
+      </svg>
+    </div>
+  );
+}
+
 /** One domain's WeChat verification-file state, as reported by the host capability. */
 export interface SdkworkIamDomainVerificationStatus {
   /** Whether the deployment manages the domain's DNS zone. */
@@ -877,9 +967,10 @@ async function toVerificationFile(
 }
 
 /**
- * One protected-domain set: the current entries as removable rows (each with the
- * WeChat verification-file state when the host provides that capability), the
- * WeChat limit, and the console rules the values must satisfy.
+ * One protected-domain set: every entry stays editable inline, the add field
+ * remains available even at the WeChat limit (so a full set explains itself
+ * instead of quietly disappearing), and each row carries the verification-file
+ * state when the host provides that capability.
  */
 function DomainListField({
   addLabel,
@@ -904,10 +995,13 @@ function DomainListField({
 }): ReactNode {
   const [input, setInput] = useState("");
   const [error, setError] = useState<string>();
+  const [edits, setEdits] = useState<Record<string, string>>({});
+  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
   const [states, setStates] = useState<Record<string, DomainVerificationState>>({});
   const picker = useRef<HTMLInputElement | null>(null);
   const pendingDomain = useRef<string | undefined>(undefined);
   const full = value.length >= max;
+  const limitMessage = messages.form.domainLimitReached.replace("{max}", String(max));
 
   // Read every listed domain's stored verification file whenever the set or the
   // capability changes, so an entry added or loaded from the API shows its real
@@ -960,10 +1054,59 @@ function DomainListField({
       setError(messages.form.domainDuplicate);
       return;
     }
-    if (full) return;
+    if (full) {
+      setError(limitMessage);
+      return;
+    }
     onChange([...value, domain]);
     setInput("");
     setError(undefined);
+  };
+
+  const clearRowError = (domain: string): void => {
+    setRowErrors((current) => {
+      if (current[domain] === undefined) return current;
+      const next = { ...current };
+      delete next[domain];
+      return next;
+    });
+  };
+
+  const commitEdit = (original: string): void => {
+    const raw = edits[original];
+    if (raw === undefined) return;
+    const revertToCommitted = (): void => {
+      setEdits((current) => {
+        const next = { ...current };
+        delete next[original];
+        return next;
+      });
+    };
+    const domain = normalizeDomainInput(raw);
+    if (domain === undefined) {
+      setRowErrors((current) => ({ ...current, [original]: messages.form.domainInvalid }));
+      revertToCommitted();
+      return;
+    }
+    if (value.some((entry) => entry !== original && entry === domain)) {
+      setRowErrors((current) => ({ ...current, [original]: messages.form.domainDuplicate }));
+      revertToCommitted();
+      return;
+    }
+    clearRowError(original);
+    revertToCommitted();
+    if (domain !== original) {
+      onChange(value.map((entry) => (entry === original ? domain : entry)));
+    }
+  };
+
+  const revertEdit = (domain: string): void => {
+    clearRowError(domain);
+    setEdits((current) => {
+      const next = { ...current };
+      delete next[domain];
+      return next;
+    });
   };
 
   const chooseFile = (domain: string): void => {
@@ -1039,84 +1182,104 @@ function DomainListField({
       {value.length > 0
         ? (
           <ul className="overflow-hidden rounded-[0.75rem] border border-[var(--sdk-color-border-default)]">
-            {value.map((domain) => {
+            {value.map((domain, index) => {
               const state = states[domain];
               const managed = state?.status?.managed !== false;
               return (
                 <li
-                  className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--sdk-color-border-subtle)] px-3 py-2 last:border-b-0"
+                  className="space-y-1 border-b border-[var(--sdk-color-border-subtle)] px-3 py-2 last:border-b-0"
                   key={domain}
                 >
-                  <div className="min-w-0 space-y-0.5">
-                    <div className="break-all font-mono text-xs text-[var(--sdk-color-text-primary)]">
-                      {domain}
+                  <div className="flex items-center gap-2">
+                    <Input
+                      aria-label={`${label} ${index + 1}`}
+                      className={`${FIELD_CLASS_NAME} font-mono`}
+                      onBlur={(event) => {
+                        const next = event.relatedTarget;
+                        if (next instanceof Node && event.currentTarget.closest("li")?.contains(next)) {
+                          return;
+                        }
+                        commitEdit(domain);
+                      }}
+                      onChange={(event) => {
+                        const next = event.target.value;
+                        setEdits((current) => ({ ...current, [domain]: next }));
+                        clearRowError(domain);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          commitEdit(domain);
+                        }
+                      }}
+                      value={edits[domain] ?? domain}
+                    />
+                    <div className="flex shrink-0 items-center gap-1">
+                      {domainVerification !== undefined && managed && state?.loading !== true
+                        ? (
+                          <Button
+                            disabled={state?.uploading === true}
+                            onClick={() => chooseFile(domain)}
+                            size="sm"
+                            variant="ghost"
+                          >
+                            {state?.status?.fileName === undefined
+                              ? messages.form.domainVerificationUpload
+                              : messages.form.domainVerificationReplace}
+                          </Button>
+                        )
+                        : null}
+                      <button
+                        aria-label={`${messages.form.domainRemove}: ${domain}`}
+                        className="px-1 text-base text-[var(--sdk-color-text-muted)] transition-colors hover:text-[var(--sdk-color-state-danger)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--sdk-color-border-focus)]"
+                        onClick={() => {
+                          revertEdit(domain);
+                          onChange(value.filter((entry) => entry !== domain));
+                        }}
+                        type="button"
+                      >
+                        ×
+                      </button>
                     </div>
-                    {domainVerification === undefined
-                      ? null
-                      : (
-                        <p className="text-xs text-[var(--sdk-color-text-muted)]">
-                          {verificationText(domain)}
-                        </p>
-                      )}
                   </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    {domainVerification !== undefined && managed && state?.loading !== true
-                      ? (
-                        <Button
-                          disabled={state?.uploading === true}
-                          onClick={() => chooseFile(domain)}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          {state?.status?.fileName === undefined
-                            ? messages.form.domainVerificationUpload
-                            : messages.form.domainVerificationReplace}
-                        </Button>
-                      )
-                      : null}
-                    <button
-                      aria-label={`${messages.form.domainRemove}: ${domain}`}
-                      className="px-1 text-base text-[var(--sdk-color-text-muted)] transition-colors hover:text-[var(--sdk-color-state-danger)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--sdk-color-border-focus)]"
-                      onClick={() => onChange(value.filter((entry) => entry !== domain))}
-                      type="button"
-                    >
-                      ×
-                    </button>
-                  </div>
+                  {domainVerification === undefined
+                    ? null
+                    : (
+                      <p className="text-xs text-[var(--sdk-color-text-muted)]">
+                        {verificationText(domain)}
+                      </p>
+                    )}
+                  <FieldError message={rowErrors[domain]} />
                 </li>
               );
             })}
           </ul>
         )
         : null}
-      {full
-        ? null
-        : (
-          <div className="flex items-center gap-2">
-            <Input
-              aria-invalid={error !== undefined}
-              aria-label={label}
-              className={FIELD_CLASS_NAME}
-              onChange={(event) => {
-                setInput(event.target.value);
-                if (error !== undefined) setError(undefined);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  add();
-                } else if (event.key === "Backspace" && input === "" && value.length > 0) {
-                  onChange(value.slice(0, -1));
-                }
-              }}
-              placeholder={placeholder}
-              value={input}
-            />
-            <Button className="h-10 shrink-0 px-4 text-sm" onClick={add} variant="outline">
-              {addLabel}
-            </Button>
-          </div>
-        )}
+      <div className="flex items-center gap-2">
+        <Input
+          aria-invalid={error !== undefined}
+          aria-label={label}
+          className={FIELD_CLASS_NAME}
+          onChange={(event) => {
+            setInput(event.target.value);
+            if (error !== undefined) setError(undefined);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              add();
+            } else if (event.key === "Backspace" && input === "" && value.length > 0) {
+              onChange(value.slice(0, -1));
+            }
+          }}
+          placeholder={placeholder}
+          value={input}
+        />
+        <Button className="h-10 shrink-0 px-4 text-sm" onClick={add} variant="outline">
+          {addLabel}
+        </Button>
+      </div>
       <FieldError message={error} />
       <p className="text-xs text-[var(--sdk-color-text-muted)]">{hint}</p>
       {domainVerification === undefined
@@ -1238,16 +1401,17 @@ function BasicInfoTab({
     : draft.notifyEncryptMode === "compatible"
       ? messages.form.encryptCompatibleHint
       : messages.form.encryptPlaintextHint;
-  const [notifyUrlCopied, setNotifyUrlCopied] = useState(false);
+  type CopyAction = "url" | "token" | "aes";
+  const [copiedAction, setCopiedAction] = useState<CopyAction>();
   const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => {
     if (copyTimer.current !== undefined) clearTimeout(copyTimer.current);
   }, []);
-  const copyNotifyUrl = async (): Promise<void> => {
-    if (notifyUrl === undefined || !(await copyText(notifyUrl))) return;
-    setNotifyUrlCopied(true);
+  const copyValue = async (value: string, action: CopyAction): Promise<void> => {
+    if (value === "" || !(await copyText(value))) return;
+    setCopiedAction(action);
     if (copyTimer.current !== undefined) clearTimeout(copyTimer.current);
-    copyTimer.current = setTimeout(() => setNotifyUrlCopied(false), 1500);
+    copyTimer.current = setTimeout(() => setCopiedAction(undefined), 1500);
   };
   return (
     <div className="space-y-5">
@@ -1314,18 +1478,16 @@ function BasicInfoTab({
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="official-account-type">{messages.form.accountType}</Label>
-          <Select
-            onValueChange={(value) => onDraftChange({ accountType: value })}
+          <PanelSelect
+            ariaLabel={messages.form.accountType}
+            id="official-account-type"
+            onChange={(value) => onDraftChange({ accountType: value })}
+            options={[
+              { value: "service", label: messages.accountType.service },
+              { value: "subscription", label: messages.accountType.subscription },
+            ]}
             value={draft.accountType}
-          >
-            <SelectTrigger aria-label={messages.form.accountType} id="official-account-type">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="service">{messages.accountType.service}</SelectItem>
-              <SelectItem value="subscription">{messages.accountType.subscription}</SelectItem>
-            </SelectContent>
-          </Select>
+          />
         </div>
         {editing
           ? (
@@ -1369,11 +1531,11 @@ function BasicInfoTab({
                 </code>
                 <Button
                   className="shrink-0"
-                  onClick={() => { void copyNotifyUrl(); }}
+                  onClick={() => { void copyValue(notifyUrl, "url"); }}
                   size="sm"
                   variant="outline"
                 >
-                  {notifyUrlCopied ? messages.form.notifyUrlCopied : messages.form.notifyUrlCopy}
+                  {copiedAction === "url" ? messages.form.notifyUrlCopied : messages.form.notifyUrlCopy}
                 </Button>
               </div>
             )}
@@ -1394,7 +1556,28 @@ function BasicInfoTab({
               value={draft.notifyToken}
             />
             <FieldError message={fieldErrors.notifyToken} />
-            <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.notifyTokenHint}</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.notifyTokenHint}</p>
+              <span className="flex shrink-0 items-center gap-3">
+                <button
+                  aria-label={`${messages.form.notifyCopy} ${messages.form.notifyToken}`}
+                  className="text-xs font-medium text-[var(--sdk-color-text-primary)] underline underline-offset-2 transition-colors hover:text-[var(--sdk-color-text-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sdk-color-border-focus)] disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={draft.notifyToken === ""}
+                  onClick={() => { void copyValue(draft.notifyToken, "token"); }}
+                  type="button"
+                >
+                  {copiedAction === "token" ? messages.form.notifyCopied : messages.form.notifyCopy}
+                </button>
+                <button
+                  aria-label={`${messages.form.notifyGenerate} ${messages.form.notifyToken}`}
+                  className="text-xs font-medium text-[var(--sdk-color-text-primary)] underline underline-offset-2 transition-colors hover:text-[var(--sdk-color-text-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sdk-color-border-focus)]"
+                  onClick={() => onDraftChange({ notifyToken: randomWechatSecret(GENERATED_TOKEN_LENGTH) })}
+                  type="button"
+                >
+                  {messages.form.notifyGenerate}
+                </button>
+              </span>
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="official-account-aes-key">{messages.form.notifyEncodingAesKey}</Label>
@@ -1408,33 +1591,51 @@ function BasicInfoTab({
               value={draft.notifyEncodingAesKey}
             />
             <FieldError message={fieldErrors.notifyEncodingAesKey} />
-            <p className="text-xs text-[var(--sdk-color-text-muted)]">
-              {messages.form.notifyEncodingAesKeyHint}
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-[var(--sdk-color-text-muted)]">
+                {messages.form.notifyEncodingAesKeyHint}
+              </p>
+              <span className="flex shrink-0 items-center gap-3">
+                <button
+                  aria-label={`${messages.form.notifyCopy} ${messages.form.notifyEncodingAesKey}`}
+                  className="text-xs font-medium text-[var(--sdk-color-text-primary)] underline underline-offset-2 transition-colors hover:text-[var(--sdk-color-text-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sdk-color-border-focus)] disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={draft.notifyEncodingAesKey === ""}
+                  onClick={() => { void copyValue(draft.notifyEncodingAesKey, "aes"); }}
+                  type="button"
+                >
+                  {copiedAction === "aes" ? messages.form.notifyCopied : messages.form.notifyCopy}
+                </button>
+                <button
+                  aria-label={`${messages.form.notifyGenerate} ${messages.form.notifyEncodingAesKey}`}
+                  className="text-xs font-medium text-[var(--sdk-color-text-primary)] underline underline-offset-2 transition-colors hover:text-[var(--sdk-color-text-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sdk-color-border-focus)]"
+                  onClick={() => onDraftChange({
+                    notifyEncodingAesKey: randomWechatSecret(GENERATED_AES_KEY_LENGTH),
+                  })}
+                  type="button"
+                >
+                  {messages.form.notifyGenerate}
+                </button>
+              </span>
+            </div>
           </div>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="official-account-encrypt-mode">{messages.form.notifyEncryptMode}</Label>
-          <Select
-            onValueChange={(value) => onDraftChange({
+          <PanelSelect
+            ariaLabel={messages.form.notifyEncryptMode}
+            id="official-account-encrypt-mode"
+            onChange={(value) => onDraftChange({
               notifyEncryptMode: value === "safe"
                 ? "safe"
                 : value === "compatible" ? "compatible" : "plaintext",
             })}
+            options={[
+              { value: "plaintext", label: messages.form.encryptPlaintext },
+              { value: "compatible", label: messages.form.encryptCompatible },
+              { value: "safe", label: messages.form.encryptSafe },
+            ]}
             value={draft.notifyEncryptMode}
-          >
-            <SelectTrigger
-              aria-label={messages.form.notifyEncryptMode}
-              id="official-account-encrypt-mode"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="plaintext">{messages.form.encryptPlaintext}</SelectItem>
-              <SelectItem value="compatible">{messages.form.encryptCompatible}</SelectItem>
-              <SelectItem value="safe">{messages.form.encryptSafe}</SelectItem>
-            </SelectContent>
-          </Select>
+          />
           <p className="text-xs text-[var(--sdk-color-text-muted)]">{encryptModeHint}</p>
         </div>
       </fieldset>
@@ -1734,22 +1935,19 @@ function MenuEditor({
             </div>
             <div className="space-y-1.5">
               <Label>{messages.menu.buttonType}</Label>
-              <Select
-                onValueChange={(value) => updateButton(index, {
+              <PanelSelect
+                ariaLabel={messages.menu.buttonType}
+                onChange={(value) => updateButton(index, {
                   ...button,
                   type: value === "click" ? "click" : value === "parent" ? "parent" : "view",
                 })}
+                options={[
+                  { value: "view", label: messages.menu.typeView },
+                  { value: "click", label: messages.menu.typeClick },
+                  { value: "parent", label: messages.menu.addSubButton },
+                ]}
                 value={button.type}
-              >
-                <SelectTrigger aria-label={messages.menu.buttonType}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="view">{messages.menu.typeView}</SelectItem>
-                  <SelectItem value="click">{messages.menu.typeClick}</SelectItem>
-                  <SelectItem value="parent">{messages.menu.addSubButton}</SelectItem>
-                </SelectContent>
-              </Select>
+              />
             </div>
             {button.type === "view"
               ? (
@@ -1797,24 +1995,21 @@ function MenuEditor({
                     </div>
                     <div className="space-y-1.5">
                       <Label>{messages.menu.buttonType}</Label>
-                      <Select
-                        onValueChange={(value) => updateButton(index, {
+                      <PanelSelect
+                        ariaLabel={messages.menu.buttonType}
+                        onChange={(value) => updateButton(index, {
                           ...button,
                           subButtons: button.subButtons.map((current, currentIndex) =>
                             currentIndex === subIndex
                               ? { ...current, type: value === "click" ? "click" : "view" }
                               : current),
                         })}
+                        options={[
+                          { value: "view", label: messages.menu.typeView },
+                          { value: "click", label: messages.menu.typeClick },
+                        ]}
                         value={sub.type}
-                      >
-                        <SelectTrigger aria-label={messages.menu.buttonType}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="view">{messages.menu.typeView}</SelectItem>
-                          <SelectItem value="click">{messages.menu.typeClick}</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      />
                     </div>
                     <div className="space-y-1.5">
                       <Label>{sub.type === "click" ? messages.menu.key : messages.menu.url}</Label>

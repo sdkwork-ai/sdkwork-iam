@@ -111,7 +111,13 @@ function logoPicker(): HTMLInputElement {
   return input;
 }
 
-/** The domain editor input for one protected-domain set. */
+/** The committed value of one domain row (rows are inline-editable inputs). */
+function domainRowValue(label: string, index = 0): string {
+  const input = screen.getByLabelText(`${label} ${index + 1}`) as HTMLInputElement;
+  return input.value;
+}
+
+/** The add-field input for one protected-domain set. */
 function domainInput(label: string): HTMLInputElement {
   return screen.getByLabelText(label) as HTMLInputElement;
 }
@@ -280,7 +286,7 @@ describe("official-account drawer tabs", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
     openDomainsTab();
     addDomain("JS interface security domains", "  API.Example.com ");
-    expect(screen.getByText("api.example.com")).toBeTruthy();
+    expect(domainRowValue("JS interface security domains")).toBe("api.example.com");
     expect(screen.getByText("1/5")).toBeTruthy();
 
     addDomain("JS interface security domains", "https://bad.example.com");
@@ -288,6 +294,61 @@ describe("official-account drawer tabs", () => {
 
     addDomain("JS interface security domains", "api.example.com");
     expect(screen.getByText("That domain is already in the list.")).toBeTruthy();
+  });
+
+  it("edits an existing domain inline and commits it on blur", async () => {
+    const { api } = bench();
+    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+    fireEvent.change(screen.getByLabelText("Account name"), {
+      target: { value: "New channel" },
+    });
+    fireEvent.change(screen.getByLabelText("AppID"), {
+      target: { value: "wxnew123456" },
+    });
+    openDomainsTab();
+    addDomain("JS interface security domains", "api.example.com");
+
+    const row = screen.getByLabelText("JS interface security domains 1") as HTMLInputElement;
+    fireEvent.change(row, { target: { value: "  H5.Example.com " } });
+    fireEvent.blur(row);
+    expect(domainRowValue("JS interface security domains")).toBe("h5.example.com");
+    expect(screen.getByText("1/5")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => {
+      expect(api.create).toHaveBeenCalledWith(
+        expect.objectContaining({ jsSecureDomains: ["h5.example.com"] }),
+      );
+    });
+  });
+
+  it("rejects an invalid inline edit and keeps the stored domain", async () => {
+    bench();
+    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+    openDomainsTab();
+    addDomain("JS interface security domains", "api.example.com");
+
+    const row = screen.getByLabelText("JS interface security domains 1") as HTMLInputElement;
+    fireEvent.change(row, { target: { value: "https://bad.example.com" } });
+    fireEvent.blur(row);
+    expect(screen.getByText("Enter a valid domain such as api.example.com.")).toBeTruthy();
+    expect(domainRowValue("JS interface security domains")).toBe("api.example.com");
+  });
+
+  it("keeps the add control available at the WeChat domain limit", async () => {
+    bench();
+    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+    openDomainsTab();
+    addDomain("Business domains", "a.example.com");
+    addDomain("Business domains", "b.example.com");
+    addDomain("Business domains", "c.example.com");
+    expect(screen.getByText("3/3")).toBeTruthy();
+
+    addDomain("Business domains", "d.example.com");
+    expect(
+      screen.getByText("This set allows at most 3 domains; remove one first."),
+    ).toBeTruthy();
+    expect(domainInput("Business domains")).toBeTruthy();
   });
 
   it("shows the platform-standard callback URL and copies it", async () => {
@@ -312,15 +373,92 @@ describe("official-account drawer tabs", () => {
     }
   });
 
-  it("saves the standard callback URL with the account", async () => {
-    const { api } = bench({}, { notifyBaseUrl: "https://api.example.test" });
-    fireEvent.click(await screen.findByRole("button", { name: "BirdCoder" }));
+  it("generates WeChat-standard Token and EncodingAESKey values", async () => {
+    const { api } = bench();
+    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate Token" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate EncodingAESKey" }));
+    const token = (screen.getByLabelText("Token") as HTMLInputElement).value;
+    const aesKey = (screen.getByLabelText("EncodingAESKey") as HTMLInputElement).value;
+    expect(token).toMatch(/^[A-Za-z0-9]{3,32}$/);
+    expect(aesKey).toMatch(/^[A-Za-z0-9]{43}$/);
+
+    fireEvent.click(screen.getByRole("button", { name: "Generate Token" }));
+    expect((screen.getByLabelText("Token") as HTMLInputElement).value).not.toBe(token);
+
+    fireEvent.change(screen.getByLabelText("Account name"), {
+      target: { value: "New channel" },
+    });
+    fireEvent.change(screen.getByLabelText("AppID"), {
+      target: { value: "wxnew123456" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => {
-      expect(api.update).toHaveBeenCalledWith(
-        "acc-1",
+      expect(api.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          notifyUrl: "https://api.example.test/iam/v3/api/iam/oauth/official_accounts/acc-1/wechat/notify",
+          notifyToken: expect.stringMatching(/^[A-Za-z0-9]{3,32}$/),
+          notifyEncodingAesKey: expect.stringMatching(/^[A-Za-z0-9]{43}$/),
+        }),
+      );
+    });
+  });
+
+  it("copies the Token and EncodingAESKey values", async () => {
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    try {
+      bench();
+      fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+      const copyToken = screen.getByRole("button", { name: "Copy Token" }) as HTMLButtonElement;
+      expect(copyToken.disabled).toBe(true);
+
+      fireEvent.click(screen.getByRole("button", { name: "Generate Token" }));
+      const token = (screen.getByLabelText("Token") as HTMLInputElement).value;
+      fireEvent.click(screen.getByRole("button", { name: "Copy Token" }));
+      await waitFor(() => {
+        expect(writeText).toHaveBeenCalledWith(token);
+      });
+      expect(await screen.findByText("Copied")).toBeTruthy();
+
+      fireEvent.click(screen.getByRole("button", { name: "Generate EncodingAESKey" }));
+      const aesKey = (screen.getByLabelText("EncodingAESKey") as HTMLInputElement).value;
+      fireEvent.click(screen.getByRole("button", { name: "Copy EncodingAESKey" }));
+      await waitFor(() => {
+        expect(writeText).toHaveBeenCalledWith(aesKey);
+      });
+    } finally {
+      Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+
+  it("changes account type and encryption mode through the selects", async () => {
+    const { api } = bench();
+    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+    fireEvent.change(screen.getByLabelText("Account name"), {
+      target: { value: "New channel" },
+    });
+    fireEvent.change(screen.getByLabelText("AppID"), {
+      target: { value: "wxnew123456" },
+    });
+
+    const accountType = screen.getByLabelText("Account type") as HTMLSelectElement;
+    expect(accountType.tagName).toBe("SELECT");
+    fireEvent.change(accountType, { target: { value: "subscription" } });
+    expect(accountType.value).toBe("subscription");
+
+    const encryptMode = screen.getByLabelText("Message encryption mode") as HTMLSelectElement;
+    fireEvent.change(encryptMode, { target: { value: "safe" } });
+    expect(encryptMode.value).toBe("safe");
+
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => {
+      expect(api.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accountType: "subscription",
+          notifyEncryptMode: "safe",
         }),
       );
     });
@@ -339,7 +477,7 @@ describe("official-account drawer tabs", () => {
     const { api } = bench();
     fireEvent.click(await screen.findByRole("button", { name: "BirdCoder" }));
     openDomainsTab();
-    expect(screen.getByText("api.example.com")).toBeTruthy();
+    expect(domainRowValue("JS interface security domains")).toBe("api.example.com");
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => {
       expect(api.update).toHaveBeenCalledWith(

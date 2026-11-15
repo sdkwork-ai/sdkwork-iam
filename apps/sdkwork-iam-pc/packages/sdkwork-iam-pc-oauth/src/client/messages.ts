@@ -97,6 +97,7 @@ export interface SdkworkIamOfficialAccountsMessages {
     domainRemove: string;
     domainInvalid: string;
     domainDuplicate: string;
+    domainLimitReached: string;
     domainPlaceholder: string;
     domainVerificationHint: string;
     domainVerificationMissing: string;
@@ -126,6 +127,9 @@ export interface SdkworkIamOfficialAccountsMessages {
     notifyUrlPending: string;
     notifyUrlCopy: string;
     notifyUrlCopied: string;
+    notifyGenerate: string;
+    notifyCopy: string;
+    notifyCopied: string;
     notifyToken: string;
     notifyTokenPlaceholder: string;
     notifyEncodingAesKey: string;
@@ -267,6 +271,7 @@ const zhCN: SdkworkIamOfficialAccountsMessages = {
     domainRemove: "移除域名",
     domainInvalid: "请填写合法域名，例如 api.example.com。",
     domainDuplicate: "该域名已添加。",
+    domainLimitReached: "该组最多添加 {max} 个域名，请先移除一个。",
     domainPlaceholder: "api.example.com",
     domainVerificationHint: "上传微信公众平台下载的 MP_verify_*.txt；本平台会在该域名根路径原样提供该文件，供微信校验。",
     domainVerificationMissing: "未上传验证文件",
@@ -296,6 +301,9 @@ const zhCN: SdkworkIamOfficialAccountsMessages = {
     notifyUrlPending: "保存账号后自动生成标准回调地址。",
     notifyUrlCopy: "复制",
     notifyUrlCopied: "已复制",
+    notifyGenerate: "生成",
+    notifyCopy: "复制",
+    notifyCopied: "已复制",
     notifyToken: "Token",
     notifyTokenPlaceholder: "消息推送校验 Token",
     notifyEncodingAesKey: "EncodingAESKey",
@@ -434,6 +442,7 @@ const enUS: SdkworkIamOfficialAccountsMessages = {
     domainRemove: "Remove domain",
     domainInvalid: "Enter a valid domain such as api.example.com.",
     domainDuplicate: "That domain is already in the list.",
+    domainLimitReached: "This set allows at most {max} domains; remove one first.",
     domainPlaceholder: "api.example.com",
     domainVerificationHint: "Upload the MP_verify_*.txt file from the WeChat console; this platform serves it verbatim at the domain root for WeChat verification.",
     domainVerificationMissing: "No verification file uploaded",
@@ -463,6 +472,9 @@ const enUS: SdkworkIamOfficialAccountsMessages = {
     notifyUrlPending: "The standard callback URL appears once the account is saved.",
     notifyUrlCopy: "Copy",
     notifyUrlCopied: "Copied",
+    notifyGenerate: "Generate",
+    notifyCopy: "Copy",
+    notifyCopied: "Copied",
     notifyToken: "Token",
     notifyTokenPlaceholder: "Message verification token",
     notifyEncodingAesKey: "EncodingAESKey",
