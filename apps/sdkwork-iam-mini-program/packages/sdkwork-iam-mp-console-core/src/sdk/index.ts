@@ -20,6 +20,13 @@ export interface IamMpRuntimeEnv {
   SDKWORK_FEATURE_APP_SURFACE: boolean;
   SDKWORK_FEATURE_CONSOLE_SURFACE: boolean;
   SDKWORK_FEATURE_ADMIN_SURFACE: boolean;
+  /**
+   * Public application access token of the selected profile document
+   * (`APP_ACCESS_TOKEN_SPEC.md` §2). Optional on the document type so a test
+   * fixture may omit it, but the mini program bootstrap fails closed without a
+   * valid public application token.
+   */
+  SDKWORK_ACCESS_TOKEN?: string;
 }
 
 declare global {

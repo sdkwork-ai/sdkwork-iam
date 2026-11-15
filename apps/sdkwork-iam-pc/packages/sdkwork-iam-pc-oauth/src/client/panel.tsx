@@ -1208,7 +1208,7 @@ function OfficialAccountLogoField({
               : (
                 <img
                   alt={copy.logo}
-                  className="h-[5.5rem] w-[5.5rem] rounded-xl border border-[var(--sdk-color-border-default)] object-cover"
+                  className="h-24 w-24 rounded-xl border border-[var(--sdk-color-border-default)] object-cover"
                   src={previewSrc}
                 />
               )
@@ -1236,7 +1236,7 @@ function OfficialAccountLogoField({
               ref={fieldRef}
               service={driveUploadImageService}
               shape="rounded"
-              sizePx={88}
+              sizePx={96}
               value={toLogoUploadValue(value)}
             />
           )}

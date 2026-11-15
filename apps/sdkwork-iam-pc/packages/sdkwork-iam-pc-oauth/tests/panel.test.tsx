@@ -153,6 +153,8 @@ describe("official-account panel", () => {
     bench({}, { drive: driveService() });
     fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
     expect(screen.getByText("Official-account logo")).toBeTruthy();
+    expect(screen.getByText("JPG, PNG, or WebP up to 5 MB.")).toBeTruthy();
+    expect(screen.getByText("Use a square image of at least 300×300.")).toBeTruthy();
     expect(screen.queryByLabelText("Logo URL")).toBeNull();
     expect(document.querySelector('input[type="file"]')).not.toBeNull();
   });

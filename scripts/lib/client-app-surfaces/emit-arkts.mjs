@@ -2336,6 +2336,72 @@ export interface DeviceInfoAdapter {
 export function coreSessionSource(surface, tier) {
   const dir = coreDirOf(surface, tier);
   const symbol = pascalFromDir(dir);
+  if (tier !== 'app') {
+    // One session/context record per application, owned by the app tier. The console
+    // and admin tiers re-export it under their own symbol names instead of declaring
+    // a second record: login commits only the app-tier store, so a tier-local copy is
+    // a store nothing writes (`HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md` section 6).
+    const coreSymbol = pascalFromDir(surface.coreDir);
+    return `${BANNER}
+/**
+ * Session and context store of \`${dir}\`.
+ *
+ * Authority: \`HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md\` sections 5 and 6. The
+ * application owns exactly one session/context record, in
+ * \`${surface.coreDir}\`; this tier re-exports it under its own symbol names rather
+ * than declaring a second record. A per-tier record is the defect this file used to
+ * have: login commits the app-tier store only, so the console and admin clients read
+ * a session nothing writes.
+ *
+ * The wrapper functions exist instead of an aliased \`export { … } from\` statement so
+ * every binding this tier publishes keeps an explicit, typed signature.
+ */
+import {
+  clear${coreSymbol}Session,
+  commit${coreSymbol}Session,
+  is${coreSymbol}SessionComplete,
+  read${coreSymbol}Session,
+  resolve${coreSymbol}AccessToken,
+  resolve${coreSymbol}AuthToken,
+  write${coreSymbol}Session,
+  type ${coreSymbol}Session,
+} from '@sdkwork/${surface.coreDir}';
+
+export type ${symbol}Session = ${coreSymbol}Session;
+
+export function read${symbol}Session(): ${symbol}Session | undefined {
+  return read${coreSymbol}Session();
+}
+
+export function write${symbol}Session(session: ${symbol}Session | undefined): void {
+  write${coreSymbol}Session(session);
+}
+
+export function commit${symbol}Session(session: ${symbol}Session): ${symbol}Session {
+  return commit${coreSymbol}Session(session);
+}
+
+export function clear${symbol}Session(): void {
+  clear${coreSymbol}Session();
+}
+
+export function resolve${symbol}AccessToken(
+  session: ${symbol}Session | undefined,
+): string | undefined {
+  return resolve${coreSymbol}AccessToken(session);
+}
+
+export function resolve${symbol}AuthToken(
+  session: ${symbol}Session | undefined,
+): string | undefined {
+  return resolve${coreSymbol}AuthToken(session);
+}
+
+export function is${symbol}SessionComplete(session: ${symbol}Session | undefined): boolean {
+  return is${coreSymbol}SessionComplete(session);
+}
+`;
+  }
   return `${BANNER}
 /**
  * Session and context store of \`${dir}\`.
@@ -2422,8 +2488,16 @@ export function coreTokenManagerSource(surface) {
  * manager is how a logout clears one credential set while another stays live, so
  * this module is the only place a token is held.
  *
- * The manager stores nothing itself: it delegates to the session store so there is
- * one credential record rather than two that must agree.
+ * Two credential classes live here and are deliberately not conflated
+ * (\`ENVIRONMENT_SPEC.md\` section 6.1): the public application access token
+ * (\`SDKWORK_ACCESS_TOKEN\`, committed, \`token_class:application\`, \`alg:none\`) that
+ * bootstrap seeds before any SDK client is constructed, and the private session
+ * tokens an interactive login installs later. A session token supersedes the
+ * application token for outbound requests, and clearing the session restores the
+ * application token rather than leaving credential entry with no credential.
+ *
+ * The manager stores no session record itself: it delegates to the session store so
+ * there is one credential record rather than two that must agree.
  *
  * The session store sits in a sibling directory, so the specifier is
  * \`'../session/SessionStore'\` and not \`'./SessionStore'\`: the latter named a file
@@ -2445,6 +2519,17 @@ export interface IamHarmonyTokenSet {
 let authenticated: boolean = false;
 
 /**
+ * Public application access token seeded by runtime bootstrap.
+ *
+ * Held outside the session store because it must survive logout and refresh failure:
+ * credential entry needs \`Access-Token\` for tenant, application and environment
+ * isolation before any interactive session exists (\`ENVIRONMENT_SPEC.md\` section
+ * 6.1). It is public material (\`APP_ACCESS_TOKEN_SPEC.md\` section 1), never a
+ * session credential.
+ */
+let bootstrapAccessToken: string | undefined = undefined;
+
+/**
  * Marks the runtime authenticated.
  *
  * Separate from holding a token because a refresh failure leaves the manager
@@ -2459,11 +2544,59 @@ export function isIamHarmonyAuthenticated(): boolean {
   return authenticated;
 }
 
-/** The token set the SDK clients should be configured with. */
+/**
+ * Seeds the public application access token.
+ *
+ * Called by runtime bootstrap before SDK client construction. A client reads this
+ * manager once while its config is built, so a client constructed before this call
+ * would carry no credential and a transport would send no \`Access-Token\`
+ * (\`ENVIRONMENT_SPEC.md\` section 6.1).
+ *
+ * Empty input is a bootstrap defect, not a value to store: the selected profile
+ * document is validated before this call, and a second silent no-op here would let a
+ * caller skip the seed without noticing.
+ */
+export function initializeIamHarmonyBootstrapToken(accessToken: string): void {
+  const normalized: string = accessToken.trim();
+  if (normalized.length === 0) {
+    throw new Error(
+      'IAM Harmony bootstrap requires a non-empty SDKWORK_ACCESS_TOKEN before SDK client construction',
+    );
+  }
+  bootstrapAccessToken = normalized;
+}
+
+/** Whether bootstrap seeded the public application access token. */
+export function hasIamHarmonyBootstrapToken(): boolean {
+  return bootstrapAccessToken !== undefined;
+}
+
+/**
+ * Drops the seeded token.
+ *
+ * Runtime teardown and tests call this; logout must restore the token, not remove it.
+ */
+export function resetIamHarmonyBootstrapToken(): void {
+  bootstrapAccessToken = undefined;
+}
+
+/** The seeded public application access token, or \`undefined\` before bootstrap. */
+export function readIamHarmonyBootstrapToken(): string | undefined {
+  return bootstrapAccessToken;
+}
+
+/**
+ * The token set the SDK clients should be configured with.
+ *
+ * The session access token wins while a session exists; otherwise the public
+ * application access token is returned, which is what keeps credential entry able to
+ * send \`Access-Token\` before login and after logout.
+ */
 export function currentIamHarmonyTokenSet(): IamHarmonyTokenSet {
   const session = read${sessionSymbol}Session();
+  const sessionAccessToken: string | undefined = resolve${sessionSymbol}AccessToken(session);
   return {
-    accessToken: resolve${sessionSymbol}AccessToken(session),
+    accessToken: sessionAccessToken !== undefined ? sessionAccessToken : bootstrapAccessToken,
     authToken: session === undefined ? undefined : session.authToken,
   };
 }
@@ -2474,10 +2607,12 @@ export function canIamHarmonyRefresh(): boolean {
 }
 
 /**
- * Clears the manager and the session store together.
+ * Clears the session credential set and restores the bootstrap application token.
  *
- * Section 6 pairs them because a caller that clears only one leaves a token the
- * next request will still send.
+ * Section 6 pairs the session store with the token manager because a caller that
+ * clears only one leaves a token the next request will still send. The public
+ * application token is deliberately kept: clearing it would leave credential entry
+ * with no \`Access-Token\` at all (\`APP_ACCESS_TOKEN_SPEC.md\` section 2).
  */
 export function clearIamHarmonyTokens(): void {
   authenticated = false;
