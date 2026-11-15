@@ -68,7 +68,8 @@ describe("official-account adapter", () => {
     expect(account.customMenu.buttons[1]?.subButtons?.[0]).toMatchObject({
       name: "帮助",
       type: "click",
-      key: "HELP",
+      key: "menu-1.0",
+      message: "HELP",
     });
   });
 

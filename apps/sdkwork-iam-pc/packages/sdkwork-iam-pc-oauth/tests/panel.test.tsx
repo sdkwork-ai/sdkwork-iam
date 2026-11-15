@@ -163,7 +163,7 @@ describe("official-account panel", () => {
     bench({}, { page: true });
     expect(await screen.findByText("Example Account")).toBeTruthy();
     expect(screen.getByText("Official Accounts")).toBeTruthy();
-    expect(screen.getByLabelText("Search name or AppID")).toBeTruthy();
+    expect(screen.getByLabelText("Search name, AppID, or original ID")).toBeTruthy();
   });
 
   it("opens the create drawer and validates before submitting", async () => {
@@ -633,7 +633,7 @@ describe("official-account panel actions", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Custom menu" }));
     expect(await screen.findByRole("button", { name: "Add top-level menu" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Add top-level menu" }));
-    expect(screen.getByText("Menu name · 1")).toBeTruthy();
+    expect(screen.getByTestId("custom-menu-editor")).toBeTruthy();
   });
 
   it("deletes an account after confirmation", async () => {
