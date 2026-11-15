@@ -1,0 +1,49 @@
+{
+  "name": "@sdkwork/iam-pc-mini-program",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Mini-program account CRUD surface for the unified IAM OAuth resource-account aggregate. An independent component family (its own types, controller, panel, i18n and transport) that follows the official-account architecture without sharing its pages.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm --dir ../../../.. exec vitest run apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-mini-program/tests --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@sdkwork/i18n-pc-react": "workspace:*",
+    "@sdkwork/ui-pc-react": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18.2.0 <20.0.0",
+    "react-dom": ">=18.2.0 <20.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": { "optional": true },
+    "react-dom": { "optional": true }
+  },
+  "devDependencies": {
+    "@testing-library/react": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "typescript": "^6.0.2",
+    "vitest": "catalog:"
+  },
+  "sdkwork": {
+    "workspace": "sdkwork-iam",
+    "architecture": "pc-react",
+    "surface": "app",
+    "domain": "iam",
+    "capability": "mini-program",
+    "status": "standard"
+  }
+}

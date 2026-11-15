@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { SdkworkI18nProvider } from "@sdkwork/i18n-pc-react";
@@ -185,6 +185,40 @@ const controller = {
   load: () => Promise.resolve(EMPTY_STATE),
 } as unknown as SdkworkIamOauthAdminController;
 
+/**
+ * Backend-admin controller double for the mini-program thin shell: the shared
+ * panel lists through `listResourceAccountPage` and mutates through the
+ * resource-account actions the operator transport calls.
+ * @param overrides - members the test asserts or redirects.
+ */
+function miniProgramPageController(
+  overrides: Record<string, unknown> = {},
+): {
+  controller: SdkworkIamOauthAdminController;
+  listResourceAccountPage: ReturnType<typeof vi.fn>;
+} {
+  const listResourceAccountPage = vi.fn(async () => ({
+    items: EMPTY_STATE.resourceAccounts,
+    pageInfo: { page: 1, pageSize: 20, totalItems: "2" },
+  }));
+  return {
+    controller: {
+      getState: () => EMPTY_STATE,
+      load: () => Promise.resolve(EMPTY_STATE),
+      listResourceAccountPage,
+      createAccountSetup: vi.fn(async () => ({ id: "iamora-new" })),
+      updateAccountProfile: vi.fn(async () => ({})),
+      updateAccountCredentials: vi.fn(async () => ({})),
+      updateAccountConfig: vi.fn(async () => ({})),
+      deleteResourceAccount: vi.fn(async () => ({})),
+      setResourceAccountEnabled: vi.fn(async () => ({})),
+      runResourceAccountMiniProgramLoginCheck: vi.fn(async () => ({})),
+      ...overrides,
+    } as unknown as SdkworkIamOauthAdminController,
+    listResourceAccountPage,
+  };
+}
+
 describe("SDKWork IAM OAuth quick setup pages", () => {
   it("shows only added platforms as rows and offers an add action", () => {
     const html = renderToStaticMarkup(
@@ -226,17 +260,20 @@ describe("SDKWork IAM OAuth quick setup pages", () => {
     expect(html).not.toContain("尚未添加平台");
   });
 
-  it("renders the mini program accounts page as a list with a top add action", () => {
-    const html = renderToStaticMarkup(
+  it("renders the mini program accounts page through the shared panel", async () => {
+    const { controller: miniController } = miniProgramPageController();
+    const { unmount } = render(
       <SdkworkI18nProvider locale="zh-CN">
-        <SdkworkIamOauthMiniProgramAccountsPage controller={controller} />
+        <SdkworkIamOauthMiniProgramAccountsPage controller={miniController} />
       </SdkworkI18nProvider>,
     );
-    expect(html).toContain("小程序账号");
-    expect(html).toContain("添加小程序账号");
-    expect(html).toContain("My mini program");
-    expect(html).toContain("已启用");
-    expect(html).not.toContain("My official account");
+    // Only the `mini_program` rows of the unified aggregate are listed; the
+    // shared panel owns the title, the add action, and the row actions.
+    expect(await screen.findByText("My mini program")).toBeTruthy();
+    expect(screen.getByText("wx-test-mini-001")).toBeTruthy();
+    expect(screen.getByText("添加小程序账号")).toBeTruthy();
+    expect(screen.queryByText("My official account")).toBeNull();
+    unmount();
   });
 
   it("renders the official accounts page as a list with a top add action", () => {
@@ -338,13 +375,6 @@ describe("SDKWork IAM OAuth quick setup pages", () => {
     );
     // The official account fixture is authorized -> connected.
     expect(html).toContain("已接通");
-    // The mini program page shows the not-yet-authorized account -> not connected.
-    const miniHtml = renderToStaticMarkup(
-      <SdkworkI18nProvider locale="zh-CN">
-        <SdkworkIamOauthMiniProgramAccountsPage controller={controller} />
-      </SdkworkI18nProvider>,
-    );
-    expect(miniHtml).toContain("未接通");
   });
 
   it("renders the official account AppID column and the uploaded logo icon", () => {
@@ -382,103 +412,62 @@ describe("SDKWork IAM OAuth quick setup pages", () => {
     expect(footer?.textContent).toContain("保存并开启");
   });
 
-  it("opens the full developer configuration drawer from an account row", async () => {
-    const configuredState = {
-      ...EMPTY_STATE,
-      resourceAccounts: [{
-        id: "iamora-1",
-        integrationId: "iamoi-1",
-        providerCode: "wechat_mini_program",
-        resourceAccountCode: "mini-wx-test",
-        resourceAccountKind: "mini_program",
-        displayName: "My mini program",
-        providerAccountId: "wx-test-mini-001",
-        providerAccountType: "enterprise",
-        providerClientSecret: "mini-secret-1",
-        enabled: true,
-        domainVerifyStatus: "pending",
-        providerConfigJson: JSON.stringify({
-          webDomain: "app.example.com",
-          redirectUri: "https://app.example.com/auth/oauth/callback",
-          domains: { request: ["https://api.example.com"] },
-          verifyFiles: [
-            { domain: "api.example.com", fileName: "MP_verify_api.txt", content: "wx-api" },
-          ],
-          notify: { url: "https://app.example.com/wechat/notify", token: "t", encodingAesKey: "k", encryptMode: "safe", dataFormat: "json" },
-        }),
-      }],
-    };
-    const updateAccountCredentials = vi.fn();
-    const configuredController = {
-      getState: () => configuredState,
-      load: () => Promise.resolve(configuredState),
-      updateAccountConfig: () => Promise.resolve({}),
+  it("opens the shared account drawer from a row and edits the profile", async () => {
+    const rows = [{
+      id: "iamora-1",
+      integrationId: "iamoi-1",
+      providerCode: "wechat_mini_program",
+      resourceAccountCode: "mini-wx-test",
+      resourceAccountKind: "mini_program",
+      displayName: "My mini program",
+      providerAccountId: "wx-test-mini-001",
+      providerAccountType: "enterprise",
+      enabled: true,
+      providerConfigJson: JSON.stringify({ category: "商城", note: "旧备注" }),
+    }];
+    const listResourceAccountPage = vi.fn(async () => ({
+      items: rows,
+      pageInfo: { page: 1, pageSize: 20, totalItems: "1" },
+    }));
+    const updateAccountProfile = vi.fn(async () => ({}));
+    const updateAccountConfig = vi.fn(async () => ({}));
+    const updateAccountCredentials = vi.fn(async () => ({}));
+    const { controller: miniController } = miniProgramPageController({
+      listResourceAccountPage,
+      updateAccountProfile,
+      updateAccountConfig,
       updateAccountCredentials,
-      runResourceAccountVerification: () => Promise.resolve({}),
-      setResourceAccountEnabled: () => Promise.resolve({}),
-      listPageResource: () => Promise.resolve([]),
-    } as unknown as SdkworkIamOauthAdminController;
+    });
     const { unmount } = render(
       <SdkworkI18nProvider locale="zh-CN">
-        <SdkworkIamOauthMiniProgramAccountsPage controller={configuredController} />
+        <SdkworkIamOauthMiniProgramAccountsPage controller={miniController} />
       </SdkworkI18nProvider>,
     );
-    await screen.findByText("My mini program");
+    fireEvent.click(await screen.findByText("My mini program"));
 
-    // Row actions: edit button opens the developer configuration drawer.
-    const editButton = screen.getByTitle("操作");
-    fireEvent.click(editButton);
-
-    // Mini programs have no server-config tab: basic / developer config / status.
-    expect(await screen.findByRole("tab", { name: "基础信息" })).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "开发配置" })).toBeTruthy();
-    expect(screen.queryByRole("tab", { name: "服务器配置" })).toBeNull();
-    expect(screen.getByRole("tab", { name: "状态信息" })).toBeTruthy();
-
-    // Basic info tab: editable name, subject type, original id, AppID/AppSecret.
+    // The shared drawer edits the identity, the credential, and the
+    // non-identity provider settings; the AppID is immutable after create.
+    expect(await screen.findByText("身份信息")).toBeTruthy();
     expect(screen.getByDisplayValue("My mini program")).toBeTruthy();
-    // The saved subject type is echoed back into the edit form (not the
-    // default personal fallback).
-    await openSelect("主体类型");
-    expect(screen.getByRole("option", { name: "个人主体" })).toBeTruthy();
-    expect(checkedOption("企业主体")).toBe(true);
-    fireEvent.keyDown(screen.getByRole("listbox"), { key: "Escape" });
-    expect(screen.getByPlaceholderText("gh_xxxxxxxx")).toBeTruthy();
-    const appIdField = screen.getByDisplayValue("wx-test-mini-001");
-    expect(appIdField).not.toBeDisabled();
-    // The saved AppSecret is echoed back and prefilled so the edit drawer
-    // shows the complete record.
-    const secretInput = screen.getByDisplayValue("mini-secret-1") as HTMLInputElement;
-    expect(secretInput).toBeTruthy();
-    expect(secretInput.type).toBe("password");
-    // The eye toggle reveals the secret in plain text.
-    fireEvent.click(screen.getByTitle("显示明文"));
-    expect((screen.getByDisplayValue("mini-secret-1") as HTMLInputElement).type).toBe("text");
-    expect(screen.getByPlaceholderText("留空则保留原密钥")).toBeTruthy();
+    expect(screen.getByDisplayValue("wx-test-mini-001")).toBeDisabled();
+    expect(screen.getByLabelText("AppSecret")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "登录检测" })).toBeTruthy();
 
-    // Developer config tab: server domains (dynamic rows), login callback and
-    // the per-domain verification files (only the request legal domain).
-    fireEvent.mouseDown(screen.getByRole("tab", { name: "开发配置" }));
-    expect(screen.getByText("自定义域名")).toBeTruthy();
-    expect(screen.getByText("域名校验文件")).toBeTruthy();
-    expect(screen.getByDisplayValue("https://api.example.com")).toBeTruthy();
-    // One dynamic add button per domain category (5 server-domain lists).
-    expect(screen.getAllByText("添加域名").length).toBeGreaterThan(0);
-    // The single WeChat verification file is prefilled from the stored entry.
-    expect(screen.getByDisplayValue("MP_verify_api.txt")).toBeTruthy();
-    expect(screen.getByDisplayValue("https://app.example.com/auth/oauth/callback")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("显示名称"), { target: { value: "Renamed" } });
+    fireEvent.change(screen.getByLabelText("备注"), { target: { value: "新备注" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
 
-    // Status tab: read-only connection/verification/enabled badges.
-    fireEvent.mouseDown(screen.getByRole("tab", { name: "状态信息" }));
-    // The same labels also appear in the account list columns.
-    expect(screen.getAllByText("未接通").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("已启用").length).toBeGreaterThan(0);
-    expect(screen.getByText("保存配置")).toBeTruthy();
-
-    // Saving with untouched credentials never re-submits the secret — the
-    // prefilled value would otherwise rotate the AppSecret on every save.
-    fireEvent.click(screen.getByText("保存配置"));
-    await screen.findByText("账号开发配置已保存。");
+    // Profile, provider configuration, and the integration display name write
+    // in dependency order; an untouched credential is never re-submitted.
+    await waitFor(() => {
+      expect(updateAccountProfile).toHaveBeenCalledWith("iamora-1", "iamoi-1", {
+        displayName: "Renamed",
+      });
+    });
+    expect(updateAccountConfig).toHaveBeenCalledWith("iamora-1", {
+      category: "商城",
+      note: "新备注",
+    });
     expect(updateAccountCredentials).not.toHaveBeenCalled();
     unmount();
   });
@@ -677,62 +666,54 @@ describe("SDKWork IAM OAuth quick setup pages", () => {
     unmount();
   });
 
-  it("renders the add drawer with the same tabs as the edit drawer (mini: three tabs)", async () => {
+  it("renders the shared create drawer's identity and credential sections", async () => {
+    const { controller: miniController } = miniProgramPageController();
     const { unmount } = render(
       <SdkworkI18nProvider locale="zh-CN">
-        <SdkworkIamOauthMiniProgramAccountsPage controller={controller} />
+        <SdkworkIamOauthMiniProgramAccountsPage controller={miniController} />
       </SdkworkI18nProvider>,
     );
-    await screen.findByText("添加小程序账号");
-    fireEvent.click(screen.getAllByText("添加小程序账号")[0]);
+    fireEvent.click(await screen.findByText("添加小程序账号"));
 
-    expect(await screen.findByRole("tab", { name: "基础信息" })).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "开发配置" })).toBeTruthy();
-    expect(screen.queryByRole("tab", { name: "服务器配置" })).toBeNull();
-    expect(screen.getByRole("tab", { name: "状态信息" })).toBeTruthy();
-    await openSelect("主体类型");
-    expect(screen.getByRole("option", { name: "个人主体" })).toBeTruthy();
-    expect(screen.getByRole("option", { name: "企业主体" })).toBeTruthy();
-    fireEvent.keyDown(screen.getByRole("listbox"), { key: "Escape" });
-    expect(screen.getByPlaceholderText("gh_xxxxxxxx")).toBeTruthy();
-
-    fireEvent.mouseDown(screen.getByRole("tab", { name: "开发配置" }));
-    expect(screen.getAllByText("登录回调地址").length).toBeGreaterThan(0);
-    expect(screen.getByText("自定义域名")).toBeTruthy();
-    expect(screen.getAllByText("添加域名").length).toBeGreaterThan(0);
-
-    // Status is not available before the account exists.
-    fireEvent.mouseDown(screen.getByRole("tab", { name: "状态信息" }));
-    expect(screen.getByText("创建并保存后展示账号状态。")).toBeTruthy();
+    expect(await screen.findByText("身份信息")).toBeTruthy();
+    expect(screen.getByText("凭据")).toBeTruthy();
+    expect(screen.getByLabelText("AppID")).toBeTruthy();
+    expect(screen.getByLabelText("AppSecret")).toBeTruthy();
+    expect(screen.getByLabelText("主体类型")).toBeTruthy();
+    expect(screen.getByLabelText("业务分类")).toBeTruthy();
+    // The login-check section only exists for a saved account.
+    expect(screen.queryByRole("button", { name: "登录检测" })).toBeNull();
     unmount();
   });
 
-  it("creates a mini program account without a callback URL (optional field)", async () => {
+  it("creates a mini program account through the one-click setup", async () => {
+    const createAccountSetup = vi.fn(async () => ({ id: "iamora-new" }));
+    const { controller: miniController } = miniProgramPageController({ createAccountSetup });
     const { unmount } = render(
       <SdkworkI18nProvider locale="zh-CN">
-        <SdkworkIamOauthMiniProgramAccountsPage controller={controller} />
+        <SdkworkIamOauthMiniProgramAccountsPage controller={miniController} />
       </SdkworkI18nProvider>,
     );
-    await screen.findByText("添加小程序账号");
-    fireEvent.click(screen.getAllByText("添加小程序账号")[0]);
-    await screen.findByRole("tab", { name: "基础信息" });
+    fireEvent.click(await screen.findByText("添加小程序账号"));
+    fireEvent.change(screen.getByLabelText("显示名称"), { target: { value: "New mini" } });
+    fireEvent.change(screen.getByLabelText("AppID"), { target: { value: "wx-mini-001" } });
+    fireEvent.change(screen.getByLabelText("AppSecret"), { target: { value: "secret-001" } });
+    fireEvent.change(screen.getByLabelText("业务分类"), { target: { value: "商城" } });
+    fireEvent.click(screen.getByRole("button", { name: "创建" }));
 
-    const fill = (placeholder: string, value: string) => {
-      fireEvent.change(screen.getByPlaceholderText(placeholder), { target: { value } });
-    };
-    fill("我的小程序", "My mini program");
-    fill("wx1234567890abcdef", "wx-mini-001");
-    fill("输入小程序 AppSecret", "secret-001");
-
-    // The callback URL is optional for mini programs.
-    fireEvent.mouseDown(screen.getByRole("tab", { name: "开发配置" }));
-    expect(screen.getByText("小程序登录通过 jscode2session 换取会话，不经过 OAuth 回调；回调地址为可选项，仅按需填写。")).toBeTruthy();
-
-    // Confirm becomes enabled without any callback URL configured.
-    const footer = document.querySelector('[data-sdk-ui="drawer-footer"]');
-    const confirmButton = footer?.querySelector("button:last-child") as HTMLButtonElement | null;
-    expect(confirmButton).toBeTruthy();
-    expect(confirmButton?.disabled).toBe(false);
+    // Mini programs go through the one-click setup (integration → account) and
+    // need no OAuth callback URL.
+    await waitFor(() => {
+      expect(createAccountSetup).toHaveBeenCalledWith("mini_program", {
+        appId: "wx-mini-001",
+        appSecret: "secret-001",
+        displayName: "New mini",
+        accountType: "personal",
+        enabled: true,
+        redirectUri: "",
+        config: { category: "商城" },
+      });
+    });
     unmount();
   });
 });
