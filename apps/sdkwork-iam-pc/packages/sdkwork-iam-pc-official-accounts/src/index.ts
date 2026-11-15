@@ -24,6 +24,7 @@ export type {
   OfficialAccountsEncryptMode,
   OfficialAccountsFollowQrCode,
   OfficialAccountsMenu,
+  OfficialAccountsMenuActionKind,
   OfficialAccountsMenuButton,
   OfficialAccountsPage,
   OfficialAccountsPatch,
@@ -53,6 +54,20 @@ export {
   type OfficialAccountsMessages,
 } from "./client/messages";
 export { SdkworkOfficialAccountsPanel } from "./client/panel";
+export {
+  SdkworkOfficialAccountsMenuDialog,
+  type SdkworkOfficialAccountsMenuDialogProps,
+  type SdkworkOfficialAccountsMenuPublishOutcome,
+} from "./client/menu/dialog";
+export {
+  SdkworkOfficialAccountsMenuWorkspace,
+  type SdkworkOfficialAccountsMenuWorkspaceProps,
+} from "./client/menu/workspace";
+export {
+  OFFICIAL_ACCOUNTS_MENU_MESSAGES_EN_US,
+  OFFICIAL_ACCOUNTS_MENU_MESSAGES_ZH_CN,
+  type OfficialAccountsMenuMessages,
+} from "./client/menu/messages";
 export type {
   OfficialAccountsDomainVerification,
   OfficialAccountsDomainVerificationStatus,

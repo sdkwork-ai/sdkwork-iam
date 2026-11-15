@@ -1,3 +1,5 @@
+import type { OfficialAccountsMenuMessages } from "./menu/messages";
+import { OFFICIAL_ACCOUNTS_MENU_MESSAGES_EN_US, OFFICIAL_ACCOUNTS_MENU_MESSAGES_ZH_CN } from "./menu/messages";
 import { createSdkworkMessageCatalog, useSdkworkModuleMessages } from "@sdkwork/i18n-pc-react";
 
 /**
@@ -205,6 +207,8 @@ export interface OfficialAccountsMessages {
     menuNameRequired: string;
     menuUrlRequired: string;
   };
+  /** Full custom-menu workspace copy. */
+  menuEditor: OfficialAccountsMenuMessages;
 }
 
 /** Namespace of the official-account message catalog. */
@@ -409,6 +413,7 @@ const zhCN: OfficialAccountsMessages = {
     menuNameRequired: "请填写菜单名称。",
     menuUrlRequired: "跳转网页的菜单需要填写网页地址。",
   },
+  menuEditor: OFFICIAL_ACCOUNTS_MENU_MESSAGES_ZH_CN,
 };
 
 const enUS: OfficialAccountsMessages = {
@@ -610,6 +615,7 @@ const enUS: OfficialAccountsMessages = {
     menuNameRequired: "Enter the menu name.",
     menuUrlRequired: "A URL-opening menu needs a URL.",
   },
+  menuEditor: OFFICIAL_ACCOUNTS_MENU_MESSAGES_EN_US,
 };
 
 /** Message catalog the panel and its host provider register. */

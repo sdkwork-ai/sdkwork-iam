@@ -29,23 +29,41 @@ export type OfficialAccountsResourceAccountKind = "official_account" | "mini_pro
 /** What a verification run checks. */
 export type OfficialAccountsVerificationKind = "domain" | "webhook" | "authorization"
 
+/** What a custom-menu button does when tapped. */
+export type OfficialAccountsMenuActionKind = "click" | "view" | "miniprogram"
+
 /** One custom-menu button (WeChat `button` / `sub_button` shape). */
 export interface OfficialAccountsMenuButton {
+  /**
+   * Stable editor id so selection and React keys survive renames and reorders.
+   * It is not the WeChat event key; `click` uses {@link message}.
+   */
+  key?: string
   /** Button label as displayed in the WeChat official-account menu. */
   name: string
-  /** `view` opens `url`; `click` reports `key`; omitted for a parent button. */
-  type?: "view" | "click"
-  /** Target URL for `type: "view"`. */
+  /** Tap action; omitted for a parent button that only opens sub-buttons. */
+  type?: OfficialAccountsMenuActionKind
+  /** Target URL for `view`, and the fallback URL for `miniprogram`. */
   url?: string
-  /** Event key for `type: "click"`. */
-  key?: string
+  /** `miniprogram`: target mini-program AppID. */
+  appId?: string
+  /** `miniprogram`: required path inside the target mini program. */
+  pagePath?: string
+  /** `click`: provider EventKey pushed to the server callback. */
+  message?: string
+  /** Imported WeChat action this editor cannot publish losslessly yet. */
+  unsupportedType?: string
+  /** Original provider payload retained until the operator converts it. */
+  providerAction?: Record<string, unknown>
   /** Second-level buttons; a parent button with sub-buttons has no type. */
-  subButtons?: readonly OfficialAccountsMenuButton[]
+  subButtons?: OfficialAccountsMenuButton[]
 }
 
 /** The editable custom-menu draft. */
 export interface OfficialAccountsMenu {
-  buttons: readonly OfficialAccountsMenuButton[]
+  buttons: OfficialAccountsMenuButton[]
+  /** Timestamp of the stored draft, when reported. */
+  updatedAt?: string
 }
 
 /**
@@ -252,6 +270,12 @@ export interface OfficialAccountsCustomMenuContext {
   accountId: string
   /** The stored draft. */
   menu: OfficialAccountsMenu
+  /** Display name the editor header shows, when the surface knows it. */
+  displayName?: string
+  /** Logo the editor preview shows, when the surface knows it. */
+  logoUrl?: string
+  /** Where the draft came from (stored config, WeChat, or empty). */
+  source?: "database" | "wechat" | "empty"
 }
 
 /** Result of pushing a menu draft to the WeChat console. */
@@ -260,6 +284,14 @@ export interface OfficialAccountsCustomMenuPublishResult {
   accountId: string
   /** Whether the channel accepted the draft. */
   published: boolean
+  /** Whether the draft was persisted before publishing. */
+  saved?: boolean
+  /** Why publication did not happen, when it did not. */
+  reason?: "backend_unavailable" | "publish_failed"
+  /** Provider error text for `publish_failed`. */
+  errorMessage?: string
+  /** The draft as stored after the operation. */
+  context?: OfficialAccountsCustomMenuContext
   /** Publication timestamp, when reported. */
   publishedAt?: string
 }
