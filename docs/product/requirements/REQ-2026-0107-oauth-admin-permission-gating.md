@@ -55,3 +55,23 @@ their mutation affordances accordingly.
 - No server-side change: the backend-api manifest already enforces every code
   listed above.
 - No new catalog codes: the plane already exists; this is UI discovery of it.
+
+## Update 2026-11-15: account maintenance opens to every signed-in member
+
+Tenant-owned OAuth account maintenance (the unified
+`iam_oauth_resource_account` rows and the login integrations, custom menus,
+follow QR codes, and login checks the shared official-account / mini-program
+panels use) no longer requires a seeded OAuth permission:
+
+- The backend-api manifest maps `iam.oauth.resourceAccounts.*` and
+  `iam.oauth.integrations.*` to no required permission; those routes require
+  only an authenticated principal. Tenant isolation and the service layer's
+  ownership checks remain authoritative, and the host no longer needs to seed
+  `iam.oauth.read` / `iam.oauth.manage` before the pages can be used.
+- The account pages in cloudrouter/webserver stop deriving capabilities from
+  `iam.oauth.resourceAccounts.*` scopes; their UI defaults to open, and the
+  server still refuses what the service layer forbids.
+- Enterprise OAuth configuration (provider catalog, policies, secrets,
+  tenants, scan-login settings) keeps its `iam.oauth.read` / `iam.oauth.manage`
+  codes.
+
