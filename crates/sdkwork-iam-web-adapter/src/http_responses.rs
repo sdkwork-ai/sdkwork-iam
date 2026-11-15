@@ -27,17 +27,36 @@ pub fn iam_api_success(data: Value) -> Response {
     response
 }
 
+/// Maps an HTTP status onto its platform result code (`API_SPEC.md` §15.3).
+///
+/// Every status a handler may deliberately return MUST have an arm here.
+/// A missing arm silently collapses the response into `InternalError`, so an
+/// upstream/provider failure (502) or a rejected payload (422) reaches the
+/// client as an opaque `500 / 50001 / "An internal error occurred"` and the
+/// real cause is lost. This mapping mirrors the canonical framework mapping in
+/// `sdkwork_web_core::problem::result_code_from_status`.
 fn result_code_from_status(status: StatusCode) -> SdkWorkResultCode {
     match status.as_u16() {
         400 => SdkWorkResultCode::ValidationError,
         401 => SdkWorkResultCode::AuthenticationRequired,
+        402 => SdkWorkResultCode::InsufficientBalance,
         403 => SdkWorkResultCode::PermissionRequired,
         404 => SdkWorkResultCode::NotFound,
         405 => SdkWorkResultCode::MethodNotAllowed,
+        408 => SdkWorkResultCode::RequestTimeout,
         409 => SdkWorkResultCode::Conflict,
+        410 => SdkWorkResultCode::Gone,
+        412 => SdkWorkResultCode::PreconditionFailed,
+        413 => SdkWorkResultCode::PayloadTooLarge,
+        415 => SdkWorkResultCode::UnsupportedMediaType,
+        422 => SdkWorkResultCode::UnprocessableEntity,
         423 => SdkWorkResultCode::Locked,
+        428 => SdkWorkResultCode::PreconditionRequired,
         429 => SdkWorkResultCode::RateLimitExceeded,
+        500 => SdkWorkResultCode::InternalError,
+        502 => SdkWorkResultCode::BadGateway,
         503 => SdkWorkResultCode::ServiceUnavailable,
+        504 => SdkWorkResultCode::GatewayTimeout,
         _ => SdkWorkResultCode::InternalError,
     }
 }
@@ -103,4 +122,56 @@ pub fn iam_api_error(status: StatusCode, wire_code: &str, message: &str) -> Resp
         .into_response();
     attach_trace_header(&mut response, &trace_id);
     response
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn provider_and_payload_statuses_keep_their_platform_code() {
+        assert_eq!(
+            SdkWorkResultCode::BadGateway,
+            result_code_from_status(StatusCode::BAD_GATEWAY)
+        );
+        assert_eq!(
+            SdkWorkResultCode::UnprocessableEntity,
+            result_code_from_status(StatusCode::UNPROCESSABLE_ENTITY)
+        );
+        assert_eq!(
+            SdkWorkResultCode::GatewayTimeout,
+            result_code_from_status(StatusCode::GATEWAY_TIMEOUT)
+        );
+        assert_eq!(
+            SdkWorkResultCode::PreconditionFailed,
+            result_code_from_status(StatusCode::PRECONDITION_FAILED)
+        );
+    }
+
+    /// Regression: a WeChat/provider rejection of the custom-menu import must
+    /// surface as `502 / 50201`, never as an opaque `500 / 50001`
+    /// (`GET /backend/v3/api/iam/oauth/resource_accounts/{id}/custom_menus`).
+    #[test]
+    fn provider_sync_failure_is_reported_as_bad_gateway() {
+        let result_code =
+            iam_wire_result_code(StatusCode::BAD_GATEWAY, "iam_oauth_custom_menu_sync_failed");
+        assert_eq!(SdkWorkResultCode::BadGateway, result_code);
+        assert_eq!(502, result_code.http_status_code());
+        assert_eq!(50201, result_code.as_i32());
+    }
+
+    #[test]
+    fn unknown_wire_code_still_uses_the_status_mapping() {
+        assert_eq!(
+            SdkWorkResultCode::Conflict,
+            iam_wire_result_code(
+                StatusCode::CONFLICT,
+                "iam_oauth_custom_menu_sync_unavailable"
+            )
+        );
+        assert_eq!(
+            SdkWorkResultCode::ServiceUnavailable,
+            iam_wire_result_code(StatusCode::SERVICE_UNAVAILABLE, "iam_oauth_unavailable")
+        );
+    }
 }
