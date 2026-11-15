@@ -954,6 +954,18 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
     ),
     HttpRoute::dual_token(
         HttpMethod::Post,
+        "/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/sync",
+        "iam.oauth",
+        "iam.oauth.resourceAccounts.customMenus.sync",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/rollback",
+        "iam.oauth",
+        "iam.oauth.resourceAccounts.customMenus.rollback",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
         "/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/verifications",
         "iam.oauth",
         "iam.oauth.resourceAccounts.verifications.create",

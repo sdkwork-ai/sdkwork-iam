@@ -59,11 +59,33 @@ export interface OfficialAccountsMenuButton {
   subButtons?: OfficialAccountsMenuButton[]
 }
 
+/** One stored revision of a custom-menu draft, kept for rollback. */
+export interface OfficialAccountsMenuVersion {
+  /** Monotonic version number; the live draft carries the highest one. */
+  version: number
+  /** The top-level buttons of that revision. */
+  buttons: OfficialAccountsMenuButton[]
+  /** When the revision was saved locally. */
+  savedAt?: string
+  /** When the revision was published to the WeChat console. */
+  publishedAt?: string
+  /** Whether the revision came from the local draft or the WeChat console. */
+  source?: "database" | "wechat"
+}
+
 /** The editable custom-menu draft. */
 export interface OfficialAccountsMenu {
   buttons: OfficialAccountsMenuButton[]
+  /** Monotonic version of this draft; absent for legacy documents (treated as 0). */
+  version?: number
   /** Timestamp of the stored draft, when reported. */
   updatedAt?: string
+  /** Timestamp of the last successful WeChat publication, when reported. */
+  publishedAt?: string
+  /** Whether the live draft came from the local store or the WeChat console. */
+  source?: "database" | "wechat"
+  /** Older revisions kept for conflict resolution and rollback (newest first). */
+  history?: OfficialAccountsMenuVersion[]
 }
 
 /**
@@ -274,8 +296,10 @@ export interface OfficialAccountsCustomMenuContext {
   displayName?: string
   /** Logo the editor preview shows, when the surface knows it. */
   logoUrl?: string
-  /** Where the draft came from (stored config, WeChat, or empty). */
+  /** Whether the live draft came from the local store or the WeChat console. */
   source?: "database" | "wechat" | "empty"
+  /** The live draft version, repeated for callers that ignore the menu body. */
+  version?: number
 }
 
 /** Result of pushing a menu draft to the WeChat console. */
@@ -347,6 +371,24 @@ export interface OfficialAccountsTransport {
     id: string,
     draft: OfficialAccountsMenu,
   ): Promise<OfficialAccountsCustomMenuPublishResult>
+  /**
+   * Pull the live WeChat menu into the stored draft (a new version).
+   * @param id - account id.
+   * @param baseVersion - the version the caller last saw, for conflict checks.
+   */
+  syncCustomMenu?(id: string, baseVersion?: number): Promise<OfficialAccountsCustomMenuContext>
+  /**
+   * Restore a stored revision as the new live draft (and publish it, when the
+   * host supports publishing).
+   * @param id - account id.
+   * @param version - the revision to restore.
+   * @param baseVersion - the version the caller last saw, for conflict checks.
+   */
+  rollbackCustomMenu?(
+    id: string,
+    version: number,
+    baseVersion?: number,
+  ): Promise<OfficialAccountsCustomMenuContext>
   /** @param id - account id. @param enabled - target value. */
   setEnabled(id: string, enabled: boolean): Promise<void>
   /** @param id - account id. @param enabled - whether it is the scan-login default. */
@@ -384,6 +426,16 @@ export interface OfficialAccountsCapabilities {
    * self-service app transport does not, so it defaults off there.
    */
   manageFollowQrCode: boolean
+  /**
+   * The live WeChat menu may be pulled into the draft. Requires a transport
+   * that implements `syncCustomMenu` and the provider credentials.
+   */
+  refreshMenu?: boolean
+  /**
+   * Older menu revisions may be restored and published. Requires a transport
+   * that implements `rollbackCustomMenu`.
+   */
+  rollbackMenu?: boolean
 }
 
 /** Panel/controller state. */

@@ -361,6 +361,16 @@ export class IamOauthIamOauthResourceAccountsCustomMenusApi {
   async publish(resourceAccountId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
     return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, { name: 'resourceAccountId', style: 'simple', explode: false })}/custom_menus/publish`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
+
+/** Iam oauth resource Accounts custom Menus rollback. */
+  async rollback(resourceAccountId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, { name: 'resourceAccountId', style: 'simple', explode: false })}/custom_menus/rollback`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Iam oauth resource Accounts custom Menus sync. */
+  async sync(resourceAccountId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, { name: 'resourceAccountId', style: 'simple', explode: false })}/custom_menus/sync`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
 }
 
 export class IamOauthIamOauthResourceAccountsAuthorizationRefreshesApi {

@@ -454,6 +454,21 @@ export interface SdkworkIamOauthCustomMenuButton {
 export interface SdkworkIamOauthCustomMenuDraft {
   buttons: SdkworkIamOauthCustomMenuButton[];
   updatedAt?: string;
+  publishedAt?: string;
+  source?: "database" | "wechat";
+  /** Monotonic revision of this draft; absent for legacy documents. */
+  version?: number;
+  /** Earlier revisions retained for conflict resolution and rollback. */
+  history?: SdkworkIamOauthCustomMenuVersion[];
+}
+
+/** One retained custom-menu revision. */
+export interface SdkworkIamOauthCustomMenuVersion {
+  version: number;
+  buttons: SdkworkIamOauthCustomMenuButton[];
+  savedAt?: string;
+  publishedAt?: string;
+  source?: "database" | "wechat";
 }
 
 /**
@@ -466,6 +481,8 @@ export interface SdkworkIamOauthCustomMenuContext {
   logoUrl?: string;
   draft: SdkworkIamOauthCustomMenuDraft;
   source?: "database" | "wechat" | "empty";
+  /** Monotonic revision of the loaded draft. */
+  version?: number;
 }
 
 /**
@@ -599,6 +616,17 @@ export interface SdkworkIamOauthAdminController {
     resourceAccountId: string,
     draft: SdkworkIamOauthCustomMenuDraft,
   ): Promise<SdkworkIamOauthCustomMenuPublishResult>;
+  /** Pull the live WeChat menu into the stored draft as a new version. */
+  syncAccountCustomMenu(
+    resourceAccountId: string,
+    baseVersion?: number,
+  ): Promise<SdkworkIamOauthCustomMenuContext>;
+  /** Restore a retained revision and publish it to WeChat. */
+  rollbackAccountCustomMenu(
+    resourceAccountId: string,
+    version: number,
+    baseVersion?: number,
+  ): Promise<SdkworkIamOauthCustomMenuContext>;
   setResourceAccountQrLogin(resourceAccountId: string, enabled: boolean): Promise<unknown>;
 }
 

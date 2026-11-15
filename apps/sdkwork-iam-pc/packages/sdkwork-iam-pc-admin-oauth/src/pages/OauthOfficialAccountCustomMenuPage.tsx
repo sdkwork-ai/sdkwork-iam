@@ -175,12 +175,27 @@ export function SdkworkIamOauthOfficialAccountCustomMenuPage({
           displayName: context.displayName,
           logoUrl: context.logoUrl,
           source: context.source,
+          version: context.version ?? context.draft.version,
         }}
+        history={context?.draft.history}
         messages={messages.quickSetup.customMenus as OfficialAccountsMenuMessages}
         onDirtyChange={onDirtyChange}
         onClose={onClose}
         onPublish={(menu) => handlePublish(menu as SdkworkIamOauthCustomMenuDraft)}
+        onRefresh={async (baseVersion) => {
+          const next = await controller.syncAccountCustomMenu(resourceAccountId, baseVersion ?? context?.version);
+          setContext(next);
+        }}
+        onRollback={async (version, baseVersion) => {
+          const next = await controller.rollbackAccountCustomMenu(
+            resourceAccountId,
+            version,
+            baseVersion ?? context?.version,
+          );
+          setContext(next);
+        }}
         onSaveDraft={(menu) => handleSaveDraft(menu as SdkworkIamOauthCustomMenuDraft)}
+        version={context?.version ?? context?.draft.version}
       />
     </div>
   );

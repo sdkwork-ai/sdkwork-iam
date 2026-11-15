@@ -972,6 +972,18 @@ export function SdkworkOfficialAccountsPanel({
             return await controller.publishMenu(menuAccount, menu);
           }
           : undefined}
+        onRefresh={capabilities.refreshMenu === true
+          ? async (baseVersion) => {
+            if (menuAccount === undefined) throw new Error("official account menu dialog has no account");
+            return await controller.syncMenu(menuAccount, baseVersion);
+          }
+          : undefined}
+        onRollback={capabilities.rollbackMenu === true
+          ? async (version, baseVersion) => {
+            if (menuAccount === undefined) throw new Error("official account menu dialog has no account");
+            return await controller.rollbackMenu(menuAccount, version, baseVersion);
+          }
+          : undefined}
         onSave={async (menu) => {
           if (menuAccount === undefined) return undefined;
           await controller.saveMenu(menuAccount, menu);

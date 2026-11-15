@@ -45,6 +45,8 @@ function memoryTransport(
     loadCustomMenu: vi.fn(async (id) => ({ accountId: id, menu: { buttons: [] } })),
     saveCustomMenu: vi.fn(async (id, menu) => ({ accountId: id, menu })),
     publishCustomMenu: vi.fn(async (id) => ({ accountId: id, published: true })),
+    syncCustomMenu: vi.fn(async (id) => ({ accountId: id, menu: { buttons: [], version: 3 } })),
+    rollbackCustomMenu: vi.fn(async (id) => ({ accountId: id, menu: { buttons: [], version: 4 } })),
     setEnabled: vi.fn(async () => undefined),
     setQrLogin: vi.fn(async () => undefined),
     createFollowQrCode: vi.fn(async () => ({
@@ -167,6 +169,33 @@ describe("official accounts panel", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Custom menu" }));
     const publish = screen.getByRole("button", { name: "Save & publish" }) as HTMLButtonElement;
     expect(publish.disabled).toBe(true);
+  });
+
+  it("refreshes and rolls back the live menu on an operator surface", async () => {
+    const menuAccount: OfficialAccount = {
+      ...ACCOUNT,
+      customMenu: {
+        buttons: [{ key: "menu-0", name: "Help", type: "click", message: "HELP" }],
+        version: 2,
+        history: [{ version: 1, buttons: [], savedAt: "2026-01-01T00:00:00Z" }],
+      },
+    };
+    const operator = bench(DEFAULT_OPERATOR_CAPABILITIES, {
+      list: vi.fn(async () => ({ items: [menuAccount], totalItems: 1, page: 1, pageSize: 20 })),
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Custom menu" }));
+    fireEvent.click(screen.getByRole("button", { name: "Roll back" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Roll back to version 1" }));
+    const confirm = await screen.findByTestId("custom-menu-rollback-confirmation");
+    fireEvent.click(confirm.querySelectorAll("button")[1] as HTMLButtonElement);
+    await waitFor(() => {
+      expect(operator.transport.rollbackCustomMenu).toHaveBeenCalledWith("acc-1", 1, 2);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+    await waitFor(() => {
+      expect(operator.transport.syncCustomMenu).toHaveBeenCalledWith("acc-1", 4);
+    });
+    operator.unmount();
   });
 
   it("annotates a self-managed account on an operator surface", async () => {

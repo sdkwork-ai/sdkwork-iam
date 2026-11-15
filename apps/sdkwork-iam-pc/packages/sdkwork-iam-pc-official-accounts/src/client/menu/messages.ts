@@ -95,9 +95,33 @@ export interface OfficialAccountsMenuMessages {
       "appIdRequired": string;
       "pagePathRequired": string;
     };
+
+  /** Refresh the draft from the live WeChat menu. */
+  refresh: string;
+  /** Refresh in progress. */
+  refreshing: string;
+  /** Refresh completed. */
+  refreshed: string;
+  /** Current draft version label. */
+  version: string;
+  /** Version history / rollback affordance. */
+  rollback: string;
+  /** Rollback dialog title. */
+  rollbackTitle: string;
+  /** Rollback dialog description. */
+  rollbackDescription: string;
+  /** Rollback action label with a {version} placeholder. */
+  rollbackAction: string;
+  /** Rollback in progress. */
+  rollingBack: string;
+  /** No earlier revisions. */
+  historyEmpty: string;
+  /** Conflict notice with a {version} placeholder. */
+  conflict: string;
 }
 
 /** Simplified Chinese copy. */
+
 export const OFFICIAL_ACCOUNTS_MENU_MESSAGES_ZH_CN: OfficialAccountsMenuMessages = {
   "actions": "操作",
   "openButton": "菜单管理",
@@ -184,7 +208,19 @@ export const OFFICIAL_ACCOUNTS_MENU_MESSAGES_ZH_CN: OfficialAccountsMenuMessages
     "urlTooLong": "网页地址不能超过 1024 字节",
     "appIdRequired": "请输入小程序 AppID",
     "pagePathRequired": "请输入小程序页面路径"
-  }
+
+  },
+  "refresh": "刷新",
+  "refreshing": "正在刷新…",
+  "refreshed": "已从公众号同步最新菜单。",
+  "version": "版本 {version}",
+  "rollback": "回滚",
+  "rollbackTitle": "回滚菜单配置",
+  "rollbackDescription": "选择要恢复的版本；恢复后会立即发布到公众号。",
+  "rollbackAction": "回滚到版本 {version}",
+  "rollingBack": "正在回滚…",
+  "historyEmpty": "暂无历史版本。",
+  "conflict": "菜单已被其他人更新（当前版本 {version}）。请先刷新后再保存。"
 };
 
 /** English copy. */
@@ -274,5 +310,17 @@ export const OFFICIAL_ACCOUNTS_MENU_MESSAGES_EN_US: OfficialAccountsMenuMessages
     "urlTooLong": "The webpage URL cannot exceed 1024 bytes",
     "appIdRequired": "Enter the mini program AppID",
     "pagePathRequired": "Enter the mini program page path"
-  }
+
+  },
+  "refresh": "Refresh",
+  "refreshing": "Refreshing…",
+  "refreshed": "The latest menu was synced from the official account.",
+  "version": "Version {version}",
+  "rollback": "Roll back",
+  "rollbackTitle": "Roll back menu",
+  "rollbackDescription": "Choose a revision to restore; it is published to the official account immediately.",
+  "rollbackAction": "Roll back to version {version}",
+  "rollingBack": "Rolling back…",
+  "historyEmpty": "No previous revisions.",
+  "conflict": "The menu was updated elsewhere (current version {version}). Refresh before saving."
 };

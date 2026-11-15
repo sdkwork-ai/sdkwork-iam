@@ -16,6 +16,7 @@ import type {
   SdkworkIamOauthCustomMenuContext,
   SdkworkIamOauthCustomMenuDraft,
   SdkworkIamOauthCustomMenuPublishResult,
+  SdkworkIamOauthCustomMenuVersion,
   SdkworkIamOauthDiagnosticRunDraft,
   SdkworkIamOauthFlowConfigDraft,
   SdkworkIamOauthIntegrationDraft,
@@ -1255,6 +1256,7 @@ export function createSdkworkIamOauthAdminController(
           logoUrl: optionalString(remoteRecord.logoUrl),
           draft: normalizeCustomMenuDraft(remoteMenu),
           source: normalizeCustomMenuSource(remoteRecord.source),
+          ...(typeof remoteRecord.version === "number" ? { version: remoteRecord.version } : {}),
         } satisfies SdkworkIamOauthCustomMenuContext;
       } catch (error) {
         setState({
@@ -1273,6 +1275,7 @@ export function createSdkworkIamOauthAdminController(
         const preparedDraft = prepareCustomMenuDraft(draft);
         await service.iam.oauth.resourceAccounts.customMenus.update(normalizedId, {
           buttons: preparedDraft.buttons,
+          ...(preparedDraft.version === undefined ? {} : { baseVersion: preparedDraft.version }),
         });
         const context = await controller.loadAccountCustomMenu(normalizedId);
         setState({ status: "ready" });
@@ -1308,6 +1311,9 @@ export function createSdkworkIamOauthAdminController(
       try {
         await service.iam.oauth.resourceAccounts.customMenus.publish(normalizedId, {
           buttons: preparedDraft.buttons,
+          ...(context.version === undefined && context.draft.version === undefined
+            ? {}
+            : { baseVersion: context.version ?? context.draft.version }),
         });
         // Read back the provider/database canonical representation after
         // publish. This prevents stale list snapshots from becoming the next
@@ -1340,6 +1346,43 @@ export function createSdkworkIamOauthAdminController(
           reason: backendUnavailable ? "backend_unavailable" : "publish_failed",
           errorMessage: backendUnavailable ? undefined : message,
         } satisfies SdkworkIamOauthCustomMenuPublishResult;
+      }
+    },
+    async syncAccountCustomMenu(resourceAccountId, baseVersion) {
+      setState({ status: "saving", lastError: undefined });
+      const normalizedId = resourceAccountId.trim();
+      try {
+        await service.iam.oauth.resourceAccounts.customMenus.sync(normalizedId, {
+          ...(baseVersion === undefined ? {} : { baseVersion }),
+        });
+        const context = await controller.loadAccountCustomMenu(normalizedId);
+        setState({ status: "ready" });
+        return context;
+      } catch (error) {
+        setState({
+          status: "error",
+          lastError: error instanceof Error ? error.message : "Failed to sync custom menu from WeChat",
+        });
+        throw error;
+      }
+    },
+    async rollbackAccountCustomMenu(resourceAccountId, version, baseVersion) {
+      setState({ status: "saving", lastError: undefined });
+      const normalizedId = resourceAccountId.trim();
+      try {
+        await service.iam.oauth.resourceAccounts.customMenus.rollback(normalizedId, {
+          version,
+          ...(baseVersion === undefined ? {} : { baseVersion }),
+        });
+        const context = await controller.loadAccountCustomMenu(normalizedId);
+        setState({ status: "ready" });
+        return context;
+      } catch (error) {
+        setState({
+          status: "error",
+          lastError: error instanceof Error ? error.message : "Failed to roll back custom menu",
+        });
+        throw error;
       }
     },
     setResourceAccountQrLogin(resourceAccountId, enabled) {
@@ -1464,6 +1507,33 @@ function normalizeCustomMenuDraft(value: unknown): SdkworkIamOauthCustomMenuDraf
       .map((button, index) => normalizeMenuButton(button, String(index)))
       .filter((button) => button !== undefined),
     updatedAt: optionalString(record.updatedAt),
+    publishedAt: optionalString(record.publishedAt),
+    ...(record.source === "database" || record.source === "wechat" ? { source: record.source } : {}),
+    ...(typeof record.version === "number" ? { version: record.version } : {}),
+    ...(Array.isArray(record.history)
+      ? {
+        history: record.history
+          .map((entry) => normalizeMenuVersion(entry))
+          .filter((entry): entry is SdkworkIamOauthCustomMenuVersion => entry !== undefined),
+      }
+      : {}),
+  };
+}
+
+/** Normalizes one retained menu revision. */
+function normalizeMenuVersion(value: unknown): SdkworkIamOauthCustomMenuVersion | undefined {
+  const record = toRecord(value);
+  if (typeof record.version !== "number" || !Array.isArray(record.buttons)) {
+    return undefined;
+  }
+  return {
+    version: record.version,
+    buttons: record.buttons
+      .map((button, index) => normalizeMenuButton(button, String(index)))
+      .filter((button): button is SdkworkIamOauthCustomMenuButton => button !== undefined),
+    savedAt: optionalString(record.savedAt),
+    publishedAt: optionalString(record.publishedAt),
+    ...(record.source === "database" || record.source === "wechat" ? { source: record.source } : {}),
   };
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CircleAlert, Info, Redo2, Undo2, X } from "lucide-react";
+import { CircleAlert, History, Info, Redo2, RefreshCw, Undo2, X } from "lucide-react";
 
 import {
   Button,
@@ -18,6 +18,7 @@ import type {
   OfficialAccountsMenuButton,
   OfficialAccountsCustomMenuContext,
   OfficialAccountsMenu,
+  OfficialAccountsMenuVersion,
 } from "../../types";
 import type { OfficialAccountsMenuMessages } from "./messages";
 import {
@@ -33,17 +34,25 @@ import { SdkworkOfficialAccountsMenuPhonePreview } from "./phone-preview";
 
 
 export interface SdkworkOfficialAccountsMenuWorkspaceProps {
-  busy?: "saving" | "publishing";
+  busy?: "saving" | "publishing" | "refreshing" | "rollingBack";
   /** Save-draft affordance (REQ-2026-0107, `customMenus.update`); defaults to true. */
   canUpdate?: boolean;
   /** Publish affordance (REQ-2026-0107, `customMenus.publish`); defaults to true. */
   canPublish?: boolean;
   context?: OfficialAccountsCustomMenuContext;
+  /** Earlier revisions the rollback dialog offers (newest first). */
+  history?: OfficialAccountsMenuVersion[];
   messages: OfficialAccountsMenuMessages;
   onDirtyChange?: (dirty: boolean) => void;
   onClose?: () => void;
+  /** Pull the live WeChat menu into the draft (a new version). */
+  onRefresh?: (baseVersion?: number) => Promise<void>;
+  /** Restore an earlier revision; the dialog persists and publishes it. */
+  onRollback?: (version: number, baseVersion?: number) => Promise<void>;
   onPublish: (draft: OfficialAccountsMenu) => Promise<OfficialAccountsMenu | undefined>;
   onSaveDraft: (draft: OfficialAccountsMenu) => Promise<OfficialAccountsMenu | undefined>;
+  /** Current draft version, when the backend reports one. */
+  version?: number;
 }
 
 type MenuPath = string;
@@ -75,11 +84,15 @@ export function SdkworkOfficialAccountsMenuWorkspace({
   canPublish = true,
   canUpdate = true,
   context,
+  history = [],
   messages,
   onDirtyChange,
   onClose,
   onPublish,
+  onRefresh,
+  onRollback,
   onSaveDraft,
+  version,
 }: SdkworkOfficialAccountsMenuWorkspaceProps) {
   const [draftHistory, setDraftHistory] = useState<CustomMenuDraftHistory>({ entries: [], index: -1 });
   const [savedFingerprint, setSavedFingerprint] = useState("");
@@ -87,6 +100,8 @@ export function SdkworkOfficialAccountsMenuWorkspace({
   const [validationBanner, setValidationBanner] = useState<string | undefined>();
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [publishConfirmationOpen, setPublishConfirmationOpen] = useState(false);
+  const [rollbackConfirmationOpen, setRollbackConfirmationOpen] = useState(false);
+  const [rollbackTarget, setRollbackTarget] = useState<number | undefined>();
   const [focusRequest, setFocusRequest] = useState<(CustomMenuFocusRequest & { path: MenuPath }) | undefined>();
   const draftAdopted = useRef(false);
   const currentFingerprint = useRef("");
@@ -332,6 +347,14 @@ export function SdkworkOfficialAccountsMenuWorkspace({
                 <span aria-hidden="true" className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${isDirty ? "bg-[#d48806] dark:bg-[#f0b429]" : "bg-[#07c160] dark:bg-[#2bd576]"}`} />
                 {isDirty ? messages.unsavedStatus : messages.savedStatus}
               </span>
+              {version === undefined ? null : (
+                <>
+                  <span aria-hidden="true" className="h-3 w-px shrink-0 bg-[#d8d8d8] dark:bg-[#52525b]" />
+                  <span className="shrink-0 text-[#8d8d8d] dark:text-[#a1a1aa]">
+                    {messages.version.replace("{version}", String(version))}
+                  </span>
+                </>
+              )}
             </div>
           ) : null}
         </div>
@@ -358,6 +381,19 @@ export function SdkworkOfficialAccountsMenuWorkspace({
               <Redo2 aria-hidden="true" className="h-4 w-4" />
             </IconButton>
           </div>
+          {onRefresh ? (
+            <Button
+              className="shrink-0"
+              disabled={Boolean(busy) || !canUpdate}
+              loading={busy === "refreshing"}
+              onClick={() => { void onRefresh?.(version); }}
+              type="button"
+              variant="outline"
+            >
+              <RefreshCw aria-hidden="true" className="mr-1 h-4 w-4" />
+              {busy === "refreshing" ? messages.refreshing : messages.refresh}
+            </Button>
+          ) : null}
           <Button
             className="shrink-0"
             disabled={Boolean(busy) || !canUpdate}
@@ -368,6 +404,19 @@ export function SdkworkOfficialAccountsMenuWorkspace({
           >
             {messages.saveDraft}
           </Button>
+          {onRollback ? (
+            <Button
+              className="shrink-0"
+              disabled={Boolean(busy) || !canUpdate}
+              loading={busy === "rollingBack"}
+              onClick={() => { setRollbackConfirmationOpen(true); }}
+              type="button"
+              variant="outline"
+            >
+              <History aria-hidden="true" className="mr-1 h-4 w-4" />
+              {busy === "rollingBack" ? messages.rollingBack : messages.rollback}
+            </Button>
+          ) : null}
           <Button
             className="shrink-0"
             disabled={Boolean(busy) || !canPublish}
@@ -548,6 +597,102 @@ export function SdkworkOfficialAccountsMenuWorkspace({
               variant="primary"
             >
               {messages.publishConfirmAction}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      <Modal open={rollbackConfirmationOpen} onOpenChange={setRollbackConfirmationOpen}>
+        <ModalContent
+          className="z-[251] !bg-white text-[#353535] opacity-100 dark:!border-[#52525b] dark:!bg-[#27272a] dark:text-[#f4f4f5]"
+          data-testid="custom-menu-rollback-history"
+          showCloseButton={false}
+          size="md"
+          style={{ opacity: 1 }}
+        >
+          <ModalHeader className="border-[#e1e1e1] dark:border-[#3f3f46]">
+            <ModalTitle>{messages.rollbackTitle}</ModalTitle>
+            <ModalDescription className="text-[#8d8d8d] dark:text-[#a1a1aa]">
+              {messages.rollbackDescription}
+            </ModalDescription>
+          </ModalHeader>
+          <div className="max-h-[50vh] overflow-y-auto px-4 py-3">
+            {history.length === 0 ? (
+              <p className="py-6 text-center text-sm text-[#8d8d8d] dark:text-[#a1a1aa]">{messages.historyEmpty}</p>
+            ) : (
+              <ul className="space-y-2">
+                {[...history].sort((left, right) => right.version - left.version).map((entry) => (
+                  <li
+                    className="flex items-center justify-between gap-3 rounded-md border border-[#e5e5e5] px-3 py-2 dark:border-[#3f3f46]"
+                    key={entry.version}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-[#242424] dark:text-[#f4f4f5]">
+                        {messages.version.replace("{version}", String(entry.version))}
+                      </p>
+                      <p className="truncate text-xs text-[#8d8d8d] dark:text-[#a1a1aa]">
+                        {entry.publishedAt ?? entry.savedAt ?? ""}
+                      </p>
+                    </div>
+                    <Button
+                      disabled={Boolean(busy)}
+                      onClick={() => {
+                        setRollbackTarget(entry.version);
+                        setRollbackConfirmationOpen(false);
+                      }}
+                      size="sm"
+                      type="button"
+                      variant="secondary"
+                    >
+                      {messages.rollbackAction.replace("{version}", String(entry.version))}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <ModalFooter className="border-[#e1e1e1] dark:border-[#3f3f46]">
+            <Button onClick={() => setRollbackConfirmationOpen(false)} type="button" variant="secondary">
+              {messages.cancel}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal
+        open={rollbackTarget !== undefined}
+        onOpenChange={(open) => { if (!open) setRollbackTarget(undefined); }}
+      >
+        <ModalContent
+          className="z-[252] !bg-white text-[#353535] opacity-100 dark:!border-[#52525b] dark:!bg-[#27272a] dark:text-[#f4f4f5]"
+          data-testid="custom-menu-rollback-confirmation"
+          showCloseButton={false}
+          size="sm"
+          style={{ opacity: 1 }}
+        >
+          <ModalHeader className="border-[#e1e1e1] dark:border-[#3f3f46]">
+            <ModalTitle>{messages.rollbackTitle}</ModalTitle>
+            <ModalDescription className="text-[#8d8d8d] dark:text-[#a1a1aa]">
+              {messages.rollbackDescription}
+            </ModalDescription>
+          </ModalHeader>
+          <ModalFooter className="border-[#e1e1e1] dark:border-[#3f3f46]">
+            <Button onClick={() => setRollbackTarget(undefined)} type="button" variant="secondary">
+              {messages.cancel}
+            </Button>
+            <Button
+              disabled={rollbackTarget === undefined || Boolean(busy)}
+              loading={busy === "rollingBack"}
+              onClick={() => {
+                const target = rollbackTarget;
+                setRollbackTarget(undefined);
+                if (target !== undefined) void onRollback?.(target, version);
+              }}
+              type="button"
+              variant="danger"
+            >
+              {rollbackTarget === undefined
+                ? messages.rollback
+                : messages.rollbackAction.replace("{version}", String(rollbackTarget))}
             </Button>
           </ModalFooter>
         </ModalContent>

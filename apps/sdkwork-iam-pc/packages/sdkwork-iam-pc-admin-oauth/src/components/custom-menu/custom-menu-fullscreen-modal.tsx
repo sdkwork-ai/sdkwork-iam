@@ -8,6 +8,7 @@
  */
 import { SdkworkOfficialAccountsMenuDialog } from "@sdkwork/iam-pc-official-accounts";
 import type {
+  OfficialAccountsCustomMenuContext,
   OfficialAccountsMenu,
   OfficialAccountsMenuMessages,
 } from "@sdkwork/iam-pc-official-accounts";
@@ -15,6 +16,7 @@ import type {
 import { useSdkworkIamOauthAdminMessages } from "../../i18n";
 import type {
   SdkworkIamOauthAdminController,
+  SdkworkIamOauthCustomMenuContext,
   SdkworkIamOauthCustomMenuDraft,
   SdkworkIamOauthCustomMenuPermissions,
 } from "../../types/oauth-admin-types";
@@ -35,20 +37,19 @@ export function SdkworkIamOauthCustomMenuFullscreenModal({
   permissions,
 }: SdkworkIamOauthCustomMenuFullscreenModalProps) {
   const messages = useSdkworkIamOauthAdminMessages().quickSetup.customMenus;
+  const toShared = (context: SdkworkIamOauthCustomMenuContext): OfficialAccountsCustomMenuContext => ({
+    accountId,
+    menu: context.draft,
+    displayName: context.displayName,
+    logoUrl: context.logoUrl,
+    source: context.source,
+    version: context.version ?? context.draft.version,
+  });
   return (
     <SdkworkOfficialAccountsMenuDialog
       canPublish={permissions?.publish ?? true}
       canUpdate={permissions?.update ?? true}
-      load={async () => {
-        const context = await controller.loadAccountCustomMenu(accountId);
-        return {
-          accountId,
-          menu: context.draft,
-          displayName: context.displayName,
-          logoUrl: context.logoUrl,
-          source: context.source,
-        };
-      }}
+      load={async () => toShared(await controller.loadAccountCustomMenu(accountId))}
       messages={messages as OfficialAccountsMenuMessages}
       onClose={onClose}
       onPublish={async (menu) => {
@@ -63,6 +64,12 @@ export function SdkworkIamOauthCustomMenuFullscreenModal({
           errorMessage: result.errorMessage,
         };
       }}
+      onRefresh={async (baseVersion) => toShared(
+        await controller.syncAccountCustomMenu(accountId, baseVersion),
+      )}
+      onRollback={async (version, baseVersion) => toShared(
+        await controller.rollbackAccountCustomMenu(accountId, version, baseVersion),
+      )}
       onSave={async (menu) => {
         const stored = await controller.saveAccountCustomMenu(
           accountId,

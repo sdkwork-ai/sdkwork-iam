@@ -2545,6 +2545,82 @@ fn persisted_custom_menu(config: &Value) -> Option<&Value> {
         .filter(|menu| menu.get("buttons").is_some_and(Value::is_array))
 }
 
+/// Number of earlier menu revisions retained for conflict resolution/rollback.
+const CUSTOM_MENU_HISTORY_LIMIT: usize = 20;
+
+/// Monotonic version of one stored menu document (legacy documents are version 0).
+fn custom_menu_version(menu: &Value) -> i64 {
+    menu.get("version").and_then(Value::as_i64).unwrap_or(0)
+}
+
+/// Earlier revisions of one stored menu document, newest first.
+fn custom_menu_history(menu: &Value) -> Vec<Value> {
+    menu.get("history")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+}
+
+/// Snapshot one menu document as a history entry.
+fn custom_menu_snapshot(menu: &Value) -> Value {
+    json!({
+        "version": custom_menu_version(menu),
+        "buttons": menu.get("buttons").cloned().unwrap_or_else(|| json!([])),
+        "savedAt": menu.get("updatedAt").cloned().unwrap_or(Value::Null),
+        "publishedAt": menu.get("publishedAt").cloned().unwrap_or(Value::Null),
+        "source": menu.get("source").cloned().unwrap_or_else(|| json!("database")),
+    })
+}
+
+/// Build the next menu document, moving the current one into the bounded history.
+///
+/// Every write path (save, publish, sync, rollback) goes through this function,
+/// so the live `version` always increases and a stale `baseVersion` can be
+/// detected before a concurrent edit is overwritten.
+fn next_custom_menu(
+    buttons: Value,
+    source: &str,
+    published_at: Option<&str>,
+    current: Option<&Value>,
+) -> Value {
+    let current_version = current.map(custom_menu_version).unwrap_or(0);
+    let mut history = current.map(custom_menu_history).unwrap_or_default();
+    if let Some(current) = current {
+        history.insert(0, custom_menu_snapshot(current));
+    }
+    history.truncate(CUSTOM_MENU_HISTORY_LIMIT);
+    let published = published_at
+        .map(|value| json!(value))
+        .or_else(|| current.and_then(|menu| menu.get("publishedAt").cloned()))
+        .unwrap_or(Value::Null);
+    json!({
+        "buttons": buttons,
+        "version": current_version + 1,
+        "updatedAt": Utc::now().to_rfc3339(),
+        "source": source,
+        "publishedAt": published,
+        "history": history,
+    })
+}
+
+/// Outcome of a versioned menu mutation: conflict carries the current document
+/// so the caller can return it to the operator (the HTTP layer only exposes the
+/// code; the UI reloads the context on conflict).
+enum MenuMutationOutcome {
+    Saved { display_name: String, menu: Value },
+    Conflict { display_name: String, menu: Value },
+    NotFound,
+}
+
+fn custom_menu_context(display_name: &str, menu: &Value, source: &str) -> Value {
+    json!({
+        "displayName": display_name,
+        "menu": menu,
+        "source": source,
+        "version": custom_menu_version(menu),
+    })
+}
+
 fn persisted_custom_menu_source(menu: &Value) -> &'static str {
     match menu.get("source").and_then(Value::as_str) {
         Some("wechat") => "wechat",
@@ -2583,7 +2659,7 @@ fn merge_published_custom_menu(
     published_at: &str,
 ) -> Result<PublishedCustomMenuMerge, String> {
     let mut config = parse_custom_menu_account_config(config_text)?;
-    let Some(mut latest_menu) = persisted_custom_menu(&config).cloned() else {
+    let Some(latest_menu) = persisted_custom_menu(&config).cloned() else {
         return Ok(PublishedCustomMenuMerge::Superseded(json!({
             "buttons": []
         })));
@@ -2591,12 +2667,23 @@ fn merge_published_custom_menu(
     if latest_menu.get("buttons") != Some(published_buttons) {
         return Ok(PublishedCustomMenuMerge::Superseded(latest_menu));
     }
-    latest_menu["publishedAt"] = json!(published_at);
-    latest_menu["source"] = json!("wechat");
-    config["customMenu"] = latest_menu.clone();
+    // Publication is a new revision: bump the version, keep the previous
+    // document in history, and record when WeChat accepted it. The draft's
+    // `updatedAt` stays the moment the operator saved it, so publishing does
+    // not look like a content edit.
+    let mut menu = next_custom_menu(
+        published_buttons.clone(),
+        "wechat",
+        Some(published_at),
+        Some(&latest_menu),
+    );
+    if let Some(updated_at) = latest_menu.get("updatedAt") {
+        menu["updatedAt"] = updated_at.clone();
+    }
+    config["customMenu"] = menu.clone();
     Ok(PublishedCustomMenuMerge::Updated {
         config,
-        menu: latest_menu,
+        menu,
     })
 }
 
@@ -2891,23 +2978,23 @@ async fn update_resource_account_custom_menu(
             )
         }
     };
-    let updated_at = Utc::now().to_rfc3339();
-    let menu = json!({
-        "buttons": normalized.get("buttons").cloned().unwrap_or_else(|| json!([])),
-        "updatedAt": updated_at,
-        "source": "database",
-    });
-    let menu_for_update = menu.clone();
+    let base_version = body.get("baseVersion").and_then(Value::as_i64);
+    let normalized_buttons = normalized
+        .get("buttons")
+        .cloned()
+        .unwrap_or_else(|| json!([]));
+    let buttons_for_update = normalized_buttons.clone();
+    let button_count = normalized_buttons.as_array().map(Vec::len).unwrap_or(0);
     let update_tenant_id = tenant_id.clone();
     let update_resource_account_id = resource_account_id.clone();
-    let update_timestamp = updated_at.clone();
+    let update_timestamp = Utc::now().to_rfc3339();
     let result = execute_conditional_mutation_with_audit(
         pg,
         &ctx,
         "iam.oauth.resourceAccounts.customMenus.update",
         "iam_oauth_resource_account",
         resource_account_id.clone(),
-        json!({ "buttonCount": menu.get("buttons").and_then(Value::as_array).map(Vec::len).unwrap_or(0) }),
+        json!({ "buttonCount": button_count, "baseVersion": base_version }),
         move |tx| {
             Box::pin(async move {
                 let row = sqlx::query(
@@ -2919,41 +3006,55 @@ async fn update_resource_account_custom_menu(
                 .fetch_optional(&mut **tx)
                 .await?;
                 let Some(row) = row else {
-                    return Ok(None);
+                    return Ok(Some(MenuMutationOutcome::NotFound));
                 };
                 let provider_code: String = row.get(0);
                 let account_kind: String = row.get(1);
                 let display_name: String = row.get(2);
                 if provider_code != "wechat" || account_kind != "official_account" {
-                    return Ok(None);
+                    return Ok(Some(MenuMutationOutcome::NotFound));
                 }
                 let config_text: String = row.get(3);
                 let mut config = parse_custom_menu_account_config(&config_text)
                     .map_err(sqlx::Error::Protocol)?;
-                config["customMenu"] = menu_for_update.clone();
+                let current = persisted_custom_menu(&config).cloned();
+                if let Some(expected) = base_version {
+                    let live_version = current.as_ref().map(custom_menu_version).unwrap_or(0);
+                    if live_version != expected {
+                        return Ok(Some(MenuMutationOutcome::Conflict {
+                            display_name,
+                            menu: current.unwrap_or_else(|| json!({ "buttons": [], "version": 0 })),
+                        }));
+                    }
+                }
+                let menu = next_custom_menu(buttons_for_update.clone(), "database", None, current.as_ref());
+                config["customMenu"] = menu.clone();
                 sqlx::query(
                     "UPDATE iam_oauth_resource_account SET provider_config_json = $1, updated_at = $2 \
                      WHERE tenant_id = $3 AND id = $4",
                 )
                 .bind(config.to_string())
-                .bind(update_timestamp)
-                .bind(update_tenant_id)
-                .bind(update_resource_account_id)
+                .bind(&update_timestamp)
+                .bind(&update_tenant_id)
+                .bind(&update_resource_account_id)
                 .execute(&mut **tx)
                 .await?;
-                Ok(Some(display_name))
+                Ok(Some(MenuMutationOutcome::Saved { display_name, menu }))
             })
         },
         Option::is_some,
     )
     .await;
     match result {
-        Ok(Some(display_name)) => custom_menu_ok(json!({
-            "displayName": display_name,
-            "menu": menu,
-            "source": "database",
-        })),
-        Ok(None) => appbase_error(
+        Ok(Some(MenuMutationOutcome::Saved { display_name, menu })) => {
+            custom_menu_ok(custom_menu_context(&display_name, &menu, "database"))
+        }
+        Ok(Some(MenuMutationOutcome::Conflict { .. })) => appbase_error(
+            StatusCode::CONFLICT,
+            "iam_oauth_custom_menu_conflict",
+            "the menu was updated elsewhere; reload it before saving",
+        ),
+        Ok(Some(MenuMutationOutcome::NotFound)) | Ok(None) => appbase_error(
             StatusCode::NOT_FOUND,
             "iam_oauth_resource_account_not_found",
             "WeChat official account not found",
@@ -3058,6 +3159,16 @@ async fn publish_resource_account_custom_menu(
             "save the custom menu before publishing",
         );
     };
+    let base_version = body.get("baseVersion").and_then(Value::as_i64);
+    if let Some(expected) = base_version {
+        if custom_menu_version(&menu) != expected {
+            return appbase_error(
+                StatusCode::CONFLICT,
+                "iam_oauth_custom_menu_conflict",
+                "the menu was updated elsewhere; reload it before publishing",
+            );
+        }
+    }
     let requested_buttons = match body.get("buttons").and_then(Value::as_array) {
         Some(buttons) => Value::Array(buttons.clone()),
         None => {
@@ -3216,6 +3327,432 @@ async fn publish_resource_account_custom_menu(
             StatusCode::NOT_FOUND,
             "iam_oauth_resource_account_not_found",
             "resource account not found after the menu was published",
+        ),
+        Err(error) => appbase_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "iam_oauth_custom_menu_publish_failed",
+            &error,
+        ),
+    }
+}
+
+/// Pulls the live WeChat menu into the stored draft as a new version.
+///
+/// Refresh is an explicit operator action: the provider menu is fetched with
+/// the account's own credentials and replaces the draft only after the
+/// versioned transaction commits, so a concurrent save is reported as a
+/// conflict instead of being overwritten.
+async fn sync_resource_account_custom_menu(
+    State(state): State<BackendIamState>,
+    ctx: WebRequestContext,
+    Path(resource_account_id): Path<String>,
+    Json(body): Json<Value>,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+    let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
+        return tenant_id_from_context(&ctx).err().expect("error response");
+    };
+    let row = match sqlx::query(
+        "SELECT provider_code, resource_account_kind, display_name, integration_id, \
+                provider_account_id, provider_config_json, oauth_client_id \
+         FROM iam_oauth_resource_account WHERE tenant_id = $1 AND id = $2",
+    )
+    .bind(&tenant_id)
+    .bind(&resource_account_id)
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(row) => row,
+        Err(error) => return internal_handler_error("iam_oauth_custom_menu_sync_failed", error),
+    };
+    let Some(row) = row else {
+        return appbase_error(
+            StatusCode::NOT_FOUND,
+            "iam_oauth_resource_account_not_found",
+            "resource account not found",
+        );
+    };
+    let provider_code: String = row.get(0);
+    let resource_account_kind: String = row.get(1);
+    let display_name: String = row.get(2);
+    let integration_id: String = row.get(3);
+    let provider_account_id: Option<String> = row.get(4);
+    if provider_code != "wechat" || resource_account_kind != "official_account" {
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_oauth_custom_menu_sync_unavailable",
+            "custom menu sync is only available for WeChat official accounts",
+        );
+    }
+    let Some(app_id) = provider_account_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    else {
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_oauth_custom_menu_sync_unavailable",
+            "official account AppID is not configured",
+        );
+    };
+    let oauth_client_id: Option<String> = row.get(6);
+    let exchange = match load_resource_account_exchange_context(
+        pg,
+        &ctx,
+        &tenant_id,
+        &resource_account_id,
+        &integration_id,
+        &provider_code,
+        app_id,
+        oauth_client_id.as_deref(),
+    )
+    .await
+    {
+        Ok(Some(value)) => value,
+        Ok(None) => {
+            return appbase_error(
+                StatusCode::CONFLICT,
+                "iam_oauth_custom_menu_sync_unavailable",
+                "official account AppSecret is not configured",
+            )
+        }
+        Err(_) => return resource_account_binding_error("iam_oauth_custom_menu_sync_unavailable"),
+    };
+    let remote_menu = match sdkwork_iam_web_adapter::retrieve_wechat_mp_custom_menu(
+        pg,
+        app_id,
+        &exchange.client_secret,
+    )
+    .await
+    {
+        Ok(menu) => menu,
+        Err(error) => {
+            return appbase_error(
+                StatusCode::BAD_GATEWAY,
+                "iam_oauth_custom_menu_sync_failed",
+                &error,
+            )
+        }
+    };
+    let normalized = match sdkwork_iam_web_adapter::normalize_wechat_mp_custom_menu_draft(&remote_menu) {
+        Ok(menu) => menu,
+        Err(error) => {
+            return appbase_error(
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "iam_oauth_custom_menu_invalid",
+                &error,
+            )
+        }
+    };
+    let buttons = normalized.get("buttons").cloned().unwrap_or_else(|| json!([]));
+    let base_version = body.get("baseVersion").and_then(Value::as_i64);
+    let update_tenant_id = tenant_id.clone();
+    let update_resource_account_id = resource_account_id.clone();
+    let update_timestamp = Utc::now().to_rfc3339();
+    let result = execute_conditional_mutation_with_audit(
+        pg,
+        &ctx,
+        "iam.oauth.resourceAccounts.customMenus.sync",
+        "iam_oauth_resource_account",
+        resource_account_id.clone(),
+        json!({ "buttonCount": buttons.as_array().map(Vec::len).unwrap_or(0), "baseVersion": base_version }),
+        move |tx| {
+            Box::pin(async move {
+                let row = sqlx::query(
+                    "SELECT display_name, provider_config_json FROM iam_oauth_resource_account \
+                     WHERE tenant_id = $1 AND id = $2 FOR UPDATE",
+                )
+                .bind(&update_tenant_id)
+                .bind(&update_resource_account_id)
+                .fetch_optional(&mut **tx)
+                .await?;
+                let Some(row) = row else {
+                    return Ok(Some(MenuMutationOutcome::NotFound));
+                };
+                let latest_name: String = row.get(0);
+                let config_text: String = row.get(1);
+                let mut config = parse_custom_menu_account_config(&config_text)
+                    .map_err(sqlx::Error::Protocol)?;
+                let current = persisted_custom_menu(&config).cloned();
+                if let Some(expected) = base_version {
+                    let live_version = current.as_ref().map(custom_menu_version).unwrap_or(0);
+                    if live_version != expected {
+                        return Ok(Some(MenuMutationOutcome::Conflict {
+                            display_name: latest_name,
+                            menu: current.unwrap_or_else(|| json!({ "buttons": [], "version": 0 })),
+                        }));
+                    }
+                }
+                let menu = next_custom_menu(buttons.clone(), "wechat", None, current.as_ref());
+                config["customMenu"] = menu.clone();
+                sqlx::query(
+                    "UPDATE iam_oauth_resource_account SET provider_config_json = $1, updated_at = $2 \
+                     WHERE tenant_id = $3 AND id = $4",
+                )
+                .bind(config.to_string())
+                .bind(&update_timestamp)
+                .bind(&update_tenant_id)
+                .bind(&update_resource_account_id)
+                .execute(&mut **tx)
+                .await?;
+                Ok(Some(MenuMutationOutcome::Saved { display_name: latest_name, menu }))
+            })
+        },
+        Option::is_some,
+    )
+    .await;
+    match result {
+        Ok(Some(MenuMutationOutcome::Saved { display_name, menu })) => {
+            custom_menu_ok(custom_menu_context(&display_name, &menu, "wechat"))
+        }
+        Ok(Some(MenuMutationOutcome::Conflict { .. })) => appbase_error(
+            StatusCode::CONFLICT,
+            "iam_oauth_custom_menu_conflict",
+            "the menu was updated elsewhere; reload it before refreshing",
+        ),
+        Ok(Some(MenuMutationOutcome::NotFound)) | Ok(None) => appbase_error(
+            StatusCode::NOT_FOUND,
+            "iam_oauth_resource_account_not_found",
+            "WeChat official account not found",
+        ),
+        Err(error) => appbase_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "iam_oauth_custom_menu_sync_failed",
+            &error,
+        ),
+    }
+}
+
+/// Restores a stored menu revision and publishes it to WeChat immediately.
+async fn rollback_resource_account_custom_menu(
+    State(state): State<BackendIamState>,
+    ctx: WebRequestContext,
+    Path(resource_account_id): Path<String>,
+    Json(body): Json<Value>,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+    let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
+        return tenant_id_from_context(&ctx).err().expect("error response");
+    };
+    let Some(target_version) = body.get("version").and_then(Value::as_i64) else {
+        return appbase_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "iam_oauth_custom_menu_invalid",
+            "the version to restore is required",
+        );
+    };
+    let row = match sqlx::query(
+        "SELECT provider_code, resource_account_kind, integration_id, provider_account_id, \
+                provider_config_json, oauth_client_id \
+         FROM iam_oauth_resource_account WHERE tenant_id = $1 AND id = $2",
+    )
+    .bind(&tenant_id)
+    .bind(&resource_account_id)
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(row) => row,
+        Err(error) => return internal_handler_error("iam_oauth_custom_menu_publish_failed", error),
+    };
+    let Some(row) = row else {
+        return appbase_error(
+            StatusCode::NOT_FOUND,
+            "iam_oauth_resource_account_not_found",
+            "resource account not found",
+        );
+    };
+    let provider_code: String = row.get(0);
+    let resource_account_kind: String = row.get(1);
+    let integration_id: String = row.get(2);
+    let provider_account_id: Option<String> = row.get(3);
+    if provider_code != "wechat" || resource_account_kind != "official_account" {
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_oauth_custom_menu_publish_unavailable",
+            "custom menu publishing is only available for WeChat official accounts",
+        );
+    }
+    let Some(app_id) = provider_account_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    else {
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_oauth_custom_menu_publish_unavailable",
+            "official account AppID is not configured",
+        );
+    };
+    let oauth_client_id: Option<String> = row.get(5);
+    let exchange = match load_resource_account_exchange_context(
+        pg,
+        &ctx,
+        &tenant_id,
+        &resource_account_id,
+        &integration_id,
+        &provider_code,
+        app_id,
+        oauth_client_id.as_deref(),
+    )
+    .await
+    {
+        Ok(Some(value)) => value,
+        Ok(None) => {
+            return appbase_error(
+                StatusCode::CONFLICT,
+                "iam_oauth_custom_menu_publish_unavailable",
+                "official account AppSecret is not configured",
+            )
+        }
+        Err(_) => return resource_account_binding_error("iam_oauth_custom_menu_publish_unavailable"),
+    };
+    let existing_config: String = row.get(4);
+    let config = match parse_custom_menu_account_config(&existing_config) {
+        Ok(config) => config,
+        Err(error) => {
+            return appbase_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "iam_oauth_custom_menu_publish_failed",
+                &error,
+            )
+        }
+    };
+    let Some(current) = persisted_custom_menu(&config).cloned() else {
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_oauth_custom_menu_rollback_unavailable",
+            "save the custom menu before rolling it back",
+        );
+    };
+    let base_version = body.get("baseVersion").and_then(Value::as_i64);
+    if let Some(expected) = base_version {
+        if custom_menu_version(&current) != expected {
+            return appbase_error(
+                StatusCode::CONFLICT,
+                "iam_oauth_custom_menu_conflict",
+                "the menu was updated elsewhere; reload it before rolling back",
+            );
+        }
+    }
+    let Some(target) = custom_menu_history(&current)
+        .into_iter()
+        .find(|entry| custom_menu_version(entry) == target_version)
+    else {
+        return appbase_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "iam_oauth_custom_menu_rollback_unavailable",
+            "the requested menu revision is no longer retained",
+        );
+    };
+    let restored = json!({ "buttons": target.get("buttons").cloned().unwrap_or_else(|| json!([])) });
+    let normalized = match sdkwork_iam_web_adapter::normalize_wechat_mp_custom_menu_draft(&restored) {
+        Ok(menu) => menu,
+        Err(error) => {
+            return appbase_error(
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "iam_oauth_custom_menu_invalid",
+                &error,
+            )
+        }
+    };
+    if let Err(error) = sdkwork_iam_web_adapter::validate_wechat_mp_custom_menu(&normalized, true) {
+        return appbase_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "iam_oauth_custom_menu_invalid",
+            &error,
+        );
+    }
+    if let Err(error) = sdkwork_iam_web_adapter::publish_wechat_mp_custom_menu(
+        pg,
+        app_id,
+        &exchange.client_secret,
+        &normalized,
+    )
+    .await
+    {
+        return appbase_error(
+            StatusCode::BAD_GATEWAY,
+            "iam_oauth_custom_menu_publish_failed",
+            &error,
+        );
+    }
+    let buttons = normalized.get("buttons").cloned().unwrap_or_else(|| json!([]));
+    let update_tenant_id = tenant_id.clone();
+    let update_resource_account_id = resource_account_id.clone();
+    let update_timestamp = Utc::now().to_rfc3339();
+    let result = execute_conditional_mutation_with_audit(
+        pg,
+        &ctx,
+        "iam.oauth.resourceAccounts.customMenus.rollback",
+        "iam_oauth_resource_account",
+        resource_account_id.clone(),
+        json!({ "targetVersion": target_version, "baseVersion": base_version }),
+        move |tx| {
+            Box::pin(async move {
+                let row = sqlx::query(
+                    "SELECT display_name, provider_config_json FROM iam_oauth_resource_account \
+                     WHERE tenant_id = $1 AND id = $2 FOR UPDATE",
+                )
+                .bind(&update_tenant_id)
+                .bind(&update_resource_account_id)
+                .fetch_optional(&mut **tx)
+                .await?;
+                let Some(row) = row else {
+                    return Ok(Some(MenuMutationOutcome::NotFound));
+                };
+                let latest_name: String = row.get(0);
+                let config_text: String = row.get(1);
+                let mut config = parse_custom_menu_account_config(&config_text)
+                    .map_err(sqlx::Error::Protocol)?;
+                let current = persisted_custom_menu(&config).cloned();
+                if let Some(expected) = base_version {
+                    let live_version = current.as_ref().map(custom_menu_version).unwrap_or(0);
+                    if live_version != expected {
+                        return Ok(Some(MenuMutationOutcome::Conflict {
+                            display_name: latest_name,
+                            menu: current.unwrap_or_else(|| json!({ "buttons": [], "version": 0 })),
+                        }));
+                    }
+                }
+                let menu = next_custom_menu(buttons.clone(), "wechat", Some(&update_timestamp), current.as_ref());
+                config["customMenu"] = menu.clone();
+                sqlx::query(
+                    "UPDATE iam_oauth_resource_account SET provider_config_json = $1, updated_at = $2 \
+                     WHERE tenant_id = $3 AND id = $4",
+                )
+                .bind(config.to_string())
+                .bind(&update_timestamp)
+                .bind(&update_tenant_id)
+                .bind(&update_resource_account_id)
+                .execute(&mut **tx)
+                .await?;
+                Ok(Some(MenuMutationOutcome::Saved { display_name: latest_name, menu }))
+            })
+        },
+        Option::is_some,
+    )
+    .await;
+    match result {
+        Ok(Some(MenuMutationOutcome::Saved { display_name, menu })) => {
+            custom_menu_ok(custom_menu_context(&display_name, &menu, "wechat"))
+        }
+        Ok(Some(MenuMutationOutcome::Conflict { .. })) => appbase_error(
+            StatusCode::CONFLICT,
+            "iam_oauth_custom_menu_conflict",
+            "the menu was updated elsewhere; reload it before rolling back",
+        ),
+        Ok(Some(MenuMutationOutcome::NotFound)) | Ok(None) => appbase_error(
+            StatusCode::NOT_FOUND,
+            "iam_oauth_resource_account_not_found",
+            "WeChat official account not found",
         ),
         Err(error) => appbase_error(
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -3698,6 +4235,39 @@ mod oauth_account_patch_tests {
 
         assert_eq!(menu["buttons"][0]["name"], "新菜单");
         assert!(menu.get("publishedAt").is_none());
+    }
+
+    #[test]
+    fn custom_menu_versions_advance_and_keep_bounded_history() {
+        let first = next_custom_menu(json!([]), "database", None, None);
+        assert_eq!(custom_menu_version(&first), 1);
+        let second = next_custom_menu(
+            json!([{ "name": "A", "type": "click", "message": "A" }]),
+            "database",
+            None,
+            Some(&first),
+        );
+        assert_eq!(custom_menu_version(&second), 2);
+        let history = custom_menu_history(&second);
+        assert_eq!(history.len(), 1);
+        assert_eq!(custom_menu_version(&history[0]), 1);
+
+        let mut current = second;
+        for _ in 0..30 {
+            current = next_custom_menu(json!([]), "database", None, Some(&current));
+        }
+        assert_eq!(custom_menu_history(&current).len(), CUSTOM_MENU_HISTORY_LIMIT);
+    }
+
+    #[test]
+    fn custom_menu_context_exposes_the_live_version() {
+        let menu = next_custom_menu(json!([]), "wechat", Some("published"), None);
+        let context = custom_menu_context("Account", &menu, "wechat");
+        assert_eq!(context["displayName"], "Account");
+        assert_eq!(context["source"], "wechat");
+        assert_eq!(context["version"], 1);
+        assert_eq!(context["menu"]["version"], 1);
+        assert_eq!(context["menu"]["publishedAt"], "published");
     }
 
     #[test]

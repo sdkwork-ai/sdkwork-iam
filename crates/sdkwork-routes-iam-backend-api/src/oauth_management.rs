@@ -589,6 +589,14 @@ pub fn apply_oauth_routes(router: Router<BackendIamState>) -> Router<BackendIamS
             post(publish_resource_account_custom_menu),
         )
         .route(
+            "/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/sync",
+            post(sync_resource_account_custom_menu),
+        )
+        .route(
+            "/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/rollback",
+            post(rollback_resource_account_custom_menu),
+        )
+        .route(
             "/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/verifications",
             post(create_resource_account_verification),
         )

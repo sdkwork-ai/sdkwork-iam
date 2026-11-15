@@ -71,6 +71,14 @@ export interface OfficialAccountsOperatorOperations {
     id: string,
     menu: OfficialAccountsMenu,
   ): Promise<OfficialAccountsCustomMenuPublishResult>
+  /** Pull the live WeChat menu into the stored draft as a new version. */
+  syncCustomMenu?(id: string, baseVersion?: number): Promise<OfficialAccountsCustomMenuContext>
+  /** Restore a retained revision and publish it to WeChat. */
+  rollbackCustomMenu?(
+    id: string,
+    version: number,
+    baseVersion?: number,
+  ): Promise<OfficialAccountsCustomMenuContext>
   /** Override the record normalizer; defaults to the shared one. */
   toAccount?(record: unknown): OfficialAccount | undefined
 }
@@ -303,6 +311,27 @@ export function createOperatorTransport(
           menu: OfficialAccountsMenu,
         ): Promise<OfficialAccountsCustomMenuPublishResult> {
           return operations.publishCustomMenu!(id, menu);
+        },
+      }),
+    ...(operations.syncCustomMenu === undefined
+      ? {}
+      : {
+        async syncCustomMenu(
+          id: string,
+          baseVersion?: number,
+        ): Promise<OfficialAccountsCustomMenuContext> {
+          return operations.syncCustomMenu!(id, baseVersion);
+        },
+      }),
+    ...(operations.rollbackCustomMenu === undefined
+      ? {}
+      : {
+        async rollbackCustomMenu(
+          id: string,
+          version: number,
+          baseVersion?: number,
+        ): Promise<OfficialAccountsCustomMenuContext> {
+          return operations.rollbackCustomMenu!(id, version, baseVersion);
         },
       }),
     async setEnabled(id: string, enabled: boolean): Promise<void> {

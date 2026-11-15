@@ -26,6 +26,7 @@ export type {
   OfficialAccountsMenu,
   OfficialAccountsMenuActionKind,
   OfficialAccountsMenuButton,
+  OfficialAccountsMenuVersion,
   OfficialAccountsPage,
   OfficialAccountsPatch,
   OfficialAccountsProfilePatch,

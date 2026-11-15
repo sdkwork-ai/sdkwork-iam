@@ -38,6 +38,8 @@ export const DEFAULT_OPERATOR_CAPABILITIES: OfficialAccountsCapabilities = {
   manageNotify: true,
   deleteAccount: true,
   manageFollowQrCode: true,
+  refreshMenu: true,
+  rollbackMenu: true,
 };
 
 /** Self-service posture: the signed-in maintainer's own accounts. */
@@ -50,6 +52,8 @@ export const DEFAULT_SELF_SERVICE_CAPABILITIES: OfficialAccountsCapabilities = {
   manageNotify: true,
   deleteAccount: true,
   manageFollowQrCode: false,
+  refreshMenu: false,
+  rollbackMenu: false,
 };
 
 /** The host surface forbids the action (see {@link OfficialAccountsCapabilities}). */
@@ -246,6 +250,52 @@ export class OfficialAccountsController {
    */
   async loadMenu(id: string): Promise<OfficialAccountsCustomMenuContext> {
     return this.transport.loadCustomMenu(id);
+  }
+
+  /**
+   * Pull the live WeChat menu into the stored draft as a new version.
+   * @param target - the account row, or its id.
+   * @param baseVersion - the version the caller last saw; a mismatch is a conflict.
+   * @returns the refreshed menu context.
+   */
+  async syncMenu(
+    target: OfficialAccount | string,
+    baseVersion?: number,
+  ): Promise<OfficialAccountsCustomMenuContext> {
+    if (this.capabilities.refreshMenu !== true) {
+      throw new OfficialAccountsCapabilityError("refreshMenu");
+    }
+    const sync = this.transport.syncCustomMenu;
+    if (sync === undefined) {
+      throw new OfficialAccountsUnsupportedError("syncCustomMenu");
+    }
+    const context = await sync.call(this.transport, idOf(target), baseVersion);
+    await this.load();
+    return context;
+  }
+
+  /**
+   * Restore an older stored menu revision as the new live draft.
+   * @param target - the account row, or its id.
+   * @param version - the revision to restore.
+   * @param baseVersion - the version the caller last saw; a mismatch is a conflict.
+   * @returns the restored menu context.
+   */
+  async rollbackMenu(
+    target: OfficialAccount | string,
+    version: number,
+    baseVersion?: number,
+  ): Promise<OfficialAccountsCustomMenuContext> {
+    if (this.capabilities.rollbackMenu !== true) {
+      throw new OfficialAccountsCapabilityError("rollbackMenu");
+    }
+    const rollback = this.transport.rollbackCustomMenu;
+    if (rollback === undefined) {
+      throw new OfficialAccountsUnsupportedError("rollbackCustomMenu");
+    }
+    const context = await rollback.call(this.transport, idOf(target), version, baseVersion);
+    await this.load();
+    return context;
   }
 
   /**

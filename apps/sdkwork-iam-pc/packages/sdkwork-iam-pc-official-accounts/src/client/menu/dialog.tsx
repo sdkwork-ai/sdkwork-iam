@@ -62,6 +62,10 @@ export interface SdkworkOfficialAccountsMenuDialogProps {
   canPublish?: boolean;
   /** Called when the user closes or discards the dialog. */
   onClose: () => void;
+  /** Pull the live WeChat menu into the draft as a new version. */
+  onRefresh?: (baseVersion?: number) => Promise<OfficialAccountsCustomMenuContext>;
+  /** Restore an earlier revision; the callback persists and publishes it. */
+  onRollback?: (version: number, baseVersion?: number) => Promise<OfficialAccountsCustomMenuContext>;
   /** Persists the draft and returns the stored draft, when the backend echoes it. */
   onSave: (menu: OfficialAccountsMenu) => Promise<OfficialAccountsMenu | undefined>;
   /** Publishes the draft (operator surfaces only). */
@@ -92,13 +96,15 @@ export function SdkworkOfficialAccountsMenuDialog(
     onClose,
     onDirtyChange,
     onPublish,
+    onRefresh,
+    onRollback,
     onSave,
     open,
   } = props;
   const [context, setContext] = useState<OfficialAccountsCustomMenuContext | undefined>(initialContext);
   const [loadError, setLoadError] = useState<string | undefined>();
   const [notice, setNotice] = useState<{ tone: "success" | "warning" | "danger" | "default"; text: string } | undefined>();
-  const [busy, setBusy] = useState<"saving" | "publishing" | undefined>();
+  const [busy, setBusy] = useState<"saving" | "publishing" | "refreshing" | "rollingBack" | undefined>();
   const [dirty, setDirty] = useState(false);
   const [closeConfirmationOpen, setCloseConfirmationOpen] = useState(false);
 
@@ -132,7 +138,7 @@ export function SdkworkOfficialAccountsMenuDialog(
   };
 
   const runBusy = async <T,>(
-    action: "saving" | "publishing",
+    action: "saving" | "publishing" | "refreshing" | "rollingBack",
     work: () => Promise<T>,
   ): Promise<T | undefined> => {
     setBusy(action);
@@ -186,6 +192,24 @@ export function SdkworkOfficialAccountsMenuDialog(
     return menu;
   };
 
+  const refreshDraft = async (baseVersion?: number): Promise<void> => {
+    if (onRefresh === undefined) return;
+    const next = await runBusy("refreshing", () => onRefresh(baseVersion));
+    if (next === undefined) return;
+    setContext(next);
+    setDirty(false);
+    setNotice({ tone: "success", text: messages.refreshed });
+  };
+
+  const rollbackDraft = async (version: number, baseVersion?: number): Promise<void> => {
+    if (onRollback === undefined) return;
+    const next = await runBusy("rollingBack", () => onRollback(version, baseVersion));
+    if (next === undefined) return;
+    setContext(next);
+    setDirty(false);
+    setNotice({ tone: "success", text: messages.refreshed });
+  };
+
   return (
     <>
       <Modal
@@ -220,11 +244,15 @@ export function SdkworkOfficialAccountsMenuDialog(
                 canPublish={canPublish}
                 canUpdate={canUpdate}
                 context={context}
+                history={context?.menu.history}
                 messages={messages}
                 onClose={requestClose}
                 onDirtyChange={setDirty}
                 onPublish={publishDraft}
+                onRefresh={onRefresh === undefined ? undefined : refreshDraft}
+                onRollback={onRollback === undefined ? undefined : rollbackDraft}
                 onSaveDraft={saveDraft}
+                version={context?.menu.version ?? context?.version}
               />
             </div>
           </div>
