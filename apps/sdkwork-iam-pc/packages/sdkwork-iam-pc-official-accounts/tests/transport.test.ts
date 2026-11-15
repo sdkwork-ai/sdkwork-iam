@@ -227,6 +227,23 @@ describe("operator transport", () => {
     });
   });
 
+  it("reads the owner labels the operator list renders", () => {
+    expect(toOfficialAccount({
+      ...RECORD,
+      organization_id: "iamorg-1",
+      organization_name: "Acme Org",
+      maintainer_user_id: "iamu-1",
+      maintainer_display_name: "Li Ming",
+      maintainer_username: "liming",
+    })).toMatchObject({
+      organizationId: "iamorg-1",
+      organizationName: "Acme Org",
+      maintainerUserId: "iamu-1",
+      maintainerDisplayName: "Li Ming",
+      maintainerUsername: "liming",
+    });
+  });
+
   it("reads the provider configuration document instead of duplicate columns", () => {
     const account: OfficialAccount = toOfficialAccount({
       id: "iamora-9",

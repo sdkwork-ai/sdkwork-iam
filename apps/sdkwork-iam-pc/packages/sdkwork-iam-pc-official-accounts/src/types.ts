@@ -123,8 +123,16 @@ export interface OfficialAccount {
   updatedAt?: string
   /** Administration mode (`D1`); operator lists annotate `self_managed_account`. */
   accessMode?: OfficialAccountsAccessMode
+  /** Organization the account belongs to (`'0'` is the platform sentinel). */
+  organizationId?: string
+  /** Resolved organization name, when the directory reports one. */
+  organizationName?: string
   /** Maintainer of a self-managed account (`D2`), when reported. */
   maintainerUserId?: string
+  /** Resolved maintainer display name, when the directory reports one. */
+  maintainerDisplayName?: string
+  /** Resolved maintainer username, when the directory reports one. */
+  maintainerUsername?: string
   /** Whether the account is the scan-login default (operator accounts only, `D4`). */
   qrDefaultEnabled?: boolean
   /** Channel kind of the unified resource account. */

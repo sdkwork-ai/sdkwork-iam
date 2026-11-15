@@ -280,10 +280,12 @@ const OPERATOR_PLATFORMS: TenantResourceSpec = TenantResourceSpec {
 
 const RESOURCE_ACCOUNTS: TenantResourceSpec = TenantResourceSpec {
     table: "iam_oauth_resource_account",
-    // `access_mode` and `maintainer_user_id` are part of the admin projection:
-    // a caller-maintained (self-service) channel is listed like any other, and
-    // the console labels it from these two fields instead of inferring it.
-    list_select: "id, tenant_id, integration_id, oauth_client_id, provider_code, resource_account_code, resource_account_kind, access_mode, maintainer_user_id, display_name, provider_account_id, provider_account_type, provider_account_original_id, provider_union_scope_id, verification_status, authorization_status, domain_verify_status, webhook_verify_status, last_verified_at, provider_config_json, qr_default_enabled, status, enabled, created_at, updated_at",
+    // `organization_id`, `access_mode`, and `maintainer_user_id` are part of the
+    // admin projection: the list groups accounts per organization and shows who
+    // maintains each channel, and a caller-maintained (self-service) channel is
+    // listed like any other and labelled from these fields instead of being
+    // inferred. The owner display labels are attached by the list enrichment.
+    list_select: "id, tenant_id, organization_id, integration_id, oauth_client_id, provider_code, resource_account_code, resource_account_kind, access_mode, maintainer_user_id, display_name, provider_account_id, provider_account_type, provider_account_original_id, provider_union_scope_id, verification_status, authorization_status, domain_verify_status, webhook_verify_status, last_verified_at, provider_config_json, qr_default_enabled, status, enabled, created_at, updated_at",
     list_order: "display_name, id",
     list_error: "iam_oauth_resource_accounts_list_failed",
     create_error: "iam_oauth_resource_accounts_create_failed",
@@ -291,6 +293,7 @@ const RESOURCE_ACCOUNTS: TenantResourceSpec = TenantResourceSpec {
     columns: &[
         "id",
         "tenant_id",
+        "organization_id",
         "integration_id",
         "oauth_client_id",
         "provider_code",

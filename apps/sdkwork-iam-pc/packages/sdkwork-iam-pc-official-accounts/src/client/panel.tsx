@@ -66,6 +66,22 @@ const JS_SECURE_DOMAIN_LIMIT = 5;
 const WEB_AUTH_DOMAIN_LIMIT = 2;
 const BUSINESS_DOMAIN_LIMIT = 3;
 
+/**
+ * Operator list grid: name, identifiers, type, organization, maintainer,
+ * status, menu, and actions. The owner columns only exist on an operator
+ * surface — a self-service list only ever shows the caller's own accounts.
+ */
+const OPERATOR_ROW_GRID =
+  "grid-cols-[minmax(0,1.5fr)_minmax(0,1.2fr)_5.5rem_minmax(0,1fr)_minmax(0,1fr)_8.5rem_7rem_auto]";
+
+/** Self-service list grid: the operator-only owner columns are omitted. */
+const SELF_SERVICE_ROW_GRID =
+  "grid-cols-[minmax(0,1.5fr)_minmax(0,1.2fr)_5.5rem_8.5rem_7rem_auto]";
+
+/** Minimum list width, so identity and owner columns never collapse to slivers. */
+const OPERATOR_LIST_MIN_WIDTH = "min-w-[68rem]";
+const SELF_SERVICE_LIST_MIN_WIDTH = "min-w-[52rem]";
+
 /** Drawer tabs: account credentials and the WeChat domain/server configuration. */
 type DrawerTab = "basic" | "domains" | "server";
 
@@ -228,30 +244,50 @@ function AccountRow({
       ? messages.accountType.subscription
       : messages.accountType.unset;
   const menuCount = account.customMenu.buttons.length;
+  const operator = capabilities.mode === "operator";
+  const originalId = account.originalId?.trim() ?? "";
+  // An account always belongs to the platform or to one organization; the
+  // sentinel `0` names the platform itself, and an unresolved directory row
+  // falls back to the raw id instead of inventing a name.
+  const organizationId = account.organizationId?.trim() ?? "";
+  const organizationLabel = account.organizationName?.trim()
+    || (organizationId === "0"
+      ? messages.account.platformOrganization
+      : organizationId || messages.account.noOrganization);
+  const organizationTitle = organizationId === ""
+    || organizationId === "0"
+    || organizationLabel === organizationId
+    ? undefined
+    : `${messages.columns.organization}: ${organizationId}`;
+  const maintainerLabel = account.maintainerDisplayName?.trim()
+    || account.maintainerUsername?.trim()
+    || account.maintainerUserId?.trim()
+    || messages.account.noMaintainer;
+  const maintainerHint = [
+    account.maintainerDisplayName?.trim(),
+    account.maintainerUsername?.trim(),
+    account.maintainerUserId?.trim(),
+  ].filter((value): value is string => value !== undefined && value !== "")
+    .join(" · ") || undefined;
+  const maintainerTitle = maintainerHint === maintainerLabel ? undefined : maintainerHint;
   return (
     <div
-      className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1.4fr)_8rem_9rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--sdk-color-border-subtle)] px-3 py-3 text-sm last:border-b-0"
+      className={`grid ${operator ? OPERATOR_ROW_GRID : SELF_SERVICE_ROW_GRID} items-center gap-3 border-b border-[var(--sdk-color-border-subtle)] px-3 py-3 text-sm last:border-b-0`}
       data-official-account-row={account.id}
     >
-      <div className="min-w-0">
+      <div className="min-w-0 space-y-1">
         <button
           className="block w-full truncate text-left font-medium text-[var(--sdk-color-text-primary)] hover:underline"
           onClick={onEdit}
+          title={account.displayName}
           type="button"
         >
           {account.displayName}
         </button>
-        {account.originalId !== undefined
-          ? (
-            <span className="block truncate text-xs text-[var(--sdk-color-text-muted)]">
-              {account.originalId}
-            </span>
-          )
-          : null}
-        {capabilities.mode === "operator" && account.accessMode === "self_managed_account"
+        {operator && account.accessMode === "self_managed_account"
           ? (
             <span
-              className="mt-1 inline-block rounded-full border border-[var(--sdk-color-border-default)] px-2 py-0.5 text-xs text-[var(--sdk-color-text-secondary)]"
+              className="inline-block rounded-full border border-[var(--sdk-color-border-default)] px-2 py-0.5 text-xs text-[var(--sdk-color-text-secondary)]"
               title={messages.account.selfManagedHint}
             >
               {messages.account.selfManaged}
@@ -259,10 +295,39 @@ function AccountRow({
           )
           : null}
       </div>
-      <span className="truncate font-mono text-xs text-[var(--sdk-color-text-secondary)]">
-        {account.appId}
-      </span>
+      <div className="min-w-0 space-y-0.5">
+        <span
+          className="block truncate font-mono text-xs text-[var(--sdk-color-text-secondary)]"
+          title={account.appId}
+        >
+          {account.appId}
+        </span>
+        <span
+          className="block truncate font-mono text-xs text-[var(--sdk-color-text-muted)]"
+          title={originalId === "" ? undefined : originalId}
+        >
+          {originalId === "" ? messages.account.unset : originalId}
+        </span>
+      </div>
       <span className="truncate text-xs text-[var(--sdk-color-text-secondary)]">{typeLabel}</span>
+      {operator
+        ? (
+          <>
+            <span
+              className="min-w-0 truncate text-xs text-[var(--sdk-color-text-secondary)]"
+              title={organizationTitle}
+            >
+              {organizationLabel}
+            </span>
+            <span
+              className="min-w-0 truncate text-xs text-[var(--sdk-color-text-primary)]"
+              title={maintainerTitle}
+            >
+              {maintainerLabel}
+            </span>
+          </>
+        )
+        : null}
       <div className="flex items-center gap-2">
         <Switch
           aria-label={`${messages.actions.edit} ${account.displayName}`}
@@ -278,6 +343,7 @@ function AccountRow({
         aria-label={messages.columns.menu}
         className="truncate text-left text-xs text-[var(--sdk-color-text-secondary)] hover:underline"
         onClick={onMenu}
+        title={menuCount === 0 ? messages.menu.empty : `${messages.columns.menu} · ${menuCount}`}
         type="button"
       >
         {menuCount === 0 ? messages.menu.empty : `${messages.columns.menu} · ${menuCount}`}
@@ -633,34 +699,48 @@ export function SdkworkOfficialAccountsPanel({
 
       {state.error !== undefined ? <StatusNotice tone="danger">{state.error}</StatusNotice> : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto rounded-[1rem] border border-[var(--sdk-color-border-default)]">
-        <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1.4fr)_8rem_9rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--sdk-color-border-default)] px-3 py-2 text-xs font-medium text-[var(--sdk-color-text-muted)]">
-          <span>{messages.columns.name}</span>
-          <span>{messages.columns.appId}</span>
-          <span>{messages.columns.type}</span>
-          <span>{messages.columns.status}</span>
-          <span>{messages.columns.menu}</span>
-          <span className="text-right">{messages.columns.actions}</span>
+      <div className="min-h-0 flex-1 overflow-auto rounded-[1rem] border border-[var(--sdk-color-border-default)]">
+        <div className={capabilities.mode === "operator" ? OPERATOR_LIST_MIN_WIDTH : SELF_SERVICE_LIST_MIN_WIDTH}>
+          <div
+            className={`sticky top-0 z-10 grid ${capabilities.mode === "operator" ? OPERATOR_ROW_GRID : SELF_SERVICE_ROW_GRID} items-center gap-3 border-b border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-panel)] px-3 py-2 text-xs font-medium text-[var(--sdk-color-text-muted)]`}
+          >
+            <span>{messages.columns.name}</span>
+            <span title={`${messages.columns.appId} / ${messages.columns.originalId}`}>
+              {messages.columns.identifier}
+            </span>
+            <span>{messages.columns.type}</span>
+            {capabilities.mode === "operator"
+              ? (
+                <>
+                  <span>{messages.columns.organization}</span>
+                  <span>{messages.columns.maintainer}</span>
+                </>
+              )
+              : null}
+            <span>{messages.columns.status}</span>
+            <span>{messages.columns.menu}</span>
+            <span className="text-right">{messages.columns.actions}</span>
+          </div>
+          {state.accounts.length === 0
+            ? (
+              <p className="px-3 py-12 text-center text-sm text-[var(--sdk-color-text-muted)]">
+                {state.status === "loading" ? messages.panel.loading : messages.panel.empty}
+              </p>
+            )
+            : state.accounts.map((account) => (
+              <AccountRow
+                account={account}
+                capabilities={capabilities}
+                key={account.id}
+                messages={messages}
+                onDelete={() => setPendingDelete(account)}
+                onEdit={() => openEdit(account)}
+                onFollowQrCode={() => openFollowQrCode(account)}
+                onMenu={() => openMenu(account)}
+                onToggle={(enabled) => { void controller.setEnabled(account, enabled); }}
+              />
+            ))}
         </div>
-        {state.accounts.length === 0
-          ? (
-            <p className="px-3 py-12 text-center text-sm text-[var(--sdk-color-text-muted)]">
-              {state.status === "loading" ? messages.panel.loading : messages.panel.empty}
-            </p>
-          )
-          : state.accounts.map((account) => (
-            <AccountRow
-              account={account}
-              capabilities={capabilities}
-              key={account.id}
-              messages={messages}
-              onDelete={() => setPendingDelete(account)}
-              onEdit={() => openEdit(account)}
-              onFollowQrCode={() => openFollowQrCode(account)}
-              onMenu={() => openMenu(account)}
-              onToggle={(enabled) => { void controller.setEnabled(account, enabled); }}
-            />
-          ))}
       </div>
 
       <footer className="flex items-center justify-end gap-2 text-xs text-[var(--sdk-color-text-muted)]">

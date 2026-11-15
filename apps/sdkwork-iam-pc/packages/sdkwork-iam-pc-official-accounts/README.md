@@ -31,6 +31,29 @@ own SDK slice and injects it.
 | `toOfficialAccount`, `readOfficialAccountMenu`, `toOfficialAccountCommand`, `toOfficialAccountCreateCommand` | Record/menu normalization and request bodies shared by both adapters. |
 | `DEFAULT_OPERATOR_CAPABILITIES`, `DEFAULT_SELF_SERVICE_CAPABILITIES` | The documented capability sets of the two postures. |
 
+## List columns
+
+The list distinguishes channels by identity and, on an operator surface, by
+ownership:
+
+| Column | Operator | Self-service | Content |
+| --- | --- | --- | --- |
+| 公众号 | ✓ | ✓ | Display name (opens the drawer) and the self-managed badge. |
+| 公众号标识 | ✓ | ✓ | AppID (mono) above the WeChat 原始 ID, so two channels with the same display name stay distinguishable. |
+| 类型 | ✓ | ✓ | 服务号 / 订阅号. |
+| 所属组织 | ✓ | — | `organizationName`, else the platform label for the `0` sentinel, else the raw `organizationId`. |
+| 维护人 | ✓ | — | `maintainerDisplayName`, else username, else the maintainer user id. |
+| 状态 | ✓ | ✓ | Enable switch and status badge. |
+| 自定义菜单 | ✓ | ✓ | Menu drawer entry with the draft button count. |
+| 操作 | ✓ | ✓ | Edit, follow QR (operator), delete. |
+
+Owner labels are resolved by the backend list enrichment from the IAM directory
+(`iam_user.display_name` / `username`, `iam_organization.name`) in one pass per
+page, so no host has to issue per-row lookups; an unresolved directory row leaves
+the label absent and the panel falls back to the id instead of inventing a name.
+The list keeps a sticky header and a minimum width, so the identity and owner
+columns stay readable from a narrow admin viewport.
+
 ## Capability matrix
 
 | Flag | `operator` default | `self-service` default | What it switches |

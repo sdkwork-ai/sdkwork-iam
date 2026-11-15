@@ -207,6 +207,28 @@ export function toOfficialAccount(value: Record<string, unknown>): OfficialAccou
     status: readRecordString(value, "status") ?? "active",
     ...(accessMode === undefined ? {} : { accessMode }),
     ...(maintainerUserId === undefined ? {} : { maintainerUserId }),
+    ...(readRecordString(
+      value,
+      "maintainerDisplayName",
+      "maintainer_display_name",
+    ) === undefined
+      ? {}
+      : {
+        maintainerDisplayName: readRecordString(
+          value,
+          "maintainerDisplayName",
+          "maintainer_display_name",
+        ),
+      }),
+    ...(readRecordString(value, "maintainerUsername", "maintainer_username") === undefined
+      ? {}
+      : { maintainerUsername: readRecordString(value, "maintainerUsername", "maintainer_username") }),
+    ...(readRecordString(value, "organizationId", "organization_id") === undefined
+      ? {}
+      : { organizationId: readRecordString(value, "organizationId", "organization_id") }),
+    ...(readRecordString(value, "organizationName", "organization_name") === undefined
+      ? {}
+      : { organizationName: readRecordString(value, "organizationName", "organization_name") }),
     ...(typeof qrDefaultRaw === "boolean"
       ? { qrDefaultEnabled: qrDefaultRaw }
       : qrDefaultRaw === "1" || qrDefaultRaw === 1

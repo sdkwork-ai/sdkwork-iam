@@ -23,8 +23,12 @@ export interface OfficialAccountsMessages {
   };
   columns: {
     name: string;
+    identifier: string;
     appId: string;
+    originalId: string;
     type: string;
+    organization: string;
+    maintainer: string;
     status: string;
     menu: string;
     actions: string;
@@ -41,6 +45,10 @@ export interface OfficialAccountsMessages {
   account: {
     selfManaged: string;
     selfManagedHint: string;
+    platformOrganization: string;
+    noOrganization: string;
+    noMaintainer: string;
+    unset: string;
   };
   actions: {
     edit: string;
@@ -206,7 +214,7 @@ const zhCN: OfficialAccountsMessages = {
   panel: {
     title: "公众号账号",
     description: "维护当前账号自己的公众号配置，供后续菜单管理与文章发布使用。",
-    searchPlaceholder: "搜索名称或 AppID",
+    searchPlaceholder: "搜索名称、AppID 或原始 ID",
     search: "搜索",
     refresh: "刷新",
     add: "添加公众号账号",
@@ -218,9 +226,13 @@ const zhCN: OfficialAccountsMessages = {
     next: "下一页",
   },
   columns: {
-    name: "名称",
+    name: "公众号",
+    identifier: "公众号标识",
     appId: "AppID",
+    originalId: "原始 ID",
     type: "类型",
+    organization: "所属组织",
+    maintainer: "维护人",
     status: "状态",
     menu: "自定义菜单",
     actions: "操作",
@@ -237,6 +249,10 @@ const zhCN: OfficialAccountsMessages = {
   account: {
     selfManaged: "自助维护",
     selfManagedHint: "该账号由用户自助维护，运营侧不可改其凭据。",
+    platformOrganization: "平台",
+    noOrganization: "未归属组织",
+    noMaintainer: "未指定",
+    unset: "—",
   },
   actions: {
     edit: "编辑",
@@ -399,7 +415,7 @@ const enUS: OfficialAccountsMessages = {
   panel: {
     title: "Official Accounts",
     description: "Maintain this account's own official-account configuration for menu management and article publishing.",
-    searchPlaceholder: "Search name or AppID",
+    searchPlaceholder: "Search name, AppID, or original ID",
     search: "Search",
     refresh: "Refresh",
     add: "Add official account",
@@ -411,9 +427,13 @@ const enUS: OfficialAccountsMessages = {
     next: "Next",
   },
   columns: {
-    name: "Name",
+    name: "Official account",
+    identifier: "Account identifiers",
     appId: "AppID",
+    originalId: "Original ID",
     type: "Type",
+    organization: "Organization",
+    maintainer: "Maintainer",
     status: "Status",
     menu: "Custom menu",
     actions: "Actions",
@@ -430,6 +450,10 @@ const enUS: OfficialAccountsMessages = {
   account: {
     selfManaged: "Self-managed",
     selfManagedHint: "This account is maintained by its user; operators cannot change its credentials.",
+    platformOrganization: "Platform",
+    noOrganization: "No organization",
+    noMaintainer: "Unassigned",
+    unset: "—",
   },
   actions: {
     edit: "Edit",

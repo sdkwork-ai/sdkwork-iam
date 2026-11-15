@@ -573,6 +573,98 @@ async fn enrich_resource_account_client_secrets(
     Ok(())
 }
 
+/// Enriches resource-account rows with the human-readable owner labels the admin
+/// list renders.
+///
+/// The base projection already carries the ownership ids (`organization_id`,
+/// `maintainer_user_id`); resolving them per row in every host would be an N+1
+/// against the IAM directory, so one pass resolves each organization name and
+/// each maintainer's display name/username for the whole page and attaches them
+/// as `organizationName`, `maintainerDisplayName`, and `maintainerUsername`.
+/// A missing directory row leaves the label absent (the client falls back to the
+/// id instead of inventing a name).
+async fn enrich_resource_account_owners(
+    pg: &PgPool,
+    tenant_id: &str,
+    items: &mut [Value],
+) -> Result<(), String> {
+    let mut user_ids: Vec<String> = Vec::new();
+    let mut organization_ids: Vec<String> = Vec::new();
+    for item in items.iter() {
+        if let Some(user_id) = item.get("maintainerUserId").and_then(Value::as_str) {
+            let user_id = user_id.trim();
+            if !user_id.is_empty() && !user_ids.iter().any(|existing| existing == user_id) {
+                user_ids.push(user_id.to_owned());
+            }
+        }
+        if let Some(organization_id) = item.get("organizationId").and_then(Value::as_str) {
+            let organization_id = organization_id.trim();
+            if !organization_id.is_empty()
+                && !organization_ids.iter().any(|existing| existing == organization_id)
+            {
+                organization_ids.push(organization_id.to_owned());
+            }
+        }
+    }
+    if user_ids.is_empty() && organization_ids.is_empty() {
+        return Ok(());
+    }
+
+    let mut maintainers: HashMap<String, (String, String)> = HashMap::new();
+    if !user_ids.is_empty() {
+        let rows = sqlx::query(
+            "SELECT id, username, display_name FROM iam_user WHERE tenant_id = $1 AND id = ANY($2)",
+        )
+        .bind(tenant_id)
+        .bind(&user_ids)
+        .fetch_all(pg)
+        .await
+        .map_err(|error| format!("load resource account maintainers failed: {error}"))?;
+        for row in rows {
+            maintainers.insert(row.get(0), (row.get(1), row.get(2)));
+        }
+    }
+
+    let mut organizations: HashMap<String, String> = HashMap::new();
+    if !organization_ids.is_empty() {
+        let rows = sqlx::query(
+            "SELECT id, name FROM iam_organization WHERE tenant_id = $1 AND id = ANY($2)",
+        )
+        .bind(tenant_id)
+        .bind(&organization_ids)
+        .fetch_all(pg)
+        .await
+        .map_err(|error| format!("load resource account organizations failed: {error}"))?;
+        for row in rows {
+            organizations.insert(row.get(0), row.get(1));
+        }
+    }
+
+    for item in items.iter_mut() {
+        let Value::Object(map) = item else {
+            continue;
+        };
+        let maintainer = map
+            .get("maintainerUserId")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+        if let Some((username, display_name)) =
+            maintainer.and_then(|user_id| maintainers.get(&user_id).cloned())
+        {
+            map.insert("maintainerUsername".to_owned(), json!(username));
+            map.insert("maintainerDisplayName".to_owned(), json!(display_name));
+        }
+        let organization = map
+            .get("organizationId")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+        if let Some(name) = organization.and_then(|organization_id| organizations.get(&organization_id).cloned()) {
+            map.insert("organizationName".to_owned(), json!(name));
+        }
+    }
+    Ok(())
+}
+
 /// Enriches integration rows with the provider client id and the decrypted
 /// client secret of their active OAuth client. The integration table has no
 /// `provider_client_id`/secret columns — both live on the linked client and
@@ -682,7 +774,8 @@ async fn enrich_oauth_list_items(
 ) -> Result<(), String> {
     match table {
         "iam_oauth_resource_account" => {
-            enrich_resource_account_client_secrets(pg, tenant_id, items).await
+            enrich_resource_account_client_secrets(pg, tenant_id, items).await?;
+            enrich_resource_account_owners(pg, tenant_id, items).await
         }
         "iam_oauth_integration" => enrich_integration_client_ids(pg, tenant_id, items).await,
         _ => Ok(()),
@@ -2555,11 +2648,17 @@ async fn retrieve_resource_account_custom_menu(
     let config = match parse_custom_menu_account_config(&original_config) {
         Ok(config) => config,
         Err(error) => {
+            tracing::error!(
+                error = %error,
+                resource_account_id = %resource_account_id,
+                wire_code = "iam_oauth_custom_menu_retrieve_failed",
+                "resource account provider config could not be parsed"
+            );
             return appbase_error(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "iam_oauth_custom_menu_retrieve_failed",
                 &error,
-            )
+            );
         }
     };
     if let Some(menu) = persisted_custom_menu(&config) {
@@ -2621,11 +2720,18 @@ async fn retrieve_resource_account_custom_menu(
     {
         Ok(menu) => menu,
         Err(error) => {
+            tracing::error!(
+                error = %error,
+                resource_account_id = %resource_account_id,
+                provider_code = %provider_code,
+                wire_code = "iam_oauth_custom_menu_sync_failed",
+                "WeChat custom menu import failed"
+            );
             return appbase_error(
                 StatusCode::BAD_GATEWAY,
                 "iam_oauth_custom_menu_sync_failed",
                 &error,
-            )
+            );
         }
     };
     let synced_menu = json!({
@@ -2735,7 +2841,19 @@ async fn retrieve_resource_account_custom_menu(
             "iam_oauth_resource_account_not_found",
             "resource account not found",
         ),
-        Err(error) => appbase_error(StatusCode::INTERNAL_SERVER_ERROR, "iam_oauth_custom_menu_sync_failed", &error),
+        Err(error) => {
+            tracing::error!(
+                error = %error,
+                resource_account_id = %resource_account_id,
+                wire_code = "iam_oauth_custom_menu_sync_failed",
+                "persisting the imported WeChat custom menu failed"
+            );
+            appbase_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "iam_oauth_custom_menu_sync_failed",
+                &error,
+            )
+        }
     }
 }
 

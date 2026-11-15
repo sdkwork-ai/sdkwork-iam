@@ -164,6 +164,53 @@ describe("official accounts panel", () => {
     expect(await screen.findByText("Self-managed")).toBeTruthy();
   });
 
+  it("shows organization and maintainer columns on an operator surface", async () => {
+    bench(DEFAULT_OPERATOR_CAPABILITIES, {
+      list: vi.fn(async () => ({
+        items: [{
+          ...ACCOUNT,
+          originalId: "gh_1234567890ab",
+          organizationId: "iamorg-1",
+          organizationName: "Acme Org",
+          maintainerUserId: "iamu-1",
+          maintainerDisplayName: "Li Ming",
+          maintainerUsername: "liming",
+        }],
+        totalItems: 1,
+        page: 1,
+        pageSize: 20,
+      })),
+    });
+    // The identifiers column distinguishes two channels with the same name.
+    expect(await screen.findByText("gh_1234567890ab")).toBeTruthy();
+    expect(screen.getByText("Account identifiers")).toBeTruthy();
+    expect(screen.getByText("Organization")).toBeTruthy();
+    expect(screen.getByText("Acme Org")).toBeTruthy();
+    expect(screen.getByText("Maintainer")).toBeTruthy();
+    expect(screen.getByText("Li Ming")).toBeTruthy();
+  });
+
+  it("falls back to the platform organization and the maintainer id", async () => {
+    bench(DEFAULT_OPERATOR_CAPABILITIES, {
+      list: vi.fn(async () => ({
+        items: [{ ...ACCOUNT, organizationId: "0", maintainerUserId: "iamu-77" }],
+        totalItems: 1,
+        page: 1,
+        pageSize: 20,
+      })),
+    });
+    expect(await screen.findByText("Platform")).toBeTruthy();
+    expect(screen.getByText("iamu-77")).toBeTruthy();
+  });
+
+  it("omits the owner columns on a self-service surface", async () => {
+    bench(DEFAULT_SELF_SERVICE_CAPABILITIES);
+    expect(await screen.findByText("Example Account")).toBeTruthy();
+    expect(screen.queryByText("Organization")).toBeNull();
+    expect(screen.queryByText("Maintainer")).toBeNull();
+    expect(screen.queryByText("Acme Org")).toBeNull();
+  });
+
   it("generates the follow QR from the operator row action", async () => {
     const { transport } = bench(DEFAULT_OPERATOR_CAPABILITIES);
     await screen.findByText("Example Account");
