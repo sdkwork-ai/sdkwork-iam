@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { StatusNotice } from "@sdkwork/ui-pc-react";
+import {
+  SdkworkOfficialAccountsMenuWorkspace,
+  type OfficialAccountsMenu,
+  type OfficialAccountsMenuMessages,
+} from "@sdkwork/iam-pc-official-accounts";
 
 import type {
   SdkworkIamOauthCustomMenuContext,
@@ -10,7 +15,6 @@ import type {
 import type { SdkworkIamOauthAdminController } from "../types/oauth-admin-types";
 import { useSdkworkIamOauthAdminMessages } from "../i18n";
 import { templateMessage } from "../utils/oauth-admin-utils";
-import { SdkworkIamOauthCustomMenuManagementSection } from "../components/custom-menu/custom-menu-management-section";
 
 interface CustomMenuNotice {
   text: string;
@@ -160,17 +164,23 @@ export function SdkworkIamOauthOfficialAccountCustomMenuPage({
           {notice ? <StatusNotice tone={notice.tone}>{notice.text}</StatusNotice> : null}
         </div>
       ) : null}
-      <SdkworkIamOauthCustomMenuManagementSection
+      <SdkworkOfficialAccountsMenuWorkspace
         key={resourceAccountId}
         busy={busy}
         canPublish={canPublish}
         canUpdate={canUpdate}
-        context={context}
-        messages={messages.quickSetup.customMenus}
+        context={context === undefined ? undefined : {
+          accountId: resourceAccountId,
+          menu: context.draft,
+          displayName: context.displayName,
+          logoUrl: context.logoUrl,
+          source: context.source,
+        }}
+        messages={messages.quickSetup.customMenus as OfficialAccountsMenuMessages}
         onDirtyChange={onDirtyChange}
         onClose={onClose}
-        onPublish={handlePublish}
-        onSaveDraft={handleSaveDraft}
+        onPublish={(menu) => handlePublish(menu as SdkworkIamOauthCustomMenuDraft)}
+        onSaveDraft={(menu) => handleSaveDraft(menu as SdkworkIamOauthCustomMenuDraft)}
       />
     </div>
   );
