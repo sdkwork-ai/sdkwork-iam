@@ -43,8 +43,15 @@ describe("SDKWork permission standard contracts", () => {
 
   it("maps backend operations to permission codes", () => {
     expect(resolveIamBackendOperationPermission("users.list")).toBe("iam.users.read");
-    expect(resolveIamBackendOperationPermission("iam.oauth.integrations.create")).toBe(
+    // Tenant-owned OAuth account maintenance is open to every signed-in member.
+    expect(resolveIamBackendOperationPermission("iam.oauth.resourceAccounts.list")).toBeUndefined();
+    expect(resolveIamBackendOperationPermission("iam.oauth.integrations.create")).toBeUndefined();
+    // Enterprise OAuth configuration keeps its seeded codes.
+    expect(resolveIamBackendOperationPermission("iam.oauth.policies.create")).toBe(
       "iam.oauth.manage",
+    );
+    expect(resolveIamBackendOperationPermission("iam.oauth.providerCatalog.list")).toBe(
+      "iam.oauth.read",
     );
   });
 });

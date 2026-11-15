@@ -6,6 +6,16 @@ export function resolveIamBackendOperationPermission(operationId: string): strin
     return explicit;
   }
   if (operationId.startsWith("iam.oauth.")) {
+    // Tenant-owned account maintenance — the unified
+    // `iam_oauth_resource_account` rows and the login integrations the shared
+    // official-account / mini-program panels create — stays reachable for every
+    // signed-in tenant member. The tenant boundary and the service layer's
+    // ownership checks decide which rows a caller can reach, so these routes
+    // declare no seeded permission; enterprise OAuth configuration keeps its
+    // `iam.oauth.read` / `iam.oauth.manage` codes.
+    if (isOauthAccountMaintenanceOperation(operationId)) {
+      return undefined;
+    }
     return oauthPermissionForOperation(operationId);
   }
   const parsed = parseCoreOperation(operationId);
@@ -13,6 +23,20 @@ export function resolveIamBackendOperationPermission(operationId: string): strin
     return undefined;
   }
   return permissionCode(parsed.resource, parsed.action);
+}
+
+/**
+ * Whether a backend operation maintains tenant-owned OAuth channel accounts.
+ *
+ * Both prefixes cover the nested operations the shared panels call as well
+ * (custom menus, follow QR codes, mini-program login checks, verification and
+ * authorization-refresh runs).
+ * @param operationId - the backend operation id.
+ * @returns whether the route needs no seeded permission beyond a principal.
+ */
+function isOauthAccountMaintenanceOperation(operationId: string): boolean {
+  return operationId.startsWith("iam.oauth.resourceAccounts.")
+    || operationId.startsWith("iam.oauth.integrations.");
 }
 
 function explicitBootstrapPermission(operationId: string): string | undefined {

@@ -427,15 +427,48 @@ fn enriched_backend_routes_declare_required_permissions_for_protected_operations
         if route.auth.skips_credential_resolution() {
             continue;
         }
-        let expected = iam_backend_permission_for_operation(route.operation_id)
-            .unwrap_or_else(|| panic!("missing permission mapping for {}", route.operation_id));
+        // A `None` mapping is deliberate for tenant-owned account maintenance:
+        // the route then requires only an authenticated principal.
+        let expected = iam_backend_permission_for_operation(route.operation_id);
         assert_eq!(
-            route.required_permission,
-            Some(expected),
-            "route {} must declare required_permission",
+            route.required_permission, expected,
+            "route {} must declare the mapped required_permission",
             route.operation_id
         );
     }
+}
+
+#[test]
+fn oauth_account_maintenance_routes_need_only_a_principal() {
+    use sdkwork_routes_iam_backend_api::iam_backend_enriched_routes;
+
+    let routes = iam_backend_enriched_routes();
+    for operation_id in [
+        "iam.oauth.resourceAccounts.list",
+        "iam.oauth.resourceAccounts.create",
+        "iam.oauth.resourceAccounts.update",
+        "iam.oauth.resourceAccounts.delete",
+        "iam.oauth.integrations.list",
+        "iam.oauth.integrations.create",
+        "iam.oauth.integrations.update",
+    ] {
+        let route = routes
+            .iter()
+            .find(|route| route.operation_id == operation_id)
+            .unwrap_or_else(|| panic!("missing route {operation_id}"));
+        assert_eq!(
+            route.required_permission, None,
+            "{operation_id} must be reachable by any signed-in member"
+        );
+    }
+
+    // Enterprise OAuth configuration (policies, provider catalog, secrets,
+    // tenants) keeps its seeded permission codes.
+    let gated = routes
+        .iter()
+        .find(|route| route.operation_id == "iam.oauth.policies.list")
+        .expect("policies route");
+    assert_eq!(gated.required_permission, Some("iam.oauth.read"));
 }
 
 #[test]

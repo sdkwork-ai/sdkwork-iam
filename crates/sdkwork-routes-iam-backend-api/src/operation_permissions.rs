@@ -52,10 +52,30 @@ pub fn iam_backend_permission_for_operation(operation_id: &str) -> Option<&'stat
         return Some(code);
     }
     if operation_id.starts_with("iam.oauth.") {
+        // Tenant-owned account maintenance — the unified
+        // `iam_oauth_resource_account` rows and the login integrations the shared
+        // official-account / mini-program panels create — is available to every
+        // signed-in tenant member: the tenant boundary and the service layer's
+        // ownership checks decide which rows a caller can reach, so seeding an
+        // OAuth permission catalog must not be a precondition for opening the
+        // surface. The manifest gate therefore only requires a principal.
+        if oauth_account_maintenance_operation(operation_id) {
+            return None;
+        }
         return Some(oauth_permission_for_operation(operation_id));
     }
     let (resource, action) = parse_core_operation(operation_id)?;
     Some(permission_code(resource, action))
+}
+
+/// Routes that maintain tenant-owned OAuth channel accounts.
+///
+/// Both prefixes cover the nested operations the shared panels call as well
+/// (custom menus, follow QR codes, mini-program login checks, verification and
+/// authorization-refresh runs).
+fn oauth_account_maintenance_operation(operation_id: &str) -> bool {
+    operation_id.starts_with("iam.oauth.resourceAccounts.")
+        || operation_id.starts_with("iam.oauth.integrations.")
 }
 
 fn explicit_bootstrap_permission(operation_id: &str) -> Option<&'static str> {
@@ -316,13 +336,37 @@ mod tests {
     #[test]
     fn maps_oauth_mutations_to_manage_permission() {
         assert_eq!(
-            iam_backend_permission_for_operation("iam.oauth.integrations.create"),
+            iam_backend_permission_for_operation("iam.oauth.policies.create"),
             Some("iam.oauth.manage")
         );
         assert_eq!(
             iam_backend_permission_for_operation("iam.oauth.providerCatalog.list"),
             Some("iam.oauth.read")
         );
+    }
+
+    #[test]
+    fn tenant_owned_oauth_account_maintenance_needs_no_permission() {
+        // The shared official-account and mini-program panels maintain
+        // tenant-owned rows; any signed-in member may open them.
+        for operation_id in [
+            "iam.oauth.resourceAccounts.list",
+            "iam.oauth.resourceAccounts.create",
+            "iam.oauth.resourceAccounts.update",
+            "iam.oauth.resourceAccounts.delete",
+            "iam.oauth.resourceAccounts.customMenus.update",
+            "iam.oauth.resourceAccounts.followQrCodes.create",
+            "iam.oauth.resourceAccounts.miniProgramLoginChecks.create",
+            "iam.oauth.integrations.list",
+            "iam.oauth.integrations.create",
+            "iam.oauth.integrations.update",
+        ] {
+            assert_eq!(
+                iam_backend_permission_for_operation(operation_id),
+                None,
+                "{operation_id} must not require a seeded permission"
+            );
+        }
     }
 
     #[test]
