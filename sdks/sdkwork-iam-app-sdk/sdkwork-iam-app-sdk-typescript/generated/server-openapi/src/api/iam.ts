@@ -383,10 +383,26 @@ export class IamOauthOfficialAccountsApi {
   }
 }
 
+export class IamOauthOfficialAccountSettingsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Iam oauth official Account Settings retrieve. */
+  async retrieve(requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(appApiPath(`/iam/oauth/official_account_settings`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export class IamOauthApi {
+  public readonly officialAccountSettings: IamOauthOfficialAccountSettingsApi;
   public readonly officialAccounts: IamOauthOfficialAccountsApi;
 
   constructor(client: HttpClient) {
+    this.officialAccountSettings = new IamOauthOfficialAccountSettingsApi(client);
     this.officialAccounts = new IamOauthOfficialAccountsApi(client);
   }
 

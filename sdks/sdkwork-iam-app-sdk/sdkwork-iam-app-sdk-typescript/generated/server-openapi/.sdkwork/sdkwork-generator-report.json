@@ -12,7 +12,7 @@
   "mode": "apply",
   "hasChanges": true,
   "hasDestructiveChanges": true,
-  "changeFingerprint": "4acc909e70223a5811191b32b7a978148ed5c94230b5b715960d00fc0e799a46",
+  "changeFingerprint": "644a1c5ccd5663a0fcaa87b992e6de5a68a4bb3165968fbf990ab26a55386a82",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
@@ -23,17 +23,21 @@
       {
         "area": "api-surface",
         "paths": [
-          "src/api/iam.ts"
+          "src/api/iam.d.ts",
+          "src/api/iam.ts",
+          "src/api/oauth.d.ts",
+          "src/api/oauth.ts"
         ]
       },
       {
         "area": "models",
         "paths": [
           "src/types/appbase-session-create-command.d.ts",
-          "src/types/iam-organization-member-list-response.ts",
-          "src/types/iam-organization-member.ts",
-          "src/types/index.ts",
+          "src/types/iam-organization-member-list-response.d.ts",
+          "src/types/iam-organization-member.d.ts",
+          "src/types/index.d.ts",
           "src/types/oauth-phone-binding-session-create-command.d.ts",
+          "src/types/oauth-phone-binding-verification-code-request-command.d.ts",
           "src/types/wechat-mini-program-session-create-command.d.ts"
         ]
       }
@@ -163,20 +167,17 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 4,
+    "writtenFiles": 2,
     "skippedScaffoldFiles": 2,
-    "skippedUnchangedGeneratedFiles": 54,
-    "deletedGeneratedFiles": 3,
+    "skippedUnchangedGeneratedFiles": 56,
+    "deletedGeneratedFiles": 9,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "4acc909e70223a5811191b32b7a978148ed5c94230b5b715960d00fc0e799a46",
+    "changeFingerprint": "644a1c5ccd5663a0fcaa87b992e6de5a68a4bb3165968fbf990ab26a55386a82",
     "changes": {
-      "createdGeneratedFiles": [
-        "src/types/iam-organization-member-list-response.ts",
-        "src/types/iam-organization-member.ts"
-      ],
+      "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [
         "src/api/iam.ts",
-        "src/types/index.ts"
+        "src/api/oauth.ts"
       ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
@@ -192,7 +193,6 @@
         "src/api/auth.ts",
         "src/api/base.ts",
         "src/api/index.ts",
-        "src/api/oauth.ts",
         "src/api/paths.ts",
         "src/api/system.ts",
         "src/auth/index.ts",
@@ -210,6 +210,8 @@
         "src/types/desktop-sessions-create-request.ts",
         "src/types/desktop-sessions-create-response.ts",
         "src/types/field-error.ts",
+        "src/types/iam-organization-member-list-response.ts",
+        "src/types/iam-organization-member.ts",
         "src/types/iam-persona-catalog-response.ts",
         "src/types/iam-persona-catalog.ts",
         "src/types/iam-persona-interest.ts",
@@ -218,6 +220,7 @@
         "src/types/iam-user-persona-response.ts",
         "src/types/iam-user-persona-update-command.ts",
         "src/types/iam-user-persona.ts",
+        "src/types/index.ts",
         "src/types/oauth-phone-binding-session-create-command.ts",
         "src/types/oauth-phone-binding-verification-code-request-command.ts",
         "src/types/page-info.ts",
@@ -235,8 +238,14 @@
         "tsconfig.json"
       ],
       "deletedGeneratedFiles": [
+        "src/api/iam.d.ts",
+        "src/api/oauth.d.ts",
         "src/types/appbase-session-create-command.d.ts",
+        "src/types/iam-organization-member-list-response.d.ts",
+        "src/types/iam-organization-member.d.ts",
+        "src/types/index.d.ts",
         "src/types/oauth-phone-binding-session-create-command.d.ts",
+        "src/types/oauth-phone-binding-verification-code-request-command.d.ts",
         "src/types/wechat-mini-program-session-create-command.d.ts"
       ],
       "scaffoldedFiles": [],
@@ -245,8 +254,14 @@
         "custom/README.md"
       ],
       "backedUpFiles": [
+        "src/api/iam.d.ts",
+        "src/api/oauth.d.ts",
         "src/types/appbase-session-create-command.d.ts",
+        "src/types/iam-organization-member-list-response.d.ts",
+        "src/types/iam-organization-member.d.ts",
+        "src/types/index.d.ts",
         "src/types/oauth-phone-binding-session-create-command.d.ts",
+        "src/types/oauth-phone-binding-verification-code-request-command.d.ts",
         "src/types/wechat-mini-program-session-create-command.d.ts"
       ]
     },
@@ -260,17 +275,21 @@
         {
           "area": "api-surface",
           "paths": [
-            "src/api/iam.ts"
+            "src/api/iam.d.ts",
+            "src/api/iam.ts",
+            "src/api/oauth.d.ts",
+            "src/api/oauth.ts"
           ]
         },
         {
           "area": "models",
           "paths": [
             "src/types/appbase-session-create-command.d.ts",
-            "src/types/iam-organization-member-list-response.ts",
-            "src/types/iam-organization-member.ts",
-            "src/types/index.ts",
+            "src/types/iam-organization-member-list-response.d.ts",
+            "src/types/iam-organization-member.d.ts",
+            "src/types/index.d.ts",
             "src/types/oauth-phone-binding-session-create-command.d.ts",
+            "src/types/oauth-phone-binding-verification-code-request-command.d.ts",
             "src/types/wechat-mini-program-session-create-command.d.ts"
           ]
         }
@@ -336,8 +355,14 @@
       ]
     },
     "backedUpFiles": [
+      "src/api/iam.d.ts",
+      "src/api/oauth.d.ts",
       "src/types/appbase-session-create-command.d.ts",
+      "src/types/iam-organization-member-list-response.d.ts",
+      "src/types/iam-organization-member.d.ts",
+      "src/types/index.d.ts",
       "src/types/oauth-phone-binding-session-create-command.d.ts",
+      "src/types/oauth-phone-binding-verification-code-request-command.d.ts",
       "src/types/wechat-mini-program-session-create-command.d.ts"
     ],
     "preservedLegacyFiles": false

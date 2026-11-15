@@ -21,6 +21,11 @@ export class OauthWechatPaymentOauthApi {
     return this.client.request<Record<string, unknown>>(appApiPath(`/oauth/wechat/payment/callback`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, skipAuth: true, sdkworkUnwrapKind: 'item' });
   }
 
+/** Wechat Payment Oauth cashier Start. */
+  async cashierStart(requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(appApiPath(`/oauth/wechat/payment/cashier/start`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, skipAuth: true, sdkworkUnwrapKind: 'item' });
+  }
+
 /** Wechat Payment Oauth start. */
   async start(params: OauthWechatPaymentOauthStartParams, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
     const query = buildQueryString([

@@ -106,6 +106,10 @@ const CONFIG_JS_SECURE_DOMAINS: &str = "jsSecureDomains";
 const CONFIG_WEB_AUTH_DOMAINS: &str = "webAuthDomains";
 const CONFIG_BUSINESS_DOMAINS: &str = "businessDomains";
 
+/// `GET` the tenant's official-account server egress IP allowlist.
+pub(crate) const OFFICIAL_ACCOUNT_SETTINGS_PATH: &str =
+    "/app/v3/api/iam/oauth/official_account_settings";
+
 /// Binds the official-account routes to the surface's shared state.
 pub(crate) fn official_account_routes() -> Router<LocalIamState> {
     Router::new()
@@ -118,6 +122,10 @@ pub(crate) fn official_account_routes() -> Router<LocalIamState> {
             get(retrieve_official_account)
                 .patch(update_official_account)
                 .delete(delete_official_account),
+        )
+        .route(
+            OFFICIAL_ACCOUNT_SETTINGS_PATH,
+            get(retrieve_official_account_settings),
         )
 }
 
@@ -1615,6 +1623,53 @@ async fn fetch_account_row(
     .bind(account_id)
     .fetch_optional(&mut *conn)
     .await
+}
+
+async fn retrieve_official_account_settings(
+    State(state): State<LocalIamState>,
+    ctx: WebRequestContext,
+) -> Response {
+    let (pg, session) = match require_session(&state, &ctx).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = sqlx::query(
+        "SELECT server_ips FROM iam_oauth_scan_login_config WHERE tenant_id = $1",
+    )
+    .bind(&session.user.tenant_id)
+    .fetch_optional(&pg)
+    .await;
+    match result {
+        Ok(row) => {
+            let server_ips = row
+                .map(|row| row.get::<String, _>(0))
+                .unwrap_or_else(|| "[]".to_string());
+            appbase_ok(json!({ "serverIps": normalize_server_ips(&server_ips) }))
+        }
+        Err(error) => official_account_storage_error(
+            "iam_official_account_settings_retrieve_failed",
+            &format!("retrieve official account settings failed: {error}"),
+        ),
+    }
+}
+
+/// Normalizes the stored allowlist document into a deduplicated string array.
+fn normalize_server_ips(value: &str) -> Value {
+    let parsed = serde_json::from_str::<Value>(value).unwrap_or_else(|_| json!([]));
+    let Some(entries) = parsed.as_array() else {
+        return json!([]);
+    };
+    let mut seen = std::collections::HashSet::new();
+    Value::Array(
+        entries
+            .iter()
+            .filter_map(Value::as_str)
+            .map(str::trim)
+            .filter(|entry| !entry.is_empty())
+            .filter(|entry| seen.insert((*entry).to_string()))
+            .map(|entry| json!(entry))
+            .collect(),
+    )
 }
 
 async fn retrieve_official_account(

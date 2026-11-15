@@ -305,6 +305,13 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
     // resource is a different, tenant-level surface.
     HttpRoute::dual_token(
         HttpMethod::Get,
+        "/app/v3/api/iam/oauth/official_account_settings",
+        "iam",
+        "iam.oauth.officialAccountSettings.retrieve",
+    )
+    .with_required_permission("iam:self"),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
         "/app/v3/api/iam/oauth/official_accounts",
         "iam",
         "iam.oauth.officialAccounts.list",
