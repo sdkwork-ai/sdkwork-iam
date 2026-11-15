@@ -5397,14 +5397,14 @@ where
 ///   message-callback (webhook) status for follow-to-login
 async fn scan_login_settings_json(pg: &PgPool, tenant_id: &str) -> Result<Value, String> {
     let config_row = sqlx::query(
-        "SELECT h5_login_origin, url_login_enabled, default_qr_mode, modes_json, scan_login_enabled \
+        "SELECT h5_login_origin, url_login_enabled, default_qr_mode, modes_json, scan_login_enabled, server_ips \
          FROM iam_oauth_scan_login_config WHERE tenant_id = $1",
     )
     .bind(tenant_id)
     .fetch_optional(pg)
     .await
     .map_err(|error| format!("load scan login config failed: {error}"))?;
-    let (h5_login_origin, url_login_enabled, default_qr_mode, modes_json, scan_login_enabled) =
+    let (h5_login_origin, url_login_enabled, default_qr_mode, modes_json, scan_login_enabled, server_ips_json) =
         match config_row {
             Some(row) => {
                 let origin: String = row.get(0);
@@ -5412,7 +5412,8 @@ async fn scan_login_settings_json(pg: &PgPool, tenant_id: &str) -> Result<Value,
                 let mode: String = row.get(2);
                 let modes: String = row.get(3);
                 let scan_enabled: i32 = row.get(4);
-                (origin, enabled != 0, mode, modes, scan_enabled != 0)
+                let server_ips: String = row.get(5);
+                (origin, enabled != 0, mode, modes, scan_enabled != 0, server_ips)
             }
             None => (
                 String::new(),
@@ -5420,10 +5421,12 @@ async fn scan_login_settings_json(pg: &PgPool, tenant_id: &str) -> Result<Value,
                 "auto".to_string(),
                 "[]".to_string(),
                 true,
+                "[]".to_string(),
             ),
         };
     let modes = serde_json::from_str::<Value>(&normalize_scan_login_modes_json(&modes_json))
         .unwrap_or_else(|_| json!([]));
+    let server_ips = normalize_server_ips_json(&server_ips_json);
 
     let accounts = sqlx::query(
         "SELECT ra.id, ra.display_name, ra.enabled, ra.qr_default_enabled, ra.verification_status, \
@@ -5506,11 +5509,30 @@ async fn scan_login_settings_json(pg: &PgPool, tenant_id: &str) -> Result<Value,
         "enabled": scan_login_enabled,
         "modes": modes,
         "officialAccounts": official_accounts,
+        "serverIps": server_ips,
         "urlLogin": {
             "enabled": url_login_enabled,
             "h5LoginOrigin": h5_login_origin,
         },
     }))
+}
+
+/// Normalizes the stored server-IP allowlist document into a string array.
+fn normalize_server_ips_json(value: &str) -> Value {
+    let parsed = serde_json::from_str::<Value>(value).unwrap_or_else(|_| json!([]));
+    let Some(entries) = parsed.as_array() else {
+        return json!([]);
+    };
+    let mut seen = std::collections::HashSet::new();
+    let ips = entries
+        .iter()
+        .filter_map(Value::as_str)
+        .map(str::trim)
+        .filter(|entry| !entry.is_empty())
+        .filter(|entry| seen.insert((*entry).to_string()))
+        .map(|entry| json!(entry))
+        .collect::<Vec<_>>();
+    Value::Array(ips)
 }
 
 async fn retrieve_scan_login_settings(
@@ -5548,7 +5570,7 @@ async fn update_scan_login_settings(
     };
 
     let existing = match sqlx::query(
-        "SELECT h5_login_origin, url_login_enabled, default_qr_mode, modes_json, scan_login_enabled \
+        "SELECT h5_login_origin, url_login_enabled, default_qr_mode, modes_json, scan_login_enabled, server_ips \
          FROM iam_oauth_scan_login_config WHERE tenant_id = $1",
     )
     .bind(&tenant_id)
@@ -5566,6 +5588,7 @@ async fn update_scan_login_settings(
         mut default_qr_mode,
         mut modes_json,
         mut scan_login_enabled,
+        mut server_ips_json,
     ) = match existing {
         Some(row) => {
             let origin: String = row.get(0);
@@ -5573,9 +5596,17 @@ async fn update_scan_login_settings(
             let mode: String = row.get(2);
             let modes: String = row.get(3);
             let scan_enabled: i32 = row.get(4);
-            (origin, enabled != 0, mode, modes, scan_enabled != 0)
+            let server_ips: String = row.get(5);
+            (origin, enabled != 0, mode, modes, scan_enabled != 0, server_ips)
         }
-        None => (String::new(), true, "auto".to_string(), "[]".to_string(), true),
+        None => (
+            String::new(),
+            true,
+            "auto".to_string(),
+            "[]".to_string(),
+            true,
+            "[]".to_string(),
+        ),
     };
 
     if let Some(value) = read_i32_field(&body, &["enabled"]) {
@@ -5598,18 +5629,22 @@ async fn update_scan_login_settings(
     if let Some(modes_value) = body.get("modes") {
         modes_json = normalize_scan_login_modes_json(&modes_value.to_string());
     }
+    if let Some(server_ips_value) = body.get("serverIps") {
+        server_ips_json = normalize_server_ips_json(&server_ips_value.to_string()).to_string();
+    }
 
     let now = Utc::now().to_rfc3339();
     match sqlx::query(
         "INSERT INTO iam_oauth_scan_login_config \
-         (tenant_id, h5_login_origin, url_login_enabled, default_qr_mode, modes_json, scan_login_enabled, updated_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7) \
+         (tenant_id, h5_login_origin, url_login_enabled, default_qr_mode, modes_json, scan_login_enabled, server_ips, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
          ON CONFLICT (tenant_id) DO UPDATE SET \
            h5_login_origin = EXCLUDED.h5_login_origin, \
            url_login_enabled = EXCLUDED.url_login_enabled, \
            default_qr_mode = EXCLUDED.default_qr_mode, \
            modes_json = EXCLUDED.modes_json, \
            scan_login_enabled = EXCLUDED.scan_login_enabled, \
+           server_ips = EXCLUDED.server_ips, \
            updated_at = EXCLUDED.updated_at",
     )
     .bind(&tenant_id)
@@ -5618,6 +5653,7 @@ async fn update_scan_login_settings(
     .bind(&default_qr_mode)
     .bind(&modes_json)
     .bind(if scan_login_enabled { 1 } else { 0 })
+    .bind(&server_ips_json)
     .bind(&now)
     .execute(pg)
     .await

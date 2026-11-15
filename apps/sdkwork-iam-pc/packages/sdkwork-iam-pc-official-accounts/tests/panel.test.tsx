@@ -131,12 +131,41 @@ describe("official accounts panel", () => {
     expect(await screen.findByText(/does not allow changing the AppID or AppSecret/)).toBeTruthy();
   });
 
-  it("renders the operator posture without the self-service server tab", async () => {
+  it("renders the same account tabs on the operator posture", async () => {
     bench(DEFAULT_OPERATOR_CAPABILITIES);
     fireEvent.click(await screen.findByRole("button", { name: "Example Account" }));
-    expect(screen.queryByRole("tab", { name: "Server info" })).toBeNull();
+    expect(screen.getByRole("tab", { name: "Server info" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Domains" })).toBeTruthy();
     expect(screen.getByText("Default account for scan login")).toBeTruthy();
+  });
+
+  it("lists the maintained server IPs and saves the allowlist", async () => {
+    const onSave = vi.fn(async (ips: string[]) => ips);
+    const transport = memoryTransport();
+    const controller = createOfficialAccountsController(transport, DEFAULT_OPERATOR_CAPABILITIES);
+    render(
+      <SdkworkThemeProvider themeColor="tech-blue" themeSelection="dark">
+        <SdkworkI18nProvider catalogs={[SDKWORK_OFFICIAL_ACCOUNTS_I18N_CATALOG]} locale="en-US">
+          <SdkworkOfficialAccountsPanel
+            capabilities={DEFAULT_OPERATOR_CAPABILITIES}
+            controller={controller}
+            onSaveServerIps={onSave}
+            serverIps={["203.0.113.10", "203.0.113.11"]}
+          />
+        </SdkworkI18nProvider>
+      </SdkworkThemeProvider>,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Example Account" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Server info" }));
+    expect(await screen.findByText("203.0.113.10")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Maintain" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Maintain server public IPs" }), {
+      target: { value: "203.0.113.10\n198.51.100.7" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save IP list" }));
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(["203.0.113.10", "198.51.100.7"]);
+    });
   });
 
   it("opens the shared menu workspace and gates publishing by capability", async () => {

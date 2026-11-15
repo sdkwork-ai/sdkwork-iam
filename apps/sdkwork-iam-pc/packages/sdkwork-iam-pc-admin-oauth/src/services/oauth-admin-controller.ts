@@ -1430,6 +1430,9 @@ function normalizeScanLoginSettings(value: unknown): SdkworkIamOauthScanLoginSet
     enabled: typeof record.enabled === "boolean" ? record.enabled : true,
     modes,
     officialAccounts: accounts,
+    serverIps: Array.isArray(record.serverIps)
+      ? [...new Set(record.serverIps.filter((entry): entry is string => typeof entry === "string").map((entry) => entry.trim()).filter((entry) => entry !== ""))]
+      : [],
     urlLogin: {
       enabled: typeof urlLogin.enabled === "boolean" ? urlLogin.enabled : true,
       h5LoginOrigin: optionalString(urlLogin.h5LoginOrigin) || "",

@@ -372,6 +372,11 @@ export interface SdkworkIamOauthScanLoginSettings {
   enabled: boolean;
   modes: SdkworkIamOauthScanLoginModeEntry[];
   officialAccounts: SdkworkIamOauthScanLoginOfficialAccount[];
+  /**
+   * Deployment server egress IPs the operator maintains for the WeChat
+   * official-account IP allowlist (multi-entry, deduplicated on write).
+   */
+  serverIps: string[];
   urlLogin: {
     enabled: boolean;
     h5LoginOrigin: string;
@@ -382,6 +387,7 @@ export interface SdkworkIamOauthScanLoginSettingsDraft {
   defaultQrMode?: "auto" | SdkworkIamOauthScanLoginQrMode;
   enabled?: boolean;
   modes?: SdkworkIamOauthScanLoginModeEntry[];
+  serverIps?: string[];
   urlLogin?: {
     enabled?: boolean;
     h5LoginOrigin?: string;

@@ -110,6 +110,13 @@ export interface OfficialAccountsMessages {
     serverIpCopy: string;
     serverIpCopied: string;
     serverIpCopyAll: string;
+    serverIpsMaintain: string;
+    serverIpsMaintainTitle: string;
+    serverIpsMaintainDescription: string;
+    serverIpsPlaceholder: string;
+    serverIpsInvalid: string;
+    serverIpsSave: string;
+    serverIpsEmptyMaintain: string;
     appIdHint: string;
     appSecretHint: string;
     originalIdHint: string;
@@ -316,6 +323,13 @@ const zhCN: OfficialAccountsMessages = {
     serverIpCopy: "复制",
     serverIpCopied: "已复制",
     serverIpCopyAll: "复制全部",
+    serverIpsMaintain: "维护",
+    serverIpsMaintainTitle: "维护服务器公网 IP",
+    serverIpsMaintainDescription: "每行一个 IP，支持多个；保存后服务器信息页签会展示并可复制。",
+    serverIpsPlaceholder: "例如 203.0.113.10",
+    serverIpsInvalid: "IP 中不能包含空格。",
+    serverIpsSave: "保存 IP 列表",
+    serverIpsEmptyMaintain: "当前还没有维护服务器 IP，点击「维护」添加。",
     appIdHint: "在公众平台「开发 → 开发管理 → 开发者 ID」中查看；创建后不可修改。",
     appSecretHint: "用于获取 access_token 的开发者密码；请确保服务端出口 IP 已加入白名单。",
     originalIdHint: "公众号「账号详情」中的原始 ID，例如 gh_xxxxxxxxxxxx。",
@@ -518,6 +532,13 @@ const enUS: OfficialAccountsMessages = {
     serverIpCopy: "Copy",
     serverIpCopied: "Copied",
     serverIpCopyAll: "Copy all",
+    serverIpsMaintain: "Maintain",
+    serverIpsMaintainTitle: "Maintain server public IPs",
+    serverIpsMaintainDescription: "One IP per line; multiple entries are supported. The server-info tab lists and copies them after saving.",
+    serverIpsPlaceholder: "e.g. 203.0.113.10",
+    serverIpsInvalid: "An IP entry cannot contain whitespace.",
+    serverIpsSave: "Save IP list",
+    serverIpsEmptyMaintain: "No server IPs are maintained yet. Choose Maintain to add them.",
     appIdHint: "Find it under Developer ID in the WeChat console; it cannot change after creation.",
     appSecretHint: "The developer secret used to obtain access_token; keep the server egress IP on the allowlist.",
     originalIdHint: "The account's original ID from its profile page, e.g. gh_xxxxxxxxxxxx.",

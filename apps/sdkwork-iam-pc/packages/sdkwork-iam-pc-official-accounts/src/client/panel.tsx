@@ -34,6 +34,7 @@ import {
   StatusBadge,
   StatusNotice,
   Switch,
+  Textarea,
 } from "@sdkwork/ui-pc-react";
 
 import type {
@@ -393,6 +394,7 @@ export function SdkworkOfficialAccountsPanel({
   messages: messagesOverride,
   notifyBaseUrl,
   onOpenCustomMenu,
+  onSaveServerIps,
   serverIps = [],
 }: {
   /** What the host allows; see {@link OfficialAccountsCapabilities}. */
@@ -432,6 +434,12 @@ export function SdkworkOfficialAccountsPanel({
    * guessing one.
    */
   notifyBaseUrl?: string;
+  /**
+   * Persists the operator-maintained server egress IP allowlist. Present on an
+   * operator surface whose host stores the tenant-level list; the server-info
+   * tab then offers a maintenance action in addition to copy-per-IP.
+   */
+  onSaveServerIps?: (ips: string[]) => Promise<readonly string[]>;
   /**
    * The deployment's published server egress IPs, listed in the 服务器信息 tab
    * for the WeChat 公众号 IP allowlist. Empty means the deployment publishes no
@@ -846,7 +854,7 @@ export function SdkworkOfficialAccountsPanel({
                         </div>
                       )
                       : null}
-                    {capabilities.mode === "self-service"
+                    {capabilities.mode === "self-service" || capabilities.mode === "operator"
                       ? (
                         <div
                           aria-labelledby="official-account-tab-server"
@@ -854,7 +862,12 @@ export function SdkworkOfficialAccountsPanel({
                           id="official-account-panel-server"
                           role="tabpanel"
                         >
-                          <ServerInfoTab messages={messages} serverIps={serverIps} />
+                          <ServerInfoTab
+                            canMaintain={capabilities.mode === "operator" && onSaveServerIps !== undefined}
+                            messages={messages}
+                            onSave={onSaveServerIps}
+                            serverIps={serverIps}
+                          />
                         </div>
                       )
                       : null}
@@ -1658,7 +1671,7 @@ function AccountTabBar({
     {
       id: "server" as const,
       label: messages.form.tabServer,
-      visible: capabilities.mode === "self-service",
+      visible: true,
     },
   ].filter((tab) => tab.visible);
   const order = tabs.map((tab) => tab.id);
@@ -2110,14 +2123,24 @@ async function copyText(value: string): Promise<boolean> {
  * so an operator can paste them into the WeChat 公众号 IP allowlist.
  */
 function ServerInfoTab({
+  canMaintain = false,
   messages,
+  onSave,
   serverIps,
 }: {
+  canMaintain?: boolean;
   messages: OfficialAccountsMessages;
+  onSave?: (ips: string[]) => Promise<readonly string[]>;
   serverIps: readonly string[];
 }): ReactNode {
   const [copied, setCopied] = useState<string>();
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [localIps, setLocalIps] = useState<readonly string[]>();
+  const [maintainOpen, setMaintainOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string>();
+  const ips = localIps ?? serverIps;
   useEffect(() => () => {
     if (timer.current !== undefined) clearTimeout(timer.current);
   }, []);
@@ -2127,32 +2150,78 @@ function ServerInfoTab({
     if (timer.current !== undefined) clearTimeout(timer.current);
     timer.current = setTimeout(() => setCopied(undefined), 1500);
   };
+  const openMaintain = (): void => {
+    setDraft(ips.join("\n"));
+    setError(undefined);
+    setMaintainOpen(true);
+  };
+  const saveMaintain = async (): Promise<void> => {
+    if (onSave === undefined) return;
+    const entries = draft
+      .split(/\r?\n/u)
+      .map((entry) => entry.trim())
+      .filter((entry) => entry !== "");
+    const unique = [...new Set(entries)];
+    if (unique.some((entry) => /\s/u.test(entry))) {
+      setError(messages.form.serverIpsInvalid);
+      return;
+    }
+    setSaving(true);
+    setError(undefined);
+    try {
+      const saved = await onSave(unique);
+      setLocalIps(saved);
+      setMaintainOpen(false);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : messages.form.serverIpsInvalid);
+    } finally {
+      setSaving(false);
+    }
+  };
   return (
     <div className="space-y-4">
       <p className="text-xs text-[var(--sdk-color-text-muted)]">{messages.form.serverIpsHint}</p>
       <StatusNotice tone="default">{messages.form.serverIpsNote}</StatusNotice>
-      {serverIps.length === 0
+      {ips.length === 0
         ? (
-          <p className="text-sm text-[var(--sdk-color-text-muted)]">
-            {messages.form.serverIpsEmpty}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-[var(--sdk-color-text-muted)]">
+              {canMaintain ? messages.form.serverIpsEmptyMaintain : messages.form.serverIpsEmpty}
+            </p>
+            {canMaintain
+              ? (
+                <Button onClick={openMaintain} size="sm" variant="outline">
+                  {messages.form.serverIpsMaintain}
+                </Button>
+              )
+              : null}
+          </div>
         )
         : (
           <div className="overflow-hidden rounded-[1rem] border border-[var(--sdk-color-border-default)]">
             <div className="flex items-center justify-between gap-3 border-b border-[var(--sdk-color-border-default)] px-3 py-2">
               <span className="text-xs font-medium text-[var(--sdk-color-text-muted)]">
-                {messages.form.serverIpsCount.replace("{count}", String(serverIps.length))}
+                {messages.form.serverIpsCount.replace("{count}", String(ips.length))}
               </span>
-              <Button
-                onClick={() => { void copy(serverIps.join("\n"), "all"); }}
-                size="sm"
-                variant="outline"
-              >
-                {copied === "all" ? messages.form.serverIpCopied : messages.form.serverIpCopyAll}
-              </Button>
+              <div className="flex items-center gap-2">
+                {canMaintain
+                  ? (
+                    <Button onClick={openMaintain} size="sm" variant="outline">
+                      {messages.form.serverIpsMaintain}
+                    </Button>
+                  )
+                  : null}
+                <Button
+                  onClick={() => { void copy(ips.join("\n"), "all"); }}
+                  size="sm"
+                  variant="outline"
+                >
+                  {copied === "all" ? messages.form.serverIpCopied : messages.form.serverIpCopyAll}
+                </Button>
+              </div>
             </div>
             <ul>
-              {serverIps.map((ip) => (
+              {ips.map((ip) => (
                 <li
                   className="flex items-center justify-between gap-3 border-b border-[var(--sdk-color-border-subtle)] px-3 py-2 last:border-b-0"
                   key={ip}
@@ -2170,6 +2239,33 @@ function ServerInfoTab({
             </ul>
           </div>
         )}
+
+      <Modal open={maintainOpen} onOpenChange={setMaintainOpen}>
+        <ModalContent size="md">
+          <ModalHeader>
+            <ModalTitle>{messages.form.serverIpsMaintainTitle}</ModalTitle>
+            <ModalDescription>{messages.form.serverIpsMaintainDescription}</ModalDescription>
+          </ModalHeader>
+          <ModalBody className="space-y-3">
+            {error === undefined ? null : <StatusNotice tone="danger">{error}</StatusNotice>}
+            <Textarea
+              aria-label={messages.form.serverIpsMaintainTitle}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder={messages.form.serverIpsPlaceholder}
+              rows={6}
+              value={draft}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={() => setMaintainOpen(false)} variant="outline">
+              {messages.form.cancel}
+            </Button>
+            <Button loading={saving} onClick={() => { void saveMaintain(); }}>
+              {messages.form.serverIpsSave}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
