@@ -31,7 +31,7 @@ import type {
   SdkworkIamOauthAccountConfig,
   SdkworkIamOauthAdminController,
 } from "../types/oauth-admin-types";
-import { readAccountIntegrationId, readDisplayName, readResourceAccountId } from "../utils/oauth-admin-utils";
+import { readAccountIntegrationId, readDisplayName, readResourceAccountId, readResourceAccountKind } from "../utils/oauth-admin-utils";
 
 /** Default page size when a caller does not ask for one. */
 const DEFAULT_PAGE_SIZE = 20;
@@ -104,6 +104,7 @@ export function createOfficialAccountOperatorOperations(
       const pageInfo = listPage.pageInfo;
       return {
         items: listPage.items
+          .filter((item) => readResourceAccountKind(item) === "official_account")
           .map(toAccount)
           .filter((account): account is OfficialAccount => account !== undefined),
         totalItems: Number(pageInfo?.totalItems ?? listPage.items.length),
@@ -113,12 +114,55 @@ export function createOfficialAccountOperatorOperations(
     },
     async create(draft: OfficialAccountDraft) {
       const kind = draft.resourceAccountKind ?? "official_account";
-      const config = draft.config ?? {};
+      // The shared panel hands over its flat draft; the backend one-click setup
+      // takes the developer-configuration document. Fold the panel fields into
+      // that document so a create never drops the domains, notification, logo,
+      // or menu draft the operator entered.
+      // The shared draft model and the backend document describe the same
+      // provider configuration; their menu arrays differ only in mutability.
+      const config = {
+        ...((draft.config ?? {}) as unknown as SdkworkIamOauthAccountConfig),
+        ...(draft.logoUrl === undefined ? {} : { logoUrl: draft.logoUrl }),
+        ...(draft.jsSecureDomains === undefined
+          ? {}
+          : { jsSecureDomains: [...draft.jsSecureDomains] }),
+        ...(draft.webAuthDomains === undefined
+          ? {}
+          : { webAuthDomains: [...draft.webAuthDomains] }),
+        ...(draft.businessDomains === undefined
+          ? {}
+          : { businessDomains: [...draft.businessDomains] }),
+        ...(draft.customMenu === undefined ? {} : { customMenu: draft.customMenu }),
+        ...(draft.redirectUri === undefined ? {} : { redirectUri: draft.redirectUri }),
+        ...(draft.notifyUrl === undefined
+          && draft.notifyToken === undefined
+          && draft.notifyEncodingAesKey === undefined
+          && draft.notifyEncryptMode === undefined
+          ? {}
+          : {
+            notify: {
+              ...(draft.notifyUrl === undefined ? {} : { url: draft.notifyUrl }),
+              ...(draft.notifyToken === undefined ? {} : { token: draft.notifyToken }),
+              ...(draft.notifyEncodingAesKey === undefined
+                ? {}
+                : { encodingAesKey: draft.notifyEncodingAesKey }),
+              ...(draft.notifyEncryptMode === undefined
+                ? {}
+                : {
+                  // The shared panel spells the plaintext mode `plaintext`;
+                  // the backend account document spells it `plain`.
+                  encryptMode: draft.notifyEncryptMode === "plaintext"
+                    ? "plain"
+                    : draft.notifyEncryptMode,
+                }),
+            },
+          }),
+      } as unknown as SdkworkIamOauthAccountConfig;
       return controller.createAccountSetup(kind, {
         ...(draft.accountType === undefined ? {} : { accountType: draft.accountType }),
         appId: draft.appId ?? "",
         appSecret: draft.appSecret ?? "",
-        config: config as unknown as SdkworkIamOauthAccountConfig,
+        config,
         displayName: draft.displayName,
         enabled: draft.enabled ?? true,
         ...(draft.originalId === undefined ? {} : { originalId: draft.originalId }),

@@ -1,0 +1,18 @@
+/**
+ * Tailwind v4 source fragment for this package.
+ *
+ * A host app that embeds the mini-program panel imports this file from its own
+ * Tailwind entry (`@import "@sdkwork/iam-pc-mini-program/panel-tailwind.css";`):
+ * the panel lives in the IAM checkout, outside the host's project root, so its
+ * utility classes would otherwise never be generated. Keeping the paths here —
+ * next to the component they style — means a host never enumerates IAM package
+ * paths, and a new shared dependency of this panel is added in this repository
+ * only.
+ *
+ * `@source` paths resolve relative to this file.
+ */
+@source "../src";
+/* The shared component library the panel composes (buttons, drawer, form fields). */
+@source "../../../../../../sdkwork-ui/sdkwork-ui-pc-react/src";
+/* The message catalog facade the panel resolves its copy through. */
+@source "../../../../../../sdkwork-appbase/packages/pc-react/foundation/sdkwork-i18n-pc-react/src";

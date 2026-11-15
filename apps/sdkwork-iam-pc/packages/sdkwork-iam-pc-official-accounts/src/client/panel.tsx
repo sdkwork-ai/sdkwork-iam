@@ -24,6 +24,13 @@ import {
   DrawerTitle,
   Input,
   Label,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalDescription,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
   StatusBadge,
   StatusNotice,
   Switch,
@@ -32,6 +39,7 @@ import {
 import type {
   OfficialAccountsCapabilities,
   OfficialAccountsEncryptMode,
+  OfficialAccountsFollowQrCode,
   OfficialAccountsMenu,
   OfficialAccountsMenuButton,
   OfficialAccount,
@@ -201,6 +209,7 @@ function AccountRow({
   messages,
   onDelete,
   onEdit,
+  onFollowQrCode,
   onMenu,
   onToggle,
 }: {
@@ -209,6 +218,7 @@ function AccountRow({
   messages: OfficialAccountsMessages;
   onDelete: () => void;
   onEdit: () => void;
+  onFollowQrCode: () => void;
   onMenu: () => void;
   onToggle: (enabled: boolean) => void;
 }): ReactNode {
@@ -274,6 +284,13 @@ function AccountRow({
       </button>
       <div className="flex items-center justify-end gap-1">
         <Button onClick={onEdit} size="sm" variant="ghost">{messages.actions.edit}</Button>
+        {capabilities.manageFollowQrCode
+          ? (
+            <Button onClick={onFollowQrCode} size="sm" variant="ghost">
+              {messages.actions.followQrCode}
+            </Button>
+          )
+          : null}
         {capabilities.deleteAccount
           ? <Button onClick={onDelete} size="sm" variant="ghost">{messages.actions.delete}</Button>
           : null}
@@ -294,16 +311,18 @@ function AccountRow({
  *
  * {@link OfficialAccountsCapabilities} decides which sections exist:
  * `manageDomains` removes the domain tab, `manageNotify` removes the
- * message-push block, `editCredentials` locks the credential fields,
- * `deleteAccount` removes the delete action, `publishMenu` adds the publish
- * action of the menu drawer, `manageQrLogin` adds the scan-login default
- * switch, and `mode` selects the self-service server-information tab.
+ * message-push block, `editCredentials` removes the add action and locks the
+ * credential fields, `deleteAccount` removes the delete action, `publishMenu`
+ * adds the publish action of the menu drawer, `manageQrLogin` adds the
+ * scan-login default switch, `manageFollowQrCode` adds the follow-QR row
+ * action, and `mode` selects the self-service server-information tab.
  */
 export function SdkworkOfficialAccountsPanel({
   capabilities,
   controller,
   domainVerification,
   driveUploadImageService,
+  initialOpen = false,
   messages: messagesOverride,
   notifyBaseUrl,
   onOpenCustomMenu,
@@ -332,6 +351,12 @@ export function SdkworkOfficialAccountsPanel({
    * fake upload.
    */
   driveUploadImageService?: DriveUploadImageService;
+  /**
+   * Open the add-account drawer as soon as the panel mounts (a host deep link
+   * such as `?open=add`). The drawer opens once per mount; later visits are the
+   * user's own decision.
+   */
+  initialOpen?: boolean;
   /**
    * The gateway origin the standard WeChat callback URL is built from. The URL
    * is deterministic: `{notifyBaseUrl}/iam/v3/api/iam/oauth/official_accounts/
@@ -366,9 +391,11 @@ export function SdkworkOfficialAccountsPanel({
   const [activeTab, setActiveTab] = useState<DrawerTab>("basic");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [pendingDelete, setPendingDelete] = useState<OfficialAccount>();
+  const [followQr, setFollowQr] = useState<FollowQrState>();
   // Create mode has no account id at pick time: the field parks the pick and
   // the submit flushes it once `controller.create` returns an id.
   const logoFieldRef = useRef<DriveUploadImageHandle | null>(null);
+  const initialOpenHandled = useRef(false);
 
   useEffect(() => {
     if (state.status === "idle") void controller.load({ page: 1 });
@@ -386,6 +413,12 @@ export function SdkworkOfficialAccountsPanel({
     resetDrawerState();
     setForm({ mode: "create", draft: emptyDraft(), menu: { buttons: [] } });
   };
+  // A host deep link (`?open=add`) asks for the add drawer once per mount.
+  useEffect(() => {
+    if (!initialOpen || initialOpenHandled.current) return;
+    initialOpenHandled.current = true;
+    openCreate();
+  }, [initialOpen]);
   const openEdit = (account: OfficialAccount): void => {
     resetDrawerState();
     setForm({ mode: "edit", account, draft: draftOf(account), menu: account.customMenu });
@@ -397,6 +430,26 @@ export function SdkworkOfficialAccountsPanel({
     }
     resetDrawerState();
     setForm({ mode: "menu", account, draft: draftOf(account), menu: account.customMenu });
+  };
+  /**
+   * Requests the account's follow (parameterized) QR and shows it in its own
+   * dialog. The action is capability-gated; the transport reports whether the
+   * channel can issue one.
+   * @param account - the account row the action was invoked from.
+   */
+  const openFollowQrCode = (account: OfficialAccount): void => {
+    setFollowQr({ account, loading: true });
+    void controller.createFollowQrCode(account)
+      .then((qr) => { setFollowQr({ account, qr, loading: false }); })
+      .catch((error: unknown) => {
+        setFollowQr({
+          account,
+          loading: false,
+          error: error instanceof Error && error.message.trim() !== ""
+            ? error.message
+            : messages.followQrCode.failure,
+        });
+      });
   };
   const closeForm = (): void => {
     if (saving || publishing) return;
@@ -572,7 +625,9 @@ export function SdkworkOfficialAccountsPanel({
           >
             {messages.panel.refresh}
           </Button>
-          <Button onClick={openCreate} size="sm">{messages.panel.add}</Button>
+          {capabilities.editCredentials
+            ? <Button onClick={openCreate} size="sm">{messages.panel.add}</Button>
+            : null}
         </div>
       </header>
 
@@ -601,6 +656,7 @@ export function SdkworkOfficialAccountsPanel({
               messages={messages}
               onDelete={() => setPendingDelete(account)}
               onEdit={() => openEdit(account)}
+              onFollowQrCode={() => openFollowQrCode(account)}
               onMenu={() => openMenu(account)}
               onToggle={(enabled) => { void controller.setEnabled(account, enabled); }}
             />
@@ -749,6 +805,57 @@ export function SdkworkOfficialAccountsPanel({
         </DrawerContent>
       </Drawer>
 
+      <Modal
+        onOpenChange={(open) => { if (!open) setFollowQr(undefined); }}
+        open={followQr !== undefined}
+      >
+        <ModalContent size="sm">
+          <ModalHeader>
+            <ModalTitle>{messages.followQrCode.title}</ModalTitle>
+            <ModalDescription>{messages.followQrCode.description}</ModalDescription>
+          </ModalHeader>
+          <ModalBody className="flex flex-col items-center gap-3">
+            {followQr?.error !== undefined
+              ? <StatusNotice tone="danger">{followQr.error}</StatusNotice>
+              : null}
+            {followQr?.loading === true
+              ? (
+                <span className="flex h-56 w-56 items-center justify-center text-sm text-[var(--sdk-color-text-muted)]">
+                  {messages.followQrCode.loading}
+                </span>
+              )
+              : null}
+            {followQr?.loading !== true && followQr?.qr !== undefined
+              ? (
+                <>
+                  <img
+                    alt={followQr.account.displayName}
+                    className="h-56 w-56 border border-[var(--sdk-color-border-default)]"
+                    src={followQr.qr.qrCode}
+                  />
+                  <span className="text-sm font-medium text-[var(--sdk-color-text-primary)]">
+                    {followQr.account.displayName}
+                  </span>
+                  {followQr.qr.scene === undefined || followQr.qr.scene === ""
+                    ? null
+                    : (
+                      <code className="max-w-full truncate text-xs text-[var(--sdk-color-text-muted)]">
+                        {messages.followQrCode.sceneLabel}: {followQr.qr.scene}
+                      </code>
+                    )}
+                  <StatusNotice tone="default">{messages.followQrCode.permanentHint}</StatusNotice>
+                </>
+              )
+              : null}
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={() => setFollowQr(undefined)} variant="outline">
+              {messages.followQrCode.close}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       <ConfirmDialog
         cancelLabel={messages.form.cancel}
         confirmLabel={messages.actions.delete}
@@ -765,6 +872,14 @@ export function SdkworkOfficialAccountsPanel({
       />
     </div>
   );
+}
+
+/** Follow-QR dialog state: the row, its pending request, and the response. */
+interface FollowQrState {
+  account: OfficialAccount;
+  qr?: OfficialAccountsFollowQrCode;
+  loading: boolean;
+  error?: string;
 }
 
 interface FormState {

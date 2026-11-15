@@ -22,17 +22,25 @@ login page renders the matching OAuth entry immediately.
 Official-account CRUD is owned by `@sdkwork/iam-pc-official-accounts`.
 `SdkworkIamOauthOfficialAccountsPage` is a thin shell: it builds that package's
 operator-mode controller over this package's backend controller
-(`createOperatorTransport` + `DEFAULT_OPERATOR_CAPABILITIES`, see
-`src/services/official-account-operator-operations.ts`) and threads it through
-`OauthAccountSetupSection`. Every create (one-click integration setup), profile /
-credential / configuration write, enable toggle, delete, follow-QR generation,
-and verification run is issued by the shared controller; the section keeps only
-presentation state and the WeChat console validation rules.
+(`createOperatorTransport`, see `src/services/official-account-operator-operations.ts`),
+derives the capability set from the page permissions
+(`src/services/official-account-capabilities.ts`), and renders
+`SdkworkOfficialAccountsPanel`. Every create (one-click integration setup),
+profile / credential / configuration write, enable toggle, delete, follow-QR
+generation, and verification run is issued by the shared controller; the admin
+page only supplies the Drive logo capability, the `?open=add` deep link, and the
+full-screen custom-menu takeover. The retired `OauthAccountSetupSection` remains
+as a compatibility shell over the same panel.
+
+Both shared panels (official account and mini program) declare their own
+Tailwind source fragments; a host app imports
+`@sdkwork/iam-pc-admin-oauth/panel-tailwind.css` from its Tailwind entry instead
+of enumerating IAM package paths.
 
 ### Official account domain configuration
 
-The official-account drawer's 开发配置 tab mirrors 公众平台 → 设置与开发 →
-公众号设置 → 功能设置, which exposes three independent protected-domain sets:
+The shared panel's 开发配置 tab mirrors 公众平台 → 设置与开发 → 公众号设置 →
+功能设置, which exposes three independent protected-domain sets:
 
 | Set | Cap | Role |
 |-----|-----|------|

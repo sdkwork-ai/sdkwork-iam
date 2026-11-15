@@ -35,12 +35,13 @@ own SDK slice and injects it.
 
 | Flag | `operator` default | `self-service` default | What it switches |
 | --- | --- | --- | --- |
-| `editCredentials` | `true` | `true` | AppID / AppSecret fields; off → fields locked with an explicit notice. |
+| `editCredentials` | `true` | `true` | Add action, AppID / AppSecret fields; off → the action and fields are locked with an explicit notice. |
 | `publishMenu` | `true` | `false` | The menu drawer's publish action (`publishCustomMenu`). |
 | `manageQrLogin` | `true` | `false` | Scan-login default switch and follow-QR / verification actions. |
 | `manageDomains` | `true` | `true` | The domain tab (three protected-domain sets) and domain verification. |
 | `manageNotify` | `true` | `true` | The message-push server configuration block. |
 | `deleteAccount` | `true` | `true` | Delete row action and its confirmation dialog. |
+| `manageFollowQrCode` | `true` | `false` | The follow (parameterized) QR row action and dialog; needs a transport that implements `createFollowQrCode`. |
 | `mode` | `operator` | `self-service` | Operator adds the self-managed badge and QR/publish actions; self-service adds the server-information tab (published egress IPs and the standard notify URL). |
 
 ## Usage
@@ -92,6 +93,21 @@ A grouped patch (`{ profile, credentials, config, enabled }`) is applied in that
 dependency order, so a partial failure never stores half an edit. An ungrouped
 panel-shaped patch is grouped by the operator adapter, so the shared panel works
 on an operator host without learning the backend action granularity.
+
+## Host style integration
+
+The panel styles itself with Tailwind utilities. A host app whose Tailwind entry
+lives outside this repository imports the package-owned source fragment from
+that entry:
+
+```css
+@import "@sdkwork/iam-pc-official-accounts/panel-tailwind.css";
+```
+
+The fragment declares this package's sources plus the shared SDKWork UI and Drive
+upload field it composes, so a host never enumerates IAM package paths. Hosts
+that compile the panel's utilities themselves (for example the BirdCoder plugin
+bundle) can ignore it.
 
 ## Boundaries
 

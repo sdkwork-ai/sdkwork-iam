@@ -26,7 +26,9 @@ import type {
 function accountWithMenu(menu: SdkworkIamOauthCustomMenuDraft): Record<string, unknown> {
   return {
     id: "iamora-menu-1",
+    integrationId: "iamoi-menu-1",
     displayName: "My official account",
+    providerAccountId: "wx-menu-1",
     providerAccountType: "service",
     resourceAccountKind: "official_account",
     provider_config_json: JSON.stringify({
@@ -1106,7 +1108,7 @@ describe("official accounts list custom menu action", () => {
       </SdkworkI18nProvider>,
     );
 
-    const menuAction = await screen.findByTitle("菜单管理");
+    const menuAction = await screen.findByRole("button", { name: "自定义菜单" });
     fireEvent.click(menuAction);
 
     expect(onOpenCustomMenu).toHaveBeenCalledWith("iamora-menu-1");
@@ -1121,11 +1123,11 @@ describe("official accounts list custom menu action", () => {
       </SdkworkI18nProvider>,
     );
 
-    const menuAction = await screen.findByTitle("菜单管理");
+    const menuAction = await screen.findByRole("button", { name: "自定义菜单" });
     fireEvent.click(menuAction);
 
     // The full-screen modal renders the custom menu manager for the account.
-    expect(await screen.findByText("自定义菜单")).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "自定义菜单" })).toBeTruthy();
     expect(screen.getAllByText("My official account").length).toBeGreaterThan(0);
     const modal = screen.getByTestId("custom-menu-modal");
     expect(modal.parentElement).toBe(document.body);
@@ -1140,7 +1142,7 @@ describe("official accounts list custom menu action", () => {
 
     fireEvent.keyDown(document, { key: "Escape" });
 
-    expect(screen.queryByText("自定义菜单")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "自定义菜单" })).toBeNull();
   });
 
   it("treats simulator device changes as preview-only state", async () => {
@@ -1154,7 +1156,7 @@ describe("official accounts list custom menu action", () => {
       </SdkworkI18nProvider>,
     );
 
-    fireEvent.click(await screen.findByTitle("菜单管理"));
+    fireEvent.click(await screen.findByRole("button", { name: "自定义菜单" }));
     const selector = await screen.findByRole("group", { name: "预览设备" });
     fireEvent.click(within(selector).getByRole("button", { name: "iPhone 17 Pro" }));
     expect(screen.getByTestId("wechat-menu-preview").parentElement).toHaveAttribute("data-device-model", "iphone-17-pro");
@@ -1174,7 +1176,7 @@ describe("official accounts list custom menu action", () => {
       </SdkworkI18nProvider>,
     );
 
-    fireEvent.click(await screen.findByTitle("菜单管理"));
+    fireEvent.click(await screen.findByRole("button", { name: "自定义菜单" }));
     fireEvent.click(await screen.findByRole("button", { name: "添加一级菜单" }));
     fireEvent.change(screen.getByLabelText("菜单名称"), { target: { value: "菜单一" } });
     fireEvent.click(screen.getByRole("button", { name: "关闭自定义菜单" }));
@@ -1190,7 +1192,7 @@ describe("official accounts list custom menu action", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "关闭自定义菜单" }));
     fireEvent.click(within(screen.getByTestId("custom-menu-unsaved-confirmation")).getByRole("button", { name: "放弃更改" }));
-    expect(screen.queryByText("自定义菜单")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "自定义菜单" })).toBeNull();
   });
 
   it("requires an explicit conversion before publishing an unsupported WeChat action", async () => {
@@ -1209,7 +1211,7 @@ describe("official accounts list custom menu action", () => {
       </SdkworkI18nProvider>,
     );
 
-    fireEvent.click(await screen.findByTitle("菜单管理"));
+    fireEvent.click(await screen.findByRole("button", { name: "自定义菜单" }));
     expect(await screen.findByText(/动作类型“media_id”暂不支持无损编辑/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "保存并发布" }));
     expect(screen.queryByTestId("custom-menu-publish-confirmation")).toBeNull();
@@ -1230,12 +1232,13 @@ describe("official accounts list custom menu action", () => {
       </SdkworkI18nProvider>,
     );
 
-    fireEvent.click(await screen.findByTitle("菜单管理"));
+    fireEvent.click(await screen.findByRole("button", { name: "自定义菜单" }));
     fireEvent.click(await screen.findByRole("button", { name: "添加一级菜单" }));
     fireEvent.keyDown(document, { key: "Escape" });
 
     expect(screen.getByTestId("custom-menu-unsaved-confirmation")).toBeTruthy();
-    expect(screen.getByText("自定义菜单")).toBeTruthy();
+    // The workspace itself stays mounted behind the confirmation dialog.
+    expect(screen.getByTestId("custom-menu-modal")).toBeTruthy();
   });
 
   it("uses a second Escape to cancel the unsaved confirmation without closing the workspace", async () => {
@@ -1247,7 +1250,7 @@ describe("official accounts list custom menu action", () => {
       </SdkworkI18nProvider>,
     );
 
-    fireEvent.click(await screen.findByTitle("菜单管理"));
+    fireEvent.click(await screen.findByRole("button", { name: "自定义菜单" }));
     fireEvent.click(await screen.findByRole("button", { name: "添加一级菜单" }));
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.getByTestId("custom-menu-unsaved-confirmation")).toBeTruthy();
@@ -1270,7 +1273,7 @@ describe("official accounts list custom menu action", () => {
       </SdkworkI18nProvider>,
     );
 
-    fireEvent.click(await screen.findByTitle("菜单管理"));
+    fireEvent.click(await screen.findByRole("button", { name: "自定义菜单" }));
     const editor = await screen.findByTestId("custom-menu-editor");
     fireEvent.click(within(editor).getByRole("button", { name: "删除菜单" }));
     expect(screen.getByTestId("custom-menu-delete-confirmation")).toBeTruthy();
@@ -1294,7 +1297,7 @@ describe("official accounts list custom menu action", () => {
       </SdkworkI18nProvider>,
     );
 
-    fireEvent.click(await screen.findByTitle("菜单管理"));
+    fireEvent.click(await screen.findByRole("button", { name: "自定义菜单" }));
     await screen.findByLabelText("菜单名称");
     fireEvent.click(screen.getByRole("button", { name: "保存并发布" }));
     expect(screen.getByTestId("custom-menu-publish-confirmation")).toBeTruthy();
@@ -1317,14 +1320,14 @@ describe("official accounts list custom menu action", () => {
       </SdkworkI18nProvider>,
     );
 
-    fireEvent.click(await screen.findByTitle("菜单管理"));
+    fireEvent.click(await screen.findByRole("button", { name: "自定义菜单" }));
     fireEvent.click(await screen.findByRole("button", { name: "添加一级菜单" }));
     fireEvent.click(screen.getByRole("button", { name: "保存草稿" }));
     expect(await screen.findByText("草稿已保存。")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "关闭自定义菜单" }));
 
     expect(screen.queryByTestId("custom-menu-unsaved-confirmation")).toBeNull();
-    expect(screen.queryByText("自定义菜单")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "自定义菜单" })).toBeNull();
   });
 
   it("keeps the workspace open while a draft save is in progress", async () => {
@@ -1340,7 +1343,7 @@ describe("official accounts list custom menu action", () => {
       </SdkworkI18nProvider>,
     );
 
-    fireEvent.click(await screen.findByTitle("菜单管理"));
+    fireEvent.click(await screen.findByRole("button", { name: "自定义菜单" }));
     fireEvent.click(await screen.findByRole("button", { name: "添加一级菜单" }));
     fireEvent.click(screen.getByRole("button", { name: "保存草稿" }));
     fireEvent.keyDown(document, { key: "Escape" });
@@ -1370,7 +1373,7 @@ describe("official accounts list custom menu action", () => {
       </SdkworkI18nProvider>,
     );
 
-    fireEvent.click(await screen.findByTitle("菜单管理"));
+    fireEvent.click(await screen.findByRole("button", { name: "自定义菜单" }));
     const nameInput = await screen.findByLabelText("菜单名称");
     fireEvent.change(nameInput, { target: { value: "旧名称" } });
     fireEvent.click(screen.getByRole("button", { name: "保存草稿" }));
@@ -1398,7 +1401,7 @@ describe("official accounts list custom menu action", () => {
       </SdkworkI18nProvider>,
     );
 
-    fireEvent.click(await screen.findByTitle("菜单管理"));
+    fireEvent.click(await screen.findByRole("button", { name: "自定义菜单" }));
     const nameInput = await screen.findByLabelText("菜单名称");
     fireEvent.change(nameInput, { target: { value: "保存版本" } });
     fireEvent.click(screen.getByRole("button", { name: "保存草稿" }));

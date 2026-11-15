@@ -47,7 +47,10 @@ function memoryTransport(
     publishCustomMenu: vi.fn(async (id) => ({ accountId: id, published: true })),
     setEnabled: vi.fn(async () => undefined),
     setQrLogin: vi.fn(async () => undefined),
-    createFollowQrCode: vi.fn(async () => ({ qrCode: "https://example.test/qr" })),
+    createFollowQrCode: vi.fn(async () => ({
+      qrCode: "https://example.test/qr",
+      scene: "follow:acc-1",
+    })),
     runVerification: vi.fn(async () => undefined),
     ...overrides,
   };
@@ -117,7 +120,11 @@ describe("official accounts panel", () => {
 
   it("locks the credentials when the surface forbids editing them", async () => {
     bench({ ...DEFAULT_SELF_SERVICE_CAPABILITIES, editCredentials: false });
-    fireEvent.click(await screen.findByRole("button", { name: "Add official account" }));
+    // The add action is part of the credential capability; the row still opens
+    // the drawer, where the credential fields are locked behind a notice.
+    expect(await screen.findByText("Example Account")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Add official account" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Example Account" }));
     expect(screen.queryByLabelText("AppSecret")).toBeNull();
     expect(await screen.findByText(/does not allow changing the AppID or AppSecret/)).toBeTruthy();
   });
@@ -155,6 +162,50 @@ describe("official accounts panel", () => {
       })),
     });
     expect(await screen.findByText("Self-managed")).toBeTruthy();
+  });
+
+  it("generates the follow QR from the operator row action", async () => {
+    const { transport } = bench(DEFAULT_OPERATOR_CAPABILITIES);
+    await screen.findByText("Example Account");
+    fireEvent.click(await screen.findByRole("button", { name: "Follow QR" }));
+    await waitFor(() => {
+      expect(transport.createFollowQrCode).toHaveBeenCalledWith("acc-1");
+    });
+    const image = await screen.findByAltText("Example Account");
+    expect(image.getAttribute("src")).toBe("https://example.test/qr");
+    expect(screen.getByText("Scene: follow:acc-1")).toBeTruthy();
+    expect(screen.getByText("This QR code does not expire and can stay in service.")).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("button", { name: "Close" }).at(-1)!);
+    await waitFor(() => {
+      expect(screen.queryByText("Scene: follow:acc-1")).toBeNull();
+    });
+  });
+
+  it("hides the follow QR action when the capability is off", async () => {
+    bench(DEFAULT_SELF_SERVICE_CAPABILITIES);
+    expect(await screen.findByText("Example Account")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Follow QR" })).toBeNull();
+  });
+
+  it("opens the add drawer on mount when the host deep-links to it", async () => {
+    const transport = memoryTransport();
+    const controller = createOfficialAccountsController(
+      transport,
+      DEFAULT_OPERATOR_CAPABILITIES,
+    );
+    render(
+      <SdkworkThemeProvider themeColor="tech-blue" themeSelection="dark">
+        <SdkworkI18nProvider catalogs={[SDKWORK_OFFICIAL_ACCOUNTS_I18N_CATALOG]} locale="en-US">
+          <SdkworkOfficialAccountsPanel
+            capabilities={DEFAULT_OPERATOR_CAPABILITIES}
+            controller={controller}
+            initialOpen
+          />
+        </SdkworkI18nProvider>
+      </SdkworkThemeProvider>,
+    );
+    expect(await screen.findByRole("heading", { name: "Add official account" })).toBeTruthy();
+    expect(screen.getByLabelText("AppID")).toBeTruthy();
   });
 });
 

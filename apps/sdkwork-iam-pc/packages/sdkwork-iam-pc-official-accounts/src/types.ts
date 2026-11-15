@@ -338,6 +338,12 @@ export interface OfficialAccountsCapabilities {
   manageNotify: boolean
   /** The account may be deleted from this surface. */
   deleteAccount: boolean
+  /**
+   * Follow (parameterized) QR generation is available. Requires a transport
+   * that implements `createFollowQrCode`; the operator adapter does, while the
+   * self-service app transport does not, so it defaults off there.
+   */
+  manageFollowQrCode: boolean
 }
 
 /** Panel/controller state. */

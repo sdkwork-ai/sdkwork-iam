@@ -1,0 +1,19 @@
+/**
+ * Tailwind v4 source fragment for the IAM admin OAuth surfaces.
+ *
+ * The admin pages mount two shared panels from this repository: the official
+ * account panel (`@sdkwork/iam-pc-official-accounts`) and the mini-program
+ * panel (`@sdkwork/iam-pc-mini-program`). Both live in the IAM checkout,
+ * outside a host's project root, so a host Tailwind entry imports this one file
+ * and this file owns the source list:
+ *
+ * ```css
+ * @import "@sdkwork/iam-pc-admin-oauth/panel-tailwind.css";
+ * ```
+ *
+ * `@source` paths in the imported fragments resolve relative to each fragment,
+ * so a new shared panel dependency is registered here (in sdkwork-iam) and
+ * never in a host's `index.css` or portal source list.
+ */
+@import "@sdkwork/iam-pc-official-accounts/panel-tailwind.css";
+@import "@sdkwork/iam-pc-mini-program/panel-tailwind.css";

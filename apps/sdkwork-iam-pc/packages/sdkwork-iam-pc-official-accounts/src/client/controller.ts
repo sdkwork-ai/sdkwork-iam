@@ -37,6 +37,7 @@ export const DEFAULT_OPERATOR_CAPABILITIES: OfficialAccountsCapabilities = {
   manageDomains: true,
   manageNotify: true,
   deleteAccount: true,
+  manageFollowQrCode: true,
 };
 
 /** Self-service posture: the signed-in maintainer's own accounts. */
@@ -48,6 +49,7 @@ export const DEFAULT_SELF_SERVICE_CAPABILITIES: OfficialAccountsCapabilities = {
   manageDomains: true,
   manageNotify: true,
   deleteAccount: true,
+  manageFollowQrCode: false,
 };
 
 /** The host surface forbids the action (see {@link OfficialAccountsCapabilities}). */

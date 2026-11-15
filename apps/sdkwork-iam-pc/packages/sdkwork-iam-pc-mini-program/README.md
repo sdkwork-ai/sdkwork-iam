@@ -116,6 +116,21 @@ Rendering:
 - The AppID is immutable after create: `MiniProgramPatch` carries no AppID, so
   the drawer shows it read-only in edit mode.
 
+## Host style integration
+
+The panel styles itself with Tailwind utilities. A host app whose Tailwind entry
+lives outside this repository imports the package-owned source fragment from
+that entry:
+
+```css
+@import "@sdkwork/iam-pc-mini-program/panel-tailwind.css";
+```
+
+The fragment declares this package's sources plus the shared SDKWork UI it
+composes, so a host never enumerates IAM package paths. Hosts that compile the
+panel's utilities themselves (for example the BirdCoder plugin bundle) can
+ignore it.
+
 ## Boundaries
 
 - No raw `fetch`, no manual `Authorization`/`Access-Token` header, no generated

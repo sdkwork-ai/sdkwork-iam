@@ -50,6 +50,16 @@ export interface OfficialAccountsMessages {
     cancel: string;
     confirmDelete: string;
     confirmDeleteDetail: string;
+    followQrCode: string;
+  };
+  followQrCode: {
+    title: string;
+    description: string;
+    loading: string;
+    failure: string;
+    sceneLabel: string;
+    permanentHint: string;
+    close: string;
   };
   form: {
     titleCreate: string;
@@ -236,6 +246,16 @@ const zhCN: OfficialAccountsMessages = {
     cancel: "取消",
     confirmDelete: "删除公众号账号",
     confirmDeleteDetail: "删除后该账号的配置与自定义菜单草稿将不再保留。",
+    followQrCode: "关注二维码",
+  },
+  followQrCode: {
+    title: "关注二维码",
+    description: "生成该公众号的带参数关注二维码，供公众号文章或线下物料投放。",
+    loading: "二维码生成中…",
+    failure: "关注二维码生成失败",
+    sceneLabel: "场景值",
+    permanentHint: "该二维码为永久有效，可长期投放使用。",
+    close: "关闭",
   },
   form: {
     titleCreate: "添加公众号账号",
@@ -419,6 +439,16 @@ const enUS: OfficialAccountsMessages = {
     cancel: "Cancel",
     confirmDelete: "Delete official account",
     confirmDeleteDetail: "The account configuration and custom-menu draft will no longer be kept.",
+    followQrCode: "Follow QR",
+  },
+  followQrCode: {
+    title: "Follow QR code",
+    description: "Generate the account's parameterized follow QR code for articles or offline placements.",
+    loading: "Generating the QR code…",
+    failure: "Failed to generate the follow QR code",
+    sceneLabel: "Scene",
+    permanentHint: "This QR code does not expire and can stay in service.",
+    close: "Close",
   },
   form: {
     titleCreate: "Add official account",
