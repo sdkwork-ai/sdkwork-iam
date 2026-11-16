@@ -271,30 +271,20 @@ async fn verify_cashier_token_for_cashier(
 /// Loads the signing secrets valid for a tenant from the payment settings table.
 ///
 /// Returns the payment-center managed secret (active plus its rotation grace
-/// secret) sealed with the deployment key-encryption key, or the deployment
-/// secret itself when no stored secret exists yet (legacy installs). An empty
-/// result disables the anonymous cashier.
+/// secret) opened by the host-installed cipher. An empty result disables the
+/// anonymous cashier (no stored secret, disabled, or provider unavailable).
 async fn load_cashier_signing_secrets(pg: &sqlx::PgPool, tenant_id: &str) -> Vec<Vec<u8>> {
-    let Some(kek) = sdkwork_utils_rust::cashier_token_secret_from_env()
-        .ok()
-        .flatten()
-    else {
-        return Vec::new();
-    };
-    match load_stored_cashier_signing_secrets(pg, tenant_id, &kek).await {
+    match load_stored_cashier_signing_secrets(pg, tenant_id).await {
         Ok(Some(secrets)) => secrets,
-        Ok(None) => vec![kek],
-        // A stored secret that cannot be opened must fail closed: falling back
-        // to the deployment secret would bypass a rotation.
-        Err(()) => Vec::new(),
+        _ => Vec::new(),
     }
 }
 
 async fn load_stored_cashier_signing_secrets(
     pg: &sqlx::PgPool,
     tenant_id: &str,
-    kek: &[u8],
 ) -> Result<Option<Vec<Vec<u8>>>, ()> {
+    let cipher = sdkwork_utils_rust::cashier_signing_key_cipher().map_err(|_| ())?;
     let tenant = tenant_id.trim();
     let scopes: &[&str] = if tenant.is_empty() || tenant == "0" {
         &["0"]
@@ -304,7 +294,8 @@ async fn load_stored_cashier_signing_secrets(
     for scope in scopes {
         let row = sqlx::query(
             r#"
-            SELECT secret_ciphertext, secret_encryption_key_id, secret_encryption_algorithm,
+            SELECT enabled, secret_ciphertext, secret_encryption_key_id,
+                   secret_encryption_algorithm,
                    previous_secret_ciphertext, previous_secret_encryption_key_id,
                    previous_secret_encryption_algorithm,
                    EXTRACT(EPOCH FROM previous_secret_expires_at)::BIGINT
@@ -322,21 +313,26 @@ async fn load_stored_cashier_signing_secrets(
             continue;
         };
         use sqlx::Row;
+        // An existing tenant row is authoritative: a disabled row or a row
+        // without a stored secret stops resolution instead of inheriting the
+        // platform row's key.
+        if !row.try_get::<bool, _>("enabled").unwrap_or(true) {
+            return Ok(None);
+        }
         let ciphertext: String = row.try_get("secret_ciphertext").unwrap_or_default();
         if ciphertext.trim().is_empty() {
-            // Legacy epoch-only row: keep looking for a platform secret.
-            continue;
+            return Ok(None);
         }
-        let current = sdkwork_utils_rust::open_cashier_token_secret(
-            kek,
-            scope,
-            &ciphertext,
-            &row.try_get::<String, _>("secret_encryption_key_id")
-                .unwrap_or_default(),
-            &row.try_get::<String, _>("secret_encryption_algorithm")
-                .unwrap_or_default(),
-        )
-        .map_err(|_| ())?;
+        let current = cipher
+            .open(
+                scope,
+                &ciphertext,
+                &row.try_get::<String, _>("secret_encryption_key_id")
+                    .unwrap_or_default(),
+                &row.try_get::<String, _>("secret_encryption_algorithm")
+                    .unwrap_or_default(),
+            )
+            .map_err(|_| ())?;
         let mut secrets = vec![current];
         let previous_ciphertext: String = row
             .try_get("previous_secret_ciphertext")
@@ -349,16 +345,16 @@ async fn load_stored_cashier_signing_secrets(
         if !previous_ciphertext.trim().is_empty()
             && previous_expires_at.is_some_and(|expires_at| expires_at > now)
         {
-            let previous = sdkwork_utils_rust::open_cashier_token_secret(
-                kek,
-                scope,
-                &previous_ciphertext,
-                &row.try_get::<String, _>("previous_secret_encryption_key_id")
-                    .unwrap_or_default(),
-                &row.try_get::<String, _>("previous_secret_encryption_algorithm")
-                    .unwrap_or_default(),
-            )
-            .map_err(|_| ())?;
+            let previous = cipher
+                .open(
+                    scope,
+                    &previous_ciphertext,
+                    &row.try_get::<String, _>("previous_secret_encryption_key_id")
+                        .unwrap_or_default(),
+                    &row.try_get::<String, _>("previous_secret_encryption_algorithm")
+                        .unwrap_or_default(),
+                )
+                .map_err(|_| ())?;
             secrets.push(previous);
         }
         return Ok(Some(secrets));
