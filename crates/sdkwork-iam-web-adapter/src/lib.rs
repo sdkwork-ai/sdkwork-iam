@@ -156,13 +156,6 @@ pub use oauth_integration_exchange::{
 pub use oauth_login_local::{LocalOAuthAuthority, LocalOAuthProviderProfile};
 #[path = "official_account_notify.rs"]
 mod official_account_notify;
-pub use official_account_notify::{
-    callback_signature, decrypt_wechat_blob, extract_encrypted_payload,
-    handle_official_account_notify_get, handle_official_account_notify_post,
-    load_official_account_notify_config, parse_notification, verify_callback_signature,
-    verify_notify_url, OfficialAccountNotifyConfig, WechatNotification, WechatNotifyChannel,
-    WechatNotifyError, WechatNotifyHttpResponse, WechatNotifyReplayGuard,
-};
 pub use oauth_provider_callback::{
     handle_provider_callback_get, handle_provider_callback_post, ProviderCallbackHttpResponse,
     ProviderCallbackRequestMeta,
@@ -184,6 +177,13 @@ pub use oauth_relying_party_registration::{
     OAUTH_SUPPORTED_SCOPES,
 };
 pub use oauth_token_lookup::IamOAuthTokenLookupService;
+pub use official_account_notify::{
+    callback_signature, decrypt_wechat_blob, extract_encrypted_payload,
+    handle_official_account_notify_get, handle_official_account_notify_post,
+    load_official_account_notify_config, parse_notification, verify_callback_signature,
+    verify_notify_url, OfficialAccountNotifyConfig, WechatNotification, WechatNotifyChannel,
+    WechatNotifyError, WechatNotifyHttpResponse, WechatNotifyReplayGuard,
+};
 pub use production_runtime::{
     allows_oauth_client_secret_env_override, assert_production_hardening,
     is_explicit_development_iam_deployment, is_production_iam_deployment,
@@ -386,10 +386,9 @@ fn iam_web_security_policy(environment: &WebEnvironment) -> SecurityPolicy {
     // `SDKWORK_CORS_SUBDOMAIN_BASE_DOMAINS`; without this projection the edge
     // admits `https://mall.sdkwork.com` while the Cors interceptor rejects the
     // request with 40301 `failedStage: cors`.
-    sdkwork_web_bootstrap::with_registered_subdomain_hosts_from_env(security_policy)
-        .unwrap_or_else(|error| {
-            panic!("IAM Web Framework CORS sub-domain configuration is invalid: {error}")
-        })
+    sdkwork_web_bootstrap::with_registered_subdomain_hosts_from_env(security_policy).unwrap_or_else(
+        |error| panic!("IAM Web Framework CORS sub-domain configuration is invalid: {error}"),
+    )
 }
 
 pub fn build_web_framework_layer<R>(

@@ -101,7 +101,10 @@ impl WechatNotification {
         for byte in digest {
             hex.push_str(&format!("{byte:02x}"));
         }
-        format!("wechat-notify-{}", &hex[..MAX_REPLAY_KEY_CHARS.min(hex.len())])
+        format!(
+            "wechat-notify-{}",
+            &hex[..MAX_REPLAY_KEY_CHARS.min(hex.len())]
+        )
     }
 }
 
@@ -189,7 +192,10 @@ pub fn verify_callback_signature(
         Some(encrypt) => callback_signature(&[token, timestamp, nonce, encrypt]),
         None => callback_signature(&[token, timestamp, nonce]),
     };
-    secure_compare(expected.as_bytes(), submitted.to_ascii_lowercase().as_bytes())
+    secure_compare(
+        expected.as_bytes(),
+        submitted.to_ascii_lowercase().as_bytes(),
+    )
 }
 
 /// Constant-time byte comparison; unequal lengths short-circuit.
@@ -216,7 +222,9 @@ pub fn decrypt_wechat_blob(
 ) -> Result<(Vec<u8>, String), WechatNotifyError> {
     let key = decode_encoding_aes_key(encoding_aes_key)?;
     if encrypt.is_empty() || encrypt.len() > MAX_ENCRYPT_CHARS {
-        return Err(WechatNotifyError::Crypto("payload size is out of bounds".to_string()));
+        return Err(WechatNotifyError::Crypto(
+            "payload size is out of bounds".to_string(),
+        ));
     }
     let mut ciphertext = BASE64_STANDARD
         .decode(encrypt)
@@ -245,9 +253,9 @@ fn decode_encoding_aes_key(encoding_aes_key: &str) -> Result<Vec<u8>, WechatNoti
             ))
         }
     };
-    let key = BASE64_STANDARD
-        .decode(padded.as_bytes())
-        .map_err(|_| WechatNotifyError::NotConfigured("EncodingAESKey is not base64".to_string()))?;
+    let key = BASE64_STANDARD.decode(padded.as_bytes()).map_err(|_| {
+        WechatNotifyError::NotConfigured("EncodingAESKey is not base64".to_string())
+    })?;
     if key.len() != 32 {
         return Err(WechatNotifyError::NotConfigured(
             "EncodingAESKey must decode to 32 bytes".to_string(),
@@ -265,7 +273,9 @@ fn split_wechat_plain(plain: &[u8]) -> Result<(Vec<u8>, String), WechatNotifyErr
     let message_len = u32::from_be_bytes([plain[16], plain[17], plain[18], plain[19]]) as usize;
     let message_end = 20 + message_len;
     if message_end > plain.len() {
-        return Err(WechatNotifyError::Crypto("payload length is out of bounds".to_string()));
+        return Err(WechatNotifyError::Crypto(
+            "payload length is out of bounds".to_string(),
+        ));
     }
     let message = plain[20..message_end].to_vec();
     let receive_id = String::from_utf8_lossy(&plain[message_end..])
@@ -277,7 +287,9 @@ fn split_wechat_plain(plain: &[u8]) -> Result<(Vec<u8>, String), WechatNotifyErr
 /// Extracts the `Encrypt` element from a safe-mode request body.
 pub fn extract_encrypted_payload(body: &str) -> Result<String, WechatNotifyError> {
     if body.len() > MAX_BODY_BYTES {
-        return Err(WechatNotifyError::Crypto("request body is too large".to_string()));
+        return Err(WechatNotifyError::Crypto(
+            "request body is too large".to_string(),
+        ));
     }
     extract_tag(body, "Encrypt", MAX_ENCRYPT_CHARS)?
         .ok_or_else(|| WechatNotifyError::InvalidRequest("Encrypt element is missing".to_string()))
@@ -331,13 +343,15 @@ fn ensure_timestamp_fresh(timestamp: &str) -> Result<(), WechatNotifyError> {
             "timestamp is missing or out of bounds".to_string(),
         ));
     }
-    let timestamp_secs = timestamp
-        .parse::<i64>()
-        .map_err(|_| WechatNotifyError::InvalidRequest("timestamp is not epoch seconds".to_string()))?;
+    let timestamp_secs = timestamp.parse::<i64>().map_err(|_| {
+        WechatNotifyError::InvalidRequest("timestamp is not epoch seconds".to_string())
+    })?;
     let now_secs = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|duration| duration.as_secs() as i64)
-        .map_err(|_| WechatNotifyError::InvalidRequest("system clock is unavailable".to_string()))?;
+        .map_err(|_| {
+            WechatNotifyError::InvalidRequest("system clock is unavailable".to_string())
+        })?;
     if (now_secs - timestamp_secs).abs() > WECHAT_NOTIFY_TIMESTAMP_WINDOW_SECONDS {
         return Err(WechatNotifyError::VerificationFailed);
     }
@@ -483,10 +497,7 @@ pub async fn load_official_account_notify_config(
         channel,
         app_id: row.get("provider_account_id"),
         token: decode(row.get("notify_token_ref"), "notify token")?,
-        encoding_aes_key: decode(
-            row.get("notify_encoding_aes_key_ref"),
-            "EncodingAESKey",
-        )?,
+        encoding_aes_key: decode(row.get("notify_encoding_aes_key_ref"), "EncodingAESKey")?,
         encrypt_mode: normalize_encrypt_mode(
             row.get::<Option<String>, _>("encryption_mode").as_deref(),
         ),
@@ -601,7 +612,9 @@ pub fn parse_notification(
         ));
     }
     if body.len() > MAX_BODY_BYTES {
-        return Err(WechatNotifyError::InvalidRequest("request body is too large".to_string()));
+        return Err(WechatNotifyError::InvalidRequest(
+            "request body is too large".to_string(),
+        ));
     }
     let signature = query
         .get("msg_signature")
@@ -634,15 +647,18 @@ pub fn parse_notification(
                     "EncodingAESKey is missing".to_string(),
                 ));
             }
-            if !verify_callback_signature(&config.token, timestamp, nonce, Some(&encrypt), signature)
-            {
+            if !verify_callback_signature(
+                &config.token,
+                timestamp,
+                nonce,
+                Some(&encrypt),
+                signature,
+            ) {
                 return Err(WechatNotifyError::VerificationFailed);
             }
-            let (message, receive_id) =
-                decrypt_wechat_blob(&config.encoding_aes_key, &encrypt)?;
-            let xml = String::from_utf8(message).map_err(|_| {
-                WechatNotifyError::Crypto("message XML is not UTF-8".to_string())
-            })?;
+            let (message, receive_id) = decrypt_wechat_blob(&config.encoding_aes_key, &encrypt)?;
+            let xml = String::from_utf8(message)
+                .map_err(|_| WechatNotifyError::Crypto("message XML is not UTF-8".to_string()))?;
             (xml, Some(receive_id))
         }
         None => {
@@ -678,9 +694,9 @@ fn normalize_notification(
             .ok_or_else(|| WechatNotifyError::InvalidRequest(format!("{tag} is missing")))
     };
     let create_time_raw = required("CreateTime")?;
-    let create_time = create_time_raw
-        .parse::<i64>()
-        .map_err(|_| WechatNotifyError::InvalidRequest("CreateTime is not epoch seconds".to_string()))?;
+    let create_time = create_time_raw.parse::<i64>().map_err(|_| {
+        WechatNotifyError::InvalidRequest("CreateTime is not epoch seconds".to_string())
+    })?;
     Ok(WechatNotification {
         channel,
         account_id: String::new(),
@@ -837,8 +853,7 @@ mod tests {
     #[test]
     fn decrypts_a_safe_mode_blob_and_reports_the_receive_id() {
         let blob = encrypt_blob("<xml><MsgType>text</MsgType></xml>", TEST_APP_ID);
-        let (message, receive_id) =
-            decrypt_wechat_blob(TEST_AES_KEY_43, &blob).expect("decrypt");
+        let (message, receive_id) = decrypt_wechat_blob(TEST_AES_KEY_43, &blob).expect("decrypt");
         assert_eq!(message, b"<xml><MsgType>text</MsgType></xml>");
         assert_eq!(receive_id, TEST_APP_ID);
     }
