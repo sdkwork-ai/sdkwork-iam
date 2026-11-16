@@ -558,12 +558,12 @@ fn build_provider_config(
         logo_url.map_or(Value::Null, |value| json!(value)),
     );
     config.insert(CONFIG_CUSTOM_MENU.to_owned(), custom_menu.clone());
-    config.insert(CONFIG_JS_SECURE_DOMAINS.to_owned(), json!(js_secure_domains));
-    config.insert(CONFIG_WEB_AUTH_DOMAINS.to_owned(), json!(web_auth_domains));
     config.insert(
-        CONFIG_BUSINESS_DOMAINS.to_owned(),
-        json!(business_domains),
+        CONFIG_JS_SECURE_DOMAINS.to_owned(),
+        json!(js_secure_domains),
     );
+    config.insert(CONFIG_WEB_AUTH_DOMAINS.to_owned(), json!(web_auth_domains));
+    config.insert(CONFIG_BUSINESS_DOMAINS.to_owned(), json!(business_domains));
     Value::Object(config)
 }
 
@@ -851,7 +851,10 @@ async fn resolve_wechat_client(
         return Ok(oauth_client_id);
     }
 
-    let oauth_client_id = format!("iamoc-oa-{}", stable_hash(&[tenant_id, integration_id, app_id]));
+    let oauth_client_id = format!(
+        "iamoc-oa-{}",
+        stable_hash(&[tenant_id, integration_id, app_id])
+    );
     let now = current_timestamp_str();
     sqlx::query(
         "INSERT INTO iam_oauth_client \
@@ -1126,10 +1129,7 @@ async fn upsert_message_push_webhook(
     .bind(webhook.organization_id)
     .bind(webhook.integration_id)
     .bind(webhook.resource_account_id)
-    .bind(format!(
-        "official-account-{}-message-push",
-        webhook.app_id
-    ))
+    .bind(format!("official-account-{}-message-push", webhook.app_id))
     .bind(webhook.display_name)
     .bind(webhook.callback_url)
     .bind(&callback_url_hash)
@@ -1414,8 +1414,7 @@ async fn create_official_account(
             organization_id: session_organization_id(&session),
             runtime_app_id: session_app_id(&session),
             environment: environment_to_string(&session.context.environment).to_owned(),
-            deployment_mode: deployment_mode_to_string(&session.context.deployment_mode)
-                .to_owned(),
+            deployment_mode: deployment_mode_to_string(&session.context.deployment_mode).to_owned(),
             user_id: session.user.id.clone(),
             account_id,
             app_id: app_id.clone(),
@@ -1575,9 +1574,7 @@ async fn create_account_aggregate(
                 callback_url: notify_url,
                 encryption_mode: &creation.notify_encrypt_mode,
                 verification_token_status: credential_status(&creation.notify_token_ref),
-                encoding_aes_key_status: credential_status(
-                    &creation.notify_encoding_aes_key_ref,
-                ),
+                encoding_aes_key_status: credential_status(&creation.notify_encoding_aes_key_ref),
                 enabled: true,
                 created_by: &creation.user_id,
             },
@@ -1614,8 +1611,13 @@ async fn create_account_aggregate(
         mark_client_secret_configured(&mut tx, &creation.tenant_id, &oauth_client_id).await?;
     }
 
-    let row = fetch_account_row(&mut tx, &creation.tenant_id, &creation.user_id, &creation.account_id)
-        .await?;
+    let row = fetch_account_row(
+        &mut tx,
+        &creation.tenant_id,
+        &creation.user_id,
+        &creation.account_id,
+    )
+    .await?;
     tx.commit().await?;
     Ok(row)
 }
@@ -1645,12 +1647,11 @@ async fn retrieve_official_account_settings(
         Ok(value) => value,
         Err(response) => return response,
     };
-    let result = sqlx::query(
-        "SELECT server_ips FROM iam_oauth_scan_login_config WHERE tenant_id = $1",
-    )
-    .bind(&session.user.tenant_id)
-    .fetch_optional(&pg)
-    .await;
+    let result =
+        sqlx::query("SELECT server_ips FROM iam_oauth_scan_login_config WHERE tenant_id = $1")
+            .bind(&session.user.tenant_id)
+            .fetch_optional(&pg)
+            .await;
     match result {
         Ok(row) => {
             let server_ips = row
@@ -1708,7 +1709,10 @@ fn app_menu_version(menu: &Value) -> i64 {
 }
 
 fn app_menu_history(menu: &Value) -> Vec<Value> {
-    menu.get("history").and_then(Value::as_array).cloned().unwrap_or_default()
+    menu.get("history")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
 }
 
 fn app_menu_next(
@@ -1720,13 +1724,16 @@ fn app_menu_next(
     let current_version = current.map(app_menu_version).unwrap_or(0);
     let mut history = current.map(app_menu_history).unwrap_or_default();
     if let Some(current) = current {
-        history.insert(0, json!({
-            "version": app_menu_version(current),
-            "buttons": current.get("buttons").cloned().unwrap_or_else(|| json!([])),
-            "savedAt": current.get("updatedAt").cloned().unwrap_or(Value::Null),
-            "publishedAt": current.get("publishedAt").cloned().unwrap_or(Value::Null),
-            "source": current.get("source").cloned().unwrap_or_else(|| json!("database")),
-        }));
+        history.insert(
+            0,
+            json!({
+                "version": app_menu_version(current),
+                "buttons": current.get("buttons").cloned().unwrap_or_else(|| json!([])),
+                "savedAt": current.get("updatedAt").cloned().unwrap_or(Value::Null),
+                "publishedAt": current.get("publishedAt").cloned().unwrap_or(Value::Null),
+                "source": current.get("source").cloned().unwrap_or_else(|| json!("database")),
+            }),
+        );
     }
     history.truncate(APP_MENU_HISTORY_LIMIT);
     let published = published_at
@@ -1759,7 +1766,8 @@ fn decode_app_secret(secret_ref: &Option<String>) -> Result<String, String> {
     };
     let bytes = sdkwork_iam_web_adapter::decode_signing_secret_ref(secret_ref)
         .map_err(|error| format!("decode official account AppSecret failed: {error}"))?;
-    String::from_utf8(bytes).map_err(|error| format!("official account AppSecret is invalid: {error}"))
+    String::from_utf8(bytes)
+        .map_err(|error| format!("official account AppSecret is invalid: {error}"))
 }
 
 async fn sync_official_account_custom_menu(
@@ -1772,33 +1780,73 @@ async fn sync_official_account_custom_menu(
         Ok(value) => value,
         Err(response) => return response,
     };
-    let row = match load_owned_official_account(&pg, &session.user.tenant_id, &session.user.id, &official_account_id).await {
+    let row = match load_owned_official_account(
+        &pg,
+        &session.user.tenant_id,
+        &session.user.id,
+        &official_account_id,
+    )
+    .await
+    {
         Ok(Some(row)) => row,
         Ok(None) => return official_account_not_found(),
-        Err(error) => return official_account_storage_error("iam_official_account_sync_failed", &format!("load official account failed: {error}")),
+        Err(error) => {
+            return official_account_storage_error(
+                "iam_official_account_sync_failed",
+                &format!("load official account failed: {error}"),
+            )
+        }
     };
     let display_name: String = row.get("display_name");
     let app_id: Option<String> = row.get("provider_account_id");
-    let Some(app_id) = app_id.as_deref().map(str::trim).filter(|value| !value.is_empty()) else {
-        return official_account_invalid("wechatAppId", "the official account AppID is not configured");
+    let Some(app_id) = app_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    else {
+        return official_account_invalid(
+            "wechatAppId",
+            "the official account AppID is not configured",
+        );
     };
     let secret = match decode_app_secret(&row.get("app_secret_ref")) {
         Ok(secret) => secret,
-        Err(message) => return appbase_error(StatusCode::CONFLICT, "iam_official_account_sync_unavailable", &message),
+        Err(message) => {
+            return appbase_error(
+                StatusCode::CONFLICT,
+                "iam_official_account_sync_unavailable",
+                &message,
+            )
+        }
     };
-    let remote = match sdkwork_iam_web_adapter::retrieve_wechat_mp_custom_menu(&pg, app_id, &secret).await {
-        Ok(menu) => menu,
-        Err(error) => return appbase_error(StatusCode::BAD_GATEWAY, "iam_official_account_sync_failed", &error),
-    };
+    let remote =
+        match sdkwork_iam_web_adapter::retrieve_wechat_mp_custom_menu(&pg, app_id, &secret).await {
+            Ok(menu) => menu,
+            Err(error) => {
+                return appbase_error(
+                    StatusCode::BAD_GATEWAY,
+                    "iam_official_account_sync_failed",
+                    &error,
+                )
+            }
+        };
     let normalized = match sdkwork_iam_web_adapter::normalize_wechat_mp_custom_menu_draft(&remote) {
         Ok(menu) => menu,
         Err(error) => return official_account_invalid("customMenu", &error),
     };
-    let buttons = normalized.get("buttons").cloned().unwrap_or_else(|| json!([]));
+    let buttons = normalized
+        .get("buttons")
+        .cloned()
+        .unwrap_or_else(|| json!([]));
     let base_version = body.get("baseVersion").and_then(Value::as_i64);
     let mut tx = match pg.begin().await {
         Ok(tx) => tx,
-        Err(error) => return official_account_storage_error("iam_official_account_sync_failed", &format!("begin sync failed: {error}")),
+        Err(error) => {
+            return official_account_storage_error(
+                "iam_official_account_sync_failed",
+                &format!("begin sync failed: {error}"),
+            )
+        }
     };
     let current_row = match sqlx::query(
         "SELECT provider_config_json FROM iam_oauth_resource_account \
@@ -1817,12 +1865,21 @@ async fn sync_official_account_custom_menu(
     let config_text: String = current_row.get(0);
     let mut config: Map<String, Value> = match serde_json::from_str::<Value>(&config_text) {
         Ok(Value::Object(config)) => config,
-        _ => return official_account_storage_error("iam_official_account_sync_failed", "provider config is invalid"),
+        _ => {
+            return official_account_storage_error(
+                "iam_official_account_sync_failed",
+                "provider config is invalid",
+            )
+        }
     };
     let current = config.get(CONFIG_CUSTOM_MENU).cloned();
     if let Some(expected) = base_version {
         if current.as_ref().map(app_menu_version).unwrap_or(0) != expected {
-            return appbase_error(StatusCode::CONFLICT, "iam_official_account_menu_conflict", "the menu was updated elsewhere; reload it before refreshing");
+            return appbase_error(
+                StatusCode::CONFLICT,
+                "iam_official_account_menu_conflict",
+                "the menu was updated elsewhere; reload it before refreshing",
+            );
         }
     }
     let menu = app_menu_next(buttons, "wechat", None, current.as_ref());
@@ -1838,12 +1895,23 @@ async fn sync_official_account_custom_menu(
     .execute(&mut *tx)
     .await
     {
-        return official_account_storage_error("iam_official_account_sync_failed", &format!("persist synced menu failed: {error}"));
+        return official_account_storage_error(
+            "iam_official_account_sync_failed",
+            &format!("persist synced menu failed: {error}"),
+        );
     }
     if let Err(error) = tx.commit().await {
-        return official_account_storage_error("iam_official_account_sync_failed", &format!("commit synced menu failed: {error}"));
+        return official_account_storage_error(
+            "iam_official_account_sync_failed",
+            &format!("commit synced menu failed: {error}"),
+        );
     }
-    appbase_ok(app_menu_context(&official_account_id, &display_name, &menu, "wechat"))
+    appbase_ok(app_menu_context(
+        &official_account_id,
+        &display_name,
+        &menu,
+        "wechat",
+    ))
 }
 
 async fn publish_official_account_custom_menu(
@@ -1856,41 +1924,94 @@ async fn publish_official_account_custom_menu(
         Ok(value) => value,
         Err(response) => return response,
     };
-    let row = match load_owned_official_account(&pg, &session.user.tenant_id, &session.user.id, &official_account_id).await {
+    let row = match load_owned_official_account(
+        &pg,
+        &session.user.tenant_id,
+        &session.user.id,
+        &official_account_id,
+    )
+    .await
+    {
         Ok(Some(row)) => row,
         Ok(None) => return official_account_not_found(),
-        Err(error) => return official_account_storage_error("iam_official_account_publish_failed", &format!("load official account failed: {error}")),
+        Err(error) => {
+            return official_account_storage_error(
+                "iam_official_account_publish_failed",
+                &format!("load official account failed: {error}"),
+            )
+        }
     };
     let display_name: String = row.get("display_name");
     let app_id: Option<String> = row.get("provider_account_id");
-    let Some(app_id) = app_id.as_deref().map(str::trim).filter(|value| !value.is_empty()) else {
-        return official_account_invalid("wechatAppId", "the official account AppID is not configured");
+    let Some(app_id) = app_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    else {
+        return official_account_invalid(
+            "wechatAppId",
+            "the official account AppID is not configured",
+        );
     };
     let secret = match decode_app_secret(&row.get("app_secret_ref")) {
         Ok(secret) => secret,
-        Err(message) => return appbase_error(StatusCode::CONFLICT, "iam_official_account_publish_unavailable", &message),
+        Err(message) => {
+            return appbase_error(
+                StatusCode::CONFLICT,
+                "iam_official_account_publish_unavailable",
+                &message,
+            )
+        }
     };
     let config_text: String = row.get("provider_config_json");
     let config: Value = match serde_json::from_str(&config_text) {
         Ok(config) => config,
-        Err(_) => return official_account_storage_error("iam_official_account_publish_failed", "provider config is invalid"),
+        Err(_) => {
+            return official_account_storage_error(
+                "iam_official_account_publish_failed",
+                "provider config is invalid",
+            )
+        }
     };
-    let Some(menu) = config.get(CONFIG_CUSTOM_MENU).filter(|menu| menu.get("buttons").is_some_and(Value::is_array)).cloned() else {
-        return appbase_error(StatusCode::CONFLICT, "iam_official_account_publish_unavailable", "save the custom menu before publishing");
+    let Some(menu) = config
+        .get(CONFIG_CUSTOM_MENU)
+        .filter(|menu| menu.get("buttons").is_some_and(Value::is_array))
+        .cloned()
+    else {
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_official_account_publish_unavailable",
+            "save the custom menu before publishing",
+        );
     };
     let base_version = body.get("baseVersion").and_then(Value::as_i64);
     if let Some(expected) = base_version {
         if app_menu_version(&menu) != expected {
-            return appbase_error(StatusCode::CONFLICT, "iam_official_account_menu_conflict", "the menu was updated elsewhere; reload it before publishing");
+            return appbase_error(
+                StatusCode::CONFLICT,
+                "iam_official_account_menu_conflict",
+                "the menu was updated elsewhere; reload it before publishing",
+            );
         }
     }
     if let Err(error) = sdkwork_iam_web_adapter::validate_wechat_mp_custom_menu(&menu, true) {
         return official_account_invalid("customMenu", &error);
     }
-    if let Err(error) = sdkwork_iam_web_adapter::publish_wechat_mp_custom_menu(&pg, app_id, &secret, &menu).await {
-        return appbase_error(StatusCode::BAD_GATEWAY, "iam_official_account_publish_failed", &error);
+    if let Err(error) =
+        sdkwork_iam_web_adapter::publish_wechat_mp_custom_menu(&pg, app_id, &secret, &menu).await
+    {
+        return appbase_error(
+            StatusCode::BAD_GATEWAY,
+            "iam_official_account_publish_failed",
+            &error,
+        );
     }
-    let published = app_menu_next(menu.get("buttons").cloned().unwrap_or_else(|| json!([])), "wechat", Some(&current_timestamp_str()), Some(&menu));
+    let published = app_menu_next(
+        menu.get("buttons").cloned().unwrap_or_else(|| json!([])),
+        "wechat",
+        Some(&current_timestamp_str()),
+        Some(&menu),
+    );
     let mut config = match config {
         Value::Object(config) => config,
         _ => Map::new(),
@@ -1907,9 +2028,17 @@ async fn publish_official_account_custom_menu(
     .execute(&pg)
     .await
     {
-        return official_account_storage_error("iam_official_account_publish_failed", &format!("persist published menu failed: {error}"));
+        return official_account_storage_error(
+            "iam_official_account_publish_failed",
+            &format!("persist published menu failed: {error}"),
+        );
     }
-    appbase_ok(app_menu_context(&official_account_id, &display_name, &published, "wechat"))
+    appbase_ok(app_menu_context(
+        &official_account_id,
+        &display_name,
+        &published,
+        "wechat",
+    ))
 }
 
 async fn rollback_official_account_custom_menu(
@@ -1925,46 +2054,112 @@ async fn rollback_official_account_custom_menu(
     let Some(target_version) = body.get("version").and_then(Value::as_i64) else {
         return official_account_invalid("version", "the version to restore is required");
     };
-    let row = match load_owned_official_account(&pg, &session.user.tenant_id, &session.user.id, &official_account_id).await {
+    let row = match load_owned_official_account(
+        &pg,
+        &session.user.tenant_id,
+        &session.user.id,
+        &official_account_id,
+    )
+    .await
+    {
         Ok(Some(row)) => row,
         Ok(None) => return official_account_not_found(),
-        Err(error) => return official_account_storage_error("iam_official_account_publish_failed", &format!("load official account failed: {error}")),
+        Err(error) => {
+            return official_account_storage_error(
+                "iam_official_account_publish_failed",
+                &format!("load official account failed: {error}"),
+            )
+        }
     };
     let display_name: String = row.get("display_name");
     let app_id: Option<String> = row.get("provider_account_id");
-    let Some(app_id) = app_id.as_deref().map(str::trim).filter(|value| !value.is_empty()) else {
-        return official_account_invalid("wechatAppId", "the official account AppID is not configured");
+    let Some(app_id) = app_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    else {
+        return official_account_invalid(
+            "wechatAppId",
+            "the official account AppID is not configured",
+        );
     };
     let secret = match decode_app_secret(&row.get("app_secret_ref")) {
         Ok(secret) => secret,
-        Err(message) => return appbase_error(StatusCode::CONFLICT, "iam_official_account_publish_unavailable", &message),
+        Err(message) => {
+            return appbase_error(
+                StatusCode::CONFLICT,
+                "iam_official_account_publish_unavailable",
+                &message,
+            )
+        }
     };
     let config_text: String = row.get("provider_config_json");
     let config: Value = match serde_json::from_str(&config_text) {
         Ok(config) => config,
-        Err(_) => return official_account_storage_error("iam_official_account_publish_failed", "provider config is invalid"),
+        Err(_) => {
+            return official_account_storage_error(
+                "iam_official_account_publish_failed",
+                "provider config is invalid",
+            )
+        }
     };
-    let Some(current) = config.get(CONFIG_CUSTOM_MENU).filter(|menu| menu.get("buttons").is_some_and(Value::is_array)).cloned() else {
-        return appbase_error(StatusCode::CONFLICT, "iam_official_account_rollback_unavailable", "save the custom menu before rolling it back");
+    let Some(current) = config
+        .get(CONFIG_CUSTOM_MENU)
+        .filter(|menu| menu.get("buttons").is_some_and(Value::is_array))
+        .cloned()
+    else {
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_official_account_rollback_unavailable",
+            "save the custom menu before rolling it back",
+        );
     };
     let base_version = body.get("baseVersion").and_then(Value::as_i64);
     if let Some(expected) = base_version {
         if app_menu_version(&current) != expected {
-            return appbase_error(StatusCode::CONFLICT, "iam_official_account_menu_conflict", "the menu was updated elsewhere; reload it before rolling back");
+            return appbase_error(
+                StatusCode::CONFLICT,
+                "iam_official_account_menu_conflict",
+                "the menu was updated elsewhere; reload it before rolling back",
+            );
         }
     }
-    let Some(target) = app_menu_history(&current).into_iter().find(|entry| app_menu_version(entry) == target_version) else {
-        return appbase_error(StatusCode::UNPROCESSABLE_ENTITY, "iam_official_account_rollback_unavailable", "the requested menu revision is no longer retained");
+    let Some(target) = app_menu_history(&current)
+        .into_iter()
+        .find(|entry| app_menu_version(entry) == target_version)
+    else {
+        return appbase_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "iam_official_account_rollback_unavailable",
+            "the requested menu revision is no longer retained",
+        );
     };
-    let restored = json!({ "buttons": target.get("buttons").cloned().unwrap_or_else(|| json!([])) });
-    let normalized = match sdkwork_iam_web_adapter::normalize_wechat_mp_custom_menu_draft(&restored) {
+    let restored =
+        json!({ "buttons": target.get("buttons").cloned().unwrap_or_else(|| json!([])) });
+    let normalized = match sdkwork_iam_web_adapter::normalize_wechat_mp_custom_menu_draft(&restored)
+    {
         Ok(menu) => menu,
         Err(error) => return official_account_invalid("customMenu", &error),
     };
-    if let Err(error) = sdkwork_iam_web_adapter::publish_wechat_mp_custom_menu(&pg, app_id, &secret, &normalized).await {
-        return appbase_error(StatusCode::BAD_GATEWAY, "iam_official_account_publish_failed", &error);
+    if let Err(error) =
+        sdkwork_iam_web_adapter::publish_wechat_mp_custom_menu(&pg, app_id, &secret, &normalized)
+            .await
+    {
+        return appbase_error(
+            StatusCode::BAD_GATEWAY,
+            "iam_official_account_publish_failed",
+            &error,
+        );
     }
-    let restored_menu = app_menu_next(normalized.get("buttons").cloned().unwrap_or_else(|| json!([])), "wechat", Some(&current_timestamp_str()), Some(&current));
+    let restored_menu = app_menu_next(
+        normalized
+            .get("buttons")
+            .cloned()
+            .unwrap_or_else(|| json!([])),
+        "wechat",
+        Some(&current_timestamp_str()),
+        Some(&current),
+    );
     let mut config = match config {
         Value::Object(config) => config,
         _ => Map::new(),
@@ -1981,9 +2176,17 @@ async fn rollback_official_account_custom_menu(
     .execute(&pg)
     .await
     {
-        return official_account_storage_error("iam_official_account_publish_failed", &format!("persist rollback menu failed: {error}"));
+        return official_account_storage_error(
+            "iam_official_account_publish_failed",
+            &format!("persist rollback menu failed: {error}"),
+        );
     }
-    appbase_ok(app_menu_context(&official_account_id, &display_name, &restored_menu, "wechat"))
+    appbase_ok(app_menu_context(
+        &official_account_id,
+        &display_name,
+        &restored_menu,
+        "wechat",
+    ))
 }
 
 async fn retrieve_official_account(
@@ -2319,9 +2522,7 @@ async fn apply_account_update(
                     callback_url: notify_url,
                     encryption_mode: &update.notify_encrypt_mode,
                     verification_token_status: credential_status(&update.notify_token_ref),
-                    encoding_aes_key_status: credential_status(
-                        &update.notify_encoding_aes_key_ref,
-                    ),
+                    encoding_aes_key_status: credential_status(&update.notify_encoding_aes_key_ref),
                     enabled: update.enabled,
                     created_by: &update.user_id,
                 },
@@ -2367,7 +2568,13 @@ async fn apply_account_update(
         }
     }
 
-    let row = fetch_account_row(&mut tx, &update.tenant_id, &update.user_id, &update.account_id).await?;
+    let row = fetch_account_row(
+        &mut tx,
+        &update.tenant_id,
+        &update.user_id,
+        &update.account_id,
+    )
+    .await?;
     tx.commit().await?;
     Ok(row)
 }
@@ -2451,12 +2658,7 @@ async fn delete_official_account(
     }
 
     let result = async {
-        delete_webhook_rows(
-            &mut tx,
-            &session.user.tenant_id,
-            &official_account_id,
-        )
-        .await?;
+        delete_webhook_rows(&mut tx, &session.user.tenant_id, &official_account_id).await?;
         sqlx::query(
             "DELETE FROM iam_oauth_secret \
              WHERE tenant_id = $1 AND secret_owner_kind = 'resource_account' \
