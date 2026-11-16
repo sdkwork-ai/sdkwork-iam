@@ -162,7 +162,7 @@ pub(crate) async fn start_wechat_payment_oauth_for_cashier(
             "cashier token is required",
         );
     };
-    let Some(claims) = verify_cashier_token_for_cashier(cashier_token) else {
+    let Some(claims) = verify_cashier_token_for_cashier(&pg, cashier_token).await else {
         // Same observable result for unknown/tampered/expired links.
         return appbase_error(
             StatusCode::NOT_FOUND,
@@ -240,36 +240,130 @@ pub(crate) async fn start_wechat_payment_oauth_for_cashier(
 }
 
 /// Verifies a cashier capability token with its tenant key.
-fn verify_cashier_token_for_cashier(token: &str) -> Option<sdkwork_utils_rust::CashierTokenClaims> {
-    let secret = sdkwork_utils_rust::cashier_token_secret_from_env()
-        .ok()
-        .flatten()?;
-    // The tenant and epoch are peeked only to select the derivation key; the
-    // signature must then validate under that tenant's epoch key, so a foreign
-    // tenant or epoch cannot pass.
-    let payload = token.split('.').nth(1)?;
-    let bytes = sdkwork_utils_rust::base64url_decode(payload)?;
-    #[derive(serde::Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    struct Peeked {
-        tenant_id: String,
-    }
-    let peeked: Peeked = serde_json::from_slice(&bytes).ok()?;
+async fn verify_cashier_token_for_cashier(
+    pg: &sqlx::PgPool,
+    token: &str,
+) -> Option<sdkwork_utils_rust::CashierTokenClaims> {
+    // The tenant and epoch are read from the (still unverified) payload only to
+    // select the derivation key; the signature must then validate under that
+    // tenant's epoch key, so a foreign tenant or epoch cannot pass.
+    let tenant_id = sdkwork_utils_rust::peek_cashier_token_tenant(token)?;
     let epoch = sdkwork_utils_rust::peek_cashier_token_epoch(token);
-    let key = sdkwork_utils_rust::derive_cashier_token_key_with_epoch(
-        &secret,
-        peeked.tenant_id.trim(),
-        epoch,
-    )
-    .ok()?;
     let now = sdkwork_utils_rust::now().timestamp();
-    sdkwork_utils_rust::verify_cashier_token(
-        token,
-        &key,
-        now,
-        sdkwork_utils_rust::CASHIER_TOKEN_AUDIENCE,
-    )
-    .ok()
+    for secret in load_cashier_signing_secrets(pg, &tenant_id).await {
+        let Ok(key) =
+            sdkwork_utils_rust::derive_cashier_token_key_with_epoch(&secret, &tenant_id, epoch)
+        else {
+            continue;
+        };
+        if let Ok(claims) = sdkwork_utils_rust::verify_cashier_token(
+            token,
+            &key,
+            now,
+            sdkwork_utils_rust::CASHIER_TOKEN_AUDIENCE,
+        ) {
+            return Some(claims);
+        }
+    }
+    None
+}
+
+/// Loads the signing secrets valid for a tenant from the payment settings table.
+///
+/// Returns the payment-center managed secret (active plus its rotation grace
+/// secret) sealed with the deployment key-encryption key, or the deployment
+/// secret itself when no stored secret exists yet (legacy installs). An empty
+/// result disables the anonymous cashier.
+async fn load_cashier_signing_secrets(pg: &sqlx::PgPool, tenant_id: &str) -> Vec<Vec<u8>> {
+    let Some(kek) = sdkwork_utils_rust::cashier_token_secret_from_env()
+        .ok()
+        .flatten()
+    else {
+        return Vec::new();
+    };
+    match load_stored_cashier_signing_secrets(pg, tenant_id, &kek).await {
+        Ok(Some(secrets)) => secrets,
+        Ok(None) => vec![kek],
+        // A stored secret that cannot be opened must fail closed: falling back
+        // to the deployment secret would bypass a rotation.
+        Err(()) => Vec::new(),
+    }
+}
+
+async fn load_stored_cashier_signing_secrets(
+    pg: &sqlx::PgPool,
+    tenant_id: &str,
+    kek: &[u8],
+) -> Result<Option<Vec<Vec<u8>>>, ()> {
+    let tenant = tenant_id.trim();
+    let scopes: &[&str] = if tenant.is_empty() || tenant == "0" {
+        &["0"]
+    } else {
+        &[tenant, "0"]
+    };
+    for scope in scopes {
+        let row = sqlx::query(
+            r#"
+            SELECT secret_ciphertext, secret_encryption_key_id, secret_encryption_algorithm,
+                   previous_secret_ciphertext, previous_secret_encryption_key_id,
+                   previous_secret_encryption_algorithm,
+                   EXTRACT(EPOCH FROM previous_secret_expires_at)::BIGINT
+                       AS previous_secret_expires_at_unix
+            FROM commerce_payment_cashier_token_setting
+            WHERE tenant_id = CAST($1 AS TEXT)
+            LIMIT 1
+            "#,
+        )
+        .bind(scope)
+        .fetch_optional(pg)
+        .await
+        .map_err(|_| ())?;
+        let Some(row) = row else {
+            continue;
+        };
+        use sqlx::Row;
+        let ciphertext: String = row.try_get("secret_ciphertext").unwrap_or_default();
+        if ciphertext.trim().is_empty() {
+            // Legacy epoch-only row: keep looking for a platform secret.
+            continue;
+        }
+        let current = sdkwork_utils_rust::open_cashier_token_secret(
+            kek,
+            scope,
+            &ciphertext,
+            &row.try_get::<String, _>("secret_encryption_key_id")
+                .unwrap_or_default(),
+            &row.try_get::<String, _>("secret_encryption_algorithm")
+                .unwrap_or_default(),
+        )
+        .map_err(|_| ())?;
+        let mut secrets = vec![current];
+        let previous_ciphertext: String = row
+            .try_get("previous_secret_ciphertext")
+            .unwrap_or_default();
+        let previous_expires_at: Option<i64> = row
+            .try_get("previous_secret_expires_at_unix")
+            .ok()
+            .flatten();
+        let now = sdkwork_utils_rust::now().timestamp();
+        if !previous_ciphertext.trim().is_empty()
+            && previous_expires_at.is_none_or(|expires_at| expires_at > now)
+        {
+            let previous = sdkwork_utils_rust::open_cashier_token_secret(
+                kek,
+                scope,
+                &previous_ciphertext,
+                &row.try_get::<String, _>("previous_secret_encryption_key_id")
+                    .unwrap_or_default(),
+                &row.try_get::<String, _>("previous_secret_encryption_algorithm")
+                    .unwrap_or_default(),
+            )
+            .map_err(|_| ())?;
+            secrets.push(previous);
+        }
+        return Ok(Some(secrets));
+    }
+    Ok(None)
 }
 
 /// Handles the WeChat authorize redirect: verifies the CSRF state,
@@ -369,8 +463,14 @@ pub(crate) async fn handle_wechat_payment_oauth_callback(
         if cashier_token_id.is_empty() {
             return payment_oauth_redirect_response(&redirect, "error", "context_missing");
         }
-        let Some(binding) =
-            sign_openid_binding(&tenant_id, &cashier_token_id, key_epoch, &profile.subject)
+        let Some(binding) = sign_openid_binding(
+            &pg,
+            &tenant_id,
+            &cashier_token_id,
+            key_epoch,
+            &profile.subject,
+        )
+        .await
         else {
             return payment_oauth_redirect_response(&redirect, "error", "context_missing");
         };
@@ -386,19 +486,17 @@ pub(crate) async fn handle_wechat_payment_oauth_callback(
 /// The order service recomputes the same HMAC from the same deployment secret and
 /// the epoch carried in the capability token, so an openid cannot be replayed onto
 /// another cashier link and cannot be invented.
-fn sign_openid_binding(
+async fn sign_openid_binding(
+    pg: &sqlx::PgPool,
     tenant_id: &str,
     token_id: &str,
     key_epoch: i64,
     openid: &str,
 ) -> Option<String> {
-    let secret = sdkwork_utils_rust::cashier_token_secret_from_env()
-        .ok()
-        .flatten()?;
-    let key = sdkwork_utils_rust::derive_cashier_token_key_with_epoch(
-        &secret, tenant_id, key_epoch,
-    )
-    .ok()?;
+    let secrets = load_cashier_signing_secrets(pg, tenant_id).await;
+    let secret = secrets.first()?;
+    let key = sdkwork_utils_rust::derive_cashier_token_key_with_epoch(secret, tenant_id, key_epoch)
+        .ok()?;
     Some(sdkwork_utils_rust::hmac_sha256_base64url(
         sdkwork_utils_rust::cashier_openid_binding_message(token_id, openid).as_bytes(),
         &key,
