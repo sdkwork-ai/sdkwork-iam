@@ -244,11 +244,12 @@ async fn verify_cashier_token_for_cashier(
     pg: &sqlx::PgPool,
     token: &str,
 ) -> Option<sdkwork_utils_rust::CashierTokenClaims> {
+    let token = resolve_cashier_short_link_token(pg, token).await?;
     // The tenant and epoch are read from the (still unverified) payload only to
     // select the derivation key; the signature must then validate under that
     // tenant's epoch key, so a foreign tenant or epoch cannot pass.
-    let tenant_id = sdkwork_utils_rust::peek_cashier_token_tenant(token)?;
-    let epoch = sdkwork_utils_rust::peek_cashier_token_epoch(token);
+    let tenant_id = sdkwork_utils_rust::peek_cashier_token_tenant(&token)?;
+    let epoch = sdkwork_utils_rust::peek_cashier_token_epoch(&token);
     let now = sdkwork_utils_rust::now().timestamp();
     for secret in load_cashier_signing_secrets(pg, &tenant_id).await {
         let Ok(key) =
@@ -257,12 +258,55 @@ async fn verify_cashier_token_for_cashier(
             continue;
         };
         if let Ok(claims) = sdkwork_utils_rust::verify_cashier_token(
-            token,
+            &token,
             &key,
             now,
             sdkwork_utils_rust::CASHIER_TOKEN_AUDIENCE,
         ) {
             return Some(claims);
+        }
+    }
+    None
+}
+
+/// Resolves a short cashier link (`s1.<22>`) to the real signed token stored in
+/// the payment-side mapping. Non-short tokens pass through unchanged.
+async fn resolve_cashier_short_link_token(pg: &sqlx::PgPool, token: &str) -> Option<String> {
+    if !sdkwork_utils_rust::is_cashier_short_link_segment(token) {
+        return Some(token.to_owned());
+    }
+    let short_id = token
+        .trim()
+        .strip_prefix(sdkwork_utils_rust::CASHIER_SHORT_LINK_PREFIX)?;
+    let row = sqlx::query(
+        r#"
+        SELECT tenant_id, key_epoch, token_ciphertext
+        FROM commerce_payment_cashier_link
+        WHERE short_id = CAST($1 AS TEXT)
+          AND status = 'active'
+          AND expires_at > NOW()
+        LIMIT 1
+        "#,
+    )
+    .bind(short_id)
+    .fetch_optional(pg)
+    .await
+    .ok()?;
+    let Some(row) = row else {
+        return None;
+    };
+    use sqlx::Row;
+    let tenant_id = row.try_get::<String, _>("tenant_id").ok()?;
+    let key_epoch = row.try_get::<i64, _>("key_epoch").ok()?;
+    let ciphertext = row.try_get::<String, _>("token_ciphertext").ok()?;
+    for secret in load_cashier_signing_secrets(pg, &tenant_id).await {
+        if let Ok(signed) = sdkwork_utils_rust::decrypt_cashier_short_link_token(
+            &secret,
+            &tenant_id,
+            key_epoch,
+            &ciphertext,
+        ) {
+            return Some(signed);
         }
     }
     None

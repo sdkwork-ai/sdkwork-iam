@@ -75,7 +75,7 @@ export function SdkworkIamH5AuthLoginScreen({
   const [wechatRedirecting, setWechatRedirecting] = useState(false);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout | null = null;
+    let timer: ReturnType<typeof setInterval> | null = null;
     if (countdown > 0) {
       timer = setInterval(() => setCountdown((value) => value - 1), 1000);
     }

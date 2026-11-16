@@ -27,6 +27,8 @@
   --iam-h5-auth-modal-bg: #111827;
   --iam-h5-auth-border-soft: rgba(148, 163, 184, 0.35);
   --iam-h5-auth-green-shadow: rgba(37, 99, 235, 0.35);
+  /* Brand mark fill; a solid field so hosts can keep a flat surface. */
+  --iam-h5-auth-brand-mark-bg: var(--iam-h5-auth-green);
 
   /* Tech-blue glow: a subtle radial light at the top over a deep navy base. */
   background-color: var(--iam-h5-auth-bg);
