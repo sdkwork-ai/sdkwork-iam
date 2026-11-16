@@ -347,7 +347,7 @@ async fn load_stored_cashier_signing_secrets(
             .flatten();
         let now = sdkwork_utils_rust::now().timestamp();
         if !previous_ciphertext.trim().is_empty()
-            && previous_expires_at.is_none_or(|expires_at| expires_at > now)
+            && previous_expires_at.is_some_and(|expires_at| expires_at > now)
         {
             let previous = sdkwork_utils_rust::open_cashier_token_secret(
                 kek,
