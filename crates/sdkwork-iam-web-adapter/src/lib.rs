@@ -374,8 +374,22 @@ fn iam_web_security_policy(environment: &WebEnvironment) -> SecurityPolicy {
     // while the request-path Cors interceptor rejects the very same origin with
     // a 40301 `failedStage: cors` problem. A half-configured pattern is
     // fail-closed at startup per §5.
-    sdkwork_web_bootstrap::with_registered_console_hosts_from_env(security_policy)
-        .unwrap_or_else(|error| panic!("IAM Web Framework CORS configuration is invalid: {error}"))
+    let security_policy =
+        sdkwork_web_bootstrap::with_registered_console_hosts_from_env(security_policy)
+            .unwrap_or_else(|error| {
+                panic!("IAM Web Framework CORS configuration is invalid: {error}")
+            });
+    // CORS_SPEC §5.1 (`Opt-in sub-domain rule`): the same edge/pipeline
+    // consistency requirement applies to whole registered base domains. A
+    // deployment that trusts every host under `sdkwork.com` (apex, second,
+    // third and fourth level) declares it once through
+    // `SDKWORK_CORS_SUBDOMAIN_BASE_DOMAINS`; without this projection the edge
+    // admits `https://mall.sdkwork.com` while the Cors interceptor rejects the
+    // request with 40301 `failedStage: cors`.
+    sdkwork_web_bootstrap::with_registered_subdomain_hosts_from_env(security_policy)
+        .unwrap_or_else(|error| {
+            panic!("IAM Web Framework CORS sub-domain configuration is invalid: {error}")
+        })
 }
 
 pub fn build_web_framework_layer<R>(

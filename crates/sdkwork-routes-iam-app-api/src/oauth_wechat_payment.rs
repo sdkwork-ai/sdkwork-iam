@@ -233,7 +233,7 @@ pub(crate) async fn start_wechat_payment_oauth_for_cashier(
     append_payment_oauth_cookie(
         &mut response,
         CASHIER_COOKIE,
-        &claims.token_id,
+        &format!("{}|{}", claims.token_id, claims.epoch),
         STATE_TTL_SECONDS,
     );
     response
@@ -244,8 +244,9 @@ fn verify_cashier_token_for_cashier(token: &str) -> Option<sdkwork_utils_rust::C
     let secret = sdkwork_utils_rust::cashier_token_secret_from_env()
         .ok()
         .flatten()?;
-    // The tenant is peeked only to select the derivation key; the signature must
-    // then validate under that tenant's key, so a foreign tenant cannot pass.
+    // The tenant and epoch are peeked only to select the derivation key; the
+    // signature must then validate under that tenant's epoch key, so a foreign
+    // tenant or epoch cannot pass.
     let payload = token.split('.').nth(1)?;
     let bytes = sdkwork_utils_rust::base64url_decode(payload)?;
     #[derive(serde::Deserialize)]
@@ -254,8 +255,13 @@ fn verify_cashier_token_for_cashier(token: &str) -> Option<sdkwork_utils_rust::C
         tenant_id: String,
     }
     let peeked: Peeked = serde_json::from_slice(&bytes).ok()?;
-    let key =
-        sdkwork_utils_rust::derive_cashier_token_key(&secret, peeked.tenant_id.trim()).ok()?;
+    let epoch = sdkwork_utils_rust::peek_cashier_token_epoch(token);
+    let key = sdkwork_utils_rust::derive_cashier_token_key_with_epoch(
+        &secret,
+        peeked.tenant_id.trim(),
+        epoch,
+    )
+    .ok()?;
     let now = sdkwork_utils_rust::now().timestamp();
     sdkwork_utils_rust::verify_cashier_token(
         token,
@@ -344,11 +350,27 @@ pub(crate) async fn handle_wechat_payment_oauth_callback(
     // Anonymous cashier: the payer has no session, so the openid must be returned
     // in a form the order service can verify against the capability token instead
     // of trusting a client-supplied value.
-    if let Some(cashier_token_id) = read_payment_oauth_cookie(&headers, CASHIER_COOKIE)
+    if let Some(cashier_cookie) = read_payment_oauth_cookie(&headers, CASHIER_COOKIE)
         .map(|value| value.trim().to_owned())
         .filter(|value| !value.is_empty())
     {
-        let Some(binding) = sign_openid_binding(&tenant_id, &cashier_token_id, &profile.subject)
+        // The cookie carries `tokenId|keyEpoch` so the binding is signed with the
+        // same tenant key epoch the order service derives from the token claims.
+        // Cookies issued before epoch rotation (plain token id) default to epoch 1.
+        let (cashier_token_id, key_epoch) = cashier_cookie
+            .split_once('|')
+            .map(|(token_id, epoch)| {
+                (
+                    token_id.trim().to_owned(),
+                    epoch.trim().parse::<i64>().unwrap_or(1),
+                )
+            })
+            .unwrap_or((cashier_cookie.clone(), 1));
+        if cashier_token_id.is_empty() {
+            return payment_oauth_redirect_response(&redirect, "error", "context_missing");
+        }
+        let Some(binding) =
+            sign_openid_binding(&tenant_id, &cashier_token_id, key_epoch, &profile.subject)
         else {
             return payment_oauth_redirect_response(&redirect, "error", "context_missing");
         };
@@ -359,15 +381,24 @@ pub(crate) async fn handle_wechat_payment_oauth_callback(
     payment_oauth_redirect_response(&redirect, "openid", &profile.subject)
 }
 
-/// Signs the payer openid against the cashier token id.
+/// Signs the payer openid against the cashier token id and key epoch.
 ///
-/// The order service recomputes the same HMAC from the same deployment secret, so
-/// an openid cannot be replayed onto another cashier link and cannot be invented.
-fn sign_openid_binding(tenant_id: &str, token_id: &str, openid: &str) -> Option<String> {
+/// The order service recomputes the same HMAC from the same deployment secret and
+/// the epoch carried in the capability token, so an openid cannot be replayed onto
+/// another cashier link and cannot be invented.
+fn sign_openid_binding(
+    tenant_id: &str,
+    token_id: &str,
+    key_epoch: i64,
+    openid: &str,
+) -> Option<String> {
     let secret = sdkwork_utils_rust::cashier_token_secret_from_env()
         .ok()
         .flatten()?;
-    let key = sdkwork_utils_rust::derive_cashier_token_key(&secret, tenant_id).ok()?;
+    let key = sdkwork_utils_rust::derive_cashier_token_key_with_epoch(
+        &secret, tenant_id, key_epoch,
+    )
+    .ok()?;
     Some(sdkwork_utils_rust::hmac_sha256_base64url(
         sdkwork_utils_rust::cashier_openid_binding_message(token_id, openid).as_bytes(),
         &key,
