@@ -167,7 +167,6 @@ test("appbase backend SDK bootstrap-body operations suppress stored credentials 
     operations.map(({ operation }) => operation.operationId).sort(),
     [
       "accessCredentials.create",
-      "applications.register",
       "serviceAccountTokens.create",
       "tenantApplications.create",
       "tenantApplications.enable",

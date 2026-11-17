@@ -56,11 +56,11 @@
     },
     {
       "path": "sdkwork_iam_backend_sdk/api/iam_oauth.py",
-      "sha256": "e5303025e54e5b0f6e077aed9bd9a8026c4435e59147322a1474b8b7bc0496a2"
+      "sha256": "95677f0cdae9f5ff7b729ccb1a42db26c1483df8568df048ba69df4d605d149f"
     },
     {
       "path": "sdkwork_iam_backend_sdk/api/iam.py",
-      "sha256": "aa73fc5d188653a7b7776744d93f425937efcd0fcee572a1440cabc7916d14f5"
+      "sha256": "50caa5902b12025c64e17f47c1d5fb7e3589619afbb253912a4bac302c708a3a"
     },
     {
       "path": "sdkwork_iam_backend_sdk/client.py",
@@ -72,15 +72,11 @@
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/__init__.py",
-      "sha256": "aaacc0e7d8f2b34b62a96a0e20619ef78bf03ad046ac2358e83d1bdd541f2a48"
+      "sha256": "d396fd7bcf840a33f973e3465afe47c00c71146e5237b4bf46a6c819be9814e8"
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/appbase_access_credential_create_command.py",
       "sha256": "5203488f27ddde0d379908a0ca3adae6ec666a12abeb3edad7e25eeaad8b0d16"
-    },
-    {
-      "path": "sdkwork_iam_backend_sdk/models/appbase_application_register_command.py",
-      "sha256": "7d5afca9321685587d62d991d218df911c6b629227b6235f1f825a522518e0e8"
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/appbase_tenant_application_enable_command.py",
@@ -88,7 +84,7 @@
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/appbase_tenant_application_provision_command.py",
-      "sha256": "75bf475df6ae0345d6656332740b4be9879030d3ce9b301166d0338f9b062737"
+      "sha256": "2cd841af6929367736f6e2b7697bd3ed08b5c3d7672f0e8b7875ba707ad0f233"
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/appbase_tenant_application_update_command.py",
@@ -104,7 +100,7 @@
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_provision_command.py",
-      "sha256": "4c69e76e530097ba41e85f7634ee4011f53fa6667390a4d70751c0744dae8034"
+      "sha256": "ce0081dce5452c6f00e544d13ac0b0da60f31a6233ea9fd5e4a5468338ec6a10"
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_update_command.py",

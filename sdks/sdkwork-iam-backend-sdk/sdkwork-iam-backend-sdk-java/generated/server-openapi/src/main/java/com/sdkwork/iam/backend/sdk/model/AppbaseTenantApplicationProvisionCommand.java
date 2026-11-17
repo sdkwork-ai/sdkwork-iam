@@ -11,8 +11,6 @@ public class AppbaseTenantApplicationProvisionCommand {
     private String password;
     private String tenantId;
     private String organizationId;
-    private String templateId;
-    private String appKey;
     private String instanceKey;
     private String displayName;
     private String environment;
@@ -20,6 +18,8 @@ public class AppbaseTenantApplicationProvisionCommand {
     private String primaryDomain;
     private List<String> accessPermissions;
     private Map<String, Object> runtimeConfig;
+    private String deployApplicationId;
+    private String provisioningIdempotencyKey;
 
     public String getAuthToken() {
         return this.authToken;
@@ -77,22 +77,6 @@ public class AppbaseTenantApplicationProvisionCommand {
         this.organizationId = organizationId;
     }
 
-    public String getTemplateId() {
-        return this.templateId;
-    }
-
-    public void setTemplateId(String templateId) {
-        this.templateId = templateId;
-    }
-
-    public String getAppKey() {
-        return this.appKey;
-    }
-
-    public void setAppKey(String appKey) {
-        this.appKey = appKey;
-    }
-
     public String getInstanceKey() {
         return this.instanceKey;
     }
@@ -147,5 +131,21 @@ public class AppbaseTenantApplicationProvisionCommand {
 
     public void setRuntimeConfig(Map<String, Object> runtimeConfig) {
         this.runtimeConfig = runtimeConfig;
+    }
+
+    public String getDeployApplicationId() {
+        return this.deployApplicationId;
+    }
+
+    public void setDeployApplicationId(String deployApplicationId) {
+        this.deployApplicationId = deployApplicationId;
+    }
+
+    public String getProvisioningIdempotencyKey() {
+        return this.provisioningIdempotencyKey;
+    }
+
+    public void setProvisioningIdempotencyKey(String provisioningIdempotencyKey) {
+        this.provisioningIdempotencyKey = provisioningIdempotencyKey;
     }
 }

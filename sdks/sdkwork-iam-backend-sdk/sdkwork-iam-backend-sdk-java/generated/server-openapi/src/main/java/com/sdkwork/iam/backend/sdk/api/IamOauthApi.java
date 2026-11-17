@@ -356,6 +356,12 @@ public class IamOauthApi {
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
+    /** Iam oauth resource Accounts delete. */
+    public Void resourceAccountsDelete(String resourceAccountId) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/oauth/resource_accounts/" + serializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false)) + ""));
+        return null;
+    }
+
     /** Iam oauth resource Accounts update. */
     public SdkWorkResourceResponse resourceAccountsUpdate(String resourceAccountId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.backendPath("/iam/oauth/resource_accounts/" + serializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false)) + ""), body, null, null, "application/json");
@@ -383,6 +389,18 @@ public class IamOauthApi {
     /** Iam oauth resource Accounts custom Menus publish. */
     public SdkWorkResourceResponse resourceAccountsCustomMenusPublish(String resourceAccountId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/" + serializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false)) + "/custom_menus/publish"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth resource Accounts custom Menus rollback. */
+    public SdkWorkResourceResponse resourceAccountsCustomMenusRollback(String resourceAccountId, Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/" + serializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false)) + "/custom_menus/rollback"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth resource Accounts custom Menus sync. */
+    public SdkWorkResourceResponse resourceAccountsCustomMenusSync(String resourceAccountId, Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/" + serializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false)) + "/custom_menus/sync"), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 

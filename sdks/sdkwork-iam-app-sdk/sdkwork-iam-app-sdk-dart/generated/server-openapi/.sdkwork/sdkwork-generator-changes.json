@@ -9,10 +9,17 @@
     "protocol": "http",
     "packageName": "sdkwork_iam_app_sdk"
   },
-  "changeFingerprint": "e7804b0cc4da89cf034029d2e94c6daf397827899f96bb64f8444d7cb6b7e1ff",
+  "changeFingerprint": "0338b7db0425ef4070a6a0e6afbcdfaf5593415a4d7de6e309383568b1f4f616",
   "changes": {
     "createdGeneratedFiles": [],
     "updatedGeneratedFiles": [
+      "lib/src/api/api.dart",
+      "lib/src/api/auth.dart",
+      "lib/src/api/iam.dart",
+      "lib/src/api/oauth.dart",
+      "lib/src/models.dart"
+    ],
+    "unchangedGeneratedFiles": [
       "analysis_options.yaml",
       "bin/publish-core.mjs",
       "bin/publish.ps1",
@@ -20,75 +27,37 @@
       "CHANGELOG.md",
       "lib/app_client.dart",
       "lib/sdkwork_iam_app_sdk.dart",
-      "lib/src/api/api.dart",
-      "lib/src/api/auth.dart",
-      "lib/src/api/iam.dart",
-      "lib/src/api/oauth.dart",
       "lib/src/api/paths.dart",
       "lib/src/api/response_helpers.dart",
       "lib/src/api/system.dart",
       "lib/src/http/client.dart",
       "lib/src/http/sdk_config.dart",
-      "lib/src/models.dart",
       "LICENSE",
       "pubspec.yaml",
       "README.md",
       "sdkwork-sdk.json"
     ],
-    "unchangedGeneratedFiles": [],
     "deletedGeneratedFiles": [],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
     ],
-    "backedUpFiles": [
-      "analysis_options.yaml",
-      "bin/publish-core.mjs",
-      "bin/publish.ps1",
-      "bin/publish.sh",
-      "CHANGELOG.md",
-      "lib/app_client.dart",
-      "lib/sdkwork_iam_app_sdk.dart",
-      "lib/src/api/api.dart",
-      "lib/src/api/auth.dart",
-      "lib/src/api/iam.dart",
-      "lib/src/api/oauth.dart",
-      "lib/src/api/paths.dart",
-      "lib/src/api/response_helpers.dart",
-      "lib/src/api/system.dart",
-      "lib/src/http/client.dart",
-      "lib/src/http/sdk_config.dart",
-      "lib/src/models.dart",
-      "LICENSE",
-      "pubspec.yaml",
-      "README.md",
-      "sdkwork-sdk.json"
-    ]
+    "backedUpFiles": []
   },
   "impact": {
     "schemaVersion": 1,
     "areas": [
       "api-surface",
-      "models",
-      "runtime",
-      "build-metadata",
-      "publish-workflow",
-      "documentation",
-      "unknown"
+      "models"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "lib/app_client.dart",
           "lib/src/api/api.dart",
           "lib/src/api/auth.dart",
           "lib/src/api/iam.dart",
-          "lib/src/api/oauth.dart",
-          "lib/src/api/paths.dart",
-          "lib/src/api/response_helpers.dart",
-          "lib/src/api/system.dart",
-          "lib/src/http/client.dart"
+          "lib/src/api/oauth.dart"
         ]
       },
       {
@@ -96,58 +65,21 @@
         "paths": [
           "lib/src/models.dart"
         ]
-      },
-      {
-        "area": "runtime",
-        "paths": [
-          "lib/src/http/client.dart",
-          "lib/src/http/sdk_config.dart"
-        ]
-      },
-      {
-        "area": "build-metadata",
-        "paths": [
-          "analysis_options.yaml",
-          "pubspec.yaml",
-          "sdkwork-sdk.json"
-        ]
-      },
-      {
-        "area": "publish-workflow",
-        "paths": [
-          "bin/publish-core.mjs",
-          "bin/publish.ps1",
-          "bin/publish.sh"
-        ]
-      },
-      {
-        "area": "documentation",
-        "paths": [
-          "CHANGELOG.md",
-          "README.md"
-        ]
-      },
-      {
-        "area": "unknown",
-        "paths": [
-          "lib/sdkwork_iam_app_sdk.dart",
-          "LICENSE"
-        ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required."
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-dart\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -165,15 +97,12 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "backed-up-generated-files",
-      "manual-review-required",
-      "unknown-impact",
       "verification-required"
     ]
   },

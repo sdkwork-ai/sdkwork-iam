@@ -56,6 +56,86 @@ namespace SDKWork.Iam.AppSdk.Api
         }
 
         /// <summary>
+        /// Iam oauth official Account Settings retrieve.
+        /// </summary>
+        public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> OauthOfficialAccountSettingsRetrieveAsync()
+        {
+            return await _client.GetAsync<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse>(ApiPaths.AppPath("/iam/oauth/official_account_settings"));
+        }
+
+        /// <summary>
+        /// Iam oauth official Accounts list.
+        /// </summary>
+        public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkListResponse?> OauthOfficialAccountsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        {
+            var queryString = BuildQueryString(new[]
+            {
+                new QueryParameterSpec("page", page, "form", true, false, null),
+                new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
+                new QueryParameterSpec("cursor", cursor, "form", true, false, null),
+                new QueryParameterSpec("sort", sort, "form", true, false, null),
+                new QueryParameterSpec("q", q, "form", true, false, null),
+            });
+            return await _client.GetAsync<SDKWork.Iam.AppSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.AppPath("/iam/oauth/official_accounts"), queryString));
+        }
+
+        /// <summary>
+        /// Iam oauth official Accounts create.
+        /// </summary>
+        public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> OauthOfficialAccountsCreateAsync(Dictionary<string, object> body)
+        {
+            return await _client.PostAsync<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse>(ApiPaths.AppPath("/iam/oauth/official_accounts"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Iam oauth official Accounts delete.
+        /// </summary>
+        public async Task OauthOfficialAccountsDeleteAsync(string officialAccountId)
+        {
+            await _client.DeleteAsync<object>(ApiPaths.AppPath($"/iam/oauth/official_accounts/{SerializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false))}"));
+        }
+
+        /// <summary>
+        /// Iam oauth official Accounts retrieve.
+        /// </summary>
+        public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> OauthOfficialAccountsRetrieveAsync(string officialAccountId)
+        {
+            return await _client.GetAsync<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse>(ApiPaths.AppPath($"/iam/oauth/official_accounts/{SerializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false))}"));
+        }
+
+        /// <summary>
+        /// Iam oauth official Accounts update.
+        /// </summary>
+        public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> OauthOfficialAccountsUpdateAsync(string officialAccountId, Dictionary<string, object>? body = null)
+        {
+            return await _client.PatchAsync<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse>(ApiPaths.AppPath($"/iam/oauth/official_accounts/{SerializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false))}"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Iam oauth official Accounts custom Menus publish.
+        /// </summary>
+        public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> OauthOfficialAccountsCustomMenusPublishAsync(string officialAccountId, Dictionary<string, object> body)
+        {
+            return await _client.PostAsync<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse>(ApiPaths.AppPath($"/iam/oauth/official_accounts/{SerializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false))}/custom_menus/publish"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Iam oauth official Accounts custom Menus rollback.
+        /// </summary>
+        public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> OauthOfficialAccountsCustomMenusRollbackAsync(string officialAccountId, Dictionary<string, object> body)
+        {
+            return await _client.PostAsync<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse>(ApiPaths.AppPath($"/iam/oauth/official_accounts/{SerializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false))}/custom_menus/rollback"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Iam oauth official Accounts custom Menus sync.
+        /// </summary>
+        public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> OauthOfficialAccountsCustomMenusSyncAsync(string officialAccountId, Dictionary<string, object> body)
+        {
+            return await _client.PostAsync<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse>(ApiPaths.AppPath($"/iam/oauth/official_accounts/{SerializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false))}/custom_menus/sync"), body, null, null, "application/json");
+        }
+
+        /// <summary>
         /// Organization Memberships list.
         /// </summary>
         public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkListResponse?> OrganizationMembershipsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
@@ -88,11 +168,36 @@ namespace SDKWork.Iam.AppSdk.Api
         }
 
         /// <summary>
+        /// Organizations members list.
+        /// </summary>
+        public async Task<SDKWork.Iam.AppSdk.Models.IamOrganizationMemberListResponse?> OrganizationsMembersListAsync(string organizationId, int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null, string? role = null)
+        {
+            var queryString = BuildQueryString(new[]
+            {
+                new QueryParameterSpec("page", page, "form", true, false, null),
+                new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
+                new QueryParameterSpec("cursor", cursor, "form", true, false, null),
+                new QueryParameterSpec("sort", sort, "form", true, false, null),
+                new QueryParameterSpec("q", q, "form", true, false, null),
+                new QueryParameterSpec("role", role, "form", true, false, null),
+            });
+            return await _client.GetAsync<SDKWork.Iam.AppSdk.Models.IamOrganizationMemberListResponse>(ApiPaths.AppendQueryString(ApiPaths.AppPath($"/iam/organizations/{SerializePathParameter(organizationId, new PathParameterSpec("organizationId", "simple", false))}/members"), queryString));
+        }
+
+        /// <summary>
         /// Organizations tree retrieve.
         /// </summary>
         public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> OrganizationsTreeRetrieveAsync()
         {
             return await _client.GetAsync<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse>(ApiPaths.AppPath("/iam/organizations/tree"));
+        }
+
+        /// <summary>
+        /// Persona Catalog retrieve.
+        /// </summary>
+        public async Task<SDKWork.Iam.AppSdk.Models.IamPersonaCatalogResponse?> PersonaCatalogRetrieveAsync()
+        {
+            return await _client.GetAsync<SDKWork.Iam.AppSdk.Models.IamPersonaCatalogResponse>(ApiPaths.AppPath("/iam/persona_catalog"));
         }
 
         /// <summary>
@@ -130,7 +235,7 @@ namespace SDKWork.Iam.AppSdk.Api
         /// <summary>
         /// Role Bindings list.
         /// </summary>
-        public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkListResponse?> RoleBindingsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkListResponse?> RoleBindingsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null, string? roleId = null, string? principalKind = null, string? principalId = null, string? scopeKind = null, string? scopeId = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -139,6 +244,11 @@ namespace SDKWork.Iam.AppSdk.Api
                 new QueryParameterSpec("cursor", cursor, "form", true, false, null),
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
+                new QueryParameterSpec("roleId", roleId, "form", true, false, null),
+                new QueryParameterSpec("principalKind", principalKind, "form", true, false, null),
+                new QueryParameterSpec("principalId", principalId, "form", true, false, null),
+                new QueryParameterSpec("scopeKind", scopeKind, "form", true, false, null),
+                new QueryParameterSpec("scopeId", scopeId, "form", true, false, null),
             });
             return await _client.GetAsync<SDKWork.Iam.AppSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.AppPath("/iam/role_bindings"), queryString));
         }
@@ -184,6 +294,30 @@ namespace SDKWork.Iam.AppSdk.Api
         }
 
         /// <summary>
+        /// Users current persona delete.
+        /// </summary>
+        public async Task UsersCurrentPersonaDeleteAsync()
+        {
+            await _client.DeleteAsync<object>(ApiPaths.AppPath("/iam/users/current/persona"));
+        }
+
+        /// <summary>
+        /// Users current persona retrieve.
+        /// </summary>
+        public async Task<SDKWork.Iam.AppSdk.Models.IamUserPersonaResponse?> UsersCurrentPersonaRetrieveAsync()
+        {
+            return await _client.GetAsync<SDKWork.Iam.AppSdk.Models.IamUserPersonaResponse>(ApiPaths.AppPath("/iam/users/current/persona"));
+        }
+
+        /// <summary>
+        /// Users current persona update.
+        /// </summary>
+        public async Task<SDKWork.Iam.AppSdk.Models.IamUserPersonaResponse?> UsersCurrentPersonaUpdateAsync(SDKWork.Iam.AppSdk.Models.IamUserPersonaUpdateCommand body)
+        {
+            return await _client.PutAsync<SDKWork.Iam.AppSdk.Models.IamUserPersonaResponse>(ApiPaths.AppPath("/iam/users/current/persona"), body, null, null, "application/json");
+        }
+
+        /// <summary>
         /// Users current phone Bindings delete.
         /// </summary>
         public async Task UsersCurrentPhoneBindingsDeleteAsync()
@@ -199,6 +333,105 @@ namespace SDKWork.Iam.AppSdk.Api
             return await _client.PostAsync<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse>(ApiPaths.AppPath("/iam/users/current/phone_bindings"), body, null, null, "application/json");
         }
 
+        private sealed record PathParameterSpec(string Name, string Style, bool Explode);
+
+        private static string SerializePathParameter(object? value, PathParameterSpec spec)
+        {
+            if (value is null)
+            {
+                return string.Empty;
+            }
+            var style = string.IsNullOrWhiteSpace(spec.Style) ? "simple" : spec.Style;
+            if (value is System.Collections.IDictionary dictionary)
+            {
+                return SerializePathObject(spec.Name, dictionary, style, spec.Explode);
+            }
+            if (value is System.Collections.IEnumerable enumerable && value is not string)
+            {
+                return SerializePathArray(spec.Name, enumerable, style, spec.Explode);
+            }
+            return PathPrimitivePrefix(spec.Name, style) + Uri.EscapeDataString(value.ToString() ?? string.Empty);
+        }
+
+        private static string SerializePathArray(string name, System.Collections.IEnumerable values, string style, bool explode)
+        {
+            var serialized = new List<string>();
+            foreach (var item in values)
+            {
+                if (item is not null)
+                {
+                    serialized.Add(Uri.EscapeDataString(item.ToString() ?? string.Empty));
+                }
+            }
+            if (serialized.Count == 0)
+            {
+                return PathPrefix(name, style);
+            }
+            if (style == "matrix")
+            {
+                if (explode)
+                {
+                    var parts = new List<string>();
+                    foreach (var item in serialized)
+                    {
+                        parts.Add(";" + name + "=" + item);
+                    }
+                    return string.Join(string.Empty, parts);
+                }
+                return ";" + name + "=" + string.Join(",", serialized);
+            }
+            var separator = explode ? "." : ",";
+            return PathPrefix(name, style) + string.Join(separator, serialized);
+        }
+
+        private static string SerializePathObject(string name, System.Collections.IDictionary values, string style, bool explode)
+        {
+            var entries = new List<string>();
+            var exploded = new List<string>();
+            foreach (System.Collections.DictionaryEntry item in values)
+            {
+                if (item.Value is null)
+                {
+                    continue;
+                }
+                var escapedKey = Uri.EscapeDataString(item.Key.ToString() ?? string.Empty);
+                var escapedValue = Uri.EscapeDataString(item.Value.ToString() ?? string.Empty);
+                if (explode)
+                {
+                    exploded.Add(style == "matrix" ? ";" + escapedKey + "=" + escapedValue : escapedKey + "=" + escapedValue);
+                }
+                else
+                {
+                    entries.Add(escapedKey);
+                    entries.Add(escapedValue);
+                }
+            }
+            if (style == "matrix")
+            {
+                return explode ? string.Join(string.Empty, exploded) : ";" + name + "=" + string.Join(",", entries);
+            }
+            if (explode)
+            {
+                var separator = style == "label" ? "." : ",";
+                return PathPrefix(name, style) + string.Join(separator, exploded);
+            }
+            return PathPrefix(name, style) + string.Join(",", entries);
+        }
+
+        private static string PathPrefix(string name, string style)
+        {
+            return style switch
+            {
+                "label" => ".",
+                "matrix" => ";" + name,
+                _ => string.Empty,
+            };
+        }
+
+        private static string PathPrimitivePrefix(string name, string style)
+        {
+            return style == "matrix" ? ";" + name + "=" : PathPrefix(name, style);
+        }
 
         private sealed record QueryParameterSpec(
             string Name,

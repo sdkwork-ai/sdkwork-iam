@@ -59,12 +59,6 @@ pub const IAM_STANDARD_PERMISSION_SEEDS: &[PermissionSeed] = &[
         action: "revoke",
     },
     PermissionSeed {
-        code: "iam.applications.register",
-        name: "Register applications",
-        resource: "iam.applications",
-        action: "register",
-    },
-    PermissionSeed {
         code: "iam.assignments.create",
         name: "Create department and position assignments",
         resource: "iam.assignments",

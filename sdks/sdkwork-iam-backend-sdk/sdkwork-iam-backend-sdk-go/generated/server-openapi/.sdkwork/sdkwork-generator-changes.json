@@ -9,16 +9,18 @@
     "protocol": "http",
     "packageName": "github.com/sdkwork/sdkwork-iam-backend-sdk"
   },
-  "changeFingerprint": "55d4bc5b0191f22795f1d375b7bf9d89041769dec675af80d3345b4a81fc1b79",
+  "changeFingerprint": "7a6b412ae15a0dc7eaa1e0b9a217508363eea107c0ea6c7a05d29cecab55fbeb",
   "changes": {
     "createdGeneratedFiles": [],
     "updatedGeneratedFiles": [
-      "api/iam.go"
+      "api/iam_oauth.go",
+      "api/iam.go",
+      "types/appbase_tenant_application_provision_command.go",
+      "types/iam_tenant_application_management_provision_command.go"
     ],
     "unchangedGeneratedFiles": [
       "api/base.go",
       "api/doc.go",
-      "api/iam_oauth.go",
       "api/paths.go",
       "bin/publish-core.mjs",
       "bin/publish.ps1",
@@ -33,16 +35,13 @@
       "sdk.go",
       "sdkwork-sdk.json",
       "types/appbase_access_credential_create_command.go",
-      "types/appbase_application_register_command.go",
       "types/appbase_operation_command.go",
       "types/appbase_tenant_application_enable_command.go",
-      "types/appbase_tenant_application_provision_command.go",
       "types/appbase_tenant_application_update_command.go",
       "types/common.go",
       "types/doc.go",
       "types/field_error.go",
       "types/iam_oauth_client_create_command.go",
-      "types/iam_tenant_application_management_provision_command.go",
       "types/iam_tenant_application_management_update_command.go",
       "types/iam_tenant_application_status_command.go",
       "types/page_info.go",
@@ -59,7 +58,9 @@
       "types/service_account_credential_revoke_command.go",
       "types/service_account_token_exchange_command.go"
     ],
-    "deletedGeneratedFiles": [],
+    "deletedGeneratedFiles": [
+      "types/appbase_application_register_command.go"
+    ],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
@@ -69,29 +70,39 @@
   "impact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface"
+      "api-surface",
+      "models"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
+          "api/iam_oauth.go",
           "api/iam.go"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "types/appbase_application_register_command.go",
+          "types/appbase_tenant_application_provision_command.go",
+          "types/iam_tenant_application_management_provision_command.go"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface. Verification is required."
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-go\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -109,12 +120,14 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },

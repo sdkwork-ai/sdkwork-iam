@@ -1,17 +1,19 @@
 package com.sdkwork.iam.backend.sdk.model;
 
 import java.util.List;
+import java.util.Map;
 
 public class IamTenantApplicationManagementProvisionCommand {
     private String organizationId;
-    private String templateId;
-    private String appKey;
     private String instanceKey;
     private String displayName;
     private String environment;
     private String applicationType;
     private String primaryDomain;
     private List<String> accessPermissions;
+    private Map<String, Object> runtimeConfig;
+    private String deployApplicationId;
+    private String provisioningIdempotencyKey;
 
     public String getOrganizationId() {
         return this.organizationId;
@@ -19,22 +21,6 @@ public class IamTenantApplicationManagementProvisionCommand {
 
     public void setOrganizationId(String organizationId) {
         this.organizationId = organizationId;
-    }
-
-    public String getTemplateId() {
-        return this.templateId;
-    }
-
-    public void setTemplateId(String templateId) {
-        this.templateId = templateId;
-    }
-
-    public String getAppKey() {
-        return this.appKey;
-    }
-
-    public void setAppKey(String appKey) {
-        this.appKey = appKey;
     }
 
     public String getInstanceKey() {
@@ -83,5 +69,29 @@ public class IamTenantApplicationManagementProvisionCommand {
 
     public void setAccessPermissions(List<String> accessPermissions) {
         this.accessPermissions = accessPermissions;
+    }
+
+    public Map<String, Object> getRuntimeConfig() {
+        return this.runtimeConfig;
+    }
+
+    public void setRuntimeConfig(Map<String, Object> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public String getDeployApplicationId() {
+        return this.deployApplicationId;
+    }
+
+    public void setDeployApplicationId(String deployApplicationId) {
+        this.deployApplicationId = deployApplicationId;
+    }
+
+    public String getProvisioningIdempotencyKey() {
+        return this.provisioningIdempotencyKey;
+    }
+
+    public void setProvisioningIdempotencyKey(String provisioningIdempotencyKey) {
+        this.provisioningIdempotencyKey = provisioningIdempotencyKey;
     }
 }

@@ -32,7 +32,7 @@
     },
     {
       "path": "lib/sdkwork/backend_sdk.rb",
-      "sha256": "ac0dfe4c1f4354ca2ed60cd256cda7cf9be6f217dcf6ef6009451679f106afbd"
+      "sha256": "ca70a0ba737ccadab197af5d4a0bfb37e243668ad71f4f29ca83cac55d04351a"
     },
     {
       "path": "lib/sdkwork/backend_sdk/api/base_api.rb",
@@ -40,11 +40,11 @@
     },
     {
       "path": "lib/sdkwork/backend_sdk/api/iam_oauth.rb",
-      "sha256": "ebf890cda2751cfb70ddaaf747e1275cf6fe42ba21bed22409102328a15723c2"
+      "sha256": "cd68de5b760228e3fb9251e6b0b69e2b99a81f449ad85262e106d182c206c1a8"
     },
     {
       "path": "lib/sdkwork/backend_sdk/api/iam.rb",
-      "sha256": "fd2ff3f3eef7bbb218decca4bda1ceb4b27eea55e77e1343fc664cf25e59fd27"
+      "sha256": "e3d892159e07aea449372d6b2c48e62366a26451aa80a92e75e4f3627094b86c"
     },
     {
       "path": "lib/sdkwork/backend_sdk/client.rb",
@@ -59,16 +59,12 @@
       "sha256": "743ca0f771b75142f717cbe668cd3138f0a0f0674fa1535e9c8de17f0f0ef7b2"
     },
     {
-      "path": "lib/sdkwork/backend_sdk/models/appbase_application_register_command.rb",
-      "sha256": "ac4b3a142530d21737ee2eaccb60ad9491a6660bf14a4e19fdc89ef9037633e0"
-    },
-    {
       "path": "lib/sdkwork/backend_sdk/models/appbase_tenant_application_enable_command.rb",
       "sha256": "9ec60b201c6c8bfefb499c1161165561695264560c44c823e2c7c1008f46822f"
     },
     {
       "path": "lib/sdkwork/backend_sdk/models/appbase_tenant_application_provision_command.rb",
-      "sha256": "4123311edbec9c98b01e256d74d0a99e85e8833018eba36f689de7205dfb0d30"
+      "sha256": "ab22621c7c2eb72dc98f000998ad6e5fffb769047737aab154afb10474e65b38"
     },
     {
       "path": "lib/sdkwork/backend_sdk/models/appbase_tenant_application_update_command.rb",
@@ -84,7 +80,7 @@
     },
     {
       "path": "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_provision_command.rb",
-      "sha256": "11602530497eeb0cc46737607d2bf9cf8f40a76ec4ded3f7135501b9b825e1a4"
+      "sha256": "cbbdaced10a168788b34e6e71e7ba6e92a09156759e38a4902d71462489136de"
     },
     {
       "path": "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_update_command.rb",

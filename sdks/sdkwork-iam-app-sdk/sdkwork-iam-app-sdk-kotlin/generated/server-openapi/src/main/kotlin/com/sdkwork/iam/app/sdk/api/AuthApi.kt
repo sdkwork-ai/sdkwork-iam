@@ -49,6 +49,11 @@ class AuthApi(private val client: HttpClient) {
         return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
+    /** Sessions current logout. */
+    suspend fun sessionsCurrentLogout(body: SessionsCurrentLogoutRequest): Unit {
+        client.request("POST", ApiPaths.appPath("/auth/sessions/current/logout"), body, null, null, "application/json", true, false)
+    }
+
     /** Sessions login Context Selection create. */
     suspend fun sessionsLoginContextSelectionCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.request("POST", ApiPaths.appPath("/auth/sessions/login_context_selection"), body, null, null, "application/json", false, true)
@@ -65,6 +70,12 @@ class AuthApi(private val client: HttpClient) {
     suspend fun sessionsRefresh(body: Map<String, Any>): SdkWorkCommandResponse? {
         val raw = client.request("POST", ApiPaths.appPath("/auth/sessions/refresh"), body, null, null, "application/json", true, false)
         return client.convertValue(raw, object : TypeReference<SdkWorkCommandResponse>() {})
+    }
+
+    /** Verification Code Requests create. */
+    suspend fun verificationCodeRequestsCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
+        val raw = client.request("POST", ApiPaths.appPath("/auth/verification_code_requests"), body, null, null, "application/json", false, true)
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
 

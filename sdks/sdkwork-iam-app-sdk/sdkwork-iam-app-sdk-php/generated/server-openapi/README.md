@@ -82,9 +82,8 @@ var_dump($result);
 ```php
 <?php
 
-// Account Links list.
-$params = ['page' => 1, 'page_size' => 2, 'cursor' => 'cursor', 'sort' => 'sort', 'q' => 'q'];
-$result = $client->oauth->accountLinksList($params);
+// Wechat Payment Oauth callback.
+$result = $client->oauth->wechatPaymentOauthCallback();
 var_dump($result);
 ```
 

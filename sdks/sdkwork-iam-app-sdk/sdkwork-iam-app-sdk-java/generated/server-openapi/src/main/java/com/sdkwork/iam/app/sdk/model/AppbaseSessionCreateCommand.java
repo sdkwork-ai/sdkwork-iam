@@ -2,6 +2,8 @@ package com.sdkwork.iam.app.sdk.model;
 
 
 public class AppbaseSessionCreateCommand {
+    private String grantType;
+    private String account;
     private String email;
     private String username;
     private String phone;
@@ -10,6 +12,23 @@ public class AppbaseSessionCreateCommand {
     private String providerKey;
     private String tenantId;
     private String organizationId;
+    private String deviceId;
+
+    public String getGrantType() {
+        return this.grantType;
+    }
+
+    public void setGrantType(String grantType) {
+        this.grantType = grantType;
+    }
+
+    public String getAccount() {
+        return this.account;
+    }
+
+    public void setAccount(String account) {
+        this.account = account;
+    }
 
     public String getEmail() {
         return this.email;
@@ -73,5 +92,13 @@ public class AppbaseSessionCreateCommand {
 
     public void setOrganizationId(String organizationId) {
         this.organizationId = organizationId;
+    }
+
+    public String getDeviceId() {
+        return this.deviceId;
+    }
+
+    public void setDeviceId(String deviceId) {
+        this.deviceId = deviceId;
     }
 }

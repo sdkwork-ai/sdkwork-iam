@@ -6,6 +6,8 @@ namespace SDKWork.Iam.AppSdk.Models
 {
     public class AppbaseSessionCreateCommand
     {
+        public string? GrantType { get; set; }
+        public string? Account { get; set; }
         public string? Email { get; set; }
         public string? Username { get; set; }
         public string? Phone { get; set; }
@@ -14,5 +16,6 @@ namespace SDKWork.Iam.AppSdk.Models
         public string? ProviderKey { get; set; }
         public string? TenantId { get; set; }
         public string? OrganizationId { get; set; }
+        public string? DeviceId { get; set; }
     }
 }

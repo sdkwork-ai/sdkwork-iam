@@ -48,8 +48,6 @@ function isOauthAccountMaintenanceOperation(operationId: string): boolean {
 
 function explicitBootstrapPermission(operationId: string): string | undefined {
   switch (operationId) {
-    case "applications.register":
-      return "iam.applications.register";
     case "tenantApplications.create":
       return "iam.tenant_applications.provision";
     case "tenantApplications.list":

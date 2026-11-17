@@ -456,6 +456,14 @@ namespace SDKWork.Iam.BackendSdk.Api
         }
 
         /// <summary>
+        /// Iam oauth resource Accounts delete.
+        /// </summary>
+        public async Task ResourceAccountsDeleteAsync(string resourceAccountId)
+        {
+            await _client.DeleteAsync<object>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}"));
+        }
+
+        /// <summary>
         /// Iam oauth resource Accounts update.
         /// </summary>
         public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ResourceAccountsUpdateAsync(string resourceAccountId, Dictionary<string, object>? body = null)
@@ -493,6 +501,22 @@ namespace SDKWork.Iam.BackendSdk.Api
         public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ResourceAccountsCustomMenusPublishAsync(string resourceAccountId, Dictionary<string, object> body)
         {
             return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}/custom_menus/publish"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Iam oauth resource Accounts custom Menus rollback.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ResourceAccountsCustomMenusRollbackAsync(string resourceAccountId, Dictionary<string, object> body)
+        {
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}/custom_menus/rollback"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Iam oauth resource Accounts custom Menus sync.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ResourceAccountsCustomMenusSyncAsync(string resourceAccountId, Dictionary<string, object> body)
+        {
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/resource_accounts/{SerializePathParameter(resourceAccountId, new PathParameterSpec("resourceAccountId", "simple", false))}/custom_menus/sync"), body, null, null, "application/json");
         }
 
         /// <summary>

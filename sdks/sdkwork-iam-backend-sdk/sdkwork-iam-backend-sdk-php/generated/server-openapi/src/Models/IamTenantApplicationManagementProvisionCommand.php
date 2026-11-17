@@ -5,15 +5,11 @@ declare(strict_types=1);
 namespace SDKWork\\Iam\\BackendSdk\Models;
 
 /**
- * Provision a registered application template for a tenant through an authenticated operator workflow.
+ * Provision a tenant installation from the deploy application it serves plus explicit attributes, through an authenticated operator workflow. Application templates are retired, so no template reference is accepted.
  */
 final class IamTenantApplicationManagementProvisionCommand
 {
     public ?string $organizationId = null;
-
-    public ?string $templateId = null;
-
-    public ?string $appKey = null;
 
     public ?string $instanceKey = null;
 
@@ -21,23 +17,27 @@ final class IamTenantApplicationManagementProvisionCommand
 
     public ?string $environment = null;
 
-    /** Product-semantic application type (api | h5 | pc | flutter | other); defaults to a mapping of the template app_type. */
+    /** Product-semantic application type (api | h5 | pc | flutter | other). Required: application templates are retired, so nothing else can supply it. */
     public ?string $applicationType = null;
 
     public ?string $primaryDomain = null;
 
+    /** Access permissions granted to the installation. An empty array or null is a valid explicit choice: the installation grants no API scope. */
     public array $accessPermissions = [];
+
+    /** Explicit runtime config, including `oauth.relyingParty`; absent registers no OAuth relying party. */
+    public array $runtimeConfig = [];
+
+    /** Deploy application this installation serves. It is the identity every access token carries, and the one-to-one relation is enforced by the database. */
+    public ?string $deployApplicationId = null;
+
+    /** Replay-safe key for the cross-module provisioning call. */
+    public ?string $provisioningIdempotencyKey = null;
 
     public function __construct(array $data = [])
     {
         $this->organizationId = array_key_exists('organizationId', $data)
             ? $data['organizationId']
-            : null;
-        $this->templateId = array_key_exists('templateId', $data)
-            ? $data['templateId']
-            : null;
-        $this->appKey = array_key_exists('appKey', $data)
-            ? $data['appKey']
             : null;
         $this->instanceKey = array_key_exists('instanceKey', $data)
             ? $data['instanceKey']
@@ -59,6 +59,15 @@ final class IamTenantApplicationManagementProvisionCommand
                 ? array_values(array_map(static fn($item) => $item, $data['accessPermissions']))
                 : []
             : [];
+        $this->runtimeConfig = array_key_exists('runtimeConfig', $data)
+            ? is_array($data['runtimeConfig']) ? $data['runtimeConfig'] : []
+            : [];
+        $this->deployApplicationId = array_key_exists('deployApplicationId', $data)
+            ? $data['deployApplicationId']
+            : null;
+        $this->provisioningIdempotencyKey = array_key_exists('provisioningIdempotencyKey', $data)
+            ? $data['provisioningIdempotencyKey']
+            : null;
     }
 
     public static function fromArray(?array $data): ?self
@@ -70,14 +79,15 @@ final class IamTenantApplicationManagementProvisionCommand
     {
         return [
             'organizationId' => $this->organizationId,
-            'templateId' => $this->templateId,
-            'appKey' => $this->appKey,
             'instanceKey' => $this->instanceKey,
             'displayName' => $this->displayName,
             'environment' => $this->environment,
             'applicationType' => $this->applicationType,
             'primaryDomain' => $this->primaryDomain,
             'accessPermissions' => array_values(array_map(static fn($item) => $item, $this->accessPermissions)),
+            'runtimeConfig' => $this->runtimeConfig,
+            'deployApplicationId' => $this->deployApplicationId,
+            'provisioningIdempotencyKey' => $this->provisioningIdempotencyKey,
         ];
     }
 }

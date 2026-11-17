@@ -539,6 +539,26 @@ class IamOauthApi {
     })();
   }
 
+  /// Iam oauth resource Accounts custom Menus rollback.
+  Future<SdkWorkResourceResponse?> resourceAccountsCustomMenusRollback(String resourceAccountId, Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.post(ApiPaths.backendPath('/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, const PathParameterSpec('resourceAccountId', 'simple', false))}/custom_menus/rollback'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Iam oauth resource Accounts custom Menus sync.
+  Future<SdkWorkResourceResponse?> resourceAccountsCustomMenusSync(String resourceAccountId, Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.post(ApiPaths.backendPath('/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, const PathParameterSpec('resourceAccountId', 'simple', false))}/custom_menus/sync'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
   /// Iam oauth resource Accounts follow Qr Codes create.
   Future<SdkWorkResourceResponse?> resourceAccountsFollowQrCodesCreate(String resourceAccountId, Map<String, dynamic> body) async {
     final payload = body;

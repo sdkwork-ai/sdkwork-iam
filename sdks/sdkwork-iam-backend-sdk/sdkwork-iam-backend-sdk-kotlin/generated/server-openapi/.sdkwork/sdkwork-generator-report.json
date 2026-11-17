@@ -11,32 +11,45 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "f22a586f7c14ce08b0d846ee5ad4069a234b83ffd2b69a7b4693a6df7672a7d1",
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "8aca0c9a8fd20089db723889ade324cc6cecba5c4f910715dc2f358a5dbb4134",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface"
+      "api-surface",
+      "unknown"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt"
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt",
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamOauthApi.kt"
+        ]
+      },
+      {
+        "area": "unknown",
+        "paths": [
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseApplicationRegisterCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationProvisionCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementProvisionCommand.kt"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface. Verification is required."
+    "summary": "Detected impact areas: api-surface, unknown. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
+      "unknown-impact",
       "verification-required"
     ]
   },
@@ -48,7 +61,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, unknown.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-kotlin\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -67,13 +80,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, unknown.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-kotlin\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -103,8 +116,8 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 38,
-    "models": 22,
+    "totalFiles": 37,
+    "models": 21,
     "apis": 2,
     "types": 0
   },
@@ -112,16 +125,19 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 1,
+    "writtenFiles": 4,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 36,
-    "deletedGeneratedFiles": 0,
+    "skippedUnchangedGeneratedFiles": 32,
+    "deletedGeneratedFiles": 1,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "f22a586f7c14ce08b0d846ee5ad4069a234b83ffd2b69a7b4693a6df7672a7d1",
+    "changeFingerprint": "8aca0c9a8fd20089db723889ade324cc6cecba5c4f910715dc2f358a5dbb4134",
     "changes": {
       "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [
-        "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt"
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamOauthApi.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationProvisionCommand.kt",
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementProvisionCommand.kt"
       ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
@@ -135,16 +151,12 @@
         "settings.gradle.kts",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/Api.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/ApiPaths.kt",
-        "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamOauthApi.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseAccessCredentialCreateCommand.kt",
-        "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseApplicationRegisterCommand.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationEnableCommand.kt",
-        "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationProvisionCommand.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationUpdateCommand.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/FieldError.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/http/HttpClient.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamOauthClientCreateCommand.kt",
-        "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementProvisionCommand.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementUpdateCommand.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationStatusCommand.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/PageInfo.kt",
@@ -161,7 +173,9 @@
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/ServiceAccountCredentialRevokeCommand.kt",
         "src/main/kotlin/com/sdkwork/iam/backend/sdk/ServiceAccountTokenExchangeCommand.kt"
       ],
-      "deletedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseApplicationRegisterCommand.kt"
+      ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/README.md"
@@ -171,29 +185,39 @@
     "impact": {
       "schemaVersion": 1,
       "areas": [
-        "api-surface"
+        "api-surface",
+        "unknown"
       ],
       "details": [
         {
           "area": "api-surface",
           "paths": [
-            "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt"
+            "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt",
+            "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamOauthApi.kt"
+          ]
+        },
+        {
+          "area": "unknown",
+          "paths": [
+            "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseApplicationRegisterCommand.kt",
+            "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationProvisionCommand.kt",
+            "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementProvisionCommand.kt"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface. Verification is required."
+      "summary": "Detected impact areas: api-surface, unknown. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, unknown.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-kotlin\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -211,12 +235,15 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "medium",
+      "riskLevel": "high",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
+        "deleted-generated-files",
+        "manual-review-required",
+        "unknown-impact",
         "verification-required"
       ]
     },

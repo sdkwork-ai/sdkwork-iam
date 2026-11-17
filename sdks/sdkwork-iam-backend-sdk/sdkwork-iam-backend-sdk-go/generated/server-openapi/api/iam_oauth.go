@@ -528,6 +528,16 @@ func (a *IamOauthApi) ResourceAccountsCreate(body sdktypes.AppbaseOperationComma
     return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
+// Iam oauth resource Accounts delete.
+func (a *IamOauthApi) ResourceAccountsDelete(resourceAccountId string) (struct{}, error) {
+    raw, err := a.client.Delete(BackendApiPath(fmt.Sprintf("/iam/oauth/resource_accounts/%s", SerializePathParameter(resourceAccountId, PathParameterSpec{Name: "resourceAccountId", Style: "simple", Explode: false}))), nil, nil)
+    if err != nil {
+        var zero struct{}
+        return zero, err
+    }
+    return decodeResult[struct{}](raw)
+}
+
 // Iam oauth resource Accounts update.
 func (a *IamOauthApi) ResourceAccountsUpdate(resourceAccountId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(BackendApiPath(fmt.Sprintf("/iam/oauth/resource_accounts/%s", SerializePathParameter(resourceAccountId, PathParameterSpec{Name: "resourceAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
@@ -571,6 +581,26 @@ func (a *IamOauthApi) ResourceAccountsCustomMenusUpdate(resourceAccountId string
 // Iam oauth resource Accounts custom Menus publish.
 func (a *IamOauthApi) ResourceAccountsCustomMenusPublish(resourceAccountId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/oauth/resource_accounts/%s/custom_menus/publish", SerializePathParameter(resourceAccountId, PathParameterSpec{Name: "resourceAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
+    if err != nil {
+        var zero sdktypes.SdkWorkResourceResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
+}
+
+// Iam oauth resource Accounts custom Menus rollback.
+func (a *IamOauthApi) ResourceAccountsCustomMenusRollback(resourceAccountId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
+    raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/oauth/resource_accounts/%s/custom_menus/rollback", SerializePathParameter(resourceAccountId, PathParameterSpec{Name: "resourceAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
+    if err != nil {
+        var zero sdktypes.SdkWorkResourceResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
+}
+
+// Iam oauth resource Accounts custom Menus sync.
+func (a *IamOauthApi) ResourceAccountsCustomMenusSync(resourceAccountId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
+    raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/oauth/resource_accounts/%s/custom_menus/sync", SerializePathParameter(resourceAccountId, PathParameterSpec{Name: "resourceAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
         var zero sdktypes.SdkWorkResourceResponse
         return zero, err

@@ -38,10 +38,16 @@ public class OauthApi {
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
+    /** Authorizations create. */
+    public AuthorizationsCreateResponse authorizationsCreate(AuthorizationsCreateRequest body) throws Exception {
+        Object raw = client.request("POST", ApiPaths.appPath("/oauth/authorizations"), body, null, null, "application/json", true, false);
+        return client.convertValue(raw, new TypeReference<AuthorizationsCreateResponse>() {});
+    }
+
     /** Authorizations completions create. */
-    public SdkWorkResourceResponse authorizationsCompletionsCreate(String authorizationStateId, Map<String, Object> body) throws Exception {
+    public AuthorizationsCompletionsCreateResponse authorizationsCompletionsCreate(String authorizationStateId, AuthorizationsCompletionsCreateRequest body) throws Exception {
         Object raw = client.post(ApiPaths.appPath("/oauth/authorizations/" + serializePathParameter(authorizationStateId, new PathParameterSpec("authorizationStateId", "simple", false)) + "/completions"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+        return client.convertValue(raw, new TypeReference<AuthorizationsCompletionsCreateResponse>() {});
     }
 
     /** Callbacks retrieve. */
@@ -54,6 +60,12 @@ public class OauthApi {
     public SdkWorkResourceResponse callbacksCreate(String providerCode, Map<String, Object> body) throws Exception {
         Object raw = client.request("POST", ApiPaths.appPath("/oauth/callbacks/" + serializePathParameter(providerCode, new PathParameterSpec("providerCode", "simple", false)) + ""), body, null, null, "application/json", false, true);
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Desktop Sessions create. */
+    public DesktopSessionsCreateResponse desktopSessionsCreate(DesktopSessionsCreateRequest body) throws Exception {
+        Object raw = client.request("POST", ApiPaths.appPath("/oauth/desktop_sessions"), body, null, null, "application/json", true, false);
+        return client.convertValue(raw, new TypeReference<DesktopSessionsCreateResponse>() {});
     }
 
     /** Device Authorizations create. */
@@ -77,6 +89,12 @@ public class OauthApi {
     /** Device Authorizations scans create. */
     public SdkWorkResourceResponse deviceAuthorizationsScansCreate(String deviceAuthorizationId, Map<String, Object> body) throws Exception {
         Object raw = client.request("POST", ApiPaths.appPath("/oauth/device_authorizations/" + serializePathParameter(deviceAuthorizationId, new PathParameterSpec("deviceAuthorizationId", "simple", false)) + "/scans"), body, null, null, "application/json", false, true);
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Device Authorizations session Completions create. */
+    public SdkWorkResourceResponse deviceAuthorizationsSessionCompletionsCreate(String deviceAuthorizationId, Map<String, Object> body) throws Exception {
+        Object raw = client.request("POST", ApiPaths.appPath("/oauth/device_authorizations/" + serializePathParameter(deviceAuthorizationId, new PathParameterSpec("deviceAuthorizationId", "simple", false)) + "/session_completions"), body, null, null, "application/json", false, true);
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
@@ -111,6 +129,18 @@ public class OauthApi {
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
+    /** Phone Binding Sessions create. */
+    public SdkWorkResourceResponse phoneBindingSessionsCreate(OauthPhoneBindingSessionCreateCommand body) throws Exception {
+        Object raw = client.request("POST", ApiPaths.appPath("/oauth/phone_binding_sessions"), body, null, null, "application/json", false, true);
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Phone Binding Sessions verification Code Requests create. */
+    public SdkWorkResourceResponse phoneBindingSessionsVerificationCodeRequestsCreate(OauthPhoneBindingVerificationCodeRequestCommand body) throws Exception {
+        Object raw = client.request("POST", ApiPaths.appPath("/oauth/phone_binding_sessions/verification_code_requests"), body, null, null, "application/json", false, true);
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
     /** Providers list. */
     public SdkWorkListResponse providersList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
@@ -124,9 +154,43 @@ public class OauthApi {
         return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
+    /** Scan Login Modes list. */
+    public SdkWorkListResponse scanLoginModesList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+        String query = buildQueryString(List.of(
+            new QueryParameterSpec("page", page, "form", true, false, null),
+            new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
+            new QueryParameterSpec("cursor", cursor, "form", true, false, null),
+            new QueryParameterSpec("sort", sort, "form", true, false, null),
+            new QueryParameterSpec("q", q, "form", true, false, null)
+        ));
+        Object raw = client.request("GET", ApiPaths.appendQueryString(ApiPaths.appPath("/oauth/scan_login_modes"), query), null, null, null, null, false, true);
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
+    }
+
     /** Sessions create. */
     public SdkWorkResourceResponse sessionsCreate(AppbaseSessionCreateCommand body) throws Exception {
         Object raw = client.request("POST", ApiPaths.appPath("/oauth/sessions"), body, null, null, "application/json", false, true);
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Wechat Payment Oauth callback. */
+    public SdkWorkResourceResponse wechatPaymentOauthCallback() throws Exception {
+        Object raw = client.request("GET", ApiPaths.appPath("/oauth/wechat/payment/callback"), null, null, null, null, true, false);
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Wechat Payment Oauth cashier Start. */
+    public SdkWorkResourceResponse wechatPaymentOauthCashierStart() throws Exception {
+        Object raw = client.request("GET", ApiPaths.appPath("/oauth/wechat/payment/cashier/start"), null, null, null, null, true, false);
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Wechat Payment Oauth start. */
+    public SdkWorkResourceResponse wechatPaymentOauthStart(String redirect) throws Exception {
+        String query = buildQueryString(List.of(
+            new QueryParameterSpec("redirect", redirect, "form", true, false, null)
+        ));
+        Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.appPath("/oauth/wechat/payment/start"), query));
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 

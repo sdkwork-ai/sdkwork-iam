@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 from ..http_client import HttpClient
-from ..models import AppbaseAccessCredentialCreateCommand, AppbaseApplicationRegisterCommand, AppbaseTenantApplicationEnableCommand, AppbaseTenantApplicationProvisionCommand, AppbaseTenantApplicationUpdateCommand, IamTenantApplicationManagementProvisionCommand, IamTenantApplicationManagementUpdateCommand, IamTenantApplicationStatusCommand, SdkWorkCommandResponse, SdkWorkListResponse, SdkWorkResourceResponse, ServiceAccountCredentialCreateCommand, ServiceAccountCredentialRevokeCommand, ServiceAccountTokenExchangeCommand
+from ..models import AppbaseAccessCredentialCreateCommand, AppbaseTenantApplicationEnableCommand, AppbaseTenantApplicationProvisionCommand, AppbaseTenantApplicationUpdateCommand, IamTenantApplicationManagementProvisionCommand, IamTenantApplicationManagementUpdateCommand, IamTenantApplicationStatusCommand, SdkWorkCommandResponse, SdkWorkListResponse, SdkWorkResourceResponse, ServiceAccountCredentialCreateCommand, ServiceAccountCredentialRevokeCommand, ServiceAccountTokenExchangeCommand
 
 def _append_query_string(path: str, raw_query_string: str) -> str:
     query = raw_query_string.lstrip('?')
@@ -192,7 +192,6 @@ class IamApi:
         self.access_credentials = IamAccessCredentialsApi(client)
         self.account_binding_policy = IamAccountBindingPolicyApi(client)
         self.api_keys = IamApiKeysApi(client)
-        self.applications = IamApplicationsApi(client)
         self.audit_events = IamAuditEventsApi(client)
         self.department_assignments = IamDepartmentAssignmentsApi(client)
         self.departments = IamDepartmentsApi(client)
@@ -260,20 +259,17 @@ class IamApiKeysApi:
         ])
         return self._client.get(_append_query_string(f"/backend/v3/api/iam/api_keys", query))
 
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
+        """Api Keys create."""
+        return self._client.post(f"/backend/v3/api/iam/api_keys", json=body)
+
     def revoke(self, api_key_id: str, body: Dict[str, Any]) -> SdkWorkCommandResponse:
         """Api Keys revoke."""
         return self._client.post(f"/backend/v3/api/iam/api_keys/{serialize_path_parameter(api_key_id, {'name': 'apiKeyId', 'style': 'simple', 'explode': False})}/revoke", json=body)
 
-class IamApplicationsApi:
-    """iam iam.applications API client."""
-
-    def __init__(self, client: HttpClient):
-        self._client = client
-
-
-    def register(self, body: AppbaseApplicationRegisterCommand) -> SdkWorkCommandResponse:
-        """Applications register."""
-        return self._client.post(f"/backend/v3/api/iam/applications/register", json=body, skip_auth=True)
+    def rotate(self, api_key_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
+        """Api Keys rotate."""
+        return self._client.post(f"/backend/v3/api/iam/api_keys/{serialize_path_parameter(api_key_id, {'name': 'apiKeyId', 'style': 'simple', 'explode': False})}/rotate", json=body)
 
 class IamAuditEventsApi:
     """iam iam.audit_events API client."""
@@ -704,6 +700,10 @@ class IamProviderAccountsCredentialsApi:
     def create(self, provider_account_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Provider Accounts credentials create."""
         return self._client.post(f"/backend/v3/api/iam/provider_accounts/{serialize_path_parameter(provider_account_id, {'name': 'providerAccountId', 'style': 'simple', 'explode': False})}/credentials", json=body)
+
+    def reveal(self, provider_account_id: str) -> SdkWorkResourceResponse:
+        """Provider Accounts credentials reveal."""
+        return self._client.get(f"/backend/v3/api/iam/provider_accounts/{serialize_path_parameter(provider_account_id, {'name': 'providerAccountId', 'style': 'simple', 'explode': False})}/credentials/reveal")
 
 class IamProviderCredentialsApi:
     """iam iam.provider_credentials API client."""

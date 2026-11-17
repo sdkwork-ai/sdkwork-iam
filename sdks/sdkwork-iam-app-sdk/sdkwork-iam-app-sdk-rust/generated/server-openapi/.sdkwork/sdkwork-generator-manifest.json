@@ -12,7 +12,7 @@
   "generatedFiles": [
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -24,7 +24,7 @@
     },
     {
       "path": "Cargo.toml",
-      "sha256": "285a3215210f4c661e0b29b8c9943ac22778044100a8070965437c43c5511de9"
+      "sha256": "43bd6cfebac07929fe53bce3d2d1dd2e386894a266c2627398eb8043cfa10fe4"
     },
     {
       "path": "CHANGELOG.md",
@@ -36,7 +36,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "356dc84d5a8cd1dc642685429d53945a0fc873eef5c41dd0995356be81bb28f9"
+      "sha256": "05ca5d0cb05bfd03b39ecb89534180068502c8fbe831eb22aa4b8b0158eddaa4"
     },
     {
       "path": "sdkwork-sdk.json",
@@ -44,7 +44,7 @@
     },
     {
       "path": "src/api/auth.rs",
-      "sha256": "a136f9e51e5ab1dac1f75a9d6409976be3ca6e46271e8f328d9f5374e26baf5f"
+      "sha256": "b41b543e181dde30587ea756d77c97bfddfa0fa5fb604a24ad237d5a55f85881"
     },
     {
       "path": "src/api/base.rs",
@@ -52,7 +52,7 @@
     },
     {
       "path": "src/api/iam.rs",
-      "sha256": "e4a8aaadcf83886d9b1c1adc08d657b51ff232d4f1bebc9e17928b0fd65b617e"
+      "sha256": "62fcd0d6f29d1a8ac3440177889245fd77c24964d5d12e5321ed55f1f0e1fa2b"
     },
     {
       "path": "src/api/mod.rs",
@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/oauth.rs",
-      "sha256": "ec7bf6c41488e194507f0f071d61331b4b63dea4b3f035ae74e124a25269b096"
+      "sha256": "8123a57c01118fcd14a3aaedb1b16aaed4714a47cdace61cf3be809158233a99"
     },
     {
       "path": "src/api/paths.rs",
@@ -76,11 +76,11 @@
     },
     {
       "path": "src/http/client.rs",
-      "sha256": "8b6e059c95e3fd9a3301bd71225f9b43f156e6a4abda765755c557ac7e3f0284"
+      "sha256": "6744c77f8c5d27ea5f0d35340b928589e8ed15c946174c184f67dd17a98b58ed"
     },
     {
       "path": "src/http/mod.rs",
-      "sha256": "fdf16d487ebd9180fb423d5630d4401ff18180721b86636dec085ad83940bb3d"
+      "sha256": "d09ef1f29c3fa0e631fc4f7287fc93dc7d3cee7e7261ac85091852a09243e90a"
     },
     {
       "path": "src/lib.rs",
@@ -88,19 +88,87 @@
     },
     {
       "path": "src/models/appbase_session_create_command.rs",
-      "sha256": "5d3f3f8f27c6270a390200ac06d93547952a36230cf3e625d34d6f290e214e5f"
+      "sha256": "e4ba7de68590b0ad12e068f5c1248c61fc0dd4287f0442e33ce807e06447d346"
+    },
+    {
+      "path": "src/models/authorizations_completions_create_request.rs",
+      "sha256": "7e50fa6107f8a0bd2e4084de87f51f1c32658e509c0079c4e326aa7637994bed"
+    },
+    {
+      "path": "src/models/authorizations_completions_create_response.rs",
+      "sha256": "c8bc22336702fb8318ac80c70d506f979c435075b549d7f2f22e1674a4a8fa94"
+    },
+    {
+      "path": "src/models/authorizations_create_request.rs",
+      "sha256": "a155a80b41babe13eff24c7cc34fcbd49e4c90e303055a772942979f32e02c20"
+    },
+    {
+      "path": "src/models/authorizations_create_response.rs",
+      "sha256": "eb34956fae9ddf228148ca4d32c0273c6bd05defdb6f26ef046e232bbafb09dc"
     },
     {
       "path": "src/models/common.rs",
       "sha256": "fce0239d85066b1c42435ab8c96676ea2d5300e5dcb87c52fd3e33d29a603a5e"
     },
     {
+      "path": "src/models/desktop_sessions_create_request.rs",
+      "sha256": "c1cc72e2d09a57f71f9c83ce6773201dd9a3416a3e2f06be79298790b6f528ac"
+    },
+    {
+      "path": "src/models/desktop_sessions_create_response.rs",
+      "sha256": "14937d2f3a00fc0638674585709d8d42d0806d2d49ded792811b88f63c42b822"
+    },
+    {
       "path": "src/models/field_error.rs",
       "sha256": "09c55595520768e5c816f456def08f58d4c6c445b825b0ca907eefe464ad57b9"
     },
     {
+      "path": "src/models/iam_organization_member_list_response.rs",
+      "sha256": "781162e0567ab8b4c29dd7f960996381c0fa51c371ff1a89b307f203895a207b"
+    },
+    {
+      "path": "src/models/iam_organization_member.rs",
+      "sha256": "6fba57c6ebdf8546a28c9e999bb85469920c17a432dcd17397f93ba52075fc0b"
+    },
+    {
+      "path": "src/models/iam_persona_catalog_response.rs",
+      "sha256": "2d8daa97cba7ed729d907ba419e2039af13ae897a597f9a65c24d338e6e563ed"
+    },
+    {
+      "path": "src/models/iam_persona_catalog.rs",
+      "sha256": "71e1787dee31fd1d9c8a8831596ad84942930d4085e90a9a05558728042e7b0b"
+    },
+    {
+      "path": "src/models/iam_persona_interest.rs",
+      "sha256": "5335f750077754c2d65a5bb91648f513ef28eead130493eac07c4c296d0d6f6c"
+    },
+    {
+      "path": "src/models/iam_persona_role.rs",
+      "sha256": "e76a03ef5dcb163c838e4a4b1c697df6a0689d5dd9610ad83016d25ba97ae69d"
+    },
+    {
+      "path": "src/models/iam_user_persona_response.rs",
+      "sha256": "724431e83d2b355d89f6532563cbd97d47abb09bc1a4a487807bb533e6ce83f9"
+    },
+    {
+      "path": "src/models/iam_user_persona_update_command.rs",
+      "sha256": "9c040c9a3ae8b81f4a2412d451aae8f6fa4cddadbd7e25bd0409163037f123dd"
+    },
+    {
+      "path": "src/models/iam_user_persona.rs",
+      "sha256": "eb3bf843edc14960ba65b7293ead24641afc86bfb43a8eca4e21504c355ceebf"
+    },
+    {
       "path": "src/models/mod.rs",
-      "sha256": "ded8ccc888f40a20545f9c1b214972d274cdf691462fd252d001e74a085576ec"
+      "sha256": "fb4f75c8025f3bc4b830e32d31f140ef23410baa538157ae7b72ab78ca311713"
+    },
+    {
+      "path": "src/models/oauth_phone_binding_session_create_command.rs",
+      "sha256": "649b6d906a61fb3a46d5e29427154955ecec933f42a970fb6c2458ab4f1069cc"
+    },
+    {
+      "path": "src/models/oauth_phone_binding_verification_code_request_command.rs",
+      "sha256": "9bf61a97dd4c7d3ed40e38317838a1bd46bbb4946ffb54ff028fee3de59ce465"
     },
     {
       "path": "src/models/page_info.rs",
@@ -139,8 +207,12 @@
       "sha256": "a16ff12f0418a861ef9a744a53676071b75f036536d35a0f310c9f875025a203"
     },
     {
+      "path": "src/models/sessions_current_logout_request.rs",
+      "sha256": "3591c62e38fc82e14e9ce5e3d45cc95f7e536c8bf86e2aff7fd8086f0e58ef35"
+    },
+    {
       "path": "src/models/wechat_mini_program_session_create_command.rs",
-      "sha256": "1d5cefd84902edf5a0976b3f3539ecd13e117c56d27acb42e9837b60fc713d5c"
+      "sha256": "2f35f4c39ca48b1ccf5d969c02488e563beabc16566ecab41a58449bb318d907"
     }
   ],
   "scaffoldFiles": [

@@ -2,6 +2,8 @@ package types
 
 // Session creation command for credential login and external user-center session exchange.
 type AppbaseSessionCreateCommand struct {
+	GrantType string `json:"grantType"`
+	Account string `json:"account"`
 	Email string `json:"email"`
 	Username string `json:"username"`
 	Phone string `json:"phone"`
@@ -10,4 +12,5 @@ type AppbaseSessionCreateCommand struct {
 	ProviderKey string `json:"providerKey"`
 	TenantId string `json:"tenantId"`
 	OrganizationId string `json:"organizationId"`
+	DeviceId string `json:"deviceId"`
 }

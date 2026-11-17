@@ -1040,139 +1040,6 @@
         }
       }
     },
-    "/backend/v3/api/iam/applications/register": {
-      "post": {
-        "tags": [
-          "iam"
-        ],
-        "summary": "Applications register.",
-        "operationId": "applications.register",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SdkWorkCommandResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable entity",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many requests",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service unavailable",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "security": [],
-        "x-sdkwork-auth-mode": "bootstrap-body",
-        "x-sdkwork-forbid-credential-headers": true,
-        "x-sdkwork-owner": "sdkwork-iam",
-        "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
-        "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "applications",
-        "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-api-surface": "backend-api",
-        "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.applications.register",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AppbaseApplicationRegisterCommand"
-              }
-            }
-          }
-        }
-      }
-    },
     "/backend/v3/api/iam/audit_events": {
       "get": {
         "tags": [
@@ -28378,126 +28245,19 @@
           }
         }
       },
-      "AppbaseApplicationRegisterCommand": {
-        "type": "object",
-        "additionalProperties": true,
-        "description": "Super-admin registered application command for startup bootstrap.",
-        "required": [
-          "appKey",
-          "name",
-          "appType",
-          "version",
-          "defaultAccessPermissions"
-        ],
-        "properties": {
-          "authToken": {
-            "type": "string",
-            "description": "Super-admin auth token used for bootstrap body authentication."
-          },
-          "username": {
-            "type": "string",
-            "description": "Super-admin username credential for bootstrap body authentication."
-          },
-          "email": {
-            "type": "string",
-            "description": "Super-admin email credential for bootstrap body authentication."
-          },
-          "phone": {
-            "type": "string",
-            "description": "Super-admin phone credential for bootstrap body authentication."
-          },
-          "password": {
-            "type": "string",
-            "format": "password",
-            "description": "Super-admin password credential for bootstrap body authentication."
-          },
-          "ownerTenantId": {
-            "type": "string"
-          },
-          "appKey": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "displayName": {
-            "type": "string"
-          },
-          "appType": {
-            "type": "string"
-          },
-          "packageName": {
-            "type": "string"
-          },
-          "bundleId": {
-            "type": "string"
-          },
-          "desktopAppId": {
-            "type": "string"
-          },
-          "version": {
-            "type": "string"
-          },
-          "channel": {
-            "type": "string"
-          },
-          "manifestHash": {
-            "type": "string"
-          },
-          "defaultAccessPermissions": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-              "type": "string"
-            }
-          },
-          "config": {
-            "type": "object",
-            "additionalProperties": true
-          },
-          "packages": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": true
-            }
-          }
-        }
-      },
       "IamTenantApplicationManagementProvisionCommand": {
         "type": "object",
         "additionalProperties": false,
-        "description": "Provision a registered application template for a tenant through an authenticated operator workflow.",
+        "description": "Provision a tenant installation from the deploy application it serves plus explicit attributes, through an authenticated operator workflow. Application templates are retired, so no template reference is accepted.",
         "required": [
           "organizationId",
           "instanceKey",
           "displayName",
-          "environment"
-        ],
-        "anyOf": [
-          {
-            "required": [
-              "templateId"
-            ]
-          },
-          {
-            "required": [
-              "appKey"
-            ]
-          }
+          "environment",
+          "applicationType"
         ],
         "properties": {
           "organizationId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "templateId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "appKey": {
             "type": "string",
             "minLength": 1,
             "maxLength": 255
@@ -28519,7 +28279,7 @@
           },
           "applicationType": {
             "type": "string",
-            "description": "Product-semantic application type (api | h5 | pc | flutter | other); defaults to a mapping of the template app_type.",
+            "description": "Product-semantic application type (api | h5 | pc | flutter | other). Required: application templates are retired, so nothing else can supply it.",
             "enum": [
               "api",
               "h5",
@@ -28534,12 +28294,33 @@
             "maxLength": 255
           },
           "accessPermissions": {
-            "type": "array",
+            "type": [
+              "array",
+              "null"
+            ],
+            "description": "Access permissions granted to the installation. An empty array or null is a valid explicit choice: the installation grants no API scope.",
             "items": {
               "type": "string",
               "minLength": 1,
               "maxLength": 255
             }
+          },
+          "runtimeConfig": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Explicit runtime config, including `oauth.relyingParty`; absent registers no OAuth relying party."
+          },
+          "deployApplicationId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "Deploy application this installation serves. It is the identity every access token carries, and the one-to-one relation is enforced by the database."
+          },
+          "provisioningIdempotencyKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "Replay-safe key for the cross-module provisioning call."
           }
         }
       },
@@ -28572,13 +28353,14 @@
       "AppbaseTenantApplicationProvisionCommand": {
         "type": "object",
         "additionalProperties": true,
-        "description": "Provision a tenant application from a registered application template.",
+        "description": "Provision a tenant installation from the deploy application it serves plus explicit attributes. Application templates are retired, so no template reference is accepted.",
         "required": [
           "tenantId",
           "organizationId",
           "instanceKey",
           "displayName",
-          "environment"
+          "environment",
+          "applicationType"
         ],
         "properties": {
           "authToken": {
@@ -28608,12 +28390,6 @@
           "organizationId": {
             "type": "string"
           },
-          "templateId": {
-            "type": "string"
-          },
-          "appKey": {
-            "type": "string"
-          },
           "instanceKey": {
             "type": "string"
           },
@@ -28625,7 +28401,7 @@
           },
           "applicationType": {
             "type": "string",
-            "description": "Product-semantic application type (api | h5 | pc | flutter | other); defaults to a mapping of the template app_type.",
+            "description": "Product-semantic application type (api | h5 | pc | flutter | other). Required: application templates are retired, so nothing else can supply it.",
             "enum": [
               "api",
               "h5",
@@ -28638,7 +28414,11 @@
             "type": "string"
           },
           "accessPermissions": {
-            "type": "array",
+            "type": [
+              "array",
+              "null"
+            ],
+            "description": "Access permissions granted to the installation. An empty array or null is a valid explicit choice: the installation grants no API scope.",
             "items": {
               "type": "string"
             }
@@ -28646,6 +28426,14 @@
           "runtimeConfig": {
             "type": "object",
             "additionalProperties": true
+          },
+          "deployApplicationId": {
+            "type": "string",
+            "description": "Deploy application this installation serves. It is the identity every access token carries, and the one-to-one relation is enforced by the database."
+          },
+          "provisioningIdempotencyKey": {
+            "type": "string",
+            "description": "Replay-safe key for the cross-module provisioning call."
           }
         }
       },

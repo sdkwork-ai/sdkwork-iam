@@ -285,7 +285,6 @@ fn backend_route_manifest_matches_the_standard_management_operation_surface() {
             "apiKeys.list",
             "apiKeys.revoke",
             "apiKeys.rotate",
-            "applications.register",
             "auditEvents.list",
             "auditEvents.retrieve",
             "departmentAssignments.create",
@@ -395,6 +394,19 @@ fn backend_route_manifest_matches_the_standard_management_operation_surface() {
     assert!(!operation_ids.contains(&"users.roles.create"));
     assert!(!operation_ids.contains(&"users.roles.delete"));
     assert!(!operation_ids.contains(&"users.roles.list"));
+    // Application templates are retired, so registering a template is not an
+    // operation any more: an installation is provisioned from the deploy
+    // application it serves.
+    assert!(
+        !operation_ids.contains(&"applications.register"),
+        "applications.register must stay retired; provision a tenant application instead"
+    );
+    assert!(
+        backend_routes()
+            .iter()
+            .all(|route| !route.path.contains("/iam/applications/register")),
+        "the retired application-template register route must not be served"
+    );
     assert!(
         backend_routes()
             .iter()

@@ -943,9 +943,6 @@ function requestBodySchemaRef(route) {
   if (route.operationId === 'sessions.create') {
     return '#/components/schemas/AppbaseSessionCreateCommand';
   }
-  if (route.operationId === 'applications.register') {
-    return '#/components/schemas/AppbaseApplicationRegisterCommand';
-  }
   if (route.operationId === 'tenantApplications.create') {
     return '#/components/schemas/AppbaseTenantApplicationProvisionCommand';
   }
@@ -1466,61 +1463,47 @@ function buildSchemas() {
         },
       },
     },
-    AppbaseApplicationRegisterCommand: {
-      type: 'object',
-      additionalProperties: true,
-      description: 'Super-admin registered application command for startup bootstrap.',
-      required: ['appKey', 'name', 'appType', 'version', 'defaultAccessPermissions'],
-      properties: {
-        ...bootstrapAuth,
-        ownerTenantId: { type: 'string' },
-        appKey: { type: 'string' },
-        name: { type: 'string' },
-        displayName: { type: 'string' },
-        appType: { type: 'string' },
-        packageName: { type: 'string' },
-        bundleId: { type: 'string' },
-        desktopAppId: { type: 'string' },
-        version: { type: 'string' },
-        channel: { type: 'string' },
-        manifestHash: { type: 'string' },
-        defaultAccessPermissions: {
-          type: 'array',
-          minItems: 1,
-          items: { type: 'string' },
-        },
-        config: { type: 'object', additionalProperties: true },
-        packages: {
-          type: 'array',
-          items: { type: 'object', additionalProperties: true },
-        },
-      },
-    },
     IamTenantApplicationManagementProvisionCommand: {
       type: 'object',
       additionalProperties: false,
-      description: 'Provision a registered application template for a tenant through an authenticated operator workflow.',
-      required: ['organizationId', 'instanceKey', 'displayName', 'environment'],
-      anyOf: [
-        { required: ['templateId'] },
-        { required: ['appKey'] },
-      ],
+      description:
+        'Provision a tenant installation from the deploy application it serves plus explicit attributes, through an authenticated operator workflow. Application templates are retired, so no template reference is accepted.',
+      required: ['organizationId', 'instanceKey', 'displayName', 'environment', 'applicationType'],
       properties: {
         organizationId: { type: 'string', minLength: 1, maxLength: 255 },
-        templateId: { type: 'string', minLength: 1, maxLength: 255 },
-        appKey: { type: 'string', minLength: 1, maxLength: 255 },
         instanceKey: { type: 'string', minLength: 1, maxLength: 255 },
         displayName: { type: 'string', minLength: 1, maxLength: 255 },
         environment: { type: 'string', minLength: 1, maxLength: 64 },
         applicationType: {
           type: 'string',
-          description: 'Product-semantic application type (api | h5 | pc | flutter | other); defaults to a mapping of the template app_type.',
+          description:
+            'Product-semantic application type (api | h5 | pc | flutter | other). Required: application templates are retired, so nothing else can supply it.',
           enum: ['api', 'h5', 'pc', 'flutter', 'other'],
         },
         primaryDomain: { type: 'string', minLength: 1, maxLength: 255 },
         accessPermissions: {
-          type: 'array',
+          type: ['array', 'null'],
+          description:
+            'Access permissions granted to the installation. An empty array or null is a valid explicit choice: the installation grants no API scope.',
           items: { type: 'string', minLength: 1, maxLength: 255 },
+        },
+        runtimeConfig: {
+          type: 'object',
+          additionalProperties: true,
+          description: 'Explicit runtime config, including `oauth.relyingParty`; absent registers no OAuth relying party.',
+        },
+        deployApplicationId: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 255,
+          description:
+            'Deploy application this installation serves. It is the identity every access token carries, and the one-to-one relation is enforced by the database.',
+        },
+        provisioningIdempotencyKey: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 255,
+          description: 'Replay-safe key for the cross-module provisioning call.',
         },
       },
     },
@@ -1545,28 +1528,39 @@ function buildSchemas() {
     AppbaseTenantApplicationProvisionCommand: {
       type: 'object',
       additionalProperties: true,
-      description: 'Provision a tenant application from a registered application template.',
-      required: ['tenantId', 'organizationId', 'instanceKey', 'displayName', 'environment'],
+      description:
+        'Provision a tenant installation from the deploy application it serves plus explicit attributes. Application templates are retired, so no template reference is accepted.',
+      required: ['tenantId', 'organizationId', 'instanceKey', 'displayName', 'environment', 'applicationType'],
       properties: {
         ...bootstrapAuth,
         tenantId: { type: 'string' },
         organizationId: { type: 'string' },
-        templateId: { type: 'string' },
-        appKey: { type: 'string' },
         instanceKey: { type: 'string' },
         displayName: { type: 'string' },
         environment: { type: 'string' },
         applicationType: {
           type: 'string',
-          description: 'Product-semantic application type (api | h5 | pc | flutter | other); defaults to a mapping of the template app_type.',
+          description:
+            'Product-semantic application type (api | h5 | pc | flutter | other). Required: application templates are retired, so nothing else can supply it.',
           enum: ['api', 'h5', 'pc', 'flutter', 'other'],
         },
         primaryDomain: { type: 'string' },
         accessPermissions: {
-          type: 'array',
+          type: ['array', 'null'],
+          description:
+            'Access permissions granted to the installation. An empty array or null is a valid explicit choice: the installation grants no API scope.',
           items: { type: 'string' },
         },
         runtimeConfig: { type: 'object', additionalProperties: true },
+        deployApplicationId: {
+          type: 'string',
+          description:
+            'Deploy application this installation serves. It is the identity every access token carries, and the one-to-one relation is enforced by the database.',
+        },
+        provisioningIdempotencyKey: {
+          type: 'string',
+          description: 'Replay-safe key for the cross-module provisioning call.',
+        },
       },
     },
     AppbaseTenantApplicationUpdateCommand: {

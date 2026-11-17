@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// Provision a tenant application from a registered application template.
+/// Provision a tenant installation from the deploy application it serves plus explicit attributes. Application templates are retired, so no template reference is accepted.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct AppbaseTenantApplicationProvisionCommand {
     /// Super-admin auth token used for bootstrap body authentication.
@@ -30,14 +30,6 @@ pub struct AppbaseTenantApplicationProvisionCommand {
     #[serde(rename = "organizationId")]
     pub organization_id: String,
 
-    #[serde(rename = "templateId")]
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub template_id: Option<String>,
-
-    #[serde(rename = "appKey")]
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub app_key: Option<String>,
-
     #[serde(rename = "instanceKey")]
     pub instance_key: String,
 
@@ -46,15 +38,15 @@ pub struct AppbaseTenantApplicationProvisionCommand {
 
     pub environment: String,
 
-    /// Product-semantic application type (api | h5 | pc | flutter | other); defaults to a mapping of the template app_type.
+    /// Product-semantic application type (api | h5 | pc | flutter | other). Required: application templates are retired, so nothing else can supply it.
     #[serde(rename = "applicationType")]
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub application_type: Option<String>,
+    pub application_type: String,
 
     #[serde(rename = "primaryDomain")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub primary_domain: Option<String>,
 
+    /// Access permissions granted to the installation. An empty array or null is a valid explicit choice: the installation grants no API scope.
     #[serde(rename = "accessPermissions")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub access_permissions: Option<Vec<String>>,
@@ -62,4 +54,14 @@ pub struct AppbaseTenantApplicationProvisionCommand {
     #[serde(rename = "runtimeConfig")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub runtime_config: Option<std::collections::HashMap<String, serde_json::Value>>,
+
+    /// Deploy application this installation serves. It is the identity every access token carries, and the one-to-one relation is enforced by the database.
+    #[serde(rename = "deployApplicationId")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub deploy_application_id: Option<String>,
+
+    /// Replay-safe key for the cross-module provisioning call.
+    #[serde(rename = "provisioningIdempotencyKey")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provisioning_idempotency_key: Option<String>,
 }

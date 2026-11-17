@@ -83,6 +83,16 @@ func (a *AuthApi) SessionsCurrentUpdate(body *sdktypes.AppbaseOperationCommand) 
     return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
+// Sessions current logout.
+func (a *AuthApi) SessionsCurrentLogout(body sdktypes.SessionsCurrentLogoutRequest) (struct{}, error) {
+    raw, err := a.client.Request("POST", AppApiPath("/auth/sessions/current/logout"), body, nil, nil, "application/json", true, false)
+    if err != nil {
+        var zero struct{}
+        return zero, err
+    }
+    return decodeResult[struct{}](raw)
+}
+
 // Sessions login Context Selection create.
 func (a *AuthApi) SessionsLoginContextSelectionCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Request("POST", AppApiPath("/auth/sessions/login_context_selection"), body, nil, nil, "application/json", false, true)
@@ -111,4 +121,14 @@ func (a *AuthApi) SessionsRefresh(body sdktypes.AppbaseOperationCommand) (sdktyp
         return zero, err
     }
     return decodeResult[sdktypes.SdkWorkCommandResponse](raw)
+}
+
+// Verification Code Requests create.
+func (a *AuthApi) VerificationCodeRequestsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
+    raw, err := a.client.Request("POST", AppApiPath("/auth/verification_code_requests"), body, nil, nil, "application/json", false, true)
+    if err != nil {
+        var zero sdktypes.SdkWorkResourceResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }

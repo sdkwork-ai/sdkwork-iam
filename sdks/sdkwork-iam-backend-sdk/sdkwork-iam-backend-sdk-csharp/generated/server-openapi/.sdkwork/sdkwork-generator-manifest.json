@@ -20,11 +20,11 @@
     },
     {
       "path": "Api/IamApi.cs",
-      "sha256": "c21ccde367e6c54d098fe3cc769667e65ac824920f33990dc0d67594857022b9"
+      "sha256": "775d2a75c3361e77cbdd5dac66f9f597adaf593684a9d23c4a79d5c271c836ad"
     },
     {
       "path": "Api/IamOauthApi.cs",
-      "sha256": "3c8673f68ba52f815f8094b9a46a33ed9443949ca2fc87201e91ee0e517e2850"
+      "sha256": "0e354475508e66b1416cb11c5652fa8d6cc22c8d617b2b25112f7e9b672d3000"
     },
     {
       "path": "bin/publish-core.mjs",
@@ -55,16 +55,12 @@
       "sha256": "0002851faa284ea766156f6e2f0ec5504d943edfa999abc5ee6f83c2c462aebe"
     },
     {
-      "path": "Models/AppbaseApplicationRegisterCommand.cs",
-      "sha256": "b46f5d691b0b71970d5da042f77c1b85180b5cb1176dbffa09b58f8f0adfdf64"
-    },
-    {
       "path": "Models/AppbaseTenantApplicationEnableCommand.cs",
       "sha256": "1442f31462670902a1efda9a1b8f26d0b929036fc2135e6efcb2fb827227d36f"
     },
     {
       "path": "Models/AppbaseTenantApplicationProvisionCommand.cs",
-      "sha256": "4e482eb118c3b0cb0bf21144799316edf9d9fe1badd245cca3025e3091cd86e2"
+      "sha256": "e3acda80fdc3a0cf7860864fa5353fec1dc3bd6aa4b8ed6c19ae8550d8404768"
     },
     {
       "path": "Models/AppbaseTenantApplicationUpdateCommand.cs",
@@ -80,7 +76,7 @@
     },
     {
       "path": "Models/IamTenantApplicationManagementProvisionCommand.cs",
-      "sha256": "b70eddeb28fb7fad6db7fd7132083d751fbfbeddf87dfd30435ec2466ed1206f"
+      "sha256": "8cf019d91b26ecf3b2d3e7f30455ee1a38655469e817db691353f38363c67a89"
     },
     {
       "path": "Models/IamTenantApplicationManagementUpdateCommand.cs",

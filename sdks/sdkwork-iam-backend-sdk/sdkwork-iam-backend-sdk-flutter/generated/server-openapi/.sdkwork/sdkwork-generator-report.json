@@ -12,22 +12,30 @@
   "mode": "apply",
   "hasChanges": true,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "ccff7fb9b144baa500d7b8dd9becead499696d8dcb9505069db1a295a7a0bff5",
+  "changeFingerprint": "e3f98c18b17f3c22c11e213a7f150f9ff5a4a21efd9f400939c3bcdf9900a52c",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface"
+      "api-surface",
+      "models"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
+          "lib/src/api/iam_oauth.dart",
           "lib/src/api/iam.dart"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "lib/src/models.dart"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface. Verification is required."
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
@@ -48,7 +56,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-flutter\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -67,13 +75,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-flutter\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -104,7 +112,7 @@
   },
   "stats": {
     "totalFiles": 19,
-    "models": 22,
+    "models": 21,
     "apis": 2,
     "types": 1
   },
@@ -112,16 +120,18 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 1,
+    "writtenFiles": 3,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 17,
+    "skippedUnchangedGeneratedFiles": 15,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "ccff7fb9b144baa500d7b8dd9becead499696d8dcb9505069db1a295a7a0bff5",
+    "changeFingerprint": "e3f98c18b17f3c22c11e213a7f150f9ff5a4a21efd9f400939c3bcdf9900a52c",
     "changes": {
       "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [
-        "lib/src/api/iam.dart"
+        "lib/src/api/iam_oauth.dart",
+        "lib/src/api/iam.dart",
+        "lib/src/models.dart"
       ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
@@ -131,11 +141,9 @@
         "lib/backend_client.dart",
         "lib/sdkwork_iam_backend_sdk.dart",
         "lib/src/api/api.dart",
-        "lib/src/api/iam_oauth.dart",
         "lib/src/api/paths.dart",
         "lib/src/api/response_helpers.dart",
         "lib/src/http/client.dart",
-        "lib/src/models.dart",
         "LICENSE",
         "pubspec_overrides.yaml",
         "pubspec.yaml",
@@ -152,29 +160,37 @@
     "impact": {
       "schemaVersion": 1,
       "areas": [
-        "api-surface"
+        "api-surface",
+        "models"
       ],
       "details": [
         {
           "area": "api-surface",
           "paths": [
+            "lib/src/api/iam_oauth.dart",
             "lib/src/api/iam.dart"
+          ]
+        },
+        {
+          "area": "models",
+          "paths": [
+            "lib/src/models.dart"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface. Verification is required."
+      "summary": "Detected impact areas: api-surface, models. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-flutter\\generated\\server-openapi",
           "command": "node",
           "args": [

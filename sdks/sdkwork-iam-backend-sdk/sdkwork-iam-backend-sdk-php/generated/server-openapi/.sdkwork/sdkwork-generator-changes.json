@@ -9,11 +9,14 @@
     "protocol": "http",
     "packageName": "sdkwork/iam-backend-sdk"
   },
-  "changeFingerprint": "a7aaaf3ba32b5d81eef8767f5f3ef1c897abea85242fb318e84bcf0b198a5922",
+  "changeFingerprint": "b8221e9e85d3d9adbdd6c8f2ea5c2d5022a402a4635e85d772ae795247cf97cf",
   "changes": {
     "createdGeneratedFiles": [],
     "updatedGeneratedFiles": [
-      "src/Api/Iam.php"
+      "src/Api/Iam.php",
+      "src/Api/IamOauth.php",
+      "src/Models/AppbaseTenantApplicationProvisionCommand.php",
+      "src/Models/IamTenantApplicationManagementProvisionCommand.php"
     ],
     "unchangedGeneratedFiles": [
       "bin/publish-core.mjs",
@@ -25,16 +28,12 @@
       "README.md",
       "sdkwork-sdk.json",
       "src/Api/BaseApi.php",
-      "src/Api/IamOauth.php",
       "src/Http/HttpClient.php",
       "src/Models/AppbaseAccessCredentialCreateCommand.php",
-      "src/Models/AppbaseApplicationRegisterCommand.php",
       "src/Models/AppbaseTenantApplicationEnableCommand.php",
-      "src/Models/AppbaseTenantApplicationProvisionCommand.php",
       "src/Models/AppbaseTenantApplicationUpdateCommand.php",
       "src/Models/FieldError.php",
       "src/Models/IamOauthClientCreateCommand.php",
-      "src/Models/IamTenantApplicationManagementProvisionCommand.php",
       "src/Models/IamTenantApplicationManagementUpdateCommand.php",
       "src/Models/IamTenantApplicationStatusCommand.php",
       "src/Models/PageInfo.php",
@@ -52,7 +51,9 @@
       "src/SdkConfig.php",
       "src/SdkworkBackendClient.php"
     ],
-    "deletedGeneratedFiles": [],
+    "deletedGeneratedFiles": [
+      "src/Models/AppbaseApplicationRegisterCommand.php"
+    ],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
@@ -62,29 +63,39 @@
   "impact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface"
+      "api-surface",
+      "models"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "src/Api/Iam.php"
+          "src/Api/Iam.php",
+          "src/Api/IamOauth.php"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "src/Models/AppbaseApplicationRegisterCommand.php",
+          "src/Models/AppbaseTenantApplicationProvisionCommand.php",
+          "src/Models/IamTenantApplicationManagementProvisionCommand.php"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface. Verification is required."
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-php\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -102,12 +113,14 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },

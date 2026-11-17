@@ -513,6 +513,14 @@ final class IamOauthApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
+    /** Iam oauth resource Accounts delete. */
+    public function resourceAccountsDelete(string $resourceAccountId): mixed
+    {
+        $path = $this->interpolatePath('/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}', ['resourceAccountId' => $this->serializePathParameter($resourceAccountId, new PathParameterSpec('resourceAccountId', 'simple', false))]);
+        $result = $this->client->request('DELETE', $path, []);
+        return $result;
+    }
+
     /** Iam oauth resource Accounts update. */
     public function resourceAccountsUpdate(string $resourceAccountId, ?array $body = null): ?SdkWorkResourceResponse
     {
@@ -558,6 +566,28 @@ final class IamOauthApi extends BaseApi
     public function resourceAccountsCustomMenusPublish(string $resourceAccountId, array $body): ?SdkWorkResourceResponse
     {
         $path = $this->interpolatePath('/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/publish', ['resourceAccountId' => $this->serializePathParameter($resourceAccountId, new PathParameterSpec('resourceAccountId', 'simple', false))]);
+        $payload = $body;
+        $result = $this->client->request('POST', $path, [
+            'json' => $payload,
+        ]);
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+    }
+
+    /** Iam oauth resource Accounts custom Menus rollback. */
+    public function resourceAccountsCustomMenusRollback(string $resourceAccountId, array $body): ?SdkWorkResourceResponse
+    {
+        $path = $this->interpolatePath('/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/rollback', ['resourceAccountId' => $this->serializePathParameter($resourceAccountId, new PathParameterSpec('resourceAccountId', 'simple', false))]);
+        $payload = $body;
+        $result = $this->client->request('POST', $path, [
+            'json' => $payload,
+        ]);
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+    }
+
+    /** Iam oauth resource Accounts custom Menus sync. */
+    public function resourceAccountsCustomMenusSync(string $resourceAccountId, array $body): ?SdkWorkResourceResponse
+    {
+        $path = $this->interpolatePath('/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/sync', ['resourceAccountId' => $this->serializePathParameter($resourceAccountId, new PathParameterSpec('resourceAccountId', 'simple', false))]);
         $payload = $body;
         $result = $this->client->request('POST', $path, [
             'json' => $payload,

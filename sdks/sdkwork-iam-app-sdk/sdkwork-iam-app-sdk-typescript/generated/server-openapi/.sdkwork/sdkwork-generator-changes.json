@@ -9,12 +9,10 @@
     "protocol": "http",
     "packageName": "@sdkwork/iam-app-sdk"
   },
-  "changeFingerprint": "ae78cc39f2bf133b55974e6dd9b82e88f1aaee015b3dccc9f051b2a3b4946d0c",
+  "changeFingerprint": "e6bd5c51da1ce36404be9a82272c4af19e251e8c2dcca3ea970516145a6212b9",
   "changes": {
     "createdGeneratedFiles": [],
-    "updatedGeneratedFiles": [
-      "src/api/iam.ts"
-    ],
+    "updatedGeneratedFiles": [],
     "unchangedGeneratedFiles": [
       "bin/publish-core.mjs",
       "bin/publish.ps1",
@@ -28,6 +26,7 @@
       "sdkwork-sdk.json",
       "src/api/auth.ts",
       "src/api/base.ts",
+      "src/api/iam.ts",
       "src/api/index.ts",
       "src/api/oauth.ts",
       "src/api/paths.ts",
@@ -74,13 +73,19 @@
       "src/types/wechat-mini-program-session-create-command.ts",
       "tsconfig.json"
     ],
-    "deletedGeneratedFiles": [],
+    "deletedGeneratedFiles": [
+      "src/api/iam.d.ts",
+      "src/api/oauth.d.ts"
+    ],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/build-runtime.mjs",
       "custom/README.md"
     ],
-    "backedUpFiles": []
+    "backedUpFiles": [
+      "src/api/iam.d.ts",
+      "src/api/oauth.d.ts"
+    ]
   },
   "impact": {
     "schemaVersion": 1,
@@ -91,7 +96,8 @@
       {
         "area": "api-surface",
         "paths": [
-          "src/api/iam.ts"
+          "src/api/iam.d.ts",
+          "src/api/oauth.d.ts"
         ]
       }
     ],
@@ -143,12 +149,15 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "backed-up-generated-files",
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },

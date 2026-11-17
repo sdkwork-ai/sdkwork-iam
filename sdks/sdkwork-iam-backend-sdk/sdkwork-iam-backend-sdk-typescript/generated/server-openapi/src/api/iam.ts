@@ -1,7 +1,7 @@
 import { backendApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { AppbaseAccessCredentialCreateCommand, AppbaseApplicationRegisterCommand, AppbaseOperationCommand, AppbaseTenantApplicationEnableCommand, AppbaseTenantApplicationProvisionCommand, AppbaseTenantApplicationUpdateCommand, IamTenantApplicationManagementProvisionCommand, IamTenantApplicationManagementUpdateCommand, IamTenantApplicationStatusCommand, SdkWorkCommandData, SdkWorkPageData, ServiceAccountCredentialCreateCommand, ServiceAccountCredentialRevokeCommand, ServiceAccountTokenExchangeCommand } from '../types';
+import type { AppbaseAccessCredentialCreateCommand, AppbaseOperationCommand, AppbaseTenantApplicationEnableCommand, AppbaseTenantApplicationProvisionCommand, AppbaseTenantApplicationUpdateCommand, IamTenantApplicationManagementProvisionCommand, IamTenantApplicationManagementUpdateCommand, IamTenantApplicationStatusCommand, SdkWorkCommandData, SdkWorkPageData, ServiceAccountCredentialCreateCommand, ServiceAccountCredentialRevokeCommand, ServiceAccountTokenExchangeCommand } from '../types';
 
 
 export interface IamUsersListParams {
@@ -1184,20 +1184,6 @@ export class IamAuditEventsApi {
   }
 }
 
-export class IamApplicationsApi {
-  private client: HttpClient;
-
-  constructor(client: HttpClient) {
-    this.client = client;
-  }
-
-
-/** Applications register. */
-  async register(body: AppbaseApplicationRegisterCommand, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
-    return this.client.request<SdkWorkCommandData>(backendApiPath(`/iam/applications/register`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true, sdkworkUnwrapKind: 'command' });
-  }
-}
-
 export interface IamApiKeysListParams {
   page?: number;
   pageSize?: number;
@@ -1279,7 +1265,6 @@ export class IamApi {
   public readonly accessCredentials: IamAccessCredentialsApi;
   public readonly accountBindingPolicy: IamAccountBindingPolicyApi;
   public readonly apiKeys: IamApiKeysApi;
-  public readonly applications: IamApplicationsApi;
   public readonly auditEvents: IamAuditEventsApi;
   public readonly departmentAssignments: IamDepartmentAssignmentsApi;
   public readonly departments: IamDepartmentsApi;
@@ -1306,7 +1291,6 @@ export class IamApi {
     this.accessCredentials = new IamAccessCredentialsApi(client);
     this.accountBindingPolicy = new IamAccountBindingPolicyApi(client);
     this.apiKeys = new IamApiKeysApi(client);
-    this.applications = new IamApplicationsApi(client);
     this.auditEvents = new IamAuditEventsApi(client);
     this.departmentAssignments = new IamDepartmentAssignmentsApi(client);
     this.departments = new IamDepartmentsApi(client);

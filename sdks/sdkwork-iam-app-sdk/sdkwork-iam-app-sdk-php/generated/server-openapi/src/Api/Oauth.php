@@ -5,6 +5,14 @@ declare(strict_types=1);
 namespace SDKWork\\Iam\\AppSdk\Api;
 
 use SDKWork\\Iam\\AppSdk\Models\AppbaseSessionCreateCommand;
+use SDKWork\\Iam\\AppSdk\Models\AuthorizationsCompletionsCreateRequest;
+use SDKWork\\Iam\\AppSdk\Models\AuthorizationsCompletionsCreateResponse;
+use SDKWork\\Iam\\AppSdk\Models\AuthorizationsCreateRequest;
+use SDKWork\\Iam\\AppSdk\Models\AuthorizationsCreateResponse;
+use SDKWork\\Iam\\AppSdk\Models\DesktopSessionsCreateRequest;
+use SDKWork\\Iam\\AppSdk\Models\DesktopSessionsCreateResponse;
+use SDKWork\\Iam\\AppSdk\Models\OauthPhoneBindingSessionCreateCommand;
+use SDKWork\\Iam\\AppSdk\Models\OauthPhoneBindingVerificationCodeRequestCommand;
 use SDKWork\\Iam\\AppSdk\Models\SdkWorkListResponse;
 use SDKWork\\Iam\\AppSdk\Models\SdkWorkResourceResponse;
 use SDKWork\\Iam\\AppSdk\Models\WechatMiniProgramSessionCreateCommand;
@@ -47,15 +55,27 @@ final class OauthApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
+    /** Authorizations create. */
+    public function authorizationsCreate(array|AuthorizationsCreateRequest $body): ?AuthorizationsCreateResponse
+    {
+        $path = '/app/v3/api/oauth/authorizations';
+        $payload = $body instanceof AuthorizationsCreateRequest ? $body->toArray() : $body;
+        $result = $this->client->request('POST', $path, [
+            'skipAuth' => true,
+            'json' => $payload,
+        ]);
+        return is_array($result) ? AuthorizationsCreateResponse::fromArray($result) : null;
+    }
+
     /** Authorizations completions create. */
-    public function authorizationsCompletionsCreate(string $authorizationStateId, array $body): ?SdkWorkResourceResponse
+    public function authorizationsCompletionsCreate(string $authorizationStateId, array|AuthorizationsCompletionsCreateRequest $body): ?AuthorizationsCompletionsCreateResponse
     {
         $path = $this->interpolatePath('/app/v3/api/oauth/authorizations/{authorizationStateId}/completions', ['authorizationStateId' => $this->serializePathParameter($authorizationStateId, new PathParameterSpec('authorizationStateId', 'simple', false))]);
-        $payload = $body;
+        $payload = $body instanceof AuthorizationsCompletionsCreateRequest ? $body->toArray() : $body;
         $result = $this->client->request('POST', $path, [
             'json' => $payload,
         ]);
-        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+        return is_array($result) ? AuthorizationsCompletionsCreateResponse::fromArray($result) : null;
     }
 
     /** Callbacks retrieve. */
@@ -78,6 +98,18 @@ final class OauthApi extends BaseApi
             'json' => $payload,
         ]);
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+    }
+
+    /** Desktop Sessions create. */
+    public function desktopSessionsCreate(array|DesktopSessionsCreateRequest $body): ?DesktopSessionsCreateResponse
+    {
+        $path = '/app/v3/api/oauth/desktop_sessions';
+        $payload = $body instanceof DesktopSessionsCreateRequest ? $body->toArray() : $body;
+        $result = $this->client->request('POST', $path, [
+            'skipAuth' => true,
+            'json' => $payload,
+        ]);
+        return is_array($result) ? DesktopSessionsCreateResponse::fromArray($result) : null;
     }
 
     /** Device Authorizations create. */
@@ -118,6 +150,18 @@ final class OauthApi extends BaseApi
     public function deviceAuthorizationsScansCreate(string $deviceAuthorizationId, array $body): ?SdkWorkResourceResponse
     {
         $path = $this->interpolatePath('/app/v3/api/oauth/device_authorizations/{deviceAuthorizationId}/scans', ['deviceAuthorizationId' => $this->serializePathParameter($deviceAuthorizationId, new PathParameterSpec('deviceAuthorizationId', 'simple', false))]);
+        $payload = $body;
+        $result = $this->client->request('POST', $path, [
+            'accessTokenOnly' => true,
+            'json' => $payload,
+        ]);
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+    }
+
+    /** Device Authorizations session Completions create. */
+    public function deviceAuthorizationsSessionCompletionsCreate(string $deviceAuthorizationId, array $body): ?SdkWorkResourceResponse
+    {
+        $path = $this->interpolatePath('/app/v3/api/oauth/device_authorizations/{deviceAuthorizationId}/session_completions', ['deviceAuthorizationId' => $this->serializePathParameter($deviceAuthorizationId, new PathParameterSpec('deviceAuthorizationId', 'simple', false))]);
         $payload = $body;
         $result = $this->client->request('POST', $path, [
             'accessTokenOnly' => true,
@@ -174,10 +218,52 @@ final class OauthApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
+    /** Phone Binding Sessions create. */
+    public function phoneBindingSessionsCreate(array|OauthPhoneBindingSessionCreateCommand $body): ?SdkWorkResourceResponse
+    {
+        $path = '/app/v3/api/oauth/phone_binding_sessions';
+        $payload = $body instanceof OauthPhoneBindingSessionCreateCommand ? $body->toArray() : $body;
+        $result = $this->client->request('POST', $path, [
+            'accessTokenOnly' => true,
+            'json' => $payload,
+        ]);
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+    }
+
+    /** Phone Binding Sessions verification Code Requests create. */
+    public function phoneBindingSessionsVerificationCodeRequestsCreate(array|OauthPhoneBindingVerificationCodeRequestCommand $body): ?SdkWorkResourceResponse
+    {
+        $path = '/app/v3/api/oauth/phone_binding_sessions/verification_code_requests';
+        $payload = $body instanceof OauthPhoneBindingVerificationCodeRequestCommand ? $body->toArray() : $body;
+        $result = $this->client->request('POST', $path, [
+            'accessTokenOnly' => true,
+            'json' => $payload,
+        ]);
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+    }
+
     /** Providers list. */
     public function providersList(?int $page = null, ?int $pageSize = null, ?string $cursor = null, ?string $sort = null, ?string $q = null): ?SdkWorkListResponse
     {
         $path = '/app/v3/api/oauth/providers';
+        $query = $this->buildQueryString([
+            new QueryParameterSpec('page', $page, 'form', true, false, null),
+            new QueryParameterSpec('page_size', $pageSize, 'form', true, false, null),
+            new QueryParameterSpec('cursor', $cursor, 'form', true, false, null),
+            new QueryParameterSpec('sort', $sort, 'form', true, false, null),
+            new QueryParameterSpec('q', $q, 'form', true, false, null),
+        ]);
+        $path = $this->appendQueryString($path, $query);
+        $result = $this->client->request('GET', $path, [
+            'accessTokenOnly' => true,
+        ]);
+        return is_array($result) ? SdkWorkListResponse::fromArray($result) : null;
+    }
+
+    /** Scan Login Modes list. */
+    public function scanLoginModesList(?int $page = null, ?int $pageSize = null, ?string $cursor = null, ?string $sort = null, ?string $q = null): ?SdkWorkListResponse
+    {
+        $path = '/app/v3/api/oauth/scan_login_modes';
         $query = $this->buildQueryString([
             new QueryParameterSpec('page', $page, 'form', true, false, null),
             new QueryParameterSpec('page_size', $pageSize, 'form', true, false, null),
@@ -201,6 +287,38 @@ final class OauthApi extends BaseApi
             'accessTokenOnly' => true,
             'json' => $payload,
         ]);
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+    }
+
+    /** Wechat Payment Oauth callback. */
+    public function wechatPaymentOauthCallback(): ?SdkWorkResourceResponse
+    {
+        $path = '/app/v3/api/oauth/wechat/payment/callback';
+        $result = $this->client->request('GET', $path, [
+            'skipAuth' => true,
+        ]);
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+    }
+
+    /** Wechat Payment Oauth cashier Start. */
+    public function wechatPaymentOauthCashierStart(): ?SdkWorkResourceResponse
+    {
+        $path = '/app/v3/api/oauth/wechat/payment/cashier/start';
+        $result = $this->client->request('GET', $path, [
+            'skipAuth' => true,
+        ]);
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+    }
+
+    /** Wechat Payment Oauth start. */
+    public function wechatPaymentOauthStart(string $redirect): ?SdkWorkResourceResponse
+    {
+        $path = '/app/v3/api/oauth/wechat/payment/start';
+        $query = $this->buildQueryString([
+            new QueryParameterSpec('redirect', $redirect, 'form', true, false, null),
+        ]);
+        $path = $this->appendQueryString($path, $query);
+        $result = $this->client->request('GET', $path, []);
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 

@@ -56,6 +56,14 @@ namespace SDKWork.Iam.BackendSdk.Api
         }
 
         /// <summary>
+        /// Api Keys create.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ApiKeysCreateAsync(Dictionary<string, object> body)
+        {
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/api_keys"), body, null, null, "application/json");
+        }
+
+        /// <summary>
         /// Api Keys revoke.
         /// </summary>
         public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse?> ApiKeysRevokeAsync(string apiKeyId, Dictionary<string, object> body)
@@ -64,11 +72,11 @@ namespace SDKWork.Iam.BackendSdk.Api
         }
 
         /// <summary>
-        /// Applications register.
+        /// Api Keys rotate.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse?> ApplicationsRegisterAsync(SDKWork.Iam.BackendSdk.Models.AppbaseApplicationRegisterCommand body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ApiKeysRotateAsync(string apiKeyId, Dictionary<string, object> body)
         {
-            return await _client.RequestAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse>("POST", ApiPaths.BackendPath("/iam/applications/register"), body, null, null, "application/json", true, false);
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/api_keys/{SerializePathParameter(apiKeyId, new PathParameterSpec("apiKeyId", "simple", false))}/rotate"), body, null, null, "application/json");
         }
 
         /// <summary>
@@ -596,6 +604,14 @@ namespace SDKWork.Iam.BackendSdk.Api
         public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ProviderAccountsCredentialsCreateAsync(string providerAccountId, Dictionary<string, object> body)
         {
             return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/provider_accounts/{SerializePathParameter(providerAccountId, new PathParameterSpec("providerAccountId", "simple", false))}/credentials"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Provider Accounts credentials reveal.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ProviderAccountsCredentialsRevealAsync(string providerAccountId)
+        {
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/provider_accounts/{SerializePathParameter(providerAccountId, new PathParameterSpec("providerAccountId", "simple", false))}/credentials/reveal"));
         }
 
         /// <summary>

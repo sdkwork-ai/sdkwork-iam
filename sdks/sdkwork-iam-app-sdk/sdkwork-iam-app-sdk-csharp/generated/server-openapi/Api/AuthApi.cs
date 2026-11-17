@@ -72,6 +72,14 @@ namespace SDKWork.Iam.AppSdk.Api
         }
 
         /// <summary>
+        /// Sessions current logout.
+        /// </summary>
+        public async Task SessionsCurrentLogoutAsync(SDKWork.Iam.AppSdk.Models.SessionsCurrentLogoutRequest body)
+        {
+            await _client.RequestAsync<object>("POST", ApiPaths.AppPath("/auth/sessions/current/logout"), body, null, null, "application/json", true, false);
+        }
+
+        /// <summary>
         /// Sessions login Context Selection create.
         /// </summary>
         public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> SessionsLoginContextSelectionCreateAsync(Dictionary<string, object> body)
@@ -93,6 +101,14 @@ namespace SDKWork.Iam.AppSdk.Api
         public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkCommandResponse?> SessionsRefreshAsync(Dictionary<string, object> body)
         {
             return await _client.RequestAsync<SDKWork.Iam.AppSdk.Models.SdkWorkCommandResponse>("POST", ApiPaths.AppPath("/auth/sessions/refresh"), body, null, null, "application/json", true, false);
+        }
+
+        /// <summary>
+        /// Verification Code Requests create.
+        /// </summary>
+        public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> VerificationCodeRequestsCreateAsync(Dictionary<string, object> body)
+        {
+            return await _client.RequestAsync<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse>("POST", ApiPaths.AppPath("/auth/verification_code_requests"), body, null, null, "application/json", false, true);
         }
 
 

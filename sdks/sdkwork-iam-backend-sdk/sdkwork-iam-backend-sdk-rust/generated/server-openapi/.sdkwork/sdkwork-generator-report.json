@@ -11,32 +11,52 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "49797900347b57b7bfd8813ebf103764f136b4d8425676bb1432d27df70b8127",
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "6b10e990a233404d9b1dfa60fb3b9458745200529488148f36ea46cb226d5c23",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface"
+      "api-surface",
+      "models",
+      "build-metadata"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
+          "src/api/iam_oauth.rs",
           "src/api/iam.rs"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "src/models/appbase_application_register_command.rs",
+          "src/models/appbase_tenant_application_provision_command.rs",
+          "src/models/iam_tenant_application_management_provision_command.rs",
+          "src/models/mod.rs"
+        ]
+      },
+      {
+        "area": "build-metadata",
+        "paths": [
+          "Cargo.toml"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface. Verification is required."
+    "summary": "Detected impact areas: api-surface, models, build-metadata. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },
@@ -48,7 +68,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, build-metadata.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -66,7 +86,7 @@
         "id": "verify-build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, build-metadata.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -85,13 +105,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models, build-metadata. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, build-metadata.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -109,7 +129,7 @@
         "id": "build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, build-metadata.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -139,37 +159,40 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 42,
-    "models": 22,
+    "totalFiles": 41,
+    "models": 21,
     "apis": 2,
-    "types": 24
+    "types": 23
   },
   "warnings": [],
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 1,
+    "writtenFiles": 6,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 40,
-    "deletedGeneratedFiles": 0,
+    "skippedUnchangedGeneratedFiles": 34,
+    "deletedGeneratedFiles": 1,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "49797900347b57b7bfd8813ebf103764f136b4d8425676bb1432d27df70b8127",
+    "changeFingerprint": "6b10e990a233404d9b1dfa60fb3b9458745200529488148f36ea46cb226d5c23",
     "changes": {
       "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [
-        "src/api/iam.rs"
+        "Cargo.toml",
+        "src/api/iam_oauth.rs",
+        "src/api/iam.rs",
+        "src/models/appbase_tenant_application_provision_command.rs",
+        "src/models/iam_tenant_application_management_provision_command.rs",
+        "src/models/mod.rs"
       ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
         "bin/publish.ps1",
         "bin/publish.sh",
-        "Cargo.toml",
         "CHANGELOG.md",
         "LICENSE",
         "README.md",
         "sdkwork-sdk.json",
         "src/api/base.rs",
-        "src/api/iam_oauth.rs",
         "src/api/mod.rs",
         "src/api/paths.rs",
         "src/client.rs",
@@ -177,17 +200,13 @@
         "src/http/mod.rs",
         "src/lib.rs",
         "src/models/appbase_access_credential_create_command.rs",
-        "src/models/appbase_application_register_command.rs",
         "src/models/appbase_tenant_application_enable_command.rs",
-        "src/models/appbase_tenant_application_provision_command.rs",
         "src/models/appbase_tenant_application_update_command.rs",
         "src/models/common.rs",
         "src/models/field_error.rs",
         "src/models/iam_oauth_client_create_command.rs",
-        "src/models/iam_tenant_application_management_provision_command.rs",
         "src/models/iam_tenant_application_management_update_command.rs",
         "src/models/iam_tenant_application_status_command.rs",
-        "src/models/mod.rs",
         "src/models/page_info.rs",
         "src/models/problem_detail.rs",
         "src/models/sdk_work_api_response.rs",
@@ -201,7 +220,9 @@
         "src/models/service_account_credential_revoke_command.rs",
         "src/models/service_account_token_exchange_command.rs"
       ],
-      "deletedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "src/models/appbase_application_register_command.rs"
+      ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/README.md"
@@ -211,29 +232,47 @@
     "impact": {
       "schemaVersion": 1,
       "areas": [
-        "api-surface"
+        "api-surface",
+        "models",
+        "build-metadata"
       ],
       "details": [
         {
           "area": "api-surface",
           "paths": [
+            "src/api/iam_oauth.rs",
             "src/api/iam.rs"
+          ]
+        },
+        {
+          "area": "models",
+          "paths": [
+            "src/models/appbase_application_register_command.rs",
+            "src/models/appbase_tenant_application_provision_command.rs",
+            "src/models/iam_tenant_application_management_provision_command.rs",
+            "src/models/mod.rs"
+          ]
+        },
+        {
+          "area": "build-metadata",
+          "paths": [
+            "Cargo.toml"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface. Verification is required."
+      "summary": "Detected impact areas: api-surface, models, build-metadata. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface, models, build-metadata. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, build-metadata.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-rust\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -251,7 +290,7 @@
           "id": "build",
           "title": "Unified package build",
           "required": true,
-          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface.",
+          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, build-metadata.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-rust\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -269,12 +308,14 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "medium",
+      "riskLevel": "high",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
+        "deleted-generated-files",
+        "manual-review-required",
         "verification-required"
       ]
     },

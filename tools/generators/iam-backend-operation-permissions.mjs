@@ -56,8 +56,6 @@ function explicitBootstrapPermission(operationId) {
     // the organization-scoped active-membership check on top.
     case 'organizations.members.list':
       return 'iam.memberships.read';
-    case 'applications.register':
-      return 'iam.applications.register';
     case 'tenantApplications.create':
       return 'iam.tenant_applications.provision';
     case 'tenantApplications.list':

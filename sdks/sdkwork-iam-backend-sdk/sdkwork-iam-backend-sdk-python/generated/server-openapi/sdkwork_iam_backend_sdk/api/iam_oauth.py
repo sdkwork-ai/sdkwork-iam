@@ -599,6 +599,10 @@ class IamOauthIamOauthResourceAccountsApi:
         """Iam oauth resource Accounts create."""
         return self._client.post(f"/backend/v3/api/iam/oauth/resource_accounts", json=body)
 
+    def delete(self, resource_account_id: str) -> None:
+        """Iam oauth resource Accounts delete."""
+        return self._client.delete(f"/backend/v3/api/iam/oauth/resource_accounts/{serialize_path_parameter(resource_account_id, {'name': 'resourceAccountId', 'style': 'simple', 'explode': False})}")
+
     def update(self, resource_account_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth resource Accounts update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/resource_accounts/{serialize_path_parameter(resource_account_id, {'name': 'resourceAccountId', 'style': 'simple', 'explode': False})}", json=body)
@@ -632,6 +636,14 @@ class IamOauthIamOauthResourceAccountsCustomMenusApi:
     def publish(self, resource_account_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Iam oauth resource Accounts custom Menus publish."""
         return self._client.post(f"/backend/v3/api/iam/oauth/resource_accounts/{serialize_path_parameter(resource_account_id, {'name': 'resourceAccountId', 'style': 'simple', 'explode': False})}/custom_menus/publish", json=body)
+
+    def rollback(self, resource_account_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
+        """Iam oauth resource Accounts custom Menus rollback."""
+        return self._client.post(f"/backend/v3/api/iam/oauth/resource_accounts/{serialize_path_parameter(resource_account_id, {'name': 'resourceAccountId', 'style': 'simple', 'explode': False})}/custom_menus/rollback", json=body)
+
+    def sync(self, resource_account_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
+        """Iam oauth resource Accounts custom Menus sync."""
+        return self._client.post(f"/backend/v3/api/iam/oauth/resource_accounts/{serialize_path_parameter(resource_account_id, {'name': 'resourceAccountId', 'style': 'simple', 'explode': False})}/custom_menus/sync", json=body)
 
 class IamOauthIamOauthResourceAccountsFollowQrCodesApi:
     """iam_oauth iam_oauth.iam.oauth.resource_accounts.follow_qr_codes API client."""

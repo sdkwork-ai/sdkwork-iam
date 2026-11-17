@@ -9,12 +9,13 @@
     "protocol": "http",
     "packageName": "sdkwork_iam_backend_sdk"
   },
-  "changeFingerprint": "2ff2808ffdde5f237a3f274a16c704e3930120dbd0c03ea050808307a0b03816",
+  "changeFingerprint": "31dc0f3eafd47176c6c8e80923b8646004f9dc44b709c793c7d6b623481f05c5",
   "changes": {
     "createdGeneratedFiles": [],
     "updatedGeneratedFiles": [
       "lib/src/api/iam_oauth.dart",
-      "lib/src/api/iam.dart"
+      "lib/src/api/iam.dart",
+      "lib/src/models.dart"
     ],
     "unchangedGeneratedFiles": [
       "analysis_options.yaml",
@@ -29,7 +30,6 @@
       "lib/src/api/response_helpers.dart",
       "lib/src/http/client.dart",
       "lib/src/http/sdk_config.dart",
-      "lib/src/models.dart",
       "LICENSE",
       "pubspec.yaml",
       "README.md",
@@ -45,7 +45,8 @@
   "impact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface"
+      "api-surface",
+      "models"
     ],
     "details": [
       {
@@ -54,21 +55,27 @@
           "lib/src/api/iam_oauth.dart",
           "lib/src/api/iam.dart"
         ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "lib/src/models.dart"
+        ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface. Verification is required."
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-dart\\generated\\server-openapi",
         "command": "node",
         "args": [

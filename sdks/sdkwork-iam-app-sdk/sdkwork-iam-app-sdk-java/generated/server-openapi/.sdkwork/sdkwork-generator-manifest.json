@@ -12,7 +12,7 @@
   "generatedFiles": [
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -36,7 +36,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "544a469c2ac91a72048c944a9718166cf6b0da17b3be553ec98ab6119a657283"
+      "sha256": "7c4c0144d73da4d8766dcc3a7e9dc49428a4dd01510c824a35fdd21e1f0eca58"
     },
     {
       "path": "sdkwork-sdk.json",
@@ -48,15 +48,15 @@
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/api/AuthApi.java",
-      "sha256": "34dde20f0542509761b0f5fac080e638fb9e73dcc56232cc79a9b9b550c95cab"
+      "sha256": "7a8d113ff2084b3513775bca024296e3429456e37c7469a7a33c1e8b48d1162f"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/api/IamApi.java",
-      "sha256": "527e1f041fe15d4b8a25bc8f9dbc1723779c58cabc7df3c9d06c2ddb7ca8804b"
+      "sha256": "933eb7cd5296286d3ff54bf0243913e6c5f2c2cc88943731dc00e55837e94256"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/api/OauthApi.java",
-      "sha256": "3b08d72b9c7a2c7b64694408f2b1bb6cec820b1ba7acd7ab50ea93277f4fa585"
+      "sha256": "ae4596a3d61f35684840f271d8ab3d4a6d7e8fdb0b45030488f4669b873aa5c2"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/api/package-info.java",
@@ -72,11 +72,79 @@
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/model/AppbaseSessionCreateCommand.java",
-      "sha256": "54051cf6e1564a46723a1e9770b812d047208c2a1d9fdd9b7a8576f3fd19e948"
+      "sha256": "bc07baaa8b92e4740f8c7c8f25d98e05e977c37374a121bbc4120b32f4860d80"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCompletionsCreateRequest.java",
+      "sha256": "a9069d37cff5dfbd9d8356711a580f1c5a96840d00fba40b8ac79767d9e0e7b2"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCompletionsCreateResponse.java",
+      "sha256": "5779eccd11e740d1dff65123cfec37366800b9da5b6fea93db63fe3de2a52639"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCreateRequest.java",
+      "sha256": "f591159e7d57f36c32a8d9e806356df3d1790dec1b7a245611a3b9c58a28ad0b"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCreateResponse.java",
+      "sha256": "e898919043437b4a9fe34233cf2258f0a103a9a2405a945ab3f6eef54d4e142e"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/DesktopSessionsCreateRequest.java",
+      "sha256": "c8c81f0d24850e7c5a6ddef0550b5111e1fec3d719101b584613f7c2c0f93b53"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/DesktopSessionsCreateResponse.java",
+      "sha256": "cf0453f1a37bac8a42dfb68fcfac30f4e0f765562f6878489a656979f4aa308d"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/model/FieldError.java",
       "sha256": "267ba360b2d6445f5f1ef2c57afeb250ea7d96de5776cea25542c114ea3b1d32"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/IamOrganizationMember.java",
+      "sha256": "8cc2adbca9c9065ac0295ccdb4fdc4b65408635819ab7ebdb691721f40e3626b"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/IamOrganizationMemberListResponse.java",
+      "sha256": "ea391fff0d2e011b72f1a9dac8badefc28b5706e5f4c26e8479d880561e4ab97"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/IamPersonaCatalog.java",
+      "sha256": "747b18388d3ae0e0f6b4f7a347510b0774a6f946919cf13103df53abf02f2aec"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/IamPersonaCatalogResponse.java",
+      "sha256": "f12ade26e92eaca4193c0a37bb9db75220451fe8063d6684a2dc5e2f4d44fe35"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/IamPersonaInterest.java",
+      "sha256": "1e55146202208b9e6331f4cff68d2f50536f345b00bca22338d34e1474e9a79d"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/IamPersonaRole.java",
+      "sha256": "dece7436ecf84448fdff31eb6f848d395edfa556257f7e065d9f79ebfd000da5"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/IamUserPersona.java",
+      "sha256": "af2500f8688ee8fdcde4bb6d3111302f9c2ca6ed88c680b6ba1e36461a720729"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/IamUserPersonaResponse.java",
+      "sha256": "2e444373c7caa2bd6aaaf3487c1785e94ab4fb1c9f8378bb97e34282c1a5f88d"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/IamUserPersonaUpdateCommand.java",
+      "sha256": "cdcb18f96a4503f73bd59e540f65c4a9c7e3e12b838044b1cd60bbf91189e957"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/OauthPhoneBindingSessionCreateCommand.java",
+      "sha256": "6522816ef3d7015cb6cbd4e4ee1f15219a8c9b93d2c41def41d088a2188c684e"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/OauthPhoneBindingVerificationCodeRequestCommand.java",
+      "sha256": "1454f00f140a6191af4d375244fd559581c1ccd41830c7c38a5ad2a20bb1c20e"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/model/PageInfo.java",
@@ -115,8 +183,12 @@
       "sha256": "4065470dc993e9d4471e3289bf7df4e617de412ae2176a616374456af1fca607"
     },
     {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/SessionsCurrentLogoutRequest.java",
+      "sha256": "2d7a63fdf69c903012e376ee4f61ae18abb117a4e9c7a9700b8629e6f4b56841"
+    },
+    {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/model/WechatMiniProgramSessionCreateCommand.java",
-      "sha256": "c9b416a235b5f6f4ab091d757ce182e96e37f8db618ab604ca1c4e3a18259320"
+      "sha256": "7046a5d788a13c9d129900c576e4dedd8ad1781542a98816f5b36ea575cdd8de"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/SdkworkAppClient.java",

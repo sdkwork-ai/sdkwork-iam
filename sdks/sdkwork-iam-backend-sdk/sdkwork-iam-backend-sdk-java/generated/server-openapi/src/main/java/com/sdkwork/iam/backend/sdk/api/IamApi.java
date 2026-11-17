@@ -44,16 +44,22 @@ public class IamApi {
         return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
+    /** Api Keys create. */
+    public SdkWorkResourceResponse apiKeysCreate(Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/api_keys"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
     /** Api Keys revoke. */
     public SdkWorkCommandResponse apiKeysRevoke(String apiKeyId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/api_keys/" + serializePathParameter(apiKeyId, new PathParameterSpec("apiKeyId", "simple", false)) + "/revoke"), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
     }
 
-    /** Applications register. */
-    public SdkWorkCommandResponse applicationsRegister(AppbaseApplicationRegisterCommand body) throws Exception {
-        Object raw = client.request("POST", ApiPaths.backendPath("/iam/applications/register"), body, null, null, "application/json", true, false);
-        return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
+    /** Api Keys rotate. */
+    public SdkWorkResourceResponse apiKeysRotate(String apiKeyId, Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/api_keys/" + serializePathParameter(apiKeyId, new PathParameterSpec("apiKeyId", "simple", false)) + "/rotate"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
     /** Audit Events list. */
@@ -463,6 +469,12 @@ public class IamApi {
     /** Provider Accounts credentials create. */
     public SdkWorkResourceResponse providerAccountsCredentialsCreate(String providerAccountId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/provider_accounts/" + serializePathParameter(providerAccountId, new PathParameterSpec("providerAccountId", "simple", false)) + "/credentials"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Provider Accounts credentials reveal. */
+    public SdkWorkResourceResponse providerAccountsCredentialsReveal(String providerAccountId) throws Exception {
+        Object raw = client.get(ApiPaths.backendPath("/iam/provider_accounts/" + serializePathParameter(providerAccountId, new PathParameterSpec("providerAccountId", "simple", false)) + "/credentials/reveal"));
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 

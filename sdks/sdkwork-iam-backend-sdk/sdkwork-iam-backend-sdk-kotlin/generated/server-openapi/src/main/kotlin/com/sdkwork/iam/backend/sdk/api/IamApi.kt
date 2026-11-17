@@ -39,16 +39,22 @@ class IamApi(private val client: HttpClient) {
         return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
+    /** Api Keys create. */
+    suspend fun apiKeysCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
+        val raw = client.post(ApiPaths.backendPath("/iam/api_keys"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
+    }
+
     /** Api Keys revoke. */
     suspend fun apiKeysRevoke(apiKeyId: String, body: Map<String, Any>): SdkWorkCommandResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/api_keys/${serializePathParameter(apiKeyId, PathParameterSpec("apiKeyId", "simple", false))}/revoke"), body, null, null, "application/json")
         return client.convertValue(raw, object : TypeReference<SdkWorkCommandResponse>() {})
     }
 
-    /** Applications register. */
-    suspend fun applicationsRegister(body: AppbaseApplicationRegisterCommand): SdkWorkCommandResponse? {
-        val raw = client.request("POST", ApiPaths.backendPath("/iam/applications/register"), body, null, null, "application/json", true, false)
-        return client.convertValue(raw, object : TypeReference<SdkWorkCommandResponse>() {})
+    /** Api Keys rotate. */
+    suspend fun apiKeysRotate(apiKeyId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
+        val raw = client.post(ApiPaths.backendPath("/iam/api_keys/${serializePathParameter(apiKeyId, PathParameterSpec("apiKeyId", "simple", false))}/rotate"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
     /** Audit Events list. */
@@ -450,6 +456,12 @@ class IamApi(private val client: HttpClient) {
     /** Provider Accounts credentials create. */
     suspend fun providerAccountsCredentialsCreate(providerAccountId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/provider_accounts/${serializePathParameter(providerAccountId, PathParameterSpec("providerAccountId", "simple", false))}/credentials"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
+    }
+
+    /** Provider Accounts credentials reveal. */
+    suspend fun providerAccountsCredentialsReveal(providerAccountId: String): SdkWorkResourceResponse? {
+        val raw = client.get(ApiPaths.backendPath("/iam/provider_accounts/${serializePathParameter(providerAccountId, PathParameterSpec("providerAccountId", "simple", false))}/credentials/reveal"))
         return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 

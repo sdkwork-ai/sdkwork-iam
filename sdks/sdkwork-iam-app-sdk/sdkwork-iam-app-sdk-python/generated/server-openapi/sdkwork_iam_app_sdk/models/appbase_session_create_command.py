@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Optional, List, Dict, Any
 @dataclass
 class AppbaseSessionCreateCommand:
     """Session creation command for credential login and external user-center session exchange."""
+    grant_type: Optional[str] = None
+    account: Optional[str] = None
     email: Optional[str] = None
     username: Optional[str] = None
     phone: Optional[str] = None
@@ -14,3 +16,4 @@ class AppbaseSessionCreateCommand:
     provider_key: Optional[str] = None
     tenant_id: Optional[str] = None
     organization_id: Optional[str] = None
+    device_id: Optional[str] = None

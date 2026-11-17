@@ -2,6 +2,7 @@ require_relative 'base_api'
 require_relative '../models/appbase_session_create_command'
 require_relative '../models/sdk_work_command_response'
 require_relative '../models/sdk_work_resource_response'
+require_relative '../models/sessions_current_logout_request'
 
 module Sdkwork
   module AppSdk
@@ -79,6 +80,17 @@ module Sdkwork
             result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
+          # Sessions current logout.
+          def sessions_current_logout(body: nil)
+            path = '/app/v3/api/auth/sessions/current/logout'
+            payload = body.respond_to?(:to_hash) ? body.to_hash : body
+            options = {}
+            options[:skip_auth] = true
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result
+          end
+
           # Sessions login Context Selection create.
           def sessions_login_context_selection_create(body: nil)
             path = '/app/v3/api/auth/sessions/login_context_selection'
@@ -110,6 +122,17 @@ module Sdkwork
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
             result.is_a?(Hash) ? Models::SdkWorkCommandResponse.from_hash(result) : nil
+          end
+
+          # Verification Code Requests create.
+          def verification_code_requests_create(body: nil)
+            path = '/app/v3/api/auth/verification_code_requests'
+            payload = body
+            options = {}
+            options[:access_token_only] = true
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
       end

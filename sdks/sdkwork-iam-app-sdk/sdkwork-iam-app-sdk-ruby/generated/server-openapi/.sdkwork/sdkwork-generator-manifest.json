@@ -12,7 +12,7 @@
   "generatedFiles": [
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -32,11 +32,11 @@
     },
     {
       "path": "lib/sdkwork/app_sdk.rb",
-      "sha256": "426b3d346d58128b789ef73fb7e8901a11e03f45788432caeb99bd5572e6dc47"
+      "sha256": "dabd696de6cf7981459cbb552969da8f6118a9af70aa6e874d6a84a977c93cf7"
     },
     {
       "path": "lib/sdkwork/app_sdk/api/auth.rb",
-      "sha256": "9dcb939b7b2921f731c68f979f8290b9e6a561dcf9653015052386547860f9b9"
+      "sha256": "a9462b2ea28a690ad7220ae7fc3d45f053a3a56437bda00af08fd971f24193cb"
     },
     {
       "path": "lib/sdkwork/app_sdk/api/base_api.rb",
@@ -44,11 +44,11 @@
     },
     {
       "path": "lib/sdkwork/app_sdk/api/iam.rb",
-      "sha256": "25e95fc6046156a5edf20c4cb5aa871c20410d8d92c4aba19ea011ddccc6209f"
+      "sha256": "dd683b62519f991689af367428bdadec2aa8d4bb97c05b2ffa04a3a4d4df0fdb"
     },
     {
       "path": "lib/sdkwork/app_sdk/api/oauth.rb",
-      "sha256": "8ddd5ae28a162c0379edf612d16ef4508a727623d82b4eaa846726c923074702"
+      "sha256": "e85bc6c739f762b9445afe008b3057d96c168125a6b32c42792d8dd54bb4aa81"
     },
     {
       "path": "lib/sdkwork/app_sdk/api/system.rb",
@@ -64,11 +64,79 @@
     },
     {
       "path": "lib/sdkwork/app_sdk/models/appbase_session_create_command.rb",
-      "sha256": "cea9011915fea14fa5a6609d277e11ea4f153109c9feae34959e4b50d6b1b4f3"
+      "sha256": "f1ca04ce1decec4bf6d5256a6f48fbdd6b71e9bc57558d73a280db8227debc26"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/authorizations_completions_create_request.rb",
+      "sha256": "1330265c8ca69302869579106ada02fb9a26b1ec870d477671bd586bc1320104"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/authorizations_completions_create_response.rb",
+      "sha256": "fecc651d433d8d02a466cdfc9c8a16fa65bcda33d50ad4cd37e845d849162fb0"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/authorizations_create_request.rb",
+      "sha256": "e228e84a20fbd27b80cb714d70e57a07452e58584d3a8cc0c992477292fbfae8"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/authorizations_create_response.rb",
+      "sha256": "27089473e5d7c74d2d48849f6cdc3ac38080710373dfc1a5fcde38ca4970402c"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/desktop_sessions_create_request.rb",
+      "sha256": "60862ee4c5bce22f19dbf68e73745d3875e6e9fa2485817e53b55884ce036016"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/desktop_sessions_create_response.rb",
+      "sha256": "81b487d31ecd1d8f1d87b60a1b562ec3a3adc41409707f25b6d08e9c2beb2beb"
     },
     {
       "path": "lib/sdkwork/app_sdk/models/field_error.rb",
       "sha256": "19ed9376bc03b1e515cbb96e9dc0a2474ac2dbbf88a47168d192e0d3ef52cfb2"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/iam_organization_member_list_response.rb",
+      "sha256": "dd5bdf1873c1b742de3792939dbd79c74427c16514da3f12f983b0894f70de21"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/iam_organization_member.rb",
+      "sha256": "8a3b7f6007e97552bfa55a98e473561aea2a0c5c1237c3e43a61af29fba86c4e"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/iam_persona_catalog_response.rb",
+      "sha256": "d46ab2dabae22d241054285753a9e1be10d30d9dc97d531b341efe7f916c5280"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/iam_persona_catalog.rb",
+      "sha256": "625f9e9096267f4f8d463ed8ce68e73eb74db3554e850f45e9ddaf15324af333"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/iam_persona_interest.rb",
+      "sha256": "9250594628ac215620cd79ab8912dff29c1ac96e1eeeed342c4a0c3a68d2a7fb"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/iam_persona_role.rb",
+      "sha256": "0005f301fe76c45b8c0cdcf549256dbd731aaa2d1292f50d76d91eb6f60ba58a"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/iam_user_persona_response.rb",
+      "sha256": "60f148351fea518eca1292304c628af2131eff27fc3a6cac82ee4fa6ba4d8e66"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/iam_user_persona_update_command.rb",
+      "sha256": "171580b77047c22027ad1f19e0ea22840d60541ecb77b132d9477a391aed566c"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/iam_user_persona.rb",
+      "sha256": "8260f0bf4f92eb3367578bb29ef9b7a2b5ecb4295178f59b0d521dfa72806db5"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/oauth_phone_binding_session_create_command.rb",
+      "sha256": "8710c7e243d59dc9fc99eb80ff36d513164c7ae673ec812ff4b0dad13de456d9"
+    },
+    {
+      "path": "lib/sdkwork/app_sdk/models/oauth_phone_binding_verification_code_request_command.rb",
+      "sha256": "484e3275f9fc8d0bc58bd276a9ad5631a2b499573b073e21ce47d8f51e1776ce"
     },
     {
       "path": "lib/sdkwork/app_sdk/models/page_info.rb",
@@ -107,8 +175,12 @@
       "sha256": "3988ba1c31c588cc823d8848631f55c913f451dcd62bc2e50e68eebffbb86d50"
     },
     {
+      "path": "lib/sdkwork/app_sdk/models/sessions_current_logout_request.rb",
+      "sha256": "99879bb9389daf2612602eb4c776387e17766875db9ae0e28d73671cfb2c2a20"
+    },
+    {
       "path": "lib/sdkwork/app_sdk/models/wechat_mini_program_session_create_command.rb",
-      "sha256": "79327d9d1783066d886c286616c23a0e9a1b309ff642d30e8cf7c4d58baff51b"
+      "sha256": "2d02ff2e4aa2242307cbf49b958c7f309e155239a4f60d470bca9517cc72066b"
     },
     {
       "path": "lib/sdkwork/app_sdk/sdk_config.rb",
@@ -124,7 +196,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "aff55b194b88efe6883f289110d1790928ef084211329f731421518b89274c9c"
+      "sha256": "501f1d7d9c1e1c4c5ee6b121192fdb4428ebe41195637241c782d6dc6c5a6e84"
     },
     {
       "path": "sdkwork-iam-app-sdk.gemspec",

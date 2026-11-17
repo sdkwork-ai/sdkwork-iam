@@ -666,30 +666,174 @@ class IamUserPersonaUpdateCommand {
   }
 }
 
+class IamOrganizationMember {
+  final String? userId;
+  final String? membershipId;
+  final String? displayName;
+  final String? username;
+  final String? email;
+  final String? membershipKind;
+  final String? status;
+  final bool? isPrimary;
+
+  IamOrganizationMember({
+    this.userId,
+    this.membershipId,
+    this.displayName,
+    this.username,
+    this.email,
+    this.membershipKind,
+    this.status,
+    this.isPrimary
+  });
+
+  factory IamOrganizationMember.fromJson(Map<String, dynamic> json) {
+    return IamOrganizationMember(
+      userId: json['userId']?.toString(),
+      membershipId: json['membershipId']?.toString(),
+      displayName: json['displayName']?.toString(),
+      username: json['username']?.toString(),
+      email: json['email']?.toString(),
+      membershipKind: json['membershipKind']?.toString(),
+      status: json['status']?.toString(),
+      isPrimary: json['isPrimary'] is bool ? json['isPrimary'] : null
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'userId': userId,
+      'membershipId': membershipId,
+      'displayName': displayName,
+      'username': username,
+      'email': email,
+      'membershipKind': membershipKind,
+      'status': status,
+      'isPrimary': isPrimary,
+    };
+  }
+}
+
+class IamOrganizationMemberListResponse {
+  final int? code;
+  final dynamic data;
+  final String? traceId;
+
+  IamOrganizationMemberListResponse({
+    this.code,
+    this.data,
+    this.traceId
+  });
+
+  factory IamOrganizationMemberListResponse.fromJson(Map<String, dynamic> json) {
+    return IamOrganizationMemberListResponse(
+      code: json['code'] is int ? json['code'] : null,
+      data: _sdkworkAsMap(json['data']),
+      traceId: json['traceId']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'data': data,
+      'traceId': traceId,
+    };
+  }
+}
+
 class WechatMiniProgramSessionCreateCommand {
   final String? jsCode;
+  final String? phoneCode;
   final String? providerCode;
   final String? surfaceCode;
+  final String? deviceId;
 
   WechatMiniProgramSessionCreateCommand({
     this.jsCode,
+    this.phoneCode,
     this.providerCode,
-    this.surfaceCode
+    this.surfaceCode,
+    this.deviceId
   });
 
   factory WechatMiniProgramSessionCreateCommand.fromJson(Map<String, dynamic> json) {
     return WechatMiniProgramSessionCreateCommand(
       jsCode: json['jsCode']?.toString(),
+      phoneCode: json['phoneCode']?.toString(),
       providerCode: json['providerCode']?.toString(),
-      surfaceCode: json['surfaceCode']?.toString()
+      surfaceCode: json['surfaceCode']?.toString(),
+      deviceId: json['deviceId']?.toString()
     );
   }
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'jsCode': jsCode,
+      'phoneCode': phoneCode,
       'providerCode': providerCode,
       'surfaceCode': surfaceCode,
+      'deviceId': deviceId,
+    };
+  }
+}
+
+class OauthPhoneBindingSessionCreateCommand {
+  final String? continuationToken;
+  final String? phone;
+  final String? verificationCode;
+  final String? surfaceCode;
+  final String? deviceId;
+
+  OauthPhoneBindingSessionCreateCommand({
+    this.continuationToken,
+    this.phone,
+    this.verificationCode,
+    this.surfaceCode,
+    this.deviceId
+  });
+
+  factory OauthPhoneBindingSessionCreateCommand.fromJson(Map<String, dynamic> json) {
+    return OauthPhoneBindingSessionCreateCommand(
+      continuationToken: json['continuationToken']?.toString(),
+      phone: json['phone']?.toString(),
+      verificationCode: json['verificationCode']?.toString(),
+      surfaceCode: json['surfaceCode']?.toString(),
+      deviceId: json['deviceId']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'continuationToken': continuationToken,
+      'phone': phone,
+      'verificationCode': verificationCode,
+      'surfaceCode': surfaceCode,
+      'deviceId': deviceId,
+    };
+  }
+}
+
+class OauthPhoneBindingVerificationCodeRequestCommand {
+  final String? continuationToken;
+  final String? phone;
+
+  OauthPhoneBindingVerificationCodeRequestCommand({
+    this.continuationToken,
+    this.phone
+  });
+
+  factory OauthPhoneBindingVerificationCodeRequestCommand.fromJson(Map<String, dynamic> json) {
+    return OauthPhoneBindingVerificationCodeRequestCommand(
+      continuationToken: json['continuationToken']?.toString(),
+      phone: json['phone']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'continuationToken': continuationToken,
+      'phone': phone,
     };
   }
 }
@@ -705,6 +849,7 @@ class AppbaseSessionCreateCommand {
   final String? providerKey;
   final String? tenantId;
   final String? organizationId;
+  final String? deviceId;
 
   AppbaseSessionCreateCommand({
     this.grantType,
@@ -716,7 +861,8 @@ class AppbaseSessionCreateCommand {
     this.externalToken,
     this.providerKey,
     this.tenantId,
-    this.organizationId
+    this.organizationId,
+    this.deviceId
   });
 
   factory AppbaseSessionCreateCommand.fromJson(Map<String, dynamic> json) {
@@ -730,7 +876,8 @@ class AppbaseSessionCreateCommand {
       externalToken: json['externalToken']?.toString(),
       providerKey: json['providerKey']?.toString(),
       tenantId: json['tenantId']?.toString(),
-      organizationId: json['organizationId']?.toString()
+      organizationId: json['organizationId']?.toString(),
+      deviceId: json['deviceId']?.toString()
     );
   }
 
@@ -746,6 +893,103 @@ class AppbaseSessionCreateCommand {
       'providerKey': providerKey,
       'tenantId': tenantId,
       'organizationId': organizationId,
+      'deviceId': deviceId,
+    };
+  }
+}
+
+class SessionsCurrentLogoutRequest {
+  final String? refreshToken;
+
+  SessionsCurrentLogoutRequest({
+    this.refreshToken
+  });
+
+  factory SessionsCurrentLogoutRequest.fromJson(Map<String, dynamic> json) {
+    return SessionsCurrentLogoutRequest(
+      refreshToken: json['refreshToken']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'refreshToken': refreshToken,
+    };
+  }
+}
+
+class AuthorizationsCreateRequest {
+  final String? clientId;
+  final String? responseType;
+  final String? redirectUri;
+  final String? scope;
+  final String? state;
+  final String? codeChallenge;
+  final String? codeChallengeMethod;
+  final String? tenantId;
+
+  AuthorizationsCreateRequest({
+    this.clientId,
+    this.responseType,
+    this.redirectUri,
+    this.scope,
+    this.state,
+    this.codeChallenge,
+    this.codeChallengeMethod,
+    this.tenantId
+  });
+
+  factory AuthorizationsCreateRequest.fromJson(Map<String, dynamic> json) {
+    return AuthorizationsCreateRequest(
+      clientId: json['clientId']?.toString(),
+      responseType: json['responseType']?.toString(),
+      redirectUri: json['redirectUri']?.toString(),
+      scope: json['scope']?.toString(),
+      state: json['state']?.toString(),
+      codeChallenge: json['codeChallenge']?.toString(),
+      codeChallengeMethod: json['codeChallengeMethod']?.toString(),
+      tenantId: json['tenantId']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'clientId': clientId,
+      'responseType': responseType,
+      'redirectUri': redirectUri,
+      'scope': scope,
+      'state': state,
+      'codeChallenge': codeChallenge,
+      'codeChallengeMethod': codeChallengeMethod,
+      'tenantId': tenantId,
+    };
+  }
+}
+
+class AuthorizationsCreateResponse {
+  final int? code;
+  final String? traceId;
+  final Map<String, dynamic>? data;
+
+  AuthorizationsCreateResponse({
+    this.code,
+    this.traceId,
+    this.data
+  });
+
+  factory AuthorizationsCreateResponse.fromJson(Map<String, dynamic> json) {
+    return AuthorizationsCreateResponse(
+      code: json['code'] is int ? json['code'] : null,
+      traceId: json['traceId']?.toString(),
+      data: _sdkworkAsMap(json['data'])
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'traceId': traceId,
+      'data': data,
     };
   }
 }
@@ -798,13 +1042,15 @@ class DesktopSessionsCreateRequest {
   final String? codeVerifier;
   final String? redirectUri;
   final String? clientSecret;
+  final String? deviceId;
 
   DesktopSessionsCreateRequest({
     this.clientId,
     this.authorizationCode,
     this.codeVerifier,
     this.redirectUri,
-    this.clientSecret
+    this.clientSecret,
+    this.deviceId
   });
 
   factory DesktopSessionsCreateRequest.fromJson(Map<String, dynamic> json) {
@@ -813,7 +1059,8 @@ class DesktopSessionsCreateRequest {
       authorizationCode: json['authorizationCode']?.toString(),
       codeVerifier: json['codeVerifier']?.toString(),
       redirectUri: json['redirectUri']?.toString(),
-      clientSecret: json['clientSecret']?.toString()
+      clientSecret: json['clientSecret']?.toString(),
+      deviceId: json['deviceId']?.toString()
     );
   }
 
@@ -824,6 +1071,7 @@ class DesktopSessionsCreateRequest {
       'codeVerifier': codeVerifier,
       'redirectUri': redirectUri,
       'clientSecret': clientSecret,
+      'deviceId': deviceId,
     };
   }
 }

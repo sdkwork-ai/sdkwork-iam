@@ -9,11 +9,29 @@
     "protocol": "http",
     "packageName": "SDKWork.Iam.AppSdk"
   },
-  "changeFingerprint": "773a8b0c511e21afb7422514f5fc5f9f6a7487ad2edd7db0f3f5b5ae34dd84f0",
+  "changeFingerprint": "914d42c527bd4e2484b0f54df113b9096689d27923d99973111076144836bfb0",
   "changes": {
-    "createdGeneratedFiles": [],
-    "updatedGeneratedFiles": [],
-    "unchangedGeneratedFiles": [
+    "createdGeneratedFiles": [
+      "Models/AuthorizationsCompletionsCreateRequest.cs",
+      "Models/AuthorizationsCompletionsCreateResponse.cs",
+      "Models/AuthorizationsCreateRequest.cs",
+      "Models/AuthorizationsCreateResponse.cs",
+      "Models/DesktopSessionsCreateRequest.cs",
+      "Models/DesktopSessionsCreateResponse.cs",
+      "Models/IamOrganizationMember.cs",
+      "Models/IamOrganizationMemberListResponse.cs",
+      "Models/IamPersonaCatalog.cs",
+      "Models/IamPersonaCatalogResponse.cs",
+      "Models/IamPersonaInterest.cs",
+      "Models/IamPersonaRole.cs",
+      "Models/IamUserPersona.cs",
+      "Models/IamUserPersonaResponse.cs",
+      "Models/IamUserPersonaUpdateCommand.cs",
+      "Models/OauthPhoneBindingSessionCreateCommand.cs",
+      "Models/OauthPhoneBindingVerificationCodeRequestCommand.cs",
+      "Models/SessionsCurrentLogoutRequest.cs"
+    ],
+    "updatedGeneratedFiles": [
       "Api/Api.cs",
       "Api/ApiPaths.cs",
       "Api/AuthApi.cs",
@@ -43,35 +61,177 @@
       "SDKWork.Iam.AppSdk.csproj",
       "SdkworkAppClient.cs"
     ],
+    "unchangedGeneratedFiles": [],
     "deletedGeneratedFiles": [],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
     ],
-    "backedUpFiles": []
+    "backedUpFiles": [
+      "Api/Api.cs",
+      "Api/ApiPaths.cs",
+      "Api/AuthApi.cs",
+      "Api/IamApi.cs",
+      "Api/OauthApi.cs",
+      "Api/SystemApi.cs",
+      "bin/publish-core.mjs",
+      "bin/publish.ps1",
+      "bin/publish.sh",
+      "CHANGELOG.md",
+      "Http/HttpClient.cs",
+      "LICENSE",
+      "Models/AppbaseSessionCreateCommand.cs",
+      "Models/FieldError.cs",
+      "Models/PageInfo.cs",
+      "Models/ProblemDetail.cs",
+      "Models/SdkWorkApiResponse.cs",
+      "Models/SdkWorkCommandData.cs",
+      "Models/SdkWorkCommandResponse.cs",
+      "Models/SdkWorkListResponse.cs",
+      "Models/SdkWorkPageData.cs",
+      "Models/SdkWorkResourceData.cs",
+      "Models/SdkWorkResourceResponse.cs",
+      "Models/WechatMiniProgramSessionCreateCommand.cs",
+      "README.md",
+      "sdkwork-sdk.json",
+      "SDKWork.Iam.AppSdk.csproj",
+      "SdkworkAppClient.cs"
+    ]
   },
   "impact": {
     "schemaVersion": 1,
-    "areas": [],
-    "details": [],
-    "requiresVerification": false,
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped."
+    "areas": [
+      "api-surface",
+      "models",
+      "runtime",
+      "build-metadata",
+      "publish-workflow",
+      "documentation",
+      "unknown"
+    ],
+    "details": [
+      {
+        "area": "api-surface",
+        "paths": [
+          "Api/Api.cs",
+          "Api/ApiPaths.cs",
+          "Api/AuthApi.cs",
+          "Api/IamApi.cs",
+          "Api/OauthApi.cs",
+          "Api/SystemApi.cs",
+          "SdkworkAppClient.cs"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "Models/AppbaseSessionCreateCommand.cs",
+          "Models/AuthorizationsCompletionsCreateRequest.cs",
+          "Models/AuthorizationsCompletionsCreateResponse.cs",
+          "Models/AuthorizationsCreateRequest.cs",
+          "Models/AuthorizationsCreateResponse.cs",
+          "Models/DesktopSessionsCreateRequest.cs",
+          "Models/DesktopSessionsCreateResponse.cs",
+          "Models/FieldError.cs",
+          "Models/IamOrganizationMember.cs",
+          "Models/IamOrganizationMemberListResponse.cs",
+          "Models/IamPersonaCatalog.cs",
+          "Models/IamPersonaCatalogResponse.cs",
+          "Models/IamPersonaInterest.cs",
+          "Models/IamPersonaRole.cs",
+          "Models/IamUserPersona.cs",
+          "Models/IamUserPersonaResponse.cs",
+          "Models/IamUserPersonaUpdateCommand.cs",
+          "Models/OauthPhoneBindingSessionCreateCommand.cs",
+          "Models/OauthPhoneBindingVerificationCodeRequestCommand.cs",
+          "Models/PageInfo.cs",
+          "Models/ProblemDetail.cs",
+          "Models/SdkWorkApiResponse.cs",
+          "Models/SdkWorkCommandData.cs",
+          "Models/SdkWorkCommandResponse.cs",
+          "Models/SdkWorkListResponse.cs",
+          "Models/SdkWorkPageData.cs",
+          "Models/SdkWorkResourceData.cs",
+          "Models/SdkWorkResourceResponse.cs",
+          "Models/SessionsCurrentLogoutRequest.cs",
+          "Models/WechatMiniProgramSessionCreateCommand.cs"
+        ]
+      },
+      {
+        "area": "runtime",
+        "paths": [
+          "Http/HttpClient.cs"
+        ]
+      },
+      {
+        "area": "build-metadata",
+        "paths": [
+          "sdkwork-sdk.json",
+          "SDKWork.Iam.AppSdk.csproj"
+        ]
+      },
+      {
+        "area": "publish-workflow",
+        "paths": [
+          "bin/publish-core.mjs",
+          "bin/publish.ps1",
+          "bin/publish.sh"
+        ]
+      },
+      {
+        "area": "documentation",
+        "paths": [
+          "CHANGELOG.md",
+          "README.md"
+        ]
+      },
+      {
+        "area": "unknown",
+        "paths": [
+          "LICENSE"
+        ]
+      }
+    ],
+    "requiresVerification": true,
+    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required."
   },
   "verificationPlan": {
-    "shouldRun": false,
-    "runPhase": "skip",
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped.",
-    "steps": []
+    "shouldRun": true,
+    "runPhase": "now",
+    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "steps": [
+      {
+        "id": "check",
+        "title": "Unified package check",
+        "required": true,
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-csharp\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "csharp",
+          "--project-dir",
+          ".",
+          "--action",
+          "check"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language csharp --project-dir . --action check"
+      }
+    ]
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "low",
-    "nextAction": "skip",
+    "riskLevel": "high",
+    "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
-    "summary": "No actionable changes were detected. No apply or verification step is required.",
+    "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "no-actionable-changes"
+      "backed-up-generated-files",
+      "manual-review-required",
+      "unknown-impact",
+      "verification-required"
     ]
   },
   "preservedLegacyFiles": false

@@ -9,16 +9,18 @@
     "protocol": "http",
     "packageName": "SDKWork.Iam.BackendSdk"
   },
-  "changeFingerprint": "c7fbafa247abb594e41607eca04ba09d3c7ef5b9f4c82139f42711e7f7d26dce",
+  "changeFingerprint": "bf5e0acb52e483b253c8ae1317ff05be753922a5ede9c91f3a7799c3c5feda4e",
   "changes": {
     "createdGeneratedFiles": [],
     "updatedGeneratedFiles": [
-      "Api/IamApi.cs"
+      "Api/IamApi.cs",
+      "Api/IamOauthApi.cs",
+      "Models/AppbaseTenantApplicationProvisionCommand.cs",
+      "Models/IamTenantApplicationManagementProvisionCommand.cs"
     ],
     "unchangedGeneratedFiles": [
       "Api/Api.cs",
       "Api/ApiPaths.cs",
-      "Api/IamOauthApi.cs",
       "bin/publish-core.mjs",
       "bin/publish.ps1",
       "bin/publish.sh",
@@ -26,13 +28,10 @@
       "Http/HttpClient.cs",
       "LICENSE",
       "Models/AppbaseAccessCredentialCreateCommand.cs",
-      "Models/AppbaseApplicationRegisterCommand.cs",
       "Models/AppbaseTenantApplicationEnableCommand.cs",
-      "Models/AppbaseTenantApplicationProvisionCommand.cs",
       "Models/AppbaseTenantApplicationUpdateCommand.cs",
       "Models/FieldError.cs",
       "Models/IamOauthClientCreateCommand.cs",
-      "Models/IamTenantApplicationManagementProvisionCommand.cs",
       "Models/IamTenantApplicationManagementUpdateCommand.cs",
       "Models/IamTenantApplicationStatusCommand.cs",
       "Models/PageInfo.cs",
@@ -52,7 +51,9 @@
       "SDKWork.Iam.BackendSdk.csproj",
       "SdkworkBackendClient.cs"
     ],
-    "deletedGeneratedFiles": [],
+    "deletedGeneratedFiles": [
+      "Models/AppbaseApplicationRegisterCommand.cs"
+    ],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
@@ -62,29 +63,39 @@
   "impact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface"
+      "api-surface",
+      "models"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "Api/IamApi.cs"
+          "Api/IamApi.cs",
+          "Api/IamOauthApi.cs"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "Models/AppbaseApplicationRegisterCommand.cs",
+          "Models/AppbaseTenantApplicationProvisionCommand.cs",
+          "Models/IamTenantApplicationManagementProvisionCommand.cs"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface. Verification is required."
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-csharp\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -102,12 +113,14 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },

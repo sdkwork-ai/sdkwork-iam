@@ -12,7 +12,6 @@ export type { SdkWorkListResponse } from './sdk-work-list-response';
 export type { SdkWorkCommandResponse } from './sdk-work-command-response';
 export type { AppbaseOperationCommand } from './appbase-operation-command';
 export type { IamOauthClientCreateCommand } from './iam-oauth-client-create-command';
-export type { AppbaseApplicationRegisterCommand } from './appbase-application-register-command';
 export type { IamTenantApplicationManagementProvisionCommand } from './iam-tenant-application-management-provision-command';
 export type { IamTenantApplicationManagementUpdateCommand } from './iam-tenant-application-management-update-command';
 export type { IamTenantApplicationStatusCommand } from './iam-tenant-application-status-command';

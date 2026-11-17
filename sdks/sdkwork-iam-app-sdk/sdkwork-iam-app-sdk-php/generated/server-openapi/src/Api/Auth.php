@@ -7,6 +7,7 @@ namespace SDKWork\\Iam\\AppSdk\Api;
 use SDKWork\\Iam\\AppSdk\Models\AppbaseSessionCreateCommand;
 use SDKWork\\Iam\\AppSdk\Models\SdkWorkCommandResponse;
 use SDKWork\\Iam\\AppSdk\Models\SdkWorkResourceResponse;
+use SDKWork\\Iam\\AppSdk\Models\SessionsCurrentLogoutRequest;
 
 final class AuthApi extends BaseApi
 {
@@ -85,6 +86,18 @@ final class AuthApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
+    /** Sessions current logout. */
+    public function sessionsCurrentLogout(array|SessionsCurrentLogoutRequest $body): mixed
+    {
+        $path = '/app/v3/api/auth/sessions/current/logout';
+        $payload = $body instanceof SessionsCurrentLogoutRequest ? $body->toArray() : $body;
+        $result = $this->client->request('POST', $path, [
+            'skipAuth' => true,
+            'json' => $payload,
+        ]);
+        return $result;
+    }
+
     /** Sessions login Context Selection create. */
     public function sessionsLoginContextSelectionCreate(array $body): ?SdkWorkResourceResponse
     {
@@ -119,6 +132,18 @@ final class AuthApi extends BaseApi
             'json' => $payload,
         ]);
         return is_array($result) ? SdkWorkCommandResponse::fromArray($result) : null;
+    }
+
+    /** Verification Code Requests create. */
+    public function verificationCodeRequestsCreate(array $body): ?SdkWorkResourceResponse
+    {
+        $path = '/app/v3/api/auth/verification_code_requests';
+        $payload = $body;
+        $result = $this->client->request('POST', $path, [
+            'accessTokenOnly' => true,
+            'json' => $payload,
+        ]);
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
 }

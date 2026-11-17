@@ -42,6 +42,16 @@ class OauthApi {
     })();
   }
 
+  /// Authorizations create.
+  Future<AuthorizationsCreateResponse?> authorizationsCreate(AuthorizationsCreateRequest body) async {
+    final payload = body.toJson();
+    final response = await _client.request('POST', ApiPaths.appPath('/oauth/authorizations'), body: payload, contentType: 'application/json', skipAuth: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : AuthorizationsCreateResponse.fromJson(map);
+    })();
+  }
+
   /// Authorizations completions create.
   Future<AuthorizationsCompletionsCreateResponse?> authorizationsCompletionsCreate(String authorizationStateId, AuthorizationsCompletionsCreateRequest body) async {
     final payload = body.toJson();
@@ -171,6 +181,26 @@ class OauthApi {
     })();
   }
 
+  /// Phone Binding Sessions create.
+  Future<SdkWorkResourceResponse?> phoneBindingSessionsCreate(OauthPhoneBindingSessionCreateCommand body) async {
+    final payload = body.toJson();
+    final response = await _client.request('POST', ApiPaths.appPath('/oauth/phone_binding_sessions'), body: payload, contentType: 'application/json', accessTokenOnly: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Phone Binding Sessions verification Code Requests create.
+  Future<SdkWorkResourceResponse?> phoneBindingSessionsVerificationCodeRequestsCreate(OauthPhoneBindingVerificationCodeRequestCommand body) async {
+    final payload = body.toJson();
+    final response = await _client.request('POST', ApiPaths.appPath('/oauth/phone_binding_sessions/verification_code_requests'), body: payload, contentType: 'application/json', accessTokenOnly: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
   /// Providers list.
   Future<SdkWorkListResponse?> providersList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
@@ -216,6 +246,15 @@ class OauthApi {
   /// Wechat Payment Oauth callback.
   Future<SdkWorkResourceResponse?> wechatPaymentOauthCallback() async {
     final response = await _client.request('GET', ApiPaths.appPath('/oauth/wechat/payment/callback'), skipAuth: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Wechat Payment Oauth cashier Start.
+  Future<SdkWorkResourceResponse?> wechatPaymentOauthCashierStart() async {
+    final response = await _client.request('GET', ApiPaths.appPath('/oauth/wechat/payment/cashier/start'), skipAuth: true);
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkResourceResponse.fromJson(map);

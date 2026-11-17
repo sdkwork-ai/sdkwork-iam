@@ -5,13 +5,14 @@ from typing import TYPE_CHECKING, Optional, List, Dict, Any
 
 @dataclass
 class IamTenantApplicationManagementProvisionCommand:
-    """Provision a registered application template for a tenant through an authenticated operator workflow."""
+    """Provision a tenant installation from the deploy application it serves plus explicit attributes, through an authenticated operator workflow. Application templates are retired, so no template reference is accepted."""
     organization_id: str
     instance_key: str
     display_name: str
     environment: str
-    template_id: Optional[str] = None
-    app_key: Optional[str] = None
-    application_type: Optional[str] = None
+    application_type: str
     primary_domain: Optional[str] = None
     access_permissions: Optional[List[str]] = None
+    runtime_config: Optional[Dict[str, Any]] = None
+    deploy_application_id: Optional[str] = None
+    provisioning_idempotency_key: Optional[str] = None

@@ -34,14 +34,19 @@ public class IamApi {
         return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/api_keys"), query), responseType: SdkWorkListResponse.self)
     }
 
+    /// Api Keys create.
+    public func apiKeysCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/api_keys"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
     /// Api Keys revoke.
     public func apiKeysRevoke(apiKeyId: String, body: [String: Any]) async throws -> SdkWorkCommandResponse? {
         return try await client.post(ApiPaths.backendPath("/iam/api_keys/\(serializePathParameter(apiKeyId, PathParameterSpec(name: "apiKeyId", style: "simple", explode: false)))/revoke"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkCommandResponse.self)
     }
 
-    /// Applications register.
-    public func applicationsRegister(body: AppbaseApplicationRegisterCommand) async throws -> SdkWorkCommandResponse? {
-        return try await client.request("POST", ApiPaths.backendPath("/iam/applications/register"), body: body, params: nil, headers: nil, contentType: "application/json", skipAuth: true, responseType: SdkWorkCommandResponse.self)
+    /// Api Keys rotate.
+    public func apiKeysRotate(apiKeyId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/api_keys/\(serializePathParameter(apiKeyId, PathParameterSpec(name: "apiKeyId", style: "simple", explode: false)))/rotate"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Audit Events list.
@@ -400,6 +405,11 @@ public class IamApi {
     /// Provider Accounts credentials create.
     public func providerAccountsCredentialsCreate(providerAccountId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
         return try await client.post(ApiPaths.backendPath("/iam/provider_accounts/\(serializePathParameter(providerAccountId, PathParameterSpec(name: "providerAccountId", style: "simple", explode: false)))/credentials"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Provider Accounts credentials reveal.
+    public func providerAccountsCredentialsReveal(providerAccountId: String) async throws -> SdkWorkResourceResponse? {
+        return try await client.get(ApiPaths.backendPath("/iam/provider_accounts/\(serializePathParameter(providerAccountId, PathParameterSpec(name: "providerAccountId", style: "simple", explode: false)))/credentials/reveal"), responseType: SdkWorkResourceResponse.self)
     }
 
     /// Provider Accounts set Default.

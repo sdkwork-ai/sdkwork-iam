@@ -649,9 +649,6 @@ export const SDKWORK_IAM_API_ROUTES = {
     accessCredentials: {
       create: operation("POST", `${backend}/iam/access_credentials`, "iam", "accessCredentials.create", "public"),
     },
-    applications: {
-      register: operation("POST", `${backend}/iam/applications/register`, "iam", "applications.register", "public"),
-    },
     tenantApplications: {
       list: operation("GET", `${backend}/iam/tenants/{tenantId}/applications`, "iam", "tenantApplications.list", "dualToken"),
       create: operation("POST", `${backend}/iam/tenant_applications`, "iam", "tenantApplications.create", "public"),
@@ -1103,7 +1100,7 @@ export const SDKWORK_IAM_CAPABILITIES = [
     "apiAccess",
     ["iam"],
     ["apiKey"],
-    ["apiKeys.list", "apiKeys.revoke", "accessCredentials.create", "applications.register", "tenantApplications.list", "tenantApplications.create", "tenantApplications.retrieve", "tenantApplications.update", "tenantApplications.enable", "tenantApplications.management.create", "tenantApplications.management.update", "tenantApplications.management.enable", "tenantApplications.management.disable", "tenantApplications.summary.retrieve"],
+    ["apiKeys.list", "apiKeys.revoke", "accessCredentials.create", "tenantApplications.list", "tenantApplications.create", "tenantApplications.retrieve", "tenantApplications.update", "tenantApplications.enable", "tenantApplications.management.create", "tenantApplications.management.update", "tenantApplications.management.enable", "tenantApplications.management.disable", "tenantApplications.summary.retrieve"],
   ),
   capability(
     "securityAudit",
