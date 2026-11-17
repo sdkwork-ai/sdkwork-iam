@@ -4,6 +4,7 @@ mod api_key_lookup;
 mod app_manifest;
 mod application_access_token;
 mod application_registry;
+mod application_scope;
 mod authorization_policy;
 mod authorization_scope;
 mod dev_runtime;
@@ -15,6 +16,7 @@ mod iam_audit;
 mod iam_database_env;
 mod iam_session;
 mod installation_lifecycle;
+mod installation_scope_cache;
 mod messaging_verification;
 mod oauth_authorization_server;
 mod oauth_integration_exchange;
@@ -78,7 +80,8 @@ pub use application_registry::{
     ensure_tenant_application_runtime, intersect_permission_scopes, is_provision_attribute_error,
     parse_tenant_application_provision_command, parse_tenant_application_update_command,
     platform_deploy_application_id_for_tenant, platform_runtime_app_id_for_tenant,
-    provision_tenant_application, resolve_access_token_app_id, resolve_tenant_application,
+    provision_tenant_application, resolve_access_token_app_id,
+    resolve_installation_ownership_scope, resolve_tenant_application,
     resolve_tenant_application_by_deploy_application_id, tenant_application_instance_key,
     tenant_application_row_id, tenant_application_to_json, update_tenant_application,
     validate_enabled_tenant_runtime_app, EnsureTenantApplicationCommand, TenantApplication,
@@ -87,6 +90,12 @@ pub use application_registry::{
     IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION, IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION,
     PLATFORM_INSTALLATION_ANCHOR,
 };
+pub use application_scope::{
+    ensure_requested_scope_matches_installation, ensure_subject_is_installation_owner,
+    resolve_installation_scope, ApplicationIsolationKey, ApplicationOwnershipScope,
+    ResolvedInstallationScope,
+};
+pub use installation_scope_cache::invalidate_installation_scope;
 pub use authorization_policy::IamAuthorizationPolicy;
 pub use authorization_scope::{
     iam_authorization_scope_provider_from_env, IamSessionAuthorizationScopeSource,

@@ -38,6 +38,7 @@ const body = {
   tenantApplicationId: 'tenantApplicationId',
   appId: 'appId',
   instanceKey: 'instanceKey',
+  ownershipScope: 'TENANT',
 };
 const result = await client.iam.accessCredentials.create(body);
 ```
@@ -86,6 +87,7 @@ const body = {
   tenantApplicationId: 'tenantApplicationId',
   appId: 'appId',
   instanceKey: 'instanceKey',
+  ownershipScope: 'TENANT',
 };
 const result = await client.iam.accessCredentials.create(body);
 ```
@@ -114,6 +116,7 @@ try {
     tenantApplicationId: 'tenantApplicationId',
     appId: 'appId',
     instanceKey: 'instanceKey',
+    ownershipScope: 'TENANT',
   };
   const result = await client.iam.accessCredentials.create(body);
 } catch (error) {

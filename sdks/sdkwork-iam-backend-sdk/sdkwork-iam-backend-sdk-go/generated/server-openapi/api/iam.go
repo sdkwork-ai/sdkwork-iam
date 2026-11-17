@@ -1146,6 +1146,53 @@ func (a *IamApi) TenantApplicationsManagementUpdate(tenantId string, tenantAppli
     return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
+// Tenant Applications credentials list.
+func (a *IamApi) TenantApplicationsCredentialsList(tenantId string, tenantApplicationId string, page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.IamInstallationCredentialListResponse, error) {
+    query := BuildQueryString([]QueryParameterSpec{
+        {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
+        {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
+        {Name: "cursor", Value: func() interface{} { if cursor == nil { return nil }; return *cursor }(), Style: "form", Explode: true, AllowReserved: false},
+        {Name: "sort", Value: func() interface{} { if sort == nil { return nil }; return *sort }(), Style: "form", Explode: true, AllowReserved: false},
+        {Name: "q", Value: func() interface{} { if q == nil { return nil }; return *q }(), Style: "form", Explode: true, AllowReserved: false},
+    })
+    raw, err := a.client.Get(AppendQueryString(BackendApiPath(fmt.Sprintf("/iam/tenants/%s/applications/%s/credentials", SerializePathParameter(tenantId, PathParameterSpec{Name: "tenantId", Style: "simple", Explode: false}), SerializePathParameter(tenantApplicationId, PathParameterSpec{Name: "tenantApplicationId", Style: "simple", Explode: false}))), query), nil, nil)
+    if err != nil {
+        var zero sdktypes.IamInstallationCredentialListResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.IamInstallationCredentialListResponse](raw)
+}
+
+// Tenant Applications credentials create.
+func (a *IamApi) TenantApplicationsCredentialsCreate(tenantId string, tenantApplicationId string, body sdktypes.IamInstallationCredentialCreateCommand) (sdktypes.IamInstallationCredentialResponse, error) {
+    raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/tenants/%s/applications/%s/credentials", SerializePathParameter(tenantId, PathParameterSpec{Name: "tenantId", Style: "simple", Explode: false}), SerializePathParameter(tenantApplicationId, PathParameterSpec{Name: "tenantApplicationId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
+    if err != nil {
+        var zero sdktypes.IamInstallationCredentialResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.IamInstallationCredentialResponse](raw)
+}
+
+// Tenant Applications credentials revoke.
+func (a *IamApi) TenantApplicationsCredentialsRevoke(tenantId string, tenantApplicationId string, credentialId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkCommandResponse, error) {
+    raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/tenants/%s/applications/%s/credentials/%s/revoke", SerializePathParameter(tenantId, PathParameterSpec{Name: "tenantId", Style: "simple", Explode: false}), SerializePathParameter(tenantApplicationId, PathParameterSpec{Name: "tenantApplicationId", Style: "simple", Explode: false}), SerializePathParameter(credentialId, PathParameterSpec{Name: "credentialId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
+    if err != nil {
+        var zero sdktypes.SdkWorkCommandResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.SdkWorkCommandResponse](raw)
+}
+
+// Tenant Applications credentials rotate.
+func (a *IamApi) TenantApplicationsCredentialsRotate(tenantId string, tenantApplicationId string, credentialId string, body sdktypes.IamInstallationCredentialRotateCommand) (sdktypes.IamInstallationCredentialResponse, error) {
+    raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/tenants/%s/applications/%s/credentials/%s/rotate", SerializePathParameter(tenantId, PathParameterSpec{Name: "tenantId", Style: "simple", Explode: false}), SerializePathParameter(tenantApplicationId, PathParameterSpec{Name: "tenantApplicationId", Style: "simple", Explode: false}), SerializePathParameter(credentialId, PathParameterSpec{Name: "credentialId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
+    if err != nil {
+        var zero sdktypes.IamInstallationCredentialResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.IamInstallationCredentialResponse](raw)
+}
+
 // Tenant Applications management disable.
 func (a *IamApi) TenantApplicationsManagementDisable(tenantId string, tenantApplicationId string, body sdktypes.IamTenantApplicationStatusCommand) (sdktypes.SdkWorkCommandResponse, error) {
     raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/tenants/%s/applications/%s/disable", SerializePathParameter(tenantId, PathParameterSpec{Name: "tenantId", Style: "simple", Explode: false}), SerializePathParameter(tenantApplicationId, PathParameterSpec{Name: "tenantApplicationId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
@@ -1164,6 +1211,43 @@ func (a *IamApi) TenantApplicationsManagementEnable(tenantId string, tenantAppli
         return zero, err
     }
     return decodeResult[sdktypes.SdkWorkCommandResponse](raw)
+}
+
+// Tenant Applications environments list.
+func (a *IamApi) TenantApplicationsEnvironmentsList(tenantId string, tenantApplicationId string, page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.IamInstallationEnvironmentListResponse, error) {
+    query := BuildQueryString([]QueryParameterSpec{
+        {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
+        {Name: "page_size", Value: func() interface{} { if pageSize == nil { return nil }; return *pageSize }(), Style: "form", Explode: true, AllowReserved: false},
+        {Name: "cursor", Value: func() interface{} { if cursor == nil { return nil }; return *cursor }(), Style: "form", Explode: true, AllowReserved: false},
+        {Name: "sort", Value: func() interface{} { if sort == nil { return nil }; return *sort }(), Style: "form", Explode: true, AllowReserved: false},
+        {Name: "q", Value: func() interface{} { if q == nil { return nil }; return *q }(), Style: "form", Explode: true, AllowReserved: false},
+    })
+    raw, err := a.client.Get(AppendQueryString(BackendApiPath(fmt.Sprintf("/iam/tenants/%s/applications/%s/environments", SerializePathParameter(tenantId, PathParameterSpec{Name: "tenantId", Style: "simple", Explode: false}), SerializePathParameter(tenantApplicationId, PathParameterSpec{Name: "tenantApplicationId", Style: "simple", Explode: false}))), query), nil, nil)
+    if err != nil {
+        var zero sdktypes.IamInstallationEnvironmentListResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.IamInstallationEnvironmentListResponse](raw)
+}
+
+// Tenant Applications environments delete.
+func (a *IamApi) TenantApplicationsEnvironmentsDelete(tenantId string, tenantApplicationId string, environmentKey string) (struct{}, error) {
+    raw, err := a.client.Delete(BackendApiPath(fmt.Sprintf("/iam/tenants/%s/applications/%s/environments/%s", SerializePathParameter(tenantId, PathParameterSpec{Name: "tenantId", Style: "simple", Explode: false}), SerializePathParameter(tenantApplicationId, PathParameterSpec{Name: "tenantApplicationId", Style: "simple", Explode: false}), SerializePathParameter(environmentKey, PathParameterSpec{Name: "environmentKey", Style: "simple", Explode: false}))), nil, nil)
+    if err != nil {
+        var zero struct{}
+        return zero, err
+    }
+    return decodeResult[struct{}](raw)
+}
+
+// Tenant Applications environments update.
+func (a *IamApi) TenantApplicationsEnvironmentsUpdate(tenantId string, tenantApplicationId string, environmentKey string, body sdktypes.IamInstallationEnvironmentUpsertCommand) (sdktypes.IamInstallationEnvironmentResponse, error) {
+    raw, err := a.client.Put(BackendApiPath(fmt.Sprintf("/iam/tenants/%s/applications/%s/environments/%s", SerializePathParameter(tenantId, PathParameterSpec{Name: "tenantId", Style: "simple", Explode: false}), SerializePathParameter(tenantApplicationId, PathParameterSpec{Name: "tenantApplicationId", Style: "simple", Explode: false}), SerializePathParameter(environmentKey, PathParameterSpec{Name: "environmentKey", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
+    if err != nil {
+        var zero sdktypes.IamInstallationEnvironmentResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.IamInstallationEnvironmentResponse](raw)
 }
 
 // Tenant Applications summary retrieve.

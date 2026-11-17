@@ -52,7 +52,7 @@
     },
     {
       "path": "src/api/iam.rs",
-      "sha256": "68fdaf91acdde319638878c31ab01b90cd255f91cd64cfcc605054791fd0146c"
+      "sha256": "5323f30f4e522bd1a4f931057268fb5f67ad53c5e16897158ac016b57c402aea"
     },
     {
       "path": "src/api/mod.rs",
@@ -80,7 +80,7 @@
     },
     {
       "path": "src/models/appbase_access_credential_create_command.rs",
-      "sha256": "736b87b95508719e080be06da76815e39699d2ce58113bfdf00757d5cddf1688"
+      "sha256": "f9bbf4d0dd06d368ae30e3369e686a1ad1650a921d32a94fbf1cf9428451b903"
     },
     {
       "path": "src/models/appbase_tenant_application_enable_command.rs",
@@ -88,7 +88,7 @@
     },
     {
       "path": "src/models/appbase_tenant_application_provision_command.rs",
-      "sha256": "4aa7205ae8649ea1210ff496feee98ba285fb25babca66506cb369e87a78bfc3"
+      "sha256": "e353795ff5a266a105f1dd4a2b9a24f09d13b6a41f684d387b8965f79e2fa3b6"
     },
     {
       "path": "src/models/appbase_tenant_application_update_command.rs",
@@ -103,12 +103,52 @@
       "sha256": "09c55595520768e5c816f456def08f58d4c6c445b825b0ca907eefe464ad57b9"
     },
     {
+      "path": "src/models/iam_installation_credential_create_command.rs",
+      "sha256": "b21e1c05d519a8eac5adcbf78f467eb4776695c357e4cc7c0f2bd2efe9ade05b"
+    },
+    {
+      "path": "src/models/iam_installation_credential_list_response.rs",
+      "sha256": "293b1faa64cabb2091c7b4552cac2ac76c18a7cfb01fcb594f4257d9e041fb98"
+    },
+    {
+      "path": "src/models/iam_installation_credential_response.rs",
+      "sha256": "4ba052b47505835522a09ea397ebc83904c4cae71142b892265770f79fcca748"
+    },
+    {
+      "path": "src/models/iam_installation_credential_rotate_command.rs",
+      "sha256": "9aeabef44403a85bd28dbd51dc0e8f9684a0cd51756e724261e29bc32b55612a"
+    },
+    {
+      "path": "src/models/iam_installation_credential_with_secret.rs",
+      "sha256": "1de2cc2d1341a0fb70659e6645ad7b485835bfbcb9c89e3a116194cada2ecb18"
+    },
+    {
+      "path": "src/models/iam_installation_credential.rs",
+      "sha256": "b910563abbb7f2e17e08fb3534620a942106ff7ba5e2708f1adc021f217a37ce"
+    },
+    {
+      "path": "src/models/iam_installation_environment_list_response.rs",
+      "sha256": "ad293cbf74b3a9b510f51fc314cff0576e760bd70e52d70d9db553c59c0bd8db"
+    },
+    {
+      "path": "src/models/iam_installation_environment_response.rs",
+      "sha256": "fb0af03c0bfb72cce46703778804c33d4f927cdd0fcd7fc55bc28d2456df83c7"
+    },
+    {
+      "path": "src/models/iam_installation_environment_upsert_command.rs",
+      "sha256": "bebf8db9b78387dc32ab596edc20c8cf701801a361197effde50336ed52883ab"
+    },
+    {
+      "path": "src/models/iam_installation_environment.rs",
+      "sha256": "056d9b5b1cf1a022e547878590a9bbf6ac1fe0b7ba654ec60397075a34d7e274"
+    },
+    {
       "path": "src/models/iam_oauth_client_create_command.rs",
       "sha256": "4411483fe15f50aa6eddd2ce894aa31848b4bca81ba30ac4fdecf42725c9e934"
     },
     {
       "path": "src/models/iam_tenant_application_management_provision_command.rs",
-      "sha256": "536798a758b5edb169843fb63d78126f781cacfe1d7a233ba964250521c3fc3e"
+      "sha256": "34a0d29788c5f57811eecd2a8c48fa9340a523adf76f19802a07ac47f9ad9689"
     },
     {
       "path": "src/models/iam_tenant_application_management_update_command.rs",
@@ -120,7 +160,7 @@
     },
     {
       "path": "src/models/mod.rs",
-      "sha256": "e79dbf2445beae0ca79f55f017a5a6eb5e62b375b8d3b64802049825f8631c8e"
+      "sha256": "4c5782af28117fa290e4e1296077bc42ef15fe6a4ddef2bd10de8f5381993418"
     },
     {
       "path": "src/models/page_info.rs",

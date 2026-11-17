@@ -3,7 +3,7 @@ module Sdkwork
     module Models
       class AppbaseTenantApplicationProvisionCommand
               # Provision a tenant installation from the deploy application it serves plus explicit attributes. Application templates are retired, so no template reference is accepted.
-              attr_accessor :auth_token, :username, :email, :phone, :password, :tenant_id, :organization_id, :instance_key, :display_name, :environment, :application_type, :primary_domain, :access_permissions, :runtime_config, :deploy_application_id, :provisioning_idempotency_key
+              attr_accessor :auth_token, :username, :email, :phone, :password, :tenant_id, :organization_id, :instance_key, :display_name, :environment, :application_type, :primary_domain, :access_permissions, :runtime_config, :deploy_application_id, :ownership_scope, :owner_user_id, :provisioning_idempotency_key
 
               def initialize(attributes = {})
                 attributes = (attributes || {}).transform_keys(&:to_s)
@@ -22,6 +22,8 @@ module Sdkwork
                 @access_permissions = attributes['accessPermissions'].is_a?(Array) ? attributes['accessPermissions'].map { |item| item } : []
                 @runtime_config = attributes['runtimeConfig'].is_a?(Hash) ? attributes['runtimeConfig'] : {}
                 @deploy_application_id = attributes['deployApplicationId']
+                @ownership_scope = attributes['ownershipScope']
+                @owner_user_id = attributes['ownerUserId']
                 @provisioning_idempotency_key = attributes['provisioningIdempotencyKey']
               end
 
@@ -48,6 +50,8 @@ module Sdkwork
                   'accessPermissions' => @access_permissions.is_a?(Array) ? @access_permissions.map { |item| item } : [],
                   'runtimeConfig' => @runtime_config,
                   'deployApplicationId' => @deploy_application_id,
+                  'ownershipScope' => @ownership_scope,
+                  'ownerUserId' => @owner_user_id,
                   'provisioningIdempotencyKey' => @provisioning_idempotency_key,
                 }
               end

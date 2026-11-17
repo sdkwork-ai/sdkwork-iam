@@ -41,4 +41,9 @@ pub struct AppbaseAccessCredentialCreateCommand {
     #[serde(rename = "instanceKey")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub instance_key: Option<String>,
+
+    /// Release scope the caller declares. It is checked against the installation, never used to select one: a value the installation was not released at fails closed (`APPLICATION_IDENTITY_SPEC.md` section 4.1 rule 3). Omit it to inherit the installation scope.
+    #[serde(rename = "ownershipScope")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ownership_scope: Option<String>,
 }

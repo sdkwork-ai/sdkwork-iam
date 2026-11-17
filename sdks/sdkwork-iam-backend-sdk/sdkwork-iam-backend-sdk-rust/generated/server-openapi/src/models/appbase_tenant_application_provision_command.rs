@@ -60,6 +60,16 @@ pub struct AppbaseTenantApplicationProvisionCommand {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub deploy_application_id: Option<String>,
 
+    /// Release scope of the installation (`APPLICATION_IDENTITY_SPEC.md` section 4.1). TENANT is the default: the application serves the whole tenant and its isolation key is (tenantId, appId). ORGANIZATION serves one organization and requires a non-zero organizationId. USER serves one person and requires ownerUserId. The scope is immutable once provisioned; publishing at another level needs a new installation.
+    #[serde(rename = "ownershipScope")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ownership_scope: Option<String>,
+
+    /// Owner of a USER-scoped installation. Required for ownershipScope USER and rejected for the other two levels.
+    #[serde(rename = "ownerUserId")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub owner_user_id: Option<String>,
+
     /// Replay-safe key for the cross-module provisioning call.
     #[serde(rename = "provisioningIdempotencyKey")]
     #[serde(default, skip_serializing_if = "Option::is_none")]

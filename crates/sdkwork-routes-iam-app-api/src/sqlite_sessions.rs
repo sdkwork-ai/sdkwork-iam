@@ -284,8 +284,16 @@ async fn create_session(
         "ORGANIZATION"
     };
     let signing_key = ensure_signing_key(sqlite, &user.tenant_id).await?;
-    let access_token = sign_local_session_token(&signing_key, "access", &context);
-    let auth_token = sign_local_session_token(&signing_key, "auth", &context);
+    // The SQLite adapter is a client-local cache with no installation table, so
+    // it keeps the legacy derivation from the login context
+    // (`APPLICATION_IDENTITY_SPEC.md` §4.1 rule 6). It never claims `USER`.
+    let ownership_scope =
+        sdkwork_iam_web_adapter::ApplicationOwnershipScope::derive_from_organization_scope(Some(
+            organization_id.as_str(),
+        ));
+    let access_token =
+        sign_local_session_token(&signing_key, "access", &context, ownership_scope);
+    let auth_token = sign_local_session_token(&signing_key, "auth", &context, ownership_scope);
     let refresh_token = generate_opaque_token("refresh");
     let expires_at = (now + chrono::Duration::seconds(LOCAL_TOKEN_TTL_SECONDS as i64)).to_rfc3339();
     sqlx::query(

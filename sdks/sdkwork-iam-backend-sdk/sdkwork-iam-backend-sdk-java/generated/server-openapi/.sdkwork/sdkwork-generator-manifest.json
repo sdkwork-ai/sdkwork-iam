@@ -48,7 +48,7 @@
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/api/IamApi.java",
-      "sha256": "24427a176010e511bcb88b0618be087cdfd69ad70005cdef97cf575f0c6742a9"
+      "sha256": "9ae17df262c015568b0fcf98b634fdf1116b3269a652e7728ea851fb4883a958"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/api/IamOauthApi.java",
@@ -64,7 +64,7 @@
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseAccessCredentialCreateCommand.java",
-      "sha256": "77cd55e16bf28752a4d057cfee9d64f6c41d2463cdaf1dbbff2957d95002cde2"
+      "sha256": "534a9a321c4976e3447613de75a7193485e1373d8fdba142a736bac56ed18c95"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationEnableCommand.java",
@@ -72,7 +72,7 @@
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationProvisionCommand.java",
-      "sha256": "8874323a0e3c80375514b76b55fe034e2d8969c899257f31f8249a5f192bb0f1"
+      "sha256": "a96c96dfda21f2ed7f07c08fdf74a3441039e8cac3c5411b3443e1d90bc3e7ba"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationUpdateCommand.java",
@@ -83,12 +83,52 @@
       "sha256": "11b14f05653255e661e118e482078e5fb8e4f04a7afd8c5c6fdb25b57e21572e"
     },
     {
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredential.java",
+      "sha256": "4a5eaa8c5e382b20f790f426774381b053b6575deb18130400045d0cb3fc8039"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredentialCreateCommand.java",
+      "sha256": "1d9fab539cba768c8a6bbe4624f3da3957f2eca27cd77b02f9238252883bd956"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredentialListResponse.java",
+      "sha256": "d2e111cd35a5693ebef5d1db86145ed2c0821c40a879d8cbd0b1c15c7ac91f4f"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredentialResponse.java",
+      "sha256": "8ec89089485138852368e5be317cf789dacfde70ec5a518879f3dca68e9bc01b"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredentialRotateCommand.java",
+      "sha256": "45248b2d069a6e82c30dedabe152a0405eaaff7caa449f6077d22455bc77ab5e"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredentialWithSecret.java",
+      "sha256": "35fcb4f3e6b2dd66a764d5146e7499446de97541f756b42f3cdc95baa28a3301"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationEnvironment.java",
+      "sha256": "50f971e35c40ffeb71fffee6b296077f3e6fb3d96014a876f3fa73386fb0746f"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationEnvironmentListResponse.java",
+      "sha256": "a099bb4187d0510cfe29be88c867bd7c27435485176378a249e79bdbf55231ec"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationEnvironmentResponse.java",
+      "sha256": "7494cd2e6c9524caefd359d561c71fb6e93453e047628c911b7e18efacfc039c"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationEnvironmentUpsertCommand.java",
+      "sha256": "114a7b8873f3b69114ff8e877c7b614964245a2bfd2256223ee5dc34bfe9494e"
+    },
+    {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamOauthClientCreateCommand.java",
       "sha256": "ef08ab77610b6232989bd902c79264aa64018918acdb9a89610eb5e07720d864"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamTenantApplicationManagementProvisionCommand.java",
-      "sha256": "058d57d4748bc7146c1611a7890f94df66e5d4a4efca8a5a2602d00d282fbef2"
+      "sha256": "fa6ff1f0bf93a74a97378f583cd567034ccba8b7e9d857bb245ec83b96fcde52"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamTenantApplicationManagementUpdateCommand.java",

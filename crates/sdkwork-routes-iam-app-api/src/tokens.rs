@@ -6,6 +6,7 @@ use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use hmac::{Hmac, Mac};
 use rand_core::{OsRng, RngCore};
 use sdkwork_iam_context_service::{AuthLevel, DeploymentMode, IamAppContext, IamUserSurface};
+use sdkwork_iam_web_adapter::ApplicationOwnershipScope;
 use sdkwork_web_core::{stamp_token_version, validate_token_version_json, TokenVersionPolicy};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -144,6 +145,68 @@ async fn ensure_personal_login_organization(pg: &PgPool, tenant_id: &str) -> Res
 /// The device id is what makes multiple devices of the same application
 /// coexist: the new session replaces the previous session of the same
 /// application on that device instead of every session of the application.
+/// Resolves and enforces the release scope of the application a login targets.
+///
+/// `APPLICATION_IDENTITY_SPEC.md` §4.1 rule 3: the installation decides the
+/// scope, so a login context the installation does not own is refused instead of
+/// signing an organization claim the installation does not have:
+///
+/// - `TENANT`: any login context (personal or organization) is valid for a
+///   tenant-released application; the context narrows business data, it does not
+///   change the release level;
+/// - `ORGANIZATION`: the login must carry exactly the installation's
+///   organization;
+/// - `USER`: the login must be personal and must be the owner.
+///
+/// An `app_id` that is not an installation keeps the historical derivation from
+/// the login context, so a non-installation application is unaffected.
+async fn resolve_login_ownership_scope(
+    pg: &PgPool,
+    tenant_id: &str,
+    app_id: &str,
+    user_id: &str,
+    organization_id: Option<&str>,
+) -> Result<ApplicationOwnershipScope, String> {
+    let installation =
+        sdkwork_iam_web_adapter::resolve_tenant_application_by_deploy_application_id(
+            pg, tenant_id, app_id,
+        )
+        .await?;
+    let Some(installation) = installation else {
+        return Ok(ApplicationOwnershipScope::derive_from_organization_scope(
+            organization_id,
+        ));
+    };
+    let scope = installation.ownership_scope;
+    match scope {
+        ApplicationOwnershipScope::Tenant => {}
+        ApplicationOwnershipScope::Organization => {
+            let installation_organization_id = installation.organization_id.trim();
+            if organization_id.map(str::trim) != Some(installation_organization_id) {
+                return Err(format!(
+                    "application {app_id} is released to organization {installation_organization_id} and must be used with that organization context"
+                ));
+            }
+        }
+        ApplicationOwnershipScope::User => {
+            if organization_id
+                .map(str::trim)
+                .is_some_and(|value| !value.is_empty() && value != "0")
+            {
+                return Err(format!(
+                    "application {app_id} is released to one person and must be used with a personal context"
+                ));
+            }
+            sdkwork_iam_web_adapter::ensure_subject_is_installation_owner(
+                scope,
+                installation.owner_user_id.as_deref(),
+                user_id,
+            )?;
+        }
+    }
+    Ok(scope)
+}
+
 pub(crate) async fn create_session_record_with_device(
     pg: &PgPool,
     config: &LocalIamConfig,
@@ -210,6 +273,16 @@ pub(crate) async fn create_session_record_with_device(
     }
 
     let app_id = runtime_app_id.trim().to_string();
+    // The installation decides the release scope of every credential issued for
+    // it, and a login context it does not own fails closed.
+    let ownership_scope = resolve_login_ownership_scope(
+        pg,
+        &user.tenant_id,
+        &app_id,
+        &user.id,
+        organization_id.as_deref(),
+    )
+    .await?;
     revoke_active_sessions_for_user_app_device(
         pg,
         &user.tenant_id,
@@ -259,8 +332,8 @@ pub(crate) async fn create_session_record_with_device(
 
     // Generate signing key (stored in iam_tenant_signing_key)
     let signing_key = ensure_tenant_signing_key(pg, &user.tenant_id).await?;
-    let access_token = sign_local_session_token(&signing_key, "access", &context);
-    let auth_token = sign_local_session_token(&signing_key, "auth", &context);
+    let access_token = sign_local_session_token(&signing_key, "access", &context, ownership_scope);
+    let auth_token = sign_local_session_token(&signing_key, "auth", &context, ownership_scope);
     ensure_entrypoint_token_budget(&access_token)?;
     ensure_entrypoint_token_budget(&auth_token)?;
     let refresh_token = generate_opaque_token("refresh");
@@ -274,9 +347,9 @@ pub(crate) async fn create_session_record_with_device(
          principal_kind, principal_id, app_id, environment, deployment_mode, auth_level, \
          auth_token_hash, auth_token_kid, access_token_hash, access_token_kid, \
          refresh_token_hash, refresh_token_kid, sharding_key, sharding_strategy, \
-         data_scope_json, permission_scope_json, expires_at, created_at, updated_at, device_id) \
+         data_scope_json, permission_scope_json, scope_kind, expires_at, created_at, updated_at, device_id) \
          VALUES ($1, $2, $3, $4, $5, 'user', $5, $6, $7, $8, $9, \
-                 $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)",
+                 $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)",
     )
     .bind(&session_id)
     .bind(&user.tenant_id)
@@ -297,6 +370,7 @@ pub(crate) async fn create_session_record_with_device(
     .bind("tenant")
     .bind(Json(&context.data_scope))
     .bind(Json(&context.permission_scope))
+    .bind(ownership_scope.as_str())
     .bind(&expires_at)
     .bind(&now)
     .bind(&now)
@@ -1021,8 +1095,19 @@ pub(crate) async fn rotate_current_session_context(
     );
 
     let signing_key = ensure_tenant_signing_key(pg, &session.user.tenant_id).await?;
-    let access_token = sign_local_session_token(&signing_key, "access", &context);
-    let auth_token = sign_local_session_token(&signing_key, "auth", &context);
+    // A context switch keeps the installation's release scope: switching to a
+    // personal context on an organization-released application is refused instead
+    // of minting a credential that contradicts the installation.
+    let ownership_scope = resolve_login_ownership_scope(
+        pg,
+        &session.user.tenant_id,
+        &session.context.app_id,
+        &session.user.id,
+        target_organization_id.as_deref(),
+    )
+    .await?;
+    let access_token = sign_local_session_token(&signing_key, "access", &context, ownership_scope);
+    let auth_token = sign_local_session_token(&signing_key, "auth", &context, ownership_scope);
     ensure_entrypoint_token_budget(&access_token)?;
     ensure_entrypoint_token_budget(&auth_token)?;
     let refresh_token = generate_opaque_token("refresh");
@@ -1037,7 +1122,7 @@ pub(crate) async fn rotate_current_session_context(
         "UPDATE iam_session SET organization_id = $2, login_scope = $3, \
          auth_token_hash = $4, access_token_hash = $5, refresh_token_hash = $6, \
          auth_token_kid = $7, access_token_kid = $7, refresh_token_kid = $7, \
-         data_scope_json = $8, permission_scope_json = $9, updated_at = $10 \
+         data_scope_json = $8, permission_scope_json = $9, updated_at = $10, scope_kind = $13 \
          WHERE id = $1 AND revoked_at IS NULL AND expires_at::timestamptz > $10::timestamptz \
            AND auth_token_hash = $11 AND access_token_hash = $12",
     )
@@ -1053,6 +1138,7 @@ pub(crate) async fn rotate_current_session_context(
     .bind(&now)
     .bind(&expected_auth_hash)
     .bind(&expected_access_hash)
+    .bind(ownership_scope.as_str())
     .execute(pg)
     .await
     .map_err(|error| format!("rotate session failed: {error}"))?;
@@ -1337,6 +1423,7 @@ pub(crate) fn sign_local_session_token(
     signing_key: &LocalTenantSigningKey,
     token_type: &str,
     context: &IamAppContext,
+    scope: ApplicationOwnershipScope,
 ) -> String {
     let issued_at = current_millis() / 1000;
     let expires_at = issued_at + LOCAL_TOKEN_TTL_SECONDS;
@@ -1361,6 +1448,7 @@ pub(crate) fn sign_local_session_token(
         "iss": "sdkwork-iam-local",
         "login_scope": login_scope_to_string(&context.login_scope),
         "organization_id": organization_id,
+        "ownership_scope": scope.as_str(),
         "session_id": context.session_id,
         "tenant_id": context.tenant_id,
         "token_type": token_type,

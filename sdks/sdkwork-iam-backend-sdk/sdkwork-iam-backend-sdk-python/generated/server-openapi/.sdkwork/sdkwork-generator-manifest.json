@@ -60,7 +60,7 @@
     },
     {
       "path": "sdkwork_iam_backend_sdk/api/iam.py",
-      "sha256": "50caa5902b12025c64e17f47c1d5fb7e3589619afbb253912a4bac302c708a3a"
+      "sha256": "2f7b286336339358a5a2bc340efbf4721bbac4b6d07020d7b023cba372691b08"
     },
     {
       "path": "sdkwork_iam_backend_sdk/client.py",
@@ -72,11 +72,11 @@
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/__init__.py",
-      "sha256": "d396fd7bcf840a33f973e3465afe47c00c71146e5237b4bf46a6c819be9814e8"
+      "sha256": "49c43a6048dd9d614b6d2d5b4a69504d772b34331aba20f9e8f544b08cb0bdaa"
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/appbase_access_credential_create_command.py",
-      "sha256": "5203488f27ddde0d379908a0ca3adae6ec666a12abeb3edad7e25eeaad8b0d16"
+      "sha256": "da4d6b09ca529b1972f9a5971a38e76b56ea8cf1a98d03cad937be1192c8a18b"
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/appbase_tenant_application_enable_command.py",
@@ -84,7 +84,7 @@
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/appbase_tenant_application_provision_command.py",
-      "sha256": "2cd841af6929367736f6e2b7697bd3ed08b5c3d7672f0e8b7875ba707ad0f233"
+      "sha256": "44894c3972b6980f6e7ecca681ee0a322dd0e81c0cc9daaee30a834cd17b56bf"
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/appbase_tenant_application_update_command.py",
@@ -95,12 +95,52 @@
       "sha256": "5027c2d560e5a15664f62611f73bc8385794ac4dd43f169adae89cf2bd8a1a76"
     },
     {
+      "path": "sdkwork_iam_backend_sdk/models/iam_installation_credential_create_command.py",
+      "sha256": "e4a420bbbb9bef250e7e720d45286dc93ee9c6710bc3c8600365000458d51db2"
+    },
+    {
+      "path": "sdkwork_iam_backend_sdk/models/iam_installation_credential_list_response.py",
+      "sha256": "70ce875d8a841370bd636ab1de1d2618fd02548c00fd2a93e9a023e8c94faebb"
+    },
+    {
+      "path": "sdkwork_iam_backend_sdk/models/iam_installation_credential_response.py",
+      "sha256": "df51f06e14258083483ac85437a172f1728ca8f117630a87a10eb057b3652287"
+    },
+    {
+      "path": "sdkwork_iam_backend_sdk/models/iam_installation_credential_rotate_command.py",
+      "sha256": "1982583ca2134cb7bc15fea1d0dea12096355c557262f6231513bd9fb0031d8d"
+    },
+    {
+      "path": "sdkwork_iam_backend_sdk/models/iam_installation_credential_with_secret.py",
+      "sha256": "5fa6094ff51d86f628ba2482cb49fe9a3c54828bbf130ee5f7764764e2326983"
+    },
+    {
+      "path": "sdkwork_iam_backend_sdk/models/iam_installation_credential.py",
+      "sha256": "e6f1a3d4032905f599b6fbb91259a7273f641b34c69f73affa5dcadb98feb6d4"
+    },
+    {
+      "path": "sdkwork_iam_backend_sdk/models/iam_installation_environment_list_response.py",
+      "sha256": "b0c32df3bb596d018afb3f21bf71ef7545d19d16c58d288a6bfb327533d46c06"
+    },
+    {
+      "path": "sdkwork_iam_backend_sdk/models/iam_installation_environment_response.py",
+      "sha256": "d9d92e4246dcd2be7daedad370d972af8fe03562f2b846781150af0a211fcbeb"
+    },
+    {
+      "path": "sdkwork_iam_backend_sdk/models/iam_installation_environment_upsert_command.py",
+      "sha256": "20e57b1b1392feda9d5eeba07dde49164eb46a950f1cd9d13553295db38f7011"
+    },
+    {
+      "path": "sdkwork_iam_backend_sdk/models/iam_installation_environment.py",
+      "sha256": "37d1448d7bca5f87c4a028fe2a2b29a009d303f7ed2e88128723ab2b9665e0ee"
+    },
+    {
       "path": "sdkwork_iam_backend_sdk/models/iam_oauth_client_create_command.py",
       "sha256": "1577bd8478d98273e19f9bd04cc98324d2e1b2bba01191c6913d2b31b2c43a0e"
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_provision_command.py",
-      "sha256": "ce0081dce5452c6f00e544d13ac0b0da60f31a6233ea9fd5e4a5468338ec6a10"
+      "sha256": "8c2ac519f899466399025bce1ce08c17fea5cb2bf5802686287849b253fa1a24"
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_update_command.py",

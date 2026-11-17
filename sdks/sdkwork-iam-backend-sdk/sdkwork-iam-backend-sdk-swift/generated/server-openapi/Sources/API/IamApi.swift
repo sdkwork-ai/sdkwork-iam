@@ -656,6 +656,33 @@ public class IamApi {
         return try await client.patch(ApiPaths.backendPath("/iam/tenants/\(serializePathParameter(tenantId, PathParameterSpec(name: "tenantId", style: "simple", explode: false)))/applications/\(serializePathParameter(tenantApplicationId, PathParameterSpec(name: "tenantApplicationId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
+    /// Tenant Applications credentials list.
+    public func tenantApplicationsCredentialsList(tenantId: String, tenantApplicationId: String, page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> IamInstallationCredentialListResponse? {
+        let query = buildQueryString([
+            QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "cursor", value: cursor, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
+        ])
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/tenants/\(serializePathParameter(tenantId, PathParameterSpec(name: "tenantId", style: "simple", explode: false)))/applications/\(serializePathParameter(tenantApplicationId, PathParameterSpec(name: "tenantApplicationId", style: "simple", explode: false)))/credentials"), query), responseType: IamInstallationCredentialListResponse.self)
+    }
+
+    /// Tenant Applications credentials create.
+    public func tenantApplicationsCredentialsCreate(tenantId: String, tenantApplicationId: String, body: IamInstallationCredentialCreateCommand) async throws -> IamInstallationCredentialResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/tenants/\(serializePathParameter(tenantId, PathParameterSpec(name: "tenantId", style: "simple", explode: false)))/applications/\(serializePathParameter(tenantApplicationId, PathParameterSpec(name: "tenantApplicationId", style: "simple", explode: false)))/credentials"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: IamInstallationCredentialResponse.self)
+    }
+
+    /// Tenant Applications credentials revoke.
+    public func tenantApplicationsCredentialsRevoke(tenantId: String, tenantApplicationId: String, credentialId: String, body: [String: Any]) async throws -> SdkWorkCommandResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/tenants/\(serializePathParameter(tenantId, PathParameterSpec(name: "tenantId", style: "simple", explode: false)))/applications/\(serializePathParameter(tenantApplicationId, PathParameterSpec(name: "tenantApplicationId", style: "simple", explode: false)))/credentials/\(serializePathParameter(credentialId, PathParameterSpec(name: "credentialId", style: "simple", explode: false)))/revoke"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkCommandResponse.self)
+    }
+
+    /// Tenant Applications credentials rotate.
+    public func tenantApplicationsCredentialsRotate(tenantId: String, tenantApplicationId: String, credentialId: String, body: IamInstallationCredentialRotateCommand) async throws -> IamInstallationCredentialResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/tenants/\(serializePathParameter(tenantId, PathParameterSpec(name: "tenantId", style: "simple", explode: false)))/applications/\(serializePathParameter(tenantApplicationId, PathParameterSpec(name: "tenantApplicationId", style: "simple", explode: false)))/credentials/\(serializePathParameter(credentialId, PathParameterSpec(name: "credentialId", style: "simple", explode: false)))/rotate"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: IamInstallationCredentialResponse.self)
+    }
+
     /// Tenant Applications management disable.
     public func tenantApplicationsManagementDisable(tenantId: String, tenantApplicationId: String, body: IamTenantApplicationStatusCommand) async throws -> SdkWorkCommandResponse? {
         return try await client.post(ApiPaths.backendPath("/iam/tenants/\(serializePathParameter(tenantId, PathParameterSpec(name: "tenantId", style: "simple", explode: false)))/applications/\(serializePathParameter(tenantApplicationId, PathParameterSpec(name: "tenantApplicationId", style: "simple", explode: false)))/disable"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkCommandResponse.self)
@@ -664,6 +691,28 @@ public class IamApi {
     /// Tenant Applications management enable.
     public func tenantApplicationsManagementEnable(tenantId: String, tenantApplicationId: String, body: IamTenantApplicationStatusCommand) async throws -> SdkWorkCommandResponse? {
         return try await client.post(ApiPaths.backendPath("/iam/tenants/\(serializePathParameter(tenantId, PathParameterSpec(name: "tenantId", style: "simple", explode: false)))/applications/\(serializePathParameter(tenantApplicationId, PathParameterSpec(name: "tenantApplicationId", style: "simple", explode: false)))/enable"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkCommandResponse.self)
+    }
+
+    /// Tenant Applications environments list.
+    public func tenantApplicationsEnvironmentsList(tenantId: String, tenantApplicationId: String, page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> IamInstallationEnvironmentListResponse? {
+        let query = buildQueryString([
+            QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "cursor", value: cursor, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
+        ])
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/tenants/\(serializePathParameter(tenantId, PathParameterSpec(name: "tenantId", style: "simple", explode: false)))/applications/\(serializePathParameter(tenantApplicationId, PathParameterSpec(name: "tenantApplicationId", style: "simple", explode: false)))/environments"), query), responseType: IamInstallationEnvironmentListResponse.self)
+    }
+
+    /// Tenant Applications environments delete.
+    public func tenantApplicationsEnvironmentsDelete(tenantId: String, tenantApplicationId: String, environmentKey: String) async throws -> Void {
+        _ = try await client.delete(ApiPaths.backendPath("/iam/tenants/\(serializePathParameter(tenantId, PathParameterSpec(name: "tenantId", style: "simple", explode: false)))/applications/\(serializePathParameter(tenantApplicationId, PathParameterSpec(name: "tenantApplicationId", style: "simple", explode: false)))/environments/\(serializePathParameter(environmentKey, PathParameterSpec(name: "environmentKey", style: "simple", explode: false)))"))
+    }
+
+    /// Tenant Applications environments update.
+    public func tenantApplicationsEnvironmentsUpdate(tenantId: String, tenantApplicationId: String, environmentKey: String, body: IamInstallationEnvironmentUpsertCommand) async throws -> IamInstallationEnvironmentResponse? {
+        return try await client.put(ApiPaths.backendPath("/iam/tenants/\(serializePathParameter(tenantId, PathParameterSpec(name: "tenantId", style: "simple", explode: false)))/applications/\(serializePathParameter(tenantApplicationId, PathParameterSpec(name: "tenantApplicationId", style: "simple", explode: false)))/environments/\(serializePathParameter(environmentKey, PathParameterSpec(name: "environmentKey", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: IamInstallationEnvironmentResponse.self)
     }
 
     /// Tenant Applications summary retrieve.

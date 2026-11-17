@@ -32,7 +32,7 @@
     },
     {
       "path": "lib/sdkwork/backend_sdk.rb",
-      "sha256": "ca70a0ba737ccadab197af5d4a0bfb37e243668ad71f4f29ca83cac55d04351a"
+      "sha256": "719fe38cf4509f2852a62fecaf23f7392ad629cc539464ed46e493bb2e456dbf"
     },
     {
       "path": "lib/sdkwork/backend_sdk/api/base_api.rb",
@@ -44,7 +44,7 @@
     },
     {
       "path": "lib/sdkwork/backend_sdk/api/iam.rb",
-      "sha256": "e3d892159e07aea449372d6b2c48e62366a26451aa80a92e75e4f3627094b86c"
+      "sha256": "19c0c7ad04f02776def9dffaf2d95bfd5544e595e53008a77380a32796f4f85c"
     },
     {
       "path": "lib/sdkwork/backend_sdk/client.rb",
@@ -56,7 +56,7 @@
     },
     {
       "path": "lib/sdkwork/backend_sdk/models/appbase_access_credential_create_command.rb",
-      "sha256": "743ca0f771b75142f717cbe668cd3138f0a0f0674fa1535e9c8de17f0f0ef7b2"
+      "sha256": "0e00fa3dccb525a7463b872dfae7e8ee32efd0969e907b1e80234b962b2a7447"
     },
     {
       "path": "lib/sdkwork/backend_sdk/models/appbase_tenant_application_enable_command.rb",
@@ -64,7 +64,7 @@
     },
     {
       "path": "lib/sdkwork/backend_sdk/models/appbase_tenant_application_provision_command.rb",
-      "sha256": "ab22621c7c2eb72dc98f000998ad6e5fffb769047737aab154afb10474e65b38"
+      "sha256": "71804d569d1f2b2d2721ee19a0f8e7fdcfdb95907fe9d8d4f8e69e0c359f7417"
     },
     {
       "path": "lib/sdkwork/backend_sdk/models/appbase_tenant_application_update_command.rb",
@@ -75,12 +75,52 @@
       "sha256": "343be28be5a396de1b36cde51595de1f1d2b09775e7fef01d7397ea77adfe1fb"
     },
     {
+      "path": "lib/sdkwork/backend_sdk/models/iam_installation_credential_create_command.rb",
+      "sha256": "6ba68530ad071a75dc64abd7cd251bfb14ca1c9455c22d474eb775920295cbd8"
+    },
+    {
+      "path": "lib/sdkwork/backend_sdk/models/iam_installation_credential_list_response.rb",
+      "sha256": "05c83d5398718cc229c9435b65cd41f0aa6b1c68f55483e45ae51df50bac5bfd"
+    },
+    {
+      "path": "lib/sdkwork/backend_sdk/models/iam_installation_credential_response.rb",
+      "sha256": "cb738141e727f993e7cc14ede1ebb3c32b0c334c0c09350c83576586e9f03b76"
+    },
+    {
+      "path": "lib/sdkwork/backend_sdk/models/iam_installation_credential_rotate_command.rb",
+      "sha256": "5238556e8a18927c849d7c109de18dc45ac9d8b6bdb5f0e77cbbe29d2209d948"
+    },
+    {
+      "path": "lib/sdkwork/backend_sdk/models/iam_installation_credential_with_secret.rb",
+      "sha256": "67af54e877aa495e1bc66de02cfaa6b4ada41c530fd7db24d998ef61f6de8359"
+    },
+    {
+      "path": "lib/sdkwork/backend_sdk/models/iam_installation_credential.rb",
+      "sha256": "2383de3488a4e2e8dc51238217cac64ce7135452620ef64444b2ab451dc2dc75"
+    },
+    {
+      "path": "lib/sdkwork/backend_sdk/models/iam_installation_environment_list_response.rb",
+      "sha256": "9efcbeb9a2631b35cd46aef1a813929abe504d3e5ab16e953d7ddd31ed3191b7"
+    },
+    {
+      "path": "lib/sdkwork/backend_sdk/models/iam_installation_environment_response.rb",
+      "sha256": "52a6657f20e310a52d75daede7e6d0c053a970a74766dafdc0f576c3dbffb431"
+    },
+    {
+      "path": "lib/sdkwork/backend_sdk/models/iam_installation_environment_upsert_command.rb",
+      "sha256": "836b148a0e4e7e9aa01f3f3e93be8ed0f79b77317152e5a0f2642f06fa5aac14"
+    },
+    {
+      "path": "lib/sdkwork/backend_sdk/models/iam_installation_environment.rb",
+      "sha256": "65b1b9ea1d70f50acdf88721d8e7ad8e71e1518c3e1c0866d4fd6e927b66a3e3"
+    },
+    {
       "path": "lib/sdkwork/backend_sdk/models/iam_oauth_client_create_command.rb",
       "sha256": "c34cb9bc11adebd38fa40be001908d73fff83a6acc2750e33d645417b089a36d"
     },
     {
       "path": "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_provision_command.rb",
-      "sha256": "cbbdaced10a168788b34e6e71e7ba6e92a09156759e38a4902d71462489136de"
+      "sha256": "f20c0a2bb841f981e4a10398d8c0b8a02b65c6137fbe2bb9b5430d687dd54cb8"
     },
     {
       "path": "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_update_command.rb",

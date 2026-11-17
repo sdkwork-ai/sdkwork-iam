@@ -3,6 +3,13 @@ require_relative '../models/appbase_access_credential_create_command'
 require_relative '../models/appbase_tenant_application_enable_command'
 require_relative '../models/appbase_tenant_application_provision_command'
 require_relative '../models/appbase_tenant_application_update_command'
+require_relative '../models/iam_installation_credential_create_command'
+require_relative '../models/iam_installation_credential_list_response'
+require_relative '../models/iam_installation_credential_response'
+require_relative '../models/iam_installation_credential_rotate_command'
+require_relative '../models/iam_installation_environment_list_response'
+require_relative '../models/iam_installation_environment_response'
+require_relative '../models/iam_installation_environment_upsert_command'
 require_relative '../models/iam_tenant_application_management_provision_command'
 require_relative '../models/iam_tenant_application_management_update_command'
 require_relative '../models/iam_tenant_application_status_command'
@@ -1122,6 +1129,53 @@ module Sdkwork
             result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
+          # Tenant Applications credentials list.
+          def tenant_applications_credentials_list(tenant_id, tenant_application_id, page: nil, page_size: nil, cursor: nil, sort: nil, q: nil)
+            path = interpolate_path('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials', tenantId: serialize_path_parameter(tenant_id, PathParameterSpec.new('tenantId', 'simple', false)), tenantApplicationId: serialize_path_parameter(tenant_application_id, PathParameterSpec.new('tenantApplicationId', 'simple', false)))
+            query = build_query_string([
+              QueryParameterSpec.new('page', page, 'form', true, false, nil),
+              QueryParameterSpec.new('page_size', page_size, 'form', true, false, nil),
+              QueryParameterSpec.new('cursor', cursor, 'form', true, false, nil),
+              QueryParameterSpec.new('sort', sort, 'form', true, false, nil),
+              QueryParameterSpec.new('q', q, 'form', true, false, nil),
+            ])
+            path = append_query_string(path, query)
+            options = {}
+
+            result = @client.request('GET', path, **options)
+            result.is_a?(Hash) ? Models::IamInstallationCredentialListResponse.from_hash(result) : nil
+          end
+
+          # Tenant Applications credentials create.
+          def tenant_applications_credentials_create(tenant_id, tenant_application_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials', tenantId: serialize_path_parameter(tenant_id, PathParameterSpec.new('tenantId', 'simple', false)), tenantApplicationId: serialize_path_parameter(tenant_application_id, PathParameterSpec.new('tenantApplicationId', 'simple', false)))
+            payload = body.respond_to?(:to_hash) ? body.to_hash : body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::IamInstallationCredentialResponse.from_hash(result) : nil
+          end
+
+          # Tenant Applications credentials revoke.
+          def tenant_applications_credentials_revoke(tenant_id, tenant_application_id, credential_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials/{credentialId}/revoke', tenantId: serialize_path_parameter(tenant_id, PathParameterSpec.new('tenantId', 'simple', false)), tenantApplicationId: serialize_path_parameter(tenant_application_id, PathParameterSpec.new('tenantApplicationId', 'simple', false)), credentialId: serialize_path_parameter(credential_id, PathParameterSpec.new('credentialId', 'simple', false)))
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkCommandResponse.from_hash(result) : nil
+          end
+
+          # Tenant Applications credentials rotate.
+          def tenant_applications_credentials_rotate(tenant_id, tenant_application_id, credential_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials/{credentialId}/rotate', tenantId: serialize_path_parameter(tenant_id, PathParameterSpec.new('tenantId', 'simple', false)), tenantApplicationId: serialize_path_parameter(tenant_application_id, PathParameterSpec.new('tenantApplicationId', 'simple', false)), credentialId: serialize_path_parameter(credential_id, PathParameterSpec.new('credentialId', 'simple', false)))
+            payload = body.respond_to?(:to_hash) ? body.to_hash : body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::IamInstallationCredentialResponse.from_hash(result) : nil
+          end
+
           # Tenant Applications management disable.
           def tenant_applications_management_disable(tenant_id, tenant_application_id, body: nil)
             path = interpolate_path('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/disable', tenantId: serialize_path_parameter(tenant_id, PathParameterSpec.new('tenantId', 'simple', false)), tenantApplicationId: serialize_path_parameter(tenant_application_id, PathParameterSpec.new('tenantApplicationId', 'simple', false)))
@@ -1140,6 +1194,42 @@ module Sdkwork
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
             result.is_a?(Hash) ? Models::SdkWorkCommandResponse.from_hash(result) : nil
+          end
+
+          # Tenant Applications environments list.
+          def tenant_applications_environments_list(tenant_id, tenant_application_id, page: nil, page_size: nil, cursor: nil, sort: nil, q: nil)
+            path = interpolate_path('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments', tenantId: serialize_path_parameter(tenant_id, PathParameterSpec.new('tenantId', 'simple', false)), tenantApplicationId: serialize_path_parameter(tenant_application_id, PathParameterSpec.new('tenantApplicationId', 'simple', false)))
+            query = build_query_string([
+              QueryParameterSpec.new('page', page, 'form', true, false, nil),
+              QueryParameterSpec.new('page_size', page_size, 'form', true, false, nil),
+              QueryParameterSpec.new('cursor', cursor, 'form', true, false, nil),
+              QueryParameterSpec.new('sort', sort, 'form', true, false, nil),
+              QueryParameterSpec.new('q', q, 'form', true, false, nil),
+            ])
+            path = append_query_string(path, query)
+            options = {}
+
+            result = @client.request('GET', path, **options)
+            result.is_a?(Hash) ? Models::IamInstallationEnvironmentListResponse.from_hash(result) : nil
+          end
+
+          # Tenant Applications environments delete.
+          def tenant_applications_environments_delete(tenant_id, tenant_application_id, environment_key)
+            path = interpolate_path('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments/{environmentKey}', tenantId: serialize_path_parameter(tenant_id, PathParameterSpec.new('tenantId', 'simple', false)), tenantApplicationId: serialize_path_parameter(tenant_application_id, PathParameterSpec.new('tenantApplicationId', 'simple', false)), environmentKey: serialize_path_parameter(environment_key, PathParameterSpec.new('environmentKey', 'simple', false)))
+            options = {}
+
+            result = @client.request('DELETE', path, **options)
+            result
+          end
+
+          # Tenant Applications environments update.
+          def tenant_applications_environments_update(tenant_id, tenant_application_id, environment_key, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments/{environmentKey}', tenantId: serialize_path_parameter(tenant_id, PathParameterSpec.new('tenantId', 'simple', false)), tenantApplicationId: serialize_path_parameter(tenant_application_id, PathParameterSpec.new('tenantApplicationId', 'simple', false)), environmentKey: serialize_path_parameter(environment_key, PathParameterSpec.new('environmentKey', 'simple', false)))
+            payload = body.respond_to?(:to_hash) ? body.to_hash : body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('PUT', path, **options)
+            result.is_a?(Hash) ? Models::IamInstallationEnvironmentResponse.from_hash(result) : nil
           end
 
           # Tenant Applications summary retrieve.

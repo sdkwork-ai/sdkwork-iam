@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 from ..http_client import HttpClient
-from ..models import AppbaseAccessCredentialCreateCommand, AppbaseTenantApplicationEnableCommand, AppbaseTenantApplicationProvisionCommand, AppbaseTenantApplicationUpdateCommand, IamTenantApplicationManagementProvisionCommand, IamTenantApplicationManagementUpdateCommand, IamTenantApplicationStatusCommand, SdkWorkCommandResponse, SdkWorkListResponse, SdkWorkResourceResponse, ServiceAccountCredentialCreateCommand, ServiceAccountCredentialRevokeCommand, ServiceAccountTokenExchangeCommand
+from ..models import AppbaseAccessCredentialCreateCommand, AppbaseTenantApplicationEnableCommand, AppbaseTenantApplicationProvisionCommand, AppbaseTenantApplicationUpdateCommand, IamInstallationCredentialCreateCommand, IamInstallationCredentialListResponse, IamInstallationCredentialResponse, IamInstallationCredentialRotateCommand, IamInstallationEnvironmentListResponse, IamInstallationEnvironmentResponse, IamInstallationEnvironmentUpsertCommand, IamTenantApplicationManagementProvisionCommand, IamTenantApplicationManagementUpdateCommand, IamTenantApplicationStatusCommand, SdkWorkCommandResponse, SdkWorkListResponse, SdkWorkResourceResponse, ServiceAccountCredentialCreateCommand, ServiceAccountCredentialRevokeCommand, ServiceAccountTokenExchangeCommand
 
 def _append_query_string(path: str, raw_query_string: str) -> str:
     query = raw_query_string.lstrip('?')
@@ -904,6 +904,8 @@ class IamTenantApplicationsApi:
     def __init__(self, client: HttpClient):
         self._client = client
         self.management = IamTenantApplicationsManagementApi(client)
+        self.credentials = IamTenantApplicationsCredentialsApi(client)
+        self.environments = IamTenantApplicationsEnvironmentsApi(client)
         self.summary = IamTenantApplicationsSummaryApi(client)
 
 
@@ -959,6 +961,62 @@ class IamTenantApplicationsManagementApi:
     def enable(self, tenant_id: str, tenant_application_id: str, body: IamTenantApplicationStatusCommand) -> SdkWorkCommandResponse:
         """Tenant Applications management enable."""
         return self._client.post(f"/backend/v3/api/iam/tenants/{serialize_path_parameter(tenant_id, {'name': 'tenantId', 'style': 'simple', 'explode': False})}/applications/{serialize_path_parameter(tenant_application_id, {'name': 'tenantApplicationId', 'style': 'simple', 'explode': False})}/enable", json=body)
+
+class IamTenantApplicationsCredentialsApi:
+    """iam iam.tenant_applications.credentials API client."""
+
+    def __init__(self, client: HttpClient):
+        self._client = client
+
+
+    def list(self, tenant_id: str, tenant_application_id: str, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> IamInstallationCredentialListResponse:
+        """Tenant Applications credentials list."""
+        query = build_query_string([
+            {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'page_size', 'value': page_size, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'cursor', 'value': cursor, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'sort', 'value': sort, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'q', 'value': q, 'style': 'form', 'explode': True, 'allow_reserved': False},
+        ])
+        return self._client.get(_append_query_string(f"/backend/v3/api/iam/tenants/{serialize_path_parameter(tenant_id, {'name': 'tenantId', 'style': 'simple', 'explode': False})}/applications/{serialize_path_parameter(tenant_application_id, {'name': 'tenantApplicationId', 'style': 'simple', 'explode': False})}/credentials", query))
+
+    def create(self, tenant_id: str, tenant_application_id: str, body: IamInstallationCredentialCreateCommand) -> IamInstallationCredentialResponse:
+        """Tenant Applications credentials create."""
+        return self._client.post(f"/backend/v3/api/iam/tenants/{serialize_path_parameter(tenant_id, {'name': 'tenantId', 'style': 'simple', 'explode': False})}/applications/{serialize_path_parameter(tenant_application_id, {'name': 'tenantApplicationId', 'style': 'simple', 'explode': False})}/credentials", json=body)
+
+    def revoke(self, tenant_id: str, tenant_application_id: str, credential_id: str, body: Dict[str, Any]) -> SdkWorkCommandResponse:
+        """Tenant Applications credentials revoke."""
+        return self._client.post(f"/backend/v3/api/iam/tenants/{serialize_path_parameter(tenant_id, {'name': 'tenantId', 'style': 'simple', 'explode': False})}/applications/{serialize_path_parameter(tenant_application_id, {'name': 'tenantApplicationId', 'style': 'simple', 'explode': False})}/credentials/{serialize_path_parameter(credential_id, {'name': 'credentialId', 'style': 'simple', 'explode': False})}/revoke", json=body)
+
+    def rotate(self, tenant_id: str, tenant_application_id: str, credential_id: str, body: IamInstallationCredentialRotateCommand) -> IamInstallationCredentialResponse:
+        """Tenant Applications credentials rotate."""
+        return self._client.post(f"/backend/v3/api/iam/tenants/{serialize_path_parameter(tenant_id, {'name': 'tenantId', 'style': 'simple', 'explode': False})}/applications/{serialize_path_parameter(tenant_application_id, {'name': 'tenantApplicationId', 'style': 'simple', 'explode': False})}/credentials/{serialize_path_parameter(credential_id, {'name': 'credentialId', 'style': 'simple', 'explode': False})}/rotate", json=body)
+
+class IamTenantApplicationsEnvironmentsApi:
+    """iam iam.tenant_applications.environments API client."""
+
+    def __init__(self, client: HttpClient):
+        self._client = client
+
+
+    def list(self, tenant_id: str, tenant_application_id: str, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> IamInstallationEnvironmentListResponse:
+        """Tenant Applications environments list."""
+        query = build_query_string([
+            {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'page_size', 'value': page_size, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'cursor', 'value': cursor, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'sort', 'value': sort, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'q', 'value': q, 'style': 'form', 'explode': True, 'allow_reserved': False},
+        ])
+        return self._client.get(_append_query_string(f"/backend/v3/api/iam/tenants/{serialize_path_parameter(tenant_id, {'name': 'tenantId', 'style': 'simple', 'explode': False})}/applications/{serialize_path_parameter(tenant_application_id, {'name': 'tenantApplicationId', 'style': 'simple', 'explode': False})}/environments", query))
+
+    def delete(self, tenant_id: str, tenant_application_id: str, environment_key: str) -> None:
+        """Tenant Applications environments delete."""
+        return self._client.delete(f"/backend/v3/api/iam/tenants/{serialize_path_parameter(tenant_id, {'name': 'tenantId', 'style': 'simple', 'explode': False})}/applications/{serialize_path_parameter(tenant_application_id, {'name': 'tenantApplicationId', 'style': 'simple', 'explode': False})}/environments/{serialize_path_parameter(environment_key, {'name': 'environmentKey', 'style': 'simple', 'explode': False})}")
+
+    def update(self, tenant_id: str, tenant_application_id: str, environment_key: str, body: IamInstallationEnvironmentUpsertCommand) -> IamInstallationEnvironmentResponse:
+        """Tenant Applications environments update."""
+        return self._client.put(f"/backend/v3/api/iam/tenants/{serialize_path_parameter(tenant_id, {'name': 'tenantId', 'style': 'simple', 'explode': False})}/applications/{serialize_path_parameter(tenant_application_id, {'name': 'tenantApplicationId', 'style': 'simple', 'explode': False})}/environments/{serialize_path_parameter(environment_key, {'name': 'environmentKey', 'style': 'simple', 'explode': False})}", json=body)
 
 class IamTenantApplicationsSummaryApi:
     """iam iam.tenant_applications.summary API client."""

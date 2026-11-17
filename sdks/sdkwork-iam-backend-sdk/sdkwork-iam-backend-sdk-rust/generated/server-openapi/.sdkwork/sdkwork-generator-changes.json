@@ -9,13 +9,23 @@
     "protocol": "http",
     "packageName": "sdkwork-iam-backend-sdk"
   },
-  "changeFingerprint": "6b10e990a233404d9b1dfa60fb3b9458745200529488148f36ea46cb226d5c23",
+  "changeFingerprint": "cf97d91bde607be9f43911ae9c35d08aa2d5bf735b27c055b62deb51a7c080e6",
   "changes": {
-    "createdGeneratedFiles": [],
+    "createdGeneratedFiles": [
+      "src/models/iam_installation_credential_create_command.rs",
+      "src/models/iam_installation_credential_list_response.rs",
+      "src/models/iam_installation_credential_response.rs",
+      "src/models/iam_installation_credential_rotate_command.rs",
+      "src/models/iam_installation_credential_with_secret.rs",
+      "src/models/iam_installation_credential.rs",
+      "src/models/iam_installation_environment_list_response.rs",
+      "src/models/iam_installation_environment_response.rs",
+      "src/models/iam_installation_environment_upsert_command.rs",
+      "src/models/iam_installation_environment.rs"
+    ],
     "updatedGeneratedFiles": [
-      "Cargo.toml",
-      "src/api/iam_oauth.rs",
       "src/api/iam.rs",
+      "src/models/appbase_access_credential_create_command.rs",
       "src/models/appbase_tenant_application_provision_command.rs",
       "src/models/iam_tenant_application_management_provision_command.rs",
       "src/models/mod.rs"
@@ -24,18 +34,19 @@
       "bin/publish-core.mjs",
       "bin/publish.ps1",
       "bin/publish.sh",
+      "Cargo.toml",
       "CHANGELOG.md",
       "LICENSE",
       "README.md",
       "sdkwork-sdk.json",
       "src/api/base.rs",
+      "src/api/iam_oauth.rs",
       "src/api/mod.rs",
       "src/api/paths.rs",
       "src/client.rs",
       "src/http/client.rs",
       "src/http/mod.rs",
       "src/lib.rs",
-      "src/models/appbase_access_credential_create_command.rs",
       "src/models/appbase_tenant_application_enable_command.rs",
       "src/models/appbase_tenant_application_update_command.rs",
       "src/models/common.rs",
@@ -56,9 +67,7 @@
       "src/models/service_account_credential_revoke_command.rs",
       "src/models/service_account_token_exchange_command.rs"
     ],
-    "deletedGeneratedFiles": [
-      "src/models/appbase_application_register_command.rs"
-    ],
+    "deletedGeneratedFiles": [],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
@@ -69,46 +78,48 @@
     "schemaVersion": 1,
     "areas": [
       "api-surface",
-      "models",
-      "build-metadata"
+      "models"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "src/api/iam_oauth.rs",
           "src/api/iam.rs"
         ]
       },
       {
         "area": "models",
         "paths": [
-          "src/models/appbase_application_register_command.rs",
+          "src/models/appbase_access_credential_create_command.rs",
           "src/models/appbase_tenant_application_provision_command.rs",
+          "src/models/iam_installation_credential_create_command.rs",
+          "src/models/iam_installation_credential_list_response.rs",
+          "src/models/iam_installation_credential_response.rs",
+          "src/models/iam_installation_credential_rotate_command.rs",
+          "src/models/iam_installation_credential_with_secret.rs",
+          "src/models/iam_installation_credential.rs",
+          "src/models/iam_installation_environment_list_response.rs",
+          "src/models/iam_installation_environment_response.rs",
+          "src/models/iam_installation_environment_upsert_command.rs",
+          "src/models/iam_installation_environment.rs",
           "src/models/iam_tenant_application_management_provision_command.rs",
           "src/models/mod.rs"
-        ]
-      },
-      {
-        "area": "build-metadata",
-        "paths": [
-          "Cargo.toml"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models, build-metadata. Verification is required."
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models, build-metadata. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, build-metadata.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -126,7 +137,7 @@
         "id": "build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, build-metadata.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -144,14 +155,12 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "deleted-generated-files",
-      "manual-review-required",
       "verification-required"
     ]
   },

@@ -11,6 +11,7 @@ use sdkwork_web_core::{validate_token_version_json, TokenVersionPolicy};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
+use crate::application_scope::ApplicationOwnershipScope;
 use crate::session_scope_cache::{insert_session_scopes, SessionScopes};
 #[cfg(feature = "sqlite")]
 use sqlx::SqlitePool;
@@ -30,7 +31,8 @@ pub(crate) const IAM_SESSION_CONTEXT_SELECT: &str =
      u.email_verified AS user_email_verified, \
      s.principal_kind, COALESCE(s.principal_id, s.user_id) AS principal_id, \
      s.authz_epoch AS session_authz_epoch, \
-     COALESCE((SELECT e.epoch FROM iam_authz_epoch e WHERE e.id = 1), 0) AS current_authz_epoch";
+     COALESCE((SELECT e.epoch FROM iam_authz_epoch e WHERE e.id = 1), 0) AS current_authz_epoch, \
+     s.scope_kind";
 
 const IAM_SESSION_CONTEXT_JOINS: &str =
     "JOIN iam_tenant t ON t.id = s.tenant_id AND t.status = 'active' \
@@ -330,8 +332,11 @@ async fn find_iam_context_from_dual_tokens(
     let row = row.ok()??;
 
     let mut context = iam_context_from_session_row(&row)?;
+    let row_scope = session_row_ownership_scope(&row);
     if !session_claims_match_context(&auth_claims, &context)
         || !session_claims_match_context(&access_claims, &context)
+        || !session_scope_matches_claims(&auth_claims, row_scope)
+        || !session_scope_matches_claims(&access_claims, row_scope)
         || !signing_key_matches_claims(&signing_key, &auth_claims)
     {
         return None;
@@ -442,6 +447,7 @@ async fn find_iam_context_from_auth_token(pg: &PgPool, auth_token: &str) -> Opti
         let now_unix = (current_millis() / 1000) as i64;
         let claims = verify_local_session_token(&signing_key, auth_token, "auth", now_unix)?;
         if !session_claims_match_context(&claims, &context)
+            || !session_scope_matches_claims(&claims, session_row_ownership_scope(&row))
             || !signing_key_matches_claims(&signing_key, &claims)
         {
             return None;
@@ -492,6 +498,7 @@ async fn find_iam_context_from_access_token(
             now_unix,
         )?;
         if !session_claims_match_context(&claims, &context)
+            || !session_scope_matches_claims(&claims, session_row_ownership_scope(&row))
             || !signing_key_matches_claims(&signing_key, &claims)
         {
             return None;
@@ -621,6 +628,7 @@ fn oauth_access_token_claims_are_valid(payload: &Value, now_unix: i64) -> bool {
         && payload.get("iss").and_then(Value::as_str) == Some(oauth_issuer_base_url().as_str())
         && claim_string_value(payload, &["app_id"]).is_some()
         && claims_login_scope_organization_consistent(payload)
+        && claims_ownership_scope_consistent(payload)
         && validate_token_version_json(payload, &TokenVersionPolicy::standard()).is_ok()
 }
 
@@ -789,6 +797,9 @@ fn verify_local_session_token_flexible(
     if !claims_login_scope_organization_consistent(&payload) {
         return None;
     }
+    if !claims_ownership_scope_consistent(&payload) {
+        return None;
+    }
     if validate_token_version_json(&payload, &TokenVersionPolicy::standard()).is_err() {
         return None;
     }
@@ -867,8 +878,89 @@ fn iam_context_from_session_row(row: &sqlx::postgres::PgRow) -> Option<IamAppCon
     })
 }
 
-fn json_string_vec_from_row(row: &sqlx::postgres::PgRow, index: usize) -> Vec<String> {
-    if let Ok(Json(value)) = row.try_get::<Json<Value>, _>(index) {
+/// Reads the release scope a session row was issued for.
+///
+/// `iam_session.scope_kind` is written by the issuer from the installation row
+/// (`APPLICATION_IDENTITY_SPEC.md` §4.1), so the resolver compares the credential
+/// against the scope it authorized against instead of re-deriving it from
+/// `login_scope` — a personal release keeps `login_scope = TENANT`.
+///
+/// A row from a database that predates the column keeps the historical
+/// derivation: the organization scope decides, and `USER` is never inferred.
+fn session_row_ownership_scope(row: &sqlx::postgres::PgRow) -> ApplicationOwnershipScope {
+    row.try_get::<String, _>(18)
+        .ok()
+        .and_then(|value| ApplicationOwnershipScope::parse(&value))
+        .unwrap_or_else(|| {
+            let organization_id: String = row.try_get(2).unwrap_or_else(|_| "0".to_owned());
+            ApplicationOwnershipScope::derive_from_organization_scope(Some(&organization_id))
+        })
+}
+
+/// The release scope a credential claims, if it declares one.
+fn claimed_ownership_scope(claims: &Value) -> Option<ApplicationOwnershipScope> {
+    claim_string_value(claims, &["ownership_scope", "ownershipScope"])
+        .and_then(|value| ApplicationOwnershipScope::parse(&value))
+}
+
+/// The scope a credential stands for: its claim, or the legacy derivation from
+/// its organization scope when the claim is absent.
+fn effective_claims_ownership_scope(claims: &Value) -> ApplicationOwnershipScope {
+    claimed_ownership_scope(claims).unwrap_or_else(|| {
+        ApplicationOwnershipScope::derive_from_organization_scope(
+            claim_string_value(claims, &["organization_id"]).as_deref(),
+        )
+    })
+}
+
+/// IAM_SPEC §5.2: the scope claim must agree with the organization claim, and an
+/// unknown value is a contradictory credential.
+///
+/// `ORGANIZATION` requires a non-zero organization and `USER` requires the
+/// sentinel: both are the installation's own organization claim. `TENANT` is
+/// neutral — a tenant-released application keeps the ordinary login-context
+/// organization, which narrows business data without changing the application's
+/// release level.
+///
+/// An absent claim is accepted (pre-existing credentials,
+/// `APPLICATION_IDENTITY_SPEC.md` §4.1 rule 6); knowing whether it *should* be
+/// present is the session row's job, done in [`session_scope_matches_claims`].
+fn claims_ownership_scope_consistent(claims: &Value) -> bool {
+    let raw = claim_string_value(claims, &["ownership_scope", "ownershipScope"]);
+    let Some(raw) = raw else {
+        return true;
+    };
+    let Some(scope) = ApplicationOwnershipScope::parse(&raw) else {
+        return false;
+    };
+    let organization_id = claim_string_value(claims, &["organization_id"]);
+    let has_organization = organization_id
+        .as_deref()
+        .map(|value| !crate::is_blank(Some(value)) && value.trim() != "0")
+        .unwrap_or(false);
+    match scope {
+        ApplicationOwnershipScope::Tenant => true,
+        ApplicationOwnershipScope::Organization => has_organization,
+        ApplicationOwnershipScope::User => !has_organization,
+    }
+}
+
+/// The credential and the session row must agree on the release scope, and a
+/// `USER`-scoped row demands the claim explicitly.
+fn session_scope_matches_claims(
+    claims: &Value,
+    row_scope: ApplicationOwnershipScope,
+) -> bool {
+    match (claimed_ownership_scope(claims), row_scope) {
+        (Some(claim), row) => claim == row,
+        // A personal release is only ever issued with the claim, so its absence
+        // on a USER-scoped row is a mismatch rather than a legacy credential.
+        (None, ApplicationOwnershipScope::User) => false,
+        (None, _) => true,
+    }
+}
+
+fn json_string_vec_from_row(row: &sqlx::postgres::PgRow, index: usize) -> Vec<String> {    if let Ok(Json(value)) = row.try_get::<Json<Value>, _>(index) {
         return serde_json::from_value(value).unwrap_or_default();
     }
     if let Ok(text) = row.try_get::<String, _>(index) {
@@ -986,6 +1078,9 @@ fn verify_local_session_token(
     if !claims_login_scope_organization_consistent(&payload) {
         return None;
     }
+    if !claims_ownership_scope_consistent(&payload) {
+        return None;
+    }
     if validate_token_version_json(&payload, &TokenVersionPolicy::standard()).is_err() {
         return None;
     }
@@ -1048,7 +1143,13 @@ fn session_token_claims_match(auth_claims: &Value, access_claims: &Value) -> boo
         .map(|value| value.trim().to_ascii_uppercase());
     let access_scope_claim = claim_string_value(access_claims, &["login_scope"])
         .map(|value| value.trim().to_ascii_uppercase());
-    auth_scope_claim == access_scope_claim
+    if auth_scope_claim != access_scope_claim {
+        return false;
+    }
+    // Both halves of one dual-token pair are signed from the same installation,
+    // so a pair that disagrees about the release scope is not a valid pair even
+    // when each half is individually well-formed.
+    effective_claims_ownership_scope(auth_claims) == effective_claims_ownership_scope(access_claims)
 }
 
 fn session_claims_match_context(claims: &Value, context: &IamAppContext) -> bool {
@@ -1239,8 +1340,20 @@ mod tests {
             kid: key.kid.clone(),
             secret: key.secret.clone(),
         };
-        let auth_token = sign_local_session_token_with_ttl(&issue_key, "auth", &context, 3600);
-        let access_token = sign_local_session_token_with_ttl(&issue_key, "access", &context, 3600);
+        let auth_token = sign_local_session_token_with_ttl(
+            &issue_key,
+            "auth",
+            &context,
+            ApplicationOwnershipScope::Organization,
+            3600,
+        );
+        let access_token = sign_local_session_token_with_ttl(
+            &issue_key,
+            "access",
+            &context,
+            ApplicationOwnershipScope::Organization,
+            3600,
+        );
         let auth_claims = verify_local_session_token(&key, &auth_token, "auth", now_unix)
             .expect("new auth token should verify");
         let access_claims = verify_local_session_token(&key, &access_token, "access", now_unix)
@@ -1365,5 +1478,125 @@ mod tests {
         let mut mismatched = access.clone();
         mismatched["organization_id"] = json!("100002");
         assert!(!session_token_claims_match(&auth, &mismatched));
+    }
+
+    fn scoped_claims(scope: &str, organization_id: &str, login_scope: &str) -> Value {
+        json!({
+            "app_id": "deploy-app-7",
+            "aud": "deploy-app-7",
+            "login_scope": login_scope,
+            "organization_id": organization_id,
+            "ownership_scope": scope,
+            "session_id": "session-1",
+            "tenant_id": "100001",
+            "token_type": "access",
+            "token_version": 1,
+            "user_id": "user-1",
+        })
+    }
+
+    /// IAM_SPEC §5.2: the scope claim and the organization claim must agree, and
+    /// an unknown scope value is a contradictory credential rather than a
+    /// value to normalize.
+    #[test]
+    fn scope_claim_must_agree_with_the_organization_claim() {
+        assert!(claims_ownership_scope_consistent(&scoped_claims(
+            "TENANT",
+            "0",
+            "TENANT"
+        )));
+        assert!(claims_ownership_scope_consistent(&scoped_claims(
+            "USER",
+            "0",
+            "TENANT"
+        )));
+        assert!(claims_ownership_scope_consistent(&scoped_claims(
+            "ORGANIZATION",
+            "42",
+            "ORGANIZATION"
+        )));
+        // A tenant-released application keeps the login-context organization.
+        assert!(claims_ownership_scope_consistent(&scoped_claims(
+            "TENANT",
+            "42",
+            "ORGANIZATION"
+        )));
+
+        // Widening/narrowing contradictions.
+        assert!(!claims_ownership_scope_consistent(&scoped_claims(
+            "USER",
+            "42",
+            "ORGANIZATION"
+        )));
+        assert!(!claims_ownership_scope_consistent(&scoped_claims(
+            "ORGANIZATION",
+            "0",
+            "TENANT"
+        )));
+        // Unknown level: rejected, never defaulted.
+        assert!(!claims_ownership_scope_consistent(&scoped_claims(
+            "GLOBAL",
+            "0",
+            "TENANT"
+        )));
+        // Legacy credential without the claim stays accepted.
+        let mut legacy = scoped_claims("TENANT", "0", "TENANT");
+        legacy.as_object_mut().expect("object").remove("ownership_scope");
+        assert!(claims_ownership_scope_consistent(&legacy));
+    }
+
+    /// A `USER`-scoped session row demands the claim; the other levels accept a
+    /// pre-existing credential without one, and every level rejects a claim that
+    /// disagrees with the row.
+    #[test]
+    fn session_scope_matches_the_claims_row_and_the_personal_level_is_explicit() {
+        let tenant = scoped_claims("TENANT", "0", "TENANT");
+        assert!(session_scope_matches_claims(
+            &tenant,
+            ApplicationOwnershipScope::Tenant
+        ));
+        let mut legacy = tenant.clone();
+        legacy.as_object_mut().expect("object").remove("ownership_scope");
+        assert!(session_scope_matches_claims(
+            &legacy,
+            ApplicationOwnershipScope::Tenant
+        ));
+        assert!(
+            !session_scope_matches_claims(&legacy, ApplicationOwnershipScope::User),
+            "a personal session is only ever issued with the claim"
+        );
+
+        let personal = scoped_claims("USER", "0", "TENANT");
+        assert!(session_scope_matches_claims(
+            &personal,
+            ApplicationOwnershipScope::User
+        ));
+        assert!(
+            !session_scope_matches_claims(&personal, ApplicationOwnershipScope::Tenant),
+            "a personal credential must not be accepted by a tenant-scoped row"
+        );
+    }
+
+    /// Both halves of a dual-token pair are signed from the same installation, so
+    /// a pair that disagrees about the release scope is not a valid pair.
+    #[test]
+    fn dual_token_pair_must_agree_on_the_release_scope() {
+        let auth = scoped_claims("USER", "0", "TENANT");
+        let mut access = auth.clone();
+        assert!(session_token_claims_match(&auth, &access));
+
+        access["ownership_scope"] = json!("TENANT");
+        assert!(!session_token_claims_match(&auth, &access));
+
+        // Legacy pair without the claim on either half: both derive the same
+        // tenant level from the organization scope.
+        let mut legacy_auth = auth.clone();
+        legacy_auth
+            .as_object_mut()
+            .expect("object")
+            .remove("ownership_scope");
+        let mut legacy_access = legacy_auth.clone();
+        legacy_access["organization_id"] = json!("0");
+        assert!(session_token_claims_match(&legacy_auth, &legacy_access));
     }
 }

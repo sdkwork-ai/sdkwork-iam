@@ -20,7 +20,7 @@
     },
     {
       "path": "Api/IamApi.cs",
-      "sha256": "775d2a75c3361e77cbdd5dac66f9f597adaf593684a9d23c4a79d5c271c836ad"
+      "sha256": "f08bdf84bf4b6d1a79d03a7a573afd1427e9f6e6ea3cf9b7c78a54073432aed0"
     },
     {
       "path": "Api/IamOauthApi.cs",
@@ -52,7 +52,7 @@
     },
     {
       "path": "Models/AppbaseAccessCredentialCreateCommand.cs",
-      "sha256": "0002851faa284ea766156f6e2f0ec5504d943edfa999abc5ee6f83c2c462aebe"
+      "sha256": "faaf61d95a25da1ffcc54d530bccb5ddacc49baabfe8944326714de8c76c0c2e"
     },
     {
       "path": "Models/AppbaseTenantApplicationEnableCommand.cs",
@@ -60,7 +60,7 @@
     },
     {
       "path": "Models/AppbaseTenantApplicationProvisionCommand.cs",
-      "sha256": "e3acda80fdc3a0cf7860864fa5353fec1dc3bd6aa4b8ed6c19ae8550d8404768"
+      "sha256": "fb6b410a1a57e2e618bcb9e16df2a22ba973e6d4eb6d5e242a836570d8cd46fa"
     },
     {
       "path": "Models/AppbaseTenantApplicationUpdateCommand.cs",
@@ -71,12 +71,52 @@
       "sha256": "9b01ad88d0d5609d02a927991cfe065515cb4fd246060134e84d6e3aa2cd697f"
     },
     {
+      "path": "Models/IamInstallationCredential.cs",
+      "sha256": "6533aa3419d99350c831c935bd2634ae1b06bbf8ecfcfac919968aea4026d06a"
+    },
+    {
+      "path": "Models/IamInstallationCredentialCreateCommand.cs",
+      "sha256": "d7450ec974e5bb954a1ca94b50e9c6254f0a473754d3d9159932134cde8c4e2f"
+    },
+    {
+      "path": "Models/IamInstallationCredentialListResponse.cs",
+      "sha256": "26bebdaeb6d8bf6fe1d2c08ebd10695f53423cd92b8264992097f95e0f4d05f8"
+    },
+    {
+      "path": "Models/IamInstallationCredentialResponse.cs",
+      "sha256": "2083e8cce94767db582a50f28a269f9f26c10fc2d59b094f757014f96ac90cf9"
+    },
+    {
+      "path": "Models/IamInstallationCredentialRotateCommand.cs",
+      "sha256": "dcfc2487493ee28954aba9ed1303b9e7db1438bbfb859a6205c0eff37e16d218"
+    },
+    {
+      "path": "Models/IamInstallationCredentialWithSecret.cs",
+      "sha256": "3c2280d66e15ccb66114a1f9572f54a54b35bd94a77fd57cb8a890ce284abe37"
+    },
+    {
+      "path": "Models/IamInstallationEnvironment.cs",
+      "sha256": "f052931c1e2fb86807c063f0aa69b0996c7e2224fe6a22e4c14d68c604151dee"
+    },
+    {
+      "path": "Models/IamInstallationEnvironmentListResponse.cs",
+      "sha256": "273eeb7b55c222e95e2b7f6e6c565538b725c62aad242644edc362735fe5b355"
+    },
+    {
+      "path": "Models/IamInstallationEnvironmentResponse.cs",
+      "sha256": "e07c8ccaf1336b94ee91f275c45261cd36abd1f0baee70bead9cca66c86535ba"
+    },
+    {
+      "path": "Models/IamInstallationEnvironmentUpsertCommand.cs",
+      "sha256": "50d178e42a192b0d99303df22374ac131094a78c48b4f35155033536c74e19cf"
+    },
+    {
       "path": "Models/IamOauthClientCreateCommand.cs",
       "sha256": "d3364fcc4fa3488509e0fa0211da44f1888e41ea195f3b54104ae1e0b78902ff"
     },
     {
       "path": "Models/IamTenantApplicationManagementProvisionCommand.cs",
-      "sha256": "8cf019d91b26ecf3b2d3e7f30455ee1a38655469e817db691353f38363c67a89"
+      "sha256": "8b3583c3dd08b3d87a68d575375d72d3b53e56be982d3dcfe383e4af140b2fc7"
     },
     {
       "path": "Models/IamTenantApplicationManagementUpdateCommand.cs",

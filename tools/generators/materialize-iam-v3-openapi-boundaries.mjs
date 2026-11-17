@@ -1780,6 +1780,20 @@ function buildSchemas() {
           description:
             'Deploy application this installation serves. It is the identity every access token carries, and the one-to-one relation is enforced by the database.',
         },
+        ownershipScope: {
+          type: 'string',
+          enum: ['TENANT', 'ORGANIZATION', 'USER'],
+          default: 'TENANT',
+          description:
+            'Release scope of the installation (`APPLICATION_IDENTITY_SPEC.md` section 4.1). TENANT is the default: the application serves the whole tenant and its isolation key is (tenantId, appId). ORGANIZATION serves one organization and requires a non-zero organizationId. USER serves one person and requires ownerUserId. The scope is immutable once provisioned; publishing at another level needs a new installation.',
+        },
+        ownerUserId: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 255,
+          description:
+            'Owner of a USER-scoped installation. Required for ownershipScope USER and rejected for the other two levels.',
+        },
         provisioningIdempotencyKey: {
           type: 'string',
           minLength: 1,
@@ -1838,6 +1852,18 @@ function buildSchemas() {
           description:
             'Deploy application this installation serves. It is the identity every access token carries, and the one-to-one relation is enforced by the database.',
         },
+        ownershipScope: {
+          type: 'string',
+          enum: ['TENANT', 'ORGANIZATION', 'USER'],
+          default: 'TENANT',
+          description:
+            'Release scope of the installation (`APPLICATION_IDENTITY_SPEC.md` section 4.1). TENANT is the default: the application serves the whole tenant and its isolation key is (tenantId, appId). ORGANIZATION serves one organization and requires a non-zero organizationId. USER serves one person and requires ownerUserId. The scope is immutable once provisioned; publishing at another level needs a new installation.',
+        },
+        ownerUserId: {
+          type: 'string',
+          description:
+            'Owner of a USER-scoped installation. Required for ownershipScope USER and rejected for the other two levels.',
+        },
         provisioningIdempotencyKey: {
           type: 'string',
           description: 'Replay-safe key for the cross-module provisioning call.',
@@ -1879,6 +1905,12 @@ function buildSchemas() {
         tenantApplicationId: { type: 'string' },
         appId: { type: 'string' },
         instanceKey: { type: 'string' },
+        ownershipScope: {
+          type: 'string',
+          enum: ['TENANT', 'ORGANIZATION', 'USER'],
+          description:
+            'Release scope the caller declares. It is checked against the installation, never used to select one: a value the installation was not released at fails closed (`APPLICATION_IDENTITY_SPEC.md` section 4.1 rule 3). Omit it to inherit the installation scope.',
+        },
       },
     },
     ServiceAccountCredentialCreateCommand: {

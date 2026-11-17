@@ -9,18 +9,30 @@
     "protocol": "http",
     "packageName": "github.com/sdkwork/sdkwork-iam-backend-sdk"
   },
-  "changeFingerprint": "7a6b412ae15a0dc7eaa1e0b9a217508363eea107c0ea6c7a05d29cecab55fbeb",
+  "changeFingerprint": "f724c08a5eac9c833043e45d2a6290decc1f5227edc1224531dffb7dfe743cf5",
   "changes": {
-    "createdGeneratedFiles": [],
+    "createdGeneratedFiles": [
+      "types/iam_installation_credential_create_command.go",
+      "types/iam_installation_credential_list_response.go",
+      "types/iam_installation_credential_response.go",
+      "types/iam_installation_credential_rotate_command.go",
+      "types/iam_installation_credential_with_secret.go",
+      "types/iam_installation_credential.go",
+      "types/iam_installation_environment_list_response.go",
+      "types/iam_installation_environment_response.go",
+      "types/iam_installation_environment_upsert_command.go",
+      "types/iam_installation_environment.go"
+    ],
     "updatedGeneratedFiles": [
-      "api/iam_oauth.go",
       "api/iam.go",
+      "types/appbase_access_credential_create_command.go",
       "types/appbase_tenant_application_provision_command.go",
       "types/iam_tenant_application_management_provision_command.go"
     ],
     "unchangedGeneratedFiles": [
       "api/base.go",
       "api/doc.go",
+      "api/iam_oauth.go",
       "api/paths.go",
       "bin/publish-core.mjs",
       "bin/publish.ps1",
@@ -34,7 +46,6 @@
       "README.md",
       "sdk.go",
       "sdkwork-sdk.json",
-      "types/appbase_access_credential_create_command.go",
       "types/appbase_operation_command.go",
       "types/appbase_tenant_application_enable_command.go",
       "types/appbase_tenant_application_update_command.go",
@@ -58,9 +69,7 @@
       "types/service_account_credential_revoke_command.go",
       "types/service_account_token_exchange_command.go"
     ],
-    "deletedGeneratedFiles": [
-      "types/appbase_application_register_command.go"
-    ],
+    "deletedGeneratedFiles": [],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
@@ -77,15 +86,24 @@
       {
         "area": "api-surface",
         "paths": [
-          "api/iam_oauth.go",
           "api/iam.go"
         ]
       },
       {
         "area": "models",
         "paths": [
-          "types/appbase_application_register_command.go",
+          "types/appbase_access_credential_create_command.go",
           "types/appbase_tenant_application_provision_command.go",
+          "types/iam_installation_credential_create_command.go",
+          "types/iam_installation_credential_list_response.go",
+          "types/iam_installation_credential_response.go",
+          "types/iam_installation_credential_rotate_command.go",
+          "types/iam_installation_credential_with_secret.go",
+          "types/iam_installation_credential.go",
+          "types/iam_installation_environment_list_response.go",
+          "types/iam_installation_environment_response.go",
+          "types/iam_installation_environment_upsert_command.go",
+          "types/iam_installation_environment.go",
           "types/iam_tenant_application_management_provision_command.go"
         ]
       }
@@ -120,14 +138,12 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "deleted-generated-files",
-      "manual-review-required",
       "verification-required"
     ]
   },

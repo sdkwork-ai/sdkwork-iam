@@ -1037,6 +1037,52 @@ class IamApi {
     })();
   }
 
+  /// Tenant Applications credentials list.
+  Future<IamInstallationCredentialListResponse?> tenantApplicationsCredentialsList(String tenantId, String tenantApplicationId, [int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+    final query = buildQueryString([
+      QueryParameterSpec('page', page, 'form', true, false, null),
+      QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
+      QueryParameterSpec('cursor', cursor, 'form', true, false, null),
+      QueryParameterSpec('sort', sort, 'form', true, false, null),
+      QueryParameterSpec('q', q, 'form', true, false, null)
+    ]);
+    final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/applications/${serializePathParameter(tenantApplicationId, const PathParameterSpec('tenantApplicationId', 'simple', false))}/credentials'), query));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamInstallationCredentialListResponse.fromJson(map);
+    })();
+  }
+
+  /// Tenant Applications credentials create.
+  Future<IamInstallationCredentialResponse?> tenantApplicationsCredentialsCreate(String tenantId, String tenantApplicationId, IamInstallationCredentialCreateCommand body) async {
+    final payload = body.toJson();
+    final response = await _client.post(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/applications/${serializePathParameter(tenantApplicationId, const PathParameterSpec('tenantApplicationId', 'simple', false))}/credentials'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamInstallationCredentialResponse.fromJson(map);
+    })();
+  }
+
+  /// Tenant Applications credentials revoke.
+  Future<SdkWorkCommandResponse?> tenantApplicationsCredentialsRevoke(String tenantId, String tenantApplicationId, String credentialId, Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.post(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/applications/${serializePathParameter(tenantApplicationId, const PathParameterSpec('tenantApplicationId', 'simple', false))}/credentials/${serializePathParameter(credentialId, const PathParameterSpec('credentialId', 'simple', false))}/revoke'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkCommandResponse.fromJson(map);
+    })();
+  }
+
+  /// Tenant Applications credentials rotate.
+  Future<IamInstallationCredentialResponse?> tenantApplicationsCredentialsRotate(String tenantId, String tenantApplicationId, String credentialId, IamInstallationCredentialRotateCommand body) async {
+    final payload = body.toJson();
+    final response = await _client.post(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/applications/${serializePathParameter(tenantApplicationId, const PathParameterSpec('tenantApplicationId', 'simple', false))}/credentials/${serializePathParameter(credentialId, const PathParameterSpec('credentialId', 'simple', false))}/rotate'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamInstallationCredentialResponse.fromJson(map);
+    })();
+  }
+
   /// Tenant Applications management disable.
   Future<SdkWorkCommandResponse?> tenantApplicationsManagementDisable(String tenantId, String tenantApplicationId, IamTenantApplicationStatusCommand body) async {
     final payload = body.toJson();
@@ -1054,6 +1100,37 @@ class IamApi {
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkCommandResponse.fromJson(map);
+    })();
+  }
+
+  /// Tenant Applications environments list.
+  Future<IamInstallationEnvironmentListResponse?> tenantApplicationsEnvironmentsList(String tenantId, String tenantApplicationId, [int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+    final query = buildQueryString([
+      QueryParameterSpec('page', page, 'form', true, false, null),
+      QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
+      QueryParameterSpec('cursor', cursor, 'form', true, false, null),
+      QueryParameterSpec('sort', sort, 'form', true, false, null),
+      QueryParameterSpec('q', q, 'form', true, false, null)
+    ]);
+    final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/applications/${serializePathParameter(tenantApplicationId, const PathParameterSpec('tenantApplicationId', 'simple', false))}/environments'), query));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamInstallationEnvironmentListResponse.fromJson(map);
+    })();
+  }
+
+  /// Tenant Applications environments delete.
+  Future<void> tenantApplicationsEnvironmentsDelete(String tenantId, String tenantApplicationId, String environmentKey) async {
+    await _client.delete(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/applications/${serializePathParameter(tenantApplicationId, const PathParameterSpec('tenantApplicationId', 'simple', false))}/environments/${serializePathParameter(environmentKey, const PathParameterSpec('environmentKey', 'simple', false))}'));
+  }
+
+  /// Tenant Applications environments update.
+  Future<IamInstallationEnvironmentResponse?> tenantApplicationsEnvironmentsUpdate(String tenantId, String tenantApplicationId, String environmentKey, IamInstallationEnvironmentUpsertCommand body) async {
+    final payload = body.toJson();
+    final response = await _client.put(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/applications/${serializePathParameter(tenantApplicationId, const PathParameterSpec('tenantApplicationId', 'simple', false))}/environments/${serializePathParameter(environmentKey, const PathParameterSpec('environmentKey', 'simple', false))}'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamInstallationEnvironmentResponse.fromJson(map);
     })();
   }
 

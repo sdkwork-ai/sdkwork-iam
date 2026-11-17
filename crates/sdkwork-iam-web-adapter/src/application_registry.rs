@@ -4,6 +4,13 @@ use serde_json::{json, Value};
 use sqlx::{types::Json, PgPool, Row};
 use std::collections::BTreeSet;
 
+use crate::application_scope::{
+    resolve_installation_scope, ApplicationOwnershipScope, ResolvedInstallationScope,
+};
+use crate::installation_scope_cache::{
+    get_installation_scope, insert_installation_scope, invalidate_installation_scope,
+};
+
 pub const IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION: &str = "iam.tenant_applications.provision";
 pub const IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION: &str = "iam.tenant_applications.update";
 pub const IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION: &str = "iam.tenant_applications.enable";
@@ -62,6 +69,16 @@ pub struct TenantApplicationProvisionCommand {
     /// partial unique index, so the one-to-one relation is enforced by the
     /// database rather than by convention.
     pub deploy_application_id: Option<String>,
+    /// Release scope the caller asks for (`APPLICATION_IDENTITY_SPEC.md` §4.1).
+    ///
+    /// Absent means the default, `TENANT`. The value `MUST` agree with
+    /// [`Self::organization_id`] and, for `USER`, with [`Self::owner_user_id`];
+    /// the installation's stored scope is immutable, so re-provisioning with a
+    /// different value is a conflict rather than an update.
+    pub ownership_scope: Option<String>,
+    /// Owner of a `USER`-scoped installation. Required for that level and
+    /// rejected for the other two.
+    pub owner_user_id: Option<String>,
     /// Replay-safe key for the cross-module provisioning call.
     pub provisioning_idempotency_key: Option<String>,
 }
@@ -101,6 +118,13 @@ pub struct TenantApplication {
     /// never linked to a deployment, and token issuance fails closed instead of
     /// falling back to [`Self::app_id`].
     pub deploy_application_id: Option<String>,
+    /// Release scope of this installation (`APPLICATION_IDENTITY_SPEC.md` §4.1):
+    /// `TENANT`, `ORGANIZATION`, or `USER`. It decides the token's
+    /// `ownership_scope` claim, its `organization_id`, and the isolation key the
+    /// data plane filters by. Stored, never request-derived at issuance.
+    pub ownership_scope: ApplicationOwnershipScope,
+    /// Owner of a `USER`-scoped installation; `None` for the other two levels.
+    pub owner_user_id: Option<String>,
 }
 
 /// Validates that `deploy_application_id` names an enabled installation of `tenant_id`.
@@ -300,12 +324,18 @@ pub async fn ensure_platform_tenant_application_with_deploy_application(
         tenant_application_id.as_str(),
     )
     .await?;
+    // The platform installation is the tenant's own IAM runtime, so it is always
+    // a TENANT release. Resetting it is a delete-plus-insert, which would
+    // silently reclassify a row that a release scope was recorded for; refuse
+    // instead of destroying the only record of that level.
+    ensure_platform_installation_is_tenant_scoped(pg, tenant_id, &tenant_application_id).await?;
     sqlx::query("DELETE FROM iam_application_installation WHERE id = $1 OR app_id = $2")
         .bind(&tenant_application_id)
         .bind(&runtime_app_id)
         .execute(pg)
         .await
         .map_err(|error| format!("reset platform tenant application rows failed: {error}"))?;
+    invalidate_installation_scope(tenant_id, &deploy_application_id);
     let primary_domain = resolve_tenant_application_primary_domain(
         pg,
         tenant_id,
@@ -318,9 +348,9 @@ pub async fn ensure_platform_tenant_application_with_deploy_application(
         "INSERT INTO iam_application_installation (id, app_id, tenant_id, organization_id, instance_key, \
          display_name, environment, application_type, status, primary_domain, domain_config_json, \
          access_permissions_json, runtime_config_json, provisioned_at, activated_at, created_at, \
-         updated_at, deploy_application_id) \
+         updated_at, deploy_application_id, ownership_scope) \
          VALUES ($1, $2, $3, '0', 'default', 'SDKWork Platform', 'prod', 'pc', 'enabled', $4, \
-         '{}'::jsonb, '[\"iam:self\"]'::jsonb, '{}'::jsonb, $5, $5, $5, $5, $6) \
+         '{}'::jsonb, '[\"iam:self\"]'::jsonb, '{}'::jsonb, $5, $5, $5, $5, $6, 'TENANT') \
          ON CONFLICT (id) DO UPDATE SET app_id = EXCLUDED.app_id, status = 'enabled', primary_domain = EXCLUDED.primary_domain, \
          access_permissions_json = EXCLUDED.access_permissions_json, deploy_application_id = EXCLUDED.deploy_application_id, \
          activated_at = EXCLUDED.activated_at, updated_at = EXCLUDED.updated_at",
@@ -362,6 +392,41 @@ pub async fn platform_deploy_application_id_for_tenant(
         format!("platform installation for tenant {tenant_id} was not found after bootstrap")
     })?;
     resolve_access_token_app_id(&tenant_application)
+}
+
+/// Refuses to reset a platform installation that was released at another level.
+///
+/// [`ensure_platform_tenant_application_with_deploy_application`] replaces the
+/// row (delete plus insert) to reconcile it with configuration. That is only
+/// valid for a `TENANT` release: replacing an `ORGANIZATION` or `USER`
+/// installation would drop its organization or owner pointer and silently widen
+/// the application to the whole tenant (`APPLICATION_IDENTITY_SPEC.md` §4.1).
+async fn ensure_platform_installation_is_tenant_scoped(
+    pg: &PgPool,
+    tenant_id: &str,
+    tenant_application_id: &str,
+) -> Result<(), String> {
+    let row = sqlx::query(
+        "SELECT id, ownership_scope FROM iam_application_installation \
+         WHERE id = $1 AND tenant_id = $2 LIMIT 1",
+    )
+    .bind(tenant_application_id)
+    .bind(tenant_id)
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| format!("load platform installation release scope failed: {error}"))?;
+    let Some(row) = row else {
+        return Ok(());
+    };
+    let stored: String = row.get(1);
+    if ApplicationOwnershipScope::parse(&stored) == Some(ApplicationOwnershipScope::Tenant) {
+        return Ok(());
+    }
+    Err(format!(
+        "platform installation {tenant_application_id} of tenant {tenant_id} was released with \
+         ownershipScope {stored} and must not be reset as a TENANT release; \
+         publish the scoped application as its own installation"
+    ))
 }
 
 /// Rejects a deploy application that is already bound to another installation.
@@ -430,6 +495,8 @@ pub fn parse_tenant_application_provision_command(
         body,
         &["deployApplicationId", "deploy_application_id"],
     );
+    let ownership_scope = read_optional_string(body, &["ownershipScope", "ownership_scope"]);
+    let owner_user_id = read_optional_string(body, &["ownerUserId", "owner_user_id"]);
     let provisioning_idempotency_key = read_optional_string(
         body,
         &["provisioningIdempotencyKey", "provisioning_idempotency_key"],
@@ -447,6 +514,8 @@ pub fn parse_tenant_application_provision_command(
         access_permissions,
         runtime_config,
         deploy_application_id,
+        ownership_scope,
+        owner_user_id,
         provisioning_idempotency_key,
     })
 }
@@ -541,6 +610,7 @@ struct ResolvedProvisionAttributes {
     application_type: String,
     access_permissions: Vec<String>,
     runtime_config: Value,
+    scope: ResolvedInstallationScope,
 }
 
 /// Derives the installation attributes of one provisioning command.
@@ -580,6 +650,13 @@ fn resolve_provision_attributes(
         application_type,
         access_permissions,
         runtime_config,
+        // The release scope and its pointer are validated before any database
+        // lookup, so a mismatched command fails on its own inputs.
+        scope: resolve_installation_scope(
+            command.ownership_scope.as_deref(),
+            &command.organization_id,
+            command.owner_user_id.as_deref(),
+        )?,
     })
 }
 
@@ -589,6 +666,14 @@ fn resolve_provision_attributes(
 /// service-unavailable one.
 pub fn is_provision_attribute_error(message: &str) -> bool {
     message.contains("is required to provision a tenant application")
+        || message.contains("ownershipScope")
+        || message.contains("ownership scope")
+        || message.contains("ownerUserId")
+        || message.contains("organizationId is required to provision")
+        // Immutable identity/scope attributes are client errors, not outages:
+        // the command contradicts an existing installation.
+        || message.contains("is immutable")
+        || message.contains("is released to organization")
 }
 
 /// Deterministic installation anchor used to build the installation row id.
@@ -698,6 +783,50 @@ pub async fn provision_tenant_application(
         .as_ref()
         .and_then(|app| app.runtime_config.pointer("/oauth/relyingParty"));
 
+    // The release scope is immutable (`APPLICATION_IDENTITY_SPEC.md` §4.1 rule 2):
+    // changing it in place would re-interpret every stored row under a different
+    // isolation key. A re-provision that *declares* another level is a conflict
+    // naming the stored level, never an update; an omitted level keeps it.
+    if let Some(app) = existing.as_ref() {
+        if let Some(requested_scope) =
+            ApplicationOwnershipScope::parse_optional(command.ownership_scope.as_deref())?
+        {
+            if requested_scope != app.ownership_scope {
+                return Err(format!(
+                    "tenant application {} was released with ownershipScope {} and is immutable; \
+                     publishing it as {} needs a new installation",
+                    app.id,
+                    app.ownership_scope.as_str(),
+                    requested_scope.as_str()
+                ));
+            }
+        }
+        if let (Some(stored_owner), Some(requested_owner)) = (
+            app.owner_user_id.as_deref(),
+            attributes.scope.owner_user_id.as_deref(),
+        ) {
+            if stored_owner != requested_owner {
+                return Err(format!(
+                    "tenant application {} belongs to owner {stored_owner} and is immutable; \
+                     a different owner needs a new installation",
+                    app.id
+                ));
+            }
+        }
+        // An organization release is bound to its organization: re-provisioning
+        // it with the tenant sentinel would contradict its CHECK constraint, so
+        // it is refused here with a message that names the stored organization.
+        if app.ownership_scope == ApplicationOwnershipScope::Organization
+            && app.organization_id != command.organization_id
+        {
+            return Err(format!(
+                "tenant application {} is released to organization {} and is immutable; \
+                 organizationId {} needs a new installation",
+                app.id, app.organization_id, command.organization_id
+            ));
+        }
+    }
+
     // Re-provisioning an existing instance merges over its stored config so
     // unrelated admin edits survive. Normalization then validates and hashes the
     // OAuth relying party before it reaches storage.
@@ -726,7 +855,8 @@ pub async fn provision_tenant_application(
              access_permissions_json = $7, runtime_config_json = $8, \
              last_synced_at = $9, updated_at = $10, \
              deploy_application_id = COALESCE($11, deploy_application_id), \
-             provisioning_idempotency_key = COALESCE($12, provisioning_idempotency_key) \
+             provisioning_idempotency_key = COALESCE($12, provisioning_idempotency_key), \
+             owner_user_id = COALESCE(owner_user_id, $13) \
              WHERE id = $1",
         )
         .bind(&tenant_application_id)
@@ -741,6 +871,7 @@ pub async fn provision_tenant_application(
         .bind(now)
         .bind(command.deploy_application_id.as_deref())
         .bind(command.provisioning_idempotency_key.as_deref())
+        .bind(attributes.scope.owner_user_id.as_deref())
         .execute(pg)
         .await
         .map_err(|error| format!("update tenant application failed: {error}"))?;
@@ -749,9 +880,9 @@ pub async fn provision_tenant_application(
             "INSERT INTO iam_application_installation (id, app_id, tenant_id, organization_id, instance_key, \
              display_name, environment, application_type, status, primary_domain, domain_config_json, \
              access_permissions_json, runtime_config_json, provisioned_at, last_synced_at, created_at, \
-             updated_at, deploy_application_id, provisioning_idempotency_key) \
+             updated_at, deploy_application_id, provisioning_idempotency_key, ownership_scope, owner_user_id) \
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending_config', $9, '{}'::jsonb, $10, $11, \
-             $12, $13, $14, $15, $16, $17)",
+             $12, $13, $14, $15, $16, $17, $18, $19)",
         )
         .bind(&tenant_application_id)
         .bind(&runtime_app_id)
@@ -770,9 +901,23 @@ pub async fn provision_tenant_application(
         .bind(now)
         .bind(command.deploy_application_id.as_deref())
         .bind(command.provisioning_idempotency_key.as_deref())
+        .bind(attributes.scope.scope.as_str())
+        .bind(attributes.scope.owner_user_id.as_deref())
         .execute(pg)
         .await
         .map_err(|error| format!("insert tenant application failed: {error}"))?;
+    }
+
+    // A write changes the installation's release scope (creation) or its owner
+    // pointer, so a cached level for this anchor must not survive it. The cache
+    // is keyed by the token subject — the deploy application anchor.
+    if let Some(anchor) = command
+        .deploy_application_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        invalidate_installation_scope(&command.tenant_id, anchor);
     }
 
     resolve_tenant_application(
@@ -991,6 +1136,7 @@ async fn clear_postgres_tenant_application_competing_rows(
         "DELETE FROM iam_application_installation \
          WHERE tenant_id = $1 \
            AND id <> $2 \
+           AND ownership_scope = 'TENANT' \
            AND ( \
              app_id = $3 OR \
              (organization_id = $4 AND instance_key = $5) \
@@ -1068,7 +1214,11 @@ async fn upsert_tenant_application_row(
          ON CONFLICT (id) DO UPDATE SET \
            app_id = EXCLUDED.app_id, \
            tenant_id = EXCLUDED.tenant_id, \
-           organization_id = EXCLUDED.organization_id, \
+           organization_id = CASE \
+             WHEN iam_application_installation.ownership_scope = 'TENANT' \
+               THEN EXCLUDED.organization_id \
+             ELSE iam_application_installation.organization_id \
+           END, \
            instance_key = EXCLUDED.instance_key, \
            display_name = EXCLUDED.display_name, \
            environment = EXCLUDED.environment, \
@@ -1105,6 +1255,15 @@ async fn upsert_tenant_application_row(
     .execute(pg)
     .await
     .map_err(|error| format!("upsert tenant application failed: {error}"))?;
+
+    if let Some(anchor) = command
+        .deploy_application_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        invalidate_installation_scope(&command.tenant_id, anchor);
+    }
 
     Ok(tenant_application_id)
 }
@@ -1261,7 +1420,7 @@ pub async fn resolve_tenant_application(
 ) -> Result<Option<TenantApplication>, String> {
     let row = if let Some(id) = tenant_application_id.filter(|value| !crate::is_blank(Some(value))) {
         sqlx::query(
-            "SELECT id, app_id, tenant_id, organization_id, instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
+            "SELECT id, app_id, tenant_id, organization_id, instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id, ownership_scope, owner_user_id \
              FROM iam_application_installation \
              WHERE tenant_id = $1 AND id = $2 \
              LIMIT 1",
@@ -1272,7 +1431,7 @@ pub async fn resolve_tenant_application(
         .await
     } else if let Some(app_id) = runtime_app_id.filter(|value| !crate::is_blank(Some(value))) {
         sqlx::query(
-            "SELECT id, app_id, tenant_id, organization_id, instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
+            "SELECT id, app_id, tenant_id, organization_id, instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id, ownership_scope, owner_user_id \
              FROM iam_application_installation \
              WHERE tenant_id = $1 AND app_id = $2 \
              LIMIT 1",
@@ -1283,7 +1442,7 @@ pub async fn resolve_tenant_application(
         .await
     } else if let Some(key) = instance_key.filter(|value| !crate::is_blank(Some(value))) {
         sqlx::query(
-            "SELECT id, app_id, tenant_id, organization_id, instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
+            "SELECT id, app_id, tenant_id, organization_id, instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id, ownership_scope, owner_user_id \
              FROM iam_application_installation \
              WHERE tenant_id = $1 AND instance_key = $2 \
              LIMIT 1",
@@ -1316,7 +1475,7 @@ pub async fn resolve_tenant_application_by_deploy_application_id(
     }
 
     let row = sqlx::query(
-        "SELECT id, app_id, tenant_id, organization_id, instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
+        "SELECT id, app_id, tenant_id, organization_id, instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id, ownership_scope, owner_user_id \
          FROM iam_application_installation \
          WHERE tenant_id = $1 AND deploy_application_id = $2 \
          LIMIT 1",
@@ -1359,6 +1518,57 @@ pub fn intersect_permission_scopes(
     Ok(granted)
 }
 
+/// Resolves the release scope of the installation that serves one deploy
+/// application.
+///
+/// `APPLICATION_IDENTITY_SPEC.md` §4.1: the installation is the authority for
+/// the scope, and the scope decides the token claims and the data-plane
+/// isolation key. This is the read the resolver uses to attach the scope to a
+/// principal; it is cached positively because the value is immutable for the
+/// installation's lifetime, and a missing row is **not** cached so a freshly
+/// provisioned installation becomes visible immediately.
+///
+/// # Errors
+///
+/// Returns an error when the lookup itself fails, and `Ok(None)` when the anchor
+/// names no installation of the tenant (the caller then treats the credential as
+/// legacy and derives the level from its organization scope).
+pub async fn resolve_installation_ownership_scope(
+    pg: &PgPool,
+    tenant_id: &str,
+    deploy_application_id: &str,
+) -> Result<Option<ApplicationOwnershipScope>, String> {
+    if crate::is_blank(Some(tenant_id)) || crate::is_blank(Some(deploy_application_id)) {
+        return Ok(None);
+    }
+    let anchor = deploy_application_id.trim();
+    if let Some(scope) = get_installation_scope(tenant_id, anchor) {
+        return Ok(Some(scope));
+    }
+    let stored = sqlx::query_scalar::<_, String>(
+        "SELECT ownership_scope FROM iam_application_installation \
+         WHERE tenant_id = $1 AND deploy_application_id = $2 LIMIT 1",
+    )
+    .bind(tenant_id)
+    .bind(anchor)
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| format!("load installation release scope failed: {error}"))?;
+    let Some(stored) = stored else {
+        return Ok(None);
+    };
+    // The CHECK constraint keeps the column inside the vocabulary; an
+    // unparsable value means the row predates the constraint, and guessing a
+    // level for it would be worse than refusing to name one.
+    let scope = ApplicationOwnershipScope::parse(&stored).ok_or_else(|| {
+        format!(
+            "installation of deploy application {anchor} of tenant {tenant_id} carries an unknown ownership_scope {stored:?}"
+        )
+    })?;
+    insert_installation_scope(tenant_id, anchor, scope);
+    Ok(Some(scope))
+}
+
 pub fn tenant_application_to_json(app: &TenantApplication) -> Value {
     json!({
         "tenantApplicationId": app.id,
@@ -1373,6 +1583,8 @@ pub fn tenant_application_to_json(app: &TenantApplication) -> Value {
         "primaryDomain": app.primary_domain,
         "accessPermissions": app.access_permissions,
         "deployApplicationId": app.deploy_application_id,
+        "ownershipScope": app.ownership_scope.as_str(),
+        "ownerUserId": app.owner_user_id,
         "oauthRelyingParty": crate::oauth_relying_party_registration::oauth_relying_party_summary(
             &app.runtime_config
         ),
@@ -1410,7 +1622,7 @@ async fn find_tenant_application_by_runtime_app_id(
     runtime_app_id: &str,
 ) -> Result<Option<TenantApplication>, String> {
     let row = sqlx::query(
-        "SELECT id, app_id, tenant_id, organization_id, instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
+        "SELECT id, app_id, tenant_id, organization_id, instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id, ownership_scope, owner_user_id \
          FROM iam_application_installation \
          WHERE tenant_id = $1 AND app_id = $2 \
          ORDER BY updated_at DESC NULLS LAST, id ASC \
@@ -1483,6 +1695,15 @@ fn map_tenant_application_row(row: sqlx::postgres::PgRow) -> TenantApplication {
         runtime_config: json_value_from_row(&row, 10),
         application_type: row.get(11),
         deploy_application_id: row.get(12),
+        // The CHECK constraint guarantees a parseable value for a live row; the
+        // fallback keeps a SQLite-era fixture (column absent) readable as the
+        // documented default instead of unwrapping.
+        ownership_scope: row
+            .try_get::<String, _>(13)
+            .ok()
+            .and_then(|value| ApplicationOwnershipScope::parse(&value))
+            .unwrap_or(ApplicationOwnershipScope::DEFAULT),
+        owner_user_id: row.try_get::<Option<String>, _>(14).ok().flatten(),
     }
 }
 
@@ -1762,7 +1983,109 @@ mod tests {
             access_permissions: vec!["iam.self".to_owned()],
             runtime_config: json!({}),
             deploy_application_id: deploy_application_id.map(str::to_owned),
+            ownership_scope: ApplicationOwnershipScope::Tenant,
+            owner_user_id: None,
         }
+    }
+
+    /// The release scope of a provisioned installation is validated against its
+    /// pointer, defaults to `TENANT`, and rejects every mismatched pair before a
+    /// database lookup can run.
+    #[test]
+    fn provision_attributes_carry_a_validated_release_scope() {
+        use crate::application_scope::ApplicationOwnershipScope;
+
+        let mut command = provision_command_fixture();
+        let attributes = resolve_provision_attributes(&command).expect("default scope");
+        assert_eq!(attributes.scope.scope, ApplicationOwnershipScope::Tenant);
+        assert_eq!(attributes.scope.owner_user_id, None);
+
+        command.organization_id = "42".to_owned();
+        command.ownership_scope = Some("ORGANIZATION".to_owned());
+        let attributes = resolve_provision_attributes(&command).expect("organization release");
+        assert_eq!(
+            attributes.scope.scope,
+            ApplicationOwnershipScope::Organization
+        );
+
+        command.organization_id = "0".to_owned();
+        command.ownership_scope = Some("USER".to_owned());
+        command.owner_user_id = Some("user-7".to_owned());
+        let attributes = resolve_provision_attributes(&command).expect("personal release");
+        assert_eq!(attributes.scope.scope, ApplicationOwnershipScope::User);
+        assert_eq!(
+            attributes.scope.owner_user_id.as_deref(),
+            Some("user-7")
+        );
+
+        // A mismatched request fails on its own inputs, before any DB work.
+        command.owner_user_id = None;
+        let error = resolve_provision_attributes(&command).expect_err("owner required");
+        assert!(error.contains("ownerUserId"), "{error}");
+        assert!(is_provision_attribute_error(&error));
+
+        command.ownership_scope = Some("TENANT".to_owned());
+        command.organization_id = "42".to_owned();
+        let error = resolve_provision_attributes(&command).expect_err("tenant needs org 0");
+        assert!(error.contains("TENANT"), "{error}");
+        assert!(is_provision_attribute_error(&error));
+
+        command.ownership_scope = Some("PLATFORM".to_owned());
+        command.organization_id = "0".to_owned();
+        let error = resolve_provision_attributes(&command).expect_err("unknown level");
+        assert!(error.contains("unknown application ownership scope"), "{error}");
+        assert!(is_provision_attribute_error(&error));
+    }
+
+    /// `ownershipScope` and `ownerUserId` are parsed from the camelCase wire
+    /// field, alongside the retired-template-free attributes.
+    #[test]
+    fn parse_provision_command_reads_the_release_scope() {
+        let body = json!({
+            "tenantId": "100001",
+            "organizationId": "0",
+            "instanceKey": "sdkwork_cloudrouter_prod",
+            "environment": "production",
+            "applicationType": "pc",
+            "ownershipScope": "USER",
+            "ownerUserId": "user-9"
+        });
+        let command =
+            parse_tenant_application_provision_command(&body).expect("scope fields parse");
+        assert_eq!(command.ownership_scope.as_deref(), Some("USER"));
+        assert_eq!(command.owner_user_id.as_deref(), Some("user-9"));
+    }
+
+    /// A re-provision that declares a different release scope is a conflict, and
+    /// an omitted scope keeps the stored one.
+    #[test]
+    fn provision_rejects_a_scope_change_on_an_existing_installation() {
+        use crate::application_scope::ApplicationOwnershipScope;
+
+        let mut existing = provision_target_fixture("tapp-personal", "app-a", Some("deploy-a"));
+        existing.ownership_scope = ApplicationOwnershipScope::User;
+        existing.owner_user_id = Some("user-7".to_owned());
+        let requested = ApplicationOwnershipScope::parse("TENANT").expect("tenant");
+        assert_ne!(requested, existing.ownership_scope);
+
+        let mut command = provision_command_fixture();
+        command.ownership_scope = Some("TENANT".to_owned());
+        command.owner_user_id = None;
+        // The comparison the provisioning path performs before the write.
+        assert_ne!(
+            ApplicationOwnershipScope::parse_optional(command.ownership_scope.as_deref())
+                .expect("declared scope"),
+            Some(existing.ownership_scope),
+            "a declared different scope must not be accepted as an update"
+        );
+
+        command.ownership_scope = None;
+        assert_eq!(
+            ApplicationOwnershipScope::parse_optional(command.ownership_scope.as_deref())
+                .expect("absent scope"),
+            None,
+            "an omitted scope keeps the stored release level"
+        );
     }
 
     /// A re-provision of the same deploy application is idempotent: the row
@@ -2180,6 +2503,8 @@ mod tests {
                 }
             }),
             deploy_application_id: Some("deploy-cloudrouter".to_owned()),
+            ownership_scope: None,
+            owner_user_id: None,
             provisioning_idempotency_key: Some("idem-cloudrouter-1".to_owned()),
         }
     }

@@ -16,5 +16,6 @@ namespace SDKWork.Iam.BackendSdk.Models
         public string? TenantApplicationId { get; set; }
         public string? AppId { get; set; }
         public string? InstanceKey { get; set; }
+        public string? OwnershipScope { get; set; }
     }
 }

@@ -48,7 +48,7 @@
     },
     {
       "path": "src/Api/Iam.php",
-      "sha256": "bf86339015d48c97596f1ea122b218af89bdd0c3d7c6d75986967c77e4a9c971"
+      "sha256": "142393dcb07062fc4118fefb1d87e1da13ad643db1813196bbb17c5114c6383e"
     },
     {
       "path": "src/Api/IamOauth.php",
@@ -60,7 +60,7 @@
     },
     {
       "path": "src/Models/AppbaseAccessCredentialCreateCommand.php",
-      "sha256": "28dd3fae5dd20210902b3631c660d8f61a1bcceee5b7d5f4413794c094e05f43"
+      "sha256": "9b2c583dbab2c97bf93f200f702aa94573aab6671202f63cf4b74d81a8f06d9c"
     },
     {
       "path": "src/Models/AppbaseTenantApplicationEnableCommand.php",
@@ -68,7 +68,7 @@
     },
     {
       "path": "src/Models/AppbaseTenantApplicationProvisionCommand.php",
-      "sha256": "b3e23e22e9b3248b05b255686964544a6e175be71b852b44a12517a78f6d8afb"
+      "sha256": "36e99fda7a9d88dfb76069e59d3f916168b699956618c4170ee1e9a5de980785"
     },
     {
       "path": "src/Models/AppbaseTenantApplicationUpdateCommand.php",
@@ -79,12 +79,52 @@
       "sha256": "dd4ee8d5969091906e2afaabd8c7911d99c4f5b518818167ae0a7998a1e7fc5d"
     },
     {
+      "path": "src/Models/IamInstallationCredential.php",
+      "sha256": "22fc4fc9987ffa38bc809e2a2caad6008be1553fccabd16302e1d071392fddbd"
+    },
+    {
+      "path": "src/Models/IamInstallationCredentialCreateCommand.php",
+      "sha256": "da449326caba40a9d3639d644621a5be5a4bcb1ad3f930674044a5a467138e7f"
+    },
+    {
+      "path": "src/Models/IamInstallationCredentialListResponse.php",
+      "sha256": "ed5c93e718a7ffaa9006591d49c7552675dc590a6ec2824a73938f4a1560b818"
+    },
+    {
+      "path": "src/Models/IamInstallationCredentialResponse.php",
+      "sha256": "85a93f2843b5483d19d9df64a1025c07a9689334a78d58101ce21c4701870806"
+    },
+    {
+      "path": "src/Models/IamInstallationCredentialRotateCommand.php",
+      "sha256": "dea18cfca718eee3e6d782337ecc670abc798a0dc28555108b75efe2b19d62f6"
+    },
+    {
+      "path": "src/Models/IamInstallationCredentialWithSecret.php",
+      "sha256": "4d028f3892e515be8371dcdcb1a25d63d090260da920d7c580b0fd59ae5a9ae5"
+    },
+    {
+      "path": "src/Models/IamInstallationEnvironment.php",
+      "sha256": "028f404bb9ad3b1113150f47208ad31c2f73a1f7fed81ee487fed1fcc3c77cfd"
+    },
+    {
+      "path": "src/Models/IamInstallationEnvironmentListResponse.php",
+      "sha256": "908242cb26651a8c48818a62776e3ed55bd284993ae2154d22ad440313eeb295"
+    },
+    {
+      "path": "src/Models/IamInstallationEnvironmentResponse.php",
+      "sha256": "b50a18999c6029c432171b5d189658b9ba8437bc02b33daccf53d322e69264ae"
+    },
+    {
+      "path": "src/Models/IamInstallationEnvironmentUpsertCommand.php",
+      "sha256": "27c41346e550036ceea5cd6f5ae388c3a14e5f5307dfb9fbe3493e19273ed324"
+    },
+    {
       "path": "src/Models/IamOauthClientCreateCommand.php",
       "sha256": "364fcf49abb82c4995ef8c5613ecca1a57a266e16db22ff540ff0fabca78046a"
     },
     {
       "path": "src/Models/IamTenantApplicationManagementProvisionCommand.php",
-      "sha256": "4fe8dc2e12e191e48276a686158ad7f776ea12f116d83a987cb488631b5e1c73"
+      "sha256": "147d7d724a1550389a7bd0582cb6b93226a300d1f07e5a48821103733b02578c"
     },
     {
       "path": "src/Models/IamTenantApplicationManagementUpdateCommand.php",
