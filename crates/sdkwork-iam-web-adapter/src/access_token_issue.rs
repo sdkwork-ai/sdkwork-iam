@@ -594,6 +594,17 @@ fn sign_local_session_token(
     sign_local_session_token_with_ttl(signing_key, token_type, context, LOCAL_TOKEN_TTL_SECONDS)
 }
 
+/// Signs one local dual-token (`auth`/`access`) JWT.
+///
+/// The payload is the identity-only envelope of `IAM_SPEC.md` §5.2. Claim
+/// admission there is closed, and `azp` — the OAuth client id of the installation
+/// credential (`APPLICATION_IDENTITY_SPEC.md` §4) — is not among the admitted
+/// claims, so it is deliberately not signed here. The installation's client
+/// credential remains a registration-plane fact
+/// (`iam_tenant_application.app_id`, overridden by
+/// `runtimeConfig.oauth.relyingParty.clientId`); `iam_session` records the deploy
+/// application anchor only, and signing an unadmitted claim would break the
+/// dual-token claim contract before the table admits it.
 pub(crate) fn sign_local_session_token_with_ttl(
     signing_key: &TenantSigningKey,
     token_type: &str,
@@ -915,6 +926,16 @@ mod tests {
                 "forbidden claim {key} should be absent"
             );
         }
+        // `APPLICATION_IDENTITY_SPEC.md` §4 lists `azp`, but the dual-token
+        // envelope is governed by `IAM_SPEC.md` §5.2, whose claim admission is
+        // closed: every claim outside its required-claims table is forbidden.
+        // The session row carries the deploy application anchor and no client
+        // credential, so this envelope stays without `azp` until that table
+        // admits the claim (see the module report / spec amendment request).
+        assert!(
+            payload.get("azp").is_none(),
+            "azp is not an admitted claim of the dual-token envelope (IAM_SPEC §5.2)"
+        );
         // Scope arrays must no longer be embedded in the local dual-token JWT:
         // they bloat the compact header and trigger HTTP 431 on proxy edges.
         // The authoritative scopes live in the iam_session row and are loaded
