@@ -9,6 +9,18 @@
       "lifecycle_status": "active"
     },
     {
+      "table_name": "iam_application_installation_credential",
+      "owner": "sdkwork-iam",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "iam_application_installation_environment",
+      "owner": "sdkwork-iam",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
       "table_name": "iam_application_template",
       "owner": "sdkwork-iam",
       "compliance_level": "L2",

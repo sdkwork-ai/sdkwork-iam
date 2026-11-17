@@ -6,7 +6,7 @@ Canonical authoritative-server lifecycle assets for `sdkwork-iam` under `DATABAS
 - `moduleId`: `iam`
 - `serviceCode`: `IAM`
 - `tablePrefix`: `iam_`
-- `contract tables`: 65 (all `active`), listed in `contract/schema.yaml`
+- `contract tables`: 67 (all `active`), listed in `contract/schema.yaml`
 - `engine`: PostgreSQL only
 - `baselineStrategy`: `baseline-plus-migrations`
 - `autoMigrate`: disabled by default

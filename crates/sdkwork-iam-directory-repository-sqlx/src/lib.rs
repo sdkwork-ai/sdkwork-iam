@@ -65,6 +65,8 @@ impl IamTables {
     pub const APPLICATION_TEMPLATE: &'static str = "iam_application_template";
     pub const APPLICATION_TEMPLATE_PACKAGE: &'static str = "iam_application_template_package";
     pub const TENANT_APPLICATION: &'static str = "iam_tenant_application";
+    pub const APPLICATION_INSTALLATION_ENVIRONMENT: &'static str = "iam_application_installation_environment";
+    pub const APPLICATION_INSTALLATION_CREDENTIAL: &'static str = "iam_application_installation_credential";
     pub const MODULE_REGISTRY_ENTRY: &'static str = "iam_module_registry_entry";
     pub const MODULE_REGISTRY_SNAPSHOT: &'static str = "iam_module_registry_snapshot";
     pub const CATALOG_MATERIALIZATION: &'static str = "iam_catalog_materialization";
