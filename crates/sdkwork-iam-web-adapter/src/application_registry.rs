@@ -53,6 +53,12 @@ pub struct TenantApplicationProvisionCommand {
     pub primary_domain: Option<String>,
     pub access_permissions: Vec<String>,
     pub runtime_config: Value,
+    /// Deployment application this installation serves. The column carries a
+    /// partial unique index, so the one-to-one relation is enforced by the
+    /// database rather than by convention.
+    pub deploy_application_id: Option<String>,
+    /// Replay-safe key for the cross-module provisioning call.
+    pub provisioning_idempotency_key: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -335,6 +341,15 @@ pub fn parse_tenant_application_provision_command(
         .cloned()
         .unwrap_or_else(|| json!({}));
 
+    let deploy_application_id = read_optional_string(
+        body,
+        &["deployApplicationId", "deploy_application_id"],
+    );
+    let provisioning_idempotency_key = read_optional_string(
+        body,
+        &["provisioningIdempotencyKey", "provisioning_idempotency_key"],
+    );
+
     Ok(TenantApplicationProvisionCommand {
         tenant_id,
         organization_id,
@@ -348,6 +363,8 @@ pub fn parse_tenant_application_provision_command(
         primary_domain,
         access_permissions,
         runtime_config,
+        deploy_application_id,
+        provisioning_idempotency_key,
     })
 }
 
@@ -600,7 +617,9 @@ pub async fn provision_tenant_application(
             "UPDATE iam_tenant_application SET organization_id = $2, template_id = $3, \
              template_version = $4, display_name = $5, environment = $6, application_type = $7, \
              primary_domain = $8, access_permissions_json = $9, runtime_config_json = $10, \
-             last_synced_at = $11, updated_at = $12 \
+             last_synced_at = $11, updated_at = $12, \
+             deploy_application_id = COALESCE($13, deploy_application_id), \
+             provisioning_idempotency_key = COALESCE($14, provisioning_idempotency_key) \
              WHERE id = $1",
         )
         .bind(&tenant_application_id)
@@ -615,6 +634,8 @@ pub async fn provision_tenant_application(
         .bind(Json(&runtime_config))
         .bind(now)
         .bind(now)
+        .bind(command.deploy_application_id.as_deref())
+        .bind(command.provisioning_idempotency_key.as_deref())
         .execute(pg)
         .await
         .map_err(|error| format!("update tenant application failed: {error}"))?;
@@ -623,8 +644,9 @@ pub async fn provision_tenant_application(
             "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, template_id, \
              template_version, instance_key, display_name, environment, application_type, status, \
              primary_domain, domain_config_json, access_permissions_json, runtime_config_json, \
-             provisioned_at, last_synced_at, created_at, updated_at) \
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending_config', $11, '{}'::jsonb, $12, $13, $14, $15, $16, $17)",
+             provisioned_at, last_synced_at, created_at, updated_at, \
+             deploy_application_id, provisioning_idempotency_key) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending_config', $11, '{}'::jsonb, $12, $13, $14, $15, $16, $17, $18, $19)",
         )
         .bind(&tenant_application_id)
         .bind(&runtime_app_id)
@@ -643,6 +665,8 @@ pub async fn provision_tenant_application(
         .bind(now)
         .bind(now)
         .bind(now)
+        .bind(command.deploy_application_id.as_deref())
+        .bind(command.provisioning_idempotency_key.as_deref())
         .execute(pg)
         .await
         .map_err(|error| format!("insert tenant application failed: {error}"))?;
