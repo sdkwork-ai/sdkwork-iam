@@ -16,7 +16,7 @@ This directory hosts IAM SDK families for `sdkwork-iam`.
 | Outbound SDKWork AS (relying parties) | `@sdkwork/iam-open-sdk` | Separate OAuth bearer credential; must not reuse app login TokenManager |
 | Tenant OAuth configuration | `@sdkwork/iam-backend-sdk` + `@sdkwork/iam-pc-admin-oauth` (`SdkworkIamOauthAdminWorkspace`) | Operational `iam.oauth.*` admin (19 resource families, lifecycle + retrieve/detail); provider catalog create/update via PC admin |
 
-Relying-party registration for SDKWork OAuth uses `iam_tenant_application.runtimeConfig.oauth.relyingParty` (see spec §4.2).
+Relying-party registration for SDKWork OAuth uses `iam_application_installation.runtimeConfig.oauth.relyingParty` (see spec §4.2).
 
 ## Generation
 

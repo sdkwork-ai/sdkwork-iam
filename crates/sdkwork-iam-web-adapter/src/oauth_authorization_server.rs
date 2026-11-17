@@ -45,6 +45,10 @@ pub struct RelyingPartyConfig {
 pub struct ResolvedRelyingParty {
     pub tenant_id: String,
     pub app_id: String,
+    /// Installations' deploy application anchor (`APPLICATION_IDENTITY_SPEC.md`
+    /// §2). A session issued from this client is bound to it; `None` means the
+    /// registration's installation is not linked and no session may be issued.
+    pub deploy_application_id: Option<String>,
     /// OAuth client id this registration answers to: the declared
     /// `clientId`, or `app_id` when none is declared.
     pub client_id: String,
@@ -119,6 +123,23 @@ pub fn parse_relying_party_config(runtime_config: &Value) -> RelyingPartyConfig 
         .unwrap_or_default()
 }
 
+/// OAuth client id a registration answers to: its declared
+/// `runtimeConfig.oauth.relyingParty.clientId`, or the tenant application
+/// `app_id` when the registration declares none (`IAM_OAUTH_SPEC.md` §4.2).
+///
+/// This value is the token's authorized party (`azp`) *and* the client the
+/// authorization code / refresh grant is issued to, so the fallback lives in one
+/// place instead of being re-derived per call site.
+fn resolve_relying_party_client_id(config: &RelyingPartyConfig, app_id: &str) -> String {
+    config
+        .client_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or(app_id)
+        .to_owned()
+}
+
 pub async fn resolve_relying_party_client(
     pg: &PgPool,
     client_id: &str,
@@ -131,8 +152,8 @@ pub async fn resolve_relying_party_client(
     // accepting either spelling for one registration.
     let rows = if let Some(tenant_id) = tenant_hint.filter(|value| !value.is_empty()) {
         sqlx::query(
-            "SELECT tenant_id, app_id, runtime_config_json \
-             FROM iam_tenant_application \
+            "SELECT tenant_id, app_id, runtime_config_json, deploy_application_id \
+             FROM iam_application_installation \
              WHERE tenant_id = $2 AND status = 'enabled' \
                AND ( \
                  (runtime_config_json #>> '{oauth,relyingParty,clientId}') = $1 \
@@ -149,8 +170,8 @@ pub async fn resolve_relying_party_client(
         .await
     } else {
         sqlx::query(
-            "SELECT tenant_id, app_id, runtime_config_json \
-             FROM iam_tenant_application \
+            "SELECT tenant_id, app_id, runtime_config_json, deploy_application_id \
+             FROM iam_application_installation \
              WHERE status = 'enabled' \
                AND ( \
                  (runtime_config_json #>> '{oauth,relyingParty,clientId}') = $1 \
@@ -181,22 +202,21 @@ pub async fn resolve_relying_party_client(
     let tenant_id: String = row.get(0);
     let app_id: String = row.get(1);
     let runtime_config = runtime_config_json_from_row(row, 2);
+    let deploy_application_id: Option<String> = row.get(3);
+    let deploy_application_id = deploy_application_id
+        .map(|value| value.trim().to_owned())
+        .filter(|value| !value.is_empty());
     let config = parse_relying_party_config(&runtime_config);
     if !config.enabled {
         return Err("OAuth relying party is disabled for this application".to_string());
     }
 
-    let resolved_client_id = config
-        .client_id
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .unwrap_or(app_id.as_str())
-        .to_owned();
+    let resolved_client_id = resolve_relying_party_client_id(&config, &app_id);
 
     Ok(ResolvedRelyingParty {
         tenant_id,
         app_id,
+        deploy_application_id,
         client_id: resolved_client_id,
         config,
     })
@@ -516,6 +536,7 @@ pub struct RedeemedAuthorizationContext {
     pub tenant_id: String,
     pub organization_id: String,
     pub user_id: String,
+    /// Deploy application anchor the issued session is bound to.
     pub app_id: String,
     pub scopes: Vec<String>,
 }
@@ -541,6 +562,15 @@ pub async fn redeem_authorization_code_session_context(
             "OAuth authorization code was not issued for a desktop redirect surface".to_string(),
         );
     }
+    // The session this code becomes is bound to the installation's deploy
+    // application anchor; a registration whose installation is not linked cannot
+    // name one, so the redemption fails closed instead of issuing an IAM app id.
+    let deploy_application_id = client.deploy_application_id.clone().ok_or_else(|| {
+        "installation is not bound to a deploy application (安装未绑定部署应用): the OAuth client's \
+         installation has no deployApplicationId; provision it with deployApplicationId before \
+         issuing a session"
+            .to_string()
+    })?;
     let approved = load_approved_authorization_code(
         pg,
         client,
@@ -582,7 +612,7 @@ pub async fn redeem_authorization_code_session_context(
         tenant_id: approved.tenant_id,
         organization_id: approved.organization_id,
         user_id: approved.user_id,
-        app_id: client.app_id.clone(),
+        app_id: deploy_application_id,
         scopes: parse_scope_json(&approved.scopes_json),
     })
 }
@@ -1218,26 +1248,35 @@ fn parse_oauth_state_from_return_path(return_path: &str) -> Option<String> {
 async fn sign_oauth_access_token(
     pg: &PgPool,
     context: &IamAppContext,
-    audience: &str,
+    client_id: &str,
 ) -> Result<String, String> {
-    let token = sign_oauth_access_token_payload(pg, context, audience).await?;
+    let token = sign_oauth_access_token_payload(pg, context, client_id).await?;
     // IAM_SPEC §5.2 issuer-side assertion: an OAuth access token is also a
     // bearer credential rendered into the entrypoint header block.
     crate::access_token_issue::ensure_entrypoint_token_budget(&token)?;
     Ok(token)
 }
 
-async fn sign_oauth_access_token_payload(
-    pg: &PgPool,
+/// Claims of one OAuth access token.
+///
+/// `client_id` is the OAuth client id of the installation credential the token is
+/// issued to (`ResolvedRelyingParty::client_id`: the registration's declared
+/// `runtimeConfig.oauth.relyingParty.clientId`, or its tenant application
+/// `app_id` when none is declared). `APPLICATION_IDENTITY_SPEC.md` §4 requires it
+/// as `azp` — the authorized party — so the client credential stays a claim of
+/// its own instead of being inferred from the deployment identity. `app_id` is
+/// still the installation's deploy application anchor (§2), never the client id.
+fn build_oauth_access_token_payload(
     context: &IamAppContext,
-    audience: &str,
-) -> Result<String, String> {
-    let issued_at = current_unix_seconds();
-    let expires_at = issued_at + OAUTH_ACCESS_TOKEN_TTL_SECONDS;
-    let payload = json!({
+    client_id: &str,
+    issued_at: i64,
+    expires_at: i64,
+) -> Value {
+    json!({
         "app_id": context.app_id,
-        "aud": audience,
+        "aud": client_id,
         "auth_level": auth_level_to_string(&context.auth_level),
+        "azp": client_id,
         "deployment_mode": deployment_mode_to_string(&context.deployment_mode),
         "environment": environment_to_string(&context.environment),
         "exp": expires_at,
@@ -1252,7 +1291,17 @@ async fn sign_oauth_access_token_payload(
         "token_type": "oauth",
         "token_version": stamp_token_version(),
         "user_id": context.user_id,
-    });
+    })
+}
+
+async fn sign_oauth_access_token_payload(
+    pg: &PgPool,
+    context: &IamAppContext,
+    client_id: &str,
+) -> Result<String, String> {
+    let issued_at = current_unix_seconds();
+    let expires_at = issued_at + OAUTH_ACCESS_TOKEN_TTL_SECONDS;
+    let payload = build_oauth_access_token_payload(context, client_id, issued_at, expires_at);
 
     if let Ok(Some(rs256)) =
         sdkwork_iam_bootstrap::load_postgres_oauth_rs256_signing_key(pg, &context.tenant_id).await
@@ -1471,6 +1520,7 @@ mod tests {
         let client = ResolvedRelyingParty {
             tenant_id: "100001".to_string(),
             app_id: "app_forum".to_string(),
+            deploy_application_id: Some("deploy_forum".to_string()),
             client_id: "app_forum".to_string(),
             config: RelyingPartyConfig {
                 enabled: true,
@@ -1567,6 +1617,7 @@ mod tests {
         let client = ResolvedRelyingParty {
             tenant_id: "100001".to_string(),
             app_id: "app_forum".to_string(),
+            deploy_application_id: Some("deploy_forum".to_string()),
             client_id: "app_forum".to_string(),
             config: RelyingPartyConfig {
                 enabled: true,
@@ -1585,6 +1636,7 @@ mod tests {
         ResolvedRelyingParty {
             tenant_id: "100001".to_string(),
             app_id: "app_forum".to_string(),
+            deploy_application_id: Some("deploy_forum".to_string()),
             client_id: "app_forum".to_string(),
             config: RelyingPartyConfig {
                 enabled: true,
@@ -1617,6 +1669,7 @@ mod tests {
         ResolvedRelyingParty {
             tenant_id: "100001".to_string(),
             app_id: "sdkwork-iam".to_string(),
+            deploy_application_id: Some("deploy_desktop".to_string()),
             client_id: "sdkwork-iam".to_string(),
             config: RelyingPartyConfig {
                 enabled: true,
@@ -1757,5 +1810,122 @@ mod tests {
             &client,
         )
         .expect("loopback redirect uri with ephemeral port must validate");
+    }
+
+    fn sample_oauth_token_context() -> IamAppContext {
+        IamAppContext::new(
+            "100001".to_owned(),
+            Some("0"),
+            "42".to_owned(),
+            "sdkwork-session-oauth".to_owned(),
+            // The installation's deploy application anchor is deliberately
+            // different from the relying party's OAuth client id: the two
+            // identities must never be conflated in the claims.
+            "deploy-cloudrouter".to_owned(),
+            Environment::Prod,
+            DeploymentMode::Saas,
+            AuthLevel::Password,
+            vec!["tenant:100001".to_owned()],
+            vec!["openid".to_owned(), "profile".to_owned()],
+        )
+    }
+
+    fn token_claims(token: &str) -> Value {
+        let payload = token
+            .split('.')
+            .nth(1)
+            .expect("a compact JWT carries a payload segment");
+        serde_json::from_slice(&URL_SAFE_NO_PAD.decode(payload).expect("payload should decode"))
+            .expect("payload should parse")
+    }
+
+    /// Renders the payload the same way the issuer does and decodes the resulting
+    /// compact JWT, so the assertion covers the signed wire form rather than the
+    /// in-memory JSON value.
+    fn rendered_oauth_token_claims(client_id: &str) -> Value {
+        let issued_at = 1_700_000_000_i64;
+        let payload = build_oauth_access_token_payload(
+            &sample_oauth_token_context(),
+            client_id,
+            issued_at,
+            issued_at + OAUTH_ACCESS_TOKEN_TTL_SECONDS,
+        );
+        let token = sign_jwt(
+            b"oauth-access-token-test-signing-secret",
+            &json!({"alg": "HS256", "kid": "100001:oauth-hs256:test", "typ": "JWT"}),
+            &payload,
+        )
+        .expect("the test token should sign");
+        token_claims(&token)
+    }
+
+    /// `APPLICATION_IDENTITY_SPEC.md` §4: an access token issued for an
+    /// application instance carries `azp` = the OAuth client id of the
+    /// installation credential. Before this claim existed the SDKWork web
+    /// framework could not resolve `OAuthPrincipalRecord.client_id` from an IAM
+    /// OAuth token at all (`optional_claim(metadata, "client_id").or_else(azp)`).
+    #[test]
+    fn oauth_access_token_carries_azp_equal_to_the_oauth_client_id() {
+        let claims = rendered_oauth_token_claims("cloudrouter-desktop");
+
+        assert_eq!(
+            claims["azp"], "cloudrouter-desktop",
+            "azp must be signed as the OAuth client id of the installation credential"
+        );
+        assert_eq!(
+            claims["app_id"], "deploy-cloudrouter",
+            "app_id must stay the installation's deploy application anchor"
+        );
+        assert_ne!(
+            claims["azp"], claims["app_id"],
+            "the OAuth client id must not be conflated with the deploy application anchor"
+        );
+        assert_eq!(
+            claims["aud"], "cloudrouter-desktop",
+            "aud names the client the authorization code was issued to"
+        );
+        assert_eq!(claims["sub"], "42");
+        assert_eq!(claims["session_id"], "sdkwork-session-oauth");
+        assert_eq!(claims["token_type"], "oauth");
+        assert_eq!(claims["iss"], oauth_issuer_base_url());
+        assert_eq!(claims["tenant_id"], "100001");
+    }
+
+    /// The `azp` value comes from the registration's declared
+    /// `oauth.relyingParty.clientId`, falling back to the tenant application
+    /// `app_id` only when the registration declares none — a blank override must
+    /// not sign an empty authorized party.
+    #[test]
+    fn relying_party_client_id_resolution_prefers_the_declared_client_id() {
+        let declared = parse_relying_party_config(&json!({
+            "oauth": { "relyingParty": { "clientId": "birdcoder", "enabled": true } }
+        }));
+        assert_eq!(
+            resolve_relying_party_client_id(&declared, "sdkwork-birdcoder"),
+            "birdcoder"
+        );
+
+        let undeclared = parse_relying_party_config(&json!({
+            "oauth": { "relyingParty": { "enabled": true } }
+        }));
+        assert_eq!(
+            resolve_relying_party_client_id(&undeclared, "sdkwork-birdcoder"),
+            "sdkwork-birdcoder",
+            "a registration without a clientId answers to its tenant application app_id"
+        );
+
+        let blank = parse_relying_party_config(&json!({
+            "oauth": { "relyingParty": { "clientId": "   ", "enabled": true } }
+        }));
+        assert_eq!(
+            resolve_relying_party_client_id(&blank, "sdkwork-birdcoder"),
+            "sdkwork-birdcoder",
+            "a blank clientId must not sign an empty azp"
+        );
+
+        let resolved = resolve_relying_party_client_id(&declared, "sdkwork-birdcoder");
+        let claims = rendered_oauth_token_claims(&resolved);
+        assert_eq!(claims["azp"], "birdcoder");
+        assert_ne!(claims["azp"], claims["app_id"]);
     }
 }

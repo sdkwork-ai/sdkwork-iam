@@ -56,8 +56,6 @@ function explicitBootstrapPermission(operationId) {
     // the organization-scoped active-membership check on top.
     case 'organizations.members.list':
       return 'iam.memberships.read';
-    case 'applications.register':
-      return 'iam.applications.register';
     case 'tenantApplications.create':
       return 'iam.tenant_applications.provision';
     case 'tenantApplications.list':
@@ -74,6 +72,17 @@ function explicitBootstrapPermission(operationId) {
       return 'iam.tenant_applications.update';
     case 'tenantApplications.enable':
       return 'iam.tenant_applications.enable';
+    // Environments and their OAuth credentials are installation attributes; they
+    // keep the existing installation-update boundary instead of seeding a new
+    // permission code (and therefore never widen who can reach them).
+    case 'tenantApplications.environments.list':
+    case 'tenantApplications.environments.update':
+    case 'tenantApplications.environments.delete':
+    case 'tenantApplications.credentials.list':
+    case 'tenantApplications.credentials.create':
+    case 'tenantApplications.credentials.rotate':
+    case 'tenantApplications.credentials.revoke':
+      return 'iam.tenant_applications.update';
     case 'accessCredentials.create':
       return 'iam.access_credentials.create';
     case 'serviceAccounts.credentials.create':

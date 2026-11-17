@@ -2,7 +2,7 @@ use axum::body::Body;
 use axum::http::{Method, Request, StatusCode};
 use http_body_util::BodyExt;
 use sdkwork_iam_web_adapter::{
-    ensure_platform_tenant_application, iam_wire_result_code, platform_runtime_app_id_for_tenant,
+    ensure_platform_tenant_application_with_deploy_application, iam_wire_result_code,
 };
 use sdkwork_web_core::bootstrap_access_token_jwt;
 use serde_json::{json, Value};
@@ -188,7 +188,7 @@ async fn ensure_default_credential_entry_tenant() {
     sdkwork_iam_bootstrap::upsert_postgres_default_subject(&pg)
         .await
         .expect("default credential entry tenant subject");
-    ensure_platform_tenant_application(&pg, "100001")
+    ensure_platform_tenant_application_with_deploy_application(&pg, "100001", test_deploy_application_id("100001").as_str())
         .await
         .expect("default credential entry tenant application");
 }
@@ -359,24 +359,33 @@ async fn request_open_registration_json(
     .await
 }
 
+/// Deploy application anchor of a PostgreSQL test tenant.
+///
+/// Access tokens name the installation by its anchor
+/// (`APPLICATION_IDENTITY_SPEC.md` §4), so a fixture token and the installation
+/// row it authenticates against must use the same value.
+fn test_deploy_application_id(tenant_id: &str) -> String {
+    format!("deploy_{tenant_id}")
+}
+
 fn test_bootstrap_access_token() -> String {
     bootstrap_access_token_jwt(
         CONFIGURED_TENANT_ID,
-        platform_runtime_app_id_for_tenant(CONFIGURED_TENANT_ID).as_str(),
+        test_deploy_application_id(CONFIGURED_TENANT_ID).as_str(),
     )
 }
 
 fn test_open_registration_bootstrap_access_token() -> String {
     bootstrap_access_token_jwt(
         "100001",
-        platform_runtime_app_id_for_tenant("100001").as_str(),
+        test_deploy_application_id("100001").as_str(),
     )
 }
 
 fn test_bootstrap_access_token_for_tenant(tenant_id: &str) -> String {
     bootstrap_access_token_jwt(
         tenant_id,
-        platform_runtime_app_id_for_tenant(tenant_id).as_str(),
+        test_deploy_application_id(tenant_id).as_str(),
     )
 }
 
@@ -856,13 +865,29 @@ async fn local_app_router_serves_oauth_device_authorization_creation() {
     let qr_content = body["data"]["qrContent"]["content"]
         .as_str()
         .expect("OAuth device authorization response must include web QR content");
-    assert_eq!(body["data"]["qrContent"]["mode"], "fallback_url");
-    assert_eq!(body["data"]["fallbackUrl"], qr_content);
+    // Two intentionally different entries exist:
+    // - `qrContent.content` is the URL the scanned phone opens: the H5 login
+    //   page `/auth/login?...&scan_source=qr`
+    //   (`build_oauth_device_authorization_h5_entry_url`), mode `url`.
+    // - `fallbackUrl` is the desktop/browser QR entry
+    //   `/auth/qr/<sessionKey>?...&scan_source=browser`
+    //   (`build_oauth_device_authorization_entry_url`).
+    assert_eq!(body["data"]["qrContent"]["mode"], "url");
+    let fallback_url = body["data"]["fallbackUrl"]
+        .as_str()
+        .expect("OAuth device authorization response must include fallbackUrl");
     assert!(
         qr_content.starts_with("http://") || qr_content.starts_with("https://"),
         "OAuth device authorization content must be a mobile-openable web URL: {qr_content}"
     );
-    assert!(qr_content.contains("/auth/qr/"));
+    assert!(
+        qr_content.contains("/auth/login?"),
+        "the scanned QR must open the H5 scan-login page: {qr_content}"
+    );
+    assert!(
+        fallback_url.contains("/auth/qr/"),
+        "the browser fallback must be the QR entry route: {fallback_url}"
+    );
     assert!(
         body["data"]["pollSecret"]
             .as_str()
@@ -871,6 +896,11 @@ async fn local_app_router_serves_oauth_device_authorization_creation() {
     );
     assert!(qr_content.contains(&format!("session_key={session_key}")));
     assert!(qr_content.contains("purpose=login"));
+    assert!(qr_content.contains("scan_source=qr"));
+    assert!(
+        fallback_url.contains(&format!("session_key={session_key}")),
+        "the browser fallback must carry the session key: {fallback_url}"
+    );
     assert!(
         !qr_content.contains("/app/v3/api/oauth/device_authorizations"),
         "OAuth device authorization content must not point at the status API: {qr_content}"
@@ -899,9 +929,25 @@ async fn local_app_router_builds_oauth_device_entry_from_request_origin() {
     let qr_content = body["data"]["qrContent"]["content"]
         .as_str()
         .expect("OAuth device authorization response must include web QR content");
+    // `qrContent.content` is the H5 scan-login entry the phone opens after
+    // scanning (`/auth/login?session_key=...&purpose=login&scan_source=qr`,
+    // `build_oauth_device_authorization_h5_entry_url`), not the browser QR entry
+    // `/auth/qr/<sessionKey>` — that one is `fallbackUrl`
+    // (`build_oauth_device_authorization_entry_url`). Both branches resolve their
+    // origin from the request when no explicit origin env is configured, so the
+    // request `Origin` header must appear in both.
     assert!(
-        qr_content.starts_with("https://chat.example.test/auth/qr/"),
+        qr_content.starts_with("https://chat.example.test/auth/login?"),
         "OAuth device authorization content must use the browser origin when available: {qr_content}"
+    );
+    assert!(qr_content.contains("purpose=login"));
+    assert!(qr_content.contains("scan_source=qr"));
+    let fallback_url = body["data"]["fallbackUrl"]
+        .as_str()
+        .expect("OAuth device authorization response must include fallbackUrl");
+    assert!(
+        fallback_url.starts_with("https://chat.example.test/auth/qr/"),
+        "the browser QR fallback must use the request origin: {fallback_url}"
     );
     assert!(
         !qr_content.contains("poll_secret=") || qr_content.contains("#poll_secret="),
@@ -937,7 +983,12 @@ async fn local_app_router_serves_password_login_with_app_context() {
     assert!(body.get("userInfo").is_none());
     assert!(body.get("shardingContext").is_none());
     assert!(body.get("token").is_none());
-    assert_eq!(body["context"]["appId"], "app_tenant_configured");
+    // The session is bound to the installation's deploy application anchor, not
+    // to the IAM runtime app id (`APPLICATION_IDENTITY_SPEC.md` §4).
+    assert_eq!(
+        body["context"]["appId"],
+        test_deploy_application_id(CONFIGURED_TENANT_ID)
+    );
     assert_eq!(body["context"]["tenantId"], CONFIGURED_TENANT_ID);
     assert_eq!(
         body["context"]["organizationId"],
@@ -2315,7 +2366,7 @@ async fn local_app_router_ephemeral_password_reset_survives_router_rebuild() {
         Some(
             bootstrap_access_token_jwt(
                 tenant_id.as_str(),
-                platform_runtime_app_id_for_tenant(&tenant_id).as_str(),
+                test_deploy_application_id(&tenant_id).as_str(),
             )
             .as_str(),
         ),
@@ -2767,7 +2818,7 @@ async fn local_app_router_resets_password_only_with_valid_reset_token_and_code()
         Some(
             bootstrap_access_token_jwt(
                 tenant_id.as_str(),
-                platform_runtime_app_id_for_tenant(&tenant_id).as_str(),
+                test_deploy_application_id(&tenant_id).as_str(),
             )
             .as_str(),
         ),
@@ -2792,7 +2843,7 @@ async fn local_app_router_resets_password_only_with_valid_reset_token_and_code()
         Some(
             bootstrap_access_token_jwt(
                 tenant_id.as_str(),
-                platform_runtime_app_id_for_tenant(&tenant_id).as_str(),
+                test_deploy_application_id(&tenant_id).as_str(),
             )
             .as_str(),
         ),
@@ -3717,7 +3768,7 @@ async fn prepare_open_registration_database() {
     sdkwork_iam_bootstrap::upsert_postgres_default_subject(&pg)
         .await
         .expect("default IAM subject should be available for open registration tests");
-    ensure_platform_tenant_application(&pg, DEFAULT_OPEN_REGISTRATION_TENANT_ID)
+    ensure_platform_tenant_application_with_deploy_application(&pg, DEFAULT_OPEN_REGISTRATION_TENANT_ID, test_deploy_application_id(DEFAULT_OPEN_REGISTRATION_TENANT_ID).as_str())
         .await
         .expect("platform tenant application should be available for open registration tests");
 }
@@ -3755,7 +3806,7 @@ async fn delete_tenant_integration_fixture(pg: &sqlx::PgPool, tenant_id: &str) {
         "DELETE FROM iam_tenant_member WHERE tenant_id = $1",
         "DELETE FROM iam_user WHERE tenant_id = $1",
         "DELETE FROM iam_tenant_signing_key WHERE tenant_id = $1",
-        "DELETE FROM iam_tenant_application WHERE tenant_id = $1",
+        "DELETE FROM iam_application_installation WHERE tenant_id = $1",
         "DELETE FROM iam_tenant WHERE id = $1 OR code = $1",
     ] {
         let _ = sqlx::query(statement).bind(tenant_id).execute(pg).await;
@@ -4130,7 +4181,7 @@ async fn seed_login_account_for_tenant(
     use argon2::Argon2;
 
     let pg = postgres_pool_for_tests().await;
-    ensure_platform_tenant_application(&pg, tenant_id)
+    ensure_platform_tenant_application_with_deploy_application(&pg, tenant_id, test_deploy_application_id(tenant_id).as_str())
         .await
         .expect("platform tenant application should be available for login tests");
     let password_hash = Argon2::default()
@@ -4242,7 +4293,7 @@ async fn seed_cross_tenant_login_account(email: &str, password: &str) {
             .await
             .expect("provision cross-tenant login signing key");
 
-        ensure_platform_tenant_application(&pg, tenant_id)
+        ensure_platform_tenant_application_with_deploy_application(&pg, tenant_id, test_deploy_application_id(tenant_id).as_str())
             .await
             .expect("platform tenant application should be available for cross-tenant login tests");
 
@@ -4324,7 +4375,7 @@ async fn local_app_router_open_registration_defaults_to_canonical_tenant_with_mu
         sdkwork_iam_bootstrap::ensure_postgres_tenant_signing_key(&pg, tenant_id)
             .await
             .expect("provision open registration tenant signing key");
-        ensure_platform_tenant_application(&pg, tenant_id)
+        ensure_platform_tenant_application_with_deploy_application(&pg, tenant_id, test_deploy_application_id(tenant_id).as_str())
             .await
             .expect("provision open registration tenant application");
     }
@@ -4414,7 +4465,7 @@ async fn local_app_router_open_registration_defaults_to_canonical_tenant_with_mu
         Some(
             bootstrap_access_token_jwt(
                 SECONDARY_TENANT_ID,
-                platform_runtime_app_id_for_tenant(SECONDARY_TENANT_ID).as_str(),
+                test_deploy_application_id(SECONDARY_TENANT_ID).as_str(),
             )
             .as_str(),
         ),
@@ -4429,7 +4480,7 @@ async fn local_app_router_open_registration_defaults_to_canonical_tenant_with_mu
         None,
         bootstrap_access_token_jwt(
             SECONDARY_TENANT_ID,
-            platform_runtime_app_id_for_tenant(SECONDARY_TENANT_ID).as_str(),
+            test_deploy_application_id(SECONDARY_TENANT_ID).as_str(),
         )
         .as_str(),
     )
@@ -4487,7 +4538,7 @@ async fn local_app_router_rejects_cross_tenant_duplicate_account_without_bootstr
         Some(
             bootstrap_access_token_jwt(
                 SECONDARY_TENANT_ID,
-                platform_runtime_app_id_for_tenant(SECONDARY_TENANT_ID).as_str(),
+                test_deploy_application_id(SECONDARY_TENANT_ID).as_str(),
             )
             .as_str(),
         ),
@@ -4668,15 +4719,20 @@ async fn local_app_router_current_session_persists_refreshed_permission_scopes()
         "current session should expose live RBAC permission scopes, got: {context_permission_scope:?}"
     );
 
-    let persisted_scopes: sqlx::types::Json<Value> = sqlx::query_scalar(
+    // `iam_session.permission_scope_json` is a TEXT column
+    // (`database/ddl/baseline/postgres/0001_iam_baseline.sql`), and the
+    // implementation persists the scope array as a JSON document in it, so
+    // decode as TEXT and parse the document instead of asking sqlx for JSONB.
+    let persisted_scopes_json: String = sqlx::query_scalar(
         "SELECT permission_scope_json FROM iam_session WHERE id = $1 AND revoked_at IS NULL",
     )
     .bind(session_id)
     .fetch_one(&pg)
     .await
     .expect("read back persisted permission scopes");
+    let persisted_scopes: Value = serde_json::from_str(&persisted_scopes_json)
+        .expect("persisted permission scope should be a JSON document");
     let persisted_codes = persisted_scopes
-        .0
         .as_array()
         .expect("persisted permission scope should be an array")
         .iter()

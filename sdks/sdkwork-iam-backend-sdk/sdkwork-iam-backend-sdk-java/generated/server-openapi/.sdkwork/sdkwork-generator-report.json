@@ -11,32 +11,44 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "596a105fbfebd8e07655f020c97ef65f5d0d36d3b417ccf0ccf5c663e5a81858",
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "c0c640d5b4a415f73ebc9fe3a3e8aa5cd7418a7b5c83087d1036f21a4f1434fe",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface"
+      "api-surface",
+      "models"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "src/main/java/com/sdkwork/iam/backend/sdk/api/IamApi.java"
+          "src/main/java/com/sdkwork/iam/backend/sdk/api/IamApi.java",
+          "src/main/java/com/sdkwork/iam/backend/sdk/api/IamOauthApi.java"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseApplicationRegisterCommand.java",
+          "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationProvisionCommand.java",
+          "src/main/java/com/sdkwork/iam/backend/sdk/model/IamTenantApplicationManagementProvisionCommand.java"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface. Verification is required."
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },
@@ -48,7 +60,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-java\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -67,13 +79,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-java\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -103,8 +115,8 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 37,
-    "models": 22,
+    "totalFiles": 36,
+    "models": 21,
     "apis": 2,
     "types": 0
   },
@@ -112,16 +124,19 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 1,
+    "writtenFiles": 4,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 35,
-    "deletedGeneratedFiles": 0,
+    "skippedUnchangedGeneratedFiles": 31,
+    "deletedGeneratedFiles": 1,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "596a105fbfebd8e07655f020c97ef65f5d0d36d3b417ccf0ccf5c663e5a81858",
+    "changeFingerprint": "c0c640d5b4a415f73ebc9fe3a3e8aa5cd7418a7b5c83087d1036f21a4f1434fe",
     "changes": {
       "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [
-        "src/main/java/com/sdkwork/iam/backend/sdk/api/IamApi.java"
+        "src/main/java/com/sdkwork/iam/backend/sdk/api/IamApi.java",
+        "src/main/java/com/sdkwork/iam/backend/sdk/api/IamOauthApi.java",
+        "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationProvisionCommand.java",
+        "src/main/java/com/sdkwork/iam/backend/sdk/model/IamTenantApplicationManagementProvisionCommand.java"
       ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
@@ -133,17 +148,13 @@
         "README.md",
         "sdkwork-sdk.json",
         "src/main/java/com/sdkwork/iam/backend/sdk/api/ApiPaths.java",
-        "src/main/java/com/sdkwork/iam/backend/sdk/api/IamOauthApi.java",
         "src/main/java/com/sdkwork/iam/backend/sdk/api/package-info.java",
         "src/main/java/com/sdkwork/iam/backend/sdk/http/HttpClient.java",
         "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseAccessCredentialCreateCommand.java",
-        "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseApplicationRegisterCommand.java",
         "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationEnableCommand.java",
-        "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationProvisionCommand.java",
         "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationUpdateCommand.java",
         "src/main/java/com/sdkwork/iam/backend/sdk/model/FieldError.java",
         "src/main/java/com/sdkwork/iam/backend/sdk/model/IamOauthClientCreateCommand.java",
-        "src/main/java/com/sdkwork/iam/backend/sdk/model/IamTenantApplicationManagementProvisionCommand.java",
         "src/main/java/com/sdkwork/iam/backend/sdk/model/IamTenantApplicationManagementUpdateCommand.java",
         "src/main/java/com/sdkwork/iam/backend/sdk/model/IamTenantApplicationStatusCommand.java",
         "src/main/java/com/sdkwork/iam/backend/sdk/model/PageInfo.java",
@@ -160,7 +171,9 @@
         "src/main/java/com/sdkwork/iam/backend/sdk/model/ServiceAccountTokenExchangeCommand.java",
         "src/main/java/com/sdkwork/iam/backend/sdk/SdkworkBackendClient.java"
       ],
-      "deletedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseApplicationRegisterCommand.java"
+      ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/README.md"
@@ -170,29 +183,39 @@
     "impact": {
       "schemaVersion": 1,
       "areas": [
-        "api-surface"
+        "api-surface",
+        "models"
       ],
       "details": [
         {
           "area": "api-surface",
           "paths": [
-            "src/main/java/com/sdkwork/iam/backend/sdk/api/IamApi.java"
+            "src/main/java/com/sdkwork/iam/backend/sdk/api/IamApi.java",
+            "src/main/java/com/sdkwork/iam/backend/sdk/api/IamOauthApi.java"
+          ]
+        },
+        {
+          "area": "models",
+          "paths": [
+            "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseApplicationRegisterCommand.java",
+            "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationProvisionCommand.java",
+            "src/main/java/com/sdkwork/iam/backend/sdk/model/IamTenantApplicationManagementProvisionCommand.java"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface. Verification is required."
+      "summary": "Detected impact areas: api-surface, models. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-java\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -210,12 +233,14 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "medium",
+      "riskLevel": "high",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
+        "deleted-generated-files",
+        "manual-review-required",
         "verification-required"
       ]
     },

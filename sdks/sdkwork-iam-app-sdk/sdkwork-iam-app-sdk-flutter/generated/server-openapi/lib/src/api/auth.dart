@@ -74,6 +74,12 @@ class AuthApi {
     })();
   }
 
+  /// Sessions current logout.
+  Future<void> sessionsCurrentLogout(SessionsCurrentLogoutRequest body) async {
+    final payload = body.toJson();
+    await _client.request('POST', ApiPaths.appPath('/auth/sessions/current/logout'), body: payload, contentType: 'application/json', skipAuth: true);
+  }
+
   /// Sessions login Context Selection create.
   Future<SdkWorkResourceResponse?> sessionsLoginContextSelectionCreate(Map<String, dynamic> body) async {
     final payload = body;
@@ -101,6 +107,16 @@ class AuthApi {
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkCommandResponse.fromJson(map);
+    })();
+  }
+
+  /// Verification Code Requests create.
+  Future<SdkWorkResourceResponse?> verificationCodeRequestsCreate(Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.request('POST', ApiPaths.appPath('/auth/verification_code_requests'), body: payload, contentType: 'application/json', accessTokenOnly: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 }

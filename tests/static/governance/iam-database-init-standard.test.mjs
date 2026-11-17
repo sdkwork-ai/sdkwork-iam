@@ -329,7 +329,7 @@ test("oauth resource-account access mode is canonicalized and constrained (0036)
   assert.match(backend, /"operator_authorized_account" \| "operator_managed"/u);
 });
 
-test("official-account migration orphan ledger is written by 0033 only", () => {
+test("official-account migration orphan ledger is written by 0033 and retired by 0038", () => {
   const ledgerTable = "iam_official_account_migration_orphan";
   const migrationName = "0033_official_account_unification.up.sql";
   const migrationDir = "database/migrations/postgres";
@@ -346,7 +346,9 @@ test("official-account migration orphan ledger is written by 0033 only", () => {
 
   // No other migration may know about it.
   for (const file of fs.readdirSync(path.join(iamRoot, migrationDir)).filter((name) => name.endsWith(".up.sql"))) {
-    if (file === migrationName || file.startsWith("0034_")) {
+    // 0033 writes the ledger; 0034 and 0038 retire the second official-account
+    // system. No other migration may know about a table the runtime never owns.
+    if (file === migrationName || file.startsWith("0034_") || file.startsWith("0038_")) {
       continue;
     }
     assert.doesNotMatch(
@@ -355,6 +357,14 @@ test("official-account migration orphan ledger is written by 0033 only", () => {
       `${file} must not reference the migration orphan ledger`,
     );
   }
+
+  // 0038 retires the ledger with the same fail-closed rule 0034 documents for the
+  // legacy table: it never drops unreviewed evidence.
+  const retirement = readText(
+    `${migrationDir}/0038_retire_official_account_migration_orphan.up.sql`,
+  );
+  assert.match(retirement, new RegExp(`DROP TABLE IF EXISTS ${ledgerTable}`, "u"));
+  assert.match(retirement, /RAISE EXCEPTION/u);
 
   // The baseline only carries it inside the folded 0033 block.
   const foldedMarker = baseline.indexOf(`-- folded migration: migrations/postgres/${migrationName}`);
@@ -427,4 +437,162 @@ test("IAM component spec declares DATABASE_FRAMEWORK_SPEC and database verificat
   assert.ok(canonicalFiles.includes("DATABASE_FRAMEWORK_SPEC.md"));
   assert.match(componentSpec.integration?.database ?? "", /sdkwork-iam-database-host/u);
   assert.ok((componentSpec.verification?.commands ?? []).includes("pnpm run check:database"));
+});
+
+/**
+ * Folded-block ledger.
+ *
+ * `DATABASE_FRAMEWORK_SPEC.md` section 7.5 keeps the primary baseline as the
+ * bootstrap anchor while the ordered migration set stays the upgrade path. The
+ * legacy pre-template model is retired completely: `iam_application` and
+ * `iam_application_package` are neither declared nor dropped by the baseline,
+ * and the whole folded `0006` block is gone - it only re-declared index
+ * statements the canonical section already declares, so removing it changes no
+ * schema.
+ *
+ * Decided consequence: an install created before the template model is no
+ * longer converged by the baseline, and a `0006` source migration restored
+ * from history would re-introduce both the legacy drops and the duplicate
+ * index declarations. Restore it only with a deliberate review, not by copying
+ * the old bytes back.
+ *
+ * The ordered block list is pinned on purpose. Ten blocks are dangling (their
+ * source migrations were deleted while the folded blocks stayed), which
+ * `tools/fold-migration-into-baseline.mjs` reports as `[missing-source]` and
+ * calls a lifecycle defect to repair. Repairing it is a reviewed change that
+ * updates this ledger; until then the ledger turns a silent block deletion,
+ * reorder, or duplicate into a failing test.
+ */
+const FOLDED_BLOCK_ORDER = [
+  "migrations/postgres/0010_iam_api_key_runtime_context.up.sql",
+  "migrations/postgres/0011_iam_tenant_application_org_template_unique.up.sql",
+  "migrations/postgres/0012_iam_service_account_credentials.up.sql",
+  "migrations/postgres/0013_iam_session_principal_compatibility.up.sql",
+  "migrations/postgres/0008_iam_query_performance_indexes.up.sql",
+  "migrations/postgres/0009_wechat_identity_scope.up.sql",
+  "migrations/postgres/0012_iam_service_account_credentials.up.sql",
+  "migrations/postgres/0014_iam_scan_login_config.up.sql",
+  "migrations/postgres/0015_iam_scan_login_modes.up.sql",
+  "migrations/postgres/0016_iam_provider_accounts.up.sql",
+  "migrations/postgres/0017_iam_provider_account_scopes.up.sql",
+  "migrations/postgres/0018_iam_provider_account_organization_scope_and_identity_kind.up.sql",
+  "migrations/postgres/0024_iam_user_official_account.up.sql",
+  "migrations/postgres/0031_iam_user_official_account_domains.up.sql",
+  "migrations/postgres/0032_iam_role_catalog_localization.up.sql",
+  "migrations/postgres/0033_official_account_unification.up.sql",
+  "migrations/postgres/0034_drop_iam_user_official_account.up.sql",
+  "migrations/postgres/0035_official_account_orphan_client_cleanup.up.sql",
+  "migrations/postgres/0036_iam_oauth_resource_account_access_mode_canonical.up.sql",
+];
+
+const FOLDED_BLOCKS_WITHOUT_SOURCE = [
+  "migrations/postgres/0008_iam_query_performance_indexes.up.sql",
+  "migrations/postgres/0009_wechat_identity_scope.up.sql",
+  "migrations/postgres/0010_iam_api_key_runtime_context.up.sql",
+  "migrations/postgres/0011_iam_tenant_application_org_template_unique.up.sql",
+  "migrations/postgres/0012_iam_service_account_credentials.up.sql",
+  "migrations/postgres/0013_iam_session_principal_compatibility.up.sql",
+  "migrations/postgres/0014_iam_scan_login_config.up.sql",
+  "migrations/postgres/0015_iam_scan_login_modes.up.sql",
+];
+
+function foldedBlocks() {
+  const lf = readText("database/ddl/baseline/postgres/0001_iam_baseline.sql").replace(/\r\n/g, "\n");
+  const markers = [...lf.matchAll(/^-- folded migration: (\S+)$/gm)].map((match) => ({
+    path: match[1],
+    lineStart: match.index,
+  }));
+  return markers.map((marker, index) => {
+    const start = marker.lineStart + `-- folded migration: ${marker.path}`.length + 1;
+    const next = markers[index + 1];
+    const end = next ? next.lineStart : lf.length;
+    return { path: marker.path, body: lf.slice(start, end) };
+  });
+}
+
+test("baseline carries no legacy application residue", () => {
+  const baseline = readText("database/ddl/baseline/postgres/0001_iam_baseline.sql");
+
+  // The retired tables are neither declared nor dropped nor referenced in any
+  // other form. `(?![_a-z])` keeps the live `iam_application_template*` tables
+  // and their indexes out of the check.
+  assert.equal(
+    (baseline.match(/iam_application(?:_package)?(?![_a-z])/gu) ?? []).length,
+    0,
+    "the retired iam_application / iam_application_package tables must not appear in the baseline at all",
+  );
+
+  // The whole folded 0006 block is gone: all six statements in it only
+  // re-declared indexes that the canonical section already declares.
+  assert.ok(
+    !baseline.includes("0006_iam_application_standard"),
+    "the folded 0006 block must not come back: its statements are already canonical",
+  );
+  assert.equal(
+    foldedBlocks().filter((block) => block.path.includes("0006_iam_application_standard")).length,
+    0,
+  );
+
+  // The retired Studio catalog and the legacy personnel table are retired as
+  // debt too: no declaration, no retirement DDL, no mention may survive.
+  assert.equal(
+    (baseline.match(/studio_/gu) ?? []).length,
+    0,
+    "baseline must not mention the retired studio_* catalog",
+  );
+  assert.equal(
+    (baseline.match(/iam_organization_member\b/gu) ?? []).length,
+    0,
+    "baseline must not mention the retired iam_organization_member table",
+  );
+});
+
+test("baseline folded-block ledger pins the known dangling upgrade path", () => {
+  const blocks = foldedBlocks();
+  assert.deepEqual(
+    blocks.map((block) => block.path),
+    FOLDED_BLOCK_ORDER,
+    "folded block set, order, and multiplicity are pinned; repairing the lifecycle must update this ledger",
+  );
+
+  const dangling = [
+    ...new Set(
+      FOLDED_BLOCK_ORDER.filter(
+        (blockPath) => !fs.existsSync(path.join(iamRoot, "database", blockPath)),
+      ),
+    ),
+  ].sort();
+  assert.deepEqual(
+    dangling,
+    FOLDED_BLOCKS_WITHOUT_SOURCE,
+    "the dangling folded-block set is pinned; restoring a source migration must update this ledger",
+  );
+});
+
+test("folded 0012 replay is split around 0013 and currently overrides it", () => {
+  const blocks = foldedBlocks();
+  const positionsOf0012 = blocks
+    .map((block, index) => ({ path: block.path, index }))
+    .filter((entry) => entry.path.includes("0012_iam_service_account_credentials"));
+  const indexOf0013 = blocks.findIndex((block) =>
+    block.path.includes("0013_iam_session_principal_compatibility"),
+  );
+
+  // Known defect, pinned rather than blessed: migration 0013 drops NOT NULL on
+  // `iam_session.principal_id`, but a second, partial replay of 0012 sits after
+  // it and sets NOT NULL back. The effective end state therefore contradicts the
+  // migration order. Merging the two 0012 blocks or moving the second one before
+  // 0013 silently flips `principal_id` to nullable - fix that deliberately (and
+  // re-run the lifecycle against a real database), then update this test.
+  assert.equal(
+    positionsOf0012.length,
+    2,
+    "0012_iam_service_account_credentials is folded twice; see the note above before changing that",
+  );
+  assert.ok(
+    positionsOf0012[0].index < indexOf0013 && indexOf0013 < positionsOf0012[1].index,
+    "the second 0012 block must stay after 0013 until the contradiction is resolved deliberately",
+  );
+  assert.match(blocks[indexOf0013].body, /ALTER COLUMN principal_id DROP NOT NULL;/u);
+  assert.match(blocks[positionsOf0012[1].index].body, /ALTER COLUMN principal_id SET NOT NULL;/u);
 });

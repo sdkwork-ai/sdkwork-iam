@@ -5,7 +5,7 @@ use reqwest::Method;
 use crate::api::paths::app_path;
 use crate::api::paths::append_query_string;
 use crate::http::{SdkworkError, SdkworkHttpClient};
-use crate::models::{AppbaseSessionCreateCommand, SdkWorkPageData, WechatMiniProgramSessionCreateCommand};
+use crate::models::{AppbaseSessionCreateCommand, AuthorizationsCompletionsCreateRequest, AuthorizationsCreateRequest, DesktopSessionsCreateRequest, OauthPhoneBindingSessionCreateCommand, OauthPhoneBindingVerificationCodeRequestCommand, SdkWorkPageData, WechatMiniProgramSessionCreateCommand};
 
 #[derive(Clone)]
 pub struct OauthApi {
@@ -42,8 +42,14 @@ impl OauthApi {
         self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), false, true).await
     }
 
+    /// Authorizations create.
+    pub async fn authorizations_create(&self, body: &AuthorizationsCreateRequest) -> Result<serde_json::Value, SdkworkError> {
+        let path = app_path(&"/oauth/authorizations".to_string());
+        self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), true, false).await
+    }
+
     /// Authorizations completions create.
-    pub async fn authorizations_completions_create(&self, authorization_state_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+    pub async fn authorizations_completions_create(&self, authorization_state_id: &str, body: &AuthorizationsCompletionsCreateRequest) -> Result<serde_json::Value, SdkworkError> {
         let path = app_path(&format!("/oauth/authorizations/{}/completions", serialize_path_parameter(authorization_state_id, PathParameterSpec::new("authorizationStateId", "simple", false))));
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
@@ -58,6 +64,12 @@ impl OauthApi {
     pub async fn callbacks_create(&self, provider_code: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = app_path(&format!("/oauth/callbacks/{}", serialize_path_parameter(provider_code, PathParameterSpec::new("providerCode", "simple", false))));
         self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), false, true).await
+    }
+
+    /// Desktop Sessions create.
+    pub async fn desktop_sessions_create(&self, body: &DesktopSessionsCreateRequest) -> Result<serde_json::Value, SdkworkError> {
+        let path = app_path(&"/oauth/desktop_sessions".to_string());
+        self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), true, false).await
     }
 
     /// Device Authorizations create.
@@ -81,6 +93,12 @@ impl OauthApi {
     /// Device Authorizations scans create.
     pub async fn device_authorizations_scans_create(&self, device_authorization_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = app_path(&format!("/oauth/device_authorizations/{}/scans", serialize_path_parameter(device_authorization_id, PathParameterSpec::new("deviceAuthorizationId", "simple", false))));
+        self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), false, true).await
+    }
+
+    /// Device Authorizations session Completions create.
+    pub async fn device_authorizations_session_completions_create(&self, device_authorization_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = app_path(&format!("/oauth/device_authorizations/{}/session_completions", serialize_path_parameter(device_authorization_id, PathParameterSpec::new("deviceAuthorizationId", "simple", false))));
         self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), false, true).await
     }
 
@@ -115,6 +133,18 @@ impl OauthApi {
         self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), false, true).await
     }
 
+    /// Phone Binding Sessions create.
+    pub async fn phone_binding_sessions_create(&self, body: &OauthPhoneBindingSessionCreateCommand) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = app_path(&"/oauth/phone_binding_sessions".to_string());
+        self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), false, true).await
+    }
+
+    /// Phone Binding Sessions verification Code Requests create.
+    pub async fn phone_binding_sessions_verification_code_requests_create(&self, body: &OauthPhoneBindingVerificationCodeRequestCommand) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = app_path(&"/oauth/phone_binding_sessions/verification_code_requests".to_string());
+        self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), false, true).await
+    }
+
     /// Providers list.
     pub async fn providers_list(&self, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>) -> Result<SdkWorkPageData, SdkworkError> {
         let query = build_query_string(&[
@@ -128,10 +158,44 @@ impl OauthApi {
         self.client.request_method(Method::GET, &path, Option::<&serde_json::Value>::None, None, None, None, false, true).await
     }
 
+    /// Scan Login Modes list.
+    pub async fn scan_login_modes_list(&self, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>) -> Result<SdkWorkPageData, SdkworkError> {
+        let query = build_query_string(&[
+            QueryParameterSpec::new("page", page, "form", true, false, None),
+            QueryParameterSpec::new("page_size", page_size, "form", true, false, None),
+            QueryParameterSpec::new("cursor", cursor, "form", true, false, None),
+            QueryParameterSpec::new("sort", sort, "form", true, false, None),
+            QueryParameterSpec::new("q", q, "form", true, false, None),
+        ]);
+        let path = append_query_string(app_path(&"/oauth/scan_login_modes".to_string()), &query);
+        self.client.request_method(Method::GET, &path, Option::<&serde_json::Value>::None, None, None, None, false, true).await
+    }
+
     /// Sessions create.
     pub async fn sessions_create(&self, body: &AppbaseSessionCreateCommand) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = app_path(&"/oauth/sessions".to_string());
         self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), false, true).await
+    }
+
+    /// Wechat Payment Oauth callback.
+    pub async fn wechat_payment_oauth_callback(&self) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = app_path(&"/oauth/wechat/payment/callback".to_string());
+        self.client.request_method(Method::GET, &path, Option::<&serde_json::Value>::None, None, None, None, true, false).await
+    }
+
+    /// Wechat Payment Oauth cashier Start.
+    pub async fn wechat_payment_oauth_cashier_start(&self) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = app_path(&"/oauth/wechat/payment/cashier/start".to_string());
+        self.client.request_method(Method::GET, &path, Option::<&serde_json::Value>::None, None, None, None, true, false).await
+    }
+
+    /// Wechat Payment Oauth start.
+    pub async fn wechat_payment_oauth_start(&self, redirect: &str) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let query = build_query_string(&[
+            QueryParameterSpec::new("redirect", redirect, "form", true, false, None),
+        ]);
+        let path = append_query_string(app_path(&"/oauth/wechat/payment/start".to_string()), &query);
+        self.client.get(&path, None, None).await
     }
 
 }

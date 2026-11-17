@@ -52,11 +52,11 @@
     },
     {
       "path": "Sources/API/IamApi.swift",
-      "sha256": "849131933836288f526cc93c51a9727f126d7bb2ad58a7035ffb2fc7ff1d65e2"
+      "sha256": "24296d8a02e4e92bd80acb824693e8a4c0749689d63614c9f84d5274bef9f448"
     },
     {
       "path": "Sources/API/IamOauthApi.swift",
-      "sha256": "0265e2641fddfc66478af63985074c4769bb9a828aed3b9f20b32dfe072a91ce"
+      "sha256": "01e9556c39a5f9d7fe8471d8727e3ca93954b123d6d2d8b3317dfa871a91f612"
     },
     {
       "path": "Sources/HTTP/HttpClient.swift",
@@ -64,7 +64,7 @@
     },
     {
       "path": "Sources/Models.swift",
-      "sha256": "87f6a936359650a0aea7b5232616f916fae79199cb5629fad9885c8765b4fa5d"
+      "sha256": "c960fcf3c8a474e3bc972240597d5263c25c612aaacf2fb33a52106349f98af3"
     },
     {
       "path": "Sources/SdkworkBackendClient.swift",

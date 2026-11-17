@@ -95,6 +95,48 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         "tenantApplications.management.disable",
     ),
     HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments",
+        "iam",
+        "tenantApplications.environments.list",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Put,
+        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments/{environmentKey}",
+        "iam",
+        "tenantApplications.environments.update",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Delete,
+        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments/{environmentKey}",
+        "iam",
+        "tenantApplications.environments.delete",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials",
+        "iam",
+        "tenantApplications.credentials.list",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials",
+        "iam",
+        "tenantApplications.credentials.create",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials/{credentialId}/rotate",
+        "iam",
+        "tenantApplications.credentials.rotate",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials/{credentialId}/revoke",
+        "iam",
+        "tenantApplications.credentials.revoke",
+    ),
+    HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/iam/organizations",
         "iam",
@@ -597,12 +639,6 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         "/backend/v3/api/iam/api_keys",
         "iam",
         "apiKeys.create",
-    ),
-    HttpRoute::bootstrap_body(
-        HttpMethod::Post,
-        "/backend/v3/api/iam/applications/register",
-        "iam",
-        "applications.register",
     ),
     HttpRoute::bootstrap_body(
         HttpMethod::Post,

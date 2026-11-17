@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 from ..http_client import HttpClient
-from ..models import AppbaseSessionCreateCommand, SdkWorkCommandResponse, SdkWorkResourceResponse
+from ..models import AppbaseSessionCreateCommand, SdkWorkCommandResponse, SdkWorkResourceResponse, SessionsCurrentLogoutRequest
 
 def _append_query_string(path: str, raw_query_string: str) -> str:
     query = raw_query_string.lstrip('?')
@@ -22,6 +22,7 @@ class AuthApi:
         self.password_resets = AuthPasswordResetsApi(client)
         self.registrations = AuthRegistrationsApi(client)
         self.sessions = AuthSessionsApi(client)
+        self.verification_code_requests = AuthVerificationCodeRequestsApi(client)
 
 
 class AuthPasswordResetRequestsApi:
@@ -94,6 +95,10 @@ class AuthSessionsCurrentApi:
         """Sessions current update."""
         return self._client.patch(f"/app/v3/api/auth/sessions/current", json=body)
 
+    def logout(self, body: SessionsCurrentLogoutRequest) -> None:
+        """Sessions current logout."""
+        return self._client.post(f"/app/v3/api/auth/sessions/current/logout", json=body, skip_auth=True)
+
 class AuthSessionsLoginContextSelectionApi:
     """auth auth.sessions.login_context_selection API client."""
 
@@ -115,3 +120,14 @@ class AuthSessionsOrganizationSelectionApi:
     def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Sessions organization Selection create."""
         return self._client.post(f"/app/v3/api/auth/sessions/organization_selection", json=body, access_token_only=True)
+
+class AuthVerificationCodeRequestsApi:
+    """auth auth.verification_code_requests API client."""
+
+    def __init__(self, client: HttpClient):
+        self._client = client
+
+
+    def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
+        """Verification Code Requests create."""
+        return self._client.post(f"/app/v3/api/auth/verification_code_requests", json=body, access_token_only=True)

@@ -1,7 +1,7 @@
 import { SDKWORK_IAM_OPERATION_IDS, SDKWORK_IAM_STANDARD } from "@sdkwork/iam-contracts";
-import type { IamBackendOAuthResourceClient } from "./backend-oauth-ports";
+import type { IamBackendOAuthResourceClient } from "./backend-oauth-ports.ts";
 
-export type { IamBackendOAuthResourceClient } from "./backend-oauth-ports";
+export type { IamBackendOAuthResourceClient } from "./backend-oauth-ports.ts";
 
 export type IamSdkMethod = (...args: any[]) => Promise<unknown>;
 
@@ -174,9 +174,6 @@ export interface IamBackendIamResourceClient {
   accessCredentials?: {
     create?: IamSdkMethod;
   };
-  applications?: {
-    register?: IamSdkMethod;
-  };
   apiKeys?: {
     list?: IamSdkMethod;
     revoke?: IamSdkMethod;
@@ -313,7 +310,6 @@ export interface IamBackendIamResourceClient {
 export interface IamSdkResourceClient {
   apiKeys?: IamBackendIamResourceClient["apiKeys"];
   accessCredentials?: IamBackendIamResourceClient["accessCredentials"];
-  applications?: IamBackendIamResourceClient["applications"];
   auditEvents?: IamBackendIamResourceClient["auditEvents"];
   organizations?: NonNullable<IamAppIamResourceClient["organizations"]> & NonNullable<IamBackendIamResourceClient["organizations"]>;
   organizationMemberships?: NonNullable<IamAppIamResourceClient["organizationMemberships"]> & NonNullable<IamBackendIamResourceClient["organizationMemberships"]>;

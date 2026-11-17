@@ -55,6 +55,12 @@ public class AuthApi {
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
+    /** Sessions current logout. */
+    public Void sessionsCurrentLogout(SessionsCurrentLogoutRequest body) throws Exception {
+        client.request("POST", ApiPaths.appPath("/auth/sessions/current/logout"), body, null, null, "application/json", true, false);
+        return null;
+    }
+
     /** Sessions login Context Selection create. */
     public SdkWorkResourceResponse sessionsLoginContextSelectionCreate(Map<String, Object> body) throws Exception {
         Object raw = client.request("POST", ApiPaths.appPath("/auth/sessions/login_context_selection"), body, null, null, "application/json", false, true);
@@ -71,6 +77,12 @@ public class AuthApi {
     public SdkWorkCommandResponse sessionsRefresh(Map<String, Object> body) throws Exception {
         Object raw = client.request("POST", ApiPaths.appPath("/auth/sessions/refresh"), body, null, null, "application/json", true, false);
         return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
+    }
+
+    /** Verification Code Requests create. */
+    public SdkWorkResourceResponse verificationCodeRequestsCreate(Map<String, Object> body) throws Exception {
+        Object raw = client.request("POST", ApiPaths.appPath("/auth/verification_code_requests"), body, null, null, "application/json", false, true);
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
 

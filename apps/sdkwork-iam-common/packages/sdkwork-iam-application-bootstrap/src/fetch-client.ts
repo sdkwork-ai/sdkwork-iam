@@ -4,18 +4,15 @@ import { unwrapIamSdkResponse } from "@sdkwork/iam-sdk-adapter";
 import type {
   EnabledTenantApplicationResult,
   IamApplicationBootstrapClient,
+  IamTenantApplicationProvisionCommand,
   IssuedAccessCredentialResult,
   ProvisionedTenantApplicationResult,
-  RegisteredApplicationTemplateResult,
 } from "./types.ts";
 
 /** Backend API prefix for IAM application-bootstrap operations. */
 export const IAM_APPLICATION_BOOTSTRAP_API_PREFIX = "/backend/v3/api";
 
-/** Register application template. */
-export const IAM_APPLICATIONS_REGISTER_PATH = "/iam/applications/register";
-
-/** Provision tenant application. */
+/** Provision or reconcile one tenant installation from its deploy application. */
 export const IAM_TENANT_APPLICATIONS_PATH = "/iam/tenant_applications";
 
 /** Issue access credential. */
@@ -27,7 +24,11 @@ export interface CreateFetchIamApplicationBootstrapClientOptions {
   baseUrl: string;
   /** Override for `globalThis.fetch`; tests inject a stub. */
   fetch?: typeof fetch;
+  /** Per-request timeout in milliseconds; defaults to 30 seconds. */
+  timeoutMs?: number;
 }
+
+const DEFAULT_BOOTSTRAP_REQUEST_TIMEOUT_MS = 30_000;
 
 /**
  * Strip a trailing `/backend/v3/api` so path constants can be joined once.
@@ -80,6 +81,13 @@ async function parseJson(response: Response): Promise<unknown> {
   }
 }
 
+function requestSignal(timeoutMs: number): AbortSignal | undefined {
+  if (typeof AbortSignal === "undefined" || typeof AbortSignal.timeout !== "function") {
+    return undefined;
+  }
+  return AbortSignal.timeout(timeoutMs);
+}
+
 /**
  * CLI/tooling IAM application-bootstrap client. Talks to the canonical
  * bootstrap-body HTTP operations without loading the generated backend SDK.
@@ -91,6 +99,7 @@ export function createFetchIamApplicationBootstrapClient(
 ): IamApplicationBootstrapClient {
   const origin = resolveIamBackendApiOrigin(options.baseUrl);
   const fetchImpl = options.fetch ?? globalThis.fetch.bind(globalThis);
+  const timeoutMs = options.timeoutMs ?? DEFAULT_BOOTSTRAP_REQUEST_TIMEOUT_MS;
 
   async function requestJson<T extends Record<string, unknown>>(
     method: string,
@@ -98,6 +107,7 @@ export function createFetchIamApplicationBootstrapClient(
     body: Record<string, unknown> | undefined,
     fallbackMessage: string,
   ): Promise<T> {
+    const signal = requestSignal(timeoutMs);
     const response = await fetchImpl(bootstrapUrl(origin, pathname), {
       method,
       headers: {
@@ -105,6 +115,7 @@ export function createFetchIamApplicationBootstrapClient(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body ?? {}),
+      ...(signal !== undefined ? { signal } : {}),
     });
     const payload = await parseJson(response);
     if (!response.ok) {
@@ -114,15 +125,7 @@ export function createFetchIamApplicationBootstrapClient(
   }
 
   return {
-    registerApplication(body) {
-      return requestJson<RegisteredApplicationTemplateResult>(
-        "POST",
-        IAM_APPLICATIONS_REGISTER_PATH,
-        body,
-        "iam.applications.register failed",
-      );
-    },
-    provisionTenantApplication(body) {
+    provisionTenantApplication(body: IamTenantApplicationProvisionCommand) {
       return requestJson<ProvisionedTenantApplicationResult>(
         "POST",
         IAM_TENANT_APPLICATIONS_PATH,

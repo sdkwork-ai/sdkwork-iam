@@ -39,11 +39,15 @@ export type {
 } from "./auth.ts";
 export {
   bootstrapApplicationFromManifest,
+  bootstrapDeployApplication,
   buildBootstrapEnvRecord,
   createIamApplicationBootstrap,
   formatBootstrapEnvFile,
 } from "./bootstrap.ts";
-export type { BootstrapApplicationFromManifestOptions } from "./bootstrap.ts";
+export type {
+  BootstrapApplicationFromManifestOptions,
+  BootstrapDeployApplicationOptions,
+} from "./bootstrap.ts";
 export { ensureRepoBootstrapAccessToken } from "./ensure-repo-bootstrap-token.ts";
 export type {
   EnsureRepoBootstrapAccessTokenOptions,
@@ -72,31 +76,43 @@ export type { IamRuntimeBootstrapSource } from "./clients.ts";
 export {
   createFetchIamApplicationBootstrapClient,
   IAM_ACCESS_CREDENTIALS_PATH,
-  IAM_APPLICATIONS_REGISTER_PATH,
   IAM_APPLICATION_BOOTSTRAP_API_PREFIX,
   IAM_TENANT_APPLICATIONS_PATH,
   resolveIamBackendApiOrigin,
 } from "./fetch-client.ts";
 export type { CreateFetchIamApplicationBootstrapClientOptions } from "./fetch-client.ts";
 export {
+  assertIamTenantApplicationType,
+  deriveProvisioningIdempotencyKey,
   hashManifestContent,
+  manifestReleaseVersion,
+  manifestRuntimeConfig,
   manifestToProvisionCommand,
-  manifestToRegisterCommand,
+  mapManifestAppTypeToApplicationType,
+  resolveDeployApplicationId,
+  tenantApplicationInstanceKey,
   validateBootstrapEnvironment,
   validateManifestForBootstrap,
+  validateTenantApplicationProvisionCommand,
 } from "./manifest.ts";
+export { IAM_TENANT_APPLICATION_TYPES } from "./types.ts";
 export type {
   ApplicationBootstrapEnvWriterInput,
+  ApplicationBootstrapFromCommandInput,
   ApplicationBootstrapFromManifestInput,
   ApplicationBootstrapResult,
   CreateIamApplicationBootstrapInput,
   EnabledTenantApplicationResult,
+  IamApplicationBootstrapAuth,
   IamApplicationBootstrapClient,
   IamApplicationBootstrapEnvironment,
   IamApplicationBootstrapModule,
   IamApplicationBootstrapProfile,
+  IamApplicationBootstrapProvisionInput,
+  IamApplicationBootstrapReplayCache,
+  IamTenantApplicationProvisionCommand,
+  IamTenantApplicationType,
   IssuedAccessCredentialResult,
   ProvisionedTenantApplicationResult,
-  RegisteredApplicationTemplateResult,
   SdkworkAppManifest,
 } from "./types.ts";

@@ -90,15 +90,6 @@
         "replacementCode": null
       },
       {
-        "code": "iam.applications.register",
-        "name": "Register applications",
-        "resource": "iam.applications",
-        "action": "register",
-        "status": "active",
-        "since": "1.0.0",
-        "replacementCode": null
-      },
-      {
         "code": "iam.assignments.create",
         "name": "Create department and position assignments",
         "resource": "iam.assignments",
@@ -553,6 +544,15 @@
         "name": "Read provider credentials",
         "resource": "iam.provider_credentials",
         "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.provider_credentials.reveal",
+        "name": "Reveal provider credential secret material",
+        "resource": "iam.provider_credentials",
+        "action": "reveal",
         "status": "active",
         "since": "1.1.0",
         "replacementCode": null

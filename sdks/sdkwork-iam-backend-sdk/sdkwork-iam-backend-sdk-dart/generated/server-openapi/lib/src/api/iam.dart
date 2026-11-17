@@ -56,6 +56,16 @@ class IamApi {
     })();
   }
 
+  /// Api Keys create.
+  Future<SdkWorkResourceResponse?> apiKeysCreate(Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.post(ApiPaths.backendPath('/iam/api_keys'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
   /// Api Keys revoke.
   Future<SdkWorkCommandResponse?> apiKeysRevoke(String apiKeyId, Map<String, dynamic> body) async {
     final payload = body;
@@ -66,13 +76,13 @@ class IamApi {
     })();
   }
 
-  /// Applications register.
-  Future<SdkWorkCommandResponse?> applicationsRegister(AppbaseApplicationRegisterCommand body) async {
-    final payload = body.toJson();
-    final response = await _client.request('POST', ApiPaths.backendPath('/iam/applications/register'), body: payload, contentType: 'application/json', skipAuth: true);
+  /// Api Keys rotate.
+  Future<SdkWorkResourceResponse?> apiKeysRotate(String apiKeyId, Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.post(ApiPaths.backendPath('/iam/api_keys/${serializePathParameter(apiKeyId, const PathParameterSpec('apiKeyId', 'simple', false))}/rotate'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : SdkWorkCommandResponse.fromJson(map);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 

@@ -42,6 +42,11 @@ public class AuthApi {
         return try await client.patch(ApiPaths.appPath("/auth/sessions/current"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
+    /// Sessions current logout.
+    public func sessionsCurrentLogout(body: SessionsCurrentLogoutRequest) async throws -> Void {
+        _ = try await client.request("POST", ApiPaths.appPath("/auth/sessions/current/logout"), body: body, params: nil, headers: nil, contentType: "application/json", skipAuth: true)
+    }
+
     /// Sessions login Context Selection create.
     public func sessionsLoginContextSelectionCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
         return try await client.request("POST", ApiPaths.appPath("/auth/sessions/login_context_selection"), body: body, params: nil, headers: nil, contentType: "application/json", accessTokenOnly: true, responseType: SdkWorkResourceResponse.self)
@@ -55,6 +60,11 @@ public class AuthApi {
     /// Sessions refresh.
     public func sessionsRefresh(body: [String: Any]) async throws -> SdkWorkCommandResponse? {
         return try await client.request("POST", ApiPaths.appPath("/auth/sessions/refresh"), body: body, params: nil, headers: nil, contentType: "application/json", skipAuth: true, responseType: SdkWorkCommandResponse.self)
+    }
+
+    /// Verification Code Requests create.
+    public func verificationCodeRequestsCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.request("POST", ApiPaths.appPath("/auth/verification_code_requests"), body: body, params: nil, headers: nil, contentType: "application/json", accessTokenOnly: true, responseType: SdkWorkResourceResponse.self)
     }
 
 

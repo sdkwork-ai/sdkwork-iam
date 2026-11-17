@@ -9,13 +9,19 @@
       "lifecycle_status": "active"
     },
     {
-      "table_name": "iam_application_template",
+      "table_name": "iam_application_installation",
       "owner": "sdkwork-iam",
       "compliance_level": "L2",
       "lifecycle_status": "active"
     },
     {
-      "table_name": "iam_application_template_package",
+      "table_name": "iam_application_installation_credential",
+      "owner": "sdkwork-iam",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "iam_application_installation_environment",
       "owner": "sdkwork-iam",
       "compliance_level": "L2",
       "lifecycle_status": "active"
@@ -231,12 +237,6 @@
       "lifecycle_status": "active"
     },
     {
-      "table_name": "iam_official_account_migration_orphan",
-      "owner": "sdkwork-iam",
-      "compliance_level": "L2",
-      "lifecycle_status": "deprecated"
-    },
-    {
       "table_name": "iam_organization",
       "owner": "sdkwork-iam",
       "compliance_level": "L2",
@@ -358,12 +358,6 @@
     },
     {
       "table_name": "iam_tenant",
-      "owner": "sdkwork-iam",
-      "compliance_level": "L2",
-      "lifecycle_status": "active"
-    },
-    {
-      "table_name": "iam_tenant_application",
       "owner": "sdkwork-iam",
       "compliance_level": "L2",
       "lifecycle_status": "active"

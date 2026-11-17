@@ -11,32 +11,52 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "d63151802d2662558222bbf2b5a278ed38d6e5060ed0e2ab061a5be0c2b24202",
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "95497e72b1067f5667041de5db926f0e9011ad0a1b6e14505bdc87b97b8c691f",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface"
+      "api-surface",
+      "models",
+      "unknown"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
+          "lib/sdkwork/backend_sdk/api/iam_oauth.rb",
           "lib/sdkwork/backend_sdk/api/iam.rb"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "lib/sdkwork/backend_sdk/models/appbase_application_register_command.rb",
+          "lib/sdkwork/backend_sdk/models/appbase_tenant_application_provision_command.rb",
+          "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_provision_command.rb"
+        ]
+      },
+      {
+        "area": "unknown",
+        "paths": [
+          "lib/sdkwork/backend_sdk.rb"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface. Verification is required."
+    "summary": "Detected impact areas: api-surface, models, unknown. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
+      "unknown-impact",
       "verification-required"
     ]
   },
@@ -48,7 +68,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, unknown.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-ruby\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -67,13 +87,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, unknown.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-ruby\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -103,25 +123,29 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 40,
-    "models": 22,
+    "totalFiles": 39,
+    "models": 21,
     "apis": 2,
-    "types": 22
+    "types": 21
   },
   "warnings": [],
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 1,
+    "writtenFiles": 5,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 38,
-    "deletedGeneratedFiles": 0,
+    "skippedUnchangedGeneratedFiles": 33,
+    "deletedGeneratedFiles": 1,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "d63151802d2662558222bbf2b5a278ed38d6e5060ed0e2ab061a5be0c2b24202",
+    "changeFingerprint": "95497e72b1067f5667041de5db926f0e9011ad0a1b6e14505bdc87b97b8c691f",
     "changes": {
       "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [
-        "lib/sdkwork/backend_sdk/api/iam.rb"
+        "lib/sdkwork/backend_sdk.rb",
+        "lib/sdkwork/backend_sdk/api/iam_oauth.rb",
+        "lib/sdkwork/backend_sdk/api/iam.rb",
+        "lib/sdkwork/backend_sdk/models/appbase_tenant_application_provision_command.rb",
+        "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_provision_command.rb"
       ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
@@ -129,19 +153,14 @@
         "bin/publish.sh",
         "CHANGELOG.md",
         "Gemfile",
-        "lib/sdkwork/backend_sdk.rb",
         "lib/sdkwork/backend_sdk/api/base_api.rb",
-        "lib/sdkwork/backend_sdk/api/iam_oauth.rb",
         "lib/sdkwork/backend_sdk/client.rb",
         "lib/sdkwork/backend_sdk/http/client.rb",
         "lib/sdkwork/backend_sdk/models/appbase_access_credential_create_command.rb",
-        "lib/sdkwork/backend_sdk/models/appbase_application_register_command.rb",
         "lib/sdkwork/backend_sdk/models/appbase_tenant_application_enable_command.rb",
-        "lib/sdkwork/backend_sdk/models/appbase_tenant_application_provision_command.rb",
         "lib/sdkwork/backend_sdk/models/appbase_tenant_application_update_command.rb",
         "lib/sdkwork/backend_sdk/models/field_error.rb",
         "lib/sdkwork/backend_sdk/models/iam_oauth_client_create_command.rb",
-        "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_provision_command.rb",
         "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_update_command.rb",
         "lib/sdkwork/backend_sdk/models/iam_tenant_application_status_command.rb",
         "lib/sdkwork/backend_sdk/models/page_info.rb",
@@ -163,7 +182,9 @@
         "sdkwork-iam-backend-sdk.gemspec",
         "sdkwork-sdk.json"
       ],
-      "deletedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "lib/sdkwork/backend_sdk/models/appbase_application_register_command.rb"
+      ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/README.md"
@@ -173,29 +194,46 @@
     "impact": {
       "schemaVersion": 1,
       "areas": [
-        "api-surface"
+        "api-surface",
+        "models",
+        "unknown"
       ],
       "details": [
         {
           "area": "api-surface",
           "paths": [
+            "lib/sdkwork/backend_sdk/api/iam_oauth.rb",
             "lib/sdkwork/backend_sdk/api/iam.rb"
+          ]
+        },
+        {
+          "area": "models",
+          "paths": [
+            "lib/sdkwork/backend_sdk/models/appbase_application_register_command.rb",
+            "lib/sdkwork/backend_sdk/models/appbase_tenant_application_provision_command.rb",
+            "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_provision_command.rb"
+          ]
+        },
+        {
+          "area": "unknown",
+          "paths": [
+            "lib/sdkwork/backend_sdk.rb"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface. Verification is required."
+      "summary": "Detected impact areas: api-surface, models, unknown. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface, models, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, unknown.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-ruby\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -213,12 +251,15 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "medium",
+      "riskLevel": "high",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
+        "deleted-generated-files",
+        "manual-review-required",
+        "unknown-impact",
         "verification-required"
       ]
     },

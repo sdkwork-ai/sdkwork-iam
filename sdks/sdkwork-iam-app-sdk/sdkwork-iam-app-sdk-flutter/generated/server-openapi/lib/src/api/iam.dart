@@ -52,6 +52,95 @@ class IamApi {
     })();
   }
 
+  /// Iam oauth official Account Settings retrieve.
+  Future<SdkWorkResourceResponse?> oauthOfficialAccountSettingsRetrieve() async {
+    final response = await _client.get(ApiPaths.appPath('/iam/oauth/official_account_settings'));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Iam oauth official Accounts list.
+  Future<SdkWorkListResponse?> oauthOfficialAccountsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+    final query = buildQueryString([
+      QueryParameterSpec('page', page, 'form', true, false, null),
+      QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
+      QueryParameterSpec('cursor', cursor, 'form', true, false, null),
+      QueryParameterSpec('sort', sort, 'form', true, false, null),
+      QueryParameterSpec('q', q, 'form', true, false, null)
+    ]);
+    final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.appPath('/iam/oauth/official_accounts'), query));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkListResponse.fromJson(map);
+    })();
+  }
+
+  /// Iam oauth official Accounts create.
+  Future<SdkWorkResourceResponse?> oauthOfficialAccountsCreate(Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.post(ApiPaths.appPath('/iam/oauth/official_accounts'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Iam oauth official Accounts delete.
+  Future<void> oauthOfficialAccountsDelete(String officialAccountId) async {
+    await _client.delete(ApiPaths.appPath('/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, const PathParameterSpec('officialAccountId', 'simple', false))}'));
+  }
+
+  /// Iam oauth official Accounts retrieve.
+  Future<SdkWorkResourceResponse?> oauthOfficialAccountsRetrieve(String officialAccountId) async {
+    final response = await _client.get(ApiPaths.appPath('/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, const PathParameterSpec('officialAccountId', 'simple', false))}'));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Iam oauth official Accounts update.
+  Future<SdkWorkResourceResponse?> oauthOfficialAccountsUpdate(String officialAccountId, [Map<String, dynamic>? body]) async {
+    final payload = body;
+    final response = await _client.patch(ApiPaths.appPath('/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, const PathParameterSpec('officialAccountId', 'simple', false))}'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Iam oauth official Accounts custom Menus publish.
+  Future<SdkWorkResourceResponse?> oauthOfficialAccountsCustomMenusPublish(String officialAccountId, Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.post(ApiPaths.appPath('/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, const PathParameterSpec('officialAccountId', 'simple', false))}/custom_menus/publish'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Iam oauth official Accounts custom Menus rollback.
+  Future<SdkWorkResourceResponse?> oauthOfficialAccountsCustomMenusRollback(String officialAccountId, Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.post(ApiPaths.appPath('/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, const PathParameterSpec('officialAccountId', 'simple', false))}/custom_menus/rollback'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Iam oauth official Accounts custom Menus sync.
+  Future<SdkWorkResourceResponse?> oauthOfficialAccountsCustomMenusSync(String officialAccountId, Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.post(ApiPaths.appPath('/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, const PathParameterSpec('officialAccountId', 'simple', false))}/custom_menus/sync'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
   /// Organization Memberships list.
   Future<SdkWorkListResponse?> organizationMembershipsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
@@ -84,12 +173,38 @@ class IamApi {
     })();
   }
 
+  /// Organizations members list.
+  Future<IamOrganizationMemberListResponse?> organizationsMembersList(String organizationId, [int? page, int? pageSize, String? cursor, String? sort, String? q, String? role]) async {
+    final query = buildQueryString([
+      QueryParameterSpec('page', page, 'form', true, false, null),
+      QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
+      QueryParameterSpec('cursor', cursor, 'form', true, false, null),
+      QueryParameterSpec('sort', sort, 'form', true, false, null),
+      QueryParameterSpec('q', q, 'form', true, false, null),
+      QueryParameterSpec('role', role, 'form', true, false, null)
+    ]);
+    final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.appPath('/iam/organizations/${serializePathParameter(organizationId, const PathParameterSpec('organizationId', 'simple', false))}/members'), query));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamOrganizationMemberListResponse.fromJson(map);
+    })();
+  }
+
   /// Organizations tree retrieve.
   Future<SdkWorkResourceResponse?> organizationsTreeRetrieve() async {
     final response = await _client.get(ApiPaths.appPath('/iam/organizations/tree'));
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Persona Catalog retrieve.
+  Future<IamPersonaCatalogResponse?> personaCatalogRetrieve() async {
+    final response = await _client.get(ApiPaths.appPath('/iam/persona_catalog'));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamPersonaCatalogResponse.fromJson(map);
     })();
   }
 
@@ -126,13 +241,18 @@ class IamApi {
   }
 
   /// Role Bindings list.
-  Future<SdkWorkListResponse?> roleBindingsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> roleBindingsList([int? page, int? pageSize, String? cursor, String? sort, String? q, String? roleId, String? principalKind, String? principalId, String? scopeKind, String? scopeId]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
       QueryParameterSpec('cursor', cursor, 'form', true, false, null),
       QueryParameterSpec('sort', sort, 'form', true, false, null),
-      QueryParameterSpec('q', q, 'form', true, false, null)
+      QueryParameterSpec('q', q, 'form', true, false, null),
+      QueryParameterSpec('roleId', roleId, 'form', true, false, null),
+      QueryParameterSpec('principalKind', principalKind, 'form', true, false, null),
+      QueryParameterSpec('principalId', principalId, 'form', true, false, null),
+      QueryParameterSpec('scopeKind', scopeKind, 'form', true, false, null),
+      QueryParameterSpec('scopeId', scopeId, 'form', true, false, null)
     ]);
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.appPath('/iam/role_bindings'), query));
     return (() {
@@ -185,6 +305,30 @@ class IamApi {
     })();
   }
 
+  /// Users current persona delete.
+  Future<void> usersCurrentPersonaDelete() async {
+    await _client.delete(ApiPaths.appPath('/iam/users/current/persona'));
+  }
+
+  /// Users current persona retrieve.
+  Future<IamUserPersonaResponse?> usersCurrentPersonaRetrieve() async {
+    final response = await _client.get(ApiPaths.appPath('/iam/users/current/persona'));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamUserPersonaResponse.fromJson(map);
+    })();
+  }
+
+  /// Users current persona update.
+  Future<IamUserPersonaResponse?> usersCurrentPersonaUpdate(IamUserPersonaUpdateCommand body) async {
+    final payload = body.toJson();
+    final response = await _client.put(ApiPaths.appPath('/iam/users/current/persona'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamUserPersonaResponse.fromJson(map);
+    })();
+  }
+
   /// Users current phone Bindings delete.
   Future<void> usersCurrentPhoneBindingsDelete() async {
     await _client.delete(ApiPaths.appPath('/iam/users/current/phone_bindings'));
@@ -201,7 +345,77 @@ class IamApi {
   }
 }
 
+class PathParameterSpec {
+  final String name;
+  final String style;
+  final bool explode;
 
+  const PathParameterSpec(this.name, this.style, this.explode);
+}
+
+String serializePathParameter(dynamic value, PathParameterSpec spec) {
+  if (value == null) return '';
+  final style = spec.style.trim().isEmpty ? 'simple' : spec.style;
+  if (value is Iterable) {
+    return serializePathArray(spec.name, value, style, spec.explode);
+  }
+  if (value is Map) {
+    return serializePathObject(spec.name, value, style, spec.explode);
+  }
+  return pathPrimitivePrefix(spec.name, style) + Uri.encodeComponent(value.toString());
+}
+
+String serializePathArray(String name, Iterable values, String style, bool explode) {
+  final serialized = values.where((item) => item != null).map((item) => Uri.encodeComponent(item.toString())).toList();
+  if (serialized.isEmpty) return pathPrefix(name, style);
+  if (style == 'matrix') {
+    if (explode) {
+      return serialized.map((item) => ';$name=$item').join();
+    }
+    return ';$name=${serialized.join(',')}';
+  }
+  final separator = explode ? '.' : ',';
+  return pathPrefix(name, style) + serialized.join(separator);
+}
+
+String serializePathObject(String name, Map values, String style, bool explode) {
+  final entries = <String>[];
+  final exploded = <String>[];
+  values.forEach((key, value) {
+    if (value == null) return;
+    final escapedKey = Uri.encodeComponent(key.toString());
+    final escapedValue = Uri.encodeComponent(value.toString());
+    if (explode) {
+      if (style == 'matrix') {
+        exploded.add(';$escapedKey=$escapedValue');
+      } else {
+        exploded.add('$escapedKey=$escapedValue');
+      }
+    } else {
+      entries.add(escapedKey);
+      entries.add(escapedValue);
+    }
+  });
+  if (style == 'matrix') {
+    if (explode) return exploded.join();
+    return ';$name=${entries.join(',')}';
+  }
+  if (explode) {
+    final separator = style == 'label' ? '.' : ',';
+    return pathPrefix(name, style) + exploded.join(separator);
+  }
+  return pathPrefix(name, style) + entries.join(',');
+}
+
+String pathPrefix(String name, String style) {
+  if (style == 'label') return '.';
+  if (style == 'matrix') return ';$name';
+  return '';
+}
+
+String pathPrimitivePrefix(String name, String style) {
+  return style == 'matrix' ? ';$name=' : pathPrefix(name, style);
+}
 class QueryParameterSpec {
   final String name;
   final dynamic value;

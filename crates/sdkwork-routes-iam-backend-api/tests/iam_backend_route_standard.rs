@@ -267,6 +267,61 @@ fn backend_routes_expose_admin_organization_directory_reads() {
 }
 
 #[test]
+fn backend_routes_expose_installation_environment_and_credential_management() {
+    let routes = backend_routes();
+
+    for route in [
+        HttpRoute::dual_token(
+            HttpMethod::Get,
+            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments",
+            "iam",
+            "tenantApplications.environments.list",
+        ),
+        HttpRoute::dual_token(
+            HttpMethod::Put,
+            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments/{environmentKey}",
+            "iam",
+            "tenantApplications.environments.update",
+        ),
+        HttpRoute::dual_token(
+            HttpMethod::Delete,
+            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments/{environmentKey}",
+            "iam",
+            "tenantApplications.environments.delete",
+        ),
+        HttpRoute::dual_token(
+            HttpMethod::Get,
+            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials",
+            "iam",
+            "tenantApplications.credentials.list",
+        ),
+        HttpRoute::dual_token(
+            HttpMethod::Post,
+            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials",
+            "iam",
+            "tenantApplications.credentials.create",
+        ),
+        HttpRoute::dual_token(
+            HttpMethod::Post,
+            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials/{credentialId}/rotate",
+            "iam",
+            "tenantApplications.credentials.rotate",
+        ),
+        HttpRoute::dual_token(
+            HttpMethod::Post,
+            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials/{credentialId}/revoke",
+            "iam",
+            "tenantApplications.credentials.revoke",
+        ),
+    ] {
+        assert!(
+            routes.contains(&route),
+            "missing installation environment/credential route: {route:?}"
+        );
+    }
+}
+
+#[test]
 fn backend_route_manifest_matches_the_standard_management_operation_surface() {
     let mut operation_ids: Vec<&str> = backend_routes()
         .iter()
@@ -285,7 +340,6 @@ fn backend_route_manifest_matches_the_standard_management_operation_surface() {
             "apiKeys.list",
             "apiKeys.revoke",
             "apiKeys.rotate",
-            "applications.register",
             "auditEvents.list",
             "auditEvents.retrieve",
             "departmentAssignments.create",
@@ -364,7 +418,14 @@ fn backend_route_manifest_matches_the_standard_management_operation_surface() {
             "serviceAccounts.retrieve",
             "serviceAccounts.update",
             "tenantApplications.create",
+            "tenantApplications.credentials.create",
+            "tenantApplications.credentials.list",
+            "tenantApplications.credentials.revoke",
+            "tenantApplications.credentials.rotate",
             "tenantApplications.enable",
+            "tenantApplications.environments.delete",
+            "tenantApplications.environments.list",
+            "tenantApplications.environments.update",
             "tenantApplications.list",
             "tenantApplications.management.create",
             "tenantApplications.management.disable",
@@ -395,6 +456,19 @@ fn backend_route_manifest_matches_the_standard_management_operation_surface() {
     assert!(!operation_ids.contains(&"users.roles.create"));
     assert!(!operation_ids.contains(&"users.roles.delete"));
     assert!(!operation_ids.contains(&"users.roles.list"));
+    // Application templates are retired, so registering a template is not an
+    // operation any more: an installation is provisioned from the deploy
+    // application it serves.
+    assert!(
+        !operation_ids.contains(&"applications.register"),
+        "applications.register must stay retired; provision a tenant application instead"
+    );
+    assert!(
+        backend_routes()
+            .iter()
+            .all(|route| !route.path.contains("/iam/applications/register")),
+        "the retired application-template register route must not be served"
+    );
     assert!(
         backend_routes()
             .iter()

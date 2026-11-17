@@ -87,14 +87,8 @@ System.out.println(result);
 ### oauth
 
 ```java
-// Account Links list.
-Map<String, Object> params = new LinkedHashMap<>();
-params.put("page", 1);
-params.put("page_size", 2);
-params.put("cursor", "cursor");
-params.put("sort", "sort");
-params.put("q", "q");
-SdkWorkListResponse result = client.getOauth().accountLinksList(params);
+// Wechat Payment Oauth callback.
+SdkWorkResourceResponse result = client.getOauth().wechatPaymentOauthCallback();
 System.out.println(result);
 ```
 

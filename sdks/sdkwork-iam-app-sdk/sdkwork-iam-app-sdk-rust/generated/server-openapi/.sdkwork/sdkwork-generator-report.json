@@ -10,37 +10,209 @@
   },
   "status": "ok",
   "mode": "apply",
-  "hasChanges": false,
+  "hasChanges": true,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "0d40ea9e4ccf700c1991452a49a9444f24f5ef59729ae91cfb0ff140bf2b2004",
+  "changeFingerprint": "bb0154688455be72ba4a120512b995e366a2015cff61248ecbdbd3841c1fe1ed",
   "changeImpact": {
     "schemaVersion": 1,
-    "areas": [],
-    "details": [],
-    "requiresVerification": false,
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped."
+    "areas": [
+      "api-surface",
+      "models",
+      "runtime",
+      "build-metadata",
+      "publish-workflow",
+      "documentation",
+      "unknown"
+    ],
+    "details": [
+      {
+        "area": "api-surface",
+        "paths": [
+          "src/api/auth.rs",
+          "src/api/base.rs",
+          "src/api/iam.rs",
+          "src/api/mod.rs",
+          "src/api/oauth.rs",
+          "src/api/paths.rs",
+          "src/api/system.rs",
+          "src/lib.rs"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "src/models/appbase_session_create_command.rs",
+          "src/models/authorizations_completions_create_request.rs",
+          "src/models/authorizations_completions_create_response.rs",
+          "src/models/authorizations_create_request.rs",
+          "src/models/authorizations_create_response.rs",
+          "src/models/common.rs",
+          "src/models/desktop_sessions_create_request.rs",
+          "src/models/desktop_sessions_create_response.rs",
+          "src/models/field_error.rs",
+          "src/models/iam_organization_member_list_response.rs",
+          "src/models/iam_organization_member.rs",
+          "src/models/iam_persona_catalog_response.rs",
+          "src/models/iam_persona_catalog.rs",
+          "src/models/iam_persona_interest.rs",
+          "src/models/iam_persona_role.rs",
+          "src/models/iam_user_persona_response.rs",
+          "src/models/iam_user_persona_update_command.rs",
+          "src/models/iam_user_persona.rs",
+          "src/models/mod.rs",
+          "src/models/oauth_phone_binding_session_create_command.rs",
+          "src/models/oauth_phone_binding_verification_code_request_command.rs",
+          "src/models/page_info.rs",
+          "src/models/problem_detail.rs",
+          "src/models/sdk_work_api_response.rs",
+          "src/models/sdk_work_command_data.rs",
+          "src/models/sdk_work_command_response.rs",
+          "src/models/sdk_work_list_response.rs",
+          "src/models/sdk_work_page_data.rs",
+          "src/models/sdk_work_resource_data.rs",
+          "src/models/sdk_work_resource_response.rs",
+          "src/models/sessions_current_logout_request.rs",
+          "src/models/wechat_mini_program_session_create_command.rs"
+        ]
+      },
+      {
+        "area": "runtime",
+        "paths": [
+          "src/http/client.rs",
+          "src/http/mod.rs"
+        ]
+      },
+      {
+        "area": "build-metadata",
+        "paths": [
+          "Cargo.toml",
+          "sdkwork-sdk.json"
+        ]
+      },
+      {
+        "area": "publish-workflow",
+        "paths": [
+          "bin/publish-core.mjs",
+          "bin/publish.ps1",
+          "bin/publish.sh"
+        ]
+      },
+      {
+        "area": "documentation",
+        "paths": [
+          "CHANGELOG.md",
+          "README.md"
+        ]
+      },
+      {
+        "area": "unknown",
+        "paths": [
+          "LICENSE",
+          "src/client.rs"
+        ]
+      }
+    ],
+    "requiresVerification": true,
+    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "low",
-    "nextAction": "skip",
+    "riskLevel": "high",
+    "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
-    "summary": "No actionable changes were detected. No apply or verification step is required.",
+    "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "no-actionable-changes"
+      "backed-up-generated-files",
+      "manual-review-required",
+      "unknown-impact",
+      "verification-required"
     ]
   },
   "executionHandoff": {
     "schemaVersion": 1,
-    "summary": "No further commands are required.",
-    "steps": []
+    "summary": "Run the required verification commands now.",
+    "steps": [
+      {
+        "id": "verify-check",
+        "title": "Unified package check",
+        "required": true,
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-rust\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "rust",
+          "--project-dir",
+          ".",
+          "--action",
+          "check"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action check"
+      },
+      {
+        "id": "verify-build",
+        "title": "Unified package build",
+        "required": true,
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-rust\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "rust",
+          "--project-dir",
+          ".",
+          "--action",
+          "build"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action build"
+      }
+    ]
   },
   "verificationPlan": {
-    "shouldRun": false,
-    "runPhase": "skip",
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped.",
-    "steps": []
+    "shouldRun": true,
+    "runPhase": "now",
+    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "steps": [
+      {
+        "id": "check",
+        "title": "Unified package check",
+        "required": true,
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-rust\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "rust",
+          "--project-dir",
+          ".",
+          "--action",
+          "check"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action check"
+      },
+      {
+        "id": "build",
+        "title": "Unified package build",
+        "required": true,
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-rust\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "rust",
+          "--project-dir",
+          ".",
+          "--action",
+          "build"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action build"
+      }
+    ]
   },
   "sdk": {
     "name": "sdkwork-iam-app-sdk",
@@ -48,7 +220,7 @@
     "language": "rust",
     "sdkType": "app",
     "protocol": "http",
-    "outputPath": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-rust\\generated\\server-openapi",
+    "outputPath": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-rust\\generated\\server-openapi",
     "packageName": "sdkwork-iam-app-sdk"
   },
   "versioning": {
@@ -56,25 +228,43 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 34,
-    "models": 12,
+    "totalFiles": 52,
+    "models": 30,
     "apis": 4,
-    "types": 14
+    "types": 32
   },
   "warnings": [],
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 0,
+    "writtenFiles": 51,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 33,
+    "skippedUnchangedGeneratedFiles": 0,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "0d40ea9e4ccf700c1991452a49a9444f24f5ef59729ae91cfb0ff140bf2b2004",
+    "changeFingerprint": "bb0154688455be72ba4a120512b995e366a2015cff61248ecbdbd3841c1fe1ed",
     "changes": {
-      "createdGeneratedFiles": [],
-      "updatedGeneratedFiles": [],
-      "unchangedGeneratedFiles": [
+      "createdGeneratedFiles": [
+        "src/models/authorizations_completions_create_request.rs",
+        "src/models/authorizations_completions_create_response.rs",
+        "src/models/authorizations_create_request.rs",
+        "src/models/authorizations_create_response.rs",
+        "src/models/desktop_sessions_create_request.rs",
+        "src/models/desktop_sessions_create_response.rs",
+        "src/models/iam_organization_member_list_response.rs",
+        "src/models/iam_organization_member.rs",
+        "src/models/iam_persona_catalog_response.rs",
+        "src/models/iam_persona_catalog.rs",
+        "src/models/iam_persona_interest.rs",
+        "src/models/iam_persona_role.rs",
+        "src/models/iam_user_persona_response.rs",
+        "src/models/iam_user_persona_update_command.rs",
+        "src/models/iam_user_persona.rs",
+        "src/models/oauth_phone_binding_session_create_command.rs",
+        "src/models/oauth_phone_binding_verification_code_request_command.rs",
+        "src/models/sessions_current_logout_request.rs"
+      ],
+      "updatedGeneratedFiles": [
         "bin/publish-core.mjs",
         "bin/publish.ps1",
         "bin/publish.sh",
@@ -109,38 +299,242 @@
         "src/models/sdk_work_resource_response.rs",
         "src/models/wechat_mini_program_session_create_command.rs"
       ],
+      "unchangedGeneratedFiles": [],
       "deletedGeneratedFiles": [],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/README.md"
       ],
-      "backedUpFiles": []
+      "backedUpFiles": [
+        "bin/publish-core.mjs",
+        "bin/publish.ps1",
+        "bin/publish.sh",
+        "Cargo.toml",
+        "CHANGELOG.md",
+        "LICENSE",
+        "README.md",
+        "sdkwork-sdk.json",
+        "src/api/auth.rs",
+        "src/api/base.rs",
+        "src/api/iam.rs",
+        "src/api/mod.rs",
+        "src/api/oauth.rs",
+        "src/api/paths.rs",
+        "src/api/system.rs",
+        "src/client.rs",
+        "src/http/client.rs",
+        "src/http/mod.rs",
+        "src/lib.rs",
+        "src/models/appbase_session_create_command.rs",
+        "src/models/common.rs",
+        "src/models/field_error.rs",
+        "src/models/mod.rs",
+        "src/models/page_info.rs",
+        "src/models/problem_detail.rs",
+        "src/models/sdk_work_api_response.rs",
+        "src/models/sdk_work_command_data.rs",
+        "src/models/sdk_work_command_response.rs",
+        "src/models/sdk_work_list_response.rs",
+        "src/models/sdk_work_page_data.rs",
+        "src/models/sdk_work_resource_data.rs",
+        "src/models/sdk_work_resource_response.rs",
+        "src/models/wechat_mini_program_session_create_command.rs"
+      ]
     },
     "impact": {
       "schemaVersion": 1,
-      "areas": [],
-      "details": [],
-      "requiresVerification": false,
-      "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped."
+      "areas": [
+        "api-surface",
+        "models",
+        "runtime",
+        "build-metadata",
+        "publish-workflow",
+        "documentation",
+        "unknown"
+      ],
+      "details": [
+        {
+          "area": "api-surface",
+          "paths": [
+            "src/api/auth.rs",
+            "src/api/base.rs",
+            "src/api/iam.rs",
+            "src/api/mod.rs",
+            "src/api/oauth.rs",
+            "src/api/paths.rs",
+            "src/api/system.rs",
+            "src/lib.rs"
+          ]
+        },
+        {
+          "area": "models",
+          "paths": [
+            "src/models/appbase_session_create_command.rs",
+            "src/models/authorizations_completions_create_request.rs",
+            "src/models/authorizations_completions_create_response.rs",
+            "src/models/authorizations_create_request.rs",
+            "src/models/authorizations_create_response.rs",
+            "src/models/common.rs",
+            "src/models/desktop_sessions_create_request.rs",
+            "src/models/desktop_sessions_create_response.rs",
+            "src/models/field_error.rs",
+            "src/models/iam_organization_member_list_response.rs",
+            "src/models/iam_organization_member.rs",
+            "src/models/iam_persona_catalog_response.rs",
+            "src/models/iam_persona_catalog.rs",
+            "src/models/iam_persona_interest.rs",
+            "src/models/iam_persona_role.rs",
+            "src/models/iam_user_persona_response.rs",
+            "src/models/iam_user_persona_update_command.rs",
+            "src/models/iam_user_persona.rs",
+            "src/models/mod.rs",
+            "src/models/oauth_phone_binding_session_create_command.rs",
+            "src/models/oauth_phone_binding_verification_code_request_command.rs",
+            "src/models/page_info.rs",
+            "src/models/problem_detail.rs",
+            "src/models/sdk_work_api_response.rs",
+            "src/models/sdk_work_command_data.rs",
+            "src/models/sdk_work_command_response.rs",
+            "src/models/sdk_work_list_response.rs",
+            "src/models/sdk_work_page_data.rs",
+            "src/models/sdk_work_resource_data.rs",
+            "src/models/sdk_work_resource_response.rs",
+            "src/models/sessions_current_logout_request.rs",
+            "src/models/wechat_mini_program_session_create_command.rs"
+          ]
+        },
+        {
+          "area": "runtime",
+          "paths": [
+            "src/http/client.rs",
+            "src/http/mod.rs"
+          ]
+        },
+        {
+          "area": "build-metadata",
+          "paths": [
+            "Cargo.toml",
+            "sdkwork-sdk.json"
+          ]
+        },
+        {
+          "area": "publish-workflow",
+          "paths": [
+            "bin/publish-core.mjs",
+            "bin/publish.ps1",
+            "bin/publish.sh"
+          ]
+        },
+        {
+          "area": "documentation",
+          "paths": [
+            "CHANGELOG.md",
+            "README.md"
+          ]
+        },
+        {
+          "area": "unknown",
+          "paths": [
+            "LICENSE",
+            "src/client.rs"
+          ]
+        }
+      ],
+      "requiresVerification": true,
+      "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required."
     },
     "verificationPlan": {
-      "shouldRun": false,
-      "runPhase": "skip",
-      "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped.",
-      "steps": []
+      "shouldRun": true,
+      "runPhase": "now",
+      "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "steps": [
+        {
+          "id": "check",
+          "title": "Unified package check",
+          "required": true,
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+          "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-rust\\generated\\server-openapi",
+          "command": "node",
+          "args": [
+            "./bin/publish-core.mjs",
+            "--language",
+            "rust",
+            "--project-dir",
+            ".",
+            "--action",
+            "check"
+          ],
+          "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action check"
+        },
+        {
+          "id": "build",
+          "title": "Unified package build",
+          "required": true,
+          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+          "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-rust\\generated\\server-openapi",
+          "command": "node",
+          "args": [
+            "./bin/publish-core.mjs",
+            "--language",
+            "rust",
+            "--project-dir",
+            ".",
+            "--action",
+            "build"
+          ],
+          "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action build"
+        }
+      ]
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "low",
-      "nextAction": "skip",
+      "riskLevel": "high",
+      "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
-      "summary": "No actionable changes were detected. No apply or verification step is required.",
+      "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
-        "no-actionable-changes"
+        "backed-up-generated-files",
+        "manual-review-required",
+        "unknown-impact",
+        "verification-required"
       ]
     },
-    "backedUpFiles": [],
+    "backedUpFiles": [
+      "bin/publish-core.mjs",
+      "bin/publish.ps1",
+      "bin/publish.sh",
+      "Cargo.toml",
+      "CHANGELOG.md",
+      "LICENSE",
+      "README.md",
+      "sdkwork-sdk.json",
+      "src/api/auth.rs",
+      "src/api/base.rs",
+      "src/api/iam.rs",
+      "src/api/mod.rs",
+      "src/api/oauth.rs",
+      "src/api/paths.rs",
+      "src/api/system.rs",
+      "src/client.rs",
+      "src/http/client.rs",
+      "src/http/mod.rs",
+      "src/lib.rs",
+      "src/models/appbase_session_create_command.rs",
+      "src/models/common.rs",
+      "src/models/field_error.rs",
+      "src/models/mod.rs",
+      "src/models/page_info.rs",
+      "src/models/problem_detail.rs",
+      "src/models/sdk_work_api_response.rs",
+      "src/models/sdk_work_command_data.rs",
+      "src/models/sdk_work_command_response.rs",
+      "src/models/sdk_work_list_response.rs",
+      "src/models/sdk_work_page_data.rs",
+      "src/models/sdk_work_resource_data.rs",
+      "src/models/sdk_work_resource_response.rs",
+      "src/models/wechat_mini_program_session_create_command.rs"
+    ],
     "preservedLegacyFiles": false
   }
 }

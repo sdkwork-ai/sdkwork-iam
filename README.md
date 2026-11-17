@@ -48,9 +48,70 @@ sdkwork-iam/
 OAuth and SSO are IAM session extensions. Inbound flows consume third-party IdPs;
 outbound flows expose SDKWork as an OAuth authorization server. All paths converge
 on IAM `auth_token` + `access_token`. Per-application policy lives in
-`iam_tenant_application.runtime_config_json` (`auth.*`, `oauth.relyingParty.*`).
+`iam_application_installation.runtime_config_json` (`auth.*`, `oauth.relyingParty.*`).
 
 See `../sdkwork-specs/IAM_OAUTH_SPEC.md` for the full contract.
+
+## Installation environments and credentials
+
+An installation (`iam_application_installation`) is one-to-one with a deploy
+application, but each lifecycle environment of that application owns its public
+domain and its own OAuth client. Those facts are stored in two child tables:
+
+- `iam_application_installation_environment` — `env_key`, `primary_domain`,
+  `domain_config_json`, `env_status` (`pending` | `active` | `disabled`).
+- `iam_application_installation_credential` — `client_id` (globally unique),
+  Argon2id `secret_hash`, `redirect_uris_json`, `granted_scopes_json`,
+  `credential_status` (`active` | `rotated` | `retired`), `rotated_at`,
+  `retired_at`.
+
+Management APIs live on the backend surface and are tenant-scoped:
+
+| Operation | Method and path | Permission |
+| --- | --- | --- |
+| `tenantApplications.environments.list` | `GET /backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments` | `iam.tenant_applications.update` |
+| `tenantApplications.environments.update` | `PUT .../environments/{environmentKey}` (upsert) | `iam.tenant_applications.update` |
+| `tenantApplications.environments.delete` | `DELETE .../environments/{environmentKey}` | `iam.tenant_applications.update` |
+| `tenantApplications.credentials.list` | `GET .../credentials` | `iam.tenant_applications.update` |
+| `tenantApplications.credentials.create` | `POST .../credentials` | `iam.tenant_applications.update` |
+| `tenantApplications.credentials.rotate` | `POST .../credentials/{credentialId}/rotate` | `iam.tenant_applications.update` |
+| `tenantApplications.credentials.revoke` | `POST .../credentials/{credentialId}/revoke` | `iam.tenant_applications.update` |
+
+The credential lifecycle never widens the existing installation-update boundary:
+no new permission code is seeded, and every path is scoped to the path tenant, so
+a row of another tenant is indistinguishable from a missing row.
+
+**Constraints and conflicts.** `(installation_id, env_key)` is unique among live
+environments; `(tenant_id, primary_domain)` is unique among live rows that carry a
+domain (a null/blank domain may repeat); `client_id` is globally unique including
+historical rows. Each violation returns HTTP `409` with
+`code: iam_installation_lifecycle_conflict` and a detail naming the conflicting
+fact. Deleting an environment is a soft delete that also retires its credentials.
+
+**Secret semantics.** The plaintext OAuth client secret is generated server-side,
+hashed with Argon2id, and returned exactly once in the `201` create / `200` rotate
+response as `data.item.clientSecret`. The client id may be supplied or generated;
+the secret itself is never accepted from the caller. No read path selects
+`secret_hash`, so list/revoke responses never echo the secret. Rotation inserts a
+replacement row that becomes `active` with a fresh `clientId` and secret, marks the
+predecessor `rotated` (kept as history), and therefore requires the environment to
+be reconfigured with both the new client id and the new secret. Revoke marks the
+row `retired` and is idempotent.
+
+**Runtime validation.** Token issuance (delegated access credential, deployment
+bootstrap credential, service-account token exchange) and session creation resolve
+the installation's live environment rows. When at least one row exists, the
+requested environment must be registered with `env_status = active`; otherwise
+issuance fails closed and the error names the installation, the requested
+environment, and the registered statuses. An installation without environment rows
+keeps the historical platform-bootstrap behavior. Common aliases (`dev` /
+`development`, `prod` / `production`, `test` / `testing`) compare canonically.
+
+The OpenAPI authority is materialized from the route manifests
+(`node tools/generators/materialize-iam-v3-openapi-boundaries.mjs`) and the
+generated backend SDK is produced by `pnpm run sdk:generate:backend`; neither is
+hand-edited. Live-PostgreSQL coverage for these tables lives in ignored tests:
+`cargo test -p sdkwork-iam-web-adapter --lib -- --ignored installation_lifecycle`.
 
 ## Verification
 

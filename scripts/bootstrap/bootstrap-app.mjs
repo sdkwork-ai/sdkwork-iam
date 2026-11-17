@@ -7,7 +7,6 @@ import { fileURLToPath } from "node:url";
 import {
   createFetchIamApplicationBootstrapClient,
   createIamApplicationBootstrap,
-  formatBootstrapEnvFile,
   hashManifestContent,
   loadBootstrapAuthProfileFromHome,
   resolveBootstrapAuth,
@@ -29,6 +28,11 @@ function parseArgs(argv) {
     instanceKey: "",
     environment: "",
     primaryDomain: "",
+    deployApplicationId: "",
+    applicationType: "",
+    accessPermissions: "",
+    runtimeConfig: "",
+    provisioningIdempotencyKey: "",
     authToken: "",
     username: "",
     password: "",
@@ -51,6 +55,16 @@ function parseArgs(argv) {
       options.environment = argv[++index];
     } else if (arg === "--domain" && argv[index + 1]) {
       options.primaryDomain = argv[++index];
+    } else if (arg === "--deploy-application-id" && argv[index + 1]) {
+      options.deployApplicationId = argv[++index];
+    } else if (arg === "--application-type" && argv[index + 1]) {
+      options.applicationType = argv[++index];
+    } else if (arg === "--access-permissions" && argv[index + 1]) {
+      options.accessPermissions = argv[++index];
+    } else if (arg === "--runtime-config" && argv[index + 1]) {
+      options.runtimeConfig = argv[++index];
+    } else if (arg === "--provisioning-idempotency-key" && argv[index + 1]) {
+      options.provisioningIdempotencyKey = argv[++index];
     } else if (arg === "--auth-token" && argv[index + 1]) {
       options.authToken = argv[++index];
     } else if (arg === "--username" && argv[index + 1]) {
@@ -82,6 +96,43 @@ function hasBootstrapAuthCredentials(auth) {
   if (auth.authToken?.trim()) return true;
   const username = auth.username ?? auth.email;
   return Boolean(username?.trim() && auth.password?.trim());
+}
+
+function parseAccessPermissions(raw) {
+  if (!raw) return undefined;
+  return `${raw}`
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+}
+
+function parseRuntimeConfig(raw) {
+  if (!raw) return undefined;
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("--runtime-config must be a JSON object");
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("--runtime-config must be a JSON object");
+  }
+  return parsed;
+}
+
+function buildProvisionInput(options) {
+  const accessPermissions = parseAccessPermissions(options.accessPermissions);
+  const runtimeConfig = parseRuntimeConfig(options.runtimeConfig);
+  const provision = {
+    ...(options.deployApplicationId ? { deployApplicationId: options.deployApplicationId } : {}),
+    ...(options.applicationType ? { applicationType: options.applicationType } : {}),
+    ...(accessPermissions !== undefined ? { accessPermissions } : {}),
+    ...(runtimeConfig !== undefined ? { runtimeConfig } : {}),
+    ...(options.provisioningIdempotencyKey
+      ? { provisioningIdempotencyKey: options.provisioningIdempotencyKey }
+      : {}),
+  };
+  return Object.keys(provision).length > 0 ? provision : undefined;
 }
 
 async function main() {
@@ -134,6 +185,10 @@ async function main() {
     );
   }
 
+  const provision = buildProvisionInput({
+    ...options,
+    deployApplicationId: options.deployApplicationId || envRecord.SDKWORK_DEPLOY_APPLICATION_ID || "",
+  });
   const client = createFetchIamApplicationBootstrapClient({
     baseUrl: environment.backendApiBaseUrl,
   });
@@ -145,6 +200,7 @@ async function main() {
     auth,
     profile: loadedProfile?.profile ?? null,
     environment,
+    ...(provision ? { provision } : {}),
   });
 
   const token = result.env.SDKWORK_ACCESS_TOKEN?.trim();
@@ -169,7 +225,9 @@ async function main() {
   console.log(
     JSON.stringify(
       {
-        templateId: result.templateId,
+        deployApplicationId: result.deployApplicationId,
+        applicationType: result.applicationType,
+        provisioningIdempotencyKey: result.provisioningIdempotencyKey,
         tenantApplicationId: result.tenantApplicationId,
         appId: result.appId,
         version: result.version,

@@ -9,6 +9,7 @@ Operational runbooks for IAM production and staging deployments.
 | --- | --- |
 | [deployments/runbooks/local-iam-rust.md](../../deployments/runbooks/local-iam-rust.md) | Local gateway, PostgreSQL bootstrap, verification |
 | [guides/operator/README.md](../guides/operator/README.md) | Production prerequisites, gateway surfaces, Snowflake node IDs |
+| [backfill-installation-deploy-link.md](backfill-installation-deploy-link.md) | Link legacy installations to their deployment application (`0040` backfill) |
 
 ## Verification
 

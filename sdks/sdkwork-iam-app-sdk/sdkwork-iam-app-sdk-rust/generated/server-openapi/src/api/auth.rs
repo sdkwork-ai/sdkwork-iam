@@ -4,7 +4,7 @@ use reqwest::Method;
 
 use crate::api::paths::app_path;
 use crate::http::{SdkworkError, SdkworkHttpClient};
-use crate::models::{AppbaseSessionCreateCommand, SdkWorkCommandData};
+use crate::models::{AppbaseSessionCreateCommand, SdkWorkCommandData, SessionsCurrentLogoutRequest};
 
 #[derive(Clone)]
 pub struct AuthApi {
@@ -58,6 +58,12 @@ impl AuthApi {
         self.client.patch(&path, Some(body), None, None, Some("application/json")).await
     }
 
+    /// Sessions current logout.
+    pub async fn sessions_current_logout(&self, body: &SessionsCurrentLogoutRequest) -> Result<(), SdkworkError> {
+        let path = app_path(&"/auth/sessions/current/logout".to_string());
+        self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), true, false).await
+    }
+
     /// Sessions login Context Selection create.
     pub async fn sessions_login_context_selection_create(&self, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = app_path(&"/auth/sessions/login_context_selection".to_string());
@@ -74,6 +80,12 @@ impl AuthApi {
     pub async fn sessions_refresh(&self, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<SdkWorkCommandData, SdkworkError> {
         let path = app_path(&"/auth/sessions/refresh".to_string());
         self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), true, false).await
+    }
+
+    /// Verification Code Requests create.
+    pub async fn verification_code_requests_create(&self, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = app_path(&"/auth/verification_code_requests".to_string());
+        self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), false, true).await
     }
 
 }

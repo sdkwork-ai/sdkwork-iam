@@ -19,7 +19,7 @@ use serde_json::Value;
 use sqlx::PgPool;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::application_registry::resolve_tenant_application;
+use crate::application_registry::resolve_tenant_application_by_deploy_application_id;
 
 const PUBLIC_APPLICATION_ACCESS_TOKEN_KID: &str = "public-app-token";
 const PUBLIC_APPLICATION_ACCESS_TOKEN_SIGNATURE: &str = "public";
@@ -157,16 +157,26 @@ pub fn parse_public_application_access_token(
 /// The context is bound to the enabled tenant application registry row; no
 /// `iam_session` row is required and no user permissions are granted (the token
 /// only enables credential-entry bootstrap).
+///
+/// The token names its installation by the **deploy application** it serves, not
+/// by the IAM runtime `app_id`: `app_id`/`aud` are the same value (checked in
+/// [`parse_public_application_access_token`]), and the registry lookup uses the
+/// deploy link. A credential that still carries the IAM runtime `app_id` no
+/// longer resolves, and an installation without a deploy link cannot resolve at
+/// all, so both fail closed here.
 #[must_use]
 pub async fn resolve_application_access_token_context(
     pg: &PgPool,
     token: &str,
 ) -> Option<IamAppContext> {
     let claims = parse_public_application_access_token(token)?;
-    let application =
-        resolve_tenant_application(pg, &claims.tenant_id, None, Some(&claims.app_id), None)
-            .await
-            .ok()??;
+    let application = resolve_tenant_application_by_deploy_application_id(
+        pg,
+        &claims.tenant_id,
+        &claims.app_id,
+    )
+    .await
+    .ok()??;
     if application.status != "enabled" {
         return None;
     }

@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 from ..http_client import HttpClient
-from ..models import AppbaseSessionCreateCommand, SdkWorkListResponse, SdkWorkResourceResponse, WechatMiniProgramSessionCreateCommand
+from ..models import AppbaseSessionCreateCommand, AuthorizationsCompletionsCreateRequest, AuthorizationsCompletionsCreateResponse, AuthorizationsCreateRequest, AuthorizationsCreateResponse, DesktopSessionsCreateRequest, DesktopSessionsCreateResponse, OauthPhoneBindingSessionCreateCommand, OauthPhoneBindingVerificationCodeRequestCommand, SdkWorkListResponse, SdkWorkResourceResponse, WechatMiniProgramSessionCreateCommand
 
 def _append_query_string(path: str, raw_query_string: str) -> str:
     query = raw_query_string.lstrip('?')
@@ -193,11 +193,15 @@ class OauthApi:
         self.authorization_urls = OauthAuthorizationUrlsApi(client)
         self.authorizations = OauthAuthorizationsApi(client)
         self.callbacks = OauthCallbacksApi(client)
+        self.desktop_sessions = OauthDesktopSessionsApi(client)
         self.device_authorizations = OauthDeviceAuthorizationsApi(client)
         self.grants = OauthGrantsApi(client)
         self.mini_program_sessions = OauthMiniProgramSessionsApi(client)
+        self.phone_binding_sessions = OauthPhoneBindingSessionsApi(client)
         self.providers = OauthProvidersApi(client)
+        self.scan_login_modes = OauthScanLoginModesApi(client)
         self.sessions = OauthSessionsApi(client)
+        self.wechat_payment_oauth = OauthWechatPaymentOauthApi(client)
 
 
 class OauthAccountLinksApi:
@@ -241,6 +245,10 @@ class OauthAuthorizationsApi:
         self.completions = OauthAuthorizationsCompletionsApi(client)
 
 
+    def create(self, body: AuthorizationsCreateRequest) -> AuthorizationsCreateResponse:
+        """Authorizations create."""
+        return self._client.post(f"/app/v3/api/oauth/authorizations", json=body, skip_auth=True)
+
 class OauthAuthorizationsCompletionsApi:
     """oauth oauth.authorizations.completions API client."""
 
@@ -248,7 +256,7 @@ class OauthAuthorizationsCompletionsApi:
         self._client = client
 
 
-    def create(self, authorization_state_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
+    def create(self, authorization_state_id: str, body: AuthorizationsCompletionsCreateRequest) -> AuthorizationsCompletionsCreateResponse:
         """Authorizations completions create."""
         return self._client.post(f"/app/v3/api/oauth/authorizations/{serialize_path_parameter(authorization_state_id, {'name': 'authorizationStateId', 'style': 'simple', 'explode': False})}/completions", json=body)
 
@@ -267,6 +275,17 @@ class OauthCallbacksApi:
         """Callbacks create."""
         return self._client.post(f"/app/v3/api/oauth/callbacks/{serialize_path_parameter(provider_code, {'name': 'providerCode', 'style': 'simple', 'explode': False})}", json=body, access_token_only=True)
 
+class OauthDesktopSessionsApi:
+    """oauth oauth.desktop_sessions API client."""
+
+    def __init__(self, client: HttpClient):
+        self._client = client
+
+
+    def create(self, body: DesktopSessionsCreateRequest) -> DesktopSessionsCreateResponse:
+        """Desktop Sessions create."""
+        return self._client.post(f"/app/v3/api/oauth/desktop_sessions", json=body, skip_auth=True)
+
 class OauthDeviceAuthorizationsApi:
     """oauth oauth.device_authorizations API client."""
 
@@ -274,6 +293,7 @@ class OauthDeviceAuthorizationsApi:
         self._client = client
         self.password_completions = OauthDeviceAuthorizationsPasswordCompletionsApi(client)
         self.scans = OauthDeviceAuthorizationsScansApi(client)
+        self.session_completions = OauthDeviceAuthorizationsSessionCompletionsApi(client)
         self.session_exchanges = OauthDeviceAuthorizationsSessionExchangesApi(client)
 
 
@@ -306,6 +326,17 @@ class OauthDeviceAuthorizationsScansApi:
     def create(self, device_authorization_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
         """Device Authorizations scans create."""
         return self._client.post(f"/app/v3/api/oauth/device_authorizations/{serialize_path_parameter(device_authorization_id, {'name': 'deviceAuthorizationId', 'style': 'simple', 'explode': False})}/scans", json=body, access_token_only=True)
+
+class OauthDeviceAuthorizationsSessionCompletionsApi:
+    """oauth oauth.device_authorizations.session_completions API client."""
+
+    def __init__(self, client: HttpClient):
+        self._client = client
+
+
+    def create(self, device_authorization_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
+        """Device Authorizations session Completions create."""
+        return self._client.post(f"/app/v3/api/oauth/device_authorizations/{serialize_path_parameter(device_authorization_id, {'name': 'deviceAuthorizationId', 'style': 'simple', 'explode': False})}/session_completions", json=body, access_token_only=True)
 
 class OauthDeviceAuthorizationsSessionExchangesApi:
     """oauth oauth.device_authorizations.session_exchanges API client."""
@@ -351,6 +382,29 @@ class OauthMiniProgramSessionsApi:
         """Mini Program Sessions create."""
         return self._client.post(f"/app/v3/api/oauth/mini_program_sessions", json=body, access_token_only=True)
 
+class OauthPhoneBindingSessionsApi:
+    """oauth oauth.phone_binding_sessions API client."""
+
+    def __init__(self, client: HttpClient):
+        self._client = client
+        self.verification_code_requests = OauthPhoneBindingSessionsVerificationCodeRequestsApi(client)
+
+
+    def create(self, body: OauthPhoneBindingSessionCreateCommand) -> SdkWorkResourceResponse:
+        """Phone Binding Sessions create."""
+        return self._client.post(f"/app/v3/api/oauth/phone_binding_sessions", json=body, access_token_only=True)
+
+class OauthPhoneBindingSessionsVerificationCodeRequestsApi:
+    """oauth oauth.phone_binding_sessions.verification_code_requests API client."""
+
+    def __init__(self, client: HttpClient):
+        self._client = client
+
+
+    def create(self, body: OauthPhoneBindingVerificationCodeRequestCommand) -> SdkWorkResourceResponse:
+        """Phone Binding Sessions verification Code Requests create."""
+        return self._client.post(f"/app/v3/api/oauth/phone_binding_sessions/verification_code_requests", json=body, access_token_only=True)
+
 class OauthProvidersApi:
     """oauth oauth.providers API client."""
 
@@ -369,6 +423,24 @@ class OauthProvidersApi:
         ])
         return self._client.get(_append_query_string(f"/app/v3/api/oauth/providers", query), access_token_only=True)
 
+class OauthScanLoginModesApi:
+    """oauth oauth.scan_login_modes API client."""
+
+    def __init__(self, client: HttpClient):
+        self._client = client
+
+
+    def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
+        """Scan Login Modes list."""
+        query = build_query_string([
+            {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'page_size', 'value': page_size, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'cursor', 'value': cursor, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'sort', 'value': sort, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'q', 'value': q, 'style': 'form', 'explode': True, 'allow_reserved': False},
+        ])
+        return self._client.get(_append_query_string(f"/app/v3/api/oauth/scan_login_modes", query), access_token_only=True)
+
 class OauthSessionsApi:
     """oauth oauth.sessions API client."""
 
@@ -379,3 +451,25 @@ class OauthSessionsApi:
     def create(self, body: AppbaseSessionCreateCommand) -> SdkWorkResourceResponse:
         """Sessions create."""
         return self._client.post(f"/app/v3/api/oauth/sessions", json=body, access_token_only=True)
+
+class OauthWechatPaymentOauthApi:
+    """oauth oauth.wechat_payment_oauth API client."""
+
+    def __init__(self, client: HttpClient):
+        self._client = client
+
+
+    def callback(self) -> SdkWorkResourceResponse:
+        """Wechat Payment Oauth callback."""
+        return self._client.get(f"/app/v3/api/oauth/wechat/payment/callback", skip_auth=True)
+
+    def cashier_start(self) -> SdkWorkResourceResponse:
+        """Wechat Payment Oauth cashier Start."""
+        return self._client.get(f"/app/v3/api/oauth/wechat/payment/cashier/start", skip_auth=True)
+
+    def start(self, redirect: str) -> SdkWorkResourceResponse:
+        """Wechat Payment Oauth start."""
+        query = build_query_string([
+            {'name': 'redirect', 'value': redirect, 'style': 'form', 'explode': True, 'allow_reserved': False},
+        ])
+        return self._client.get(_append_query_string(f"/app/v3/api/oauth/wechat/payment/start", query))

@@ -68,6 +68,14 @@ pub struct ManifestAppSection {
 pub struct ManifestBackendSection {
     #[serde(default)]
     pub app_id: Option<String>,
+    /// Deploy application anchor of this installation.
+    ///
+    /// `APPLICATION_IDENTITY_SPEC.md` §2 makes the deployed runtime identity the
+    /// deploy application, so a manifest that declares it here is authoritative.
+    /// A manifest that omits it keeps its `backend.appId` as the anchor: that
+    /// field is the configured runtime identity and is never a generated value.
+    #[serde(default)]
+    pub deploy_application_id: Option<String>,
     #[serde(default)]
     pub tenant_id: Option<String>,
     #[serde(default)]
@@ -222,6 +230,31 @@ pub fn manifest_to_ensure_command(
     if runtime_app_id.is_empty() {
         return Err("runtime appId must be resolved from manifest or runtime binding".to_string());
     }
+    // The deploy anchor comes from configuration: an explicit
+    // `backend.deployApplicationId`, else the manifest's configured runtime
+    // identity (`backend.appId`, or `app.key` when the manifest declares no
+    // runtime id). It is never generated, and there is no fallback to a
+    // synthesized IAM app id.
+    //
+    // An explicit additional runtime binding is a *surface* of the same
+    // deployment (PC/H5/mobile of one product), not a second installation, so it
+    // does not claim the anchor: `uk_iam_application_installation_deploy` makes the
+    // anchor one-to-one and a surface must not compete for it.
+    let is_installation_identity = binding
+        .map(|value| backend_runtime_app_id(manifest) == Some(value.runtime_app_id.trim()))
+        .unwrap_or(true);
+    let deploy_application_id = if is_installation_identity {
+        let anchor = manifest
+            .backend
+            .deploy_application_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .unwrap_or(runtime_app_id.as_str());
+        Some(anchor.to_owned())
+    } else {
+        None
+    };
 
     let display_name = binding
         .and_then(|value| value.display_name.as_deref())
@@ -282,6 +315,7 @@ pub fn manifest_to_ensure_command(
         environment,
         primary_domain,
         runtime_app_id,
+        deploy_application_id,
         oauth_relying_party: manifest_oauth_relying_party(manifest),
     })
 }
@@ -519,6 +553,13 @@ mod tests {
 
         assert_eq!("sdkwork-cloudrouter", command.runtime_app_id);
         assert_eq!("sdkwork_cloudrouter_prod", command.instance_key);
+        // The configured runtime identity is the installation's deploy anchor;
+        // no generated IAM id is invented for a manifest that declares no
+        // separate `backend.deployApplicationId`.
+        assert_eq!(
+            command.deploy_application_id.as_deref(),
+            Some("sdkwork-cloudrouter")
+        );
     }
 
     #[test]

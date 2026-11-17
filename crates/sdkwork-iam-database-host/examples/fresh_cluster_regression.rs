@@ -122,7 +122,7 @@ async fn main() -> Result<()> {
             .as_str()
             .context("registry application.appId")?;
         let status: Option<String> = sqlx::query_scalar(
-            "SELECT status FROM iam_tenant_application \
+            "SELECT status FROM iam_application_installation \
              WHERE tenant_id = '100001' AND app_id = $1 LIMIT 1",
         )
         .bind(app_id)
@@ -137,7 +137,7 @@ async fn main() -> Result<()> {
 
     let duplicate_domains: i64 = sqlx::query_scalar(
         "SELECT COUNT(*)::bigint FROM (\
-           SELECT primary_domain FROM iam_tenant_application \
+           SELECT primary_domain FROM iam_application_installation \
            WHERE tenant_id = '100001' AND primary_domain IS NOT NULL \
            GROUP BY primary_domain HAVING COUNT(*) > 1\
          ) duplicates",
@@ -167,7 +167,7 @@ async fn main() -> Result<()> {
 
     // Redeploy/restart convergence: the same bootstrap must be idempotent.
     let enabled_before: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*)::bigint FROM iam_tenant_application \
+        "SELECT COUNT(*)::bigint FROM iam_application_installation \
          WHERE tenant_id = '100001' AND status = 'enabled'",
     )
     .fetch_one(pg)
@@ -179,7 +179,7 @@ async fn main() -> Result<()> {
         .context("rerun IAM bootstrap on the same database")?;
     let pg_rerun: &PgPool = rerun.postgres_pool().map_err(anyhow::Error::msg)?;
     let enabled_after: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*)::bigint FROM iam_tenant_application \
+        "SELECT COUNT(*)::bigint FROM iam_application_installation \
          WHERE tenant_id = '100001' AND status = 'enabled'",
     )
     .fetch_one(pg_rerun)

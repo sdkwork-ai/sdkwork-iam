@@ -12,10 +12,13 @@ tables:
   - name: iam_api_key
     lifecycle_status: active
     owner: sdkwork-iam
-  - name: iam_application_template
+  - name: iam_application_installation
     lifecycle_status: active
     owner: sdkwork-iam
-  - name: iam_application_template_package
+  - name: iam_application_installation_credential
+    lifecycle_status: active
+    owner: sdkwork-iam
+  - name: iam_application_installation_environment
     lifecycle_status: active
     owner: sdkwork-iam
   - name: iam_audit_event
@@ -123,16 +126,6 @@ tables:
   - name: iam_oauth_webhook_config
     lifecycle_status: active
     owner: sdkwork-iam
-  # Migration evidence only: written once by 0033_official_account_unification,
-  # never read or written by runtime code. 0034 drops the legacy
-  # iam_user_official_account table but deliberately keeps this ledger so the
-  # isolated rows stay reviewable; an operator retires it in a separate,
-  # explicitly approved step once those rows are re-appended or accepted.
-  # 0033's own provenance header predates that decision and is frozen by the
-  # migration checksum, so this comment is the current lifecycle statement.
-  - name: iam_official_account_migration_orphan
-    lifecycle_status: deprecated
-    owner: sdkwork-iam
   - name: iam_organization
     lifecycle_status: active
     owner: sdkwork-iam
@@ -194,9 +187,6 @@ tables:
     lifecycle_status: active
     owner: sdkwork-iam
   - name: iam_tenant
-    lifecycle_status: active
-    owner: sdkwork-iam
-  - name: iam_tenant_application
     lifecycle_status: active
     owner: sdkwork-iam
   - name: iam_tenant_member

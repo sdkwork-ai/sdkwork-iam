@@ -92,7 +92,6 @@ fn oauth_account_maintenance_operation(operation_id: &str) -> bool {
 
 fn explicit_bootstrap_permission(operation_id: &str) -> Option<&'static str> {
     match operation_id {
-        "applications.register" => Some("iam.applications.register"),
         "tenantApplications.create" => Some("iam.tenant_applications.provision"),
         "tenantApplications.list" | "tenantApplications.summary.retrieve" => {
             Some("iam.tenant_applications.update")
@@ -105,6 +104,18 @@ fn explicit_bootstrap_permission(operation_id: &str) -> Option<&'static str> {
         "tenantApplications.retrieve" => Some("iam.tenant_applications.update"),
         "tenantApplications.update" => Some("iam.tenant_applications.update"),
         "tenantApplications.enable" => Some("iam.tenant_applications.enable"),
+        // Environments and their OAuth credentials are attributes of the
+        // installation itself, so they ride on the permission that already owns
+        // installation mutation. No new code is seeded and no existing boundary is
+        // widened: an actor that may update an installation may manage the
+        // environment domain and credential lifecycle of that installation.
+        "tenantApplications.environments.list"
+        | "tenantApplications.environments.update"
+        | "tenantApplications.environments.delete"
+        | "tenantApplications.credentials.list"
+        | "tenantApplications.credentials.create"
+        | "tenantApplications.credentials.rotate"
+        | "tenantApplications.credentials.revoke" => Some("iam.tenant_applications.update"),
         "accessCredentials.create" => Some("iam.access_credentials.create"),
         "serviceAccounts.credentials.create" => Some("iam.service_account_credentials.create"),
         "serviceAccountCredentials.revoke" => Some("iam.service_account_credentials.revoke"),
@@ -358,6 +369,25 @@ mod tests {
     }
 
     #[test]
+    fn maps_installation_environment_and_credential_operations_to_the_update_boundary() {
+        for operation_id in [
+            "tenantApplications.environments.list",
+            "tenantApplications.environments.update",
+            "tenantApplications.environments.delete",
+            "tenantApplications.credentials.list",
+            "tenantApplications.credentials.create",
+            "tenantApplications.credentials.rotate",
+            "tenantApplications.credentials.revoke",
+        ] {
+            assert_eq!(
+                iam_backend_permission_for_operation(operation_id),
+                Some("iam.tenant_applications.update"),
+                "{operation_id} must reuse the installation update boundary"
+            );
+        }
+    }
+
+    #[test]
     fn tenant_owned_oauth_account_maintenance_needs_no_permission() {
         // The shared official-account and mini-program panels maintain
         // tenant-owned rows; any signed-in member may open them.
@@ -389,10 +419,11 @@ mod tests {
     }
 
     #[test]
-    fn maps_bootstrap_operations_to_platform_permissions() {
+    fn retired_application_register_operation_has_no_permission() {
         assert_eq!(
             iam_backend_permission_for_operation("applications.register"),
-            Some("iam.applications.register")
+            None,
+            "the retired application-template register operation must not resolve a permission"
         );
     }
 

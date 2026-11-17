@@ -2,20 +2,21 @@ module Sdkwork
   module BackendSdk
     module Models
       class IamTenantApplicationManagementProvisionCommand
-              # Provision a registered application template for a tenant through an authenticated operator workflow.
-              attr_accessor :organization_id, :template_id, :app_key, :instance_key, :display_name, :environment, :application_type, :primary_domain, :access_permissions
+              # Provision a tenant installation from the deploy application it serves plus explicit attributes, through an authenticated operator workflow. Application templates are retired, so no template reference is accepted.
+              attr_accessor :organization_id, :instance_key, :display_name, :environment, :application_type, :primary_domain, :access_permissions, :runtime_config, :deploy_application_id, :provisioning_idempotency_key
 
               def initialize(attributes = {})
                 attributes = (attributes || {}).transform_keys(&:to_s)
                 @organization_id = attributes['organizationId']
-                @template_id = attributes['templateId']
-                @app_key = attributes['appKey']
                 @instance_key = attributes['instanceKey']
                 @display_name = attributes['displayName']
                 @environment = attributes['environment']
                 @application_type = attributes['applicationType']
                 @primary_domain = attributes['primaryDomain']
                 @access_permissions = attributes['accessPermissions'].is_a?(Array) ? attributes['accessPermissions'].map { |item| item } : []
+                @runtime_config = attributes['runtimeConfig'].is_a?(Hash) ? attributes['runtimeConfig'] : {}
+                @deploy_application_id = attributes['deployApplicationId']
+                @provisioning_idempotency_key = attributes['provisioningIdempotencyKey']
               end
 
               def self.from_hash(data)
@@ -27,14 +28,15 @@ module Sdkwork
               def to_hash
                 {
                   'organizationId' => @organization_id,
-                  'templateId' => @template_id,
-                  'appKey' => @app_key,
                   'instanceKey' => @instance_key,
                   'displayName' => @display_name,
                   'environment' => @environment,
                   'applicationType' => @application_type,
                   'primaryDomain' => @primary_domain,
                   'accessPermissions' => @access_permissions.is_a?(Array) ? @access_permissions.map { |item| item } : [],
+                  'runtimeConfig' => @runtime_config,
+                  'deployApplicationId' => @deploy_application_id,
+                  'provisioningIdempotencyKey' => @provisioning_idempotency_key,
                 }
               end
             end

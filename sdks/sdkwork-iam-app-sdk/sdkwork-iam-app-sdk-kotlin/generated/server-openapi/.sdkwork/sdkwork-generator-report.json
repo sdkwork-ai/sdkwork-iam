@@ -10,37 +10,163 @@
   },
   "status": "ok",
   "mode": "apply",
-  "hasChanges": false,
+  "hasChanges": true,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "8b053db69f999b71b49cd0422779dbeeb4b32a6970437ddfd2fe131a715a34d4",
+  "changeFingerprint": "7c1d5251dacf2e27c435b3e7b7c5673f0d80bbb629d09306396ec38b54237768",
   "changeImpact": {
     "schemaVersion": 1,
-    "areas": [],
-    "details": [],
-    "requiresVerification": false,
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped."
+    "areas": [
+      "api-surface",
+      "runtime",
+      "build-metadata",
+      "publish-workflow",
+      "documentation",
+      "unknown"
+    ],
+    "details": [
+      {
+        "area": "api-surface",
+        "paths": [
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/api/Api.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/api/ApiPaths.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/api/AuthApi.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/api/IamApi.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/api/OauthApi.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/api/SystemApi.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkworkAppClient.kt"
+        ]
+      },
+      {
+        "area": "runtime",
+        "paths": [
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/http/HttpClient.kt"
+        ]
+      },
+      {
+        "area": "build-metadata",
+        "paths": [
+          "build.gradle.kts",
+          "sdkwork-sdk.json",
+          "settings.gradle.kts"
+        ]
+      },
+      {
+        "area": "publish-workflow",
+        "paths": [
+          "bin/publish-core.mjs",
+          "bin/publish.ps1",
+          "bin/publish.sh"
+        ]
+      },
+      {
+        "area": "documentation",
+        "paths": [
+          "CHANGELOG.md",
+          "README.md"
+        ]
+      },
+      {
+        "area": "unknown",
+        "paths": [
+          "LICENSE",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/AppbaseSessionCreateCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/AuthorizationsCompletionsCreateRequest.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/AuthorizationsCompletionsCreateResponse.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/AuthorizationsCreateRequest.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/AuthorizationsCreateResponse.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/DesktopSessionsCreateRequest.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/DesktopSessionsCreateResponse.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/FieldError.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/IamOrganizationMember.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/IamOrganizationMemberListResponse.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/IamPersonaCatalog.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/IamPersonaCatalogResponse.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/IamPersonaInterest.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/IamPersonaRole.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/IamUserPersona.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/IamUserPersonaResponse.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/IamUserPersonaUpdateCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/OauthPhoneBindingSessionCreateCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/OauthPhoneBindingVerificationCodeRequestCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/PageInfo.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/ProblemDetail.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkApiResponse.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkCommandData.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkCommandResponse.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkListResponse.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkPageData.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkResourceData.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkResourceResponse.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/SessionsCurrentLogoutRequest.kt",
+          "src/main/kotlin/com/sdkwork/iam/app/sdk/WechatMiniProgramSessionCreateCommand.kt"
+        ]
+      }
+    ],
+    "requiresVerification": true,
+    "summary": "Detected impact areas: api-surface, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "low",
-    "nextAction": "skip",
+    "riskLevel": "high",
+    "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
-    "summary": "No actionable changes were detected. No apply or verification step is required.",
+    "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "no-actionable-changes"
+      "backed-up-generated-files",
+      "manual-review-required",
+      "unknown-impact",
+      "verification-required"
     ]
   },
   "executionHandoff": {
     "schemaVersion": 1,
-    "summary": "No further commands are required.",
-    "steps": []
+    "summary": "Run the required verification commands now.",
+    "steps": [
+      {
+        "id": "verify-check",
+        "title": "Unified package check",
+        "required": true,
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-kotlin\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "kotlin",
+          "--project-dir",
+          ".",
+          "--action",
+          "check"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language kotlin --project-dir . --action check"
+      }
+    ]
   },
   "verificationPlan": {
-    "shouldRun": false,
-    "runPhase": "skip",
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped.",
-    "steps": []
+    "shouldRun": true,
+    "runPhase": "now",
+    "summary": "Detected impact areas: api-surface, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "steps": [
+      {
+        "id": "check",
+        "title": "Unified package check",
+        "required": true,
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-kotlin\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "kotlin",
+          "--project-dir",
+          ".",
+          "--action",
+          "check"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language kotlin --project-dir . --action check"
+      }
+    ]
   },
   "sdk": {
     "name": "sdkwork-iam-app-sdk",
@@ -48,7 +174,7 @@
     "language": "kotlin",
     "sdkType": "app",
     "protocol": "http",
-    "outputPath": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-kotlin\\generated\\server-openapi",
+    "outputPath": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-kotlin\\generated\\server-openapi",
     "packageName": "com.sdkwork:sdkwork-iam-app-sdk"
   },
   "versioning": {
@@ -56,8 +182,8 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 30,
-    "models": 12,
+    "totalFiles": 48,
+    "models": 30,
     "apis": 4,
     "types": 0
   },
@@ -65,16 +191,34 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 0,
+    "writtenFiles": 47,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 29,
+    "skippedUnchangedGeneratedFiles": 0,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "8b053db69f999b71b49cd0422779dbeeb4b32a6970437ddfd2fe131a715a34d4",
+    "changeFingerprint": "7c1d5251dacf2e27c435b3e7b7c5673f0d80bbb629d09306396ec38b54237768",
     "changes": {
-      "createdGeneratedFiles": [],
-      "updatedGeneratedFiles": [],
-      "unchangedGeneratedFiles": [
+      "createdGeneratedFiles": [
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/AuthorizationsCompletionsCreateRequest.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/AuthorizationsCompletionsCreateResponse.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/AuthorizationsCreateRequest.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/AuthorizationsCreateResponse.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/DesktopSessionsCreateRequest.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/DesktopSessionsCreateResponse.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/IamOrganizationMember.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/IamOrganizationMemberListResponse.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/IamPersonaCatalog.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/IamPersonaCatalogResponse.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/IamPersonaInterest.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/IamPersonaRole.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/IamUserPersona.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/IamUserPersonaResponse.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/IamUserPersonaUpdateCommand.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/OauthPhoneBindingSessionCreateCommand.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/OauthPhoneBindingVerificationCodeRequestCommand.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/SessionsCurrentLogoutRequest.kt"
+      ],
+      "updatedGeneratedFiles": [
         "bin/publish-core.mjs",
         "bin/publish.ps1",
         "bin/publish.sh",
@@ -105,38 +249,206 @@
         "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkResourceResponse.kt",
         "src/main/kotlin/com/sdkwork/iam/app/sdk/WechatMiniProgramSessionCreateCommand.kt"
       ],
+      "unchangedGeneratedFiles": [],
       "deletedGeneratedFiles": [],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/README.md"
       ],
-      "backedUpFiles": []
+      "backedUpFiles": [
+        "bin/publish-core.mjs",
+        "bin/publish.ps1",
+        "bin/publish.sh",
+        "build.gradle.kts",
+        "CHANGELOG.md",
+        "LICENSE",
+        "README.md",
+        "sdkwork-sdk.json",
+        "settings.gradle.kts",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/api/Api.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/api/ApiPaths.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/api/AuthApi.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/api/IamApi.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/api/OauthApi.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/api/SystemApi.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/AppbaseSessionCreateCommand.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/FieldError.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/http/HttpClient.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/PageInfo.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/ProblemDetail.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkApiResponse.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkworkAppClient.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkCommandData.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkCommandResponse.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkListResponse.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkPageData.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkResourceData.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkResourceResponse.kt",
+        "src/main/kotlin/com/sdkwork/iam/app/sdk/WechatMiniProgramSessionCreateCommand.kt"
+      ]
     },
     "impact": {
       "schemaVersion": 1,
-      "areas": [],
-      "details": [],
-      "requiresVerification": false,
-      "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped."
+      "areas": [
+        "api-surface",
+        "runtime",
+        "build-metadata",
+        "publish-workflow",
+        "documentation",
+        "unknown"
+      ],
+      "details": [
+        {
+          "area": "api-surface",
+          "paths": [
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/api/Api.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/api/ApiPaths.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/api/AuthApi.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/api/IamApi.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/api/OauthApi.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/api/SystemApi.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkworkAppClient.kt"
+          ]
+        },
+        {
+          "area": "runtime",
+          "paths": [
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/http/HttpClient.kt"
+          ]
+        },
+        {
+          "area": "build-metadata",
+          "paths": [
+            "build.gradle.kts",
+            "sdkwork-sdk.json",
+            "settings.gradle.kts"
+          ]
+        },
+        {
+          "area": "publish-workflow",
+          "paths": [
+            "bin/publish-core.mjs",
+            "bin/publish.ps1",
+            "bin/publish.sh"
+          ]
+        },
+        {
+          "area": "documentation",
+          "paths": [
+            "CHANGELOG.md",
+            "README.md"
+          ]
+        },
+        {
+          "area": "unknown",
+          "paths": [
+            "LICENSE",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/AppbaseSessionCreateCommand.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/AuthorizationsCompletionsCreateRequest.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/AuthorizationsCompletionsCreateResponse.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/AuthorizationsCreateRequest.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/AuthorizationsCreateResponse.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/DesktopSessionsCreateRequest.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/DesktopSessionsCreateResponse.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/FieldError.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/IamOrganizationMember.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/IamOrganizationMemberListResponse.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/IamPersonaCatalog.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/IamPersonaCatalogResponse.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/IamPersonaInterest.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/IamPersonaRole.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/IamUserPersona.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/IamUserPersonaResponse.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/IamUserPersonaUpdateCommand.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/OauthPhoneBindingSessionCreateCommand.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/OauthPhoneBindingVerificationCodeRequestCommand.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/PageInfo.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/ProblemDetail.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkApiResponse.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkCommandData.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkCommandResponse.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkListResponse.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkPageData.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkResourceData.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkResourceResponse.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/SessionsCurrentLogoutRequest.kt",
+            "src/main/kotlin/com/sdkwork/iam/app/sdk/WechatMiniProgramSessionCreateCommand.kt"
+          ]
+        }
+      ],
+      "requiresVerification": true,
+      "summary": "Detected impact areas: api-surface, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required."
     },
     "verificationPlan": {
-      "shouldRun": false,
-      "runPhase": "skip",
-      "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped.",
-      "steps": []
+      "shouldRun": true,
+      "runPhase": "now",
+      "summary": "Detected impact areas: api-surface, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "steps": [
+        {
+          "id": "check",
+          "title": "Unified package check",
+          "required": true,
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, runtime, build-metadata, publish-workflow, documentation, unknown.",
+          "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-kotlin\\generated\\server-openapi",
+          "command": "node",
+          "args": [
+            "./bin/publish-core.mjs",
+            "--language",
+            "kotlin",
+            "--project-dir",
+            ".",
+            "--action",
+            "check"
+          ],
+          "displayCommand": "node ./bin/publish-core.mjs --language kotlin --project-dir . --action check"
+        }
+      ]
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "low",
-      "nextAction": "skip",
+      "riskLevel": "high",
+      "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
-      "summary": "No actionable changes were detected. No apply or verification step is required.",
+      "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
-        "no-actionable-changes"
+        "backed-up-generated-files",
+        "manual-review-required",
+        "unknown-impact",
+        "verification-required"
       ]
     },
-    "backedUpFiles": [],
+    "backedUpFiles": [
+      "bin/publish-core.mjs",
+      "bin/publish.ps1",
+      "bin/publish.sh",
+      "build.gradle.kts",
+      "CHANGELOG.md",
+      "LICENSE",
+      "README.md",
+      "sdkwork-sdk.json",
+      "settings.gradle.kts",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/api/Api.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/api/ApiPaths.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/api/AuthApi.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/api/IamApi.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/api/OauthApi.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/api/SystemApi.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/AppbaseSessionCreateCommand.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/FieldError.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/http/HttpClient.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/PageInfo.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/ProblemDetail.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkApiResponse.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkworkAppClient.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkCommandData.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkCommandResponse.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkListResponse.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkPageData.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkResourceData.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/SdkWorkResourceResponse.kt",
+      "src/main/kotlin/com/sdkwork/iam/app/sdk/WechatMiniProgramSessionCreateCommand.kt"
+    ],
     "preservedLegacyFiles": false
   }
 }

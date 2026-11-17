@@ -8,14 +8,13 @@ use std::path::{Path, PathBuf};
 
 use crate::access_token_issue::IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION;
 use crate::application_registry::{
-    IAM_APPLICATIONS_REGISTER_PERMISSION, IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION,
-    IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION, IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION,
+    IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION, IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION,
+    IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION,
 };
 use crate::iam_session::resolve_iam_app_context_from_auth_token;
 
 const BOOTSTRAP_PERMISSIONS: &[&str] = &[
     IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
-    IAM_APPLICATIONS_REGISTER_PERMISSION,
     IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION,
     IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION,
     IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION,
@@ -452,7 +451,7 @@ pub async fn ensure_super_admin_sync_actor(
     pg: &PgPool,
     actor: &AccessTokenActor,
 ) -> Result<(), String> {
-    ensure_bootstrap_permission(pg, actor, IAM_APPLICATIONS_REGISTER_PERMISSION).await
+    ensure_bootstrap_permission(pg, actor, IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION).await
 }
 
 async fn user_has_permission_code(

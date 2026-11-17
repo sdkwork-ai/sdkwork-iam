@@ -116,7 +116,8 @@ describe("SDKWork IAM standard contracts", () => {
     expect(operationIds).not.toContain("qrAuth.sessions.scans.create");
     expect(operationIds).not.toContain("qrAuth.sessions.passwords.create");
     expect(operationIds).toContain("apiKeys.list");
-    expect(operationIds).toContain("applications.register");
+    // Application templates are retired; provisioning replaces registration.
+    expect(operationIds).not.toContain("applications.register");
     expect(operationIds).toContain("tenantApplications.create");
     expect(operationIds).toContain("tenantApplications.management.create");
     expect(operationIds).toContain("tenantApplications.retrieve");

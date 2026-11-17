@@ -150,20 +150,191 @@ public struct SdkWorkCommandResponse: Codable {
     }
 }
 
+public struct IamPersonaRole: Codable {
+    public let code: String?
+    public let iamRoleCode: String?
+    public let sortOrder: Int?
+    public let labels: [String: String]?
+    public let descriptions: [String: String]?
+
+
+    public init(code: String? = nil, iamRoleCode: String? = nil, sortOrder: Int? = nil, labels: [String: String]? = nil, descriptions: [String: String]? = nil) {
+        self.code = code
+        self.iamRoleCode = iamRoleCode
+        self.sortOrder = sortOrder
+        self.labels = labels
+        self.descriptions = descriptions
+    }
+}
+
+public struct IamPersonaInterest: Codable {
+    public let code: String?
+    public let sortOrder: Int?
+    public let labels: [String: String]?
+
+
+    public init(code: String? = nil, sortOrder: Int? = nil, labels: [String: String]? = nil) {
+        self.code = code
+        self.sortOrder = sortOrder
+        self.labels = labels
+    }
+}
+
+public struct IamPersonaCatalog: Codable {
+    public let version: String?
+    public let roles: [IamPersonaRole]?
+    public let interests: [IamPersonaInterest]?
+
+
+    public init(version: String? = nil, roles: [IamPersonaRole]? = nil, interests: [IamPersonaInterest]? = nil) {
+        self.version = version
+        self.roles = roles
+        self.interests = interests
+    }
+}
+
+public struct IamUserPersona: Codable {
+    public let role: String?
+    public let interests: [String]?
+    public let promptDismissed: Bool?
+    public let hasSelection: Bool?
+    public let catalogVersion: String?
+    public let updatedAt: String?
+
+
+    public init(role: String? = nil, interests: [String]? = nil, promptDismissed: Bool? = nil, hasSelection: Bool? = nil, catalogVersion: String? = nil, updatedAt: String? = nil) {
+        self.role = role
+        self.interests = interests
+        self.promptDismissed = promptDismissed
+        self.hasSelection = hasSelection
+        self.catalogVersion = catalogVersion
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct IamPersonaCatalogResponse: Codable {
+    public let code: Int?
+    public let data: Any?
+    public let traceId: String?
+
+
+    public init(code: Int? = nil, data: Any? = nil, traceId: String? = nil) {
+        self.code = code
+        self.data = data
+        self.traceId = traceId
+    }
+}
+
+public struct IamUserPersonaResponse: Codable {
+    public let code: Int?
+    public let data: Any?
+    public let traceId: String?
+
+
+    public init(code: Int? = nil, data: Any? = nil, traceId: String? = nil) {
+        self.code = code
+        self.data = data
+        self.traceId = traceId
+    }
+}
+
+public struct IamUserPersonaUpdateCommand: Codable {
+    public let role: String?
+    public let interests: [String]?
+    public let promptDismissed: Bool?
+
+
+    public init(role: String? = nil, interests: [String]? = nil, promptDismissed: Bool? = nil) {
+        self.role = role
+        self.interests = interests
+        self.promptDismissed = promptDismissed
+    }
+}
+
+public struct IamOrganizationMember: Codable {
+    public let userId: String?
+    public let membershipId: String?
+    public let displayName: String?
+    public let username: String?
+    public let email: String?
+    public let membershipKind: String?
+    public let status: String?
+    public let isPrimary: Bool?
+
+
+    public init(userId: String? = nil, membershipId: String? = nil, displayName: String? = nil, username: String? = nil, email: String? = nil, membershipKind: String? = nil, status: String? = nil, isPrimary: Bool? = nil) {
+        self.userId = userId
+        self.membershipId = membershipId
+        self.displayName = displayName
+        self.username = username
+        self.email = email
+        self.membershipKind = membershipKind
+        self.status = status
+        self.isPrimary = isPrimary
+    }
+}
+
+public struct IamOrganizationMemberListResponse: Codable {
+    public let code: Int?
+    public let data: Any?
+    public let traceId: String?
+
+
+    public init(code: Int? = nil, data: Any? = nil, traceId: String? = nil) {
+        self.code = code
+        self.data = data
+        self.traceId = traceId
+    }
+}
+
 public struct WechatMiniProgramSessionCreateCommand: Codable {
     public let jsCode: String?
+    public let phoneCode: String?
     public let providerCode: String?
     public let surfaceCode: String?
+    public let deviceId: String?
 
 
-    public init(jsCode: String? = nil, providerCode: String? = nil, surfaceCode: String? = nil) {
+    public init(jsCode: String? = nil, phoneCode: String? = nil, providerCode: String? = nil, surfaceCode: String? = nil, deviceId: String? = nil) {
         self.jsCode = jsCode
+        self.phoneCode = phoneCode
         self.providerCode = providerCode
         self.surfaceCode = surfaceCode
+        self.deviceId = deviceId
+    }
+}
+
+public struct OauthPhoneBindingSessionCreateCommand: Codable {
+    public let continuationToken: String?
+    public let phone: String?
+    public let verificationCode: String?
+    public let surfaceCode: String?
+    public let deviceId: String?
+
+
+    public init(continuationToken: String? = nil, phone: String? = nil, verificationCode: String? = nil, surfaceCode: String? = nil, deviceId: String? = nil) {
+        self.continuationToken = continuationToken
+        self.phone = phone
+        self.verificationCode = verificationCode
+        self.surfaceCode = surfaceCode
+        self.deviceId = deviceId
+    }
+}
+
+public struct OauthPhoneBindingVerificationCodeRequestCommand: Codable {
+    public let continuationToken: String?
+    public let phone: String?
+
+
+    public init(continuationToken: String? = nil, phone: String? = nil) {
+        self.continuationToken = continuationToken
+        self.phone = phone
     }
 }
 
 public struct AppbaseSessionCreateCommand: Codable {
+    public let grantType: String?
+    public let account: String?
     public let email: String?
     public let username: String?
     public let phone: String?
@@ -172,9 +343,12 @@ public struct AppbaseSessionCreateCommand: Codable {
     public let providerKey: String?
     public let tenantId: String?
     public let organizationId: String?
+    public let deviceId: String?
 
 
-    public init(email: String? = nil, username: String? = nil, phone: String? = nil, password: String? = nil, externalToken: String? = nil, providerKey: String? = nil, tenantId: String? = nil, organizationId: String? = nil) {
+    public init(grantType: String? = nil, account: String? = nil, email: String? = nil, username: String? = nil, phone: String? = nil, password: String? = nil, externalToken: String? = nil, providerKey: String? = nil, tenantId: String? = nil, organizationId: String? = nil, deviceId: String? = nil) {
+        self.grantType = grantType
+        self.account = account
         self.email = email
         self.username = username
         self.phone = phone
@@ -183,5 +357,101 @@ public struct AppbaseSessionCreateCommand: Codable {
         self.providerKey = providerKey
         self.tenantId = tenantId
         self.organizationId = organizationId
+        self.deviceId = deviceId
+    }
+}
+
+public struct SessionsCurrentLogoutRequest: Codable {
+    public let refreshToken: String?
+
+
+    public init(refreshToken: String? = nil) {
+        self.refreshToken = refreshToken
+    }
+}
+
+public struct AuthorizationsCreateRequest: Codable {
+    public let clientId: String?
+    public let responseType: String?
+    public let redirectUri: String?
+    public let scope: String?
+    public let state: String?
+    public let codeChallenge: String?
+    public let codeChallengeMethod: String?
+    public let tenantId: String?
+
+
+    public init(clientId: String? = nil, responseType: String? = nil, redirectUri: String? = nil, scope: String? = nil, state: String? = nil, codeChallenge: String? = nil, codeChallengeMethod: String? = nil, tenantId: String? = nil) {
+        self.clientId = clientId
+        self.responseType = responseType
+        self.redirectUri = redirectUri
+        self.scope = scope
+        self.state = state
+        self.codeChallenge = codeChallenge
+        self.codeChallengeMethod = codeChallengeMethod
+        self.tenantId = tenantId
+    }
+}
+
+public struct AuthorizationsCreateResponse: Codable {
+    public let code: Int?
+    public let traceId: String?
+    public let data: [String: Any]?
+
+
+    public init(code: Int? = nil, traceId: String? = nil, data: [String: Any]? = nil) {
+        self.code = code
+        self.traceId = traceId
+        self.data = data
+    }
+}
+
+public struct AuthorizationsCompletionsCreateRequest: Codable {
+
+    public init() {}
+}
+
+public struct AuthorizationsCompletionsCreateResponse: Codable {
+    public let code: Int?
+    public let traceId: String?
+    public let data: [String: Any]?
+
+
+    public init(code: Int? = nil, traceId: String? = nil, data: [String: Any]? = nil) {
+        self.code = code
+        self.traceId = traceId
+        self.data = data
+    }
+}
+
+public struct DesktopSessionsCreateRequest: Codable {
+    public let clientId: String?
+    public let authorizationCode: String?
+    public let codeVerifier: String?
+    public let redirectUri: String?
+    public let clientSecret: String?
+    public let deviceId: String?
+
+
+    public init(clientId: String? = nil, authorizationCode: String? = nil, codeVerifier: String? = nil, redirectUri: String? = nil, clientSecret: String? = nil, deviceId: String? = nil) {
+        self.clientId = clientId
+        self.authorizationCode = authorizationCode
+        self.codeVerifier = codeVerifier
+        self.redirectUri = redirectUri
+        self.clientSecret = clientSecret
+        self.deviceId = deviceId
+    }
+}
+
+public struct DesktopSessionsCreateResponse: Codable {
+    public let code: Int?
+    public let traceId: String?
+    public let data: [String: Any]?
+
+
+    public init(code: Int? = nil, traceId: String? = nil, data: [String: Any]? = nil) {
+        self.code = code
+        self.traceId = traceId
+        self.data = data
     }
 }

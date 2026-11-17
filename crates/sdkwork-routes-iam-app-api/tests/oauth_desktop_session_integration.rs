@@ -23,9 +23,9 @@ use http_body_util::BodyExt;
 use sdkwork_iam_context_service::{AuthLevel, DeploymentMode, Environment, IamAppContext};
 use sdkwork_iam_web_adapter::{
     complete_authorization_state, create_pending_authorization_state,
-    default_account_binding_policy, ensure_platform_tenant_application,
+    default_account_binding_policy, ensure_platform_tenant_application_with_deploy_application,
     exchange_authorization_code, introspect_oauth_token, parse_relying_party_config,
-    platform_runtime_app_id_for_tenant, resolve_relying_party_client, revoke_oauth_token,
+    resolve_relying_party_client, revoke_oauth_token,
     validate_authorize_request, AuthorizeRequest,
 };
 use sdkwork_web_core::bootstrap_access_token_jwt;
@@ -37,9 +37,17 @@ use tower::ServiceExt;
 #[path = "unified_database_env.rs"]
 mod unified_database_env;
 
+/// Deploy application anchor of a PostgreSQL test tenant.
+///
+/// Access tokens name the installation by its anchor, so a fixture token and the
+/// installation row it authenticates against must use the same value.
+fn test_deploy_application_id(tenant_id: &str) -> String {
+    format!("deploy_{tenant_id}")
+}
+
 const DESKTOP_E2E_TENANT_ID: &str = sdkwork_iam_bootstrap::DEFAULT_IAM_TENANT_ID;
 const DESKTOP_E2E_CLIENT_APP_ID: &str = "app_desktop_e2e_partner";
-const DESKTOP_E2E_TEMPLATE_ID: &str = "tmpl_desktop_partner_e2e";
+const DESKTOP_E2E_DEPLOY_APPLICATION_ID: &str = "deploy_desktop_e2e_partner";
 const DESKTOP_E2E_USERNAME: &str = "desktop-e2e@sdkwork-iam.test";
 const DESKTOP_E2E_PASSWORD: &str = "DesktopE2e#2026";
 const DESKTOP_E2E_REDIRECT_URI: &str = "sdkwork-iam://auth/callback";
@@ -127,8 +135,7 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
         "DELETE FROM iam_tenant_member WHERE tenant_id = $1 AND user_id IN \
          (SELECT id FROM iam_user WHERE tenant_id = $1 AND email = $2)",
         "DELETE FROM iam_user WHERE tenant_id = $1 AND email = $2",
-        "DELETE FROM iam_tenant_application WHERE app_id = $3",
-        "DELETE FROM iam_application_template WHERE id = $3",
+        "DELETE FROM iam_application_installation WHERE app_id = $3",
     ] {
         let _ = sqlx::query(statement)
             .bind(DESKTOP_E2E_TENANT_ID)
@@ -189,7 +196,7 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
 
     // The personal-login session of the desktop user persists organization_id
     // "0"; the default tenant owns that sentinel organization row.
-    ensure_platform_tenant_application(pg, DESKTOP_E2E_TENANT_ID)
+    ensure_platform_tenant_application_with_deploy_application(pg, DESKTOP_E2E_TENANT_ID, test_deploy_application_id(DESKTOP_E2E_TENANT_ID).as_str())
         .await
         .expect("provision desktop e2e platform tenant application");
 
@@ -215,36 +222,22 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
     assert!(parsed.enabled, "desktop e2e relying party must be enabled");
 
     sqlx::query(
-        "INSERT INTO iam_application_template (id, owner_tenant_id, app_key, name, display_name, app_type, \
-         version, channel, status, runtime_config_json, artifacts_config_json, default_access_permissions_json, \
-         created_at, updated_at) \
-         VALUES ($1, '0', $2, $2, 'Desktop Partner E2E', 'WEB', '1.0.0', 'stable', 'active', '{}'::jsonb, '{}'::jsonb, \
-         '[\"iam:self\"]'::jsonb, $3, $3) \
-         ON CONFLICT (id) DO UPDATE SET status = 'active', updated_at = EXCLUDED.updated_at",
-    )
-    .bind(DESKTOP_E2E_TEMPLATE_ID)
-    .bind(DESKTOP_E2E_CLIENT_APP_ID)
-    .bind(&now)
-    .execute(pg)
-    .await
-    .expect("insert desktop e2e partner application template");
-
-    sqlx::query(
-        "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, template_id, \
-         template_version, instance_key, display_name, environment, application_type, status, primary_domain, \
-         domain_config_json, access_permissions_json, runtime_config_json, provisioned_at, activated_at, \
-         created_at, updated_at) \
-         VALUES ($1, $2, $3, '0', $4, '1.0.0', 'desktop-partner', 'Desktop Partner', 'prod', 'other', 'enabled', \
-         'desktop-e2e.sdkwork.test', '{}'::jsonb, '[\"iam:self\"]'::jsonb, $5::jsonb, $6, $6, $6, $6) \
+        "INSERT INTO iam_application_installation (id, app_id, tenant_id, organization_id, instance_key, \
+         display_name, environment, application_type, status, primary_domain, domain_config_json, \
+         access_permissions_json, runtime_config_json, provisioned_at, activated_at, created_at, \
+         updated_at, deploy_application_id) \
+         VALUES ($1, $2, $3, '0', 'desktop-partner', 'Desktop Partner', 'prod', 'other', 'enabled', \
+         'desktop-e2e.sdkwork.test', '{}'::jsonb, '[\"iam:self\"]'::jsonb, $4::jsonb, $5, $5, $5, $5, $6) \
          ON CONFLICT (id) DO UPDATE SET runtime_config_json = EXCLUDED.runtime_config_json, \
+         deploy_application_id = EXCLUDED.deploy_application_id, \
          status = 'enabled', updated_at = EXCLUDED.updated_at",
     )
     .bind(format!("tapp_{DESKTOP_E2E_TENANT_ID}_desktop_partner"))
     .bind(DESKTOP_E2E_CLIENT_APP_ID)
     .bind(DESKTOP_E2E_TENANT_ID)
-    .bind(DESKTOP_E2E_TEMPLATE_ID)
     .bind(runtime_config.to_string())
     .bind(&now)
+    .bind(DESKTOP_E2E_DEPLOY_APPLICATION_ID)
     .execute(pg)
     .await
     .expect("insert desktop e2e relying party tenant application");
@@ -255,7 +248,7 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
 async fn login_desktop_e2e_session(app: &Router) -> (Value, IamAppContext) {
     let access_token = bootstrap_access_token_jwt(
         DESKTOP_E2E_TENANT_ID,
-        platform_runtime_app_id_for_tenant(DESKTOP_E2E_TENANT_ID).as_str(),
+        test_deploy_application_id(DESKTOP_E2E_TENANT_ID).as_str(),
     );
     let response = app
         .clone()
@@ -401,6 +394,12 @@ async fn issue_desktop_code(
 }
 
 /// Active desktop sessions of the e2e user as `(session id, device id)`.
+///
+/// A desktop session's `iam_session.app_id` is the installation's deploy
+/// application anchor, never the IAM runtime app id/OAuth client id:
+/// `redeem_authorization_code_session_context` returns
+/// `client.deploy_application_id` and `create_session_record_with_device`
+/// persists it, so the fixture must filter on the same anchor.
 async fn active_desktop_sessions(pg: &PgPool, user_id: &str) -> Vec<(String, Option<String>)> {
     sqlx::query_as(
         "SELECT id, device_id FROM iam_session \
@@ -409,7 +408,7 @@ async fn active_desktop_sessions(pg: &PgPool, user_id: &str) -> Vec<(String, Opt
     )
     .bind(DESKTOP_E2E_TENANT_ID)
     .bind(user_id)
-    .bind(DESKTOP_E2E_CLIENT_APP_ID)
+    .bind(DESKTOP_E2E_DEPLOY_APPLICATION_ID)
     .fetch_all(pg)
     .await
     .expect("list active desktop sessions")
@@ -850,7 +849,7 @@ async fn admin_provider_catalog_entries_appear_on_the_login_surface() {
     seed_desktop_e2e_fixtures(&pg).await;
 
     let tenant_id = DESKTOP_E2E_TENANT_ID;
-    let runtime_app_id = platform_runtime_app_id_for_tenant(tenant_id);
+    let runtime_app_id = test_deploy_application_id(tenant_id);
     let provider_code = "custom_e2e_provider";
     let catalog_id = "cat_custom_e2e_provider";
     let integration_id = "int_custom_e2e_provider";
@@ -1573,7 +1572,7 @@ async fn hosted_authorization_bootstrap_creates_a_pending_state_without_redirect
 
     // Disabling the relying party in Admin must stop the hosted bootstrap too.
     let previous_runtime_config: sqlx::types::Json<Value> = sqlx::query_scalar(
-        "SELECT runtime_config_json FROM iam_tenant_application \
+        "SELECT runtime_config_json FROM iam_application_installation \
          WHERE tenant_id = $1 AND app_id = $2 LIMIT 1",
     )
     .bind(DESKTOP_E2E_TENANT_ID)
@@ -1584,7 +1583,7 @@ async fn hosted_authorization_bootstrap_creates_a_pending_state_without_redirect
     let mut disabled_config = previous_runtime_config.0.clone();
     disabled_config["oauth"]["relyingParty"]["enabled"] = json!(false);
     sqlx::query(
-        "UPDATE iam_tenant_application SET runtime_config_json = $3 \
+        "UPDATE iam_application_installation SET runtime_config_json = $3 \
          WHERE tenant_id = $1 AND app_id = $2",
     )
     .bind(DESKTOP_E2E_TENANT_ID)
@@ -1620,7 +1619,7 @@ async fn hosted_authorization_bootstrap_creates_a_pending_state_without_redirect
     assert_eq!(disabled_bootstrap.status(), StatusCode::BAD_REQUEST);
 
     sqlx::query(
-        "UPDATE iam_tenant_application SET runtime_config_json = $3 \
+        "UPDATE iam_application_installation SET runtime_config_json = $3 \
          WHERE tenant_id = $1 AND app_id = $2",
     )
     .bind(DESKTOP_E2E_TENANT_ID)
@@ -1789,19 +1788,19 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
         serde_json::to_string(&browser_after_desktop_body).unwrap_or_default()
     );
 
-    let desktop_session_app_id: String = sqlx::query_scalar(
-        "SELECT s.app_id FROM iam_session s \
-         JOIN iam_user u ON u.id = s.user_id AND u.tenant_id = s.tenant_id \
-         WHERE u.email = $1 AND s.revoked_at IS NULL \
-         ORDER BY s.created_at DESC LIMIT 1",
-    )
-    .bind(DESKTOP_E2E_USERNAME)
-    .fetch_one(&pg)
-    .await
-    .expect("desktop session app id");
+    let desktop_session_app_id: String =
+        sqlx::query_scalar("SELECT app_id FROM iam_session WHERE id = $1 AND revoked_at IS NULL")
+            .bind(session["sessionId"].as_str().expect("desktop session id"))
+            .fetch_one(&pg)
+            .await
+            .expect("desktop session app id");
+    // `redeem_authorization_code_session_context` hands the installation's
+    // deploy application anchor to `create_session_record_with_device`, so the
+    // redeemed session names `deploy_desktop_e2e_partner`, not the OAuth client
+    // id (`APPLICATION_IDENTITY_SPEC.md` §4).
     assert_eq!(
-        desktop_session_app_id, DESKTOP_E2E_CLIENT_APP_ID,
-        "the redeemed session must be bound to the desktop relying party app"
+        desktop_session_app_id, DESKTOP_E2E_DEPLOY_APPLICATION_ID,
+        "the redeemed session must be bound to the desktop installation's deploy application anchor"
     );
 
     // 5. The redeemed session exists as a real IAM session row.
@@ -1879,7 +1878,7 @@ async fn hosted_login_body_without_grant_type_creates_a_session() {
 
     let access_token = bootstrap_access_token_jwt(
         DESKTOP_E2E_TENANT_ID,
-        platform_runtime_app_id_for_tenant(DESKTOP_E2E_TENANT_ID).as_str(),
+        test_deploy_application_id(DESKTOP_E2E_TENANT_ID).as_str(),
     );
     let response = app
         .oneshot(

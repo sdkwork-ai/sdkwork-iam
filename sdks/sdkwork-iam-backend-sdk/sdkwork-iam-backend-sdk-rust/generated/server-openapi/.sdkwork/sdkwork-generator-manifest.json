@@ -24,7 +24,7 @@
     },
     {
       "path": "Cargo.toml",
-      "sha256": "e10cf5fdaa3ad1a7b6077368b6f5c4f775010639eb346d5cf99b94a7f41e28d1"
+      "sha256": "a62a206af7dd8d36f582a3afd993e0a8aaf3177a7b5aa161fccba3276568ba2a"
     },
     {
       "path": "CHANGELOG.md",
@@ -48,11 +48,11 @@
     },
     {
       "path": "src/api/iam_oauth.rs",
-      "sha256": "b02f4d604b30f4361e12f8f49070cf10dbb4a0b91f82ba94a318cbb3ad953c2f"
+      "sha256": "30539c9d084419bd9279b9e614eb3e1895734bede236222323f5e01c397676a8"
     },
     {
       "path": "src/api/iam.rs",
-      "sha256": "ff7b8053fff8ec888c3ed5647b410ffb47f87f9caf4a565a96b6e35bbf1ca3b8"
+      "sha256": "68fdaf91acdde319638878c31ab01b90cd255f91cd64cfcc605054791fd0146c"
     },
     {
       "path": "src/api/mod.rs",
@@ -83,16 +83,12 @@
       "sha256": "736b87b95508719e080be06da76815e39699d2ce58113bfdf00757d5cddf1688"
     },
     {
-      "path": "src/models/appbase_application_register_command.rs",
-      "sha256": "a984b7359002104b10cc4b99df041887d336a125e04af01ecb4aaad5921e481f"
-    },
-    {
       "path": "src/models/appbase_tenant_application_enable_command.rs",
       "sha256": "9197b64d8bd3603b6c67363adfc45114afa7322ff174c5dd649a84c070edc1b8"
     },
     {
       "path": "src/models/appbase_tenant_application_provision_command.rs",
-      "sha256": "cf0587364dc52bb83bc58a6efbc2d05f7e80c2f9fc0029609ab4cfbad8b8fb81"
+      "sha256": "4aa7205ae8649ea1210ff496feee98ba285fb25babca66506cb369e87a78bfc3"
     },
     {
       "path": "src/models/appbase_tenant_application_update_command.rs",
@@ -112,7 +108,7 @@
     },
     {
       "path": "src/models/iam_tenant_application_management_provision_command.rs",
-      "sha256": "5ab1b536bfcf4a652ebdc86a78ca56e6aabae0b50f366714c6b20fce2490eaa7"
+      "sha256": "536798a758b5edb169843fb63d78126f781cacfe1d7a233ba964250521c3fc3e"
     },
     {
       "path": "src/models/iam_tenant_application_management_update_command.rs",
@@ -124,7 +120,7 @@
     },
     {
       "path": "src/models/mod.rs",
-      "sha256": "13cd6dfeb0ebfe1064c863d0b6f861957f230f92cb7944969f5ab2fefd3971da"
+      "sha256": "e79dbf2445beae0ca79f55f017a5a6eb5e62b375b8d3b64802049825f8631c8e"
     },
     {
       "path": "src/models/page_info.rs",

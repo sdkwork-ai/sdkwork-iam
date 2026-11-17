@@ -1911,6 +1911,22 @@ async fn create_integration(
     let deployment_mode = read_string_field(&body, &["deploymentMode", "deployment_mode"])
         .unwrap_or_else(|| "saas".to_owned());
     let app_id = read_string_field(&body, &["appId", "app_id"]).unwrap_or_else(|| "0".to_owned());
+    // A pinned integration is filed under the installation's deploy application
+    // anchor: it is the identity the login flows pass back when they look the
+    // integration up, and `"0"` keeps meaning "any installation of the tenant".
+    if app_id != "0" {
+        if let Err(error) = sdkwork_iam_web_adapter::validate_enabled_tenant_runtime_app(
+            pg, &tenant_id, &app_id,
+        )
+        .await
+        {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_oauth_integration_app_invalid",
+                &error,
+            );
+        }
+    }
     let enabled = read_i32_field(&body, &["enabled"]).unwrap_or(0);
     let provider_client_id = read_string_field(&body, &["providerClientId", "provider_client_id"]);
     let provider_client_secret =
@@ -2603,12 +2619,12 @@ fn next_custom_menu(
     })
 }
 
-/// Outcome of a versioned menu mutation: conflict carries the current document
-/// so the caller can return it to the operator (the HTTP layer only exposes the
-/// code; the UI reloads the context on conflict).
+/// Outcome of a versioned menu mutation. A conflict is reported by code only:
+/// the HTTP layer never returns the live document, and the UI reloads the
+/// context after a conflict.
 enum MenuMutationOutcome {
     Saved { display_name: String, menu: Value },
-    Conflict { display_name: String, menu: Value },
+    Conflict,
     NotFound,
 }
 
@@ -3021,10 +3037,7 @@ async fn update_resource_account_custom_menu(
                 if let Some(expected) = base_version {
                     let live_version = current.as_ref().map(custom_menu_version).unwrap_or(0);
                     if live_version != expected {
-                        return Ok(Some(MenuMutationOutcome::Conflict {
-                            display_name,
-                            menu: current.unwrap_or_else(|| json!({ "buttons": [], "version": 0 })),
-                        }));
+                        return Ok(Some(MenuMutationOutcome::Conflict));
                     }
                 }
                 let menu = next_custom_menu(buttons_for_update.clone(), "database", None, current.as_ref());
@@ -3049,7 +3062,7 @@ async fn update_resource_account_custom_menu(
         Ok(Some(MenuMutationOutcome::Saved { display_name, menu })) => {
             custom_menu_ok(custom_menu_context(&display_name, &menu, "database"))
         }
-        Ok(Some(MenuMutationOutcome::Conflict { .. })) => appbase_error(
+        Ok(Some(MenuMutationOutcome::Conflict)) => appbase_error(
             StatusCode::CONFLICT,
             "iam_oauth_custom_menu_conflict",
             "the menu was updated elsewhere; reload it before saving",
@@ -3378,7 +3391,6 @@ async fn sync_resource_account_custom_menu(
     };
     let provider_code: String = row.get(0);
     let resource_account_kind: String = row.get(1);
-    let display_name: String = row.get(2);
     let integration_id: String = row.get(3);
     let provider_account_id: Option<String> = row.get(4);
     if provider_code != "wechat" || resource_account_kind != "official_account" {
@@ -3481,10 +3493,7 @@ async fn sync_resource_account_custom_menu(
                 if let Some(expected) = base_version {
                     let live_version = current.as_ref().map(custom_menu_version).unwrap_or(0);
                     if live_version != expected {
-                        return Ok(Some(MenuMutationOutcome::Conflict {
-                            display_name: latest_name,
-                            menu: current.unwrap_or_else(|| json!({ "buttons": [], "version": 0 })),
-                        }));
+                        return Ok(Some(MenuMutationOutcome::Conflict));
                     }
                 }
                 let menu = next_custom_menu(buttons.clone(), "wechat", None, current.as_ref());
@@ -3509,7 +3518,7 @@ async fn sync_resource_account_custom_menu(
         Ok(Some(MenuMutationOutcome::Saved { display_name, menu })) => {
             custom_menu_ok(custom_menu_context(&display_name, &menu, "wechat"))
         }
-        Ok(Some(MenuMutationOutcome::Conflict { .. })) => appbase_error(
+        Ok(Some(MenuMutationOutcome::Conflict)) => appbase_error(
             StatusCode::CONFLICT,
             "iam_oauth_custom_menu_conflict",
             "the menu was updated elsewhere; reload it before refreshing",
@@ -3716,10 +3725,7 @@ async fn rollback_resource_account_custom_menu(
                 if let Some(expected) = base_version {
                     let live_version = current.as_ref().map(custom_menu_version).unwrap_or(0);
                     if live_version != expected {
-                        return Ok(Some(MenuMutationOutcome::Conflict {
-                            display_name: latest_name,
-                            menu: current.unwrap_or_else(|| json!({ "buttons": [], "version": 0 })),
-                        }));
+                        return Ok(Some(MenuMutationOutcome::Conflict));
                     }
                 }
                 let menu = next_custom_menu(buttons.clone(), "wechat", Some(&update_timestamp), current.as_ref());
@@ -3744,7 +3750,7 @@ async fn rollback_resource_account_custom_menu(
         Ok(Some(MenuMutationOutcome::Saved { display_name, menu })) => {
             custom_menu_ok(custom_menu_context(&display_name, &menu, "wechat"))
         }
-        Ok(Some(MenuMutationOutcome::Conflict { .. })) => appbase_error(
+        Ok(Some(MenuMutationOutcome::Conflict)) => appbase_error(
             StatusCode::CONFLICT,
             "iam_oauth_custom_menu_conflict",
             "the menu was updated elsewhere; reload it before rolling back",

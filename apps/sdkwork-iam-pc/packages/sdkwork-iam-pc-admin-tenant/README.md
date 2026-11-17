@@ -44,10 +44,26 @@ The create/edit tenant drawer renders the shared `DriveUploadImage` field from `
 - The edit status selector offers the registered `IAM_SPEC.md` lifecycle set: `active`, `suspended`, `disabled`, and `terminated`.
 - Nullable profile values travel as an explicit empty string when cleared, and removing the stored logo travels as an explicit `logo: null` patch; the backend clears the corresponding column instead of silently ignoring the removal.
 
+## Tenant Application Provisioning Contract
+
 Tenant application administration uses the authenticated operator methods under
-`service.iam.tenantApplications.management`. Global application-template registration and
-bootstrap credential issuance remain server/CLI bootstrap responsibilities and are never exposed
-through this browser package.
+`service.iam.tenantApplications.management`. Application templates are retired, so an installation
+is opened from the deploy application it serves plus explicit attributes; deploy-application
+registration and bootstrap credential issuance remain server/CLI bootstrap responsibilities and are
+never exposed through this browser package.
+
+- `deployApplicationId` is required: it is the identity every access token carries, and one deploy
+  application binds to one tenant installation. The `appKey`/`templateId` fields no longer exist.
+- `applicationType` (`api | h5 | pc | flutter | other`) is required and has no default, because no
+  template supplies one any more.
+- `instanceKey` still defaults to a slug of `deployApplicationId` plus the environment and stays
+  editable; `displayName`, `environment`, and `organizationId` are unchanged.
+- `primaryDomain` is optional and omitted from the payload when blank (`minLength: 1` on the wire);
+  `accessPermissions` always travels, since an empty array is an explicit "no API scope" choice.
+- `runtimeConfig` is an optional JSON object. It is parsed in the drawer, blocks submit while it is
+  not a JSON object, and only travels when provided.
+- The controller validates before calling the API and names the missing field (`deployApplicationId`,
+  `applicationType`) instead of surfacing an opaque provisioning failure.
 
 ## SDKWork Documentation Contract
 

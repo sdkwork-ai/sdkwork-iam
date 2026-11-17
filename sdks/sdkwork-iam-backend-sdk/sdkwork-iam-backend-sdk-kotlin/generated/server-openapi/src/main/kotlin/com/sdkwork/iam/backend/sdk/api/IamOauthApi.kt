@@ -347,6 +347,11 @@ class IamOauthApi(private val client: HttpClient) {
         return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
+    /** Iam oauth resource Accounts delete. */
+    suspend fun resourceAccountsDelete(resourceAccountId: String): Unit {
+        client.delete(ApiPaths.backendPath("/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, PathParameterSpec("resourceAccountId", "simple", false))}"))
+    }
+
     /** Iam oauth resource Accounts update. */
     suspend fun resourceAccountsUpdate(resourceAccountId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.backendPath("/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, PathParameterSpec("resourceAccountId", "simple", false))}"), body, null, null, "application/json")
@@ -374,6 +379,18 @@ class IamOauthApi(private val client: HttpClient) {
     /** Iam oauth resource Accounts custom Menus publish. */
     suspend fun resourceAccountsCustomMenusPublish(resourceAccountId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, PathParameterSpec("resourceAccountId", "simple", false))}/custom_menus/publish"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
+    }
+
+    /** Iam oauth resource Accounts custom Menus rollback. */
+    suspend fun resourceAccountsCustomMenusRollback(resourceAccountId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
+        val raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, PathParameterSpec("resourceAccountId", "simple", false))}/custom_menus/rollback"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
+    }
+
+    /** Iam oauth resource Accounts custom Menus sync. */
+    suspend fun resourceAccountsCustomMenusSync(resourceAccountId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
+        val raw = client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/${serializePathParameter(resourceAccountId, PathParameterSpec("resourceAccountId", "simple", false))}/custom_menus/sync"), body, null, null, "application/json")
         return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 

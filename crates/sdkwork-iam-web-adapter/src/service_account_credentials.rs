@@ -12,7 +12,10 @@ use crate::access_token_issue::{
     environment_to_string, generate_opaque_token, hash_token, login_scope_to_string,
     sign_local_session_token_with_ttl,
 };
-use crate::application_registry::{intersect_permission_scopes, resolve_tenant_application};
+use crate::application_registry::{
+    intersect_permission_scopes, resolve_access_token_app_id, resolve_tenant_application,
+};
+use crate::installation_lifecycle::ensure_installation_environment_active;
 
 pub const IAM_SERVICE_ACCOUNT_CREDENTIALS_CREATE_PERMISSION: &str =
     "iam.service_account_credentials.create";
@@ -159,6 +162,10 @@ pub async fn create_service_account_credential(
     let client_secret = generate_opaque_token("secret");
     let secret_hash = hash_secret(&client_secret)?;
     let now = chrono::Utc::now();
+    // The credential is filed under the installation's deploy application: the
+    // exchange signs it into `app_id`/`aud`, so storing the IAM runtime app id
+    // here would mint a token the anchor gate rejects.
+    let deploy_application_id = resolve_access_token_app_id(&tenant_application)?;
 
     sqlx::query(
         "INSERT INTO iam_service_account_credential \
@@ -171,7 +178,7 @@ pub async fn create_service_account_credential(
     .bind(&organization_id)
     .bind(service_account_id)
     .bind(&tenant_application.id)
-    .bind(&tenant_application.app_id)
+    .bind(&deploy_application_id)
     .bind(&client_id)
     .bind(&secret_hash)
     .bind(request.expires_at)
@@ -189,7 +196,7 @@ pub async fn create_service_account_credential(
         organization_id,
         service_account_id: service_account_id.to_string(),
         tenant_application_id: tenant_application.id,
-        app_id: tenant_application.app_id,
+        app_id: deploy_application_id,
         expires_at: request.expires_at.map(|value| value.to_rfc3339()),
     })
 }
@@ -281,13 +288,25 @@ pub async fn exchange_service_account_credential(
     )
     .await?
     .ok_or_else(|| "bound tenant application was not found".to_string())?;
+    let bound_deploy_application_id = resolve_access_token_app_id(&tenant_application)?;
     if tenant_application.status != "enabled"
-        || tenant_application.app_id != credential.app_id
+        || bound_deploy_application_id != credential.app_id
         || tenant_application.organization_id
             != credential.organization_id.as_deref().unwrap_or("0")
     {
         return Err("bound tenant application is unavailable or no longer matches".to_string());
     }
+    // A service-account token is a credential for one environment of the
+    // installation: registered installations only issue for an active
+    // environment, while installations without environment rows keep the
+    // historical behavior.
+    ensure_installation_environment_active(
+        pg,
+        &credential.tenant_id,
+        &tenant_application.id,
+        &credential.environment,
+    )
+    .await?;
 
     let (mut data_scope, service_permission_scope) = sdkwork_iam_bootstrap::resolve_session_scopes(
         pg,
@@ -436,7 +455,7 @@ async fn load_active_credential(pg: &PgPool, client_id: &str) -> Result<StoredCr
          FROM iam_service_account_credential c \
          JOIN iam_service_account sa ON sa.id = c.service_account_id \
            AND sa.tenant_id = c.tenant_id AND sa.status = 'active' \
-         JOIN iam_tenant_application ta ON ta.id = c.tenant_application_id \
+         JOIN iam_application_installation ta ON ta.id = c.tenant_application_id \
            AND ta.tenant_id = c.tenant_id AND ta.status = 'enabled' \
          WHERE c.client_id = $1 AND c.status = 'active' \
            AND (c.expires_at IS NULL OR c.expires_at > $2) LIMIT 1",

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace SDKWork\\Iam\\BackendSdk\Api;
 
 use SDKWork\\Iam\\BackendSdk\Models\AppbaseAccessCredentialCreateCommand;
-use SDKWork\\Iam\\BackendSdk\Models\AppbaseApplicationRegisterCommand;
 use SDKWork\\Iam\\BackendSdk\Models\AppbaseTenantApplicationEnableCommand;
 use SDKWork\\Iam\\BackendSdk\Models\AppbaseTenantApplicationProvisionCommand;
 use SDKWork\\Iam\\BackendSdk\Models\AppbaseTenantApplicationUpdateCommand;
@@ -68,6 +67,17 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkListResponse::fromArray($result) : null;
     }
 
+    /** Api Keys create. */
+    public function apiKeysCreate(array $body): ?SdkWorkResourceResponse
+    {
+        $path = '/backend/v3/api/iam/api_keys';
+        $payload = $body;
+        $result = $this->client->request('POST', $path, [
+            'json' => $payload,
+        ]);
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+    }
+
     /** Api Keys revoke. */
     public function apiKeysRevoke(string $apiKeyId, array $body): ?SdkWorkCommandResponse
     {
@@ -79,16 +89,15 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkCommandResponse::fromArray($result) : null;
     }
 
-    /** Applications register. */
-    public function applicationsRegister(array|AppbaseApplicationRegisterCommand $body): ?SdkWorkCommandResponse
+    /** Api Keys rotate. */
+    public function apiKeysRotate(string $apiKeyId, array $body): ?SdkWorkResourceResponse
     {
-        $path = '/backend/v3/api/iam/applications/register';
-        $payload = $body instanceof AppbaseApplicationRegisterCommand ? $body->toArray() : $body;
+        $path = $this->interpolatePath('/backend/v3/api/iam/api_keys/{apiKeyId}/rotate', ['apiKeyId' => $this->serializePathParameter($apiKeyId, new PathParameterSpec('apiKeyId', 'simple', false))]);
+        $payload = $body;
         $result = $this->client->request('POST', $path, [
-            'skipAuth' => true,
             'json' => $payload,
         ]);
-        return is_array($result) ? SdkWorkCommandResponse::fromArray($result) : null;
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
     /** Audit Events list. */
@@ -681,6 +690,14 @@ final class IamApi extends BaseApi
         $result = $this->client->request('POST', $path, [
             'json' => $payload,
         ]);
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+    }
+
+    /** Provider Accounts credentials reveal. */
+    public function providerAccountsCredentialsReveal(string $providerAccountId): ?SdkWorkResourceResponse
+    {
+        $path = $this->interpolatePath('/backend/v3/api/iam/provider_accounts/{providerAccountId}/credentials/reveal', ['providerAccountId' => $this->serializePathParameter($providerAccountId, new PathParameterSpec('providerAccountId', 'simple', false))]);
+        $result = $this->client->request('GET', $path, []);
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 

@@ -14,6 +14,7 @@ mod http_responses;
 mod iam_audit;
 mod iam_database_env;
 mod iam_session;
+mod installation_lifecycle;
 mod messaging_verification;
 mod oauth_authorization_server;
 mod oauth_integration_exchange;
@@ -44,7 +45,7 @@ use sdkwork_web_core::{
 pub use access_token_issue::{
     issue_delegated_access_credential, issue_standalone_bootstrap_access_credential,
     issued_access_credential_to_json, parse_access_credential_create_request,
-    principal_has_permission, resolve_deployment_bootstrap_access_token, resolve_runtime_app_id,
+    principal_has_permission, resolve_deployment_bootstrap_access_token,
     AccessCredentialCreateRequest, IssuedAccessCredential,
     IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
 };
@@ -71,23 +72,20 @@ pub use application_access_token::{
     PublicApplicationAccessTokenClaims, APPLICATION_ACCESS_TOKEN_NO_EXPIRY,
 };
 pub use application_registry::{
-    dedupe_postgres_tenant_application_org_template_rows,
-    derive_tenant_application_primary_domain_candidate, disable_tenant_application,
-    enable_tenant_application, ensure_platform_tenant_application,
-    ensure_postgres_tenant_application_org_template_unique_index,
-    ensure_tenant_application_runtime, intersect_permission_scopes,
-    parse_application_register_command, parse_tenant_application_provision_command,
-    parse_tenant_application_update_command, platform_runtime_app_id_for_tenant,
-    provision_tenant_application, reconcile_postgres_tenant_application_org_template_rows,
-    register_application_template, registered_application_template_to_json,
-    resolve_tenant_application, tenant_application_instance_key, tenant_application_row_id,
-    tenant_application_template_id, tenant_application_to_json, update_tenant_application,
-    validate_enabled_tenant_runtime_app, ApplicationPackageSyncCommand, ApplicationRegisterCommand,
-    EnsureTenantApplicationCommand, RegisteredApplicationTemplate, TenantApplication,
+    configured_deploy_application_id, derive_tenant_application_primary_domain_candidate,
+    disable_tenant_application, enable_tenant_application, ensure_platform_tenant_application,
+    ensure_platform_tenant_application_with_deploy_application,
+    ensure_tenant_application_runtime, intersect_permission_scopes, is_provision_attribute_error,
+    parse_tenant_application_provision_command, parse_tenant_application_update_command,
+    platform_deploy_application_id_for_tenant, platform_runtime_app_id_for_tenant,
+    provision_tenant_application, resolve_access_token_app_id, resolve_tenant_application,
+    resolve_tenant_application_by_deploy_application_id, tenant_application_instance_key,
+    tenant_application_row_id, tenant_application_to_json, update_tenant_application,
+    validate_enabled_tenant_runtime_app, EnsureTenantApplicationCommand, TenantApplication,
     TenantApplicationProvisionCommand, TenantApplicationUpdateCommand,
-    IAM_APPLICATIONS_REGISTER_PERMISSION, IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION,
+    DEPLOY_APPLICATION_ID_ENV, IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION,
     IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION, IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION,
-    PLATFORM_APPLICATION_KEY, PLATFORM_APPLICATION_TEMPLATE_ID,
+    PLATFORM_INSTALLATION_ANCHOR,
 };
 pub use authorization_policy::IamAuthorizationPolicy;
 pub use authorization_scope::{
@@ -122,6 +120,24 @@ pub use iam_session::{
     resolve_iam_app_context_from_auth_token, resolve_iam_app_context_from_dual_tokens,
     resolve_iam_app_context_from_dual_tokens_pool, resolve_iam_app_context_from_oauth_bearer,
     resolve_iam_app_context_from_oauth_bearer_pool,
+};
+pub use installation_lifecycle::{
+    canonical_environment_key, classify_installation_lifecycle_error,
+    create_installation_credential, decide_installation_environment_access,
+    delete_installation_environment, ensure_deploy_application_environment_active,
+    ensure_installation_environment_active, installation_credential_to_json,
+    installation_environment_to_json, installation_lifecycle_error_detail,
+    list_installation_credentials, list_installation_environments,
+    normalize_environment_key, parse_installation_credential_create_command,
+    parse_installation_credential_rotate_command, parse_installation_environment_upsert_command,
+    revoke_installation_credential, rotate_installation_credential,
+    upsert_installation_environment, InstallationCredential, InstallationCredentialCreateCommand,
+    InstallationCredentialPage, InstallationCredentialRotateCommand, InstallationEnvironment,
+    InstallationEnvironmentPage, InstallationEnvironmentUpsertCommand,
+    InstallationLifecycleErrorKind, INSTALLATION_CREDENTIAL_STATUS_ACTIVE,
+    INSTALLATION_CREDENTIAL_STATUS_RETIRED, INSTALLATION_CREDENTIAL_STATUS_ROTATED,
+    INSTALLATION_ENVIRONMENT_STATUS_ACTIVE, INSTALLATION_ENVIRONMENT_STATUS_DISABLED,
+    INSTALLATION_ENVIRONMENT_STATUS_PENDING,
 };
 pub use messaging_verification::{
     messaging_verification_code_hash, messaging_verification_enabled,

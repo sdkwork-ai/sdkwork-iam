@@ -1,6 +1,5 @@
 require_relative 'base_api'
 require_relative '../models/appbase_access_credential_create_command'
-require_relative '../models/appbase_application_register_command'
 require_relative '../models/appbase_tenant_application_enable_command'
 require_relative '../models/appbase_tenant_application_provision_command'
 require_relative '../models/appbase_tenant_application_update_command'
@@ -65,6 +64,16 @@ module Sdkwork
             result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
+          # Api Keys create.
+          def api_keys_create(body: nil)
+            path = '/backend/v3/api/iam/api_keys'
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
           # Api Keys revoke.
           def api_keys_revoke(api_key_id, body: nil)
             path = interpolate_path('/backend/v3/api/iam/api_keys/{apiKeyId}/revoke', apiKeyId: serialize_path_parameter(api_key_id, PathParameterSpec.new('apiKeyId', 'simple', false)))
@@ -75,15 +84,14 @@ module Sdkwork
             result.is_a?(Hash) ? Models::SdkWorkCommandResponse.from_hash(result) : nil
           end
 
-          # Applications register.
-          def applications_register(body: nil)
-            path = '/backend/v3/api/iam/applications/register'
-            payload = body.respond_to?(:to_hash) ? body.to_hash : body
+          # Api Keys rotate.
+          def api_keys_rotate(api_key_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/api_keys/{apiKeyId}/rotate', apiKeyId: serialize_path_parameter(api_key_id, PathParameterSpec.new('apiKeyId', 'simple', false)))
+            payload = body
             options = {}
-            options[:skip_auth] = true
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::SdkWorkCommandResponse.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
           # Audit Events list.
@@ -684,6 +692,15 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Provider Accounts credentials reveal.
+          def provider_accounts_credentials_reveal(provider_account_id)
+            path = interpolate_path('/backend/v3/api/iam/provider_accounts/{providerAccountId}/credentials/reveal', providerAccountId: serialize_path_parameter(provider_account_id, PathParameterSpec.new('providerAccountId', 'simple', false)))
+            options = {}
+
+            result = @client.request('GET', path, **options)
             result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 

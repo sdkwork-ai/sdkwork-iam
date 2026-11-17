@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createSdkworkIamTenantController } from "../src/index";
+import type { SdkworkIamTenantApplicationDraft } from "../src/index";
 
 /**
  * Tenant controller wire contract (`DRIVE_SPEC.md` §18, IAM_SPEC tenant
@@ -121,5 +122,134 @@ describe("tenant administration controller", () => {
     await controller.updateTenant("tenant-1", { name: "Acme", status: "suspended" });
 
     expect(update).toHaveBeenCalledWith("tenant-1", { name: "Acme", status: "suspended" });
+  });
+});
+
+/**
+ * Tenant application provisioning (`IAM_SPEC` v3).
+ *
+ * Application templates are retired: the create command is anchored by the
+ * deploy application the installation serves plus an explicit
+ * `applicationType`, and `templateId`/`appKey` must never reach the wire.
+ */
+const provisionedApplicationRecord = {
+  accessPermissions: ["iam.users.read"],
+  appId: "app_crm_prod",
+  applicationType: "pc",
+  deployApplicationId: "deploy-crm",
+  displayName: "CRM",
+  environment: "production",
+  instanceKey: "crm-production",
+  organizationId: "0",
+  primaryDomain: "crm.example.com",
+  status: "pending_config",
+  tenantApplicationId: "tapp_crm",
+  tenantId: "tenant-1",
+};
+
+const provisionDraft: SdkworkIamTenantApplicationDraft = {
+  accessPermissions: ["iam.users.read"],
+  applicationType: "pc",
+  deployApplicationId: "deploy-crm",
+  displayName: "CRM",
+  environment: "production",
+  instanceKey: "crm-production",
+  organizationId: "0",
+  primaryDomain: "crm.example.com",
+};
+
+function createProvisionService() {
+  const create = vi.fn().mockResolvedValue(provisionedApplicationRecord);
+  const service = {
+    iam: {
+      tenantApplications: {
+        management: { create },
+      },
+    },
+  };
+  return { create, service };
+}
+
+describe("tenant application provisioning contract", () => {
+  it("opens the installation from a deploy application without the retired template fields", async () => {
+    const { create, service } = createProvisionService();
+    const controller = createSdkworkIamTenantController({ service: service as never });
+
+    const application = await controller.provisionTenantApplication("tenant-1", provisionDraft);
+
+    expect(create).toHaveBeenCalledWith("tenant-1", {
+      accessPermissions: ["iam.users.read"],
+      applicationType: "pc",
+      deployApplicationId: "deploy-crm",
+      displayName: "CRM",
+      environment: "production",
+      instanceKey: "crm-production",
+      organizationId: "0",
+      primaryDomain: "crm.example.com",
+    });
+    const [, payload] = create.mock.calls[0] ?? [];
+    expect(payload).not.toHaveProperty("templateId");
+    expect(payload).not.toHaveProperty("appKey");
+    expect(application).toMatchObject({
+      deployApplicationId: "deploy-crm",
+      tenantApplicationId: "tapp_crm",
+    });
+  });
+
+  it("omits a blank primary domain and forwards the explicit runtime config", async () => {
+    const { create, service } = createProvisionService();
+    const controller = createSdkworkIamTenantController({ service: service as never });
+
+    await controller.provisionTenantApplication("tenant-1", {
+      ...provisionDraft,
+      primaryDomain: "   ",
+      provisioningIdempotencyKey: " idem-1 ",
+      runtimeConfig: { oauth: { relyingParty: { clientId: "cloudrouter" } } },
+    });
+
+    expect(create).toHaveBeenCalledWith("tenant-1", {
+      accessPermissions: ["iam.users.read"],
+      applicationType: "pc",
+      deployApplicationId: "deploy-crm",
+      displayName: "CRM",
+      environment: "production",
+      instanceKey: "crm-production",
+      organizationId: "0",
+      provisioningIdempotencyKey: "idem-1",
+      runtimeConfig: { oauth: { relyingParty: { clientId: "cloudrouter" } } },
+    });
+  });
+
+  it("names deployApplicationId when the draft omits it", async () => {
+    const { create, service } = createProvisionService();
+    const controller = createSdkworkIamTenantController({ service: service as never });
+
+    await expect(controller.provisionTenantApplication("tenant-1", {
+      ...provisionDraft,
+      deployApplicationId: "   ",
+    })).rejects.toThrow(/requires deployApplicationId/u);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("names applicationType when the draft does not choose one", async () => {
+    const { create, service } = createProvisionService();
+    const controller = createSdkworkIamTenantController({ service: service as never });
+
+    await expect(controller.provisionTenantApplication("tenant-1", {
+      ...provisionDraft,
+      applicationType: "",
+    })).rejects.toThrow(/requires applicationType/u);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("rejects an applicationType outside the backend enum", async () => {
+    const { create, service } = createProvisionService();
+    const controller = createSdkworkIamTenantController({ service: service as never });
+
+    await expect(controller.provisionTenantApplication("tenant-1", {
+      ...provisionDraft,
+      applicationType: "desktop" as SdkworkIamTenantApplicationDraft["applicationType"],
+    })).rejects.toThrow(/requires applicationType to be one of/u);
+    expect(create).not.toHaveBeenCalled();
   });
 });

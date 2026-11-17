@@ -550,161 +550,29 @@ class IamOauthClientCreateCommand {
   }
 }
 
-class AppbaseApplicationRegisterCommand {
-  final String? authToken;
-  final String? username;
-  final String? email;
-  final String? phone;
-  final String? password;
-  final String? ownerTenantId;
-  final String appKey;
-  final String name;
-  final String? displayName;
-  final String appType;
-  final String? packageName;
-  final String? bundleId;
-  final String? desktopAppId;
-  final String version;
-  final String? channel;
-  final String? manifestHash;
-  final List<String> defaultAccessPermissions;
-  final Map<String, dynamic>? config;
-  final List<Map<String, dynamic>>? packages;
-
-  AppbaseApplicationRegisterCommand({
-    this.authToken,
-    this.username,
-    this.email,
-    this.phone,
-    this.password,
-    this.ownerTenantId,
-    required this.appKey,
-    required this.name,
-    this.displayName,
-    required this.appType,
-    this.packageName,
-    this.bundleId,
-    this.desktopAppId,
-    required this.version,
-    this.channel,
-    this.manifestHash,
-    required this.defaultAccessPermissions,
-    this.config,
-    this.packages
-  });
-
-  factory AppbaseApplicationRegisterCommand.fromJson(Map<String, dynamic> json) {
-    return AppbaseApplicationRegisterCommand(
-      authToken: json['authToken']?.toString(),
-      username: json['username']?.toString(),
-      email: json['email']?.toString(),
-      phone: json['phone']?.toString(),
-      password: json['password']?.toString(),
-      ownerTenantId: json['ownerTenantId']?.toString(),
-      appKey: (() {
-        final value = json['appKey']?.toString();
-        if (value == null) {
-          throw FormatException('AppbaseApplicationRegisterCommand.appKey is required');
-        }
-        return value;
-      })(),
-      name: (() {
-        final value = json['name']?.toString();
-        if (value == null) {
-          throw FormatException('AppbaseApplicationRegisterCommand.name is required');
-        }
-        return value;
-      })(),
-      displayName: json['displayName']?.toString(),
-      appType: (() {
-        final value = json['appType']?.toString();
-        if (value == null) {
-          throw FormatException('AppbaseApplicationRegisterCommand.appType is required');
-        }
-        return value;
-      })(),
-      packageName: json['packageName']?.toString(),
-      bundleId: json['bundleId']?.toString(),
-      desktopAppId: json['desktopAppId']?.toString(),
-      version: (() {
-        final value = json['version']?.toString();
-        if (value == null) {
-          throw FormatException('AppbaseApplicationRegisterCommand.version is required');
-        }
-        return value;
-      })(),
-      channel: json['channel']?.toString(),
-      manifestHash: json['manifestHash']?.toString(),
-      defaultAccessPermissions: (() {
-        final list = _sdkworkAsList(json['defaultAccessPermissions']);
-        if (list == null) {
-          throw FormatException('AppbaseApplicationRegisterCommand.defaultAccessPermissions is required');
-        }
-        return list
-            .map((item) => item?.toString())
-            .whereType<String>()
-            .toList();
-      })(),
-      config: _sdkworkAsMap(json['config']),
-      packages: (() {
-        final list = _sdkworkAsList(json['packages']);
-        if (list == null) {
-          return null;
-        }
-        return list
-            .map((item) => _sdkworkAsMap(item))
-            .whereType<Map<String, dynamic>>()
-            .toList();
-      })()
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      'authToken': authToken,
-      'username': username,
-      'email': email,
-      'phone': phone,
-      'password': password,
-      'ownerTenantId': ownerTenantId,
-      'appKey': appKey,
-      'name': name,
-      'displayName': displayName,
-      'appType': appType,
-      'packageName': packageName,
-      'bundleId': bundleId,
-      'desktopAppId': desktopAppId,
-      'version': version,
-      'channel': channel,
-      'manifestHash': manifestHash,
-      'defaultAccessPermissions': defaultAccessPermissions.map((item) => item).toList(),
-      'config': config,
-      'packages': packages?.map((item) => item).toList(),
-    };
-  }
-}
-
 class IamTenantApplicationManagementProvisionCommand {
   final String organizationId;
-  final String? templateId;
-  final String? appKey;
   final String instanceKey;
   final String displayName;
   final String environment;
-  final String? applicationType;
+  final String applicationType;
   final String? primaryDomain;
   final List<String>? accessPermissions;
+  final Map<String, dynamic>? runtimeConfig;
+  final String? deployApplicationId;
+  final String? provisioningIdempotencyKey;
 
   IamTenantApplicationManagementProvisionCommand({
     required this.organizationId,
-    this.templateId,
-    this.appKey,
     required this.instanceKey,
     required this.displayName,
     required this.environment,
-    this.applicationType,
+    required this.applicationType,
     this.primaryDomain,
-    this.accessPermissions
+    this.accessPermissions,
+    this.runtimeConfig,
+    this.deployApplicationId,
+    this.provisioningIdempotencyKey
   });
 
   factory IamTenantApplicationManagementProvisionCommand.fromJson(Map<String, dynamic> json) {
@@ -716,8 +584,6 @@ class IamTenantApplicationManagementProvisionCommand {
         }
         return value;
       })(),
-      templateId: json['templateId']?.toString(),
-      appKey: json['appKey']?.toString(),
       instanceKey: (() {
         final value = json['instanceKey']?.toString();
         if (value == null) {
@@ -739,7 +605,13 @@ class IamTenantApplicationManagementProvisionCommand {
         }
         return value;
       })(),
-      applicationType: json['applicationType']?.toString(),
+      applicationType: (() {
+        final value = json['applicationType']?.toString();
+        if (value == null) {
+          throw FormatException('IamTenantApplicationManagementProvisionCommand.applicationType is required');
+        }
+        return value;
+      })(),
       primaryDomain: json['primaryDomain']?.toString(),
       accessPermissions: (() {
         final list = _sdkworkAsList(json['accessPermissions']);
@@ -750,21 +622,25 @@ class IamTenantApplicationManagementProvisionCommand {
             .map((item) => item?.toString())
             .whereType<String>()
             .toList();
-      })()
+      })(),
+      runtimeConfig: _sdkworkAsMap(json['runtimeConfig']),
+      deployApplicationId: json['deployApplicationId']?.toString(),
+      provisioningIdempotencyKey: json['provisioningIdempotencyKey']?.toString()
     );
   }
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'organizationId': organizationId,
-      'templateId': templateId,
-      'appKey': appKey,
       'instanceKey': instanceKey,
       'displayName': displayName,
       'environment': environment,
       'applicationType': applicationType,
       'primaryDomain': primaryDomain,
       'accessPermissions': accessPermissions?.map((item) => item).toList(),
+      'runtimeConfig': runtimeConfig,
+      'deployApplicationId': deployApplicationId,
+      'provisioningIdempotencyKey': provisioningIdempotencyKey,
     };
   }
 }
@@ -824,15 +700,15 @@ class AppbaseTenantApplicationProvisionCommand {
   final String? password;
   final String tenantId;
   final String organizationId;
-  final String? templateId;
-  final String? appKey;
   final String instanceKey;
   final String displayName;
   final String environment;
-  final String? applicationType;
+  final String applicationType;
   final String? primaryDomain;
   final List<String>? accessPermissions;
   final Map<String, dynamic>? runtimeConfig;
+  final String? deployApplicationId;
+  final String? provisioningIdempotencyKey;
 
   AppbaseTenantApplicationProvisionCommand({
     this.authToken,
@@ -842,15 +718,15 @@ class AppbaseTenantApplicationProvisionCommand {
     this.password,
     required this.tenantId,
     required this.organizationId,
-    this.templateId,
-    this.appKey,
     required this.instanceKey,
     required this.displayName,
     required this.environment,
-    this.applicationType,
+    required this.applicationType,
     this.primaryDomain,
     this.accessPermissions,
-    this.runtimeConfig
+    this.runtimeConfig,
+    this.deployApplicationId,
+    this.provisioningIdempotencyKey
   });
 
   factory AppbaseTenantApplicationProvisionCommand.fromJson(Map<String, dynamic> json) {
@@ -874,8 +750,6 @@ class AppbaseTenantApplicationProvisionCommand {
         }
         return value;
       })(),
-      templateId: json['templateId']?.toString(),
-      appKey: json['appKey']?.toString(),
       instanceKey: (() {
         final value = json['instanceKey']?.toString();
         if (value == null) {
@@ -897,7 +771,13 @@ class AppbaseTenantApplicationProvisionCommand {
         }
         return value;
       })(),
-      applicationType: json['applicationType']?.toString(),
+      applicationType: (() {
+        final value = json['applicationType']?.toString();
+        if (value == null) {
+          throw FormatException('AppbaseTenantApplicationProvisionCommand.applicationType is required');
+        }
+        return value;
+      })(),
       primaryDomain: json['primaryDomain']?.toString(),
       accessPermissions: (() {
         final list = _sdkworkAsList(json['accessPermissions']);
@@ -909,7 +789,9 @@ class AppbaseTenantApplicationProvisionCommand {
             .whereType<String>()
             .toList();
       })(),
-      runtimeConfig: _sdkworkAsMap(json['runtimeConfig'])
+      runtimeConfig: _sdkworkAsMap(json['runtimeConfig']),
+      deployApplicationId: json['deployApplicationId']?.toString(),
+      provisioningIdempotencyKey: json['provisioningIdempotencyKey']?.toString()
     );
   }
 
@@ -922,8 +804,6 @@ class AppbaseTenantApplicationProvisionCommand {
       'password': password,
       'tenantId': tenantId,
       'organizationId': organizationId,
-      'templateId': templateId,
-      'appKey': appKey,
       'instanceKey': instanceKey,
       'displayName': displayName,
       'environment': environment,
@@ -931,6 +811,8 @@ class AppbaseTenantApplicationProvisionCommand {
       'primaryDomain': primaryDomain,
       'accessPermissions': accessPermissions?.map((item) => item).toList(),
       'runtimeConfig': runtimeConfig,
+      'deployApplicationId': deployApplicationId,
+      'provisioningIdempotencyKey': provisioningIdempotencyKey,
     };
   }
 }

@@ -308,6 +308,11 @@ public class IamOauthApi {
         return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
+    /// Iam oauth resource Accounts delete.
+    public func resourceAccountsDelete(resourceAccountId: String) async throws -> Void {
+        _ = try await client.delete(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))"))
+    }
+
     /// Iam oauth resource Accounts update.
     public func resourceAccountsUpdate(resourceAccountId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
         return try await client.patch(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
@@ -331,6 +336,16 @@ public class IamOauthApi {
     /// Iam oauth resource Accounts custom Menus publish.
     public func resourceAccountsCustomMenusPublish(resourceAccountId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
         return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))/custom_menus/publish"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth resource Accounts custom Menus rollback.
+    public func resourceAccountsCustomMenusRollback(resourceAccountId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))/custom_menus/rollback"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth resource Accounts custom Menus sync.
+    public func resourceAccountsCustomMenusSync(resourceAccountId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/resource_accounts/\(serializePathParameter(resourceAccountId, PathParameterSpec(name: "resourceAccountId", style: "simple", explode: false)))/custom_menus/sync"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
     /// Iam oauth resource Accounts follow Qr Codes create.

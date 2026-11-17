@@ -11,7 +11,6 @@ from .sdk_work_resource_response import SdkWorkResourceResponse
 from .sdk_work_list_response import SdkWorkListResponse
 from .sdk_work_command_response import SdkWorkCommandResponse
 from .iam_oauth_client_create_command import IamOauthClientCreateCommand
-from .appbase_application_register_command import AppbaseApplicationRegisterCommand
 from .iam_tenant_application_management_provision_command import IamTenantApplicationManagementProvisionCommand
 from .iam_tenant_application_management_update_command import IamTenantApplicationManagementUpdateCommand
 from .iam_tenant_application_status_command import IamTenantApplicationStatusCommand
@@ -23,4 +22,4 @@ from .service_account_credential_create_command import ServiceAccountCredentialC
 from .service_account_credential_revoke_command import ServiceAccountCredentialRevokeCommand
 from .service_account_token_exchange_command import ServiceAccountTokenExchangeCommand
 
-__all__ = ['SdkWorkApiResponse', 'SdkWorkResourceData', 'SdkWorkPageData', 'SdkWorkCommandData', 'PageInfo', 'ProblemDetail', 'FieldError', 'SdkWorkResourceResponse', 'SdkWorkListResponse', 'SdkWorkCommandResponse', 'IamOauthClientCreateCommand', 'AppbaseApplicationRegisterCommand', 'IamTenantApplicationManagementProvisionCommand', 'IamTenantApplicationManagementUpdateCommand', 'IamTenantApplicationStatusCommand', 'AppbaseTenantApplicationProvisionCommand', 'AppbaseTenantApplicationUpdateCommand', 'AppbaseTenantApplicationEnableCommand', 'AppbaseAccessCredentialCreateCommand', 'ServiceAccountCredentialCreateCommand', 'ServiceAccountCredentialRevokeCommand', 'ServiceAccountTokenExchangeCommand']
+__all__ = ['SdkWorkApiResponse', 'SdkWorkResourceData', 'SdkWorkPageData', 'SdkWorkCommandData', 'PageInfo', 'ProblemDetail', 'FieldError', 'SdkWorkResourceResponse', 'SdkWorkListResponse', 'SdkWorkCommandResponse', 'IamOauthClientCreateCommand', 'IamTenantApplicationManagementProvisionCommand', 'IamTenantApplicationManagementUpdateCommand', 'IamTenantApplicationStatusCommand', 'AppbaseTenantApplicationProvisionCommand', 'AppbaseTenantApplicationUpdateCommand', 'AppbaseTenantApplicationEnableCommand', 'AppbaseAccessCredentialCreateCommand', 'ServiceAccountCredentialCreateCommand', 'ServiceAccountCredentialRevokeCommand', 'ServiceAccountTokenExchangeCommand']

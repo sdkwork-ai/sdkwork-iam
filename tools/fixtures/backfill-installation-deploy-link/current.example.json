@@ -1,0 +1,17 @@
+[
+  {
+    "tenantId": "100001",
+    "installationAppId": "app_100001",
+    "deployApplicationId": null
+  },
+  {
+    "tenantId": "100001",
+    "installationAppId": "sdkwork-drama",
+    "deployApplicationId": "410000000000000002"
+  },
+  {
+    "tenantId": "100001",
+    "installationAppId": "app_legacy",
+    "deployApplicationId": null
+  }
+]

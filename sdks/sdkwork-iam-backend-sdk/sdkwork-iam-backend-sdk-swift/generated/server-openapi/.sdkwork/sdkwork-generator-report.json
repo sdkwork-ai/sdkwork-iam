@@ -12,22 +12,30 @@
   "mode": "apply",
   "hasChanges": true,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "118e7ed5a282c0603092d6b15b13cfc4cc47e04568ad007563049ce7951cda2d",
+  "changeFingerprint": "5b233efaf6d91f91bfeef669faf02fae216054bc5ba9f680ec8dcd58e0e21fcb",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface"
+      "api-surface",
+      "models"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "Sources/API/IamApi.swift"
+          "Sources/API/IamApi.swift",
+          "Sources/API/IamOauthApi.swift"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "Sources/Models.swift"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface. Verification is required."
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
@@ -48,7 +56,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-swift\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -67,13 +75,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-swift\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -104,7 +112,7 @@
   },
   "stats": {
     "totalFiles": 16,
-    "models": 22,
+    "models": 21,
     "apis": 2,
     "types": 0
   },
@@ -112,16 +120,18 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 1,
+    "writtenFiles": 3,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 14,
+    "skippedUnchangedGeneratedFiles": 12,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "118e7ed5a282c0603092d6b15b13cfc4cc47e04568ad007563049ce7951cda2d",
+    "changeFingerprint": "5b233efaf6d91f91bfeef669faf02fae216054bc5ba9f680ec8dcd58e0e21fcb",
     "changes": {
       "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [
-        "Sources/API/IamApi.swift"
+        "Sources/API/IamApi.swift",
+        "Sources/API/IamOauthApi.swift",
+        "Sources/Models.swift"
       ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
@@ -134,9 +144,7 @@
         "sdkwork-sdk.json",
         "Sources/API/API.swift",
         "Sources/API/ApiPaths.swift",
-        "Sources/API/IamOauthApi.swift",
         "Sources/HTTP/HttpClient.swift",
-        "Sources/Models.swift",
         "Sources/SdkworkBackendClient.swift"
       ],
       "deletedGeneratedFiles": [],
@@ -149,29 +157,37 @@
     "impact": {
       "schemaVersion": 1,
       "areas": [
-        "api-surface"
+        "api-surface",
+        "models"
       ],
       "details": [
         {
           "area": "api-surface",
           "paths": [
-            "Sources/API/IamApi.swift"
+            "Sources/API/IamApi.swift",
+            "Sources/API/IamOauthApi.swift"
+          ]
+        },
+        {
+          "area": "models",
+          "paths": [
+            "Sources/Models.swift"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface. Verification is required."
+      "summary": "Detected impact areas: api-surface, models. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-swift\\generated\\server-openapi",
           "command": "node",
           "args": [

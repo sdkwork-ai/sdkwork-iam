@@ -87,15 +87,8 @@ fmt.Println(result)
 ### oauth
 
 ```go
-// Account Links list.
-params := map[string]interface{}{
-    "page": 1,
-    "page_size": 2,
-    "cursor": "cursor",
-    "sort": "sort",
-    "q": "q",
-}
-result, err := client.Oauth.AccountLinksList(params)
+// Wechat Payment Oauth callback.
+result, err := client.Oauth.WechatPaymentOauthCallback()
 if err != nil {
     panic(err)
 }

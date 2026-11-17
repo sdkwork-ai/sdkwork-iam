@@ -409,144 +409,34 @@ class IamOauthClientCreateCommand {
   }
 }
 
-class AppbaseApplicationRegisterCommand {
-  final String? authToken;
-  final String? username;
-  final String? email;
-  final String? phone;
-  final String? password;
-  final String? ownerTenantId;
-  final String? appKey;
-  final String? name;
-  final String? displayName;
-  final String? appType;
-  final String? packageName;
-  final String? bundleId;
-  final String? desktopAppId;
-  final String? version;
-  final String? channel;
-  final String? manifestHash;
-  final List<String>? defaultAccessPermissions;
-  final Map<String, dynamic>? config;
-  final List<Map<String, dynamic>>? packages;
-
-  AppbaseApplicationRegisterCommand({
-    this.authToken,
-    this.username,
-    this.email,
-    this.phone,
-    this.password,
-    this.ownerTenantId,
-    this.appKey,
-    this.name,
-    this.displayName,
-    this.appType,
-    this.packageName,
-    this.bundleId,
-    this.desktopAppId,
-    this.version,
-    this.channel,
-    this.manifestHash,
-    this.defaultAccessPermissions,
-    this.config,
-    this.packages
-  });
-
-  factory AppbaseApplicationRegisterCommand.fromJson(Map<String, dynamic> json) {
-    return AppbaseApplicationRegisterCommand(
-      authToken: json['authToken']?.toString(),
-      username: json['username']?.toString(),
-      email: json['email']?.toString(),
-      phone: json['phone']?.toString(),
-      password: json['password']?.toString(),
-      ownerTenantId: json['ownerTenantId']?.toString(),
-      appKey: json['appKey']?.toString(),
-      name: json['name']?.toString(),
-      displayName: json['displayName']?.toString(),
-      appType: json['appType']?.toString(),
-      packageName: json['packageName']?.toString(),
-      bundleId: json['bundleId']?.toString(),
-      desktopAppId: json['desktopAppId']?.toString(),
-      version: json['version']?.toString(),
-      channel: json['channel']?.toString(),
-      manifestHash: json['manifestHash']?.toString(),
-      defaultAccessPermissions: (() {
-        final list = _sdkworkAsList(json['defaultAccessPermissions']);
-        if (list == null) {
-          return null;
-        }
-        return list
-            .map((item) => item?.toString())
-            .whereType<String>()
-            .toList();
-      })(),
-      config: _sdkworkAsMap(json['config']),
-      packages: (() {
-        final list = _sdkworkAsList(json['packages']);
-        if (list == null) {
-          return null;
-        }
-        return list
-            .map((item) => _sdkworkAsMap(item))
-            .whereType<Map<String, dynamic>>()
-            .toList();
-      })()
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      'authToken': authToken,
-      'username': username,
-      'email': email,
-      'phone': phone,
-      'password': password,
-      'ownerTenantId': ownerTenantId,
-      'appKey': appKey,
-      'name': name,
-      'displayName': displayName,
-      'appType': appType,
-      'packageName': packageName,
-      'bundleId': bundleId,
-      'desktopAppId': desktopAppId,
-      'version': version,
-      'channel': channel,
-      'manifestHash': manifestHash,
-      'defaultAccessPermissions': defaultAccessPermissions?.map((item) => item).toList(),
-      'config': config,
-      'packages': packages?.map((item) => item).toList(),
-    };
-  }
-}
-
 class IamTenantApplicationManagementProvisionCommand {
   final String? organizationId;
-  final String? templateId;
-  final String? appKey;
   final String? instanceKey;
   final String? displayName;
   final String? environment;
   final String? applicationType;
   final String? primaryDomain;
   final List<String>? accessPermissions;
+  final Map<String, dynamic>? runtimeConfig;
+  final String? deployApplicationId;
+  final String? provisioningIdempotencyKey;
 
   IamTenantApplicationManagementProvisionCommand({
     this.organizationId,
-    this.templateId,
-    this.appKey,
     this.instanceKey,
     this.displayName,
     this.environment,
     this.applicationType,
     this.primaryDomain,
-    this.accessPermissions
+    this.accessPermissions,
+    this.runtimeConfig,
+    this.deployApplicationId,
+    this.provisioningIdempotencyKey
   });
 
   factory IamTenantApplicationManagementProvisionCommand.fromJson(Map<String, dynamic> json) {
     return IamTenantApplicationManagementProvisionCommand(
       organizationId: json['organizationId']?.toString(),
-      templateId: json['templateId']?.toString(),
-      appKey: json['appKey']?.toString(),
       instanceKey: json['instanceKey']?.toString(),
       displayName: json['displayName']?.toString(),
       environment: json['environment']?.toString(),
@@ -561,21 +451,25 @@ class IamTenantApplicationManagementProvisionCommand {
             .map((item) => item?.toString())
             .whereType<String>()
             .toList();
-      })()
+      })(),
+      runtimeConfig: _sdkworkAsMap(json['runtimeConfig']),
+      deployApplicationId: json['deployApplicationId']?.toString(),
+      provisioningIdempotencyKey: json['provisioningIdempotencyKey']?.toString()
     );
   }
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'organizationId': organizationId,
-      'templateId': templateId,
-      'appKey': appKey,
       'instanceKey': instanceKey,
       'displayName': displayName,
       'environment': environment,
       'applicationType': applicationType,
       'primaryDomain': primaryDomain,
       'accessPermissions': accessPermissions?.map((item) => item).toList(),
+      'runtimeConfig': runtimeConfig,
+      'deployApplicationId': deployApplicationId,
+      'provisioningIdempotencyKey': provisioningIdempotencyKey,
     };
   }
 }
@@ -635,8 +529,6 @@ class AppbaseTenantApplicationProvisionCommand {
   final String? password;
   final String? tenantId;
   final String? organizationId;
-  final String? templateId;
-  final String? appKey;
   final String? instanceKey;
   final String? displayName;
   final String? environment;
@@ -644,6 +536,8 @@ class AppbaseTenantApplicationProvisionCommand {
   final String? primaryDomain;
   final List<String>? accessPermissions;
   final Map<String, dynamic>? runtimeConfig;
+  final String? deployApplicationId;
+  final String? provisioningIdempotencyKey;
 
   AppbaseTenantApplicationProvisionCommand({
     this.authToken,
@@ -653,15 +547,15 @@ class AppbaseTenantApplicationProvisionCommand {
     this.password,
     this.tenantId,
     this.organizationId,
-    this.templateId,
-    this.appKey,
     this.instanceKey,
     this.displayName,
     this.environment,
     this.applicationType,
     this.primaryDomain,
     this.accessPermissions,
-    this.runtimeConfig
+    this.runtimeConfig,
+    this.deployApplicationId,
+    this.provisioningIdempotencyKey
   });
 
   factory AppbaseTenantApplicationProvisionCommand.fromJson(Map<String, dynamic> json) {
@@ -673,8 +567,6 @@ class AppbaseTenantApplicationProvisionCommand {
       password: json['password']?.toString(),
       tenantId: json['tenantId']?.toString(),
       organizationId: json['organizationId']?.toString(),
-      templateId: json['templateId']?.toString(),
-      appKey: json['appKey']?.toString(),
       instanceKey: json['instanceKey']?.toString(),
       displayName: json['displayName']?.toString(),
       environment: json['environment']?.toString(),
@@ -690,7 +582,9 @@ class AppbaseTenantApplicationProvisionCommand {
             .whereType<String>()
             .toList();
       })(),
-      runtimeConfig: _sdkworkAsMap(json['runtimeConfig'])
+      runtimeConfig: _sdkworkAsMap(json['runtimeConfig']),
+      deployApplicationId: json['deployApplicationId']?.toString(),
+      provisioningIdempotencyKey: json['provisioningIdempotencyKey']?.toString()
     );
   }
 
@@ -703,8 +597,6 @@ class AppbaseTenantApplicationProvisionCommand {
       'password': password,
       'tenantId': tenantId,
       'organizationId': organizationId,
-      'templateId': templateId,
-      'appKey': appKey,
       'instanceKey': instanceKey,
       'displayName': displayName,
       'environment': environment,
@@ -712,6 +604,8 @@ class AppbaseTenantApplicationProvisionCommand {
       'primaryDomain': primaryDomain,
       'accessPermissions': accessPermissions?.map((item) => item).toList(),
       'runtimeConfig': runtimeConfig,
+      'deployApplicationId': deployApplicationId,
+      'provisioningIdempotencyKey': provisioningIdempotencyKey,
     };
   }
 }

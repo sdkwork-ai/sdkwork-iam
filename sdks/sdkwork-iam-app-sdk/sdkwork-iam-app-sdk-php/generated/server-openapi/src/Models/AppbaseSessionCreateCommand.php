@@ -9,6 +9,12 @@ namespace SDKWork\\Iam\\AppSdk\Models;
  */
 final class AppbaseSessionCreateCommand
 {
+    /** Credential grant to run. Omitted `grantType` means the password grant, which is the body the platform hosted login posts. */
+    public ?string $grantType = null;
+
+    /** Shared account identifier understood by hosted-login clients; `email`/`username`/`phone` remain the authoritative identity fields. */
+    public ?string $account = null;
+
     /** Email credential used by standard password login. */
     public ?string $email = null;
 
@@ -33,8 +39,17 @@ final class AppbaseSessionCreateCommand
     /** Verified organization id supplied by an external user-center session exchange when the upstream identity resolved an organization scope. */
     public ?string $organizationId = null;
 
+    /** Opaque client device identity. Sessions are replaced per application per device; omitting it keeps the legacy single-slot behaviour where only sessions without a device are revoked. */
+    public ?string $deviceId = null;
+
     public function __construct(array $data = [])
     {
+        $this->grantType = array_key_exists('grantType', $data)
+            ? $data['grantType']
+            : null;
+        $this->account = array_key_exists('account', $data)
+            ? $data['account']
+            : null;
         $this->email = array_key_exists('email', $data)
             ? $data['email']
             : null;
@@ -59,6 +74,9 @@ final class AppbaseSessionCreateCommand
         $this->organizationId = array_key_exists('organizationId', $data)
             ? $data['organizationId']
             : null;
+        $this->deviceId = array_key_exists('deviceId', $data)
+            ? $data['deviceId']
+            : null;
     }
 
     public static function fromArray(?array $data): ?self
@@ -69,6 +87,8 @@ final class AppbaseSessionCreateCommand
     public function toArray(): array
     {
         return [
+            'grantType' => $this->grantType,
+            'account' => $this->account,
             'email' => $this->email,
             'username' => $this->username,
             'phone' => $this->phone,
@@ -77,6 +97,7 @@ final class AppbaseSessionCreateCommand
             'providerKey' => $this->providerKey,
             'tenantId' => $this->tenantId,
             'organizationId' => $this->organizationId,
+            'deviceId' => $this->deviceId,
         ];
     }
 }

@@ -1,6 +1,7 @@
 import { createSdkWorkPagedListSession, hasPermissionInScope } from "@sdkwork/iam-contracts";
 import type { SdkworkIamService } from "@sdkwork/iam-service";
 
+import { SDKWORK_IAM_TENANT_APPLICATION_TYPES } from "../types/tenant-admin-types";
 import type {
   CreateSdkworkIamTenantControllerInput,
   SdkworkIamTenant,
@@ -10,6 +11,7 @@ import type {
   SdkworkIamTenantApplicationAccessToken,
   SdkworkIamTenantApplicationDraft,
   SdkworkIamTenantApplicationSummary,
+  SdkworkIamTenantApplicationType,
   SdkworkIamTenantApplicationUpdateDraft,
   SdkworkIamTenantLogoMediaResource,
   SdkworkIamTenantMember,
@@ -470,17 +472,38 @@ function emptyApplicationSummary(): SdkworkIamTenantApplicationSummary {
   return { disabled: 0, enabled: 0, pending: 0, total: 0 };
 }
 
+/**
+ * The `tenantApplications.management.create` wire payload.
+ *
+ * `IAM_SPEC` v3 retires application templates: an installation is opened from
+ * the deploy application it serves plus explicit attributes, so the record
+ * carries `deployApplicationId`/`applicationType` and never `appKey`/
+ * `templateId`. `primaryDomain` is optional with `minLength: 1`, so an empty
+ * value is omitted instead of travelling as `""`; `accessPermissions` always
+ * travels because an empty array is an explicit "no API scope" choice.
+ */
 function applicationDraftToRecord(body: SdkworkIamTenantApplicationDraft): Record<string, unknown> {
-  return {
-    accessPermissions: body.accessPermissions,
-    appKey: body.appKey.trim(),
-    applicationType: body.applicationType.trim(),
+  const record: Record<string, unknown> = {
+    accessPermissions: [...body.accessPermissions],
+    applicationType: requireApplicationType(body.applicationType),
+    deployApplicationId: requireId(body.deployApplicationId, "deployApplicationId"),
     displayName: body.displayName.trim(),
     environment: body.environment.trim(),
     instanceKey: body.instanceKey.trim(),
     organizationId: body.organizationId.trim(),
-    primaryDomain: body.primaryDomain.trim(),
   };
+  const primaryDomain = body.primaryDomain.trim();
+  if (primaryDomain) {
+    record.primaryDomain = primaryDomain;
+  }
+  if (body.runtimeConfig) {
+    record.runtimeConfig = body.runtimeConfig;
+  }
+  const provisioningIdempotencyKey = (body.provisioningIdempotencyKey ?? "").trim();
+  if (provisioningIdempotencyKey) {
+    record.provisioningIdempotencyKey = provisioningIdempotencyKey;
+  }
+  return record;
 }
 
 function applicationUpdateDraftToRecord(body: SdkworkIamTenantApplicationUpdateDraft): Record<string, unknown> {
@@ -490,12 +513,31 @@ function applicationUpdateDraftToRecord(body: SdkworkIamTenantApplicationUpdateD
   };
 }
 
+/**
+ * Drawer-level validation. `deployApplicationId` and `applicationType` are the
+ * two fields the retired template used to supply, so each failure names its
+ * own field instead of degrading into a generic provisioning error.
+ */
 function validateApplicationDraft(body: SdkworkIamTenantApplicationDraft) {
-  requireId(body.appKey, "appKey");
+  requireId(body.deployApplicationId, "deployApplicationId");
+  requireApplicationType(body.applicationType);
   requireId(body.displayName, "displayName");
   requireId(body.environment, "environment");
   requireId(body.instanceKey, "instanceKey");
   requireId(body.organizationId, "organizationId");
+}
+
+function requireApplicationType(value: string): SdkworkIamTenantApplicationType {
+  const normalized = value.trim().toLowerCase();
+  const applicationType = SDKWORK_IAM_TENANT_APPLICATION_TYPES.find((candidate) => candidate === normalized);
+  if (!applicationType) {
+    throw new Error(
+      normalized
+        ? `SDKWork IAM tenant controller requires applicationType to be one of ${SDKWORK_IAM_TENANT_APPLICATION_TYPES.join(" | ")}`
+        : "SDKWork IAM tenant controller requires applicationType",
+    );
+  }
+  return applicationType;
 }
 
 function resolveInput(
@@ -652,14 +694,13 @@ function toTenantApplication(value: unknown): SdkworkIamTenantApplication | unde
     appId,
     applicationType: optionalString(record.applicationType) ?? optionalString(record.application_type) ?? "other",
     createdAt: optionalString(record.createdAt) || optionalString(record.created_at),
+    deployApplicationId: optionalString(record.deployApplicationId) || optionalString(record.deploy_application_id),
     displayName: optionalString(record.displayName) || optionalString(record.display_name) || appId,
     environment: optionalString(record.environment) || "unknown",
     instanceKey: optionalString(record.instanceKey) || optionalString(record.instance_key) || appId,
     organizationId: optionalString(record.organizationId) || optionalString(record.organization_id) || "0",
     primaryDomain: optionalString(record.primaryDomain) || optionalString(record.primary_domain),
     status: optionalString(record.status) || "pending_config",
-    templateId: optionalString(record.templateId) || optionalString(record.template_id) || "",
-    templateVersion: optionalString(record.templateVersion) || optionalString(record.template_version),
     tenantApplicationId,
     tenantId,
     updatedAt: optionalString(record.updatedAt) || optionalString(record.updated_at),

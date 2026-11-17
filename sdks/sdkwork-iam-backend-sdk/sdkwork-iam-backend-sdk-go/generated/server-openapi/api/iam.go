@@ -64,6 +64,16 @@ func (a *IamApi) ApiKeysList(page *int, pageSize *int, cursor *string, sort *str
     return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
+// Api Keys create.
+func (a *IamApi) ApiKeysCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
+    raw, err := a.client.Post(BackendApiPath("/iam/api_keys"), body, nil, nil, "application/json")
+    if err != nil {
+        var zero sdktypes.SdkWorkResourceResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
+}
+
 // Api Keys revoke.
 func (a *IamApi) ApiKeysRevoke(apiKeyId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkCommandResponse, error) {
     raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/api_keys/%s/revoke", SerializePathParameter(apiKeyId, PathParameterSpec{Name: "apiKeyId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
@@ -74,14 +84,14 @@ func (a *IamApi) ApiKeysRevoke(apiKeyId string, body sdktypes.AppbaseOperationCo
     return decodeResult[sdktypes.SdkWorkCommandResponse](raw)
 }
 
-// Applications register.
-func (a *IamApi) ApplicationsRegister(body sdktypes.AppbaseApplicationRegisterCommand) (sdktypes.SdkWorkCommandResponse, error) {
-    raw, err := a.client.Request("POST", BackendApiPath("/iam/applications/register"), body, nil, nil, "application/json", true, false)
+// Api Keys rotate.
+func (a *IamApi) ApiKeysRotate(apiKeyId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
+    raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/api_keys/%s/rotate", SerializePathParameter(apiKeyId, PathParameterSpec{Name: "apiKeyId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.SdkWorkCommandResponse
+        var zero sdktypes.SdkWorkResourceResponse
         return zero, err
     }
-    return decodeResult[sdktypes.SdkWorkCommandResponse](raw)
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
 // Audit Events list.
@@ -695,6 +705,16 @@ func (a *IamApi) ProviderAccountsCredentialsList(providerAccountId string, page 
 // Provider Accounts credentials create.
 func (a *IamApi) ProviderAccountsCredentialsCreate(providerAccountId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/provider_accounts/%s/credentials", SerializePathParameter(providerAccountId, PathParameterSpec{Name: "providerAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
+    if err != nil {
+        var zero sdktypes.SdkWorkResourceResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
+}
+
+// Provider Accounts credentials reveal.
+func (a *IamApi) ProviderAccountsCredentialsReveal(providerAccountId string) (sdktypes.SdkWorkResourceResponse, error) {
+    raw, err := a.client.Get(BackendApiPath(fmt.Sprintf("/iam/provider_accounts/%s/credentials/reveal", SerializePathParameter(providerAccountId, PathParameterSpec{Name: "providerAccountId", Style: "simple", Explode: false}))), nil, nil)
     if err != nil {
         var zero sdktypes.SdkWorkResourceResponse
         return zero, err

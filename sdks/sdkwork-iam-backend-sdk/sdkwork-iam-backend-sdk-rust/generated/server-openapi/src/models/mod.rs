@@ -22,8 +22,6 @@ pub mod sdk_work_command_response;
 pub use sdk_work_command_response::SdkWorkCommandResponse;
 pub mod iam_oauth_client_create_command;
 pub use iam_oauth_client_create_command::IamOauthClientCreateCommand;
-pub mod appbase_application_register_command;
-pub use appbase_application_register_command::AppbaseApplicationRegisterCommand;
 pub mod iam_tenant_application_management_provision_command;
 pub use iam_tenant_application_management_provision_command::IamTenantApplicationManagementProvisionCommand;
 pub mod iam_tenant_application_management_update_command;

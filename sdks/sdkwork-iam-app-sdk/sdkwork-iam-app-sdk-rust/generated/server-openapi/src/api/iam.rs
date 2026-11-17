@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::api::paths::app_path;
 use crate::api::paths::append_query_string;
 use crate::http::{SdkworkError, SdkworkHttpClient};
-use crate::models::{SdkWorkPageData};
+use crate::models::{IamPersonaCatalog, IamUserPersona, IamUserPersonaUpdateCommand, SdkWorkPageData};
 
 #[derive(Clone)]
 pub struct IamApi {
@@ -47,6 +47,67 @@ impl IamApi {
         self.client.get(&path, None, None).await
     }
 
+    /// Iam oauth official Account Settings retrieve.
+    pub async fn oauth_official_account_settings_retrieve(&self) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = app_path(&"/iam/oauth/official_account_settings".to_string());
+        self.client.get(&path, None, None).await
+    }
+
+    /// Iam oauth official Accounts list.
+    pub async fn oauth_official_accounts_list(&self, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>) -> Result<SdkWorkPageData, SdkworkError> {
+        let query = build_query_string(&[
+            QueryParameterSpec::new("page", page, "form", true, false, None),
+            QueryParameterSpec::new("page_size", page_size, "form", true, false, None),
+            QueryParameterSpec::new("cursor", cursor, "form", true, false, None),
+            QueryParameterSpec::new("sort", sort, "form", true, false, None),
+            QueryParameterSpec::new("q", q, "form", true, false, None),
+        ]);
+        let path = append_query_string(app_path(&"/iam/oauth/official_accounts".to_string()), &query);
+        self.client.get(&path, None, None).await
+    }
+
+    /// Iam oauth official Accounts create.
+    pub async fn oauth_official_accounts_create(&self, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = app_path(&"/iam/oauth/official_accounts".to_string());
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Iam oauth official Accounts delete.
+    pub async fn oauth_official_accounts_delete(&self, official_account_id: &str) -> Result<(), SdkworkError> {
+        let path = app_path(&format!("/iam/oauth/official_accounts/{}", serialize_path_parameter(official_account_id, PathParameterSpec::new("officialAccountId", "simple", false))));
+        self.client.delete(&path, None, None).await
+    }
+
+    /// Iam oauth official Accounts retrieve.
+    pub async fn oauth_official_accounts_retrieve(&self, official_account_id: &str) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = app_path(&format!("/iam/oauth/official_accounts/{}", serialize_path_parameter(official_account_id, PathParameterSpec::new("officialAccountId", "simple", false))));
+        self.client.get(&path, None, None).await
+    }
+
+    /// Iam oauth official Accounts update.
+    pub async fn oauth_official_accounts_update(&self, official_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = app_path(&format!("/iam/oauth/official_accounts/{}", serialize_path_parameter(official_account_id, PathParameterSpec::new("officialAccountId", "simple", false))));
+        self.client.patch(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Iam oauth official Accounts custom Menus publish.
+    pub async fn oauth_official_accounts_custom_menus_publish(&self, official_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = app_path(&format!("/iam/oauth/official_accounts/{}/custom_menus/publish", serialize_path_parameter(official_account_id, PathParameterSpec::new("officialAccountId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Iam oauth official Accounts custom Menus rollback.
+    pub async fn oauth_official_accounts_custom_menus_rollback(&self, official_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = app_path(&format!("/iam/oauth/official_accounts/{}/custom_menus/rollback", serialize_path_parameter(official_account_id, PathParameterSpec::new("officialAccountId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Iam oauth official Accounts custom Menus sync.
+    pub async fn oauth_official_accounts_custom_menus_sync(&self, official_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = app_path(&format!("/iam/oauth/official_accounts/{}/custom_menus/sync", serialize_path_parameter(official_account_id, PathParameterSpec::new("officialAccountId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
     /// Organization Memberships list.
     pub async fn organization_memberships_list(&self, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>) -> Result<SdkWorkPageData, SdkworkError> {
         let query = build_query_string(&[
@@ -73,9 +134,29 @@ impl IamApi {
         self.client.get(&path, None, None).await
     }
 
+    /// Organizations members list.
+    pub async fn organizations_members_list(&self, organization_id: &str, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>, role: Option<&str>) -> Result<serde_json::Value, SdkworkError> {
+        let query = build_query_string(&[
+            QueryParameterSpec::new("page", page, "form", true, false, None),
+            QueryParameterSpec::new("page_size", page_size, "form", true, false, None),
+            QueryParameterSpec::new("cursor", cursor, "form", true, false, None),
+            QueryParameterSpec::new("sort", sort, "form", true, false, None),
+            QueryParameterSpec::new("q", q, "form", true, false, None),
+            QueryParameterSpec::new("role", role, "form", true, false, None),
+        ]);
+        let path = append_query_string(app_path(&format!("/iam/organizations/{}/members", serialize_path_parameter(organization_id, PathParameterSpec::new("organizationId", "simple", false)))), &query);
+        self.client.get(&path, None, None).await
+    }
+
     /// Organizations tree retrieve.
     pub async fn organizations_tree_retrieve(&self) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = app_path(&"/iam/organizations/tree".to_string());
+        self.client.get(&path, None, None).await
+    }
+
+    /// Persona Catalog retrieve.
+    pub async fn persona_catalog_retrieve(&self) -> Result<IamPersonaCatalog, SdkworkError> {
+        let path = app_path(&"/iam/persona_catalog".to_string());
         self.client.get(&path, None, None).await
     }
 
@@ -106,13 +187,18 @@ impl IamApi {
     }
 
     /// Role Bindings list.
-    pub async fn role_bindings_list(&self, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>) -> Result<SdkWorkPageData, SdkworkError> {
+    pub async fn role_bindings_list(&self, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>, role_id: Option<&str>, principal_kind: Option<&str>, principal_id: Option<&str>, scope_kind: Option<&str>, scope_id: Option<&str>) -> Result<SdkWorkPageData, SdkworkError> {
         let query = build_query_string(&[
             QueryParameterSpec::new("page", page, "form", true, false, None),
             QueryParameterSpec::new("page_size", page_size, "form", true, false, None),
             QueryParameterSpec::new("cursor", cursor, "form", true, false, None),
             QueryParameterSpec::new("sort", sort, "form", true, false, None),
             QueryParameterSpec::new("q", q, "form", true, false, None),
+            QueryParameterSpec::new("roleId", role_id, "form", true, false, None),
+            QueryParameterSpec::new("principalKind", principal_kind, "form", true, false, None),
+            QueryParameterSpec::new("principalId", principal_id, "form", true, false, None),
+            QueryParameterSpec::new("scopeKind", scope_kind, "form", true, false, None),
+            QueryParameterSpec::new("scopeId", scope_id, "form", true, false, None),
         ]);
         let path = append_query_string(app_path(&"/iam/role_bindings".to_string()), &query);
         self.client.get(&path, None, None).await
@@ -148,6 +234,24 @@ impl IamApi {
         self.client.patch(&path, Some(body), None, None, Some("application/json")).await
     }
 
+    /// Users current persona delete.
+    pub async fn users_current_persona_delete(&self) -> Result<(), SdkworkError> {
+        let path = app_path(&"/iam/users/current/persona".to_string());
+        self.client.delete(&path, None, None).await
+    }
+
+    /// Users current persona retrieve.
+    pub async fn users_current_persona_retrieve(&self) -> Result<IamUserPersona, SdkworkError> {
+        let path = app_path(&"/iam/users/current/persona".to_string());
+        self.client.get(&path, None, None).await
+    }
+
+    /// Users current persona update.
+    pub async fn users_current_persona_update(&self, body: &IamUserPersonaUpdateCommand) -> Result<IamUserPersona, SdkworkError> {
+        let path = app_path(&"/iam/users/current/persona".to_string());
+        self.client.put(&path, Some(body), None, None, Some("application/json")).await
+    }
+
     /// Users current phone Bindings delete.
     pub async fn users_current_phone_bindings_delete(&self) -> Result<(), SdkworkError> {
         let path = app_path(&"/iam/users/current/phone_bindings".to_string());
@@ -162,6 +266,103 @@ impl IamApi {
 
 }
 
+struct PathParameterSpec<'a> {
+    name: &'a str,
+    style: &'a str,
+    explode: bool,
+}
+
+impl<'a> PathParameterSpec<'a> {
+    fn new(name: &'a str, style: &'a str, explode: bool) -> Self {
+        Self { name, style, explode }
+    }
+}
+
+fn serialize_path_parameter<T: serde::Serialize>(value: T, spec: PathParameterSpec<'_>) -> String {
+    let value = serde_json::to_value(value).unwrap_or(serde_json::Value::Null);
+    if value.is_null() {
+        return String::new();
+    }
+    let style = if spec.style.is_empty() { "simple" } else { spec.style };
+    match value {
+        serde_json::Value::Array(values) => serialize_path_array(spec.name, &values, style, spec.explode),
+        serde_json::Value::Object(values) => serialize_path_object(spec.name, &values, style, spec.explode),
+        value => format!("{}{}", path_primitive_prefix(spec.name, style), percent_encode(&primitive_to_string(&value))),
+    }
+}
+
+fn serialize_path_array(name: &str, values: &[serde_json::Value], style: &str, explode: bool) -> String {
+    let serialized = values
+        .iter()
+        .filter(|value| !value.is_null())
+        .map(|value| percent_encode(&primitive_to_string(value)))
+        .collect::<Vec<_>>();
+    if serialized.is_empty() {
+        return path_prefix(name, style);
+    }
+    if style == "matrix" {
+        if explode {
+            return serialized.iter().map(|item| format!(";{}={}", name, item)).collect::<Vec<_>>().join("");
+        }
+        return format!(";{}={}", name, serialized.join(","));
+    }
+    let separator = if explode { "." } else { "," };
+    format!("{}{}", path_prefix(name, style), serialized.join(separator))
+}
+
+fn serialize_path_object(
+    name: &str,
+    values: &serde_json::Map<String, serde_json::Value>,
+    style: &str,
+    explode: bool,
+) -> String {
+    let mut entries = Vec::new();
+    let mut exploded = Vec::new();
+    for (key, value) in values {
+        if value.is_null() {
+            continue;
+        }
+        let escaped_key = percent_encode(key);
+        let escaped_value = percent_encode(&primitive_to_string(value));
+        if explode {
+            if style == "matrix" {
+                exploded.push(format!(";{}={}", escaped_key, escaped_value));
+            } else {
+                exploded.push(format!("{}={}", escaped_key, escaped_value));
+            }
+        } else {
+            entries.push(escaped_key);
+            entries.push(escaped_value);
+        }
+    }
+    if style == "matrix" {
+        if explode {
+            return exploded.join("");
+        }
+        return format!(";{}={}", name, entries.join(","));
+    }
+    if explode {
+        let separator = if style == "label" { "." } else { "," };
+        return format!("{}{}", path_prefix(name, style), exploded.join(separator));
+    }
+    format!("{}{}", path_prefix(name, style), entries.join(","))
+}
+
+fn path_prefix(name: &str, style: &str) -> String {
+    match style {
+        "label" => ".".to_string(),
+        "matrix" => format!(";{}", name),
+        _ => String::new(),
+    }
+}
+
+fn path_primitive_prefix(name: &str, style: &str) -> String {
+    if style == "matrix" {
+        format!(";{}=", name)
+    } else {
+        path_prefix(name, style)
+    }
+}
 
 
 struct QueryParameterSpec<'a> {

@@ -33,26 +33,56 @@ function listMigrationUpFiles(engine) {
     .map((entry) => path.join(migrationDir, entry));
 }
 
-function extractCreateTableNames(sql) {
-  return [...sql.matchAll(/CREATE TABLE IF NOT EXISTS ([a-z0-9_]+)/gi)].map((match) => match[1]);
-}
-
+/**
+ * Ordered DDL collector: `CREATE TABLE` adds a name,
+ * `ALTER TABLE ... RENAME TO ...` replaces it, `DROP TABLE` removes it.
+ *
+ * Parsing only `CREATE TABLE` is not enough. A forward rename leaves the
+ * original `CREATE` in the immutable baseline and renames afterwards, so a
+ * create-only scan would materialize the pre-rename name and then report the
+ * renamed table as missing from the DDL. The replay is read in file order
+ * (baseline first, then the ordered migration set) because a rename only means
+ * what it says at the point it is applied.
+ */
 function collectAuthoritativeTableNames(engine = 'postgres') {
   const orderedSources = [
     ...listSqlFiles(path.join(databaseRoot, 'ddl/baseline', engine)),
     ...listMigrationUpFiles(engine),
   ];
 
+  const present = new Set();
   const tableNames = [];
-  const seen = new Set();
   for (const sourcePath of orderedSources) {
     const sql = fs.readFileSync(sourcePath, 'utf8');
-    for (const tableName of extractCreateTableNames(sql)) {
-      if (seen.has(tableName)) {
+    const statements =
+      /CREATE TABLE(?: IF NOT EXISTS)?\s+([a-z0-9_]+)|ALTER TABLE(?: IF EXISTS)?\s+([a-z0-9_]+)\s+RENAME TO\s+([a-z0-9_]+)|DROP TABLE(?: IF EXISTS)?\s+([a-z0-9_]+)/gi;
+    for (const match of sql.matchAll(statements)) {
+      const [, created, renamedFrom, renamedTo, dropped] = match;
+      if (created) {
+        if (!present.has(created)) {
+          present.add(created);
+          tableNames.push(created);
+        }
         continue;
       }
-      seen.add(tableName);
-      tableNames.push(tableName);
+      if (renamedFrom) {
+        const index = tableNames.indexOf(renamedFrom);
+        present.delete(renamedFrom);
+        present.add(renamedTo);
+        if (index >= 0) {
+          tableNames[index] = renamedTo;
+        } else {
+          tableNames.push(renamedTo);
+        }
+        continue;
+      }
+      if (dropped) {
+        present.delete(dropped);
+        const index = tableNames.indexOf(dropped);
+        if (index >= 0) {
+          tableNames.splice(index, 1);
+        }
+      }
     }
   }
 
@@ -106,6 +136,7 @@ const prefixRegistry = {
 const schemaYaml = [
   'schema_version: 1',
   'kind: sdkwork.database.schema',
+  'database_role: authoritative-server',
   'module_id: iam',
   `contract_version: ${L2_CONTRACT_VERSION}`,
   `owner_team: ${IAM_DATABASE_OWNER}`,
@@ -133,7 +164,10 @@ fs.writeFileSync(path.join(databaseRoot, 'contract/schema.yaml'), schemaYaml);
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 manifest.contractVersion = L2_CONTRACT_VERSION;
 manifest.owner = IAM_DATABASE_OWNER;
-manifest.lifecycle.autoMigrate = true;
+// Authoritative-server modules never auto-migrate (DATABASE_FRAMEWORK_SPEC
+// section 3, enforced by check-database-framework-standard.mjs), so the
+// materializer must preserve the explicit false instead of forcing it on.
+manifest.lifecycle.autoMigrate = false;
 manifest.spi = {
   ...(manifest.spi ?? {}),
   provider: IAM_DATABASE_SPI_PROVIDER,

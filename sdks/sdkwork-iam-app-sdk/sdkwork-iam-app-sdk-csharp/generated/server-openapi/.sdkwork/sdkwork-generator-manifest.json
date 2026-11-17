@@ -20,15 +20,15 @@
     },
     {
       "path": "Api/AuthApi.cs",
-      "sha256": "2bd1e7e9993f265de7411c5e71e8e9c86506e1208a0eb3f49caa42bd7b945e04"
+      "sha256": "5edce6767e8b5733a6865fec1cd95570e32621bc13ee256b33971af8b1f73682"
     },
     {
       "path": "Api/IamApi.cs",
-      "sha256": "b070d556e5204d5ae02a29acc97b010e210500e186b40c736d1769addf2b5b9d"
+      "sha256": "e02080c98fdcf09cf3c228e858c9947453e63d3c693524ac6c6ce981cba20882"
     },
     {
       "path": "Api/OauthApi.cs",
-      "sha256": "d0b9d9ca5b4de25a2d9b583322903e7f97246f58018d1859cbcb0eb1650070d2"
+      "sha256": "30f5191dc5edbf5ede0c3222b47a219f738ed52338b93262f04ebc7c6d3b93bf"
     },
     {
       "path": "Api/SystemApi.cs",
@@ -36,7 +36,7 @@
     },
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -52,7 +52,7 @@
     },
     {
       "path": "Http/HttpClient.cs",
-      "sha256": "5833ca8b28b73014c890564912b059e92c8f31bd1253b648634347019c9ecde0"
+      "sha256": "527e23a872e1b1bf8419c77692336b4cd370a3d497dc34796eefae4c05dd4eae"
     },
     {
       "path": "LICENSE",
@@ -60,11 +60,79 @@
     },
     {
       "path": "Models/AppbaseSessionCreateCommand.cs",
-      "sha256": "5819a3ca67fa645e875d515191707e4e0288c2d3eeb51fa6cafa07f216d2dc2e"
+      "sha256": "78494e1837c9750f268d7edddb300425eb69994ae92c9b8d1474c1dcea4b8f2c"
+    },
+    {
+      "path": "Models/AuthorizationsCompletionsCreateRequest.cs",
+      "sha256": "3645c6e1072a52f50af22112c2f87d962315968684d39318ce1e0c027d8fdf34"
+    },
+    {
+      "path": "Models/AuthorizationsCompletionsCreateResponse.cs",
+      "sha256": "43f3305107ee02d541dac11f9dcbdc46317debf9d56f7d278c3a3887c2d487e7"
+    },
+    {
+      "path": "Models/AuthorizationsCreateRequest.cs",
+      "sha256": "d419d55cfb264886be3dccc651f02c5f8ab2deddcdfa765de3294fa61e25f80b"
+    },
+    {
+      "path": "Models/AuthorizationsCreateResponse.cs",
+      "sha256": "05be139d8117ab3e649cb0a0d9edebb0c2f23c04879324d1c4215208fde27d3d"
+    },
+    {
+      "path": "Models/DesktopSessionsCreateRequest.cs",
+      "sha256": "9708c5cdb4fff6d84892a210dfe9ebde6b899e26497d79d117f83b41fcb9f995"
+    },
+    {
+      "path": "Models/DesktopSessionsCreateResponse.cs",
+      "sha256": "106b8fc0ae9d6cb65a778e30a38f4087f3a3d7e16a25e2c2de228e2f0d821ec4"
     },
     {
       "path": "Models/FieldError.cs",
       "sha256": "3cee6396d6463fb2af19288468976d19b048c9661d31587027c968a2c6619250"
+    },
+    {
+      "path": "Models/IamOrganizationMember.cs",
+      "sha256": "0128a5f0cb47e165c17c1e522b6e5497bad835d17f282505e0f089dbd4ecb3d8"
+    },
+    {
+      "path": "Models/IamOrganizationMemberListResponse.cs",
+      "sha256": "76426a2da66ac99197fab1a55b2e91a2282e114c1f7516eb07b331914f6b3660"
+    },
+    {
+      "path": "Models/IamPersonaCatalog.cs",
+      "sha256": "f14cf54012718bc2e834d58ef7c4e7b467f901fb749685391e4915eacf2ad534"
+    },
+    {
+      "path": "Models/IamPersonaCatalogResponse.cs",
+      "sha256": "a4acec9a9aa38988fe5fb68c5f8f7c0d2ac4ee325b2aee36405e02580be8ae1e"
+    },
+    {
+      "path": "Models/IamPersonaInterest.cs",
+      "sha256": "a6b7f259a7050c7de6dba30cdc51026d443fce3a228f106d2b86af0432b145ee"
+    },
+    {
+      "path": "Models/IamPersonaRole.cs",
+      "sha256": "4ac2f59f9ec23ab525e73269bb3478baa949e0444c857f72e38f70ead01db381"
+    },
+    {
+      "path": "Models/IamUserPersona.cs",
+      "sha256": "0fc781d1d96f3512340f3e15023d722fc5ab5ee5d3a7f7b30a53fe583e061243"
+    },
+    {
+      "path": "Models/IamUserPersonaResponse.cs",
+      "sha256": "c4e123ef86d154fec6302695824e8dffca37456c0af61e078948727d837b3503"
+    },
+    {
+      "path": "Models/IamUserPersonaUpdateCommand.cs",
+      "sha256": "1e7a0d6208ff8cdcef137ba98915d6ae3f0fe8c2bfba8963b0f32df9b7297ed0"
+    },
+    {
+      "path": "Models/OauthPhoneBindingSessionCreateCommand.cs",
+      "sha256": "3d7e1cf6875ddf6ea8e39de434760451717c2117599f1dc34e9e452d92ed0925"
+    },
+    {
+      "path": "Models/OauthPhoneBindingVerificationCodeRequestCommand.cs",
+      "sha256": "b438cd21084101a3cc4e779e272945260083a07e1a5d7d50729714368d3807e0"
     },
     {
       "path": "Models/PageInfo.cs",
@@ -103,12 +171,16 @@
       "sha256": "a5b62bbc8c1c5bd24c50bcc46043fa7818853b3156dce063a096d5775364aa92"
     },
     {
+      "path": "Models/SessionsCurrentLogoutRequest.cs",
+      "sha256": "2a32c7b58cfe3de718b954765560b299585ee185453e73e86d25a0767a1e98b1"
+    },
+    {
       "path": "Models/WechatMiniProgramSessionCreateCommand.cs",
-      "sha256": "bccaadcf6e63be5e9e3cc7d53228d643de113fa2941cc4e19b08d524e2ca5226"
+      "sha256": "ee2f6947f4de2e6a64be2d2f9cdbe25b348e2acf05084d466a4157c05954bcfc"
     },
     {
       "path": "README.md",
-      "sha256": "682e89ef5439fc6c4ed4a0e1d8ceb234f9b8f9c72e8d08195d5dd7fdb4dd8034"
+      "sha256": "077fd50082c33d88f3490329627c3a12a250a12a0f73f3842a54ee44e990220f"
     },
     {
       "path": "sdkwork-sdk.json",

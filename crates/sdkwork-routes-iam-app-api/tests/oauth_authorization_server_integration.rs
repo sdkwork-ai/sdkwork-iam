@@ -9,8 +9,8 @@ use http_body_util::BodyExt;
 use sdkwork_iam_context_service::{AuthLevel, DeploymentMode, Environment, IamAppContext};
 use sdkwork_iam_web_adapter::{
     build_userinfo_claims, complete_authorization_state, create_pending_authorization_state,
-    ensure_platform_tenant_application, exchange_authorization_code, load_oauth_bearer_scopes,
-    parse_relying_party_config, platform_runtime_app_id_for_tenant, resolve_relying_party_client,
+    ensure_platform_tenant_application_with_deploy_application, exchange_authorization_code, load_oauth_bearer_scopes,
+    parse_relying_party_config, resolve_relying_party_client,
     revoke_oauth_token, seed_builtin_oauth_provider_catalog, validate_authorize_request,
     AuthorizeRequest,
 };
@@ -24,12 +24,20 @@ use tower::ServiceExt;
 #[path = "unified_database_env.rs"]
 mod unified_database_env;
 
+/// Deploy application anchor of a PostgreSQL test tenant.
+///
+/// Access tokens name the installation by its anchor, so a fixture token and the
+/// installation row it authenticates against must use the same value.
+fn test_deploy_application_id(tenant_id: &str) -> String {
+    format!("deploy_{tenant_id}")
+}
+
 const OAUTH_E2E_TENANT_ID: &str = "tenant_oauth_pkce_e2e";
 const OAUTH_E2E_CLIENT_APP_ID: &str = "app_oauth_partner_e2e";
+const OAUTH_E2E_DEPLOY_APPLICATION_ID: &str = "deploy_oauth_e2e_partner";
 const OAUTH_E2E_USERNAME: &str = "oauth-pkce-e2e@sdkwork-iam.test";
 const OAUTH_E2E_PASSWORD: &str = "OAuthPkce#2026";
 const OAUTH_E2E_REDIRECT_URI: &str = "https://partner.sdkwork.test/oauth/callback";
-const OAUTH_E2E_PARTNER_TEMPLATE_ID: &str = "tmpl_oauth_partner_e2e";
 
 fn local_iam_env_lock() -> &'static Mutex<()> {
     static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
@@ -74,7 +82,7 @@ async fn cleanup_oauth_e2e_fixtures() {
         "DELETE FROM iam_tenant_member WHERE tenant_id = $1",
         "DELETE FROM iam_user WHERE tenant_id = $1",
         "DELETE FROM iam_tenant_signing_key WHERE tenant_id = $1",
-        "DELETE FROM iam_tenant_application WHERE tenant_id = $1",
+        "DELETE FROM iam_application_installation WHERE tenant_id = $1",
         "DELETE FROM iam_tenant WHERE id = $1",
     ] {
         let _ = sqlx::query(statement)
@@ -141,7 +149,7 @@ async fn seed_oauth_e2e_fixtures() {
     // The credential-entry login leg resolves its runtime app scope through
     // the tenant's platform application (`app_<tenant>`); on a fresh test
     // database nothing else provisions it.
-    ensure_platform_tenant_application(&pg, OAUTH_E2E_TENANT_ID)
+    ensure_platform_tenant_application_with_deploy_application(&pg, OAUTH_E2E_TENANT_ID, test_deploy_application_id(OAUTH_E2E_TENANT_ID).as_str())
         .await
         .expect("provision oauth e2e platform tenant application");
 
@@ -186,7 +194,7 @@ async fn seed_oauth_e2e_fixtures() {
     .await
     .expect("insert oauth e2e tenant member");
 
-    sdkwork_iam_web_adapter::ensure_platform_tenant_application(&pg, OAUTH_E2E_TENANT_ID)
+    sdkwork_iam_web_adapter::ensure_platform_tenant_application_with_deploy_application(&pg, OAUTH_E2E_TENANT_ID, test_deploy_application_id(OAUTH_E2E_TENANT_ID).as_str())
         .await
         .expect("ensure platform tenant application for oauth e2e tenant");
 
@@ -207,36 +215,22 @@ async fn seed_oauth_e2e_fixtures() {
     );
 
     sqlx::query(
-        "INSERT INTO iam_application_template (id, owner_tenant_id, app_key, name, display_name, app_type, \
-         version, channel, status, runtime_config_json, artifacts_config_json, default_access_permissions_json, \
-         created_at, updated_at) \
-         VALUES ($1, '0', $2, $2, 'OAuth Partner E2E', 'WEB', '1.0.0', 'stable', 'active', '{}'::jsonb, '{}'::jsonb, \
-         '[\"iam:self\"]'::jsonb, $3, $3) \
-         ON CONFLICT (id) DO UPDATE SET status = 'active', updated_at = EXCLUDED.updated_at",
-    )
-    .bind(OAUTH_E2E_PARTNER_TEMPLATE_ID)
-    .bind(OAUTH_E2E_CLIENT_APP_ID)
-    .bind(&now)
-    .execute(&pg)
-    .await
-    .expect("insert oauth partner application template");
-
-    sqlx::query(
-        "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, template_id, \
-         template_version, instance_key, display_name, environment, status, primary_domain, \
-         domain_config_json, access_permissions_json, runtime_config_json, provisioned_at, activated_at, \
-         created_at, updated_at) \
-         VALUES ($1, $2, $3, '0', $4, '1.0.0', 'oauth-partner', 'OAuth Partner', 'prod', 'enabled', \
-         'partner.sdkwork.test', '{}'::jsonb, '[\"iam:self\"]'::jsonb, $5::jsonb, $6, $6, $6, $6) \
+        "INSERT INTO iam_application_installation (id, app_id, tenant_id, organization_id, instance_key, \
+         display_name, environment, status, primary_domain, domain_config_json, \
+         access_permissions_json, runtime_config_json, provisioned_at, activated_at, \
+         created_at, updated_at, deploy_application_id) \
+         VALUES ($1, $2, $3, '0', 'oauth-partner', 'OAuth Partner', 'prod', 'enabled', \
+         'partner.sdkwork.test', '{}'::jsonb, '[\"iam:self\"]'::jsonb, $4::jsonb, $5, $5, $5, $5, $6) \
          ON CONFLICT (id) DO UPDATE SET runtime_config_json = EXCLUDED.runtime_config_json, \
+         deploy_application_id = EXCLUDED.deploy_application_id, \
          status = 'enabled', updated_at = EXCLUDED.updated_at",
     )
     .bind(format!("tapp_{OAUTH_E2E_TENANT_ID}_oauth_partner"))
     .bind(OAUTH_E2E_CLIENT_APP_ID)
     .bind(OAUTH_E2E_TENANT_ID)
-    .bind(OAUTH_E2E_PARTNER_TEMPLATE_ID)
     .bind(runtime_config.to_string())
     .bind(&now)
+    .bind(OAUTH_E2E_DEPLOY_APPLICATION_ID)
     .execute(&pg)
     .await
     .expect("insert oauth relying party tenant application");
@@ -251,7 +245,7 @@ async fn seed_oauth_e2e_fixtures() {
 async fn login_oauth_e2e_session(app: &axum::Router) -> Value {
     let access_token = bootstrap_access_token_jwt(
         OAUTH_E2E_TENANT_ID,
-        platform_runtime_app_id_for_tenant(OAUTH_E2E_TENANT_ID).as_str(),
+        test_deploy_application_id(OAUTH_E2E_TENANT_ID).as_str(),
     );
     let response = app
         .clone()

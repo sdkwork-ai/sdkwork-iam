@@ -9,11 +9,15 @@
     "protocol": "http",
     "packageName": "sdkwork-iam-backend-sdk"
   },
-  "changeFingerprint": "69b848c8bdf0105c3169323e42f5cbeab7de13c0c9298e1f9b36d7ce69b36829",
+  "changeFingerprint": "a070fcc3083a3e7de33e764ea2f627a44406b7daa21fd86e2240636f2280fd2c",
   "changes": {
     "createdGeneratedFiles": [],
     "updatedGeneratedFiles": [
-      "sdkwork_iam_backend_sdk/api/iam.py"
+      "sdkwork_iam_backend_sdk/api/iam_oauth.py",
+      "sdkwork_iam_backend_sdk/api/iam.py",
+      "sdkwork_iam_backend_sdk/models/__init__.py",
+      "sdkwork_iam_backend_sdk/models/appbase_tenant_application_provision_command.py",
+      "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_provision_command.py"
     ],
     "unchangedGeneratedFiles": [
       "bin/publish-core.mjs",
@@ -27,18 +31,13 @@
       "requirements.txt",
       "sdkwork_iam_backend_sdk/__init__.py",
       "sdkwork_iam_backend_sdk/api/__init__.py",
-      "sdkwork_iam_backend_sdk/api/iam_oauth.py",
       "sdkwork_iam_backend_sdk/client.py",
       "sdkwork_iam_backend_sdk/http_client.py",
-      "sdkwork_iam_backend_sdk/models/__init__.py",
       "sdkwork_iam_backend_sdk/models/appbase_access_credential_create_command.py",
-      "sdkwork_iam_backend_sdk/models/appbase_application_register_command.py",
       "sdkwork_iam_backend_sdk/models/appbase_tenant_application_enable_command.py",
-      "sdkwork_iam_backend_sdk/models/appbase_tenant_application_provision_command.py",
       "sdkwork_iam_backend_sdk/models/appbase_tenant_application_update_command.py",
       "sdkwork_iam_backend_sdk/models/field_error.py",
       "sdkwork_iam_backend_sdk/models/iam_oauth_client_create_command.py",
-      "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_provision_command.py",
       "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_update_command.py",
       "sdkwork_iam_backend_sdk/models/iam_tenant_application_status_command.py",
       "sdkwork_iam_backend_sdk/models/page_info.py",
@@ -56,7 +55,9 @@
       "sdkwork-sdk.json",
       "setup.py"
     ],
-    "deletedGeneratedFiles": [],
+    "deletedGeneratedFiles": [
+      "sdkwork_iam_backend_sdk/models/appbase_application_register_command.py"
+    ],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
@@ -66,29 +67,41 @@
   "impact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface"
+      "api-surface",
+      "models"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "sdkwork_iam_backend_sdk/api/iam.py"
+          "sdkwork_iam_backend_sdk/api/iam_oauth.py",
+          "sdkwork_iam_backend_sdk/api/iam.py",
+          "sdkwork_iam_backend_sdk/models/__init__.py"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "sdkwork_iam_backend_sdk/models/__init__.py",
+          "sdkwork_iam_backend_sdk/models/appbase_application_register_command.py",
+          "sdkwork_iam_backend_sdk/models/appbase_tenant_application_provision_command.py",
+          "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_provision_command.py"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface. Verification is required."
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-python\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -106,12 +119,14 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },

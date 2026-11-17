@@ -5,7 +5,7 @@ use reqwest::Method;
 use crate::api::paths::backend_path;
 use crate::api::paths::append_query_string;
 use crate::http::{SdkworkError, SdkworkHttpClient};
-use crate::models::{AppbaseAccessCredentialCreateCommand, AppbaseApplicationRegisterCommand, AppbaseTenantApplicationEnableCommand, AppbaseTenantApplicationProvisionCommand, AppbaseTenantApplicationUpdateCommand, IamTenantApplicationManagementProvisionCommand, IamTenantApplicationManagementUpdateCommand, IamTenantApplicationStatusCommand, SdkWorkCommandData, SdkWorkPageData, ServiceAccountCredentialCreateCommand, ServiceAccountCredentialRevokeCommand, ServiceAccountTokenExchangeCommand};
+use crate::models::{AppbaseAccessCredentialCreateCommand, AppbaseTenantApplicationEnableCommand, AppbaseTenantApplicationProvisionCommand, AppbaseTenantApplicationUpdateCommand, IamTenantApplicationManagementProvisionCommand, IamTenantApplicationManagementUpdateCommand, IamTenantApplicationStatusCommand, SdkWorkCommandData, SdkWorkPageData, ServiceAccountCredentialCreateCommand, ServiceAccountCredentialRevokeCommand, ServiceAccountTokenExchangeCommand};
 
 #[derive(Clone)]
 pub struct IamApi {
@@ -48,16 +48,22 @@ impl IamApi {
         self.client.get(&path, None, None).await
     }
 
+    /// Api Keys create.
+    pub async fn api_keys_create(&self, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&"/iam/api_keys".to_string());
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
     /// Api Keys revoke.
     pub async fn api_keys_revoke(&self, api_key_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<SdkWorkCommandData, SdkworkError> {
         let path = backend_path(&format!("/iam/api_keys/{}/revoke", serialize_path_parameter(api_key_id, PathParameterSpec::new("apiKeyId", "simple", false))));
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
 
-    /// Applications register.
-    pub async fn applications_register(&self, body: &AppbaseApplicationRegisterCommand) -> Result<SdkWorkCommandData, SdkworkError> {
-        let path = backend_path(&"/iam/applications/register".to_string());
-        self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), true, false).await
+    /// Api Keys rotate.
+    pub async fn api_keys_rotate(&self, api_key_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/api_keys/{}/rotate", serialize_path_parameter(api_key_id, PathParameterSpec::new("apiKeyId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
 
     /// Audit Events list.
@@ -468,6 +474,12 @@ impl IamApi {
     pub async fn provider_accounts_credentials_create(&self, provider_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = backend_path(&format!("/iam/provider_accounts/{}/credentials", serialize_path_parameter(provider_account_id, PathParameterSpec::new("providerAccountId", "simple", false))));
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Provider Accounts credentials reveal.
+    pub async fn provider_accounts_credentials_reveal(&self, provider_account_id: &str) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/provider_accounts/{}/credentials/reveal", serialize_path_parameter(provider_account_id, PathParameterSpec::new("providerAccountId", "simple", false))));
+        self.client.get(&path, None, None).await
     }
 
     /// Provider Accounts set Default.

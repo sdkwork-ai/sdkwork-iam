@@ -67,9 +67,8 @@ puts result.inspect
 ### oauth
 
 ```ruby
-# Account Links list.
-params = { 'page' => 1, 'page_size' => 2, 'cursor' => 'cursor', 'sort' => 'sort', 'q' => 'q' }
-result = client.oauth.account_links_list(params: params)
+# Wechat Payment Oauth callback.
+result = client.oauth.wechat_payment_oauth_callback()
 puts result.inspect
 ```
 

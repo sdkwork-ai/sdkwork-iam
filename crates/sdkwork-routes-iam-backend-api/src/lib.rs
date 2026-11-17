@@ -1,6 +1,7 @@
 mod backend_audit;
 mod backend_sql;
 mod handlers;
+mod installation_lifecycle;
 mod management;
 mod manifest;
 mod oauth_management;

@@ -358,6 +358,12 @@ impl IamOauthApi {
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
 
+    /// Iam oauth resource Accounts delete.
+    pub async fn resource_accounts_delete(&self, resource_account_id: &str) -> Result<(), SdkworkError> {
+        let path = backend_path(&format!("/iam/oauth/resource_accounts/{}", serialize_path_parameter(resource_account_id, PathParameterSpec::new("resourceAccountId", "simple", false))));
+        self.client.delete(&path, None, None).await
+    }
+
     /// Iam oauth resource Accounts update.
     pub async fn resource_accounts_update(&self, resource_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = backend_path(&format!("/iam/oauth/resource_accounts/{}", serialize_path_parameter(resource_account_id, PathParameterSpec::new("resourceAccountId", "simple", false))));
@@ -385,6 +391,18 @@ impl IamOauthApi {
     /// Iam oauth resource Accounts custom Menus publish.
     pub async fn resource_accounts_custom_menus_publish(&self, resource_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = backend_path(&format!("/iam/oauth/resource_accounts/{}/custom_menus/publish", serialize_path_parameter(resource_account_id, PathParameterSpec::new("resourceAccountId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Iam oauth resource Accounts custom Menus rollback.
+    pub async fn resource_accounts_custom_menus_rollback(&self, resource_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/oauth/resource_accounts/{}/custom_menus/rollback", serialize_path_parameter(resource_account_id, PathParameterSpec::new("resourceAccountId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Iam oauth resource Accounts custom Menus sync.
+    pub async fn resource_accounts_custom_menus_sync(&self, resource_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/oauth/resource_accounts/{}/custom_menus/sync", serialize_path_parameter(resource_account_id, PathParameterSpec::new("resourceAccountId", "simple", false))));
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
 

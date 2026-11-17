@@ -3784,7 +3784,7 @@ async fn create_desktop_session(
         &state.config,
         &user,
         organization_id,
-        &client.app_id,
+        &redeemed.app_id,
         device_id.as_deref(),
     )
     .await
@@ -4242,6 +4242,15 @@ async fn create_provider_scan_login(
     // callback screen — which in provider mode never visits the H5 login URL
     // — can complete the QR session after exchanging the authorization code.
     let oauth_state = format!("p:{normalized}:{session_key}:{poll_secret}");
+    // The session issued after the callback is bound to the installation's
+    // deploy application anchor; the platform installation is bootstrapped from
+    // configuration, never from a synthesized IAM runtime app id.
+    let platform_deploy_application_id =
+        sdkwork_iam_web_adapter::platform_deploy_application_id_for_tenant(
+            pg,
+            &integration_tenant,
+        )
+        .await?;
     // Register the state server-side: the exchange endpoint validates the
     // echoed state against this record (provider / redirect / tenant / app).
     match crate::ephemeral::upsert_oauth_state(
@@ -4254,9 +4263,7 @@ async fn create_provider_scan_login(
             scope: None,
             state: oauth_state.clone(),
             tenant_id: integration_tenant.clone(),
-            runtime_app_id: sdkwork_iam_web_adapter::platform_runtime_app_id_for_tenant(
-                &integration_tenant,
-            ),
+            runtime_app_id: platform_deploy_application_id,
         },
     )
     .await
@@ -4527,18 +4534,25 @@ async fn complete_follow_login_scan(
     {
         Some(value) => value.to_string(),
         None => {
-            if let Err(error) =
-                sdkwork_iam_web_adapter::ensure_platform_tenant_application(pg, &tenant_id).await
+            // The webhook has no request-side application context, so the
+            // session is issued for the tenant's platform installation — whose
+            // deploy application anchor is configured, not synthesized.
+            match sdkwork_iam_web_adapter::platform_deploy_application_id_for_tenant(
+                pg, &tenant_id,
+            )
+            .await
             {
-                return reset_follow_login_and_error(
-                    &state,
-                    device_authorization_id,
-                    "iam_oauth_follow_login_incomplete",
-                    &error,
-                )
-                .await;
+                Ok(deploy_application_id) => deploy_application_id,
+                Err(error) => {
+                    return reset_follow_login_and_error(
+                        &state,
+                        device_authorization_id,
+                        "iam_oauth_follow_login_incomplete",
+                        &error,
+                    )
+                    .await;
+                }
             }
-            sdkwork_iam_web_adapter::platform_runtime_app_id_for_tenant(&tenant_id)
         }
     };
     let policy = effective_account_binding_policy(state, pg, Some(&tenant_id)).await;

@@ -1,7 +1,11 @@
 //! Admin-scoped delegated access token issuance for backend IAM operators.
 
-use crate::application_registry::{intersect_permission_scopes, resolve_tenant_application};
+use crate::application_registry::{
+    intersect_permission_scopes, resolve_access_token_app_id,
+    resolve_tenant_application, resolve_tenant_application_by_deploy_application_id,
+};
 use crate::iam_database_env::resolve_iam_database_pool_from_env;
+use crate::installation_lifecycle::ensure_installation_environment_active;
 use crate::is_blank;
 use crate::super_admin_auth::AccessTokenActor;
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
@@ -39,7 +43,11 @@ type HmacSha256 = Hmac<Sha256>;
 pub struct AccessCredentialCreateRequest {
     pub tenant_id: String,
     pub organization_id: String,
+    /// IAM tenant application row selector.
     pub tenant_application_id: Option<String>,
+    /// Installation deploy application anchor selector. Resolved against
+    /// `iam_application_installation.deploy_application_id`; the IAM runtime app id is
+    /// not accepted as a token subject.
     pub app_id: Option<String>,
     pub instance_key: Option<String>,
 }
@@ -51,7 +59,10 @@ pub struct IssuedAccessCredential {
     pub session_id: String,
     pub tenant_id: String,
     pub organization_id: String,
+    /// Subject written into the signed tokens' `app_id`/`aud`: the
+    /// installation's deploy application id, mirroring `iam_session.app_id`.
     pub app_id: String,
+    /// IAM tenant application row that issued the credential.
     pub tenant_application_id: String,
     pub expires_at: String,
 }
@@ -89,14 +100,13 @@ pub fn parse_access_credential_create_request(
     })
 }
 
-pub fn resolve_runtime_app_id(
-    request: &AccessCredentialCreateRequest,
-    tenant_app: &crate::application_registry::TenantApplication,
-) -> String {
-    let _ = request;
-    tenant_app.app_id.clone()
-}
-
+/// Issues a delegated access credential whose subject is the installation's
+/// deploy application.
+///
+/// The IAM runtime `app_id` selects the tenant application row; the signed
+/// token's `app_id`/`aud` are that row's `deploy_application_id`, so a host can
+/// scope the credential to the deployment it serves. An installation without the
+/// deploy link is rejected here rather than being signed with the IAM app id.
 pub async fn issue_delegated_access_credential(
     pg: &PgPool,
     actor: &AccessTokenActor,
@@ -105,14 +115,51 @@ pub async fn issue_delegated_access_credential(
     ensure_tenant_exists(pg, &request.tenant_id).await?;
     ensure_organization_exists(pg, &request.tenant_id, &request.organization_id).await?;
 
-    let tenant_application = resolve_tenant_application(
-        pg,
-        &request.tenant_id,
-        request.tenant_application_id.as_deref(),
-        request.app_id.as_deref(),
-        request.instance_key.as_deref(),
-    )
-    .await?
+    // `appId` in the request is the installation's deploy application anchor (the
+    // registration plane speaks the same identity as the token), while
+    // `tenantApplicationId`/`instanceKey` still address the row directly.
+    let tenant_application = match request
+        .tenant_application_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        Some(tenant_application_id) => {
+            resolve_tenant_application(
+                pg,
+                &request.tenant_id,
+                Some(tenant_application_id),
+                None,
+                None,
+            )
+            .await?
+        }
+        None => match request
+            .app_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+        {
+            Some(deploy_application_id) => {
+                resolve_tenant_application_by_deploy_application_id(
+                    pg,
+                    &request.tenant_id,
+                    deploy_application_id,
+                )
+                .await?
+            }
+            None => {
+                resolve_tenant_application(
+                    pg,
+                    &request.tenant_id,
+                    None,
+                    None,
+                    request.instance_key.as_deref(),
+                )
+                .await?
+            }
+        },
+    }
     .ok_or_else(|| {
         "tenant application was not found; register application and provision tenant application before issuing access credential".to_string()
     })?;
@@ -125,6 +172,17 @@ pub async fn issue_delegated_access_credential(
     if tenant_application.organization_id != request.organization_id {
         return Err("organizationId does not match tenant application".to_string());
     }
+    // Environment-scoped installations only issue credentials for a registered,
+    // active environment. An installation without environment rows keeps the
+    // historical behavior. The requested environment is the operator context's
+    // environment, which is what the signed token records.
+    ensure_installation_environment_active(
+        pg,
+        &request.tenant_id,
+        &tenant_application.id,
+        environment_to_string(&actor.environment),
+    )
+    .await?;
 
     let organization_id = Some(request.organization_id.clone());
     let (data_scope, actor_permission_scope) = resolve_session_scopes(
@@ -138,7 +196,9 @@ pub async fn issue_delegated_access_credential(
         &actor_permission_scope,
         &tenant_application.access_permissions,
     )?;
-    let app_id = tenant_application.app_id.clone();
+    // The token subject is the deploy application, not the tenant application's
+    // IAM runtime id; an installation with no deploy link fails closed here.
+    let app_id = resolve_access_token_app_id(&tenant_application)?;
 
     let session_id = generate_opaque_token("session");
     let now = chrono::Utc::now();
@@ -201,6 +261,11 @@ pub async fn issue_delegated_access_credential(
 ///    persisted. The gateway then resolves the token through the verified
 ///    database path (signature + tenant binding + scope), never through the
 ///    payload-only development fallback.
+///
+/// `app_id` is the installation's deploy application anchor. The credential's
+/// `app_id`/`aud` are that anchor, and an installation that is not linked to a
+/// deploy application fails closed instead of being signed with an IAM runtime
+/// app id.
 pub async fn issue_standalone_bootstrap_access_credential(
     pg: &PgPool,
     tenant_id: &str,
@@ -209,16 +274,33 @@ pub async fn issue_standalone_bootstrap_access_credential(
 ) -> Result<IssuedAccessCredential, String> {
     ensure_tenant_exists(pg, tenant_id).await?;
 
-    let tenant_application = resolve_tenant_application(pg, tenant_id, None, Some(app_id), None)
-        .await?
-        .ok_or_else(|| {
-            format!("tenant application {app_id} is not provisioned for tenant {tenant_id}")
-        })?;
+    let tenant_application =
+        resolve_tenant_application_by_deploy_application_id(pg, tenant_id, app_id)
+            .await?
+            .ok_or_else(|| {
+                format!(
+                    "deploy application {app_id} is not bound to an installation of tenant {tenant_id}"
+                )
+            })?;
     if tenant_application.status != "enabled" {
         return Err(format!(
             "tenant application {app_id} must be enabled before issuing a bootstrap access credential"
         ));
     }
+    // Bootstrap issuance is a token issuance path too: a registered installation
+    // only accepts its active environments. An installation without environment
+    // rows keeps the platform-bootstrap compatibility path.
+    let environment = bootstrap_environment();
+    ensure_installation_environment_active(
+        pg,
+        tenant_id,
+        &tenant_application.id,
+        environment_to_string(&environment),
+    )
+    .await?;
+    // The token subject is the installation's deploy application. Without the
+    // link there is no deployment to name, so issuance fails closed.
+    let token_app_id = resolve_access_token_app_id(&tenant_application)?;
     ensure_bootstrap_system_user(pg, tenant_id).await?;
 
     let organization_id = tenant_application.organization_id.clone();
@@ -235,13 +317,12 @@ pub async fn issue_standalone_bootstrap_access_credential(
         now + chrono::Duration::seconds(ttl as i64)
     };
 
-    let environment = bootstrap_environment();
     let context = IamAppContext::new(
         tenant_id.to_owned(),
         Some(organization_id.as_str()),
         "system",
         session_id.clone(),
-        app_id.to_owned(),
+        token_app_id.clone(),
         environment,
         DeploymentMode::Local,
         AuthLevel::System,
@@ -281,7 +362,7 @@ pub async fn issue_standalone_bootstrap_access_credential(
         session_id,
         tenant_id: tenant_id.to_owned(),
         organization_id,
-        app_id: app_id.to_owned(),
+        app_id: token_app_id,
         tenant_application_id: tenant_application.id.clone(),
         expires_at: expires_at.to_rfc3339(),
     })
@@ -314,9 +395,13 @@ fn bootstrap_environment() -> Environment {
 /// 3. `Ok(None)` when no IAM database is configured, letting the caller fall
 ///    back to a development-only token.
 ///
-/// `tenant_id`/`app_id` default to the installer-provisioned tenant runtime
-/// app (`SDKWORK_WEB_FRAMEWORK_JWT_BOOTSTRAP_TENANT_ID` /
-/// `SDKWORK_WEB_FRAMEWORK_JWT_BOOTSTRAP_APP_ID` env overrides apply).
+/// `tenant_id` defaults to the installer-provisioned tenant
+/// (`SDKWORK_WEB_FRAMEWORK_JWT_BOOTSTRAP_TENANT_ID` overrides it). `app_id` is
+/// the installation's deploy application anchor; it defaults to
+/// [`crate::application_registry::DEPLOY_APPLICATION_ID_ENV`] and there is no
+/// fallback to the IAM runtime app id, so a deployment that names neither fails
+/// with an explicit configuration error instead of issuing a credential under the
+/// retired identity.
 pub async fn resolve_deployment_bootstrap_access_token(
     tenant_id: Option<&str>,
     app_id: Option<&str>,
@@ -349,16 +434,14 @@ pub async fn resolve_deployment_bootstrap_access_token(
                 .filter(|value| !value.trim().is_empty())
         })
         .unwrap_or_else(|| "100001".to_owned());
-    let app_id = app_id
+    let app_id = match app_id
         .map(str::trim)
         .filter(|value| !value.is_empty())
         .map(str::to_owned)
-        .or_else(|| {
-            std::env::var("SDKWORK_WEB_FRAMEWORK_JWT_BOOTSTRAP_APP_ID")
-                .ok()
-                .filter(|value| !value.trim().is_empty())
-        })
-        .unwrap_or_else(|| "sdkwork-cloudrouter".to_owned());
+    {
+        Some(app_id) => app_id,
+        None => crate::application_registry::configured_deploy_application_id()?,
+    };
 
     let issued =
         issue_standalone_bootstrap_access_credential(pg, &tenant_id, &app_id, None).await?;
@@ -533,6 +616,17 @@ fn sign_local_session_token(
     sign_local_session_token_with_ttl(signing_key, token_type, context, LOCAL_TOKEN_TTL_SECONDS)
 }
 
+/// Signs one local dual-token (`auth`/`access`) JWT.
+///
+/// The payload is the identity-only envelope of `IAM_SPEC.md` §5.2. Claim
+/// admission there is closed, and `azp` — the OAuth client id of the installation
+/// credential (`APPLICATION_IDENTITY_SPEC.md` §4) — is not among the admitted
+/// claims, so it is deliberately not signed here. The installation's client
+/// credential remains a registration-plane fact
+/// (`iam_application_installation.app_id`, overridden by
+/// `runtimeConfig.oauth.relyingParty.clientId`); `iam_session` records the deploy
+/// application anchor only, and signing an unadmitted claim would break the
+/// dual-token claim contract before the table admits it.
 pub(crate) fn sign_local_session_token_with_ttl(
     signing_key: &TenantSigningKey,
     token_type: &str,
@@ -665,6 +759,38 @@ pub(crate) fn auth_level_to_string(auth_level: &AuthLevel) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application_registry::TenantApplication;
+
+    /// Installation fixture: the IAM runtime `app_id` is the OAuth client id and
+    /// is never the access-token subject.
+    fn tenant_application(deploy_application_id: Option<&str>) -> TenantApplication {
+        TenantApplication {
+            id: "tapp-1".to_owned(),
+            app_id: "sdkwork-cloudrouter".to_owned(),
+            tenant_id: "100001".to_owned(),
+            organization_id: "0".to_owned(),
+            instance_key: "sdkwork-cloudrouter:production".to_owned(),
+            display_name: "SDKWork CloudRouter".to_owned(),
+            environment: "production".to_owned(),
+            application_type: "pc".to_owned(),
+            status: "enabled".to_owned(),
+            primary_domain: Some("cloudrouter.example.com".to_owned()),
+            access_permissions: vec!["iam.credential_entry".to_owned()],
+            runtime_config: json!({}),
+            deploy_application_id: deploy_application_id.map(str::to_owned),
+        }
+    }
+
+    fn access_token_payload(token: &str) -> Value {
+        let parts: Vec<&str> = token.split('.').collect();
+        assert_eq!(parts.len(), 3, "a session token has three segments");
+        serde_json::from_slice(
+            &URL_SAFE_NO_PAD
+                .decode(parts[1])
+                .expect("payload should decode"),
+        )
+        .expect("payload should parse")
+    }
 
     #[test]
     fn parse_access_credential_create_request_accepts_camel_case_fields() {
@@ -689,6 +815,70 @@ mod tests {
             &["iam.users.read".to_owned()],
             IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION
         ));
+    }
+
+    /// A linked installation signs the deploy application into `app_id` and
+    /// `aud`; the IAM runtime `app_id` never reaches the claims, so the
+    /// `aud == app_id` invariant holds on the new subject.
+    #[test]
+    fn access_token_claims_carry_the_deploy_application_id() {
+        let tenant_application = tenant_application(Some("deploy-app-7"));
+        let app_id = crate::application_registry::resolve_access_token_app_id(&tenant_application)
+            .expect("a linked installation resolves its deploy application");
+
+        let context = IamAppContext::new(
+            tenant_application.tenant_id.clone(),
+            Some(tenant_application.organization_id.as_str()),
+            "user-1".to_owned(),
+            "session-1".to_owned(),
+            app_id,
+            Environment::Prod,
+            DeploymentMode::Local,
+            AuthLevel::System,
+            vec!["tenant:100001".to_owned()],
+            tenant_application.access_permissions.clone(),
+        );
+        let signing_key = TenantSigningKey {
+            kid: "kid-1".to_owned(),
+            secret: b"0123456789abcdef0123456789abcdef".to_vec(),
+        };
+
+        for token in [
+            sign_local_session_token(&signing_key, "access", &context),
+            sign_local_session_token(&signing_key, "auth", &context),
+        ] {
+            let payload = access_token_payload(&token);
+            assert_eq!(payload["app_id"], "deploy-app-7");
+            assert_eq!(payload["aud"], "deploy-app-7");
+            assert_eq!(
+                payload["app_id"], payload["aud"],
+                "the aud == app_id invariant must hold for the deployment credential"
+            );
+            assert_ne!(
+                payload["app_id"], tenant_application.app_id,
+                "the IAM runtime app id must not be signed as the token subject"
+            );
+            assert_eq!(payload["tenant_id"], "100001");
+        }
+    }
+
+    /// Without a deploy link there is no deployment identity to name, so
+    /// issuance fails closed instead of falling back to the IAM runtime app id.
+    #[test]
+    fn access_token_issuance_fails_closed_without_a_deploy_application_link() {
+        for deploy_application_id in [None, Some(""), Some("   ")] {
+            let tenant_application = tenant_application(deploy_application_id);
+            let error = crate::application_registry::resolve_access_token_app_id(&tenant_application)
+                .expect_err("an installation without a deploy link must not issue a token");
+            assert!(
+                error.contains("not bound to a deploy application"),
+                "error must state the missing binding: {error}"
+            );
+            assert!(
+                error.contains("tapp-1"),
+                "error must name the installation: {error}"
+            );
+        }
     }
 
     #[test]
@@ -758,6 +948,16 @@ mod tests {
                 "forbidden claim {key} should be absent"
             );
         }
+        // `APPLICATION_IDENTITY_SPEC.md` §4 lists `azp`, but the dual-token
+        // envelope is governed by `IAM_SPEC.md` §5.2, whose claim admission is
+        // closed: every claim outside its required-claims table is forbidden.
+        // The session row carries the deploy application anchor and no client
+        // credential, so this envelope stays without `azp` until that table
+        // admits the claim (see the module report / spec amendment request).
+        assert!(
+            payload.get("azp").is_none(),
+            "azp is not an admitted claim of the dual-token envelope (IAM_SPEC §5.2)"
+        );
         // Scope arrays must no longer be embedded in the local dual-token JWT:
         // they bloat the compact header and trigger HTTP 431 on proxy edges.
         // The authoritative scopes live in the iam_session row and are loaded

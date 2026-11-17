@@ -139,16 +139,6 @@ async fn ensure_personal_login_organization(pg: &PgPool, tenant_id: &str) -> Res
     Ok(())
 }
 
-pub(crate) async fn create_session_record(
-    pg: &PgPool,
-    config: &LocalIamConfig,
-    user: &LocalIamUser,
-    organization_id: Option<String>,
-    runtime_app_id: &str,
-) -> Result<LocalSession, String> {
-    create_session_record_with_device(pg, config, user, organization_id, runtime_app_id, None).await
-}
-
 /// Create a session bound to an optional opaque device identity.
 ///
 /// The device id is what makes multiple devices of the same application
@@ -182,6 +172,16 @@ pub(crate) async fn create_session_record_with_device(
         pg,
         &user.tenant_id,
         runtime_app_id,
+    )
+    .await?;
+    // Environment-scoped installations only create sessions for a registered,
+    // active environment. An installation without environment rows keeps the
+    // historical platform-bootstrap compatibility path.
+    sdkwork_iam_web_adapter::ensure_deploy_application_environment_active(
+        pg,
+        &user.tenant_id,
+        runtime_app_id,
+        &config.environment,
     )
     .await?;
 

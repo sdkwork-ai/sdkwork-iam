@@ -510,6 +510,15 @@ module Sdkwork
             result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
+          # Iam oauth resource Accounts delete.
+          def resource_accounts_delete(resource_account_id)
+            path = interpolate_path('/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}', resourceAccountId: serialize_path_parameter(resource_account_id, PathParameterSpec.new('resourceAccountId', 'simple', false)))
+            options = {}
+
+            result = @client.request('DELETE', path, **options)
+            result
+          end
+
           # Iam oauth resource Accounts update.
           def resource_accounts_update(resource_account_id, body: nil)
             path = interpolate_path('/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}', resourceAccountId: serialize_path_parameter(resource_account_id, PathParameterSpec.new('resourceAccountId', 'simple', false)))
@@ -552,6 +561,26 @@ module Sdkwork
           # Iam oauth resource Accounts custom Menus publish.
           def resource_accounts_custom_menus_publish(resource_account_id, body: nil)
             path = interpolate_path('/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/publish', resourceAccountId: serialize_path_parameter(resource_account_id, PathParameterSpec.new('resourceAccountId', 'simple', false)))
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Iam oauth resource Accounts custom Menus rollback.
+          def resource_accounts_custom_menus_rollback(resource_account_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/rollback', resourceAccountId: serialize_path_parameter(resource_account_id, PathParameterSpec.new('resourceAccountId', 'simple', false)))
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
+          # Iam oauth resource Accounts custom Menus sync.
+          def resource_accounts_custom_menus_sync(resource_account_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/sync', resourceAccountId: serialize_path_parameter(resource_account_id, PathParameterSpec.new('resourceAccountId', 'simple', false)))
             payload = body
             options = {}
             options[:json] = payload unless payload.nil?

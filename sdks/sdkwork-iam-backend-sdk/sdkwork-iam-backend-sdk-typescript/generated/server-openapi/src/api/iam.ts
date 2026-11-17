@@ -1,7 +1,7 @@
 import { backendApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { AppbaseAccessCredentialCreateCommand, AppbaseApplicationRegisterCommand, AppbaseOperationCommand, AppbaseTenantApplicationEnableCommand, AppbaseTenantApplicationProvisionCommand, AppbaseTenantApplicationUpdateCommand, IamTenantApplicationManagementProvisionCommand, IamTenantApplicationManagementUpdateCommand, IamTenantApplicationStatusCommand, SdkWorkCommandData, SdkWorkPageData, ServiceAccountCredentialCreateCommand, ServiceAccountCredentialRevokeCommand, ServiceAccountTokenExchangeCommand } from '../types';
+import type { AppbaseAccessCredentialCreateCommand, AppbaseOperationCommand, AppbaseTenantApplicationEnableCommand, AppbaseTenantApplicationProvisionCommand, AppbaseTenantApplicationUpdateCommand, IamInstallationCredential, IamInstallationCredentialCreateCommand, IamInstallationCredentialRotateCommand, IamInstallationCredentialWithSecret, IamInstallationEnvironment, IamInstallationEnvironmentUpsertCommand, IamTenantApplicationManagementProvisionCommand, IamTenantApplicationManagementUpdateCommand, IamTenantApplicationStatusCommand, PageInfo, SdkWorkCommandData, SdkWorkPageData, ServiceAccountCredentialCreateCommand, ServiceAccountCredentialRevokeCommand, ServiceAccountTokenExchangeCommand } from '../types';
 
 
 export interface IamUsersListParams {
@@ -174,6 +174,89 @@ export class IamTenantApplicationsSummaryApi {
   }
 }
 
+export interface IamTenantApplicationsEnvironmentsListParams {
+  page?: number;
+  pageSize?: number;
+  cursor?: string;
+  sort?: string;
+  q?: string;
+}
+
+export class IamTenantApplicationsEnvironmentsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Tenant Applications environments list. */
+  async list(tenantId: string, tenantApplicationId: string, params?: IamTenantApplicationsEnvironmentsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: IamInstallationEnvironment[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
+      { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: IamInstallationEnvironment[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/applications/${serializePathParameter(tenantApplicationId, { name: 'tenantApplicationId', style: 'simple', explode: false })}/environments`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+
+/** Tenant Applications environments delete. */
+  async delete(tenantId: string, tenantApplicationId: string, environmentKey: string, requestOptions?: ApiRequestOptions): Promise<void> {
+    return this.client.request<void>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/applications/${serializePathParameter(tenantApplicationId, { name: 'tenantApplicationId', style: 'simple', explode: false })}/environments/${serializePathParameter(environmentKey, { name: 'environmentKey', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'DELETE' as any });
+  }
+
+/** Tenant Applications environments update. */
+  async update(tenantId: string, tenantApplicationId: string, environmentKey: string, body: IamInstallationEnvironmentUpsertCommand, requestOptions?: ApiRequestOptions): Promise<IamInstallationEnvironment> {
+    return this.client.request<IamInstallationEnvironment>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/applications/${serializePathParameter(tenantApplicationId, { name: 'tenantApplicationId', style: 'simple', explode: false })}/environments/${serializePathParameter(environmentKey, { name: 'environmentKey', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PUT' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
+export interface IamTenantApplicationsCredentialsListParams {
+  page?: number;
+  pageSize?: number;
+  cursor?: string;
+  sort?: string;
+  q?: string;
+}
+
+export class IamTenantApplicationsCredentialsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Tenant Applications credentials list. */
+  async list(tenantId: string, tenantApplicationId: string, params?: IamTenantApplicationsCredentialsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: IamInstallationCredential[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
+      { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: IamInstallationCredential[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/applications/${serializePathParameter(tenantApplicationId, { name: 'tenantApplicationId', style: 'simple', explode: false })}/credentials`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+
+/** Tenant Applications credentials create. */
+  async create(tenantId: string, tenantApplicationId: string, body: IamInstallationCredentialCreateCommand, requestOptions?: ApiRequestOptions): Promise<IamInstallationCredentialWithSecret> {
+    return this.client.request<IamInstallationCredentialWithSecret>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/applications/${serializePathParameter(tenantApplicationId, { name: 'tenantApplicationId', style: 'simple', explode: false })}/credentials`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Tenant Applications credentials revoke. */
+  async revoke(tenantId: string, tenantApplicationId: string, credentialId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
+    return this.client.request<SdkWorkCommandData>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/applications/${serializePathParameter(tenantApplicationId, { name: 'tenantApplicationId', style: 'simple', explode: false })}/credentials/${serializePathParameter(credentialId, { name: 'credentialId', style: 'simple', explode: false })}/revoke`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
+  }
+
+/** Tenant Applications credentials rotate. */
+  async rotate(tenantId: string, tenantApplicationId: string, credentialId: string, body: IamInstallationCredentialRotateCommand, requestOptions?: ApiRequestOptions): Promise<IamInstallationCredentialWithSecret> {
+    return this.client.request<IamInstallationCredentialWithSecret>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/applications/${serializePathParameter(tenantApplicationId, { name: 'tenantApplicationId', style: 'simple', explode: false })}/credentials/${serializePathParameter(credentialId, { name: 'credentialId', style: 'simple', explode: false })}/rotate`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export class IamTenantApplicationsManagementApi {
   private client: HttpClient;
 
@@ -217,11 +300,15 @@ export interface IamTenantApplicationsListParams {
 export class IamTenantApplicationsApi {
   private client: HttpClient;
   public readonly management: IamTenantApplicationsManagementApi;
+  public readonly credentials: IamTenantApplicationsCredentialsApi;
+  public readonly environments: IamTenantApplicationsEnvironmentsApi;
   public readonly summary: IamTenantApplicationsSummaryApi;
 
   constructor(client: HttpClient) {
     this.client = client;
     this.management = new IamTenantApplicationsManagementApi(client);
+    this.credentials = new IamTenantApplicationsCredentialsApi(client);
+    this.environments = new IamTenantApplicationsEnvironmentsApi(client);
     this.summary = new IamTenantApplicationsSummaryApi(client);
   }
 
@@ -1184,20 +1271,6 @@ export class IamAuditEventsApi {
   }
 }
 
-export class IamApplicationsApi {
-  private client: HttpClient;
-
-  constructor(client: HttpClient) {
-    this.client = client;
-  }
-
-
-/** Applications register. */
-  async register(body: AppbaseApplicationRegisterCommand, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
-    return this.client.request<SdkWorkCommandData>(backendApiPath(`/iam/applications/register`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true, sdkworkUnwrapKind: 'command' });
-  }
-}
-
 export interface IamApiKeysListParams {
   page?: number;
   pageSize?: number;
@@ -1279,7 +1352,6 @@ export class IamApi {
   public readonly accessCredentials: IamAccessCredentialsApi;
   public readonly accountBindingPolicy: IamAccountBindingPolicyApi;
   public readonly apiKeys: IamApiKeysApi;
-  public readonly applications: IamApplicationsApi;
   public readonly auditEvents: IamAuditEventsApi;
   public readonly departmentAssignments: IamDepartmentAssignmentsApi;
   public readonly departments: IamDepartmentsApi;
@@ -1306,7 +1378,6 @@ export class IamApi {
     this.accessCredentials = new IamAccessCredentialsApi(client);
     this.accountBindingPolicy = new IamAccountBindingPolicyApi(client);
     this.apiKeys = new IamApiKeysApi(client);
-    this.applications = new IamApplicationsApi(client);
     this.auditEvents = new IamAuditEventsApi(client);
     this.departmentAssignments = new IamDepartmentAssignmentsApi(client);
     this.departments = new IamDepartmentsApi(client);

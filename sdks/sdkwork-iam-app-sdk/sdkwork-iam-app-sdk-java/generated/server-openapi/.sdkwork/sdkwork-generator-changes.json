@@ -9,11 +9,29 @@
     "protocol": "http",
     "packageName": "com.sdkwork:sdkwork-iam-app-sdk"
   },
-  "changeFingerprint": "ea8771e26700d7e8e20de2884b6b258531d91c123a5ed4fc00d7cf10eeecc00b",
+  "changeFingerprint": "03cb9ed25cd4c941d88dfefdc088d8049f9fb2c3e1bd101c51c70d4a9193a906",
   "changes": {
-    "createdGeneratedFiles": [],
-    "updatedGeneratedFiles": [],
-    "unchangedGeneratedFiles": [
+    "createdGeneratedFiles": [
+      "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCompletionsCreateRequest.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCompletionsCreateResponse.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCreateRequest.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCreateResponse.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/DesktopSessionsCreateRequest.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/DesktopSessionsCreateResponse.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/IamOrganizationMember.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/IamOrganizationMemberListResponse.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/IamPersonaCatalog.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/IamPersonaCatalogResponse.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/IamPersonaInterest.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/IamPersonaRole.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/IamUserPersona.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/IamUserPersonaResponse.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/IamUserPersonaUpdateCommand.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/OauthPhoneBindingSessionCreateCommand.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/OauthPhoneBindingVerificationCodeRequestCommand.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/SessionsCurrentLogoutRequest.java"
+    ],
+    "updatedGeneratedFiles": [
       "bin/publish-core.mjs",
       "bin/publish.ps1",
       "bin/publish.sh",
@@ -43,35 +61,177 @@
       "src/main/java/com/sdkwork/iam/app/sdk/model/WechatMiniProgramSessionCreateCommand.java",
       "src/main/java/com/sdkwork/iam/app/sdk/SdkworkAppClient.java"
     ],
+    "unchangedGeneratedFiles": [],
     "deletedGeneratedFiles": [],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
     ],
-    "backedUpFiles": []
+    "backedUpFiles": [
+      "bin/publish-core.mjs",
+      "bin/publish.ps1",
+      "bin/publish.sh",
+      "CHANGELOG.md",
+      "LICENSE",
+      "pom.xml",
+      "README.md",
+      "sdkwork-sdk.json",
+      "src/main/java/com/sdkwork/iam/app/sdk/api/ApiPaths.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/api/AuthApi.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/api/IamApi.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/api/OauthApi.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/api/package-info.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/api/SystemApi.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/http/HttpClient.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/AppbaseSessionCreateCommand.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/FieldError.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/PageInfo.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/ProblemDetail.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/SdkWorkApiResponse.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/SdkWorkCommandData.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/SdkWorkCommandResponse.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/SdkWorkListResponse.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/SdkWorkPageData.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/SdkWorkResourceData.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/SdkWorkResourceResponse.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/model/WechatMiniProgramSessionCreateCommand.java",
+      "src/main/java/com/sdkwork/iam/app/sdk/SdkworkAppClient.java"
+    ]
   },
   "impact": {
     "schemaVersion": 1,
-    "areas": [],
-    "details": [],
-    "requiresVerification": false,
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped."
+    "areas": [
+      "api-surface",
+      "models",
+      "runtime",
+      "build-metadata",
+      "publish-workflow",
+      "documentation",
+      "unknown"
+    ],
+    "details": [
+      {
+        "area": "api-surface",
+        "paths": [
+          "src/main/java/com/sdkwork/iam/app/sdk/api/ApiPaths.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/api/AuthApi.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/api/IamApi.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/api/OauthApi.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/api/package-info.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/api/SystemApi.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/SdkworkAppClient.java"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "src/main/java/com/sdkwork/iam/app/sdk/model/AppbaseSessionCreateCommand.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCompletionsCreateRequest.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCompletionsCreateResponse.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCreateRequest.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCreateResponse.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/DesktopSessionsCreateRequest.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/DesktopSessionsCreateResponse.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/FieldError.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/IamOrganizationMember.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/IamOrganizationMemberListResponse.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/IamPersonaCatalog.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/IamPersonaCatalogResponse.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/IamPersonaInterest.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/IamPersonaRole.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/IamUserPersona.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/IamUserPersonaResponse.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/IamUserPersonaUpdateCommand.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/OauthPhoneBindingSessionCreateCommand.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/OauthPhoneBindingVerificationCodeRequestCommand.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/PageInfo.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/ProblemDetail.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/SdkWorkApiResponse.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/SdkWorkCommandData.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/SdkWorkCommandResponse.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/SdkWorkListResponse.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/SdkWorkPageData.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/SdkWorkResourceData.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/SdkWorkResourceResponse.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/SessionsCurrentLogoutRequest.java",
+          "src/main/java/com/sdkwork/iam/app/sdk/model/WechatMiniProgramSessionCreateCommand.java"
+        ]
+      },
+      {
+        "area": "runtime",
+        "paths": [
+          "src/main/java/com/sdkwork/iam/app/sdk/http/HttpClient.java"
+        ]
+      },
+      {
+        "area": "build-metadata",
+        "paths": [
+          "pom.xml",
+          "sdkwork-sdk.json"
+        ]
+      },
+      {
+        "area": "publish-workflow",
+        "paths": [
+          "bin/publish-core.mjs",
+          "bin/publish.ps1",
+          "bin/publish.sh"
+        ]
+      },
+      {
+        "area": "documentation",
+        "paths": [
+          "CHANGELOG.md",
+          "README.md"
+        ]
+      },
+      {
+        "area": "unknown",
+        "paths": [
+          "LICENSE"
+        ]
+      }
+    ],
+    "requiresVerification": true,
+    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required."
   },
   "verificationPlan": {
-    "shouldRun": false,
-    "runPhase": "skip",
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped.",
-    "steps": []
+    "shouldRun": true,
+    "runPhase": "now",
+    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "steps": [
+      {
+        "id": "check",
+        "title": "Unified package check",
+        "required": true,
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-java\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "java",
+          "--project-dir",
+          ".",
+          "--action",
+          "check"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language java --project-dir . --action check"
+      }
+    ]
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "low",
-    "nextAction": "skip",
+    "riskLevel": "high",
+    "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
-    "summary": "No actionable changes were detected. No apply or verification step is required.",
+    "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "no-actionable-changes"
+      "backed-up-generated-files",
+      "manual-review-required",
+      "unknown-impact",
+      "verification-required"
     ]
   },
   "preservedLegacyFiles": false

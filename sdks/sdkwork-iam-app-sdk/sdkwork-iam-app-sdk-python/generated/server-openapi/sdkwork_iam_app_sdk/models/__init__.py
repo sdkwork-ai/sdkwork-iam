@@ -10,7 +10,25 @@ from .field_error import FieldError
 from .sdk_work_resource_response import SdkWorkResourceResponse
 from .sdk_work_list_response import SdkWorkListResponse
 from .sdk_work_command_response import SdkWorkCommandResponse
+from .iam_persona_role import IamPersonaRole
+from .iam_persona_interest import IamPersonaInterest
+from .iam_persona_catalog import IamPersonaCatalog
+from .iam_user_persona import IamUserPersona
+from .iam_persona_catalog_response import IamPersonaCatalogResponse
+from .iam_user_persona_response import IamUserPersonaResponse
+from .iam_user_persona_update_command import IamUserPersonaUpdateCommand
+from .iam_organization_member import IamOrganizationMember
+from .iam_organization_member_list_response import IamOrganizationMemberListResponse
 from .wechat_mini_program_session_create_command import WechatMiniProgramSessionCreateCommand
+from .oauth_phone_binding_session_create_command import OauthPhoneBindingSessionCreateCommand
+from .oauth_phone_binding_verification_code_request_command import OauthPhoneBindingVerificationCodeRequestCommand
 from .appbase_session_create_command import AppbaseSessionCreateCommand
+from .sessions_current_logout_request import SessionsCurrentLogoutRequest
+from .authorizations_create_request import AuthorizationsCreateRequest
+from .authorizations_create_response import AuthorizationsCreateResponse
+from .authorizations_completions_create_request import AuthorizationsCompletionsCreateRequest
+from .authorizations_completions_create_response import AuthorizationsCompletionsCreateResponse
+from .desktop_sessions_create_request import DesktopSessionsCreateRequest
+from .desktop_sessions_create_response import DesktopSessionsCreateResponse
 
-__all__ = ['SdkWorkApiResponse', 'SdkWorkResourceData', 'SdkWorkPageData', 'SdkWorkCommandData', 'PageInfo', 'ProblemDetail', 'FieldError', 'SdkWorkResourceResponse', 'SdkWorkListResponse', 'SdkWorkCommandResponse', 'WechatMiniProgramSessionCreateCommand', 'AppbaseSessionCreateCommand']
+__all__ = ['SdkWorkApiResponse', 'SdkWorkResourceData', 'SdkWorkPageData', 'SdkWorkCommandData', 'PageInfo', 'ProblemDetail', 'FieldError', 'SdkWorkResourceResponse', 'SdkWorkListResponse', 'SdkWorkCommandResponse', 'IamPersonaRole', 'IamPersonaInterest', 'IamPersonaCatalog', 'IamUserPersona', 'IamPersonaCatalogResponse', 'IamUserPersonaResponse', 'IamUserPersonaUpdateCommand', 'IamOrganizationMember', 'IamOrganizationMemberListResponse', 'WechatMiniProgramSessionCreateCommand', 'OauthPhoneBindingSessionCreateCommand', 'OauthPhoneBindingVerificationCodeRequestCommand', 'AppbaseSessionCreateCommand', 'SessionsCurrentLogoutRequest', 'AuthorizationsCreateRequest', 'AuthorizationsCreateResponse', 'AuthorizationsCompletionsCreateRequest', 'AuthorizationsCompletionsCreateResponse', 'DesktopSessionsCreateRequest', 'DesktopSessionsCreateResponse']

@@ -36,6 +36,58 @@ public class IamApi {
         return try await client.get(ApiPaths.appPath("/iam/departments/tree"), responseType: SdkWorkResourceResponse.self)
     }
 
+    /// Iam oauth official Account Settings retrieve.
+    public func oauthOfficialAccountSettingsRetrieve() async throws -> SdkWorkResourceResponse? {
+        return try await client.get(ApiPaths.appPath("/iam/oauth/official_account_settings"), responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth official Accounts list.
+    public func oauthOfficialAccountsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
+        let query = buildQueryString([
+            QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "cursor", value: cursor, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
+        ])
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.appPath("/iam/oauth/official_accounts"), query), responseType: SdkWorkListResponse.self)
+    }
+
+    /// Iam oauth official Accounts create.
+    public func oauthOfficialAccountsCreate(body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.appPath("/iam/oauth/official_accounts"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth official Accounts delete.
+    public func oauthOfficialAccountsDelete(officialAccountId: String) async throws -> Void {
+        _ = try await client.delete(ApiPaths.appPath("/iam/oauth/official_accounts/\(serializePathParameter(officialAccountId, PathParameterSpec(name: "officialAccountId", style: "simple", explode: false)))"))
+    }
+
+    /// Iam oauth official Accounts retrieve.
+    public func oauthOfficialAccountsRetrieve(officialAccountId: String) async throws -> SdkWorkResourceResponse? {
+        return try await client.get(ApiPaths.appPath("/iam/oauth/official_accounts/\(serializePathParameter(officialAccountId, PathParameterSpec(name: "officialAccountId", style: "simple", explode: false)))"), responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth official Accounts update.
+    public func oauthOfficialAccountsUpdate(officialAccountId: String, body: [String: Any]? = nil) async throws -> SdkWorkResourceResponse? {
+        return try await client.patch(ApiPaths.appPath("/iam/oauth/official_accounts/\(serializePathParameter(officialAccountId, PathParameterSpec(name: "officialAccountId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth official Accounts custom Menus publish.
+    public func oauthOfficialAccountsCustomMenusPublish(officialAccountId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.appPath("/iam/oauth/official_accounts/\(serializePathParameter(officialAccountId, PathParameterSpec(name: "officialAccountId", style: "simple", explode: false)))/custom_menus/publish"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth official Accounts custom Menus rollback.
+    public func oauthOfficialAccountsCustomMenusRollback(officialAccountId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.appPath("/iam/oauth/official_accounts/\(serializePathParameter(officialAccountId, PathParameterSpec(name: "officialAccountId", style: "simple", explode: false)))/custom_menus/rollback"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Iam oauth official Accounts custom Menus sync.
+    public func oauthOfficialAccountsCustomMenusSync(officialAccountId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.appPath("/iam/oauth/official_accounts/\(serializePathParameter(officialAccountId, PathParameterSpec(name: "officialAccountId", style: "simple", explode: false)))/custom_menus/sync"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
     /// Organization Memberships list.
     public func organizationMembershipsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
@@ -60,9 +112,27 @@ public class IamApi {
         return try await client.get(ApiPaths.appendQueryString(ApiPaths.appPath("/iam/organizations"), query), responseType: SdkWorkListResponse.self)
     }
 
+    /// Organizations members list.
+    public func organizationsMembersList(organizationId: String, page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil, role: String? = nil) async throws -> IamOrganizationMemberListResponse? {
+        let query = buildQueryString([
+            QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "cursor", value: cursor, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "role", value: role, style: "form", explode: true, allowReserved: false, contentType: nil)
+        ])
+        return try await client.get(ApiPaths.appendQueryString(ApiPaths.appPath("/iam/organizations/\(serializePathParameter(organizationId, PathParameterSpec(name: "organizationId", style: "simple", explode: false)))/members"), query), responseType: IamOrganizationMemberListResponse.self)
+    }
+
     /// Organizations tree retrieve.
     public func organizationsTreeRetrieve() async throws -> SdkWorkResourceResponse? {
         return try await client.get(ApiPaths.appPath("/iam/organizations/tree"), responseType: SdkWorkResourceResponse.self)
+    }
+
+    /// Persona Catalog retrieve.
+    public func personaCatalogRetrieve() async throws -> IamPersonaCatalogResponse? {
+        return try await client.get(ApiPaths.appPath("/iam/persona_catalog"), responseType: IamPersonaCatalogResponse.self)
     }
 
     /// Position Assignments list.
@@ -90,13 +160,18 @@ public class IamApi {
     }
 
     /// Role Bindings list.
-    public func roleBindingsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil) async throws -> SdkWorkListResponse? {
+    public func roleBindingsList(page: Int? = nil, pageSize: Int? = nil, cursor: String? = nil, sort: String? = nil, q: String? = nil, roleId: String? = nil, principalKind: String? = nil, principalId: String? = nil, scopeKind: String? = nil, scopeId: String? = nil) async throws -> SdkWorkListResponse? {
         let query = buildQueryString([
             QueryParameterSpec(name: "page", value: page, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "page_size", value: pageSize, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "cursor", value: cursor, style: "form", explode: true, allowReserved: false, contentType: nil),
             QueryParameterSpec(name: "sort", value: sort, style: "form", explode: true, allowReserved: false, contentType: nil),
-            QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil)
+            QueryParameterSpec(name: "q", value: q, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "roleId", value: roleId, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "principalKind", value: principalKind, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "principalId", value: principalId, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "scopeKind", value: scopeKind, style: "form", explode: true, allowReserved: false, contentType: nil),
+            QueryParameterSpec(name: "scopeId", value: scopeId, style: "form", explode: true, allowReserved: false, contentType: nil)
         ])
         return try await client.get(ApiPaths.appendQueryString(ApiPaths.appPath("/iam/role_bindings"), query), responseType: SdkWorkListResponse.self)
     }
@@ -126,6 +201,21 @@ public class IamApi {
         return try await client.patch(ApiPaths.appPath("/iam/users/current/password"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
+    /// Users current persona delete.
+    public func usersCurrentPersonaDelete() async throws -> Void {
+        _ = try await client.delete(ApiPaths.appPath("/iam/users/current/persona"))
+    }
+
+    /// Users current persona retrieve.
+    public func usersCurrentPersonaRetrieve() async throws -> IamUserPersonaResponse? {
+        return try await client.get(ApiPaths.appPath("/iam/users/current/persona"), responseType: IamUserPersonaResponse.self)
+    }
+
+    /// Users current persona update.
+    public func usersCurrentPersonaUpdate(body: IamUserPersonaUpdateCommand) async throws -> IamUserPersonaResponse? {
+        return try await client.put(ApiPaths.appPath("/iam/users/current/persona"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: IamUserPersonaResponse.self)
+    }
+
     /// Users current phone Bindings delete.
     public func usersCurrentPhoneBindingsDelete() async throws -> Void {
         _ = try await client.delete(ApiPaths.appPath("/iam/users/current/phone_bindings"))
@@ -136,6 +226,80 @@ public class IamApi {
         return try await client.post(ApiPaths.appPath("/iam/users/current/phone_bindings"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
+    private struct PathParameterSpec {
+        let name: String
+        let style: String
+        let explode: Bool
+    }
+
+    private func serializePathParameter(_ value: Any?, _ spec: PathParameterSpec) -> String {
+        guard let value else { return "" }
+        let style = spec.style.isEmpty ? "simple" : spec.style
+        if let array = value as? [Any] {
+            return serializePathArray(spec.name, array, style, spec.explode)
+        }
+        if let object = value as? [String: Any] {
+            return serializePathObject(spec.name, object, style, spec.explode)
+        }
+        return pathPrimitivePrefix(spec.name, style) + pathEncode(String(describing: value))
+    }
+
+    private func serializePathArray(_ name: String, _ values: [Any], _ style: String, _ explode: Bool) -> String {
+        let serialized = values.map { pathEncode(String(describing: $0)) }
+        if serialized.isEmpty { return pathPrefix(name, style) }
+        if style == "matrix" {
+            if explode {
+                return serialized.map { ";\(name)=\($0)" }.joined()
+            }
+            return ";\(name)=" + serialized.joined(separator: ",")
+        }
+        let separator = explode ? "." : ","
+        return pathPrefix(name, style) + serialized.joined(separator: separator)
+    }
+
+    private func serializePathObject(_ name: String, _ values: [String: Any], _ style: String, _ explode: Bool) -> String {
+        var entries: [String] = []
+        var exploded: [String] = []
+        for (key, value) in values {
+            let escapedKey = pathEncode(key)
+            let escapedValue = pathEncode(String(describing: value))
+            if explode {
+                if style == "matrix" {
+                    exploded.append(";\(escapedKey)=\(escapedValue)")
+                } else {
+                    exploded.append("\(escapedKey)=\(escapedValue)")
+                }
+            } else {
+                entries.append(escapedKey)
+                entries.append(escapedValue)
+            }
+        }
+        if style == "matrix" {
+            if explode {
+                return exploded.joined()
+            }
+            return ";\(name)=" + entries.joined(separator: ",")
+        }
+        if explode {
+            let separator = style == "label" ? "." : ","
+            return pathPrefix(name, style) + exploded.joined(separator: separator)
+        }
+        return pathPrefix(name, style) + entries.joined(separator: ",")
+    }
+
+    private func pathPrefix(_ name: String, _ style: String) -> String {
+        if style == "label" { return "." }
+        if style == "matrix" { return ";\(name)" }
+        return ""
+    }
+
+    private func pathPrimitivePrefix(_ name: String, _ style: String) -> String {
+        style == "matrix" ? ";\(name)=" : pathPrefix(name, style)
+    }
+
+    private func pathEncode(_ value: String) -> String {
+        value.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? value
+    }
 
     private struct QueryParameterSpec {
         let name: String

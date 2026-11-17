@@ -67,11 +67,14 @@ pub(crate) fn require_credential_entry_tenant_id(
 pub(crate) fn require_credential_entry_runtime_app_id(
     ctx: &WebRequestContext,
 ) -> Result<&str, Response> {
+    // The claim is the installation's deploy application anchor
+    // (`APPLICATION_IDENTITY_SPEC.md` §4): a credential that names the IAM
+    // runtime app id no longer satisfies the routes below.
     ctx.require_app_id().map_err(|_| {
         appbase_error(
             StatusCode::UNAUTHORIZED,
             "iam_runtime_app_id_required",
-            "credential entry routes require a bootstrap Access-Token with runtime appId",
+            "credential entry routes require a bootstrap Access-Token naming the installation's deploy application",
         )
     })
 }

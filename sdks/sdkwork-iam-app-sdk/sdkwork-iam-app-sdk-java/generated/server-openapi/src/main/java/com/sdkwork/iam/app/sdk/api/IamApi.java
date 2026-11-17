@@ -45,6 +45,67 @@ public class IamApi {
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
+    /** Iam oauth official Account Settings retrieve. */
+    public SdkWorkResourceResponse oauthOfficialAccountSettingsRetrieve() throws Exception {
+        Object raw = client.get(ApiPaths.appPath("/iam/oauth/official_account_settings"));
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth official Accounts list. */
+    public SdkWorkListResponse oauthOfficialAccountsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+        String query = buildQueryString(List.of(
+            new QueryParameterSpec("page", page, "form", true, false, null),
+            new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
+            new QueryParameterSpec("cursor", cursor, "form", true, false, null),
+            new QueryParameterSpec("sort", sort, "form", true, false, null),
+            new QueryParameterSpec("q", q, "form", true, false, null)
+        ));
+        Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.appPath("/iam/oauth/official_accounts"), query));
+        return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
+    }
+
+    /** Iam oauth official Accounts create. */
+    public SdkWorkResourceResponse oauthOfficialAccountsCreate(Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.appPath("/iam/oauth/official_accounts"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth official Accounts delete. */
+    public Void oauthOfficialAccountsDelete(String officialAccountId) throws Exception {
+        client.delete(ApiPaths.appPath("/iam/oauth/official_accounts/" + serializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false)) + ""));
+        return null;
+    }
+
+    /** Iam oauth official Accounts retrieve. */
+    public SdkWorkResourceResponse oauthOfficialAccountsRetrieve(String officialAccountId) throws Exception {
+        Object raw = client.get(ApiPaths.appPath("/iam/oauth/official_accounts/" + serializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false)) + ""));
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth official Accounts update. */
+    public SdkWorkResourceResponse oauthOfficialAccountsUpdate(String officialAccountId, Map<String, Object> body) throws Exception {
+        Object raw = client.patch(ApiPaths.appPath("/iam/oauth/official_accounts/" + serializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false)) + ""), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth official Accounts custom Menus publish. */
+    public SdkWorkResourceResponse oauthOfficialAccountsCustomMenusPublish(String officialAccountId, Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.appPath("/iam/oauth/official_accounts/" + serializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false)) + "/custom_menus/publish"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth official Accounts custom Menus rollback. */
+    public SdkWorkResourceResponse oauthOfficialAccountsCustomMenusRollback(String officialAccountId, Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.appPath("/iam/oauth/official_accounts/" + serializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false)) + "/custom_menus/rollback"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Iam oauth official Accounts custom Menus sync. */
+    public SdkWorkResourceResponse oauthOfficialAccountsCustomMenusSync(String officialAccountId, Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.appPath("/iam/oauth/official_accounts/" + serializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false)) + "/custom_menus/sync"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
     /** Organization Memberships list. */
     public SdkWorkListResponse organizationMembershipsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
@@ -71,10 +132,30 @@ public class IamApi {
         return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
+    /** Organizations members list. */
+    public IamOrganizationMemberListResponse organizationsMembersList(String organizationId, Integer page, Integer pageSize, String cursor, String sort, String q, String role) throws Exception {
+        String query = buildQueryString(List.of(
+            new QueryParameterSpec("page", page, "form", true, false, null),
+            new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
+            new QueryParameterSpec("cursor", cursor, "form", true, false, null),
+            new QueryParameterSpec("sort", sort, "form", true, false, null),
+            new QueryParameterSpec("q", q, "form", true, false, null),
+            new QueryParameterSpec("role", role, "form", true, false, null)
+        ));
+        Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.appPath("/iam/organizations/" + serializePathParameter(organizationId, new PathParameterSpec("organizationId", "simple", false)) + "/members"), query));
+        return client.convertValue(raw, new TypeReference<IamOrganizationMemberListResponse>() {});
+    }
+
     /** Organizations tree retrieve. */
     public SdkWorkResourceResponse organizationsTreeRetrieve() throws Exception {
         Object raw = client.get(ApiPaths.appPath("/iam/organizations/tree"));
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Persona Catalog retrieve. */
+    public IamPersonaCatalogResponse personaCatalogRetrieve() throws Exception {
+        Object raw = client.get(ApiPaths.appPath("/iam/persona_catalog"));
+        return client.convertValue(raw, new TypeReference<IamPersonaCatalogResponse>() {});
     }
 
     /** Position Assignments list. */
@@ -104,13 +185,18 @@ public class IamApi {
     }
 
     /** Role Bindings list. */
-    public SdkWorkListResponse roleBindingsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    public SdkWorkListResponse roleBindingsList(Integer page, Integer pageSize, String cursor, String sort, String q, String roleId, String principalKind, String principalId, String scopeKind, String scopeId) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
             new QueryParameterSpec("cursor", cursor, "form", true, false, null),
             new QueryParameterSpec("sort", sort, "form", true, false, null),
-            new QueryParameterSpec("q", q, "form", true, false, null)
+            new QueryParameterSpec("q", q, "form", true, false, null),
+            new QueryParameterSpec("roleId", roleId, "form", true, false, null),
+            new QueryParameterSpec("principalKind", principalKind, "form", true, false, null),
+            new QueryParameterSpec("principalId", principalId, "form", true, false, null),
+            new QueryParameterSpec("scopeKind", scopeKind, "form", true, false, null),
+            new QueryParameterSpec("scopeId", scopeId, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.appPath("/iam/role_bindings"), query));
         return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
@@ -146,6 +232,24 @@ public class IamApi {
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
+    /** Users current persona delete. */
+    public Void usersCurrentPersonaDelete() throws Exception {
+        client.delete(ApiPaths.appPath("/iam/users/current/persona"));
+        return null;
+    }
+
+    /** Users current persona retrieve. */
+    public IamUserPersonaResponse usersCurrentPersonaRetrieve() throws Exception {
+        Object raw = client.get(ApiPaths.appPath("/iam/users/current/persona"));
+        return client.convertValue(raw, new TypeReference<IamUserPersonaResponse>() {});
+    }
+
+    /** Users current persona update. */
+    public IamUserPersonaResponse usersCurrentPersonaUpdate(IamUserPersonaUpdateCommand body) throws Exception {
+        Object raw = client.put(ApiPaths.appPath("/iam/users/current/persona"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<IamUserPersonaResponse>() {});
+    }
+
     /** Users current phone Bindings delete. */
     public Void usersCurrentPhoneBindingsDelete() throws Exception {
         client.delete(ApiPaths.appPath("/iam/users/current/phone_bindings"));
@@ -158,6 +262,99 @@ public class IamApi {
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
+    private record PathParameterSpec(String name, String style, boolean explode) {}
+
+    private static String serializePathParameter(Object value, PathParameterSpec spec) {
+        if (value == null) {
+            return "";
+        }
+        String style = spec.style() == null || spec.style().isBlank() ? "simple" : spec.style();
+        if (value instanceof Iterable<?> iterable) {
+            return serializePathArray(spec.name(), iterable, style, spec.explode());
+        }
+        if (value instanceof Map<?, ?> map) {
+            return serializePathObject(spec.name(), map, style, spec.explode());
+        }
+        return pathPrimitivePrefix(spec.name(), style) + pathEncode(String.valueOf(value));
+    }
+
+    private static String serializePathArray(String name, Iterable<?> values, String style, boolean explode) {
+        List<String> serialized = new java.util.ArrayList<>();
+        for (Object item : values) {
+            if (item != null) {
+                serialized.add(pathEncode(String.valueOf(item)));
+            }
+        }
+        if (serialized.isEmpty()) {
+            return pathPrefix(name, style);
+        }
+        if ("matrix".equals(style)) {
+            if (explode) {
+                List<String> parts = new java.util.ArrayList<>();
+                for (String item : serialized) {
+                    parts.add(";" + name + "=" + item);
+                }
+                return String.join("", parts);
+            }
+            return ";" + name + "=" + String.join(",", serialized);
+        }
+        String separator = explode ? "." : ",";
+        return pathPrefix(name, style) + String.join(separator, serialized);
+    }
+
+    private static String serializePathObject(String name, Map<?, ?> values, String style, boolean explode) {
+        List<String> entries = new java.util.ArrayList<>();
+        List<String> exploded = new java.util.ArrayList<>();
+        values.forEach((key, value) -> {
+            if (value == null) {
+                return;
+            }
+            String escapedKey = pathEncode(String.valueOf(key));
+            String escapedValue = pathEncode(String.valueOf(value));
+            if (explode) {
+                if ("matrix".equals(style)) {
+                    exploded.add(";" + escapedKey + "=" + escapedValue);
+                } else {
+                    exploded.add(escapedKey + "=" + escapedValue);
+                }
+            } else {
+                entries.add(escapedKey);
+                entries.add(escapedValue);
+            }
+        });
+        if ("matrix".equals(style)) {
+            if (explode) {
+                return String.join("", exploded);
+            }
+            return ";" + name + "=" + String.join(",", entries);
+        }
+        if (explode) {
+            String separator = "label".equals(style) ? "." : ",";
+            return pathPrefix(name, style) + String.join(separator, exploded);
+        }
+        return pathPrefix(name, style) + String.join(",", entries);
+    }
+
+    private static String pathPrefix(String name, String style) {
+        if ("label".equals(style)) {
+            return ".";
+        }
+        if ("matrix".equals(style)) {
+            return ";" + name;
+        }
+        return "";
+    }
+
+    private static String pathPrimitivePrefix(String name, String style) {
+        if ("matrix".equals(style)) {
+            return ";" + name + "=";
+        }
+        return pathPrefix(name, style);
+    }
+
+    private static String pathEncode(String value) {
+        return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+    }
 
     private record QueryParameterSpec(String name, Object value, String style, boolean explode, boolean allowReserved, String contentType) {}
 

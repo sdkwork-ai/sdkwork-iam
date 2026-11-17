@@ -1,7 +1,7 @@
 use axum::body::Body;
 use axum::http::{Method, Request, StatusCode};
 use http_body_util::BodyExt;
-use sdkwork_iam_web_adapter::ensure_platform_tenant_application;
+use sdkwork_iam_web_adapter::ensure_platform_tenant_application_with_deploy_application;
 use sdkwork_routes_iam_app_api::{
     app_routes, build_sdkwork_iam_app_api_router_with_initialized_pool,
     required_dual_token_headers, HttpMethod, HttpRoute, APP_API_PREFIX,
@@ -15,6 +15,14 @@ use tower::ServiceExt;
 
 #[path = "unified_database_env.rs"]
 mod unified_database_env;
+
+/// Deploy application anchor of a PostgreSQL test tenant.
+///
+/// Access tokens name the installation by its anchor, so a fixture token and the
+/// installation row it authenticates against must use the same value.
+fn test_deploy_application_id(tenant_id: &str) -> String {
+    format!("deploy_{tenant_id}")
+}
 
 fn app_api_authored_source() -> String {
     [
@@ -1135,8 +1143,7 @@ const OPEN_REGISTRATION_TENANT_ID: &str = "100001";
 fn test_bootstrap_access_token() -> String {
     bootstrap_access_token_jwt(
         OPEN_REGISTRATION_TENANT_ID,
-        sdkwork_iam_web_adapter::platform_runtime_app_id_for_tenant(OPEN_REGISTRATION_TENANT_ID)
-            .as_str(),
+        test_deploy_application_id(OPEN_REGISTRATION_TENANT_ID).as_str(),
     )
 }
 
@@ -1817,7 +1824,7 @@ async fn ensure_credential_entry_bootstrap_runtime_app() {
     }
     unified_database_env::apply_workspace_postgres_env();
     let pg = unified_database_env::postgres_pool_for_integration_tests().await;
-    ensure_platform_tenant_application(&pg, OPEN_REGISTRATION_TENANT_ID)
+    ensure_platform_tenant_application_with_deploy_application(&pg, OPEN_REGISTRATION_TENANT_ID, test_deploy_application_id(OPEN_REGISTRATION_TENANT_ID).as_str())
         .await
         .expect("platform tenant application should be available for credential-entry routes");
 }
@@ -1831,7 +1838,7 @@ async fn reset_iam_tenants_for_open_registration() {
     sdkwork_iam_bootstrap::upsert_postgres_default_subject(&pg)
         .await
         .expect("default IAM subject should be available for open registration tests");
-    ensure_platform_tenant_application(&pg, unified_database_env::OPEN_REGISTRATION_TENANT_ID)
+    ensure_platform_tenant_application_with_deploy_application(&pg, unified_database_env::OPEN_REGISTRATION_TENANT_ID, test_deploy_application_id(unified_database_env::OPEN_REGISTRATION_TENANT_ID).as_str())
         .await
         .expect("platform tenant application should be available for open registration tests");
 }
