@@ -16,23 +16,11 @@ function readRegistryTableNames(tableRegistry) {
   return tableRegistry.tables.map((entry) => entry.table_name).sort();
 }
 
-// Tables the database materializes but the IAM ownership catalog does not own.
-//
-// - `iam_user_official_account` was unified into `iam_oauth_resource_account`
-//   by migration 0033: the application has no read or write path to it any
-//   more, while the physical table stays until the separately approved DROP
-//   migration (contract D9). It therefore remains a baseline DDL object and a
-//   declared database-contract table, but it must not be owned by `IamTables`.
-// - `iam_official_account_migration_orphan` is migration evidence only: 0033
-//   writes the legacy rows it could not carry over into it, and no runtime code
-//   may read or write it. It is owned by the migration, not by the runtime
-//   catalog.
-//
-// P4 (the human-approved DROP migration) removes both registry entries, both
-// baseline declarations, and this exception list together.
-const NON_CATALOG_TABLES = [
-  'iam_official_account_migration_orphan',
-];
+// P4 is complete: `0034_drop_iam_user_official_account` retired the legacy
+// per-user table and `0038_retire_official_account_migration_orphan` retired the
+// migration-only orphan ledger. Neither is an active contract table any more, so
+// no table may be materialized without being owned by `IamTables`.
+const NON_CATALOG_TABLES = [];
 
 function readRustCatalogTableNames() {
   const source = fs.readFileSync(rustLibPath, 'utf8');
@@ -119,14 +107,17 @@ assert.deepEqual(
 // history is faithful, but that a later approved migration drops. They must stay
 // out of the active contract registries; the materialized set is compared after
 // removing them because the DDL scan sees the historical CREATE.
-const DROPPED_LEGACY_TABLES = ['iam_user_official_account'];
+const DROPPED_LEGACY_TABLES = [
+  'iam_user_official_account',
+  'iam_official_account_migration_orphan',
+];
 
 assert.deepEqual(
   ddlTables.filter((tableName) => !DROPPED_LEGACY_TABLES.includes(tableName)),
   registryTables,
   'baseline + postgres migrations must materialize the same IAM tables as contract registries',
 );
-assert.equal(registryTables.length, 66, 'IAM database contract must currently own 66 tables');
+assert.equal(registryTables.length, 65, 'IAM database contract must currently own 65 tables');
 
 for (const tableName of foundationTables.filter((name) => !DROPPED_LEGACY_TABLES.includes(name))) {
   assert.ok(

@@ -310,12 +310,14 @@ fn database_baseline_declares_mature_organization_hierarchy_and_membership_table
 }
 
 #[test]
-fn database_baseline_removes_legacy_organization_member_table() {
+fn database_baseline_does_not_retain_legacy_organization_member_table() {
     let sql = iam_database_baseline_sql();
 
+    // The legacy personnel table is retired as debt: neither a declaration nor
+    // retirement DDL for it may remain, so nothing reintroduces the old name.
     assert!(
-        sql.contains("DROP TABLE IF EXISTS iam_organization_member"),
-        "IAM database baseline must explicitly remove the legacy iam_organization_member table",
+        !sql.contains("DROP TABLE IF EXISTS iam_organization_member"),
+        "IAM database baseline must not carry retirement DDL for the legacy iam_organization_member table",
     );
     assert!(
         table_definition(sql, "iam_organization_member").is_none(),
@@ -969,14 +971,16 @@ fn application_standard_baseline_declares_tenant_application_tables_without_stud
         );
     }
 
-    for legacy_drop in [
+    // The Studio catalog is retired as debt, not merely superseded: no
+    // retirement DDL for it may survive in the baseline either.
+    for retired_drop in [
         "DROP TABLE IF EXISTS studio_app_template",
         "DROP TABLE IF EXISTS studio_mcp_binding",
         "DROP TABLE IF EXISTS studio_catalog_action",
     ] {
         assert!(
-            sql.contains(legacy_drop),
-            "baseline must fold the legacy studio cleanup drops (initialization state, no migrations)",
+            !sql.contains(retired_drop),
+            "baseline must not retain retired studio cleanup DDL: {retired_drop}",
         );
     }
 }

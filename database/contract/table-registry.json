@@ -231,12 +231,6 @@
       "lifecycle_status": "active"
     },
     {
-      "table_name": "iam_official_account_migration_orphan",
-      "owner": "sdkwork-iam",
-      "compliance_level": "L2",
-      "lifecycle_status": "deprecated"
-    },
-    {
       "table_name": "iam_organization",
       "owner": "sdkwork-iam",
       "compliance_level": "L2",

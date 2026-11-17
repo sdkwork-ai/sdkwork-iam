@@ -6,7 +6,7 @@ Canonical authoritative-server lifecycle assets for `sdkwork-iam` under `DATABAS
 - `moduleId`: `iam`
 - `serviceCode`: `IAM`
 - `tablePrefix`: `iam_`
-- `contract tables`: 64, listed in `contract/schema.yaml`
+- `contract tables`: 65 (all `active`), listed in `contract/schema.yaml`
 - `engine`: PostgreSQL only
 - `baselineStrategy`: `baseline-plus-migrations`
 - `autoMigrate`: disabled by default
@@ -32,6 +32,8 @@ This module installs greenfield deployments with one canonical baseline plus eve
 2. **Migrations** — `database/migrations/{engine}/` carries the post-baseline schema history. Historical entries are checksum-immutable; a correction is a new forward migration.
 3. **Seeds** — `seeds/seed.manifest.json` declares `i18nVersion`, `defaultLocale`, `fallbackLocale`, `supportedLocales`, `activeLocales`, per-locale set versions/checksums, and the `minimal` / `standard` / `operational` profiles.
 4. **Drift** — run `pnpm db:drift:check` before release.
+5. **Folded legacy retirement** — the pre-template application model (`iam_application`, `iam_application_package`), the Studio catalog (13 `studio_*` tables), and the legacy personnel table (`iam_organization_member`) are retired completely: the baseline neither declares nor drops any of them. The folded `0006_iam_application_standard` block was removed outright because all six statements in it only re-declared canonical indexes, and the folded `0007_drop_legacy_studio_tables` block was removed with it. Consequences to keep in mind when repairing the lifecycle: an install created before any of those models is no longer converged by the baseline, and restoring a source migration from history would bring the retirement DDL back, so it must be reviewed rather than copied back. Eight folded blocks (`0008`–`0015`) still have no committed source migration; `tools/fold-migration-into-baseline.mjs` reports them as `[missing-source]`, and `tests/static/governance/iam-database-init-standard.test.mjs` pins the exact set, the order, and the absence of legacy residue.
+6. **Known folded-block defects (pinned, not blessed)** — `0012_iam_service_account_credentials` is folded twice, and the second copy sits after `0013`; it re-applies `SET NOT NULL` to `iam_session.principal_id`, which `0013` drops, so the effective end state contradicts migration order. `0008` and `0009` also carried different names in earlier revisions (`0008_iam_rbac_federation` → `0008_iam_query_performance_indexes`, `0009_iam_rbac_subject_extensions` → `0009_wechat_identity_scope`), so only a database that applied an earlier revision can tell them apart. `tests/static/governance/iam-database-init-standard.test.mjs` pins both the block order and this contradiction so neither changes silently; resolving them is a reviewed change that also updates the ledger.
 
 ## Commands
 

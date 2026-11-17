@@ -1205,9 +1205,6 @@ CREATE INDEX IF NOT EXISTS idx_iam_oauth_operational_resource_account
 CREATE INDEX IF NOT EXISTS idx_iam_oauth_operational_resource_target
   ON iam_oauth_operational_resource (tenant_id, target_app_id, target_url_hash, target_path, status);
 
--- source: database/ddl/baseline/postgres/0001_iam_baseline.sql#drop-legacy-organization-member
-DROP TABLE IF EXISTS iam_organization_member;
-
 -- source: database/ddl/baseline/postgres/0001_iam_baseline.sql#user-enhancements
 -- Enhance iam_user with industry-standard security and profile fields
 ALTER TABLE iam_user ADD COLUMN IF NOT EXISTS nickname TEXT;
@@ -1685,36 +1682,6 @@ CREATE INDEX IF NOT EXISTS idx_iam_service_account_tenant_status
 CREATE INDEX IF NOT EXISTS idx_iam_role_exclusion_tenant_role
   ON iam_role_exclusion (tenant_id, role_id, status);
 
--- folded migration: migrations/postgres/0006_iam_application_standard.up.sql
-DROP TABLE IF EXISTS iam_application_package CASCADE;
-DROP TABLE IF EXISTS iam_application CASCADE;
-
-
-
-CREATE UNIQUE INDEX IF NOT EXISTS uk_iam_application_template_package_name
-  ON iam_application_template (package_name)
-  WHERE package_name IS NOT NULL AND TRIM(package_name) <> '';
-
-CREATE INDEX IF NOT EXISTS idx_iam_application_template_status
-  ON iam_application_template (status, updated_at, id);
-
-
-
-CREATE INDEX IF NOT EXISTS idx_iam_application_template_package_lookup
-  ON iam_application_template_package (template_id, platform, architecture, language, status);
-
-
-
-CREATE UNIQUE INDEX IF NOT EXISTS uk_iam_tenant_application_primary_domain
-  ON iam_tenant_application (tenant_id, primary_domain)
-  WHERE primary_domain IS NOT NULL AND TRIM(primary_domain) <> '';
-
-CREATE INDEX IF NOT EXISTS idx_iam_tenant_application_tenant_status
-  ON iam_tenant_application (tenant_id, organization_id, status, updated_at, id);
-
-CREATE INDEX IF NOT EXISTS idx_iam_tenant_application_template
-  ON iam_tenant_application (template_id, tenant_id, status, id);
-
 -- folded migration: migrations/postgres/0010_iam_api_key_runtime_context.up.sql
 ALTER TABLE iam_api_key
   ADD COLUMN IF NOT EXISTS app_id TEXT NOT NULL DEFAULT '',
@@ -1809,24 +1776,6 @@ END $$;
 -- folded migration: migrations/postgres/0013_iam_session_principal_compatibility.up.sql
 ALTER TABLE iam_session
   ALTER COLUMN principal_id DROP NOT NULL;
-
--- folded migration: migrations/postgres/0007_drop_legacy_studio_tables.up.sql
--- Remove legacy Studio catalog tables superseded by IAM application registry.
--- Fresh installs never create these tables; this migration cleans upgraded databases only.
-
-DROP TABLE IF EXISTS studio_mcp_binding CASCADE;
-DROP TABLE IF EXISTS studio_mcp_tool CASCADE;
-DROP TABLE IF EXISTS studio_mcp_server_revision CASCADE;
-DROP TABLE IF EXISTS studio_mcp_server CASCADE;
-DROP TABLE IF EXISTS studio_prompt_binding CASCADE;
-DROP TABLE IF EXISTS studio_prompt_version CASCADE;
-DROP TABLE IF EXISTS studio_prompt CASCADE;
-DROP TABLE IF EXISTS studio_app_template_usage CASCADE;
-DROP TABLE IF EXISTS studio_app_template_version CASCADE;
-DROP TABLE IF EXISTS studio_app_template CASCADE;
-DROP TABLE IF EXISTS studio_catalog_artifact CASCADE;
-DROP TABLE IF EXISTS studio_catalog_asset CASCADE;
-DROP TABLE IF EXISTS studio_catalog_action CASCADE;
 
 -- folded migration: migrations/postgres/0008_iam_query_performance_indexes.up.sql
 -- OAuth integration lookup paths (tenant-scoped provider resolution).
