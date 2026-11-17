@@ -85,7 +85,7 @@ TypeScript surfaces use `@sdkwork/utils`; Flutter mobile surfaces use `sdkwork_i
 Consumer application gateways mount IAM through `sdkwork-api-iam-assembly`:
 
 - `bootstrap_iam_for_application()` — one-shot integration entry point following `IAM_APPLICATION_BOOTSTRAP_SPEC.md` §5.1: bootstraps IAM database (DDL, migrations, module catalog, super admin), provisions the tenant application from `agent.app.config.json`, and assembles the app-api, backend-api, and open-api business routers
-- `assemble_api_router()` — assembles only the API router; assumes the database and tenant application are already bootstrapped
+- `assemble_owner_api_surfaces()` — assembles only the IAM-owned API surfaces; assumes the database and tenant application are already bootstrapped
 - Infrastructure probes — `/healthz` (liveness) and `/readyz` (readiness via IAM database pool when configured)
 - Route crate async `gateway_mount()` — per-surface business routers with database pool from env (no duplicate infra routes)
 
@@ -112,7 +112,7 @@ The function executes three steps in order:
 
 1. `bootstrap_iam_database_from_env()` — IAM schema, migrations, module catalog materialization, super-admin/manager/operator credentials
 2. `ensure_tenant_application_from_app_root_with_env_and_fallback()` — provisions the tenant application from `agent.app.config.json` at `SDKWORK_APP_ROOT` so the app-api auth runtime can resolve signing keys, access scopes, and runtime `app_id`
-3. `assemble_api_router()` — merges the three API surface routers
+3. `assemble_owner_api_surfaces_with_host()` — merges the three API surface routers
 
 ### Required Environment For First-Run Success
 

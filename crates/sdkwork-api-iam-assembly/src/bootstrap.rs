@@ -50,17 +50,6 @@ impl ReadinessCheck for IamDatabaseReadinessCheck {
     }
 }
 
-/// Deprecated generated entrypoint retained for downstream migration.
-#[deprecated(
-    since = "0.1.0",
-    note = "use assemble_owner_api_surfaces for IAM standalone or assemble_app_api_contribution for an App API dependency mount"
-)]
-pub async fn assemble_api_router() -> ApiAssembly {
-    assemble_owner_api_surfaces()
-        .await
-        .expect("initialize IAM owner API surfaces")
-}
-
 /// Assembles all IAM-owned HTTP surfaces as one raw standalone contribution.
 ///
 /// No Web Framework layer, CORS middleware, or infrastructure route is mounted.
