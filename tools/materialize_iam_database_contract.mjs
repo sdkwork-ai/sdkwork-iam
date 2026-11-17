@@ -37,6 +37,19 @@ function extractCreateTableNames(sql) {
   return [...sql.matchAll(/CREATE TABLE IF NOT EXISTS ([a-z0-9_]+)/gi)].map((match) => match[1]);
 }
 
+/**
+ * Tables an approved migration retires.
+ *
+ * A historical folded block (or an earlier migration) still creates these so a
+ * faithful replay of the migration history succeeds, but the end state does not
+ * own them: they are neither in `IamTables` nor in the active contract. Without
+ * this subtraction the materializer demands every historical CREATE in the Rust
+ * catalog, which no dropped table can satisfy.
+ */
+function extractDropTableNames(sql) {
+  return [...sql.matchAll(/DROP TABLE(?: IF EXISTS)? ([a-z0-9_]+)/gi)].map((match) => match[1]);
+}
+
 function collectAuthoritativeTableNames(engine = 'postgres') {
   const orderedSources = [
     ...listSqlFiles(path.join(databaseRoot, 'ddl/baseline', engine)),
@@ -45,8 +58,12 @@ function collectAuthoritativeTableNames(engine = 'postgres') {
 
   const tableNames = [];
   const seen = new Set();
+  const retired = new Set();
   for (const sourcePath of orderedSources) {
     const sql = fs.readFileSync(sourcePath, 'utf8');
+    for (const tableName of extractDropTableNames(sql)) {
+      retired.add(tableName);
+    }
     for (const tableName of extractCreateTableNames(sql)) {
       if (seen.has(tableName)) {
         continue;
@@ -56,7 +73,9 @@ function collectAuthoritativeTableNames(engine = 'postgres') {
     }
   }
 
-  return tableNames.sort((left, right) => left.localeCompare(right));
+  return tableNames
+    .filter((tableName) => !retired.has(tableName))
+    .sort((left, right) => left.localeCompare(right));
 }
 
 function readIamTablesFromRustCatalog() {
@@ -106,6 +125,7 @@ const prefixRegistry = {
 const schemaYaml = [
   'schema_version: 1',
   'kind: sdkwork.database.schema',
+  'database_role: authoritative-server',
   'module_id: iam',
   `contract_version: ${L2_CONTRACT_VERSION}`,
   `owner_team: ${IAM_DATABASE_OWNER}`,
@@ -133,7 +153,10 @@ fs.writeFileSync(path.join(databaseRoot, 'contract/schema.yaml'), schemaYaml);
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 manifest.contractVersion = L2_CONTRACT_VERSION;
 manifest.owner = IAM_DATABASE_OWNER;
-manifest.lifecycle.autoMigrate = true;
+// Authoritative-server modules never auto-migrate (DATABASE_FRAMEWORK_SPEC
+// section 3, enforced by check-database-framework-standard.mjs), so the
+// materializer must preserve the explicit false instead of forcing it on.
+manifest.lifecycle.autoMigrate = false;
 manifest.spi = {
   ...(manifest.spi ?? {}),
   provider: IAM_DATABASE_SPI_PROVIDER,
