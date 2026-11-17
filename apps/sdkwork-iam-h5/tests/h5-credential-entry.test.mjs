@@ -48,6 +48,17 @@ const PROFILE_IDS = [
   'cloud.production',
 ];
 
+// IAM makes the deploy application the identity of every access token, so the
+// committed `app_id`/`aud` claims are this installation's anchor, never the
+// manifest runtime id (APP_ACCESS_TOKEN_SPEC.md section 3.1.1). With no anchor on
+// a source checkout the committed profiles carry the explicit placeholder.
+const DEPLOY_APPLICATION_ID_ENV = 'SDKWORK_DEPLOY_APPLICATION_ID';
+const PENDING_DEPLOY_APPLICATION_ID = '__SDKWORK_DEPLOY_APPLICATION_ID__';
+
+function expectedTokenAppId() {
+  return String(process.env[DEPLOY_APPLICATION_ID_ENV] ?? '').trim() || PENDING_DEPLOY_APPLICATION_ID;
+}
+
 test('vite config registers the canonical public application access token plugin', () => {
   const config = read('vite.config.ts');
   assert.match(
@@ -64,7 +75,11 @@ test('vite config registers the canonical public application access token plugin
     /SDKWORK_ACCESS_TOKEN/u,
     'the token option must resolve SDKWORK_ACCESS_TOKEN from the selected profile env',
   );
-  assert.match(options, /applicationId:\s*'sdkwork-iam'/u, 'the token app_id must bind to sdkwork-iam');
+  assert.match(
+    options,
+    /applicationId:\s*readDeployApplicationId\(\)/u,
+    'the token app_id must bind to the deploy application anchor',
+  );
   assert.match(options, /environment/u, 'the plugin must receive the profile lifecycle environment');
   assert.match(options, /profileId/u, 'the plugin must receive the profile id');
 });
@@ -94,7 +109,7 @@ test('every committed profile carries the public application token the config em
     assert.equal(header.alg, 'none', profileId + ' token must be the unsigned public token');
     assert.equal(payload.token_class, 'application', profileId + ' token must declare token_class:application');
     assert.equal(payload.environment, profileId.split('.')[1], profileId + ' token environment must match the profile');
-    assert.equal(payload.app_id, 'sdkwork-iam', profileId + ' token must bind app_id:sdkwork-iam');
+    assert.equal(payload.app_id, expectedTokenAppId(), profileId + ' token must bind app_id to the deploy application anchor');
   }
 });
 

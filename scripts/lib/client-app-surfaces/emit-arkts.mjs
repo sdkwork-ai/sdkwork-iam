@@ -422,6 +422,11 @@ const SCREEN_TITLES = {
   'organization.directory': ['Organizations', '组织'],
   'organization.tree': ['Organization tree', '组织树'],
   'oauth.providers': ['Identity providers', '身份提供商'],
+  // The app tier's official-account resource surface (`/oauth/official-accounts`)
+  // arrived with the route-table growth; without a copy entry the Harmony emitter
+  // threw for every package that owns the route, so the surface could not be
+  // regenerated at all.
+  'oauth.official-accounts': ['Official accounts', '公众号'],
   'permission.roles': ['Roles', '角色'],
   'permission.permissions': ['Permissions', '权限'],
   'permission.policies': ['Policies', '策略'],

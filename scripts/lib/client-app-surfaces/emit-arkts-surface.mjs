@@ -536,6 +536,25 @@ const PRIVATE_CREDENTIAL_KEYS = [
   'password',
 ];
 
+/**
+ * Deploy application anchor: the identity every public application access token
+ * must carry.
+ *
+ * IAM makes the deploy application the identity of every access token, so the
+ * committed 'app_id'/'aud' claims are this installation's anchor, never the
+ * manifest 'backend.appId' runtime id (APP_ACCESS_TOKEN_SPEC.md section 3.1.1).
+ * A repository cannot know an installation's deploy id, so a source checkout
+ * materializes the explicit '__SDKWORK_DEPLOY_APPLICATION_ID__' placeholder and
+ * a packaging run exports the real anchor, which this suite then compares to.
+ * @returns the anchor when the build host sets it, else the committed placeholder.
+ */
+const DEPLOY_APPLICATION_ID_ENV = 'SDKWORK_DEPLOY_APPLICATION_ID';
+const PENDING_DEPLOY_APPLICATION_ID = '__SDKWORK_DEPLOY_APPLICATION_ID__';
+
+function expectedTokenAppId() {
+  return String(process.env[DEPLOY_APPLICATION_ID_ENV] ?? '').trim() || PENDING_DEPLOY_APPLICATION_ID;
+}
+
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
@@ -654,6 +673,7 @@ describe('harmony runtime config', () => {
     // the public pre-login isolation token (alg:none, token_class:application) and it
     // must match the profile and the root manifest identity it is committed for.
     const manifest = readJson(path.join(APP_ROOT, 'agent.app.config.json'));
+    const expectedAppId = expectedTokenAppId();
     for (const profileId of PROFILE_IDS) {
       const [deploymentProfile, environment] = profileId.split('.');
       const segments = readApplicationAccessToken(profileId).split('.');
@@ -666,8 +686,8 @@ describe('harmony runtime config', () => {
       assert.equal(payload.environment, environment, profileId + ': environment claim');
       assert.equal(payload.deployment_profile, deploymentProfile, profileId + ': deployment_profile claim');
       assert.equal(payload.runtime_target, RUNTIME_TARGET, profileId + ': runtime_target claim');
-      assert.equal(payload.app_id, manifest.backend.appId, profileId + ': app_id claim');
-      assert.equal(payload.aud, manifest.backend.appId, profileId + ': aud claim');
+      assert.equal(payload.app_id, expectedAppId, profileId + ': app_id claim');
+      assert.equal(payload.aud, expectedAppId, profileId + ': aud claim');
       assert.equal(
         String(payload.tenant_id),
         String(manifest.backend.tenantId),
