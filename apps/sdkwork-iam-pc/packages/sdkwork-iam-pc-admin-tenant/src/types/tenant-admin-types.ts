@@ -77,33 +77,60 @@ export interface SdkworkIamTenantMemberDraft {
   userId: string;
 }
 
+/**
+ * The product-semantic application types the backend accepts when an
+ * installation is provisioned (`api | h5 | pc | flutter | other`).
+ *
+ * Application templates are retired, so this list is the only source of
+ * `applicationType`: nothing else can infer it.
+ */
+export const SDKWORK_IAM_TENANT_APPLICATION_TYPES = ["api", "h5", "pc", "flutter", "other"] as const;
+
+/** One product-semantic application type; the backend rejects anything else. */
+export type SdkworkIamTenantApplicationType = (typeof SDKWORK_IAM_TENANT_APPLICATION_TYPES)[number];
+
 export interface SdkworkIamTenantApplication {
   accessPermissions: readonly string[];
   appId: string;
   applicationType: string;
   createdAt?: string;
+  /**
+   * Deploy application this installation serves. It is the identity every
+   * access token carries, and the installation/service relation is one-to-one.
+   */
+  deployApplicationId?: string;
   displayName: string;
   environment: string;
   instanceKey: string;
   organizationId: string;
   primaryDomain?: string;
   status: string;
-  templateId: string;
-  templateVersion?: string;
   tenantApplicationId: string;
   tenantId: string;
   updatedAt?: string;
 }
 
+/**
+ * The operator draft behind the provision drawer.
+ *
+ * `applicationType` is `""` until the operator picks one: with templates
+ * retired nothing supplies a default, so the empty string is the explicit
+ * "not chosen yet" state the drawer validates against.
+ */
 export interface SdkworkIamTenantApplicationDraft {
   accessPermissions: string[];
-  appKey: string;
-  applicationType: string;
+  applicationType: SdkworkIamTenantApplicationType | "";
+  /** Deploy application this installation serves (`deployApplicationId`); required. */
+  deployApplicationId: string;
   displayName: string;
   environment: string;
   instanceKey: string;
   organizationId: string;
   primaryDomain: string;
+  /** Explicit runtime config (`oauth.relyingParty`, ...); absent sends none. */
+  runtimeConfig?: Record<string, unknown>;
+  /** Replay-safe key for the cross-module provisioning call. */
+  provisioningIdempotencyKey?: string;
 }
 
 export interface SdkworkIamTenantApplicationUpdateDraft {

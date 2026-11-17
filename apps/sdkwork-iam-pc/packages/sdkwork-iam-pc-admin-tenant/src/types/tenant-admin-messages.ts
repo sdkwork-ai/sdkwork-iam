@@ -31,10 +31,14 @@ export interface SdkworkIamTenantAdminMessages {
       accessPermissions: string;
       accessPermissionsHint: string;
       accessPermissionsPlaceholder: string;
-      appKey: string;
-      appKeyHint: string;
       applicationType: string;
       applicationTypeHint: string;
+      applicationTypePlaceholder: string;
+      applicationTypeRequired: string;
+      deployApplicationId: string;
+      deployApplicationIdHint: string;
+      deployApplicationIdPlaceholder: string;
+      deployApplicationIdRequired: string;
       displayName: string;
       editDescription: string;
       editTitle: string;
@@ -45,7 +49,13 @@ export interface SdkworkIamTenantAdminMessages {
       primaryDomain: string;
       primaryDomainPlaceholder: string;
       registerDescription: string;
+      registerInvalidNotice: string;
       registerTitle: string;
+      requiredFieldTemplate: string;
+      runtimeConfig: string;
+      runtimeConfigHint: string;
+      runtimeConfigInvalid: string;
+      runtimeConfigPlaceholder: string;
     };
     environments: {
       development: string;

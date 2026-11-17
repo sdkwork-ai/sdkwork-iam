@@ -124,13 +124,14 @@ describe("@sdkwork/iam-pc-admin-tenant", () => {
     const application = {
       accessPermissions: ["iam.users.read"],
       appId: "app_crm_prod",
+      applicationType: "pc",
+      deployApplicationId: "deploy-crm",
       displayName: "CRM",
       environment: "production",
       instanceKey: "crm-production",
       organizationId: "0",
       primaryDomain: "crm.example.com",
       status: "pending_config",
-      templateId: "tmpl_crm",
       tenantApplicationId: "tapp_crm",
       tenantId: "tenant-1",
     };
@@ -160,7 +161,7 @@ describe("@sdkwork/iam-pc-admin-tenant", () => {
     });
 
     await expect(controller.listTenantApplications("tenant-1", { page_size: 20 })).resolves.toMatchObject([
-      { appId: "app_crm_prod", tenantApplicationId: "tapp_crm" },
+      { appId: "app_crm_prod", deployApplicationId: "deploy-crm", tenantApplicationId: "tapp_crm" },
     ]);
     await expect(controller.retrieveTenantApplicationSummary("tenant-1")).resolves.toEqual({
       disabled: 0,
@@ -170,8 +171,8 @@ describe("@sdkwork/iam-pc-admin-tenant", () => {
     });
     await expect(controller.provisionTenantApplication("tenant-1", {
       accessPermissions: ["iam.users.read"],
-      appKey: "crm",
       applicationType: "pc",
+      deployApplicationId: "deploy-crm",
       displayName: "CRM",
       environment: "production",
       instanceKey: "crm-production",
@@ -186,7 +187,16 @@ describe("@sdkwork/iam-pc-admin-tenant", () => {
     await expect(controller.setTenantApplicationEnabled("tenant-1", "tapp_crm", false)).resolves.toMatchObject({ status: "disabled" });
 
     expect(service.iam.tenantApplications.list).toHaveBeenCalledWith("tenant-1", { page_size: 20 });
-    expect(service.iam.tenantApplications.management.create).toHaveBeenCalledWith("tenant-1", expect.objectContaining({ appKey: "crm", applicationType: "pc" }));
+    expect(service.iam.tenantApplications.management.create).toHaveBeenCalledWith("tenant-1", {
+      accessPermissions: ["iam.users.read"],
+      applicationType: "pc",
+      deployApplicationId: "deploy-crm",
+      displayName: "CRM",
+      environment: "production",
+      instanceKey: "crm-production",
+      organizationId: "0",
+      primaryDomain: "crm.example.com",
+    });
     expect(service.iam.tenantApplications.management.update).toHaveBeenCalledWith("tenant-1", "tapp_crm", expect.objectContaining({ primaryDomain: "crm.acme.com" }));
     expect(service.iam.tenantApplications.management.enable).toHaveBeenCalledWith("tenant-1", "tapp_crm");
     expect(service.iam.tenantApplications.management.disable).toHaveBeenCalledWith("tenant-1", "tapp_crm");

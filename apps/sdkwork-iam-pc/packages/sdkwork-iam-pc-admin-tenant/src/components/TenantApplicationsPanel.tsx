@@ -39,6 +39,7 @@ import {
   StatusNotice,
   Switch,
   TagInput,
+  Textarea,
 } from "@sdkwork/ui-pc-react";
 
 import { useSdkworkIamTenantAdminMessages } from "../i18n";
@@ -46,14 +47,17 @@ import {
   TenantApplicationAccessTokenDrawer,
   type TenantAccessTokenState,
 } from "./TenantApplicationAccessTokenDrawer";
-import type {
-  SdkworkIamTenant,
-  SdkworkIamTenantApplication,
-  SdkworkIamTenantApplicationDraft,
-  SdkworkIamTenantApplicationSummary,
-  SdkworkIamTenantApplicationUpdateDraft,
-  SdkworkIamTenantController,
+import {
+  SDKWORK_IAM_TENANT_APPLICATION_TYPES,
+  type SdkworkIamTenant,
+  type SdkworkIamTenantApplication,
+  type SdkworkIamTenantApplicationDraft,
+  type SdkworkIamTenantApplicationSummary,
+  type SdkworkIamTenantApplicationType,
+  type SdkworkIamTenantApplicationUpdateDraft,
+  type SdkworkIamTenantController,
 } from "../types/tenant-admin-types";
+import type { SdkworkIamTenantAdminMessages } from "../types/tenant-admin-messages";
 
 interface TenantApplicationsPanelProps {
   controller: SdkworkIamTenantController;
@@ -72,21 +76,25 @@ interface StatusTransition {
   enabled: boolean;
 }
 
-const APPLICATION_TYPE_VALUES = ["api", "h5", "pc", "flutter", "other"] as const;
-
 const EMPTY_FILTERS: ApplicationFilters = { applicationType: "all", environment: "all", q: "", status: "all" };
 
 function emptyApplicationDraft(): SdkworkIamTenantApplicationDraft {
   return {
     accessPermissions: [],
-    appKey: "",
-    applicationType: "other",
+    // No default: application templates are retired, so the operator must pick
+    // the product-semantic type explicitly instead of inheriting one.
+    applicationType: "",
+    deployApplicationId: "",
     displayName: "",
     environment: "production",
     instanceKey: "",
     organizationId: "0",
     primaryDomain: "",
   };
+}
+
+function toApplicationTypeValue(value: string): SdkworkIamTenantApplicationType | "" {
+  return SDKWORK_IAM_TENANT_APPLICATION_TYPES.find((candidate) => candidate === value) ?? "";
 }
 
 export function TenantApplicationsPanel({ controller, tenant }: TenantApplicationsPanelProps) {
@@ -335,7 +343,7 @@ export function TenantApplicationsPanel({ controller, tenant }: TenantApplicatio
             onValueChange={(applicationType) => setFilters((current) => ({ ...current, applicationType }))}
             options={[
               ["all", messages.applications.filters.allTypes],
-              ...APPLICATION_TYPE_VALUES.map((value) => [value, applicationTypeLabel(value, messages.applications.types)] as [string, string]),
+              ...SDKWORK_IAM_TENANT_APPLICATION_TYPES.map((value) => [value, applicationTypeLabel(value, messages.applications.types)] as [string, string]),
             ]}
             value={filters.applicationType}
           />
@@ -531,52 +539,114 @@ function FilterSelect({ ariaLabel, onValueChange, options, value }: { ariaLabel:
   );
 }
 
+/**
+ * The provision drawer.
+ *
+ * `IAM_SPEC` v3 retires application templates: the operator names the deploy
+ * application the installation serves (`deployApplicationId`), picks the
+ * product-semantic `applicationType` explicitly, and may add explicit
+ * `accessPermissions` and a JSON `runtimeConfig`. Required fields validate on
+ * the first submit attempt and name themselves when missing.
+ */
 function ApplicationRegisterDrawer({ busy, draft, onDraftChange, onOpenChange, onSubmit, open }: { busy: boolean; draft: SdkworkIamTenantApplicationDraft; onDraftChange: (draft: SdkworkIamTenantApplicationDraft) => void; onOpenChange: (open: boolean) => void; onSubmit: () => void; open: boolean }) {
   const messages = useSdkworkIamTenantAdminMessages();
-  const updateAppKey = (appKey: string) => {
-    const previousSuggestion = suggestInstanceKey(draft.appKey, draft.environment);
+  const copy = messages.applications.drawer;
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [runtimeConfigText, setRuntimeConfigText] = useState("");
+  const [runtimeConfigError, setRuntimeConfigError] = useState<string>();
+
+  // Every open starts a fresh provisioning intent: the previous attempt's
+  // validation state and the raw JSON text must not leak into the next one.
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    setSubmitAttempted(false);
+    setRuntimeConfigText("");
+    setRuntimeConfigError(undefined);
+  }, [open]);
+
+  const errors = validateApplicationDraftForm(draft, copy);
+  const errorFor = (field: ApplicationDraftField) => (submitAttempted ? errors[field] : undefined);
+
+  const updateDeployApplicationId = (deployApplicationId: string) => {
+    const previousSuggestion = suggestInstanceKey(draft.deployApplicationId, draft.environment);
     onDraftChange({
       ...draft,
-      appKey,
+      deployApplicationId,
       instanceKey: !draft.instanceKey || draft.instanceKey === previousSuggestion
-        ? suggestInstanceKey(appKey, draft.environment)
+        ? suggestInstanceKey(deployApplicationId, draft.environment)
         : draft.instanceKey,
     });
   };
   const updateEnvironment = (environment: string) => {
-    const previousSuggestion = suggestInstanceKey(draft.appKey, draft.environment);
+    const previousSuggestion = suggestInstanceKey(draft.deployApplicationId, draft.environment);
     onDraftChange({
       ...draft,
       environment,
       instanceKey: !draft.instanceKey || draft.instanceKey === previousSuggestion
-        ? suggestInstanceKey(draft.appKey, environment)
+        ? suggestInstanceKey(draft.deployApplicationId, environment)
         : draft.instanceKey,
     });
   };
-  const canSubmit = Boolean(
-    draft.appKey.trim()
-    && draft.displayName.trim()
-    && draft.environment.trim()
-    && draft.instanceKey.trim()
-    && draft.organizationId.trim(),
-  );
+  const updateRuntimeConfig = (text: string) => {
+    setRuntimeConfigText(text);
+    const runtimeConfig = parseRuntimeConfigText(text);
+    setRuntimeConfigError(text.trim() && !runtimeConfig ? copy.runtimeConfigInvalid : undefined);
+    onDraftChange({ ...draft, runtimeConfig });
+  };
+  const submit = () => {
+    setSubmitAttempted(true);
+    if (Object.keys(errors).length > 0 || runtimeConfigError) {
+      return;
+    }
+    onSubmit();
+  };
+
   return (
     <Drawer onOpenChange={onOpenChange} open={open}>
       <DrawerContent size="lg">
         <DrawerHeader>
-          <DrawerTitle>{messages.applications.drawer.registerTitle}</DrawerTitle>
-          <DrawerDescription>{messages.applications.drawer.registerDescription}</DrawerDescription>
+          <DrawerTitle>{copy.registerTitle}</DrawerTitle>
+          <DrawerDescription>{copy.registerDescription}</DrawerDescription>
         </DrawerHeader>
         <DrawerBody className="space-y-5">
-          <ApplicationField label={messages.applications.drawer.displayName} onChange={(displayName) => onDraftChange({ ...draft, displayName })} value={draft.displayName} />
-          <ApplicationField helper={messages.applications.drawer.appKeyHint} label={messages.applications.drawer.appKey} onChange={updateAppKey} value={draft.appKey} />
-          <ApplicationField helper={messages.applications.drawer.instanceKeyHint} label={messages.applications.drawer.instanceKey} onChange={(instanceKey) => onDraftChange({ ...draft, instanceKey })} value={draft.instanceKey} />
+          <ApplicationField
+            error={errorFor("displayName")}
+            label={copy.displayName}
+            onChange={(displayName) => onDraftChange({ ...draft, displayName })}
+            required
+            value={draft.displayName}
+          />
+          <ApplicationField
+            error={errorFor("deployApplicationId")}
+            helper={copy.deployApplicationIdHint}
+            label={copy.deployApplicationId}
+            onChange={updateDeployApplicationId}
+            placeholder={copy.deployApplicationIdPlaceholder}
+            required
+            value={draft.deployApplicationId}
+          />
+          <ApplicationField
+            error={errorFor("instanceKey")}
+            helper={copy.instanceKeyHint}
+            label={copy.instanceKey}
+            onChange={(instanceKey) => onDraftChange({ ...draft, instanceKey })}
+            required
+            value={draft.instanceKey}
+          />
           <div className="grid gap-4 sm:grid-cols-2">
-            <ApplicationField label={messages.applications.drawer.organizationId} onChange={(organizationId) => onDraftChange({ ...draft, organizationId })} value={draft.organizationId} />
+            <ApplicationField
+              error={errorFor("organizationId")}
+              label={copy.organizationId}
+              onChange={(organizationId) => onDraftChange({ ...draft, organizationId })}
+              required
+              value={draft.organizationId}
+            />
             <label className="space-y-1.5 text-sm">
-              <span className="font-medium text-[var(--sdk-color-text-primary)]">{messages.applications.drawer.environment}</span>
+              <span className="font-medium text-[var(--sdk-color-text-primary)]">{copy.environment}</span>
               <Select onValueChange={updateEnvironment} value={draft.environment}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label={copy.environment}><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="development">{messages.applications.environments.development}</SelectItem>
                   <SelectItem value="staging">{messages.applications.environments.staging}</SelectItem>
@@ -586,29 +656,46 @@ function ApplicationRegisterDrawer({ busy, draft, onDraftChange, onOpenChange, o
             </label>
           </div>
           <label className="block space-y-1.5 text-sm">
-            <span className="font-medium text-[var(--sdk-color-text-primary)]">{messages.applications.drawer.applicationType}</span>
-            <Select onValueChange={(applicationType) => onDraftChange({ ...draft, applicationType })} value={draft.applicationType}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <ApplicationFieldLabel label={copy.applicationType} required />
+            <Select onValueChange={(applicationType) => onDraftChange({ ...draft, applicationType: toApplicationTypeValue(applicationType) })} value={draft.applicationType}>
+              <SelectTrigger aria-invalid={errorFor("applicationType") ? true : undefined} aria-label={copy.applicationType}>
+                <SelectValue placeholder={copy.applicationTypePlaceholder} />
+              </SelectTrigger>
               <SelectContent>
-                {APPLICATION_TYPE_VALUES.map((value) => (
+                {SDKWORK_IAM_TENANT_APPLICATION_TYPES.map((value) => (
                   <SelectItem key={value} value={value}>{applicationTypeLabel(value, messages.applications.types)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <span className="block text-xs leading-5 text-[var(--sdk-color-text-muted)]">{messages.applications.drawer.applicationTypeHint}</span>
+            <ApplicationFieldSupport error={errorFor("applicationType")} helper={copy.applicationTypeHint} />
           </label>
-          <ApplicationField label={messages.applications.drawer.primaryDomain} onChange={(primaryDomain) => onDraftChange({ ...draft, primaryDomain })} placeholder={messages.applications.drawer.primaryDomainPlaceholder} value={draft.primaryDomain} />
+          <ApplicationField label={copy.primaryDomain} onChange={(primaryDomain) => onDraftChange({ ...draft, primaryDomain })} placeholder={copy.primaryDomainPlaceholder} value={draft.primaryDomain} />
           <ApplicationPermissionsField
-            helper={messages.applications.drawer.accessPermissionsHint}
-            label={messages.applications.drawer.accessPermissions}
+            helper={copy.accessPermissionsHint}
+            label={copy.accessPermissions}
             onChange={(accessPermissions) => onDraftChange({ ...draft, accessPermissions })}
-            placeholder={messages.applications.drawer.accessPermissionsPlaceholder}
+            placeholder={copy.accessPermissionsPlaceholder}
             value={draft.accessPermissions}
           />
+          <label className="block space-y-1.5 text-sm">
+            <ApplicationFieldLabel label={copy.runtimeConfig} />
+            <Textarea
+              aria-invalid={runtimeConfigError ? true : undefined}
+              aria-label={copy.runtimeConfig}
+              onChange={(event) => updateRuntimeConfig(event.target.value)}
+              placeholder={copy.runtimeConfigPlaceholder}
+              rows={4}
+              value={runtimeConfigText}
+            />
+            <ApplicationFieldSupport error={runtimeConfigError} helper={copy.runtimeConfigHint} />
+          </label>
+          {submitAttempted && Object.keys(errors).length > 0 ? (
+            <StatusNotice tone="danger">{copy.registerInvalidNotice}</StatusNotice>
+          ) : null}
         </DrawerBody>
         <DrawerFooter>
           <Button disabled={busy} onClick={() => onOpenChange(false)} type="button" variant="secondary">{messages.common.cancel}</Button>
-          <Button disabled={busy || !canSubmit} loading={busy} onClick={onSubmit} type="button">
+          <Button disabled={busy} loading={busy} onClick={submit} type="button">
             <Plus className="h-4 w-4" />
             {messages.applications.actions.register}
           </Button>
@@ -634,7 +721,7 @@ function ApplicationEditDrawer({ application, busy, draft, onDraftChange, onOpen
               <ReadOnlyDatum label={messages.applications.table.applicationType} value={applicationTypeLabel(application.applicationType, messages.applications.types)} />
               <ReadOnlyDatum label={messages.applications.drawer.environment} value={formatEnumLabel(messages.applications.environments, application.environment)} />
               <ReadOnlyDatum label={messages.applications.drawer.instanceKey} value={application.instanceKey} />
-              <ReadOnlyDatum label={messages.applications.drawer.appKey} value={application.templateId} />
+              <ReadOnlyDatum label={messages.applications.drawer.deployApplicationId} value={application.deployApplicationId || "-"} />
             </div>
           ) : null}
           <ApplicationField label={messages.applications.drawer.primaryDomain} onChange={(primaryDomain) => onDraftChange({ ...draft, primaryDomain })} placeholder={messages.applications.drawer.primaryDomainPlaceholder} value={draft.primaryDomain} />
@@ -655,14 +742,38 @@ function ApplicationEditDrawer({ application, busy, draft, onDraftChange, onOpen
   );
 }
 
-function ApplicationField({ helper, label, onChange, placeholder, value }: { helper?: string; label: string; onChange: (value: string) => void; placeholder?: string; value: string }) {
+function ApplicationField({ error, helper, label, onChange, placeholder, required, value }: { error?: string; helper?: string; label: string; onChange: (value: string) => void; placeholder?: string; required?: boolean; value: string }) {
   return (
     <label className="block space-y-1.5 text-sm">
-      <span className="font-medium text-[var(--sdk-color-text-primary)]">{label}</span>
-      <Input onChange={(event) => onChange(event.target.value)} placeholder={placeholder} value={value} />
-      {helper ? <span className="block text-xs leading-5 text-[var(--sdk-color-text-muted)]">{helper}</span> : null}
+      <ApplicationFieldLabel label={label} required={required} />
+      <Input
+        aria-invalid={error ? true : undefined}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        value={value}
+      />
+      <ApplicationFieldSupport error={error} helper={helper} />
     </label>
   );
+}
+
+function ApplicationFieldLabel({ label, required }: { label: string; required?: boolean }) {
+  return (
+    <span className="flex items-center gap-1 font-medium text-[var(--sdk-color-text-primary)]">
+      {label}
+      {required ? <span aria-hidden="true" className="text-[var(--sdk-color-state-danger)]">*</span> : null}
+    </span>
+  );
+}
+
+function ApplicationFieldSupport({ error, helper }: { error?: string; helper?: string }) {
+  if (error) {
+    return <span className="block text-xs text-[var(--sdk-color-state-danger)]" role="alert">{error}</span>;
+  }
+  if (helper) {
+    return <span className="block text-xs leading-5 text-[var(--sdk-color-text-muted)]">{helper}</span>;
+  }
+  return null;
 }
 
 function ApplicationPermissionsField({ helper, label, onChange, placeholder, value }: { helper: string; label: string; onChange: (value: string[]) => void; placeholder: string; value: string[] }) {
@@ -728,14 +839,69 @@ function formatEnumLabel(environments: { development: string; production: string
   return environments[normalized as keyof typeof environments] ?? environments.unknown;
 }
 
-function suggestInstanceKey(appKey: string, environment: string) {
-  return [appKey, environment]
+function suggestInstanceKey(deployApplicationId: string, environment: string) {
+  return [deployApplicationId, environment]
     .filter(Boolean)
     .join("-")
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/gu, "-")
     .replace(/^-+|-+$/gu, "");
+}
+
+type ApplicationDraftField = "applicationType" | "deployApplicationId" | "displayName" | "instanceKey" | "organizationId";
+
+/**
+ * Drawer validation for the provision draft.
+ *
+ * `deployApplicationId` and `applicationType` are the two attributes the
+ * retired template used to supply, so each missing one names its own field
+ * instead of surfacing later as an opaque backend failure.
+ */
+function validateApplicationDraftForm(
+  draft: SdkworkIamTenantApplicationDraft,
+  copy: SdkworkIamTenantAdminMessages["applications"]["drawer"],
+): Partial<Record<ApplicationDraftField, string>> {
+  const errors: Partial<Record<ApplicationDraftField, string>> = {};
+  const requiredField = (label: string) => template(copy.requiredFieldTemplate, { field: label });
+  if (!draft.displayName.trim()) {
+    errors.displayName = requiredField(copy.displayName);
+  }
+  if (!draft.deployApplicationId.trim()) {
+    errors.deployApplicationId = copy.deployApplicationIdRequired;
+  }
+  if (!draft.instanceKey.trim()) {
+    errors.instanceKey = requiredField(copy.instanceKey);
+  }
+  if (!draft.organizationId.trim()) {
+    errors.organizationId = requiredField(copy.organizationId);
+  }
+  if (!draft.applicationType) {
+    errors.applicationType = copy.applicationTypeRequired;
+  }
+  return errors;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Pure: an empty text means "no runtime config", and anything that is not a
+ * JSON object (malformed JSON, an array, a scalar) stays an error rather than a
+ * silently dropped value.
+ */
+function parseRuntimeConfigText(text: string): Record<string, unknown> | undefined {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  try {
+    const parsed: unknown = JSON.parse(trimmed);
+    return isPlainRecord(parsed) ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 async function copyText(value: string) {
