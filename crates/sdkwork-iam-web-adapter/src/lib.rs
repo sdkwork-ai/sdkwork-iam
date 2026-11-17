@@ -14,6 +14,7 @@ mod http_responses;
 mod iam_audit;
 mod iam_database_env;
 mod iam_session;
+mod installation_lifecycle;
 mod messaging_verification;
 mod oauth_authorization_server;
 mod oauth_integration_exchange;
@@ -119,6 +120,24 @@ pub use iam_session::{
     resolve_iam_app_context_from_auth_token, resolve_iam_app_context_from_dual_tokens,
     resolve_iam_app_context_from_dual_tokens_pool, resolve_iam_app_context_from_oauth_bearer,
     resolve_iam_app_context_from_oauth_bearer_pool,
+};
+pub use installation_lifecycle::{
+    canonical_environment_key, classify_installation_lifecycle_error,
+    create_installation_credential, decide_installation_environment_access,
+    delete_installation_environment, ensure_deploy_application_environment_active,
+    ensure_installation_environment_active, installation_credential_to_json,
+    installation_environment_to_json, installation_lifecycle_error_detail,
+    list_installation_credentials, list_installation_environments,
+    normalize_environment_key, parse_installation_credential_create_command,
+    parse_installation_credential_rotate_command, parse_installation_environment_upsert_command,
+    revoke_installation_credential, rotate_installation_credential,
+    upsert_installation_environment, InstallationCredential, InstallationCredentialCreateCommand,
+    InstallationCredentialPage, InstallationCredentialRotateCommand, InstallationEnvironment,
+    InstallationEnvironmentPage, InstallationEnvironmentUpsertCommand,
+    InstallationLifecycleErrorKind, INSTALLATION_CREDENTIAL_STATUS_ACTIVE,
+    INSTALLATION_CREDENTIAL_STATUS_RETIRED, INSTALLATION_CREDENTIAL_STATUS_ROTATED,
+    INSTALLATION_ENVIRONMENT_STATUS_ACTIVE, INSTALLATION_ENVIRONMENT_STATUS_DISABLED,
+    INSTALLATION_ENVIRONMENT_STATUS_PENDING,
 };
 pub use messaging_verification::{
     messaging_verification_code_hash, messaging_verification_enabled,

@@ -15,6 +15,7 @@ use crate::access_token_issue::{
 use crate::application_registry::{
     intersect_permission_scopes, resolve_access_token_app_id, resolve_tenant_application,
 };
+use crate::installation_lifecycle::ensure_installation_environment_active;
 
 pub const IAM_SERVICE_ACCOUNT_CREDENTIALS_CREATE_PERMISSION: &str =
     "iam.service_account_credentials.create";
@@ -295,6 +296,17 @@ pub async fn exchange_service_account_credential(
     {
         return Err("bound tenant application is unavailable or no longer matches".to_string());
     }
+    // A service-account token is a credential for one environment of the
+    // installation: registered installations only issue for an active
+    // environment, while installations without environment rows keep the
+    // historical behavior.
+    ensure_installation_environment_active(
+        pg,
+        &credential.tenant_id,
+        &tenant_application.id,
+        &credential.environment,
+    )
+    .await?;
 
     let (mut data_scope, service_permission_scope) = sdkwork_iam_bootstrap::resolve_session_scopes(
         pg,

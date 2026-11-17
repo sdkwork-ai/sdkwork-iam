@@ -48,6 +48,23 @@ All list handlers in this crate use database-level offset pagination via `sdkwor
 
 Legacy `{ records, total }` envelopes and in-memory slicing are forbidden. Authority: `sdkwork-specs/API_SPEC.md` sections 14–15, `sdkwork-specs/templates/openapi/components/schemas/sdkwork-list-query.yaml`.
 
+## Installation Environments And Credentials
+
+`src/installation_lifecycle.rs` mounts the tenant-scoped management surface for
+`iam_application_installation_environment` and
+`iam_application_installation_credential`:
+
+- `GET|PUT|DELETE .../applications/{tenantApplicationId}/environments[/{environmentKey}]`
+  (list / idempotent upsert / soft delete)
+- `GET|POST .../applications/{tenantApplicationId}/credentials` and
+  `POST .../credentials/{credentialId}/rotate|revoke`
+
+All seven operations map to `iam.tenant_applications.update`; credential create
+and rotate return the plaintext `clientSecret` exactly once, and no read path
+selects `secret_hash`. Duplicate env key, tenant-wide primary domain, or client id
+return `409 iam_installation_lifecycle_conflict`. Cross-tenant access is refused at
+the handler and again by the tenant filter in every query.
+
 ## Tree Resources
 
 Tree endpoints (`organizations/tree`, `departments/tree`) return `SdkWorkResourceResponse` inside `SdkWorkApiResponse.data`:

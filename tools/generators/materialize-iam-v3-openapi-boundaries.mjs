@@ -423,6 +423,7 @@ function buildOperation(surface, route) {
   const authMode = operationAuthMode(surface, route);
   const successSchemaRef = personaSuccessSchemaRef(route)
     ?? typedListSuccessSchemaRef(route)
+    ?? typedResourceSuccessSchemaRef(route)
     ?? successResponseSchemaRef(route);
   const responses = {
     400: problemResponse('Bad request'),
@@ -961,6 +962,15 @@ function requestBodySchemaRef(route) {
   if (route.operationId === 'tenantApplications.update') {
     return '#/components/schemas/AppbaseTenantApplicationUpdateCommand';
   }
+  if (route.operationId === 'tenantApplications.environments.update') {
+    return '#/components/schemas/IamInstallationEnvironmentUpsertCommand';
+  }
+  if (route.operationId === 'tenantApplications.credentials.create') {
+    return '#/components/schemas/IamInstallationCredentialCreateCommand';
+  }
+  if (route.operationId === 'tenantApplications.credentials.rotate') {
+    return '#/components/schemas/IamInstallationCredentialRotateCommand';
+  }
   if (route.operationId === 'tenantApplications.enable') {
     return '#/components/schemas/AppbaseTenantApplicationEnableCommand';
   }
@@ -1044,6 +1054,28 @@ function typedListSuccessSchemaRef(route) {
   switch (route.operationId) {
     case 'organizations.members.list':
       return '#/components/schemas/IamOrganizationMemberListResponse';
+    case 'tenantApplications.environments.list':
+      return '#/components/schemas/IamInstallationEnvironmentListResponse';
+    case 'tenantApplications.credentials.list':
+      return '#/components/schemas/IamInstallationCredentialListResponse';
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Typed single-resource envelope for operations that return the resource itself.
+ *
+ * Without this the generated clients expose `data.item` as an untyped object and
+ * every consumer has to re-declare the environment/credential shape.
+ */
+function typedResourceSuccessSchemaRef(route) {
+  switch (route.operationId) {
+    case 'tenantApplications.environments.update':
+      return '#/components/schemas/IamInstallationEnvironmentResponse';
+    case 'tenantApplications.credentials.create':
+    case 'tenantApplications.credentials.rotate':
+      return '#/components/schemas/IamInstallationCredentialResponse';
     default:
       return undefined;
   }
@@ -1054,6 +1086,255 @@ function buildSchemas() {
 
   return {
     ...sdkWorkEnvelopeComponentSchemas,
+    IamInstallationEnvironment: {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'environmentId',
+        'tenantId',
+        'installationId',
+        'environmentKey',
+        'status',
+        'createdAt',
+        'updatedAt',
+      ],
+      description: 'One lifecycle environment registered for an installation.',
+      properties: {
+        environmentId: { type: 'string' },
+        tenantId: { type: 'string' },
+        organizationId: { type: 'string' },
+        installationId: { type: 'string', description: 'Installation (tenant application) id.' },
+        environmentKey: {
+          type: 'string',
+          pattern: '^[a-z0-9._-]{1,64}$',
+          description: 'Environment key, unique per installation.',
+        },
+        primaryDomain: {
+          type: ['string', 'null'],
+          description:
+            'Public domain of this environment. Null when the environment has no domain; null is the only value allowed to repeat inside one tenant.',
+        },
+        domainConfig: {
+          type: 'object',
+          additionalProperties: true,
+          description: 'Environment-specific domain configuration document.',
+        },
+        status: { type: 'string', enum: ['pending', 'active', 'disabled'] },
+        createdAt: { type: 'string', description: 'Creation timestamp.' },
+        updatedAt: { type: 'string', description: 'Last write timestamp.' },
+      },
+    },
+    IamInstallationEnvironmentUpsertCommand: {
+      type: 'object',
+      additionalProperties: false,
+      description:
+        'Idempotent registration of one environment. The path environmentKey is authoritative; an explicit body value must match it. Omitted status keeps the stored status on update and defaults to pending on insert.',
+      properties: {
+        environmentKey: { type: 'string', pattern: '^[a-z0-9._-]{1,64}$' },
+        primaryDomain: {
+          type: ['string', 'null'],
+          maxLength: 253,
+          description: 'Blank or null clears the domain; a domain is unique per tenant.',
+        },
+        domainConfig: { type: 'object', additionalProperties: true },
+        status: { type: 'string', enum: ['pending', 'active', 'disabled'] },
+      },
+    },
+    IamInstallationCredential: {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'credentialId',
+        'tenantId',
+        'installationEnvironmentId',
+        'environmentKey',
+        'clientId',
+        'redirectUris',
+        'grantedScopes',
+        'status',
+        'createdAt',
+        'updatedAt',
+      ],
+      description:
+        'OAuth client metadata of one installation environment. The secret is write-only and is returned only by create/rotate.',
+      properties: {
+        credentialId: { type: 'string' },
+        tenantId: { type: 'string' },
+        installationEnvironmentId: { type: 'string' },
+        environmentKey: { type: 'string' },
+        clientId: {
+          type: 'string',
+          description: 'OAuth client id; globally unique across every credential row.',
+        },
+        redirectUris: { type: 'array', items: { type: 'string', format: 'uri' } },
+        grantedScopes: { type: 'array', items: { type: 'string' } },
+        status: { type: 'string', enum: ['active', 'rotated', 'retired'] },
+        rotatedAt: {
+          type: ['string', 'null'],
+          description: 'When this credential was replaced by a rotation, or null.',
+        },
+        retiredAt: {
+          type: ['string', 'null'],
+          description: 'When this credential was revoked, or null.',
+        },
+        createdAt: { type: 'string', description: 'Creation timestamp.' },
+        updatedAt: { type: 'string', description: 'Last write timestamp.' },
+      },
+    },
+    IamInstallationCredentialWithSecret: {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'credentialId',
+        'tenantId',
+        'installationEnvironmentId',
+        'environmentKey',
+        'clientId',
+        'clientSecret',
+        'redirectUris',
+        'grantedScopes',
+        'status',
+        'createdAt',
+        'updatedAt',
+      ],
+      description:
+        'The create/rotate result: credential metadata plus the one-time plaintext secret. No read operation returns this shape.',
+      properties: {
+        credentialId: { type: 'string' },
+        tenantId: { type: 'string' },
+        installationEnvironmentId: { type: 'string' },
+        environmentKey: { type: 'string' },
+        clientId: { type: 'string' },
+        clientSecret: {
+          type: 'string',
+          description:
+            'Plaintext OAuth client secret. Emitted exactly once by create/rotate and never on reads.',
+        },
+        redirectUris: { type: 'array', items: { type: 'string', format: 'uri' } },
+        grantedScopes: { type: 'array', items: { type: 'string' } },
+        status: { type: 'string', enum: ['active', 'rotated', 'retired'] },
+        rotatedAt: { type: ['string', 'null'] },
+        retiredAt: { type: ['string', 'null'] },
+        createdAt: { type: 'string', description: 'Creation timestamp.' },
+        updatedAt: { type: 'string', description: 'Last write timestamp.' },
+      },
+    },
+    IamInstallationCredentialCreateCommand: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['environmentKey'],
+      description:
+        'Creates the OAuth client of one environment. Omitted clientId is generated.',
+      properties: {
+        environmentKey: {
+          type: 'string',
+          description: 'Registered environment of the installation, by key or canonical alias.',
+        },
+        clientId: {
+          type: 'string',
+          description:
+            'Explicit client id. Omitted generates one; an id already in use conflicts.',
+        },
+        redirectUris: { type: 'array', items: { type: 'string', format: 'uri' } },
+        grantedScopes: { type: 'array', items: { type: 'string' } },
+      },
+    },
+    IamInstallationCredentialRotateCommand: {
+      type: 'object',
+      additionalProperties: false,
+      description:
+        'Rotates the active credential: the replacement becomes active with a new client id and secret, and the predecessor is kept as rotated history.',
+      properties: {
+        clientId: {
+          type: 'string',
+          description: 'Explicit replacement client id. Omitted generates one.',
+        },
+      },
+    },
+    IamInstallationEnvironmentListResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['items', 'pageInfo'],
+              properties: {
+                items: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/IamInstallationEnvironment' },
+                },
+                pageInfo: { $ref: '#/components/schemas/PageInfo' },
+              },
+            },
+          },
+        },
+      ],
+    },
+    IamInstallationEnvironmentResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['item'],
+              properties: {
+                item: { $ref: '#/components/schemas/IamInstallationEnvironment' },
+              },
+            },
+          },
+        },
+      ],
+    },
+    IamInstallationCredentialResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['item'],
+              properties: {
+                item: { $ref: '#/components/schemas/IamInstallationCredentialWithSecret' },
+              },
+            },
+          },
+        },
+      ],
+    },
+    IamInstallationCredentialListResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['items', 'pageInfo'],
+              properties: {
+                items: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/IamInstallationCredential' },
+                },
+                pageInfo: { $ref: '#/components/schemas/PageInfo' },
+              },
+            },
+          },
+        },
+      ],
+    },
     IamPersonaLabels: {
       type: 'object',
       additionalProperties: { type: 'string' },

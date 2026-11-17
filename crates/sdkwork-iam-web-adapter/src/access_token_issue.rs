@@ -5,6 +5,7 @@ use crate::application_registry::{
     resolve_tenant_application, resolve_tenant_application_by_deploy_application_id,
 };
 use crate::iam_database_env::resolve_iam_database_pool_from_env;
+use crate::installation_lifecycle::ensure_installation_environment_active;
 use crate::is_blank;
 use crate::super_admin_auth::AccessTokenActor;
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
@@ -171,6 +172,17 @@ pub async fn issue_delegated_access_credential(
     if tenant_application.organization_id != request.organization_id {
         return Err("organizationId does not match tenant application".to_string());
     }
+    // Environment-scoped installations only issue credentials for a registered,
+    // active environment. An installation without environment rows keeps the
+    // historical behavior. The requested environment is the operator context's
+    // environment, which is what the signed token records.
+    ensure_installation_environment_active(
+        pg,
+        &request.tenant_id,
+        &tenant_application.id,
+        environment_to_string(&actor.environment),
+    )
+    .await?;
 
     let organization_id = Some(request.organization_id.clone());
     let (data_scope, actor_permission_scope) = resolve_session_scopes(
@@ -275,6 +287,17 @@ pub async fn issue_standalone_bootstrap_access_credential(
             "tenant application {app_id} must be enabled before issuing a bootstrap access credential"
         ));
     }
+    // Bootstrap issuance is a token issuance path too: a registered installation
+    // only accepts its active environments. An installation without environment
+    // rows keeps the platform-bootstrap compatibility path.
+    let environment = bootstrap_environment();
+    ensure_installation_environment_active(
+        pg,
+        tenant_id,
+        &tenant_application.id,
+        environment_to_string(&environment),
+    )
+    .await?;
     // The token subject is the installation's deploy application. Without the
     // link there is no deployment to name, so issuance fails closed.
     let token_app_id = resolve_access_token_app_id(&tenant_application)?;
@@ -294,7 +317,6 @@ pub async fn issue_standalone_bootstrap_access_credential(
         now + chrono::Duration::seconds(ttl as i64)
     };
 
-    let environment = bootstrap_environment();
     let context = IamAppContext::new(
         tenant_id.to_owned(),
         Some(organization_id.as_str()),

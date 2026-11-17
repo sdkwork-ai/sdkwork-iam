@@ -166,55 +166,57 @@ pub async fn build_sdkwork_iam_backend_api_router_from_env() -> Router {
 }
 
 fn build_sdkwork_iam_backend_api_business_router_with_state(state: BackendIamState) -> Router {
-    oauth_management::apply_oauth_routes(management::apply_management_routes(
-        crate::provider_accounts::apply_provider_account_routes(
-            crate::service_account_credentials::apply_service_account_credential_routes(
-                Router::new()
-                .route(
-                    "/backend/v3/api/iam/account_binding_policy",
-                    get(retrieve_account_binding_policy).patch(update_account_binding_policy),
-                )
-                .route(
-                    "/backend/v3/api/iam/access_credentials",
-                    post(create_access_credential),
-                )
-                .route(
-                    "/backend/v3/api/iam/tenant_applications",
-                    post(provision_tenant_application_handler),
-                )
-                .route(
-                    "/backend/v3/api/iam/tenant_applications/{tenantApplicationId}",
-                    get(retrieve_tenant_application_handler)
-                        .patch(update_tenant_application_handler),
-                )
-                .route(
-                    "/backend/v3/api/iam/tenant_applications/{tenantApplicationId}/enable",
-                    post(enable_tenant_application_handler),
-                )
-                .route(
-                    "/backend/v3/api/iam/tenants/{tenantId}/applications",
-                    get(list_tenant_applications_handler)
-                        .post(provision_tenant_application_management_handler),
-                )
-                .route(
-                    "/backend/v3/api/iam/tenants/{tenantId}/applications/summary",
-                    get(retrieve_tenant_application_summary_handler),
-                )
-                .route(
-                    "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}",
-                    axum::routing::patch(update_tenant_application_management_handler),
-                )
-                .route(
-                    "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/enable",
-                    post(enable_tenant_application_management_handler),
-                )
-                .route(
-                    "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/disable",
-                    post(disable_tenant_application_management_handler),
+    let router = Router::new()
+        .route(
+            "/backend/v3/api/iam/account_binding_policy",
+            get(retrieve_account_binding_policy).patch(update_account_binding_policy),
+        )
+        .route(
+            "/backend/v3/api/iam/access_credentials",
+            post(create_access_credential),
+        )
+        .route(
+            "/backend/v3/api/iam/tenant_applications",
+            post(provision_tenant_application_handler),
+        )
+        .route(
+            "/backend/v3/api/iam/tenant_applications/{tenantApplicationId}",
+            get(retrieve_tenant_application_handler).patch(update_tenant_application_handler),
+        )
+        .route(
+            "/backend/v3/api/iam/tenant_applications/{tenantApplicationId}/enable",
+            post(enable_tenant_application_handler),
+        )
+        .route(
+            "/backend/v3/api/iam/tenants/{tenantId}/applications",
+            get(list_tenant_applications_handler).post(provision_tenant_application_management_handler),
+        )
+        .route(
+            "/backend/v3/api/iam/tenants/{tenantId}/applications/summary",
+            get(retrieve_tenant_application_summary_handler),
+        )
+        .route(
+            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}",
+            axum::routing::patch(update_tenant_application_management_handler),
+        )
+        .route(
+            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/enable",
+            post(enable_tenant_application_management_handler),
+        )
+        .route(
+            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/disable",
+            post(disable_tenant_application_management_handler),
+        );
+
+    crate::installation_lifecycle::apply_installation_lifecycle_routes(
+        oauth_management::apply_oauth_routes(management::apply_management_routes(
+            crate::provider_accounts::apply_provider_account_routes(
+                crate::service_account_credentials::apply_service_account_credential_routes(
+                    router,
                 ),
             ),
-        ),
-    ))
+        )),
+    )
     .with_state(state.clone())
     .layer(middleware::from_fn_with_state(
         state,
@@ -659,7 +661,7 @@ async fn list_tenant_applications_handler(
                 instance_key, display_name, environment, status, primary_domain, \
                 access_permissions_json, created_at::text, updated_at::text, \
                 application_type, runtime_config_json, COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
-         FROM iam_tenant_application \
+         FROM iam_application_installation \
          WHERE tenant_id = $1 \
            AND ($4::text IS NULL OR LOWER(display_name) LIKE $4 OR LOWER(app_id) LIKE $4 \
                 OR LOWER(instance_key) LIKE $4 OR LOWER(COALESCE(primary_domain, '')) LIKE $4) \
@@ -708,7 +710,7 @@ async fn retrieve_tenant_application_summary_handler(
                 COUNT(*) FILTER (WHERE status = 'enabled')::BIGINT, \
                 COUNT(*) FILTER (WHERE status = 'disabled')::BIGINT, \
                 COUNT(*) FILTER (WHERE status NOT IN ('enabled', 'disabled'))::BIGINT \
-         FROM iam_tenant_application WHERE tenant_id = $1",
+         FROM iam_application_installation WHERE tenant_id = $1",
     )
     .bind(&tenant_id)
     .fetch_one(pg)

@@ -119,7 +119,15 @@ fn exposes_canonical_iam_table_constants() {
     assert_eq!("iam_user_identity", IamTables::USER_IDENTITY);
     assert_eq!("iam_credential", IamTables::CREDENTIAL);
     assert_eq!("iam_ephemeral_artifact", IamTables::EPHEMERAL_ARTIFACT);
-    assert_eq!("iam_application_installation", IamTables::TENANT_APPLICATION);
+    assert_eq!("iam_application_installation", IamTables::APPLICATION_INSTALLATION);
+    assert_eq!(
+        "iam_application_installation_environment",
+        IamTables::APPLICATION_INSTALLATION_ENVIRONMENT
+    );
+    assert_eq!(
+        "iam_application_installation_credential",
+        IamTables::APPLICATION_INSTALLATION_CREDENTIAL
+    );
     assert_eq!(
         "iam_module_registry_entry",
         IamTables::MODULE_REGISTRY_ENTRY
@@ -960,10 +968,15 @@ fn application_standard_baseline_declares_tenant_application_tables_without_stud
     // `application_type` from them. Migrations 0041/0042 retire the template
     // columns and tables at the end of the upgrade path, so the active contract
     // (asserted above) does not own them.
+    //
+    // The installation table is likewise declared under its historical name and
+    // renamed to `iam_application_installation` by migration 0043; replaying the
+    // ordered migration set (what the contract materializer does) yields the
+    // design name asserted above.
     for table in [
         "iam_application_template",
         "iam_application_template_package",
-        "iam_application_installation",
+        "iam_tenant_application",
     ] {
         assert!(
             sql.contains(&format!("CREATE TABLE IF NOT EXISTS {table}")),

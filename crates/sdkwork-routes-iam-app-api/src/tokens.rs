@@ -174,6 +174,16 @@ pub(crate) async fn create_session_record_with_device(
         runtime_app_id,
     )
     .await?;
+    // Environment-scoped installations only create sessions for a registered,
+    // active environment. An installation without environment rows keeps the
+    // historical platform-bootstrap compatibility path.
+    sdkwork_iam_web_adapter::ensure_deploy_application_environment_active(
+        pg,
+        &user.tenant_id,
+        runtime_app_id,
+        &config.environment,
+    )
+    .await?;
 
     if let Some(scoped_organization_id) = organization_id
         .as_deref()

@@ -24,6 +24,41 @@ node sdks/materialize-iam-v3-openapi-boundaries.mjs
 
 Generated SDK transport output remains under `sdks/sdkwork-iam-backend-sdk/`.
 
+## Installation Environments And Credentials
+
+An installation owns one row per lifecycle environment
+(`iam_application_installation_environment`) and one OAuth client per environment
+(`iam_application_installation_credential`). The materialized authority exposes:
+
+| Operation ID | Method / path | Success shape |
+| --- | --- | --- |
+| `tenantApplications.environments.list` | `GET /backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments` | `IamInstallationEnvironmentListResponse` |
+| `tenantApplications.environments.update` | `PUT .../environments/{environmentKey}` | `IamInstallationEnvironmentResponse` |
+| `tenantApplications.environments.delete` | `DELETE .../environments/{environmentKey}` | `204` |
+| `tenantApplications.credentials.list` | `GET .../credentials` | `IamInstallationCredentialListResponse` |
+| `tenantApplications.credentials.create` | `POST .../credentials` | `201 IamInstallationCredentialResponse` |
+| `tenantApplications.credentials.rotate` | `POST .../credentials/{credentialId}/rotate` | `IamInstallationCredentialResponse` |
+| `tenantApplications.credentials.revoke` | `POST .../credentials/{credentialId}/revoke` | `SdkWorkCommandResponse` |
+
+Every operation declares `x-sdkwork-permission: iam.tenant_applications.update`
+(the existing installation-update boundary; no new code is seeded) and
+`x-sdkwork-required-surface: organizationMember`.
+
+`PUT .../environments/{environmentKey}` is an idempotent upsert keyed by the path
+environment key. A body `environmentKey`, when present, must match the path. An
+omitted body `status` keeps the stored status on update and defaults to `pending`
+on insert.
+
+`clientSecret` is `writeOnly` and is emitted only by the create and rotate
+operations; reads return credential metadata only. `409 conflict` responses use
+`code: iam_installation_lifecycle_conflict` and name the duplicate environment
+key, tenant-wide primary domain, or client id. `404` responses use
+`code: iam_installation_lifecycle_not_found` for both a missing row and a row
+outside the caller's tenant scope.
+
+Runtime enforcement (token issuance and session creation) is documented in the
+repository `README.md`; OpenAPI describes the management surface only.
+
 ## Role Catalog Display Text
 
 `iam.roles.list` and `iam.roles.retrieve` carry catalog display text as machine
