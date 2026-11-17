@@ -1911,6 +1911,22 @@ async fn create_integration(
     let deployment_mode = read_string_field(&body, &["deploymentMode", "deployment_mode"])
         .unwrap_or_else(|| "saas".to_owned());
     let app_id = read_string_field(&body, &["appId", "app_id"]).unwrap_or_else(|| "0".to_owned());
+    // A pinned integration is filed under the installation's deploy application
+    // anchor: it is the identity the login flows pass back when they look the
+    // integration up, and `"0"` keeps meaning "any installation of the tenant".
+    if app_id != "0" {
+        if let Err(error) = sdkwork_iam_web_adapter::validate_enabled_tenant_runtime_app(
+            pg, &tenant_id, &app_id,
+        )
+        .await
+        {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_oauth_integration_app_invalid",
+                &error,
+            );
+        }
+    }
     let enabled = read_i32_field(&body, &["enabled"]).unwrap_or(0);
     let provider_client_id = read_string_field(&body, &["providerClientId", "provider_client_id"]);
     let provider_client_secret =

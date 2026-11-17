@@ -71,6 +71,12 @@ pub async fn load_runtime_auth_metadata_input(
     ))
 }
 
+/// Loads the runtime config of the installation an access token names.
+///
+/// `app_id` is the deploy application anchor carried by the request principal
+/// (`APPLICATION_IDENTITY_SPEC.md` §4), so the lookup joins on
+/// `deploy_application_id`; an installation that is not linked resolves to the
+/// caller's defaults instead of silently reading another installation's config.
 pub async fn load_tenant_application_runtime_config(
     pg: &PgPool,
     tenant_id: &str,
@@ -78,7 +84,7 @@ pub async fn load_tenant_application_runtime_config(
 ) -> Result<Value, String> {
     let row = sqlx::query_scalar::<_, sqlx::types::Json<Value>>(
         "SELECT runtime_config_json FROM iam_tenant_application \
-         WHERE tenant_id = $1 AND app_id = $2 AND status = 'enabled' \
+         WHERE tenant_id = $1 AND deploy_application_id = $2 AND status = 'enabled' \
          LIMIT 1",
     )
     .bind(tenant_id)

@@ -7,9 +7,8 @@ use sdkwork_iam_bootstrap::{
     DEFAULT_IAM_TENANT_ID,
 };
 use sdkwork_iam_web_adapter::{
-    ensure_platform_tenant_application, platform_runtime_app_id_for_tenant,
-    tenant_application_row_id, PLATFORM_APPLICATION_TEMPLATE_ID,
-    SDKWORK_IAM_BOOTSTRAP_PASSWORD_ENV,
+    ensure_platform_tenant_application_with_deploy_application, tenant_application_row_id,
+    PLATFORM_APPLICATION_TEMPLATE_ID, SDKWORK_IAM_BOOTSTRAP_PASSWORD_ENV,
 };
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -18,6 +17,9 @@ pub const INTEGRATION_BOOTSTRAP_PASSWORD: &str = "BackendIntegration#2026";
 pub const INTEGRATION_BOOTSTRAP_EMAIL: &str = "backend-integration-owner@sdkwork-iam.test";
 pub const INTEGRATION_ORGANIZATION_ID: &str = "iamorg_backend_integration";
 const INTEGRATION_ORGANIZATION_CODE: &str = "backend-integration";
+/// Deploy application the integration installation serves; the delegated access
+/// credential's `app_id`/`aud` is this value.
+pub const INTEGRATION_DEPLOY_APPLICATION_ID: &str = "deploy_backend_integration";
 
 pub fn configure_backend_integration_runtime_env() {
     // SAFETY: backend integration tests run single-threaded under the IAM env mutex.
@@ -44,9 +46,13 @@ pub async fn seed_backend_integration_bootstrap_owner(pg: &PgPool) -> String {
         .await
         .expect("seed standard IAM roles for integration tests");
 
-    let runtime_app_id = ensure_platform_tenant_application(pg, DEFAULT_IAM_TENANT_ID)
-        .await
-        .expect("ensure platform tenant application for backend integration tests");
+    let runtime_app_id = ensure_platform_tenant_application_with_deploy_application(
+        pg,
+        DEFAULT_IAM_TENANT_ID,
+        INTEGRATION_DEPLOY_APPLICATION_ID,
+    )
+    .await
+    .expect("ensure platform tenant application for backend integration tests");
     ensure_integration_organization_and_tenant_application(pg, &runtime_app_id)
         .await
         .expect("ensure integration organization tenant application");
@@ -249,15 +255,19 @@ async fn ensure_integration_organization_and_tenant_application(
 
     let tenant_application_id =
         tenant_application_row_id(DEFAULT_IAM_TENANT_ID, "0", PLATFORM_APPLICATION_TEMPLATE_ID);
+    // The deployment access credential is signed with the installation's deploy
+    // application (migration 0040); without the link issuance fails closed, so
+    // the fixture links the row the same way the install command does.
     sqlx::query(
         "UPDATE iam_tenant_application \
-         SET organization_id = $1, status = 'enabled', updated_at = $2 \
+         SET organization_id = $1, status = 'enabled', deploy_application_id = $5, updated_at = $2 \
          WHERE tenant_id = $3 AND id = $4",
     )
     .bind(INTEGRATION_ORGANIZATION_ID)
     .bind(&now)
     .bind(DEFAULT_IAM_TENANT_ID)
     .bind(&tenant_application_id)
+    .bind(INTEGRATION_DEPLOY_APPLICATION_ID)
     .execute(pg)
     .await
     .map_err(|error| {
@@ -272,7 +282,7 @@ pub fn integration_access_credential_request_body() -> String {
     serde_json::json!({
         "tenantId": DEFAULT_IAM_TENANT_ID,
         "organizationId": INTEGRATION_ORGANIZATION_ID,
-        "appId": platform_runtime_app_id_for_tenant(DEFAULT_IAM_TENANT_ID),
+        "appId": INTEGRATION_DEPLOY_APPLICATION_ID,
         "username": INTEGRATION_BOOTSTRAP_EMAIL,
         "password": INTEGRATION_BOOTSTRAP_PASSWORD,
     })

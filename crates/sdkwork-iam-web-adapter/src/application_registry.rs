@@ -12,6 +12,14 @@ pub const IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION: &str = "iam.tenant_applicat
 pub const PLATFORM_APPLICATION_TEMPLATE_ID: &str = "tmpl_sdkwork_platform";
 pub const PLATFORM_APPLICATION_KEY: &str = "sdkwork-platform";
 
+/// Environment variable carrying the deploy application id of this installation.
+///
+/// An installation is one-to-one with a deploy application
+/// (`APPLICATION_IDENTITY_SPEC.md` §3), so a deployment that self-bootstraps its
+/// platform installation must name that anchor explicitly. There is no fallback
+/// to the IAM runtime `app_id`.
+pub const DEPLOY_APPLICATION_ID_ENV: &str = "SDKWORK_DEPLOY_APPLICATION_ID";
+
 /// Deterministic runtime app id for a tenant's default platform instance.
 pub fn platform_runtime_app_id_for_tenant(tenant_id: &str) -> String {
     format!("app_{}", tenant_id.trim())
@@ -100,6 +108,11 @@ pub struct RegisteredApplicationTemplate {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TenantApplication {
     pub id: String,
+    /// IAM runtime `app_id` (the OAuth client id) of the tenant application.
+    ///
+    /// This is the registration-plane identity: OAuth clients, API keys, and
+    /// login sessions are keyed by it. It is **not** the deployment access
+    /// token subject — see [`Self::deploy_application_id`].
     pub app_id: String,
     pub tenant_id: String,
     pub organization_id: String,
@@ -113,38 +126,75 @@ pub struct TenantApplication {
     pub primary_domain: Option<String>,
     pub access_permissions: Vec<String>,
     pub runtime_config: Value,
+    /// Deployment application this installation serves (migration 0040).
+    ///
+    /// The deployment access token's `app_id` and `aud` are this value: the
+    /// credential identifies the installation a host is serving, not the IAM
+    /// tenant application's OAuth client id. `None` means the installation was
+    /// never linked to a deployment, and token issuance fails closed instead of
+    /// falling back to [`Self::app_id`].
+    pub deploy_application_id: Option<String>,
 }
 
+/// Validates that `deploy_application_id` names an enabled installation of `tenant_id`.
+///
+/// This is the single application-identity gate. The identifier is the deploy
+/// application anchor, never the IAM runtime `app_id`: the registration plane
+/// (API keys), the credential-entry plane (deployment access token), and the
+/// session plane all pass the anchor, so an installation without the deploy link
+/// cannot authenticate anything.
 pub async fn validate_enabled_tenant_runtime_app(
     pg: &PgPool,
     tenant_id: &str,
-    runtime_app_id: &str,
+    deploy_application_id: &str,
 ) -> Result<(), String> {
-    if crate::is_blank(Some(runtime_app_id)) {
-        return Err("runtime appId is required".to_string());
+    if crate::is_blank(Some(deploy_application_id)) {
+        return Err("deploy application id is required".to_string());
     }
 
     let row = sqlx::query(
         "SELECT a.status, t.status \
          FROM iam_tenant_application a \
          LEFT JOIN iam_tenant t ON t.id = a.tenant_id \
-         WHERE a.tenant_id = $1 AND a.app_id = $2 \
+         WHERE a.tenant_id = $1 AND a.deploy_application_id = $2 \
          LIMIT 1",
     )
     .bind(tenant_id)
-    .bind(runtime_app_id)
+    .bind(deploy_application_id.trim())
     .fetch_optional(pg)
     .await
-    .map_err(|error| format!("load tenant runtime application failed: {error}"))?;
+    .map_err(|error| format!("load tenant application by deploy application failed: {error}"))?;
 
-    let Some(row) = row else {
+    let application = row.map(|row| {
+        let app_status: String = row.get(0);
+        let tenant_status: Option<String> = row.get(1);
+        (app_status, tenant_status)
+    });
+    ensure_enabled_installation(tenant_id, deploy_application_id, application)
+}
+
+/// Decision half of [`validate_enabled_tenant_runtime_app`].
+///
+/// Kept pure so the gate's fail-closed rules are unit-testable without a
+/// database: `application` is the `(installation status, tenant status)` pair the
+/// deploy-application lookup returned, or `None` when the anchor is unbound.
+fn ensure_enabled_installation(
+    tenant_id: &str,
+    deploy_application_id: &str,
+    application: Option<(String, Option<String>)>,
+) -> Result<(), String> {
+    if crate::is_blank(Some(deploy_application_id)) {
+        return Err("deploy application id is required".to_string());
+    }
+
+    let Some((app_status, tenant_status)) = application else {
         return Err(format!(
-            "runtime appId {runtime_app_id} is not provisioned for tenant {tenant_id}"
+            "deploy application {} is not bound to an enabled installation of tenant {tenant_id}; \
+             provision the installation with deployApplicationId",
+            deploy_application_id.trim()
         ));
     };
 
-    let app_status: String = row.get(0);
-    let tenant_status: Option<String> = row.get(1);
     let Some(tenant_status) = tenant_status else {
         return Err(format!("tenant {tenant_id} was not found"));
     };
@@ -155,17 +205,123 @@ pub async fn validate_enabled_tenant_runtime_app(
     }
     if app_status != "enabled" {
         return Err(format!(
-            "tenant application {runtime_app_id} must be enabled before use (status={app_status})"
+            "installation of deploy application {} must be enabled before use (status={app_status})",
+            deploy_application_id.trim()
         ));
     }
 
     Ok(())
 }
 
+/// Reads this installation's configured deploy application id.
+///
+/// Self-bootstrapped installations (the platform installation, embedded
+/// application manifests) must name their anchor from configuration. A missing
+/// value is an explicit failure: silently inventing a deploy id, or falling back
+/// to the IAM runtime `app_id`, would recreate the ambiguity
+/// `APPLICATION_IDENTITY_SPEC.md` §2 removes.
+///
+/// # Errors
+///
+/// Returns an error naming [`DEPLOY_APPLICATION_ID_ENV`] when the variable is
+/// unset or blank.
+pub fn configured_deploy_application_id() -> Result<String, String> {
+    deploy_application_id_from_configured_value(
+        std::env::var(DEPLOY_APPLICATION_ID_ENV).ok().as_deref(),
+        DEPLOY_APPLICATION_ID_ENV,
+    )
+}
+
+fn deploy_application_id_from_configured_value(
+    value: Option<&str>,
+    source: &str,
+) -> Result<String, String> {
+    value
+        .map(str::trim)
+        .filter(|value| !crate::is_blank(Some(value)))
+        .map(str::to_owned)
+        .ok_or_else(|| {
+            format!(
+                "deploy application is not configured: set {source} to the deploy application id \
+                 of this installation; an installation is one-to-one with a deploy application and \
+                 must not be bootstrapped with the IAM runtime app id"
+            )
+        })
+}
+
+/// Returns the installation's bound deploy application anchor, if it has one.
+fn bound_deploy_application_id(tenant_application: &TenantApplication) -> Option<&str> {
+    tenant_application
+        .deploy_application_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !crate::is_blank(Some(value)))
+}
+
+/// Resolves the `app_id`/`aud` subject of a deployment access token.
+///
+/// The subject is the installation's deploy application (migration 0040), not
+/// the IAM tenant application's runtime `app_id`: the credential tells a host
+/// which deployment it is serving. An installation that was never linked has no
+/// deploy application to name, so this fails closed instead of signing the IAM
+/// runtime id into the token — there is deliberately no fallback and no
+/// dual-value issuance.
+///
+/// # Errors
+///
+/// Returns an error whose message states that the installation is not bound to a
+/// deploy application when `deploy_application_id` is absent or blank.
+pub fn resolve_access_token_app_id(
+    tenant_application: &TenantApplication,
+) -> Result<String, String> {
+    bound_deploy_application_id(tenant_application)
+        .map(str::to_owned)
+        .ok_or_else(|| {
+            format!(
+                "installation is not bound to a deploy application (安装未绑定部署应用): \
+                 tenant application {} (appId {}) has no deployApplicationId in \
+                 iam_tenant_application; provision the installation with deployApplicationId \
+                 before issuing an access token",
+                tenant_application.id, tenant_application.app_id
+            )
+        })
+}
+
 pub async fn ensure_platform_tenant_application(
     pg: &PgPool,
     tenant_id: &str,
 ) -> Result<String, String> {
+    // Resolve the anchor before any mutation: a deployment without a configured
+    // deploy application must not create an installation at all.
+    let deploy_application_id = configured_deploy_application_id()?;
+    ensure_platform_tenant_application_with_deploy_application(
+        pg,
+        tenant_id,
+        deploy_application_id.as_str(),
+    )
+    .await
+}
+
+/// Ensures a tenant's platform installation is bound to an explicit anchor.
+///
+/// `ensure_platform_tenant_application` takes the anchor from
+/// [`DEPLOY_APPLICATION_ID_ENV`]; callers that already hold the installation's
+/// deploy application (a test fixture, a tenant provisioned by the deploy module)
+/// pass it here so a process-wide default never has to stand in for a per-tenant
+/// anchor.
+pub async fn ensure_platform_tenant_application_with_deploy_application(
+    pg: &PgPool,
+    tenant_id: &str,
+    deploy_application_id: &str,
+) -> Result<String, String> {
+    let deploy_application_id = deploy_application_id.trim().to_owned();
+    if crate::is_blank(Some(deploy_application_id.as_str())) {
+        return Err(format!(
+            "deploy application is not configured for the platform installation of tenant {tenant_id}: \
+             an installation is one-to-one with a deploy application and must not be bootstrapped with \
+             the IAM runtime app id"
+        ));
+    }
     let runtime_app_id = platform_runtime_app_id_for_tenant(tenant_id);
     let now = chrono::Utc::now();
 
@@ -186,6 +342,12 @@ pub async fn ensure_platform_tenant_application(
 
     let tenant_application_id =
         tenant_application_row_id(tenant_id, "0", PLATFORM_APPLICATION_TEMPLATE_ID);
+    ensure_deploy_application_unclaimed(
+        pg,
+        &deploy_application_id,
+        tenant_application_id.as_str(),
+    )
+    .await?;
     sqlx::query("DELETE FROM iam_tenant_application WHERE app_id = $1")
         .bind(&runtime_app_id)
         .execute(pg)
@@ -212,11 +374,12 @@ pub async fn ensure_platform_tenant_application(
         "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, template_id, \
          template_version, instance_key, display_name, environment, application_type, status, \
          primary_domain, domain_config_json, access_permissions_json, runtime_config_json, \
-         provisioned_at, activated_at, created_at, updated_at) \
+         provisioned_at, activated_at, created_at, updated_at, deploy_application_id) \
          VALUES ($1, $2, $3, '0', $4, '1.0.0', 'default', 'SDKWork Platform', 'prod', 'pc', 'enabled', $5, \
-         '{}'::jsonb, '[\"iam:self\"]'::jsonb, '{}'::jsonb, $6, $6, $6, $6) \
+         '{}'::jsonb, '[\"iam:self\"]'::jsonb, '{}'::jsonb, $6, $6, $6, $6, $7) \
          ON CONFLICT (id) DO UPDATE SET app_id = EXCLUDED.app_id, status = 'enabled', primary_domain = EXCLUDED.primary_domain, \
-         access_permissions_json = EXCLUDED.access_permissions_json, activated_at = EXCLUDED.activated_at, updated_at = EXCLUDED.updated_at",
+         access_permissions_json = EXCLUDED.access_permissions_json, deploy_application_id = EXCLUDED.deploy_application_id, \
+         activated_at = EXCLUDED.activated_at, updated_at = EXCLUDED.updated_at",
     )
     .bind(&tenant_application_id)
     .bind(&runtime_app_id)
@@ -224,6 +387,7 @@ pub async fn ensure_platform_tenant_application(
     .bind(PLATFORM_APPLICATION_TEMPLATE_ID)
     .bind(&primary_domain)
     .bind(now)
+    .bind(&deploy_application_id)
     .execute(pg)
     .await
     .map_err(|error| format!("ensure platform tenant application failed: {error}"))?;
@@ -231,6 +395,65 @@ pub async fn ensure_platform_tenant_application(
     reconcile_postgres_tenant_application_org_template_rows(pg).await?;
 
     Ok(runtime_app_id)
+}
+
+/// Resolves the deploy application id of a tenant's platform installation.
+///
+/// The platform installation is this deployment's own installation, so it is
+/// bootstrapped (or reconciled) from [`DEPLOY_APPLICATION_ID_ENV`] and then read
+/// back: callers must not synthesize an IAM runtime app id in its place.
+pub async fn platform_deploy_application_id_for_tenant(
+    pg: &PgPool,
+    tenant_id: &str,
+) -> Result<String, String> {
+    ensure_platform_tenant_application(pg, tenant_id).await?;
+    let tenant_application_id =
+        tenant_application_row_id(tenant_id, "0", PLATFORM_APPLICATION_TEMPLATE_ID);
+    let tenant_application = resolve_tenant_application(
+        pg,
+        tenant_id,
+        Some(tenant_application_id.as_str()),
+        None,
+        None,
+    )
+    .await?
+    .ok_or_else(|| {
+        format!("platform installation for tenant {tenant_id} was not found after bootstrap")
+    })?;
+    resolve_access_token_app_id(&tenant_application)
+}
+
+/// Rejects a deploy application that is already bound to another installation.
+///
+/// The partial unique index `uk_iam_tenant_application_deploy` enforces the
+/// one-to-one relation; checking first turns a constraint violation into an
+/// actionable error naming the conflicting installation.
+async fn ensure_deploy_application_unclaimed(
+    pg: &PgPool,
+    deploy_application_id: &str,
+    tenant_application_id: &str,
+) -> Result<(), String> {
+    let row = sqlx::query(
+        "SELECT id, tenant_id FROM iam_tenant_application \
+         WHERE deploy_application_id = $1 AND id <> $2 \
+         LIMIT 1",
+    )
+    .bind(deploy_application_id)
+    .bind(tenant_application_id)
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| format!("load deploy application binding failed: {error}"))?;
+
+    let Some(row) = row else {
+        return Ok(());
+    };
+    let conflicting_id: String = row.get(0);
+    let conflicting_tenant: String = row.get(1);
+    Err(format!(
+        "deploy application {deploy_application_id} is already bound to installation \
+         {conflicting_id} of tenant {conflicting_tenant}; an installation is one-to-one with a \
+         deploy application"
+    ))
 }
 
 pub fn parse_application_register_command(
@@ -499,6 +722,40 @@ fn map_template_app_type_to_application_type(template_app_type: &str) -> String 
     .to_owned()
 }
 
+/// Chooses the installation row a provisioning command targets.
+///
+/// Order: the row already bound to the command's deploy application wins, then
+/// the (tenant, organization, template) row, then the instance-key row. A
+/// fallback row that already names a *different* deploy application is a
+/// conflict — silently re-pointing its link would break the one-to-one relation
+/// `uk_iam_tenant_application_deploy` exists to enforce.
+fn select_provision_target(
+    deploy_match: Option<TenantApplication>,
+    organization_template_match: Option<TenantApplication>,
+    instance_key_match: Option<TenantApplication>,
+    requested_deploy_application_id: Option<&str>,
+) -> Result<Option<TenantApplication>, String> {
+    if let Some(existing) = deploy_match {
+        return Ok(Some(existing));
+    }
+    let Some(existing) = organization_template_match.or(instance_key_match) else {
+        return Ok(None);
+    };
+    if let Some(requested) = requested_deploy_application_id {
+        if let Some(bound) = bound_deploy_application_id(&existing) {
+            if bound != requested {
+                return Err(format!(
+                    "tenant application {} is already bound to deploy application {bound}; \
+                     deploy application {requested} needs its own installation and must not \
+                     overwrite the existing deploy application link",
+                    existing.id
+                ));
+            }
+        }
+    }
+    Ok(Some(existing))
+}
+
 pub async fn provision_tenant_application(
     pg: &PgPool,
     command: &TenantApplicationProvisionCommand,
@@ -523,17 +780,50 @@ pub async fn provision_tenant_application(
     };
 
     let now = chrono::Utc::now();
-    let existing = find_tenant_application_by_organization_template(
-        pg,
-        &command.tenant_id,
-        &command.organization_id,
-        &template.id,
-    )
-    .await?
-    .or(
-        find_tenant_application_by_instance_key(pg, &command.tenant_id, &command.instance_key)
-            .await?,
-    );
+    let requested_deploy_application_id = command
+        .deploy_application_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !crate::is_blank(Some(value)));
+    // Deploy-application-first dedupe: the anchor is the installation identity
+    // (`APPLICATION_IDENTITY_SPEC.md` §3), so a re-provision of the same anchor
+    // must reuse its row even when another deployment of the same template
+    // exists. Falling back to (tenant, org, template) / instance_key only after
+    // that miss keeps the old idempotency for anchorless registrations, and the
+    // selected row must not already name a *different* anchor.
+    let deploy_match = match requested_deploy_application_id {
+        Some(deploy_application_id) => {
+            resolve_tenant_application_by_deploy_application_id(
+                pg,
+                &command.tenant_id,
+                deploy_application_id,
+            )
+            .await?
+        }
+        None => None,
+    };
+    let organization_template_match = if deploy_match.is_some() {
+        None
+    } else {
+        find_tenant_application_by_organization_template(
+            pg,
+            &command.tenant_id,
+            &command.organization_id,
+            &template.id,
+        )
+        .await?
+    };
+    let instance_key_match = if deploy_match.is_some() || organization_template_match.is_some() {
+        None
+    } else {
+        find_tenant_application_by_instance_key(pg, &command.tenant_id, &command.instance_key).await?
+    };
+    let existing = select_provision_target(
+        deploy_match,
+        organization_template_match,
+        instance_key_match,
+        requested_deploy_application_id,
+    )?;
     let tenant_application_id = existing
         .as_ref()
         .map(|app| app.id.clone())
@@ -761,6 +1051,15 @@ pub struct EnsureTenantApplicationCommand {
     pub environment: String,
     pub primary_domain: String,
     pub runtime_app_id: String,
+    /// Deploy application anchor of this installation (migration 0040).
+    ///
+    /// Required for the installation's own runtime identity: embedded bootstrap
+    /// takes it from the application manifest, and an installation without an
+    /// anchor must not be created. An explicit additional runtime binding is a
+    /// surface of the same deployment (PC/H5/mobile of one product) and carries
+    /// `None`, because `uk_iam_tenant_application_deploy` makes the anchor
+    /// one-to-one and a surface must not compete for it.
+    pub deploy_application_id: Option<String>,
     /// `oauth.relyingParty` declared by the application manifest. Applied only
     /// when the auto-registration policy allows it for this lifecycle.
     pub oauth_relying_party: Option<Value>,
@@ -1108,6 +1407,15 @@ async fn upsert_tenant_application_row(
     .await?;
     let now = chrono::Utc::now();
     let application_type = map_template_app_type_to_application_type(&command.app_type);
+    if let Some(deploy_application_id) = command
+        .deploy_application_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        ensure_deploy_application_unclaimed(pg, deploy_application_id, tenant_application_id.as_str())
+            .await?;
+    }
 
     // Manifest-driven OAuth registration lands here. The patch is merged over
     // whatever an admin already configured so a restart never drops an edited
@@ -1132,8 +1440,8 @@ async fn upsert_tenant_application_row(
         "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, template_id, \
          template_version, instance_key, display_name, environment, application_type, status, \
          primary_domain, domain_config_json, access_permissions_json, runtime_config_json, \
-         provisioned_at, last_synced_at, created_at, updated_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending_config', $11, '{}'::jsonb, $12, $13, $14, $15, $16, $17) \
+         provisioned_at, last_synced_at, created_at, updated_at, deploy_application_id) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending_config', $11, '{}'::jsonb, $12, $13, $14, $15, $16, $17, $18) \
          ON CONFLICT (id) DO UPDATE SET \
            app_id = EXCLUDED.app_id, \
            tenant_id = EXCLUDED.tenant_id, \
@@ -1147,6 +1455,7 @@ async fn upsert_tenant_application_row(
            primary_domain = EXCLUDED.primary_domain, \
            access_permissions_json = EXCLUDED.access_permissions_json, \
            runtime_config_json = EXCLUDED.runtime_config_json, \
+           deploy_application_id = COALESCE(EXCLUDED.deploy_application_id, iam_tenant_application.deploy_application_id), \
            last_synced_at = EXCLUDED.last_synced_at, \
            updated_at = EXCLUDED.updated_at",
     )
@@ -1167,6 +1476,13 @@ async fn upsert_tenant_application_row(
     .bind(now)
     .bind(now)
     .bind(now)
+    .bind(
+        command
+            .deploy_application_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty()),
+    )
     .execute(pg)
     .await
     .map_err(|error| format!("upsert tenant application failed: {error}"))?;
@@ -1219,6 +1535,17 @@ pub async fn ensure_tenant_application_runtime(
     }
     if crate::is_blank(Some(command.runtime_app_id.as_str())) {
         return Err("runtime appId is required".to_string());
+    }
+    if command
+        .deploy_application_id
+        .as_deref()
+        .map(str::trim)
+        .is_some_and(str::is_empty)
+    {
+        return Err(
+            "deployApplicationId must not be blank: an installation is one-to-one with a deploy application"
+                .to_string(),
+        );
     }
 
     let template_id = tenant_application_template_id(&command.app_key);
@@ -1343,7 +1670,7 @@ pub async fn resolve_tenant_application(
     let row = if let Some(id) = tenant_application_id.filter(|value| !crate::is_blank(Some(value))) {
         sqlx::query(
             "SELECT id, app_id, tenant_id, organization_id, template_id, template_version, \
-                    instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type \
+                    instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
              FROM iam_tenant_application \
              WHERE tenant_id = $1 AND id = $2 \
              LIMIT 1",
@@ -1355,7 +1682,7 @@ pub async fn resolve_tenant_application(
     } else if let Some(app_id) = runtime_app_id.filter(|value| !crate::is_blank(Some(value))) {
         sqlx::query(
             "SELECT id, app_id, tenant_id, organization_id, template_id, template_version, \
-                    instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type \
+                    instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
              FROM iam_tenant_application \
              WHERE tenant_id = $1 AND app_id = $2 \
              LIMIT 1",
@@ -1367,7 +1694,7 @@ pub async fn resolve_tenant_application(
     } else if let Some(key) = instance_key.filter(|value| !crate::is_blank(Some(value))) {
         sqlx::query(
             "SELECT id, app_id, tenant_id, organization_id, template_id, template_version, \
-                    instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type \
+                    instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
              FROM iam_tenant_application \
              WHERE tenant_id = $1 AND instance_key = $2 \
              LIMIT 1",
@@ -1380,6 +1707,37 @@ pub async fn resolve_tenant_application(
         return Ok(None);
     }
     .map_err(|error| format!("load tenant application failed: {error}"))?;
+
+    Ok(row.map(map_tenant_application_row))
+}
+
+/// Loads the installation that serves one deploy application.
+///
+/// This is the verifier side of [`resolve_access_token_app_id`]: an application
+/// access token names its installation by deploy application id, so a credential
+/// that still carries the IAM runtime `app_id` resolves to nothing and is
+/// rejected instead of silently falling back to the registration-plane lookup.
+pub async fn resolve_tenant_application_by_deploy_application_id(
+    pg: &PgPool,
+    tenant_id: &str,
+    deploy_application_id: &str,
+) -> Result<Option<TenantApplication>, String> {
+    if crate::is_blank(Some(deploy_application_id)) {
+        return Ok(None);
+    }
+
+    let row = sqlx::query(
+        "SELECT id, app_id, tenant_id, organization_id, template_id, template_version, \
+                instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
+         FROM iam_tenant_application \
+         WHERE tenant_id = $1 AND deploy_application_id = $2 \
+         LIMIT 1",
+    )
+    .bind(tenant_id)
+    .bind(deploy_application_id.trim())
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| format!("load tenant application by deploy application failed: {error}"))?;
 
     Ok(row.map(map_tenant_application_row))
 }
@@ -1439,6 +1797,7 @@ pub fn tenant_application_to_json(app: &TenantApplication) -> Value {
         "status": app.status,
         "primaryDomain": app.primary_domain,
         "accessPermissions": app.access_permissions,
+        "deployApplicationId": app.deploy_application_id,
         "oauthRelyingParty": crate::oauth_relying_party_registration::oauth_relying_party_summary(
             &app.runtime_config
         ),
@@ -1531,7 +1890,7 @@ async fn find_tenant_application_by_runtime_app_id(
 ) -> Result<Option<TenantApplication>, String> {
     let row = sqlx::query(
         "SELECT id, app_id, tenant_id, organization_id, template_id, template_version, \
-                instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type \
+                instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
          FROM iam_tenant_application \
          WHERE tenant_id = $1 AND app_id = $2 \
          ORDER BY updated_at DESC NULLS LAST, id ASC \
@@ -1553,7 +1912,7 @@ async fn find_tenant_application_by_organization_template(
 ) -> Result<Option<TenantApplication>, String> {
     let row = sqlx::query(
         "SELECT id, app_id, tenant_id, organization_id, template_id, template_version, \
-                instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type \
+                instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
          FROM iam_tenant_application \
          WHERE tenant_id = $1 AND organization_id = $2 AND template_id = $3 \
          ORDER BY \
@@ -1834,6 +2193,7 @@ fn map_tenant_application_row(row: sqlx::postgres::PgRow) -> TenantApplication {
         access_permissions: json_string_vec_from_row(&row, 11),
         runtime_config: json_value_from_row(&row, 12),
         application_type: row.get(13),
+        deploy_application_id: row.get(14),
     }
 }
 
@@ -2117,6 +2477,169 @@ fn merge_relying_party_config(existing: &Value, patch: &Value) -> Value {
 mod tests {
     use super::*;
 
+    fn provision_target_fixture(
+        id: &str,
+        app_id: &str,
+        deploy_application_id: Option<&str>,
+    ) -> TenantApplication {
+        TenantApplication {
+            id: id.to_owned(),
+            app_id: app_id.to_owned(),
+            tenant_id: "100001".to_owned(),
+            organization_id: "0".to_owned(),
+            template_id: "tmpl_sdkwork_cloudrouter".to_owned(),
+            template_version: "1.0.0".to_owned(),
+            instance_key: "sdkwork_cloudrouter_prod".to_owned(),
+            display_name: "SDKWork CloudRouter".to_owned(),
+            environment: "production".to_owned(),
+            application_type: "pc".to_owned(),
+            status: "enabled".to_owned(),
+            primary_domain: Some("cloudrouter.example.com".to_owned()),
+            access_permissions: vec!["iam.self".to_owned()],
+            runtime_config: json!({}),
+            deploy_application_id: deploy_application_id.map(str::to_owned),
+        }
+    }
+
+    /// A re-provision of the same deploy application is idempotent: the row
+    /// already bound to the anchor wins over the same-template fallback, so the
+    /// command updates that installation instead of creating a second one.
+    #[test]
+    fn provision_reuses_the_installation_bound_to_the_same_deploy_application() {
+        let bound = provision_target_fixture("tapp-bound", "app-a", Some("deploy-a"));
+        let same_template_sibling =
+            provision_target_fixture("tapp-sibling", "app-b", Some("deploy-b"));
+
+        let selected = select_provision_target(
+            Some(bound.clone()),
+            Some(same_template_sibling),
+            None,
+            Some("deploy-a"),
+        )
+        .expect("same anchor must reuse its installation");
+        assert_eq!(selected.map(|app| app.id), Some("tapp-bound".to_owned()));
+
+        // Idempotent when the fallback lookups are the same row as well.
+        let selected = select_provision_target(None, Some(bound.clone()), None, Some("deploy-a"))
+            .expect("same anchor on the template row is the same installation");
+        assert_eq!(selected.map(|app| app.id), Some(bound.id));
+    }
+
+    /// A second deploy application that reuses the same (tenant, organization,
+    /// template) row must be rejected instead of silently overwriting the
+    /// existing link.
+    #[test]
+    fn provision_rejects_a_second_deploy_application_on_the_same_template_row() {
+        let existing = provision_target_fixture("tapp-bound", "sdkwork-cloudrouter", Some("deploy-a"));
+
+        let error = select_provision_target(None, Some(existing.clone()), None, Some("deploy-b"))
+            .expect_err("a different anchor must conflict");
+        assert!(error.contains("deploy-a"), "error must name the bound anchor: {error}");
+        assert!(
+            error.contains("deploy-b"),
+            "error must name the requested anchor: {error}"
+        );
+        assert!(error.contains("tapp-bound"), "error must name the row: {error}");
+
+        // The same conflict is caught through the instance-key fallback.
+        let error = select_provision_target(None, None, Some(existing), Some("deploy-b"))
+            .expect_err("instance-key reuse must conflict as well");
+        assert!(error.contains("deploy-a") && error.contains("deploy-b"));
+    }
+
+    /// An anchorless registration keeps the previous dedupe behavior, and an
+    /// unbound fallback row may be linked by the provisioning command.
+    #[test]
+    fn provision_keeps_the_legacy_dedupe_without_an_anchor() {
+        let bound = provision_target_fixture("tapp-legacy", "app-a", Some("deploy-a"));
+        let selected = select_provision_target(None, Some(bound.clone()), None, None)
+            .expect("anchorless provisioning keeps the template dedupe");
+        assert_eq!(selected.map(|app| app.id), Some(bound.id));
+
+        let unbound = provision_target_fixture("tapp-unbound", "app-b", None);
+        let selected = select_provision_target(None, Some(unbound), None, Some("deploy-b"))
+            .expect("an unbound installation may be linked");
+        assert_eq!(selected.map(|app| app.id), Some("tapp-unbound".to_owned()));
+    }
+
+    /// The gate accepts a deploy-scoped credential whose anchor is bound to an
+    /// enabled installation of the tenant.
+    #[test]
+    fn gate_accepts_a_deploy_application_bound_to_an_enabled_installation() {
+        ensure_enabled_installation(
+            "100001",
+            "deploy-a",
+            Some(("enabled".to_owned(), Some("active".to_owned()))),
+        )
+        .expect("a bound, enabled installation must pass the gate");
+    }
+
+    /// An installation that was never linked to a deploy application fails
+    /// closed at the gate instead of matching an IAM runtime app id.
+    #[test]
+    fn gate_rejects_an_installation_without_a_deploy_application() {
+        let error = ensure_enabled_installation("100001", "deploy-a", None)
+            .expect_err("an unbound installation must be rejected");
+        assert!(
+            error.contains("not bound to an enabled installation"),
+            "unexpected gate error: {error}"
+        );
+        assert!(error.contains("deployApplicationId"), "unexpected gate error: {error}");
+    }
+
+    /// A disabled installation or an inactive/absent tenant fails closed too.
+    #[test]
+    fn gate_rejects_a_disabled_installation_or_inactive_tenant() {
+        assert!(ensure_enabled_installation(
+            "100001",
+            "deploy-a",
+            Some(("disabled".to_owned(), Some("active".to_owned()))),
+        )
+        .is_err());
+        assert!(ensure_enabled_installation(
+            "100001",
+            "deploy-a",
+            Some(("enabled".to_owned(), Some("suspended".to_owned()))),
+        )
+        .is_err());
+        assert!(
+            ensure_enabled_installation("100001", "deploy-a", Some(("enabled".to_owned(), None)))
+                .is_err()
+        );
+        assert!(ensure_enabled_installation("100001", "   ", Some(("enabled".to_owned(), Some("active".to_owned())))).is_err());
+    }
+
+    /// The self-bootstrapped platform installation takes its anchor from
+    /// configuration and can issue a deployment credential afterwards.
+    #[test]
+    fn platform_installation_anchor_comes_from_configuration_and_is_issuable() {
+        let configured =
+            deploy_application_id_from_configured_value(Some(" deploy-platform "), DEPLOY_APPLICATION_ID_ENV)
+                .expect("a configured anchor must be accepted");
+        assert_eq!(configured, "deploy-platform");
+
+        let platform_installation = provision_target_fixture(
+            "tapp_100001_0_sdkwork_platform",
+            "app_100001",
+            Some(configured.as_str()),
+        );
+        assert_eq!(
+            resolve_access_token_app_id(&platform_installation).expect("linked platform install"),
+            "deploy-platform"
+        );
+
+        for missing in [None, Some(""), Some("   ")] {
+            let error =
+                deploy_application_id_from_configured_value(missing, DEPLOY_APPLICATION_ID_ENV)
+                    .expect_err("unconfigured anchor must fail closed");
+            assert!(error.contains(DEPLOY_APPLICATION_ID_ENV), "unexpected error: {error}");
+            assert!(
+                error.contains("must not be bootstrapped with the IAM runtime app id"),
+                "unexpected error: {error}"
+            );
+        }
+    }
+
     #[test]
     fn parse_application_register_command_requires_default_permissions() {
         let body = json!({
@@ -2338,6 +2861,7 @@ mod tests {
             environment: "production".to_owned(),
             primary_domain: "localhost".to_owned(),
             runtime_app_id: "sdkwork-birdcoder".to_owned(),
+            deploy_application_id: Some("deploy_birdcoder".to_owned()),
             oauth_relying_party: Some(relying_party.clone()),
         };
 

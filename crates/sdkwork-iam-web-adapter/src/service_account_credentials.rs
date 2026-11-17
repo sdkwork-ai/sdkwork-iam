@@ -12,7 +12,9 @@ use crate::access_token_issue::{
     environment_to_string, generate_opaque_token, hash_token, login_scope_to_string,
     sign_local_session_token_with_ttl,
 };
-use crate::application_registry::{intersect_permission_scopes, resolve_tenant_application};
+use crate::application_registry::{
+    intersect_permission_scopes, resolve_access_token_app_id, resolve_tenant_application,
+};
 
 pub const IAM_SERVICE_ACCOUNT_CREDENTIALS_CREATE_PERMISSION: &str =
     "iam.service_account_credentials.create";
@@ -159,6 +161,10 @@ pub async fn create_service_account_credential(
     let client_secret = generate_opaque_token("secret");
     let secret_hash = hash_secret(&client_secret)?;
     let now = chrono::Utc::now();
+    // The credential is filed under the installation's deploy application: the
+    // exchange signs it into `app_id`/`aud`, so storing the IAM runtime app id
+    // here would mint a token the anchor gate rejects.
+    let deploy_application_id = resolve_access_token_app_id(&tenant_application)?;
 
     sqlx::query(
         "INSERT INTO iam_service_account_credential \
@@ -171,7 +177,7 @@ pub async fn create_service_account_credential(
     .bind(&organization_id)
     .bind(service_account_id)
     .bind(&tenant_application.id)
-    .bind(&tenant_application.app_id)
+    .bind(&deploy_application_id)
     .bind(&client_id)
     .bind(&secret_hash)
     .bind(request.expires_at)
@@ -189,7 +195,7 @@ pub async fn create_service_account_credential(
         organization_id,
         service_account_id: service_account_id.to_string(),
         tenant_application_id: tenant_application.id,
-        app_id: tenant_application.app_id,
+        app_id: deploy_application_id,
         expires_at: request.expires_at.map(|value| value.to_rfc3339()),
     })
 }
@@ -281,8 +287,9 @@ pub async fn exchange_service_account_credential(
     )
     .await?
     .ok_or_else(|| "bound tenant application was not found".to_string())?;
+    let bound_deploy_application_id = resolve_access_token_app_id(&tenant_application)?;
     if tenant_application.status != "enabled"
-        || tenant_application.app_id != credential.app_id
+        || bound_deploy_application_id != credential.app_id
         || tenant_application.organization_id
             != credential.organization_id.as_deref().unwrap_or("0")
     {

@@ -45,6 +45,10 @@ pub struct RelyingPartyConfig {
 pub struct ResolvedRelyingParty {
     pub tenant_id: String,
     pub app_id: String,
+    /// Installations' deploy application anchor (`APPLICATION_IDENTITY_SPEC.md`
+    /// §2). A session issued from this client is bound to it; `None` means the
+    /// registration's installation is not linked and no session may be issued.
+    pub deploy_application_id: Option<String>,
     /// OAuth client id this registration answers to: the declared
     /// `clientId`, or `app_id` when none is declared.
     pub client_id: String,
@@ -131,7 +135,7 @@ pub async fn resolve_relying_party_client(
     // accepting either spelling for one registration.
     let rows = if let Some(tenant_id) = tenant_hint.filter(|value| !value.is_empty()) {
         sqlx::query(
-            "SELECT tenant_id, app_id, runtime_config_json \
+            "SELECT tenant_id, app_id, runtime_config_json, deploy_application_id \
              FROM iam_tenant_application \
              WHERE tenant_id = $2 AND status = 'enabled' \
                AND ( \
@@ -149,7 +153,7 @@ pub async fn resolve_relying_party_client(
         .await
     } else {
         sqlx::query(
-            "SELECT tenant_id, app_id, runtime_config_json \
+            "SELECT tenant_id, app_id, runtime_config_json, deploy_application_id \
              FROM iam_tenant_application \
              WHERE status = 'enabled' \
                AND ( \
@@ -181,6 +185,10 @@ pub async fn resolve_relying_party_client(
     let tenant_id: String = row.get(0);
     let app_id: String = row.get(1);
     let runtime_config = runtime_config_json_from_row(row, 2);
+    let deploy_application_id: Option<String> = row.get(3);
+    let deploy_application_id = deploy_application_id
+        .map(|value| value.trim().to_owned())
+        .filter(|value| !value.is_empty());
     let config = parse_relying_party_config(&runtime_config);
     if !config.enabled {
         return Err("OAuth relying party is disabled for this application".to_string());
@@ -197,6 +205,7 @@ pub async fn resolve_relying_party_client(
     Ok(ResolvedRelyingParty {
         tenant_id,
         app_id,
+        deploy_application_id,
         client_id: resolved_client_id,
         config,
     })
@@ -516,6 +525,7 @@ pub struct RedeemedAuthorizationContext {
     pub tenant_id: String,
     pub organization_id: String,
     pub user_id: String,
+    /// Deploy application anchor the issued session is bound to.
     pub app_id: String,
     pub scopes: Vec<String>,
 }
@@ -541,6 +551,15 @@ pub async fn redeem_authorization_code_session_context(
             "OAuth authorization code was not issued for a desktop redirect surface".to_string(),
         );
     }
+    // The session this code becomes is bound to the installation's deploy
+    // application anchor; a registration whose installation is not linked cannot
+    // name one, so the redemption fails closed instead of issuing an IAM app id.
+    let deploy_application_id = client.deploy_application_id.clone().ok_or_else(|| {
+        "installation is not bound to a deploy application (安装未绑定部署应用): the OAuth client's \
+         installation has no deployApplicationId; provision it with deployApplicationId before \
+         issuing a session"
+            .to_string()
+    })?;
     let approved = load_approved_authorization_code(
         pg,
         client,
@@ -582,7 +601,7 @@ pub async fn redeem_authorization_code_session_context(
         tenant_id: approved.tenant_id,
         organization_id: approved.organization_id,
         user_id: approved.user_id,
-        app_id: client.app_id.clone(),
+        app_id: deploy_application_id,
         scopes: parse_scope_json(&approved.scopes_json),
     })
 }
@@ -1471,6 +1490,7 @@ mod tests {
         let client = ResolvedRelyingParty {
             tenant_id: "100001".to_string(),
             app_id: "app_forum".to_string(),
+            deploy_application_id: Some("deploy_forum".to_string()),
             client_id: "app_forum".to_string(),
             config: RelyingPartyConfig {
                 enabled: true,
@@ -1567,6 +1587,7 @@ mod tests {
         let client = ResolvedRelyingParty {
             tenant_id: "100001".to_string(),
             app_id: "app_forum".to_string(),
+            deploy_application_id: Some("deploy_forum".to_string()),
             client_id: "app_forum".to_string(),
             config: RelyingPartyConfig {
                 enabled: true,
@@ -1585,6 +1606,7 @@ mod tests {
         ResolvedRelyingParty {
             tenant_id: "100001".to_string(),
             app_id: "app_forum".to_string(),
+            deploy_application_id: Some("deploy_forum".to_string()),
             client_id: "app_forum".to_string(),
             config: RelyingPartyConfig {
                 enabled: true,
@@ -1617,6 +1639,7 @@ mod tests {
         ResolvedRelyingParty {
             tenant_id: "100001".to_string(),
             app_id: "sdkwork-iam".to_string(),
+            deploy_application_id: Some("deploy_desktop".to_string()),
             client_id: "sdkwork-iam".to_string(),
             config: RelyingPartyConfig {
                 enabled: true,

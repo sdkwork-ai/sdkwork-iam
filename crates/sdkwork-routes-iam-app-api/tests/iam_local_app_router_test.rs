@@ -2,7 +2,7 @@ use axum::body::Body;
 use axum::http::{Method, Request, StatusCode};
 use http_body_util::BodyExt;
 use sdkwork_iam_web_adapter::{
-    ensure_platform_tenant_application, iam_wire_result_code, platform_runtime_app_id_for_tenant,
+    ensure_platform_tenant_application_with_deploy_application, iam_wire_result_code,
 };
 use sdkwork_web_core::bootstrap_access_token_jwt;
 use serde_json::{json, Value};
@@ -188,7 +188,7 @@ async fn ensure_default_credential_entry_tenant() {
     sdkwork_iam_bootstrap::upsert_postgres_default_subject(&pg)
         .await
         .expect("default credential entry tenant subject");
-    ensure_platform_tenant_application(&pg, "100001")
+    ensure_platform_tenant_application_with_deploy_application(&pg, "100001", test_deploy_application_id("100001").as_str())
         .await
         .expect("default credential entry tenant application");
 }
@@ -359,24 +359,33 @@ async fn request_open_registration_json(
     .await
 }
 
+/// Deploy application anchor of a PostgreSQL test tenant.
+///
+/// Access tokens name the installation by its anchor
+/// (`APPLICATION_IDENTITY_SPEC.md` §4), so a fixture token and the installation
+/// row it authenticates against must use the same value.
+fn test_deploy_application_id(tenant_id: &str) -> String {
+    format!("deploy_{tenant_id}")
+}
+
 fn test_bootstrap_access_token() -> String {
     bootstrap_access_token_jwt(
         CONFIGURED_TENANT_ID,
-        platform_runtime_app_id_for_tenant(CONFIGURED_TENANT_ID).as_str(),
+        test_deploy_application_id(CONFIGURED_TENANT_ID).as_str(),
     )
 }
 
 fn test_open_registration_bootstrap_access_token() -> String {
     bootstrap_access_token_jwt(
         "100001",
-        platform_runtime_app_id_for_tenant("100001").as_str(),
+        test_deploy_application_id("100001").as_str(),
     )
 }
 
 fn test_bootstrap_access_token_for_tenant(tenant_id: &str) -> String {
     bootstrap_access_token_jwt(
         tenant_id,
-        platform_runtime_app_id_for_tenant(tenant_id).as_str(),
+        test_deploy_application_id(tenant_id).as_str(),
     )
 }
 
@@ -937,7 +946,12 @@ async fn local_app_router_serves_password_login_with_app_context() {
     assert!(body.get("userInfo").is_none());
     assert!(body.get("shardingContext").is_none());
     assert!(body.get("token").is_none());
-    assert_eq!(body["context"]["appId"], "app_tenant_configured");
+    // The session is bound to the installation's deploy application anchor, not
+    // to the IAM runtime app id (`APPLICATION_IDENTITY_SPEC.md` §4).
+    assert_eq!(
+        body["context"]["appId"],
+        test_deploy_application_id(CONFIGURED_TENANT_ID)
+    );
     assert_eq!(body["context"]["tenantId"], CONFIGURED_TENANT_ID);
     assert_eq!(
         body["context"]["organizationId"],
@@ -2315,7 +2329,7 @@ async fn local_app_router_ephemeral_password_reset_survives_router_rebuild() {
         Some(
             bootstrap_access_token_jwt(
                 tenant_id.as_str(),
-                platform_runtime_app_id_for_tenant(&tenant_id).as_str(),
+                test_deploy_application_id(&tenant_id).as_str(),
             )
             .as_str(),
         ),
@@ -2767,7 +2781,7 @@ async fn local_app_router_resets_password_only_with_valid_reset_token_and_code()
         Some(
             bootstrap_access_token_jwt(
                 tenant_id.as_str(),
-                platform_runtime_app_id_for_tenant(&tenant_id).as_str(),
+                test_deploy_application_id(&tenant_id).as_str(),
             )
             .as_str(),
         ),
@@ -2792,7 +2806,7 @@ async fn local_app_router_resets_password_only_with_valid_reset_token_and_code()
         Some(
             bootstrap_access_token_jwt(
                 tenant_id.as_str(),
-                platform_runtime_app_id_for_tenant(&tenant_id).as_str(),
+                test_deploy_application_id(&tenant_id).as_str(),
             )
             .as_str(),
         ),
@@ -3717,7 +3731,7 @@ async fn prepare_open_registration_database() {
     sdkwork_iam_bootstrap::upsert_postgres_default_subject(&pg)
         .await
         .expect("default IAM subject should be available for open registration tests");
-    ensure_platform_tenant_application(&pg, DEFAULT_OPEN_REGISTRATION_TENANT_ID)
+    ensure_platform_tenant_application_with_deploy_application(&pg, DEFAULT_OPEN_REGISTRATION_TENANT_ID, test_deploy_application_id(DEFAULT_OPEN_REGISTRATION_TENANT_ID).as_str())
         .await
         .expect("platform tenant application should be available for open registration tests");
 }
@@ -4130,7 +4144,7 @@ async fn seed_login_account_for_tenant(
     use argon2::Argon2;
 
     let pg = postgres_pool_for_tests().await;
-    ensure_platform_tenant_application(&pg, tenant_id)
+    ensure_platform_tenant_application_with_deploy_application(&pg, tenant_id, test_deploy_application_id(tenant_id).as_str())
         .await
         .expect("platform tenant application should be available for login tests");
     let password_hash = Argon2::default()
@@ -4242,7 +4256,7 @@ async fn seed_cross_tenant_login_account(email: &str, password: &str) {
             .await
             .expect("provision cross-tenant login signing key");
 
-        ensure_platform_tenant_application(&pg, tenant_id)
+        ensure_platform_tenant_application_with_deploy_application(&pg, tenant_id, test_deploy_application_id(tenant_id).as_str())
             .await
             .expect("platform tenant application should be available for cross-tenant login tests");
 
@@ -4324,7 +4338,7 @@ async fn local_app_router_open_registration_defaults_to_canonical_tenant_with_mu
         sdkwork_iam_bootstrap::ensure_postgres_tenant_signing_key(&pg, tenant_id)
             .await
             .expect("provision open registration tenant signing key");
-        ensure_platform_tenant_application(&pg, tenant_id)
+        ensure_platform_tenant_application_with_deploy_application(&pg, tenant_id, test_deploy_application_id(tenant_id).as_str())
             .await
             .expect("provision open registration tenant application");
     }
@@ -4414,7 +4428,7 @@ async fn local_app_router_open_registration_defaults_to_canonical_tenant_with_mu
         Some(
             bootstrap_access_token_jwt(
                 SECONDARY_TENANT_ID,
-                platform_runtime_app_id_for_tenant(SECONDARY_TENANT_ID).as_str(),
+                test_deploy_application_id(SECONDARY_TENANT_ID).as_str(),
             )
             .as_str(),
         ),
@@ -4429,7 +4443,7 @@ async fn local_app_router_open_registration_defaults_to_canonical_tenant_with_mu
         None,
         bootstrap_access_token_jwt(
             SECONDARY_TENANT_ID,
-            platform_runtime_app_id_for_tenant(SECONDARY_TENANT_ID).as_str(),
+            test_deploy_application_id(SECONDARY_TENANT_ID).as_str(),
         )
         .as_str(),
     )
@@ -4487,7 +4501,7 @@ async fn local_app_router_rejects_cross_tenant_duplicate_account_without_bootstr
         Some(
             bootstrap_access_token_jwt(
                 SECONDARY_TENANT_ID,
-                platform_runtime_app_id_for_tenant(SECONDARY_TENANT_ID).as_str(),
+                test_deploy_application_id(SECONDARY_TENANT_ID).as_str(),
             )
             .as_str(),
         ),

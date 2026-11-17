@@ -108,10 +108,13 @@ impl ApiKeyLookupService for IamApiKeyLookupService {
 
         if crate::is_blank(Some(app_id.as_str())) {
             return Err(WebFrameworkError::invalid_credentials(
-                "IAM API key record is missing runtime appId",
+                "IAM API key record is missing its deploy application id",
             ));
         }
 
+        // The key is filed under the installation's deploy application anchor;
+        // an unbound installation (or a key still filed under an IAM runtime app
+        // id) fails closed here.
         validate_enabled_tenant_runtime_app(self.pool.as_ref(), &tenant_id, &app_id)
             .await
             .map_err(WebFrameworkError::invalid_credentials)?;

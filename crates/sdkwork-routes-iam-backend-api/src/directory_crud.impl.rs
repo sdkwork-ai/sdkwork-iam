@@ -2799,6 +2799,9 @@ async fn create_api_key(
             }
         }
     }
+    // `appId` is the installation's deploy application anchor: the key is stored
+    // and looked up under that identity, so an IAM runtime app id is rejected
+    // here instead of producing a key the anchor gate can never resolve.
     if let Err(error) = sdkwork_iam_web_adapter::validate_enabled_tenant_runtime_app(
         pg, &tenant_id, &app_id,
     )

@@ -23,9 +23,9 @@ use http_body_util::BodyExt;
 use sdkwork_iam_context_service::{AuthLevel, DeploymentMode, Environment, IamAppContext};
 use sdkwork_iam_web_adapter::{
     complete_authorization_state, create_pending_authorization_state,
-    default_account_binding_policy, ensure_platform_tenant_application,
+    default_account_binding_policy, ensure_platform_tenant_application_with_deploy_application,
     exchange_authorization_code, introspect_oauth_token, parse_relying_party_config,
-    platform_runtime_app_id_for_tenant, resolve_relying_party_client, revoke_oauth_token,
+    resolve_relying_party_client, revoke_oauth_token,
     validate_authorize_request, AuthorizeRequest,
 };
 use sdkwork_web_core::bootstrap_access_token_jwt;
@@ -37,8 +37,17 @@ use tower::ServiceExt;
 #[path = "unified_database_env.rs"]
 mod unified_database_env;
 
+/// Deploy application anchor of a PostgreSQL test tenant.
+///
+/// Access tokens name the installation by its anchor, so a fixture token and the
+/// installation row it authenticates against must use the same value.
+fn test_deploy_application_id(tenant_id: &str) -> String {
+    format!("deploy_{tenant_id}")
+}
+
 const DESKTOP_E2E_TENANT_ID: &str = sdkwork_iam_bootstrap::DEFAULT_IAM_TENANT_ID;
 const DESKTOP_E2E_CLIENT_APP_ID: &str = "app_desktop_e2e_partner";
+const DESKTOP_E2E_DEPLOY_APPLICATION_ID: &str = "deploy_desktop_e2e_partner";
 const DESKTOP_E2E_TEMPLATE_ID: &str = "tmpl_desktop_partner_e2e";
 const DESKTOP_E2E_USERNAME: &str = "desktop-e2e@sdkwork-iam.test";
 const DESKTOP_E2E_PASSWORD: &str = "DesktopE2e#2026";
@@ -189,7 +198,7 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
 
     // The personal-login session of the desktop user persists organization_id
     // "0"; the default tenant owns that sentinel organization row.
-    ensure_platform_tenant_application(pg, DESKTOP_E2E_TENANT_ID)
+    ensure_platform_tenant_application_with_deploy_application(pg, DESKTOP_E2E_TENANT_ID, test_deploy_application_id(DESKTOP_E2E_TENANT_ID).as_str())
         .await
         .expect("provision desktop e2e platform tenant application");
 
@@ -233,10 +242,11 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
         "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, template_id, \
          template_version, instance_key, display_name, environment, application_type, status, primary_domain, \
          domain_config_json, access_permissions_json, runtime_config_json, provisioned_at, activated_at, \
-         created_at, updated_at) \
+         created_at, updated_at, deploy_application_id) \
          VALUES ($1, $2, $3, '0', $4, '1.0.0', 'desktop-partner', 'Desktop Partner', 'prod', 'other', 'enabled', \
-         'desktop-e2e.sdkwork.test', '{}'::jsonb, '[\"iam:self\"]'::jsonb, $5::jsonb, $6, $6, $6, $6) \
+         'desktop-e2e.sdkwork.test', '{}'::jsonb, '[\"iam:self\"]'::jsonb, $5::jsonb, $6, $6, $6, $6, $7) \
          ON CONFLICT (id) DO UPDATE SET runtime_config_json = EXCLUDED.runtime_config_json, \
+         deploy_application_id = EXCLUDED.deploy_application_id, \
          status = 'enabled', updated_at = EXCLUDED.updated_at",
     )
     .bind(format!("tapp_{DESKTOP_E2E_TENANT_ID}_desktop_partner"))
@@ -245,6 +255,7 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
     .bind(DESKTOP_E2E_TEMPLATE_ID)
     .bind(runtime_config.to_string())
     .bind(&now)
+    .bind(DESKTOP_E2E_DEPLOY_APPLICATION_ID)
     .execute(pg)
     .await
     .expect("insert desktop e2e relying party tenant application");
@@ -255,7 +266,7 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
 async fn login_desktop_e2e_session(app: &Router) -> (Value, IamAppContext) {
     let access_token = bootstrap_access_token_jwt(
         DESKTOP_E2E_TENANT_ID,
-        platform_runtime_app_id_for_tenant(DESKTOP_E2E_TENANT_ID).as_str(),
+        test_deploy_application_id(DESKTOP_E2E_TENANT_ID).as_str(),
     );
     let response = app
         .clone()
@@ -850,7 +861,7 @@ async fn admin_provider_catalog_entries_appear_on_the_login_surface() {
     seed_desktop_e2e_fixtures(&pg).await;
 
     let tenant_id = DESKTOP_E2E_TENANT_ID;
-    let runtime_app_id = platform_runtime_app_id_for_tenant(tenant_id);
+    let runtime_app_id = test_deploy_application_id(tenant_id);
     let provider_code = "custom_e2e_provider";
     let catalog_id = "cat_custom_e2e_provider";
     let integration_id = "int_custom_e2e_provider";
@@ -1879,7 +1890,7 @@ async fn hosted_login_body_without_grant_type_creates_a_session() {
 
     let access_token = bootstrap_access_token_jwt(
         DESKTOP_E2E_TENANT_ID,
-        platform_runtime_app_id_for_tenant(DESKTOP_E2E_TENANT_ID).as_str(),
+        test_deploy_application_id(DESKTOP_E2E_TENANT_ID).as_str(),
     );
     let response = app
         .oneshot(

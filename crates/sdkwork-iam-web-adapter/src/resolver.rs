@@ -105,6 +105,12 @@ impl IamDatabaseWebRequestContextResolver {
         Ok(self)
     }
 
+    /// The audience allow-list is the host's own application identity. For a
+    /// deployment access credential that identity is the installation's deploy
+    /// application id (migration 0040), because the signed token's `app_id` and
+    /// `aud` are both the deploy application. A host that only allows its IAM
+    /// runtime app id therefore rejects a deployment credential instead of
+    /// accepting the retired IAM application identity.
     fn validate_production_principal(
         &self,
         principal: WebRequestPrincipal,
