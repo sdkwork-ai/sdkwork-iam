@@ -394,6 +394,12 @@ async fn issue_desktop_code(
 }
 
 /// Active desktop sessions of the e2e user as `(session id, device id)`.
+///
+/// A desktop session's `iam_session.app_id` is the installation's deploy
+/// application anchor, never the IAM runtime app id/OAuth client id:
+/// `redeem_authorization_code_session_context` returns
+/// `client.deploy_application_id` and `create_session_record_with_device`
+/// persists it, so the fixture must filter on the same anchor.
 async fn active_desktop_sessions(pg: &PgPool, user_id: &str) -> Vec<(String, Option<String>)> {
     sqlx::query_as(
         "SELECT id, device_id FROM iam_session \
@@ -402,7 +408,7 @@ async fn active_desktop_sessions(pg: &PgPool, user_id: &str) -> Vec<(String, Opt
     )
     .bind(DESKTOP_E2E_TENANT_ID)
     .bind(user_id)
-    .bind(DESKTOP_E2E_CLIENT_APP_ID)
+    .bind(DESKTOP_E2E_DEPLOY_APPLICATION_ID)
     .fetch_all(pg)
     .await
     .expect("list active desktop sessions")
@@ -1782,19 +1788,19 @@ async fn desktop_browser_login_redeems_authorization_code_for_dual_token_session
         serde_json::to_string(&browser_after_desktop_body).unwrap_or_default()
     );
 
-    let desktop_session_app_id: String = sqlx::query_scalar(
-        "SELECT s.app_id FROM iam_session s \
-         JOIN iam_user u ON u.id = s.user_id AND u.tenant_id = s.tenant_id \
-         WHERE u.email = $1 AND s.revoked_at IS NULL \
-         ORDER BY s.created_at DESC LIMIT 1",
-    )
-    .bind(DESKTOP_E2E_USERNAME)
-    .fetch_one(&pg)
-    .await
-    .expect("desktop session app id");
+    let desktop_session_app_id: String =
+        sqlx::query_scalar("SELECT app_id FROM iam_session WHERE id = $1 AND revoked_at IS NULL")
+            .bind(session["sessionId"].as_str().expect("desktop session id"))
+            .fetch_one(&pg)
+            .await
+            .expect("desktop session app id");
+    // `redeem_authorization_code_session_context` hands the installation's
+    // deploy application anchor to `create_session_record_with_device`, so the
+    // redeemed session names `deploy_desktop_e2e_partner`, not the OAuth client
+    // id (`APPLICATION_IDENTITY_SPEC.md` §4).
     assert_eq!(
-        desktop_session_app_id, DESKTOP_E2E_CLIENT_APP_ID,
-        "the redeemed session must be bound to the desktop relying party app"
+        desktop_session_app_id, DESKTOP_E2E_DEPLOY_APPLICATION_ID,
+        "the redeemed session must be bound to the desktop installation's deploy application anchor"
     );
 
     // 5. The redeemed session exists as a real IAM session row.

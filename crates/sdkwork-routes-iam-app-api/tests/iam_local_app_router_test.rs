@@ -865,13 +865,29 @@ async fn local_app_router_serves_oauth_device_authorization_creation() {
     let qr_content = body["data"]["qrContent"]["content"]
         .as_str()
         .expect("OAuth device authorization response must include web QR content");
-    assert_eq!(body["data"]["qrContent"]["mode"], "fallback_url");
-    assert_eq!(body["data"]["fallbackUrl"], qr_content);
+    // Two intentionally different entries exist:
+    // - `qrContent.content` is the URL the scanned phone opens: the H5 login
+    //   page `/auth/login?...&scan_source=qr`
+    //   (`build_oauth_device_authorization_h5_entry_url`), mode `url`.
+    // - `fallbackUrl` is the desktop/browser QR entry
+    //   `/auth/qr/<sessionKey>?...&scan_source=browser`
+    //   (`build_oauth_device_authorization_entry_url`).
+    assert_eq!(body["data"]["qrContent"]["mode"], "url");
+    let fallback_url = body["data"]["fallbackUrl"]
+        .as_str()
+        .expect("OAuth device authorization response must include fallbackUrl");
     assert!(
         qr_content.starts_with("http://") || qr_content.starts_with("https://"),
         "OAuth device authorization content must be a mobile-openable web URL: {qr_content}"
     );
-    assert!(qr_content.contains("/auth/qr/"));
+    assert!(
+        qr_content.contains("/auth/login?"),
+        "the scanned QR must open the H5 scan-login page: {qr_content}"
+    );
+    assert!(
+        fallback_url.contains("/auth/qr/"),
+        "the browser fallback must be the QR entry route: {fallback_url}"
+    );
     assert!(
         body["data"]["pollSecret"]
             .as_str()
@@ -880,6 +896,11 @@ async fn local_app_router_serves_oauth_device_authorization_creation() {
     );
     assert!(qr_content.contains(&format!("session_key={session_key}")));
     assert!(qr_content.contains("purpose=login"));
+    assert!(qr_content.contains("scan_source=qr"));
+    assert!(
+        fallback_url.contains(&format!("session_key={session_key}")),
+        "the browser fallback must carry the session key: {fallback_url}"
+    );
     assert!(
         !qr_content.contains("/app/v3/api/oauth/device_authorizations"),
         "OAuth device authorization content must not point at the status API: {qr_content}"
@@ -908,9 +929,25 @@ async fn local_app_router_builds_oauth_device_entry_from_request_origin() {
     let qr_content = body["data"]["qrContent"]["content"]
         .as_str()
         .expect("OAuth device authorization response must include web QR content");
+    // `qrContent.content` is the H5 scan-login entry the phone opens after
+    // scanning (`/auth/login?session_key=...&purpose=login&scan_source=qr`,
+    // `build_oauth_device_authorization_h5_entry_url`), not the browser QR entry
+    // `/auth/qr/<sessionKey>` — that one is `fallbackUrl`
+    // (`build_oauth_device_authorization_entry_url`). Both branches resolve their
+    // origin from the request when no explicit origin env is configured, so the
+    // request `Origin` header must appear in both.
     assert!(
-        qr_content.starts_with("https://chat.example.test/auth/qr/"),
+        qr_content.starts_with("https://chat.example.test/auth/login?"),
         "OAuth device authorization content must use the browser origin when available: {qr_content}"
+    );
+    assert!(qr_content.contains("purpose=login"));
+    assert!(qr_content.contains("scan_source=qr"));
+    let fallback_url = body["data"]["fallbackUrl"]
+        .as_str()
+        .expect("OAuth device authorization response must include fallbackUrl");
+    assert!(
+        fallback_url.starts_with("https://chat.example.test/auth/qr/"),
+        "the browser QR fallback must use the request origin: {fallback_url}"
     );
     assert!(
         !qr_content.contains("poll_secret=") || qr_content.contains("#poll_secret="),
@@ -4682,15 +4719,20 @@ async fn local_app_router_current_session_persists_refreshed_permission_scopes()
         "current session should expose live RBAC permission scopes, got: {context_permission_scope:?}"
     );
 
-    let persisted_scopes: sqlx::types::Json<Value> = sqlx::query_scalar(
+    // `iam_session.permission_scope_json` is a TEXT column
+    // (`database/ddl/baseline/postgres/0001_iam_baseline.sql`), and the
+    // implementation persists the scope array as a JSON document in it, so
+    // decode as TEXT and parse the document instead of asking sqlx for JSONB.
+    let persisted_scopes_json: String = sqlx::query_scalar(
         "SELECT permission_scope_json FROM iam_session WHERE id = $1 AND revoked_at IS NULL",
     )
     .bind(session_id)
     .fetch_one(&pg)
     .await
     .expect("read back persisted permission scopes");
+    let persisted_scopes: Value = serde_json::from_str(&persisted_scopes_json)
+        .expect("persisted permission scope should be a JSON document");
     let persisted_codes = persisted_scopes
-        .0
         .as_array()
         .expect("persisted permission scope should be an array")
         .iter()
