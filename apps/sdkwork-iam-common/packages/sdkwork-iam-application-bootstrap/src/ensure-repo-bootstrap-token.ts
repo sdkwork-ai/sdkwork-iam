@@ -175,6 +175,9 @@ export async function ensureRepoBootstrapAccessToken(
     const client = createClient({
       baseUrl: backendBaseUrl,
     });
+    // The deploy application anchor the installation serves. `SDKWORK_DEPLOY_APPLICATION_ID`
+    // overrides the manifest (`backend.deployApplicationId`, else `backend.appId`).
+    const deployApplicationId = env.SDKWORK_DEPLOY_APPLICATION_ID?.trim();
     const result = await bootstrapApplicationFromManifest({
       client,
       manifest: manifest as never,
@@ -182,6 +185,7 @@ export async function ensureRepoBootstrapAccessToken(
       auth,
       profile: loadedProfile?.profile ?? null,
       environment,
+      ...(deployApplicationId ? { provision: { deployApplicationId } } : {}),
     });
     const token = result.env.SDKWORK_ACCESS_TOKEN?.trim();
     if (!token) {

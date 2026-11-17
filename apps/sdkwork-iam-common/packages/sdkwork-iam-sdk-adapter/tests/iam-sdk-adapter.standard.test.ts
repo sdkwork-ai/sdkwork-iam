@@ -579,9 +579,6 @@ describe("SDKWork IAM generated SDK adapters", () => {
         accessCredentials: {
           create: vi.fn().mockResolvedValue({ data: { id: "credential-1" } }),
         },
-        applications: {
-          register: vi.fn().mockResolvedValue({ data: { applicationId: "app-1" } }),
-        },
         apiKeys: {
           list: vi.fn().mockResolvedValue({ data: [] }),
           revoke: vi.fn().mockResolvedValue({ data: true }),
@@ -1069,9 +1066,6 @@ function createGeneratedBackendClient(overrides: AnyRecord = {}): AnyRecord {
     iam: {
       accessCredentials: {
         create: vi.fn().mockResolvedValue({ data: null }),
-      },
-      applications: {
-        register: vi.fn().mockResolvedValue({ data: null }),
       },
       apiKeys: {
         list: vi.fn().mockResolvedValue({ data: null }),

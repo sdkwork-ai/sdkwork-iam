@@ -5,9 +5,9 @@ import {
   isIamLoginContextSelectionChallenge,
 } from "@sdkwork/iam-contracts";
 import type { IamAppSdkClient, IamBackendIamResourceClient, IamBackendSdkClient, IamSdkResourceClient } from "@sdkwork/iam-sdk-ports";
-import { createIamBackendOauthService, type IamBackendOauthService } from "./iam-backend-oauth-service";
+import { createIamBackendOauthService, type IamBackendOauthService } from "./iam-backend-oauth-service.ts";
 
-export type { IamBackendOauthService } from "./iam-backend-oauth-service";
+export type { IamBackendOauthService } from "./iam-backend-oauth-service.ts";
 import {
   readSdkworkMediaResource,
   type SdkworkMediaResource,
@@ -321,9 +321,6 @@ export interface SdkworkIamService {
     };
     accessCredentials: {
       create(body: Record<string, unknown>): Promise<unknown>;
-    };
-    applications: {
-      register(body: Record<string, unknown>): Promise<unknown>;
     };
     tenantApplications: {
       enable(tenantApplicationId: string, body?: Record<string, unknown>): Promise<unknown>;
@@ -780,9 +777,6 @@ export function createSdkworkIamService(input: CreateSdkworkIamServiceInput): Sd
       },
       accessCredentials: {
         create: (body) => callBackendIam(backendIam, (iam) => iam.accessCredentials, "create", "iam.accessCredentials.create", body),
-      },
-      applications: {
-        register: (body) => callBackendIam(backendIam, (iam) => iam.applications, "register", "iam.applications.register", body),
       },
       tenantApplications: {
         create: (body) => callBackendIam(backendIam, (iam) => iam.tenantApplications, "create", "iam.tenantApplications.create", body),

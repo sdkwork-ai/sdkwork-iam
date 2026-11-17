@@ -330,9 +330,6 @@ export function createIamBackendSdkAdapter(client: unknown): IamBackendSdkClient
       accessCredentials: {
         create: standardResourceMethod(toRecord(iam.accessCredentials), "create", "appbaseBackend.iam.accessCredentials.create"),
       },
-      applications: {
-        register: standardResourceMethod(toRecord(iam.applications), "register", "appbaseBackend.iam.applications.register"),
-      },
       apiKeys: {
         list: standardResourceMethod(toRecord(iam.apiKeys), "list", "appbaseBackend.iam.apiKeys.list"),
         revoke: standardResourceMethod(toRecord(iam.apiKeys), "revoke", "appbaseBackend.iam.apiKeys.revoke"),

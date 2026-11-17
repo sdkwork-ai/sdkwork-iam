@@ -6817,9 +6817,6 @@ function createSdkworkIamService(input) {
       accessCredentials: {
         create: (body) => callBackendIam(backendIam, (iam) => iam.accessCredentials, "create", "iam.accessCredentials.create", body)
       },
-      applications: {
-        register: (body) => callBackendIam(backendIam, (iam) => iam.applications, "register", "iam.applications.register", body)
-      },
       tenantApplications: {
         create: (body) => callBackendIam(backendIam, (iam) => iam.tenantApplications, "create", "iam.tenantApplications.create", body),
         list: (tenantId, params) => callBackendIam(backendIam, (iam) => iam.tenantApplications, "list", "iam.tenantApplications.list", tenantId, iamListQuery(params)),

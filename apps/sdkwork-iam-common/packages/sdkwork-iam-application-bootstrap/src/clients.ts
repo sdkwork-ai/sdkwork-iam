@@ -10,21 +10,15 @@ import {
 import type {
   EnabledTenantApplicationResult,
   IamApplicationBootstrapClient,
+  IamTenantApplicationProvisionCommand,
   IssuedAccessCredentialResult,
   ProvisionedTenantApplicationResult,
-  RegisteredApplicationTemplateResult,
 } from "./types.ts";
 
 export function createIamApplicationBootstrapClientFromBackend(
   backend: IamBackendSdkClient,
 ): IamApplicationBootstrapClient {
   return {
-    async registerApplication(body) {
-      return unwrapIamSdkResponse<RegisteredApplicationTemplateResult>(
-        await backend.iam?.applications?.register?.(body),
-        "iam.applications.register failed",
-      );
-    },
     async provisionTenantApplication(body) {
       return unwrapIamSdkResponse<ProvisionedTenantApplicationResult>(
         await backend.iam?.tenantApplications?.create?.(body),
@@ -65,16 +59,15 @@ export function createIamApplicationBootstrapClientFromAppbaseBackendSdk(
 }
 
 /**
- * Bootstrap-only backend SDK binding. Uses the four IAM bootstrap operations
+ * Bootstrap-only backend SDK binding. Uses the three IAM bootstrap operations
  * directly so application bootstrap does not depend on the full generated SDK
  * surface matching {@link createIamBackendSdkAdapter}.
  */
 export function createIamApplicationBootstrapClientFromGeneratedBackendSdk(
   client: {
     iam?: {
-      applications?: { register?: (body: Record<string, unknown>) => Promise<unknown> };
       tenantApplications?: {
-        create?: (body: Record<string, unknown>) => Promise<unknown>;
+        create?: (body: IamTenantApplicationProvisionCommand) => Promise<unknown>;
         enable?: (tenantApplicationId: string, body?: Record<string, unknown>) => Promise<unknown>;
         update?: (tenantApplicationId: string, body?: Record<string, unknown>) => Promise<unknown>;
       };
@@ -84,12 +77,6 @@ export function createIamApplicationBootstrapClientFromGeneratedBackendSdk(
 ): IamApplicationBootstrapClient {
   const iam = client.iam;
   return {
-    async registerApplication(body) {
-      return unwrapIamSdkResponse<RegisteredApplicationTemplateResult>(
-        await iam?.applications?.register?.(body),
-        "iam.applications.register failed",
-      );
-    },
     async provisionTenantApplication(body) {
       return unwrapIamSdkResponse<ProvisionedTenantApplicationResult>(
         await iam?.tenantApplications?.create?.(body),
@@ -121,7 +108,6 @@ export function createIamApplicationBootstrapClientFromIamService(
   service: SdkworkIamService,
 ): IamApplicationBootstrapClient {
   return {
-    registerApplication: (body) => service.iam.applications.register(body) as Promise<RegisteredApplicationTemplateResult>,
     provisionTenantApplication: (body) =>
       service.iam.tenantApplications.create(body) as Promise<ProvisionedTenantApplicationResult>,
     enableTenantApplication: (tenantApplicationId, body) =>
