@@ -367,7 +367,7 @@ async fn backend_postgres_user_create_and_update_roundtrip_with_profile_fields()
     // widen the tenant application's access permissions before the credential
     // is issued.
     sqlx::query(
-        "UPDATE iam_tenant_application \
+        "UPDATE iam_application_installation \
          SET access_permissions_json = '[\"iam:self\", \"iam.users.read\", \"iam.users.create\", \"iam.users.update\", \"iam.oauth.read\"]'::jsonb, updated_at = CURRENT_TIMESTAMP \
          WHERE tenant_id = $1 AND organization_id = $2",
     )

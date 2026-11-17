@@ -153,7 +153,7 @@ the existing account untouched.
 | --- | --- | --- |
 | 404 on `/app/v3/api/auth/sessions` | App SDK base URL includes `/app/v3/api` prefix, producing a double-prefixed request URL | Pass the gateway origin only (`https://api.example.com`); `resolveAppSdkBaseUrl` strips a trailing prefix if present |
 | 401 on first authenticated request | Database not bootstrapped — no `iam_user` / `iam_credential` / `iam_role_binding` rows | Call `bootstrap_iam_for_application()` before serving traffic |
-| 401 on app-api auth (token issuance) | Tenant application not provisioned — `iam_tenant_application` row missing for the runtime `app_id`, so auth runtime cannot resolve signing keys or access scopes | Set `SDKWORK_APP_ROOT` to the consumer app root containing `agent.app.config.json`; `bootstrap_iam_for_application()` provisions it automatically |
+| 401 on app-api auth (token issuance) | Tenant application not provisioned — `iam_application_installation` row missing for the runtime `app_id`, so auth runtime cannot resolve signing keys or access scopes | Set `SDKWORK_APP_ROOT` to the consumer app root containing `agent.app.config.json`; `bootstrap_iam_for_application()` provisions it automatically |
 | 401 on backend-api mutations | `build_sdkwork_iam_backend_api_router()` (fail-closed) mounts without a database pool | Use `gateway_mount()` / `_from_env()` constructors or the assembly-level `bootstrap_iam_for_application()` |
 | 503 `iam_database_unavailable` | Backend route state has `pool: None` | Same as above — the `_from_env` constructor resolves the pool from `SDKWORK_DATABASE_URL` |
 

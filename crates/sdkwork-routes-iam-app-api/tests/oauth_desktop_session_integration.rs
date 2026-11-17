@@ -135,7 +135,7 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
         "DELETE FROM iam_tenant_member WHERE tenant_id = $1 AND user_id IN \
          (SELECT id FROM iam_user WHERE tenant_id = $1 AND email = $2)",
         "DELETE FROM iam_user WHERE tenant_id = $1 AND email = $2",
-        "DELETE FROM iam_tenant_application WHERE app_id = $3",
+        "DELETE FROM iam_application_installation WHERE app_id = $3",
     ] {
         let _ = sqlx::query(statement)
             .bind(DESKTOP_E2E_TENANT_ID)
@@ -222,7 +222,7 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
     assert!(parsed.enabled, "desktop e2e relying party must be enabled");
 
     sqlx::query(
-        "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, instance_key, \
+        "INSERT INTO iam_application_installation (id, app_id, tenant_id, organization_id, instance_key, \
          display_name, environment, application_type, status, primary_domain, domain_config_json, \
          access_permissions_json, runtime_config_json, provisioned_at, activated_at, created_at, \
          updated_at, deploy_application_id) \
@@ -1566,7 +1566,7 @@ async fn hosted_authorization_bootstrap_creates_a_pending_state_without_redirect
 
     // Disabling the relying party in Admin must stop the hosted bootstrap too.
     let previous_runtime_config: sqlx::types::Json<Value> = sqlx::query_scalar(
-        "SELECT runtime_config_json FROM iam_tenant_application \
+        "SELECT runtime_config_json FROM iam_application_installation \
          WHERE tenant_id = $1 AND app_id = $2 LIMIT 1",
     )
     .bind(DESKTOP_E2E_TENANT_ID)
@@ -1577,7 +1577,7 @@ async fn hosted_authorization_bootstrap_creates_a_pending_state_without_redirect
     let mut disabled_config = previous_runtime_config.0.clone();
     disabled_config["oauth"]["relyingParty"]["enabled"] = json!(false);
     sqlx::query(
-        "UPDATE iam_tenant_application SET runtime_config_json = $3 \
+        "UPDATE iam_application_installation SET runtime_config_json = $3 \
          WHERE tenant_id = $1 AND app_id = $2",
     )
     .bind(DESKTOP_E2E_TENANT_ID)
@@ -1613,7 +1613,7 @@ async fn hosted_authorization_bootstrap_creates_a_pending_state_without_redirect
     assert_eq!(disabled_bootstrap.status(), StatusCode::BAD_REQUEST);
 
     sqlx::query(
-        "UPDATE iam_tenant_application SET runtime_config_json = $3 \
+        "UPDATE iam_application_installation SET runtime_config_json = $3 \
          WHERE tenant_id = $1 AND app_id = $2",
     )
     .bind(DESKTOP_E2E_TENANT_ID)

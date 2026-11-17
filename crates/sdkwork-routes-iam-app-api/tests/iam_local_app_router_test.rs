@@ -3769,7 +3769,7 @@ async fn delete_tenant_integration_fixture(pg: &sqlx::PgPool, tenant_id: &str) {
         "DELETE FROM iam_tenant_member WHERE tenant_id = $1",
         "DELETE FROM iam_user WHERE tenant_id = $1",
         "DELETE FROM iam_tenant_signing_key WHERE tenant_id = $1",
-        "DELETE FROM iam_tenant_application WHERE tenant_id = $1",
+        "DELETE FROM iam_application_installation WHERE tenant_id = $1",
         "DELETE FROM iam_tenant WHERE id = $1 OR code = $1",
     ] {
         let _ = sqlx::query(statement).bind(tenant_id).execute(pg).await;

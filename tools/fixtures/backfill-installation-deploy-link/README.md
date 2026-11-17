@@ -6,7 +6,7 @@ placeholders.
 
 - `mapping.example.json` — the confirmed mapping supplied to `--mapping`.
 - `current.example.json` — an optional read-only snapshot of
-  `iam_tenant_application` supplied to `--current`, used only to compute the
+  `iam_application_installation` supplied to `--current`, used only to compute the
   dry-run's already-consistent / conflict / unmapped counters offline.
 
 Generate the snapshot with:
@@ -23,7 +23,7 @@ SELECT COALESCE(
            ),
            '[]'::json
        )
-  FROM iam_tenant_application;
+  FROM iam_application_installation;
 ```
 
 ```bash

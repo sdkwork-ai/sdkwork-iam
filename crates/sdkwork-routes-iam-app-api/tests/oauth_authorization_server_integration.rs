@@ -82,7 +82,7 @@ async fn cleanup_oauth_e2e_fixtures() {
         "DELETE FROM iam_tenant_member WHERE tenant_id = $1",
         "DELETE FROM iam_user WHERE tenant_id = $1",
         "DELETE FROM iam_tenant_signing_key WHERE tenant_id = $1",
-        "DELETE FROM iam_tenant_application WHERE tenant_id = $1",
+        "DELETE FROM iam_application_installation WHERE tenant_id = $1",
         "DELETE FROM iam_tenant WHERE id = $1",
     ] {
         let _ = sqlx::query(statement)
@@ -215,7 +215,7 @@ async fn seed_oauth_e2e_fixtures() {
     );
 
     sqlx::query(
-        "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, instance_key, \
+        "INSERT INTO iam_application_installation (id, app_id, tenant_id, organization_id, instance_key, \
          display_name, environment, status, primary_domain, domain_config_json, \
          access_permissions_json, runtime_config_json, provisioned_at, activated_at, \
          created_at, updated_at, deploy_application_id) \

@@ -153,7 +153,7 @@ pub async fn resolve_relying_party_client(
     let rows = if let Some(tenant_id) = tenant_hint.filter(|value| !value.is_empty()) {
         sqlx::query(
             "SELECT tenant_id, app_id, runtime_config_json, deploy_application_id \
-             FROM iam_tenant_application \
+             FROM iam_application_installation \
              WHERE tenant_id = $2 AND status = 'enabled' \
                AND ( \
                  (runtime_config_json #>> '{oauth,relyingParty,clientId}') = $1 \
@@ -171,7 +171,7 @@ pub async fn resolve_relying_party_client(
     } else {
         sqlx::query(
             "SELECT tenant_id, app_id, runtime_config_json, deploy_application_id \
-             FROM iam_tenant_application \
+             FROM iam_application_installation \
              WHERE status = 'enabled' \
                AND ( \
                  (runtime_config_json #>> '{oauth,relyingParty,clientId}') = $1 \

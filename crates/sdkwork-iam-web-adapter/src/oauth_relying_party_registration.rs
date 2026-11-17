@@ -1,7 +1,7 @@
 //! Relying-party (SDKWork OAuth client) registration for tenant applications.
 //!
 //! The SDKWork authorization server resolves an OAuth client from an enabled
-//! `iam_tenant_application` row and its `runtime_config_json.oauth.relyingParty`
+//! `iam_application_installation` row and its `runtime_config_json.oauth.relyingParty`
 //! document (`IAM_OAUTH_SPEC.md` section 4.2). Nothing else registers a client:
 //! an application that never writes that document answers `invalid_client` at
 //! `/iam/v3/oauth/authorize`, which is the failure this module removes.

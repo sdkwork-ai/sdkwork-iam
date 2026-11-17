@@ -44,8 +44,12 @@ function readIamContractsFoundationTableNames() {
 
 function collectDdlTableNames() {
   const tableNames = [];
-  const seen = new Set();
+  const present = new Set();
 
+  // Ordered replay: `CREATE TABLE` adds a name,
+  // `ALTER TABLE ... RENAME TO ...` replaces it, `DROP TABLE` removes it. A
+  // forward rename always leaves the original `CREATE` in the immutable
+  // baseline, so a create-only scan would report the renamed table as missing.
   function ingestDirectory(relativeDir, suffix) {
     const absoluteDir = path.join(databaseRoot, relativeDir);
     if (!fs.existsSync(absoluteDir)) {
@@ -53,13 +57,35 @@ function collectDdlTableNames() {
     }
     for (const entry of fs.readdirSync(absoluteDir).filter((name) => name.endsWith(suffix)).sort()) {
       const sql = fs.readFileSync(path.join(absoluteDir, entry), 'utf8');
-      for (const match of sql.matchAll(/CREATE TABLE IF NOT EXISTS (iam_[a-z0-9_]+)/gi)) {
-        const tableName = match[1];
-        if (seen.has(tableName)) {
+      const statements =
+        /CREATE TABLE(?: IF NOT EXISTS)?\s+([a-z0-9_]+)|ALTER TABLE(?: IF EXISTS)?\s+([a-z0-9_]+)\s+RENAME TO\s+([a-z0-9_]+)|DROP TABLE(?: IF EXISTS)?\s+([a-z0-9_]+)/gi;
+      for (const match of sql.matchAll(statements)) {
+        const [, created, renamedFrom, renamedTo, dropped] = match;
+        if (created) {
+          if (!present.has(created)) {
+            present.add(created);
+            tableNames.push(created);
+          }
           continue;
         }
-        seen.add(tableName);
-        tableNames.push(tableName);
+        if (renamedFrom) {
+          const index = tableNames.indexOf(renamedFrom);
+          present.delete(renamedFrom);
+          present.add(renamedTo);
+          if (index >= 0) {
+            tableNames[index] = renamedTo;
+          } else {
+            tableNames.push(renamedTo);
+          }
+          continue;
+        }
+        if (dropped) {
+          present.delete(dropped);
+          const index = tableNames.indexOf(dropped);
+          if (index >= 0) {
+            tableNames.splice(index, 1);
+          }
+        }
       }
     }
   }

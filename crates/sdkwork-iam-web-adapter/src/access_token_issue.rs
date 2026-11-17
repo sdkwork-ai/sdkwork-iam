@@ -45,7 +45,7 @@ pub struct AccessCredentialCreateRequest {
     /// IAM tenant application row selector.
     pub tenant_application_id: Option<String>,
     /// Installation deploy application anchor selector. Resolved against
-    /// `iam_tenant_application.deploy_application_id`; the IAM runtime app id is
+    /// `iam_application_installation.deploy_application_id`; the IAM runtime app id is
     /// not accepted as a token subject.
     pub app_id: Option<String>,
     pub instance_key: Option<String>,
@@ -601,7 +601,7 @@ fn sign_local_session_token(
 /// credential (`APPLICATION_IDENTITY_SPEC.md` §4) — is not among the admitted
 /// claims, so it is deliberately not signed here. The installation's client
 /// credential remains a registration-plane fact
-/// (`iam_tenant_application.app_id`, overridden by
+/// (`iam_application_installation.app_id`, overridden by
 /// `runtimeConfig.oauth.relyingParty.clientId`); `iam_session` records the deploy
 /// application anchor only, and signing an unadmitted claim would break the
 /// dual-token claim contract before the table admits it.

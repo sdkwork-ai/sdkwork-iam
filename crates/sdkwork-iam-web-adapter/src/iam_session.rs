@@ -46,6 +46,22 @@ const IAM_SESSION_PRINCIPAL_ACTIVE: &str =
           AND sac.status = 'active' \
           AND (sac.expires_at IS NULL OR sac.expires_at > $3::timestamptz)))";
 
+/// Liveness predicate shared by the two auth-token session queries.
+///
+/// `iam_session.expires_at` stores the epoch sentinel for a credential issued
+/// with the "no expiry" TTL (the packaged portal's bootstrap credential, see
+/// `access_token_issue::no_expiry_timestamp`). The access-token channel already
+/// treats that sentinel as "never expires" (`expires_at <= 'epoch'`); the
+/// auth-token channels must apply the identical rule, otherwise a valid
+/// no-expiry credential is rejected as expired before its signature, hash and
+/// principal checks ever run.
+fn auth_token_expiry_predicate(timestamp_param: &str) -> String {
+    format!(
+        "(s.expires_at::timestamptz <= 'epoch'::timestamptz \
+          OR s.expires_at::timestamptz > {timestamp_param}::timestamptz)"
+    )
+}
+
 pub(crate) fn user_profile_from_session_row(row: &sqlx::postgres::PgRow) -> (String, String, bool) {
     let display_name: String = row.try_get(11).unwrap_or_default();
     let email: String = row.try_get(12).unwrap_or_default();
@@ -296,12 +312,13 @@ async fn find_iam_context_from_dual_tokens(
 
     let auth_hash = hash_token(auth_token);
     let access_hash = hash_token(access_token);
+    let expiry_predicate = auth_token_expiry_predicate("$3");
 
     let row = sqlx::query(sqlx::AssertSqlSafe(format!(
         "SELECT {IAM_SESSION_CONTEXT_SELECT} \
          FROM iam_session s {IAM_SESSION_CONTEXT_JOINS} \
          WHERE s.auth_token_hash = $1 AND s.access_token_hash = $2 \
-           AND s.revoked_at IS NULL AND s.expires_at::timestamptz > $3::timestamptz \
+           AND s.revoked_at IS NULL AND {expiry_predicate} \
            AND {IAM_SESSION_PRINCIPAL_ACTIVE} \
          LIMIT 1"
     )))
@@ -400,11 +417,12 @@ async fn find_iam_context_from_auth_token(pg: &PgPool, auth_token: &str) -> Opti
         return None;
     }
     let auth_hash = hash_token(auth_token);
+    let expiry_predicate = auth_token_expiry_predicate("$2");
     let row = sqlx::query(sqlx::AssertSqlSafe(format!(
         "SELECT {IAM_SESSION_CONTEXT_SELECT} \
          FROM iam_session s {IAM_SESSION_CONTEXT_JOINS} \
          WHERE s.auth_token_hash = $1 \
-           AND s.revoked_at IS NULL AND s.expires_at::timestamptz > $2::timestamptz \
+           AND s.revoked_at IS NULL AND {expiry_predicate} \
            AND ((s.principal_kind = 'user' AND u.status = 'active' AND u.is_deleted = 0) \
              OR (s.principal_kind = 'service_account' AND sa.status = 'active' \
                AND sac.status = 'active' \
@@ -1116,6 +1134,27 @@ mod tests {
         assert!(IAM_SESSION_CONTEXT_SELECT.contains("s.authz_epoch"));
         assert!(IAM_SESSION_CONTEXT_SELECT.contains("current_authz_epoch"));
         assert!(IAM_SESSION_CONTEXT_SELECT.contains("iam_authz_epoch"));
+    }
+
+    /// The packaged portal's bootstrap credential is issued with `ttl = 0`
+    /// (`NO_EXPIRY_EPOCH_SECONDS`) and persisted with `expires_at = UNIX_EPOCH`
+    /// (`no_expiry_timestamp`). Both auth-token channels must treat that
+    /// sentinel as "never expires" exactly like the access-token channel,
+    /// otherwise the credential the gateway receives on first boot is rejected
+    /// as expired before its signature/hash/principal checks run.
+    #[test]
+    fn auth_token_liveness_accepts_the_no_expiry_epoch_sentinel() {
+        for timestamp_param in ["$2", "$3"] {
+            let predicate = auth_token_expiry_predicate(timestamp_param);
+            assert!(
+                predicate.contains("<= 'epoch'::timestamptz"),
+                "the no-expiry sentinel must be allowed: {predicate}"
+            );
+            assert!(
+                predicate.contains(&format!("> {timestamp_param}::timestamptz")),
+                "a concrete expiry must still be compared against {timestamp_param}: {predicate}"
+            );
+        }
     }
 
     fn test_signing_key() -> TenantSigningKey {

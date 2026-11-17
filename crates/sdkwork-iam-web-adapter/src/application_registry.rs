@@ -121,7 +121,7 @@ pub async fn validate_enabled_tenant_runtime_app(
 
     let row = sqlx::query(
         "SELECT a.status, t.status \
-         FROM iam_tenant_application a \
+         FROM iam_application_installation a \
          LEFT JOIN iam_tenant t ON t.id = a.tenant_id \
          WHERE a.tenant_id = $1 AND a.deploy_application_id = $2 \
          LIMIT 1",
@@ -247,7 +247,7 @@ pub fn resolve_access_token_app_id(
             format!(
                 "installation is not bound to a deploy application (安装未绑定部署应用): \
                  tenant application {} (appId {}) has no deployApplicationId in \
-                 iam_tenant_application; provision the installation with deployApplicationId \
+                 iam_application_installation; provision the installation with deployApplicationId \
                  before issuing an access token",
                 tenant_application.id, tenant_application.app_id
             )
@@ -300,7 +300,7 @@ pub async fn ensure_platform_tenant_application_with_deploy_application(
         tenant_application_id.as_str(),
     )
     .await?;
-    sqlx::query("DELETE FROM iam_tenant_application WHERE id = $1 OR app_id = $2")
+    sqlx::query("DELETE FROM iam_application_installation WHERE id = $1 OR app_id = $2")
         .bind(&tenant_application_id)
         .bind(&runtime_app_id)
         .execute(pg)
@@ -315,7 +315,7 @@ pub async fn ensure_platform_tenant_application_with_deploy_application(
     )
     .await?;
     sqlx::query(
-        "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, instance_key, \
+        "INSERT INTO iam_application_installation (id, app_id, tenant_id, organization_id, instance_key, \
          display_name, environment, application_type, status, primary_domain, domain_config_json, \
          access_permissions_json, runtime_config_json, provisioned_at, activated_at, created_at, \
          updated_at, deploy_application_id) \
@@ -366,7 +366,7 @@ pub async fn platform_deploy_application_id_for_tenant(
 
 /// Rejects a deploy application that is already bound to another installation.
 ///
-/// The partial unique index `uk_iam_tenant_application_deploy` enforces the
+/// The partial unique index `uk_iam_application_installation_deploy` enforces the
 /// one-to-one relation; checking first turns a constraint violation into an
 /// actionable error naming the conflicting installation.
 async fn ensure_deploy_application_unclaimed(
@@ -375,7 +375,7 @@ async fn ensure_deploy_application_unclaimed(
     tenant_application_id: &str,
 ) -> Result<(), String> {
     let row = sqlx::query(
-        "SELECT id, tenant_id FROM iam_tenant_application \
+        "SELECT id, tenant_id FROM iam_application_installation \
          WHERE deploy_application_id = $1 AND id <> $2 \
          LIMIT 1",
     )
@@ -505,7 +505,7 @@ fn map_manifest_app_type_to_application_type(manifest_app_type: &str) -> String 
 /// Order: the row already bound to the command's deploy application wins, then
 /// the instance-key row. A fallback row that already names a *different* deploy
 /// application is a conflict — silently re-pointing its link would break the
-/// one-to-one relation `uk_iam_tenant_application_deploy` exists to enforce.
+/// one-to-one relation `uk_iam_application_installation_deploy` exists to enforce.
 fn select_provision_target(
     deploy_match: Option<TenantApplication>,
     instance_key_match: Option<TenantApplication>,
@@ -721,7 +721,7 @@ pub async fn provision_tenant_application(
 
     if existing.is_some() {
         sqlx::query(
-            "UPDATE iam_tenant_application SET organization_id = $2, display_name = $3, \
+            "UPDATE iam_application_installation SET organization_id = $2, display_name = $3, \
              environment = $4, application_type = $5, primary_domain = $6, \
              access_permissions_json = $7, runtime_config_json = $8, \
              last_synced_at = $9, updated_at = $10, \
@@ -746,7 +746,7 @@ pub async fn provision_tenant_application(
         .map_err(|error| format!("update tenant application failed: {error}"))?;
     } else {
         sqlx::query(
-            "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, instance_key, \
+            "INSERT INTO iam_application_installation (id, app_id, tenant_id, organization_id, instance_key, \
              display_name, environment, application_type, status, primary_domain, domain_config_json, \
              access_permissions_json, runtime_config_json, provisioned_at, last_synced_at, created_at, \
              updated_at, deploy_application_id, provisioning_idempotency_key) \
@@ -827,7 +827,7 @@ pub async fn update_tenant_application(
     let now = chrono::Utc::now();
 
     sqlx::query(
-        "UPDATE iam_tenant_application SET primary_domain = $2, domain_config_json = $3, \
+        "UPDATE iam_application_installation SET primary_domain = $2, domain_config_json = $3, \
          access_permissions_json = $4, runtime_config_json = $5::jsonb, \
          updated_at = $6 \
          WHERE id = $1 AND tenant_id = $7",
@@ -870,7 +870,7 @@ pub struct EnsureTenantApplicationCommand {
     /// takes it from the application manifest, and an installation without an
     /// anchor must not be created. An explicit additional runtime binding is a
     /// surface of the same deployment (PC/H5/mobile of one product) and carries
-    /// `None`, because `uk_iam_tenant_application_deploy` makes the anchor
+    /// `None`, because `uk_iam_application_installation_deploy` makes the anchor
     /// one-to-one and a surface must not compete for it.
     pub deploy_application_id: Option<String>,
     /// `oauth.relyingParty` declared by the application manifest. Applied only
@@ -941,7 +941,7 @@ async fn find_tenant_application_id_by_primary_domain(
     primary_domain: &str,
 ) -> Result<Option<String>, String> {
     let row = sqlx::query_scalar::<_, String>(
-        "SELECT id FROM iam_tenant_application \
+        "SELECT id FROM iam_application_installation \
          WHERE tenant_id = $1 AND primary_domain = $2 \
          LIMIT 1",
     )
@@ -988,7 +988,7 @@ async fn clear_postgres_tenant_application_competing_rows(
     keep_id: &str,
 ) -> Result<u64, String> {
     let result = sqlx::query(
-        "DELETE FROM iam_tenant_application \
+        "DELETE FROM iam_application_installation \
          WHERE tenant_id = $1 \
            AND id <> $2 \
            AND ( \
@@ -1059,7 +1059,7 @@ async fn upsert_tenant_application_row(
     .await?;
 
     sqlx::query(
-        "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, instance_key, \
+        "INSERT INTO iam_application_installation (id, app_id, tenant_id, organization_id, instance_key, \
          display_name, environment, application_type, status, primary_domain, domain_config_json, \
          access_permissions_json, runtime_config_json, provisioned_at, last_synced_at, created_at, \
          updated_at, deploy_application_id) \
@@ -1076,7 +1076,7 @@ async fn upsert_tenant_application_row(
            primary_domain = EXCLUDED.primary_domain, \
            access_permissions_json = EXCLUDED.access_permissions_json, \
            runtime_config_json = EXCLUDED.runtime_config_json, \
-           deploy_application_id = COALESCE(EXCLUDED.deploy_application_id, iam_tenant_application.deploy_application_id), \
+           deploy_application_id = COALESCE(EXCLUDED.deploy_application_id, iam_application_installation.deploy_application_id), \
            last_synced_at = EXCLUDED.last_synced_at, \
            updated_at = EXCLUDED.updated_at",
     )
@@ -1211,7 +1211,7 @@ pub async fn enable_tenant_application(
 
     let now = chrono::Utc::now();
     sqlx::query(
-        "UPDATE iam_tenant_application SET status = 'enabled', activated_at = $2, updated_at = $2 \
+        "UPDATE iam_application_installation SET status = 'enabled', activated_at = $2, updated_at = $2 \
          WHERE id = $1 AND tenant_id = $3",
     )
     .bind(tenant_application_id)
@@ -1237,7 +1237,7 @@ pub async fn disable_tenant_application(
 
     let now = chrono::Utc::now();
     sqlx::query(
-        "UPDATE iam_tenant_application SET status = 'disabled', updated_at = $2 \
+        "UPDATE iam_application_installation SET status = 'disabled', updated_at = $2 \
          WHERE id = $1 AND tenant_id = $3",
     )
     .bind(tenant_application_id)
@@ -1262,7 +1262,7 @@ pub async fn resolve_tenant_application(
     let row = if let Some(id) = tenant_application_id.filter(|value| !crate::is_blank(Some(value))) {
         sqlx::query(
             "SELECT id, app_id, tenant_id, organization_id, instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
-             FROM iam_tenant_application \
+             FROM iam_application_installation \
              WHERE tenant_id = $1 AND id = $2 \
              LIMIT 1",
         )
@@ -1273,7 +1273,7 @@ pub async fn resolve_tenant_application(
     } else if let Some(app_id) = runtime_app_id.filter(|value| !crate::is_blank(Some(value))) {
         sqlx::query(
             "SELECT id, app_id, tenant_id, organization_id, instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
-             FROM iam_tenant_application \
+             FROM iam_application_installation \
              WHERE tenant_id = $1 AND app_id = $2 \
              LIMIT 1",
         )
@@ -1284,7 +1284,7 @@ pub async fn resolve_tenant_application(
     } else if let Some(key) = instance_key.filter(|value| !crate::is_blank(Some(value))) {
         sqlx::query(
             "SELECT id, app_id, tenant_id, organization_id, instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
-             FROM iam_tenant_application \
+             FROM iam_application_installation \
              WHERE tenant_id = $1 AND instance_key = $2 \
              LIMIT 1",
         )
@@ -1317,7 +1317,7 @@ pub async fn resolve_tenant_application_by_deploy_application_id(
 
     let row = sqlx::query(
         "SELECT id, app_id, tenant_id, organization_id, instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
-         FROM iam_tenant_application \
+         FROM iam_application_installation \
          WHERE tenant_id = $1 AND deploy_application_id = $2 \
          LIMIT 1",
     )
@@ -1411,7 +1411,7 @@ async fn find_tenant_application_by_runtime_app_id(
 ) -> Result<Option<TenantApplication>, String> {
     let row = sqlx::query(
         "SELECT id, app_id, tenant_id, organization_id, instance_key, display_name, environment, status, primary_domain, access_permissions_json, runtime_config_json, application_type, deploy_application_id \
-         FROM iam_tenant_application \
+         FROM iam_application_installation \
          WHERE tenant_id = $1 AND app_id = $2 \
          ORDER BY updated_at DESC NULLS LAST, id ASC \
          LIMIT 1",
@@ -1429,7 +1429,7 @@ async fn load_tenant_application_runtime_config(
     pg: &PgPool,
     tenant_application_id: &str,
 ) -> Result<Value, String> {
-    let row = sqlx::query("SELECT runtime_config_json FROM iam_tenant_application WHERE id = $1")
+    let row = sqlx::query("SELECT runtime_config_json FROM iam_application_installation WHERE id = $1")
         .bind(tenant_application_id)
         .fetch_optional(pg)
         .await
@@ -1583,7 +1583,7 @@ fn normalize_runtime_config_oauth(
 
 /// Rejects an OAuth client id already claimed by another tenant application.
 ///
-/// `iam_tenant_application.app_id` carries a unique constraint, but a declared
+/// `iam_application_installation.app_id` carries a unique constraint, but a declared
 /// `oauth.relyingParty.clientId` does not, and the authorization endpoint
 /// resolves a client without a tenant hint when the id is globally unique.
 /// Checking both columns keeps that resolution deterministic.
@@ -1603,7 +1603,7 @@ async fn ensure_relying_party_client_id_available(
         .filter(|value| !value.is_empty())
         .unwrap_or(app_id);
     let conflicts: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*)::BIGINT FROM iam_tenant_application \
+        "SELECT COUNT(*)::BIGINT FROM iam_application_installation \
          WHERE id <> $1 \
            AND ( \
              app_id = $2 \

@@ -75,7 +75,7 @@ pub async fn postgres_iam_foundation_schema_ready(pg: &PgPool) -> Result<bool, S
     let row = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM information_schema.tables \
          WHERE table_schema = current_schema() \
-           AND table_name = 'iam_tenant_application'",
+           AND table_name = 'iam_application_installation'",
     )
     .fetch_one(pg)
     .await

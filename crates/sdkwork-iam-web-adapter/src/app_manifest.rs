@@ -238,7 +238,7 @@ pub fn manifest_to_ensure_command(
     //
     // An explicit additional runtime binding is a *surface* of the same
     // deployment (PC/H5/mobile of one product), not a second installation, so it
-    // does not claim the anchor: `uk_iam_tenant_application_deploy` makes the
+    // does not claim the anchor: `uk_iam_application_installation_deploy` makes the
     // anchor one-to-one and a surface must not compete for it.
     let is_installation_identity = binding
         .map(|value| backend_runtime_app_id(manifest) == Some(value.runtime_app_id.trim()))

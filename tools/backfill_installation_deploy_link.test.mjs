@@ -175,7 +175,7 @@ test('buildApplySql guards every UPDATE with tenant_id, app_id, and IS NULL', ()
   assert.match(sql, /^-- Apply:/);
   assert.match(sql, /\nBEGIN;\n/);
   assert.match(sql, /\nCOMMIT;\n/);
-  assert.equal((sql.match(/UPDATE iam_tenant_application/g) ?? []).length, 2);
+  assert.equal((sql.match(/UPDATE iam_application_installation/g) ?? []).length, 2);
   for (const entry of entries) {
     assert.ok(
       sql.includes(
@@ -214,14 +214,14 @@ test('buildApplySql emits only would_update rows when a snapshot is supplied', (
   ];
   const classifications = classifyMapping(entries, snapshot);
   const sql = buildApplySql(entries, classifications);
-  assert.equal((sql.match(/UPDATE iam_tenant_application/g) ?? []).length, 1);
+  assert.equal((sql.match(/UPDATE iam_application_installation/g) ?? []).length, 1);
   assert.ok(sql.includes("AND app_id = 'sdkwork-drama'"));
 });
 
 test('buildApplySql produces a valid empty batch for an empty mapping', () => {
   const sql = buildApplySql([]);
   assert.match(sql, /No UPDATE statement is generated for this mapping/);
-  assert.ok(!sql.includes('UPDATE iam_tenant_application'));
+  assert.ok(!sql.includes('UPDATE iam_application_installation'));
   assert.match(sql, /\nBEGIN;\n/);
   assert.match(sql, /\nCOMMIT;\n/);
 });
@@ -233,7 +233,7 @@ test('buildPreflightSql exposes the four required counters and the classificatio
     assert.ok(sql.includes(metric), `missing metric ${metric}`);
   }
   assert.ok(sql.includes("('100001', 'app_100001', '410000000000000001')"));
-  assert.ok(sql.includes('LEFT JOIN iam_tenant_application ta'));
+  assert.ok(sql.includes('LEFT JOIN iam_application_installation ta'));
   assert.ok(sql.includes('installation_missing'));
   assert.ok(sql.includes('linked_elsewhere'));
   assert.ok(sql.includes('deploy_application_claimed'));
@@ -252,7 +252,7 @@ test('buildReportSql lists unlinked installations and marks rows covered by the 
   assert.ok(sql.includes('WHERE ta.deploy_application_id IS NULL'));
   assert.ok(sql.includes('pending_deploy_application_id'));
   assert.ok(sql.includes('LEFT JOIN mapping m'));
-  assert.ok(!sql.includes('UPDATE iam_tenant_application'));
+  assert.ok(!sql.includes('UPDATE iam_application_installation'));
 });
 
 test('summarizePlan classifies would_update, consistent, conflicts, and unmapped', () => {
@@ -386,7 +386,7 @@ test('CLI --apply emits pure SQL to stdout and a summary to stderr', () => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /^-- Apply:/);
   assert.match(result.stdout, /BEGIN;/);
-  assert.equal((result.stdout.match(/UPDATE iam_tenant_application/g) ?? []).length, 2);
+  assert.equal((result.stdout.match(/UPDATE iam_application_installation/g) ?? []).length, 2);
   assert.match(result.stderr, /2 UPDATE statement\(s\) to stdout/);
 });
 
@@ -399,7 +399,7 @@ test('CLI --apply --out writes the SQL file', () => {
   assert.match(result.stdout, /wrote the apply SQL to/);
   const written = readFileSync(outPath, 'utf8');
   assert.match(written, /^-- Apply:/);
-  assert.equal((written.match(/UPDATE iam_tenant_application/g) ?? []).length, 2);
+  assert.equal((written.match(/UPDATE iam_application_installation/g) ?? []).length, 2);
 });
 
 test('CLI --report emits only the read-only report query', () => {
@@ -409,7 +409,7 @@ test('CLI --report emits only the read-only report query', () => {
   assert.match(result.stdout, /^-- Report \(read-only\)/);
   assert.match(result.stdout, /pending_deploy_application_id/);
   assert.ok(!result.stdout.includes('BEGIN;'));
-  assert.ok(!result.stdout.includes('UPDATE iam_tenant_application'));
+  assert.ok(!result.stdout.includes('UPDATE iam_application_installation'));
 });
 
 test('CLI validation failures exit 2 and print every error', () => {

@@ -12,6 +12,9 @@ tables:
   - name: iam_api_key
     lifecycle_status: active
     owner: sdkwork-iam
+  - name: iam_application_installation
+    lifecycle_status: active
+    owner: sdkwork-iam
   - name: iam_application_installation_credential
     lifecycle_status: active
     owner: sdkwork-iam
@@ -184,9 +187,6 @@ tables:
     lifecycle_status: active
     owner: sdkwork-iam
   - name: iam_tenant
-    lifecycle_status: active
-    owner: sdkwork-iam
-  - name: iam_tenant_application
     lifecycle_status: active
     owner: sdkwork-iam
   - name: iam_tenant_member

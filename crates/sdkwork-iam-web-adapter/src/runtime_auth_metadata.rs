@@ -83,7 +83,7 @@ pub async fn load_tenant_application_runtime_config(
     app_id: &str,
 ) -> Result<Value, String> {
     let row = sqlx::query_scalar::<_, sqlx::types::Json<Value>>(
-        "SELECT runtime_config_json FROM iam_tenant_application \
+        "SELECT runtime_config_json FROM iam_application_installation \
          WHERE tenant_id = $1 AND deploy_application_id = $2 AND status = 'enabled' \
          LIMIT 1",
     )

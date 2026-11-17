@@ -33,7 +33,7 @@ fn exposes_complete_iam_table_catalog() {
     assert!(tables.contains(&"iam_security_event"));
     assert!(tables.contains(&"iam_audit_event"));
     assert!(tables.contains(&"iam_ephemeral_artifact"));
-    assert!(tables.contains(&"iam_tenant_application"));
+    assert!(tables.contains(&"iam_application_installation"));
     assert!(tables.contains(&"iam_application_installation_environment"));
     assert!(tables.contains(&"iam_application_installation_credential"));
     assert!(tables.contains(&"iam_module_registry_entry"));
@@ -119,7 +119,7 @@ fn exposes_canonical_iam_table_constants() {
     assert_eq!("iam_user_identity", IamTables::USER_IDENTITY);
     assert_eq!("iam_credential", IamTables::CREDENTIAL);
     assert_eq!("iam_ephemeral_artifact", IamTables::EPHEMERAL_ARTIFACT);
-    assert_eq!("iam_tenant_application", IamTables::TENANT_APPLICATION);
+    assert_eq!("iam_application_installation", IamTables::TENANT_APPLICATION);
     assert_eq!(
         "iam_module_registry_entry",
         IamTables::MODULE_REGISTRY_ENTRY
@@ -963,7 +963,7 @@ fn application_standard_baseline_declares_tenant_application_tables_without_stud
     for table in [
         "iam_application_template",
         "iam_application_template_package",
-        "iam_tenant_application",
+        "iam_application_installation",
     ] {
         assert!(
             sql.contains(&format!("CREATE TABLE IF NOT EXISTS {table}")),

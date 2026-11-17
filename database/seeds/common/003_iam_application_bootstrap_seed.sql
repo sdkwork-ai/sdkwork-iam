@@ -9,7 +9,7 @@
 -- databases drift on which of them an older seed run provisioned. Update by
 -- id and insert only when the row is genuinely absent, so re-seeding never
 -- violates a sibling key.
-UPDATE iam_tenant_application SET
+UPDATE iam_application_installation SET
   app_id = 'app_100001',
   tenant_id = '100001',
   organization_id = '0',
@@ -25,7 +25,7 @@ UPDATE iam_tenant_application SET
   updated_at = CURRENT_TIMESTAMP
 WHERE id = 'tapp_100001_0_sdkwork_platform';
 
-INSERT INTO iam_tenant_application (
+INSERT INTO iam_application_installation (
   id,
   app_id,
   tenant_id,
@@ -63,5 +63,5 @@ SELECT
   CURRENT_TIMESTAMP,
   CURRENT_TIMESTAMP
 WHERE NOT EXISTS (
-  SELECT 1 FROM iam_tenant_application WHERE id = 'tapp_100001_0_sdkwork_platform'
+  SELECT 1 FROM iam_application_installation WHERE id = 'tapp_100001_0_sdkwork_platform'
 );

@@ -8,7 +8,7 @@ Tests: [`tools/backfill_installation_deploy_link.test.mjs`](../../tools/backfill
 
 ## Why this exists
 
-`iam_tenant_application.deploy_application_id` is nullable on purpose. An
+`iam_application_installation.deploy_application_id` is nullable on purpose. An
 installation created before migration 0040 has no link, and IAM fails closed
 without one: deployment access-token issuance and the gateway both refuse to
 name an application. IAM cannot derive the value from its own columns — the
@@ -36,8 +36,8 @@ database, does not execute a write, and does not change the schema.
 
 | Field | Meaning |
 | --- | --- |
-| `tenantId` | `iam_tenant_application.tenant_id` (text) |
-| `installationAppId` | `iam_tenant_application.app_id` (globally unique) |
+| `tenantId` | `iam_application_installation.tenant_id` (text) |
+| `installationAppId` | `iam_application_installation.app_id` (globally unique) |
 | `deployApplicationId` | the deployment application this installation serves |
 
 For an installation provisioned by `sdkwork-deployments`, `deployApplicationId`
@@ -55,7 +55,7 @@ deployment owner, not as proof that it is wrong.
 
    ```sql
    SELECT tenant_id, app_id, instance_key, display_name, status, updated_at
-     FROM iam_tenant_application
+     FROM iam_application_installation
     WHERE deploy_application_id IS NULL
     ORDER BY tenant_id, app_id;
    ```
@@ -73,7 +73,7 @@ deployment owner, not as proof that it is wrong.
 3. Write only the confirmed pairs to the mapping file. Leave every unresolved
    installation out: it stays `NULL` and is reported by the report query.
 
-Slugs and names are not identity. `iam_tenant_application.app_id` and
+Slugs and names are not identity. `iam_application_installation.app_id` and
 `deploy_app.id` are the keys; matching by display name or slug would invent a
 link, which is worse than a missing one.
 
@@ -88,7 +88,7 @@ The tool refuses to generate SQL (exit code `2`) when:
 - one `installationAppId` appears more than once — `app_id` is globally unique,
   so two links would describe the same installation twice;
 - one `deployApplicationId` appears more than once — the partial unique index
-  `uk_iam_tenant_application_deploy` allows one installation per deployment
+  `uk_iam_application_installation_deploy` allows one installation per deployment
   application.
 
 An empty array is valid: it generates a no-op plan, which is useful for
@@ -129,7 +129,7 @@ SELECT COALESCE(
            ),
            '[]'::json
        )
-  FROM iam_tenant_application;
+  FROM iam_application_installation;
 ```
 
 ### 2. Review the SQL
@@ -137,7 +137,7 @@ SELECT COALESCE(
 Every generated statement has the form:
 
 ```sql
-UPDATE iam_tenant_application
+UPDATE iam_application_installation
    SET deploy_application_id = '410000000000000001',
        updated_at = NOW()
  WHERE tenant_id = '100001'
@@ -148,7 +148,7 @@ UPDATE iam_tenant_application
 The `deploy_application_id IS NULL` predicate is the safety property: an
 existing link is never overwritten, and re-running the file is idempotent. The
 transaction (`BEGIN` / `COMMIT`) means a collision with
-`uk_iam_tenant_application_deploy` aborts the whole batch instead of leaving a
+`uk_iam_application_installation_deploy` aborts the whole batch instead of leaving a
 partial backfill.
 
 The preflight classifies each mapping row as `would_update`,

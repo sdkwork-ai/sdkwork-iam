@@ -62,7 +62,7 @@ impl IamTables {
     pub const OAUTH_DIAGNOSTIC_RUN: &'static str = "iam_oauth_diagnostic_run";
     pub const OAUTH_SCAN_LOGIN_CONFIG: &'static str = "iam_oauth_scan_login_config";
     pub const EPHEMERAL_ARTIFACT: &'static str = "iam_ephemeral_artifact";
-    pub const TENANT_APPLICATION: &'static str = "iam_tenant_application";
+    pub const APPLICATION_INSTALLATION: &'static str = "iam_application_installation";
     pub const APPLICATION_INSTALLATION_ENVIRONMENT: &'static str = "iam_application_installation_environment";
     pub const APPLICATION_INSTALLATION_CREDENTIAL: &'static str = "iam_application_installation_credential";
     pub const MODULE_REGISTRY_ENTRY: &'static str = "iam_module_registry_entry";
@@ -128,7 +128,7 @@ pub fn iam_database_tables() -> Vec<&'static str> {
         IamTables::OAUTH_DIAGNOSTIC_RUN,
         IamTables::OAUTH_SCAN_LOGIN_CONFIG,
         IamTables::EPHEMERAL_ARTIFACT,
-        IamTables::TENANT_APPLICATION,
+        IamTables::APPLICATION_INSTALLATION,
         IamTables::APPLICATION_INSTALLATION_ENVIRONMENT,
         IamTables::APPLICATION_INSTALLATION_CREDENTIAL,
         IamTables::MODULE_REGISTRY_ENTRY,

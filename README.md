@@ -48,7 +48,7 @@ sdkwork-iam/
 OAuth and SSO are IAM session extensions. Inbound flows consume third-party IdPs;
 outbound flows expose SDKWork as an OAuth authorization server. All paths converge
 on IAM `auth_token` + `access_token`. Per-application policy lives in
-`iam_tenant_application.runtime_config_json` (`auth.*`, `oauth.relyingParty.*`).
+`iam_application_installation.runtime_config_json` (`auth.*`, `oauth.relyingParty.*`).
 
 See `../sdkwork-specs/IAM_OAUTH_SPEC.md` for the full contract.
 

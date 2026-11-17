@@ -2,7 +2,7 @@
 /**
  * Generation tool for the IAM installation -> deployment application backfill.
  *
- * `iam_tenant_application.deploy_application_id` is nullable on purpose
+ * `iam_application_installation.deploy_application_id` is nullable on purpose
  * (migration 0040): an installation created before the column existed has no
  * link, and a missing link fails token issuance and the gateway closed. The
  * value cannot be derived from IAM's own columns -- the deployment inventory
@@ -39,7 +39,7 @@
  *   WHERE tenant_id = '...' AND app_id = '...' AND deploy_application_id IS NULL
  *
  * so an existing link is never overwritten and a re-run is idempotent. The
- * partial unique index `uk_iam_tenant_application_deploy` remains the final
+ * partial unique index `uk_iam_application_installation_deploy` remains the final
  * authority against two installations claiming one deployment application: a
  * collision aborts the whole psql transaction.
  *
@@ -90,7 +90,7 @@ Required:
                      [{ "tenantId", "installationAppId", "deployApplicationId" }]
 
 Options:
-  --current <path>   Optional read-only snapshot of iam_tenant_application in the
+  --current <path>   Optional read-only snapshot of iam_application_installation in the
                      same shape, with deployApplicationId null for unlinked rows.
                      Supplies exact already-consistent / conflict / unmapped counts.
   --apply            Emit executable SQL (BEGIN; UPDATE ...; COMMIT;) to stdout,
@@ -227,7 +227,7 @@ function checkUnknownFields(raw, rowLabel, errors) {
  *   - all three fields are non-blank strings without control characters;
  *   - one installation (`installationAppId`) appears at most once;
  *   - one deployment application (`deployApplicationId`) appears at most once
- *     (`uk_iam_tenant_application_deploy` is a global partial unique index).
+ *     (`uk_iam_application_installation_deploy` is a global partial unique index).
  */
 export function validateMapping(raw) {
   const errors = [];
@@ -344,7 +344,7 @@ export function validateCurrentSnapshot(raw) {
       const first = byInstallation.get(appId);
       errors.push(
         `${rowLabel}.installationAppId "${appId}" duplicates current[${first}] ` +
-          '(iam_tenant_application.app_id is globally unique)',
+          '(iam_application_installation.app_id is globally unique)',
       );
     } else {
       byInstallation.set(appId, index);
@@ -354,7 +354,7 @@ export function validateCurrentSnapshot(raw) {
         const first = byDeployApplication.get(deployApplicationId);
         errors.push(
           `${rowLabel}.deployApplicationId "${deployApplicationId}" duplicates current[${first}] ` +
-            '(uk_iam_tenant_application_deploy is a global partial unique index)',
+            '(uk_iam_application_installation_deploy is a global partial unique index)',
         );
       } else {
         byDeployApplication.set(deployApplicationId, index);
@@ -517,14 +517,14 @@ function classifiedCte() {
             WHEN ta.deploy_application_id IS NOT NULL THEN 'linked_elsewhere'
             WHEN EXISTS (
                 SELECT 1
-                  FROM iam_tenant_application other
+                  FROM iam_application_installation other
                  WHERE other.deploy_application_id = m.deploy_application_id
                    AND other.app_id <> m.app_id
             ) THEN 'deploy_application_claimed'
             ELSE 'would_update'
         END AS outcome
       FROM mapping m
-      LEFT JOIN iam_tenant_application ta
+      LEFT JOIN iam_application_installation ta
              ON ta.tenant_id = m.tenant_id
             AND ta.app_id = m.app_id
 )`;
@@ -549,7 +549,7 @@ counted AS (
 ),
 unmapped AS (
     SELECT count(*) AS still_unmapped
-      FROM iam_tenant_application ta
+      FROM iam_application_installation ta
      WHERE ta.deploy_application_id IS NULL
        AND NOT EXISTS (
            SELECT 1
@@ -600,7 +600,7 @@ export function buildUpdateStatements(entries, classifications = null) {
       ? ` (${classification.outcome})`
       : '';
     return `-- mapping[${entry.index}] tenantId=${entry.tenantId} installationAppId=${entry.appId}${suffix}
-UPDATE iam_tenant_application
+UPDATE iam_application_installation
    SET deploy_application_id = ${sqlLiteral(entry.deployApplicationId)},
        updated_at = NOW()
  WHERE tenant_id = ${sqlLiteral(entry.tenantId)}
@@ -660,7 +660,7 @@ SELECT ta.tenant_id,
        ta.status,
        ta.updated_at,
        m.deploy_application_id AS pending_deploy_application_id
-  FROM iam_tenant_application ta
+  FROM iam_application_installation ta
   LEFT JOIN mapping m
          ON m.tenant_id = ta.tenant_id
         AND m.app_id = ta.app_id

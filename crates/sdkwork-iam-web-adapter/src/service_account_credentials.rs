@@ -443,7 +443,7 @@ async fn load_active_credential(pg: &PgPool, client_id: &str) -> Result<StoredCr
          FROM iam_service_account_credential c \
          JOIN iam_service_account sa ON sa.id = c.service_account_id \
            AND sa.tenant_id = c.tenant_id AND sa.status = 'active' \
-         JOIN iam_tenant_application ta ON ta.id = c.tenant_application_id \
+         JOIN iam_application_installation ta ON ta.id = c.tenant_application_id \
            AND ta.tenant_id = c.tenant_id AND ta.status = 'enabled' \
          WHERE c.client_id = $1 AND c.status = 'active' \
            AND (c.expires_at IS NULL OR c.expires_at > $2) LIMIT 1",

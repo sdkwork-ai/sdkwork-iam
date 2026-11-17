@@ -58,7 +58,7 @@ pub async fn seed_backend_integration_bootstrap_owner(pg: &PgPool) -> String {
         .expect("ensure integration organization tenant application");
 
     sqlx::query(
-        "UPDATE iam_tenant_application \
+        "UPDATE iam_application_installation \
          SET access_permissions_json = '[\"iam:self\", \"iam.users.read\", \"iam.oauth.read\"]'::jsonb, updated_at = CURRENT_TIMESTAMP \
          WHERE tenant_id = $1 AND organization_id = $2",
     )
@@ -259,7 +259,7 @@ async fn ensure_integration_organization_and_tenant_application(
     // application (migration 0040); without the link issuance fails closed, so
     // the fixture links the row the same way the install command does.
     sqlx::query(
-        "UPDATE iam_tenant_application \
+        "UPDATE iam_application_installation \
          SET organization_id = $1, status = 'enabled', deploy_application_id = $5, updated_at = $2 \
          WHERE tenant_id = $3 AND id = $4",
     )
