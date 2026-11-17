@@ -38,7 +38,6 @@ const OAUTH_E2E_DEPLOY_APPLICATION_ID: &str = "deploy_oauth_e2e_partner";
 const OAUTH_E2E_USERNAME: &str = "oauth-pkce-e2e@sdkwork-iam.test";
 const OAUTH_E2E_PASSWORD: &str = "OAuthPkce#2026";
 const OAUTH_E2E_REDIRECT_URI: &str = "https://partner.sdkwork.test/oauth/callback";
-const OAUTH_E2E_PARTNER_TEMPLATE_ID: &str = "tmpl_oauth_partner_e2e";
 
 fn local_iam_env_lock() -> &'static Mutex<()> {
     static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
@@ -216,27 +215,12 @@ async fn seed_oauth_e2e_fixtures() {
     );
 
     sqlx::query(
-        "INSERT INTO iam_application_template (id, owner_tenant_id, app_key, name, display_name, app_type, \
-         version, channel, status, runtime_config_json, artifacts_config_json, default_access_permissions_json, \
-         created_at, updated_at) \
-         VALUES ($1, '0', $2, $2, 'OAuth Partner E2E', 'WEB', '1.0.0', 'stable', 'active', '{}'::jsonb, '{}'::jsonb, \
-         '[\"iam:self\"]'::jsonb, $3, $3) \
-         ON CONFLICT (id) DO UPDATE SET status = 'active', updated_at = EXCLUDED.updated_at",
-    )
-    .bind(OAUTH_E2E_PARTNER_TEMPLATE_ID)
-    .bind(OAUTH_E2E_CLIENT_APP_ID)
-    .bind(&now)
-    .execute(&pg)
-    .await
-    .expect("insert oauth partner application template");
-
-    sqlx::query(
-        "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, template_id, \
-         template_version, instance_key, display_name, environment, status, primary_domain, \
-         domain_config_json, access_permissions_json, runtime_config_json, provisioned_at, activated_at, \
+        "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, instance_key, \
+         display_name, environment, status, primary_domain, domain_config_json, \
+         access_permissions_json, runtime_config_json, provisioned_at, activated_at, \
          created_at, updated_at, deploy_application_id) \
-         VALUES ($1, $2, $3, '0', $4, '1.0.0', 'oauth-partner', 'OAuth Partner', 'prod', 'enabled', \
-         'partner.sdkwork.test', '{}'::jsonb, '[\"iam:self\"]'::jsonb, $5::jsonb, $6, $6, $6, $6, $7) \
+         VALUES ($1, $2, $3, '0', 'oauth-partner', 'OAuth Partner', 'prod', 'enabled', \
+         'partner.sdkwork.test', '{}'::jsonb, '[\"iam:self\"]'::jsonb, $4::jsonb, $5, $5, $5, $5, $6) \
          ON CONFLICT (id) DO UPDATE SET runtime_config_json = EXCLUDED.runtime_config_json, \
          deploy_application_id = EXCLUDED.deploy_application_id, \
          status = 'enabled', updated_at = EXCLUDED.updated_at",
@@ -244,7 +228,6 @@ async fn seed_oauth_e2e_fixtures() {
     .bind(format!("tapp_{OAUTH_E2E_TENANT_ID}_oauth_partner"))
     .bind(OAUTH_E2E_CLIENT_APP_ID)
     .bind(OAUTH_E2E_TENANT_ID)
-    .bind(OAUTH_E2E_PARTNER_TEMPLATE_ID)
     .bind(runtime_config.to_string())
     .bind(&now)
     .bind(OAUTH_E2E_DEPLOY_APPLICATION_ID)

@@ -21,18 +21,6 @@
       "lifecycle_status": "active"
     },
     {
-      "table_name": "iam_application_template",
-      "owner": "sdkwork-iam",
-      "compliance_level": "L2",
-      "lifecycle_status": "active"
-    },
-    {
-      "table_name": "iam_application_template_package",
-      "owner": "sdkwork-iam",
-      "compliance_level": "L2",
-      "lifecycle_status": "active"
-    },
-    {
       "table_name": "iam_audit_event",
       "owner": "sdkwork-iam",
       "compliance_level": "L2",

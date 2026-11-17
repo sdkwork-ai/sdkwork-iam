@@ -48,7 +48,6 @@ fn test_deploy_application_id(tenant_id: &str) -> String {
 const DESKTOP_E2E_TENANT_ID: &str = sdkwork_iam_bootstrap::DEFAULT_IAM_TENANT_ID;
 const DESKTOP_E2E_CLIENT_APP_ID: &str = "app_desktop_e2e_partner";
 const DESKTOP_E2E_DEPLOY_APPLICATION_ID: &str = "deploy_desktop_e2e_partner";
-const DESKTOP_E2E_TEMPLATE_ID: &str = "tmpl_desktop_partner_e2e";
 const DESKTOP_E2E_USERNAME: &str = "desktop-e2e@sdkwork-iam.test";
 const DESKTOP_E2E_PASSWORD: &str = "DesktopE2e#2026";
 const DESKTOP_E2E_REDIRECT_URI: &str = "sdkwork-iam://auth/callback";
@@ -137,7 +136,6 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
          (SELECT id FROM iam_user WHERE tenant_id = $1 AND email = $2)",
         "DELETE FROM iam_user WHERE tenant_id = $1 AND email = $2",
         "DELETE FROM iam_tenant_application WHERE app_id = $3",
-        "DELETE FROM iam_application_template WHERE id = $3",
     ] {
         let _ = sqlx::query(statement)
             .bind(DESKTOP_E2E_TENANT_ID)
@@ -224,27 +222,12 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
     assert!(parsed.enabled, "desktop e2e relying party must be enabled");
 
     sqlx::query(
-        "INSERT INTO iam_application_template (id, owner_tenant_id, app_key, name, display_name, app_type, \
-         version, channel, status, runtime_config_json, artifacts_config_json, default_access_permissions_json, \
-         created_at, updated_at) \
-         VALUES ($1, '0', $2, $2, 'Desktop Partner E2E', 'WEB', '1.0.0', 'stable', 'active', '{}'::jsonb, '{}'::jsonb, \
-         '[\"iam:self\"]'::jsonb, $3, $3) \
-         ON CONFLICT (id) DO UPDATE SET status = 'active', updated_at = EXCLUDED.updated_at",
-    )
-    .bind(DESKTOP_E2E_TEMPLATE_ID)
-    .bind(DESKTOP_E2E_CLIENT_APP_ID)
-    .bind(&now)
-    .execute(pg)
-    .await
-    .expect("insert desktop e2e partner application template");
-
-    sqlx::query(
-        "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, template_id, \
-         template_version, instance_key, display_name, environment, application_type, status, primary_domain, \
-         domain_config_json, access_permissions_json, runtime_config_json, provisioned_at, activated_at, \
-         created_at, updated_at, deploy_application_id) \
-         VALUES ($1, $2, $3, '0', $4, '1.0.0', 'desktop-partner', 'Desktop Partner', 'prod', 'other', 'enabled', \
-         'desktop-e2e.sdkwork.test', '{}'::jsonb, '[\"iam:self\"]'::jsonb, $5::jsonb, $6, $6, $6, $6, $7) \
+        "INSERT INTO iam_tenant_application (id, app_id, tenant_id, organization_id, instance_key, \
+         display_name, environment, application_type, status, primary_domain, domain_config_json, \
+         access_permissions_json, runtime_config_json, provisioned_at, activated_at, created_at, \
+         updated_at, deploy_application_id) \
+         VALUES ($1, $2, $3, '0', 'desktop-partner', 'Desktop Partner', 'prod', 'other', 'enabled', \
+         'desktop-e2e.sdkwork.test', '{}'::jsonb, '[\"iam:self\"]'::jsonb, $4::jsonb, $5, $5, $5, $5, $6) \
          ON CONFLICT (id) DO UPDATE SET runtime_config_json = EXCLUDED.runtime_config_json, \
          deploy_application_id = EXCLUDED.deploy_application_id, \
          status = 'enabled', updated_at = EXCLUDED.updated_at",
@@ -252,7 +235,6 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
     .bind(format!("tapp_{DESKTOP_E2E_TENANT_ID}_desktop_partner"))
     .bind(DESKTOP_E2E_CLIENT_APP_ID)
     .bind(DESKTOP_E2E_TENANT_ID)
-    .bind(DESKTOP_E2E_TEMPLATE_ID)
     .bind(runtime_config.to_string())
     .bind(&now)
     .bind(DESKTOP_E2E_DEPLOY_APPLICATION_ID)

@@ -736,8 +736,6 @@ mod tests {
             app_id: "sdkwork-cloudrouter".to_owned(),
             tenant_id: "100001".to_owned(),
             organization_id: "0".to_owned(),
-            template_id: "template-1".to_owned(),
-            template_version: "1.0.0".to_owned(),
             instance_key: "sdkwork-cloudrouter:production".to_owned(),
             display_name: "SDKWork CloudRouter".to_owned(),
             environment: "production".to_owned(),

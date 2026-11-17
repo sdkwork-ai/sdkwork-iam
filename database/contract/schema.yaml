@@ -18,12 +18,6 @@ tables:
   - name: iam_application_installation_environment
     lifecycle_status: active
     owner: sdkwork-iam
-  - name: iam_application_template
-    lifecycle_status: active
-    owner: sdkwork-iam
-  - name: iam_application_template_package
-    lifecycle_status: active
-    owner: sdkwork-iam
   - name: iam_audit_event
     lifecycle_status: active
     owner: sdkwork-iam

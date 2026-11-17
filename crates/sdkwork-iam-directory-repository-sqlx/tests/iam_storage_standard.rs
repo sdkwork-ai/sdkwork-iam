@@ -33,9 +33,9 @@ fn exposes_complete_iam_table_catalog() {
     assert!(tables.contains(&"iam_security_event"));
     assert!(tables.contains(&"iam_audit_event"));
     assert!(tables.contains(&"iam_ephemeral_artifact"));
-    assert!(tables.contains(&"iam_application_template"));
-    assert!(tables.contains(&"iam_application_template_package"));
     assert!(tables.contains(&"iam_tenant_application"));
+    assert!(tables.contains(&"iam_application_installation_environment"));
+    assert!(tables.contains(&"iam_application_installation_credential"));
     assert!(tables.contains(&"iam_module_registry_entry"));
     assert!(tables.contains(&"iam_module_registry_snapshot"));
     assert!(tables.contains(&"iam_catalog_materialization"));
@@ -53,11 +53,22 @@ fn exposes_complete_iam_table_catalog() {
     assert_eq!(
         65,
         tables.len(),
-        "IAM catalog must own 65 canonical tables (the deprecated \
-         iam_user_official_account row is unified into iam_oauth_resource_account and \
-         remains only as a physical, read-only database-contract table)"
+        "IAM catalog must own 65 canonical tables (the retired application-template \
+         tables are gone, the installation environment/credential tables are owned, and \
+         the deprecated iam_user_official_account row is unified into \
+         iam_oauth_resource_account)"
     );
     assert!(!tables.contains(&"iam_user_role"));
+    // The application-template model was retired (migrations 0041/0042): neither
+    // template table may remain an owned IAM table.
+    assert!(
+        !tables.contains(&"iam_application_template"),
+        "iam_application_template is retired and must not be an owned IAM table",
+    );
+    assert!(
+        !tables.contains(&"iam_application_template_package"),
+        "iam_application_template_package is retired and must not be an owned IAM table",
+    );
     // The per-user official account table was unified into
     // `iam_oauth_resource_account` (migration 0033): the ownership catalog must
     // never list the legacy aggregate again.
@@ -108,11 +119,6 @@ fn exposes_canonical_iam_table_constants() {
     assert_eq!("iam_user_identity", IamTables::USER_IDENTITY);
     assert_eq!("iam_credential", IamTables::CREDENTIAL);
     assert_eq!("iam_ephemeral_artifact", IamTables::EPHEMERAL_ARTIFACT);
-    assert_eq!("iam_application_template", IamTables::APPLICATION_TEMPLATE);
-    assert_eq!(
-        "iam_application_template_package",
-        IamTables::APPLICATION_TEMPLATE_PACKAGE
-    );
     assert_eq!("iam_tenant_application", IamTables::TENANT_APPLICATION);
     assert_eq!(
         "iam_module_registry_entry",
@@ -949,6 +955,11 @@ fn database_baseline_declares_oauth_provider_callback_and_operational_resources(
 fn application_standard_baseline_declares_tenant_application_tables_without_studio_debt() {
     let sql = iam_database_baseline_sql();
 
+    // The baseline is the historical bootstrap anchor: it still declares the
+    // retired template tables because migration 0005 backfills
+    // `application_type` from them. Migrations 0041/0042 retire the template
+    // columns and tables at the end of the upgrade path, so the active contract
+    // (asserted above) does not own them.
     for table in [
         "iam_application_template",
         "iam_application_template_package",
@@ -956,7 +967,7 @@ fn application_standard_baseline_declares_tenant_application_tables_without_stud
     ] {
         assert!(
             sql.contains(&format!("CREATE TABLE IF NOT EXISTS {table}")),
-            "baseline must declare {table}",
+            "baseline must declare the historical bootstrap table {table}",
         );
     }
 

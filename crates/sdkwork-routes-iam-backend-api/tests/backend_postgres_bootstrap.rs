@@ -8,7 +8,7 @@ use sdkwork_iam_bootstrap::{
 };
 use sdkwork_iam_web_adapter::{
     ensure_platform_tenant_application_with_deploy_application, tenant_application_row_id,
-    PLATFORM_APPLICATION_TEMPLATE_ID, SDKWORK_IAM_BOOTSTRAP_PASSWORD_ENV,
+    PLATFORM_INSTALLATION_ANCHOR, SDKWORK_IAM_BOOTSTRAP_PASSWORD_ENV,
 };
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -254,7 +254,7 @@ async fn ensure_integration_organization_and_tenant_application(
     .map_err(|error| format!("ensure integration organization failed: {error}"))?;
 
     let tenant_application_id =
-        tenant_application_row_id(DEFAULT_IAM_TENANT_ID, "0", PLATFORM_APPLICATION_TEMPLATE_ID);
+        tenant_application_row_id(DEFAULT_IAM_TENANT_ID, "0", PLATFORM_INSTALLATION_ANCHOR);
     // The deployment access credential is signed with the installation's deploy
     // application (migration 0040); without the link issuance fails closed, so
     // the fixture links the row the same way the install command does.

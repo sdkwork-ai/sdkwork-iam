@@ -1,48 +1,8 @@
--- Platform application template and default tenant applications for IAM bootstrap and dev seeds.
+-- Default platform installation for IAM bootstrap and dev seeds.
+-- Application templates are retired (migrations 0041/0042): an installation is
+-- created from its deploy application plus explicit attributes, and the
+-- deterministic row id keeps the historical `sdkwork_platform` suffix.
 -- Runtime app_id values follow app_{tenant_id} for standard SDKWork tenant ids.
-
-INSERT INTO iam_application_template (
-  id,
-  owner_tenant_id,
-  app_key,
-  name,
-  display_name,
-  app_type,
-  version,
-  channel,
-  status,
-  runtime_config_json,
-  artifacts_config_json,
-  default_access_permissions_json,
-  created_at,
-  updated_at
-)
-VALUES (
-  'tmpl_sdkwork_platform',
-  '0',
-  'sdkwork-platform',
-  'sdkwork-platform',
-  'SDKWork Platform',
-  'WEB',
-  '1.0.0',
-  'stable',
-  'active',
-  '{}'::jsonb,
-  '{}'::jsonb,
-  '["iam.self"]'::jsonb,
-  CURRENT_TIMESTAMP,
-  CURRENT_TIMESTAMP
-)
-ON CONFLICT (id) DO UPDATE SET
-  app_key = EXCLUDED.app_key,
-  name = EXCLUDED.name,
-  display_name = EXCLUDED.display_name,
-  app_type = EXCLUDED.app_type,
-  version = EXCLUDED.version,
-  channel = EXCLUDED.channel,
-  status = EXCLUDED.status,
-  default_access_permissions_json = EXCLUDED.default_access_permissions_json,
-  updated_at = CURRENT_TIMESTAMP;
 
 -- The platform application row carries three unique identities (id, app_id,
 -- and the partial (tenant_id, primary_domain) index), and long-lived shared
@@ -53,8 +13,6 @@ UPDATE iam_tenant_application SET
   app_id = 'app_100001',
   tenant_id = '100001',
   organization_id = '0',
-  template_id = 'tmpl_sdkwork_platform',
-  template_version = '1.0.0',
   instance_key = 'default',
   display_name = 'SDKWork Default',
   environment = 'prod',
@@ -72,8 +30,6 @@ INSERT INTO iam_tenant_application (
   app_id,
   tenant_id,
   organization_id,
-  template_id,
-  template_version,
   instance_key,
   display_name,
   environment,
@@ -93,8 +49,6 @@ SELECT
   'app_100001',
   '100001',
   '0',
-  'tmpl_sdkwork_platform',
-  '1.0.0',
   'default',
   'SDKWork Default',
   'prod',

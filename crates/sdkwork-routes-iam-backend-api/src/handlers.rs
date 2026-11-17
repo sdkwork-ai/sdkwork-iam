@@ -15,15 +15,14 @@ use sdkwork_iam_database_host;
 use sdkwork_iam_web_adapter::{
     account_binding_policy_to_json, disable_tenant_application, enable_tenant_application,
     ensure_actor_tenant_scope, ensure_bootstrap_permission, iam_api_error, iam_api_success,
-    issue_delegated_access_credential, issued_access_credential_to_json,
-    load_account_binding_policy, oauth_relying_party_summary,
-    parse_access_credential_create_request, parse_account_binding_policy,
-    parse_application_register_command, parse_tenant_application_provision_command,
+    is_provision_attribute_error, issue_delegated_access_credential,
+    issued_access_credential_to_json, load_account_binding_policy,
+    oauth_relying_party_summary, parse_access_credential_create_request,
+    parse_account_binding_policy, parse_tenant_application_provision_command,
     parse_tenant_application_update_command, provision_tenant_application,
-    register_application_template, registered_application_template_to_json,
     resolve_bootstrap_actor, resolve_tenant_application, save_account_binding_policy,
     tenant_application_to_json, update_tenant_application, AccountBindingPolicyDocument,
-    IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION, IAM_APPLICATIONS_REGISTER_PERMISSION,
+    IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
     IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION, IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION,
     IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION,
 };
@@ -178,10 +177,6 @@ fn build_sdkwork_iam_backend_api_business_router_with_state(state: BackendIamSta
                 .route(
                     "/backend/v3/api/iam/access_credentials",
                     post(create_access_credential),
-                )
-                .route(
-                    "/backend/v3/api/iam/applications/register",
-                    post(register_application),
                 )
                 .route(
                     "/backend/v3/api/iam/tenant_applications",
@@ -396,83 +391,6 @@ async fn create_access_credential(
     }
 }
 
-async fn register_application(
-    State(state): State<BackendIamState>,
-    Json(body): Json<Value>,
-) -> Response {
-    let Ok(pg) = postgres_pool_or_error(&state) else {
-        return postgres_pool_or_error(&state)
-            .err()
-            .expect("error response");
-    };
-    if let Some(response) = enforce_backend_rate_limit(pg, "backend:applications:register").await {
-        return response;
-    }
-
-    let command = match parse_application_register_command(&body) {
-        Ok(command) => command,
-        Err(message) => {
-            return appbase_error(
-                StatusCode::BAD_REQUEST,
-                "iam_applications_register_invalid",
-                &message,
-            );
-        }
-    };
-
-    let actor = match resolve_bootstrap_actor(pg, &body).await {
-        Ok(actor) => actor,
-        Err(message) if message.contains("invalid") || message.contains("required") => {
-            return appbase_error(
-                StatusCode::UNAUTHORIZED,
-                "iam_super_admin_auth_failed",
-                &message,
-            );
-        }
-        Err(message)
-            if message.contains("not a bootstrap operator")
-                || message.contains("not a super admin") =>
-        {
-            return appbase_error(
-                StatusCode::FORBIDDEN,
-                "iam_applications_register_forbidden",
-                &message,
-            );
-        }
-        Err(message) => {
-            return appbase_error(
-                StatusCode::SERVICE_UNAVAILABLE,
-                "iam_super_admin_auth_unavailable",
-                &message,
-            );
-        }
-    };
-
-    if let Err(message) =
-        ensure_bootstrap_permission(pg, &actor, IAM_APPLICATIONS_REGISTER_PERMISSION).await
-    {
-        return appbase_error(
-            StatusCode::FORBIDDEN,
-            "iam_applications_register_forbidden",
-            &message,
-        );
-    }
-
-    match register_application_template(pg, &command).await {
-        Ok(template) => appbase_ok(registered_application_template_to_json(&template)),
-        Err(message) if message.contains("already registered") => appbase_error(
-            StatusCode::CONFLICT,
-            "iam_application_template_package_name_conflict",
-            &message,
-        ),
-        Err(message) => appbase_error(
-            StatusCode::SERVICE_UNAVAILABLE,
-            "iam_applications_register_failed",
-            &message,
-        ),
-    }
-}
-
 async fn provision_tenant_application_handler(
     State(state): State<BackendIamState>,
     Json(body): Json<Value>,
@@ -548,9 +466,9 @@ async fn provision_tenant_application_handler(
         Ok(application) => appbase_created(sdkwork_resource_json(tenant_application_to_json(
             &application,
         ))),
-        Err(message) if message.contains("not found") => appbase_error(
-            StatusCode::NOT_FOUND,
-            "iam_tenant_application_template_not_found",
+        Err(message) if is_provision_attribute_error(&message) => appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_tenant_application_provision_invalid",
             &message,
         ),
         Err(message) => appbase_error(
@@ -737,7 +655,7 @@ async fn list_tenant_applications_handler(
     let environment = normalized_query_filter(&query, "environment");
     let application_type = normalized_query_filter(&query, "application_type");
     let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
-        "SELECT id, app_id, tenant_id, organization_id, template_id, template_version, \
+        "SELECT id, app_id, tenant_id, organization_id, \
                 instance_key, display_name, environment, status, primary_domain, \
                 access_permissions_json, created_at::text, updated_at::text, \
                 application_type, runtime_config_json, COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
@@ -846,9 +764,9 @@ async fn provision_tenant_application_management_handler(
         Ok(application) => appbase_created(sdkwork_resource_json(tenant_application_to_json(
             &application,
         ))),
-        Err(message) if message.contains("not found") => appbase_error(
-            StatusCode::NOT_FOUND,
-            "iam_tenant_application_template_not_found",
+        Err(message) if is_provision_attribute_error(&message) => appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_tenant_application_management_provision_invalid",
             &message,
         ),
         Err(message) if message.contains("duplicate") || message.contains("unique") => {
@@ -980,30 +898,28 @@ fn normalized_query_filter(query: &HashMap<String, String>, key: &str) -> Option
 
 fn tenant_application_list_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
     let access_permissions = row
-        .try_get::<SqlJson<Vec<String>>, _>(11)
+        .try_get::<SqlJson<Vec<String>>, _>(9)
         .map(|value| value.0)
         .unwrap_or_default();
     let runtime_config = row
-        .try_get::<SqlJson<Value>, _>(15)
+        .try_get::<SqlJson<Value>, _>(13)
         .map(|value| value.0)
         .unwrap_or_else(|_| json!({}));
     json!({
         "accessPermissions": access_permissions,
         "appId": row.get::<String, _>(1),
-        "applicationType": row.get::<String, _>(14),
-        "createdAt": row.get::<String, _>(12),
-        "displayName": row.get::<String, _>(7),
-        "environment": row.get::<String, _>(8),
-        "instanceKey": row.get::<String, _>(6),
+        "applicationType": row.get::<String, _>(12),
+        "createdAt": row.get::<String, _>(10),
+        "displayName": row.get::<String, _>(5),
+        "environment": row.get::<String, _>(6),
+        "instanceKey": row.get::<String, _>(4),
         "oauthRelyingParty": oauth_relying_party_summary(&runtime_config),
         "organizationId": row.get::<String, _>(3),
-        "primaryDomain": row.get::<Option<String>, _>(10),
-        "status": row.get::<String, _>(9),
-        "templateId": row.get::<String, _>(4),
-        "templateVersion": row.get::<String, _>(5),
+        "primaryDomain": row.get::<Option<String>, _>(8),
+        "status": row.get::<String, _>(7),
         "tenantApplicationId": row.get::<String, _>(0),
         "tenantId": row.get::<String, _>(2),
-        "updatedAt": row.get::<String, _>(13),
+        "updatedAt": row.get::<String, _>(11),
     })
 }
 

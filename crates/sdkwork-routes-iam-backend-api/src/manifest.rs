@@ -600,12 +600,6 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
     ),
     HttpRoute::bootstrap_body(
         HttpMethod::Post,
-        "/backend/v3/api/iam/applications/register",
-        "iam",
-        "applications.register",
-    ),
-    HttpRoute::bootstrap_body(
-        HttpMethod::Post,
         "/backend/v3/api/iam/tenant_applications",
         "iam",
         "tenantApplications.create",

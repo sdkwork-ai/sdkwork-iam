@@ -92,7 +92,6 @@ fn oauth_account_maintenance_operation(operation_id: &str) -> bool {
 
 fn explicit_bootstrap_permission(operation_id: &str) -> Option<&'static str> {
     match operation_id {
-        "applications.register" => Some("iam.applications.register"),
         "tenantApplications.create" => Some("iam.tenant_applications.provision"),
         "tenantApplications.list" | "tenantApplications.summary.retrieve" => {
             Some("iam.tenant_applications.update")
@@ -389,10 +388,11 @@ mod tests {
     }
 
     #[test]
-    fn maps_bootstrap_operations_to_platform_permissions() {
+    fn retired_application_register_operation_has_no_permission() {
         assert_eq!(
             iam_backend_permission_for_operation("applications.register"),
-            Some("iam.applications.register")
+            None,
+            "the retired application-template register operation must not resolve a permission"
         );
     }
 

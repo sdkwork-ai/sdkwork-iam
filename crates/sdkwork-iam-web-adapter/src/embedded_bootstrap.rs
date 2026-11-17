@@ -75,13 +75,13 @@ pub async fn postgres_iam_foundation_schema_ready(pg: &PgPool) -> Result<bool, S
     let row = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM information_schema.tables \
          WHERE table_schema = current_schema() \
-           AND table_name IN ('iam_application_template', 'iam_tenant_application')",
+           AND table_name = 'iam_tenant_application'",
     )
     .fetch_one(pg)
     .await
     .map_err(|error| format!("probe IAM foundation schema failed: {error}"))?;
 
-    Ok(row >= 2)
+    Ok(row >= 1)
 }
 
 /// Ensures tenant applications from a manifest on a specific pool.
@@ -352,7 +352,6 @@ pub(crate) async fn try_auto_provision_tenant_application(pg: &PgPool) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application_registry::tenant_application_template_id;
 
     const CLIENT_ARCHITECTURES: [&str; 7] = [
         "pc",
@@ -486,7 +485,7 @@ mod tests {
             ..EmbeddedApplicationBootstrapOptions::default()
         };
         let mut runtime_app_ids = BTreeSet::new();
-        let mut template_ids = BTreeSet::new();
+        let mut instance_keys = BTreeSet::new();
         for manifest_root in manifest_roots {
             let manifest = load_manifest_from_app_root(manifest_root.as_path())
                 .expect("load architecture manifest");
@@ -503,11 +502,11 @@ mod tests {
             assert!(!command.runtime_app_id.contains("-h5-pc"));
             assert!(!command.runtime_app_id.contains("-flutter-mobile-ios"));
             runtime_app_ids.insert(command.runtime_app_id.clone());
-            template_ids.insert(tenant_application_template_id(&command.app_key));
+            instance_keys.insert(command.instance_key.clone());
         }
 
         assert_eq!(runtime_app_ids.len(), CLIENT_ARCHITECTURES.len());
-        assert_eq!(template_ids.len(), CLIENT_ARCHITECTURES.len());
+        assert_eq!(instance_keys.len(), CLIENT_ARCHITECTURES.len());
         let _ = std::fs::remove_dir_all(root);
     }
 }

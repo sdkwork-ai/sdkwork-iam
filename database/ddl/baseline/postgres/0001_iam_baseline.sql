@@ -1322,6 +1322,11 @@ CREATE INDEX IF NOT EXISTS idx_iam_ephemeral_artifact_tenant_kind
   ON iam_ephemeral_artifact (tenant_id, artifact_kind, expires_at);
 
 -- source: database/ddl/baseline/postgres/0001_iam_baseline.sql#application-bootstrap
+-- Historical bootstrap anchor: migration 0005 backfills
+-- `iam_tenant_application.application_type` from these template rows, so a
+-- fresh install must declare them before replaying the migration set. The
+-- retirement is applied at the end of that set by 0041 (template columns) and
+-- 0042 (template tables); the active contract does not own them.
 CREATE TABLE IF NOT EXISTS iam_application_template (
   id TEXT PRIMARY KEY,
   owner_tenant_id TEXT NOT NULL DEFAULT '0',
