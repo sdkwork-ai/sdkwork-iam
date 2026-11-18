@@ -4,6 +4,10 @@ use crate::application_registry::{
     intersect_permission_scopes, resolve_access_token_app_id,
     resolve_tenant_application, resolve_tenant_application_by_deploy_application_id,
 };
+use crate::application_scope::{
+    ensure_requested_scope_matches_installation, ensure_subject_is_installation_owner,
+    ApplicationOwnershipScope,
+};
 use crate::iam_database_env::resolve_iam_database_pool_from_env;
 use crate::installation_lifecycle::ensure_installation_environment_active;
 use crate::is_blank;
@@ -17,7 +21,7 @@ use sdkwork_iam_context_service::{
 use sdkwork_web_core::stamp_token_version;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use sqlx::{types::Json, PgPool};
+use sqlx::{types::Json, PgPool, Row};
 
 use sdkwork_iam_bootstrap::resolve_session_scopes as bootstrap_resolve_session_scopes;
 
@@ -50,6 +54,11 @@ pub struct AccessCredentialCreateRequest {
     /// not accepted as a token subject.
     pub app_id: Option<String>,
     pub instance_key: Option<String>,
+    /// Release scope the caller declares. It is a **declaration to be checked**,
+    /// never a selector: the installation decides the level, and a value that
+    /// disagrees with the installation fails closed
+    /// (`APPLICATION_IDENTITY_SPEC.md` §4.1 rule 3).
+    pub ownership_scope: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,6 +73,8 @@ pub struct IssuedAccessCredential {
     pub app_id: String,
     /// IAM tenant application row that issued the credential.
     pub tenant_application_id: String,
+    /// Release scope the credential was signed for, read from the installation.
+    pub ownership_scope: ApplicationOwnershipScope,
     pub expires_at: String,
 }
 
@@ -86,6 +97,7 @@ pub fn parse_access_credential_create_request(
         read_optional_string(body, &["tenantApplicationId", "tenant_application_id"]);
     let app_id = read_optional_string(body, &["appId", "app_id"]);
     let instance_key = read_optional_string(body, &["instanceKey", "instance_key"]);
+    let ownership_scope = read_optional_string(body, &["ownershipScope", "ownership_scope"]);
 
     if tenant_application_id.is_none() && app_id.is_none() && instance_key.is_none() {
         return Err("tenantApplicationId, appId, or instanceKey is required".to_string());
@@ -97,6 +109,7 @@ pub fn parse_access_credential_create_request(
         tenant_application_id,
         app_id,
         instance_key,
+        ownership_scope,
     })
 }
 
@@ -169,9 +182,24 @@ pub async fn issue_delegated_access_credential(
             "tenant application must be enabled before issuing access credential".to_string(),
         );
     }
+    // The installation is the authority for the release scope. A request that
+    // declares another level is a contradiction, not a selector, and the
+    // organization claim it declares must already agree with the installation.
+    ensure_requested_scope_matches_installation(
+        request.ownership_scope.as_deref(),
+        tenant_application.ownership_scope,
+    )?;
     if tenant_application.organization_id != request.organization_id {
         return Err("organizationId does not match tenant application".to_string());
     }
+    // A personal release credentials exactly its owner: the credential's
+    // `user_id` is the isolation key's last column, so any other subject would
+    // read another person's partition of the same application.
+    ensure_subject_is_installation_owner(
+        tenant_application.ownership_scope,
+        tenant_application.owner_user_id.as_deref(),
+        &actor.user_id,
+    )?;
     // Environment-scoped installations only issue credentials for a registered,
     // active environment. An installation without environment rows keeps the
     // historical behavior. The requested environment is the operator context's
@@ -184,7 +212,11 @@ pub async fn issue_delegated_access_credential(
     )
     .await?;
 
-    let organization_id = Some(request.organization_id.clone());
+    let scope = tenant_application.ownership_scope;
+    let organization_id = match scope {
+        ApplicationOwnershipScope::Organization => Some(request.organization_id.clone()),
+        ApplicationOwnershipScope::Tenant | ApplicationOwnershipScope::User => None,
+    };
     let (data_scope, actor_permission_scope) = resolve_session_scopes(
         pg,
         &request.tenant_id,
@@ -218,8 +250,8 @@ pub async fn issue_delegated_access_credential(
     );
 
     let signing_key = ensure_tenant_signing_key(pg, &request.tenant_id).await?;
-    let access_token = sign_local_session_token(&signing_key, "access", &context);
-    let auth_token = sign_local_session_token(&signing_key, "auth", &context);
+    let access_token = sign_local_session_token(&signing_key, "access", &context, scope);
+    let auth_token = sign_local_session_token(&signing_key, "auth", &context, scope);
     let refresh_token = generate_opaque_token("refresh");
 
     let auth_token_hash = hash_token(&auth_token);
@@ -229,6 +261,7 @@ pub async fn issue_delegated_access_credential(
     persist_signed_session(
         pg,
         &context,
+        scope,
         &signing_key,
         &auth_token_hash,
         &access_token_hash,
@@ -246,6 +279,7 @@ pub async fn issue_delegated_access_credential(
         organization_id: request.organization_id.clone(),
         app_id,
         tenant_application_id: tenant_application.id.clone(),
+        ownership_scope: scope,
         expires_at: expires_at.to_rfc3339(),
     })
 }
@@ -301,9 +335,37 @@ pub async fn issue_standalone_bootstrap_access_credential(
     // The token subject is the installation's deploy application. Without the
     // link there is no deployment to name, so issuance fails closed.
     let token_app_id = resolve_access_token_app_id(&tenant_application)?;
-    ensure_bootstrap_system_user(pg, tenant_id).await?;
+    let scope = tenant_application.ownership_scope;
+    // A personal release is one person's deployment: its ambient credential is
+    // issued for — and only for — the recorded owner, because the owner is the
+    // last column of that installation's isolation key. Issuing it for the
+    // synthetic bootstrap user would file every row it writes under a user id
+    // nobody owns. The owner must be a real active user of the tenant, so a
+    // deactivated owner stops the deployment from authenticating instead of
+    // leaving an orphan credential behind.
+    let subject_user_id = match scope {
+        ApplicationOwnershipScope::User => {
+            let owner_user_id = tenant_application
+                .owner_user_id
+                .as_deref()
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| {
+                    format!(
+                        "USER-scoped installation {} has no ownerUserId and cannot issue a bootstrap credential",
+                        tenant_application.id
+                    )
+                })?;
+            ensure_active_bootstrap_owner(pg, tenant_id, owner_user_id).await?;
+            owner_user_id.to_owned()
+        }
+        ApplicationOwnershipScope::Tenant | ApplicationOwnershipScope::Organization => {
+            ensure_bootstrap_system_user(pg, tenant_id).await?;
+            "system".to_owned()
+        }
+    };
 
-    let organization_id = tenant_application.organization_id.clone();
+    let organization_id = scope.organization_claim(&tenant_application.organization_id).to_owned();
     let session_id = generate_opaque_token("session");
     let now = chrono::Utc::now();
     // Default: no expiry (`ttl_seconds = None` or `Some(0)`). The bootstrap
@@ -320,13 +382,13 @@ pub async fn issue_standalone_bootstrap_access_credential(
     let context = IamAppContext::new(
         tenant_id.to_owned(),
         Some(organization_id.as_str()),
-        "system",
+        subject_user_id.as_str(),
         session_id.clone(),
         token_app_id.clone(),
         environment,
         DeploymentMode::Local,
         AuthLevel::System,
-        vec![format!("tenant:{tenant_id}"), "user:system".to_owned()],
+        vec![format!("tenant:{tenant_id}"), format!("user:{subject_user_id}")],
         tenant_application.access_permissions.clone(),
     );
 
@@ -334,9 +396,15 @@ pub async fn issue_standalone_bootstrap_access_credential(
     // before signing, so the issued token is always bound to the tenant
     // secret and the database session.
     let signing_key = ensure_tenant_signing_key(pg, tenant_id).await?;
-    let access_token =
-        sign_local_session_token_with_ttl(&signing_key, "access", &context, ttl as u128);
-    let auth_token = sign_local_session_token_with_ttl(&signing_key, "auth", &context, ttl as u128);
+    let access_token = sign_local_session_token_with_ttl(
+        &signing_key,
+        "access",
+        &context,
+        scope,
+        ttl as u128,
+    );
+    let auth_token =
+        sign_local_session_token_with_ttl(&signing_key, "auth", &context, scope, ttl as u128);
     ensure_entrypoint_token_budget(&access_token)?;
     ensure_entrypoint_token_budget(&auth_token)?;
     let refresh_token = generate_opaque_token("refresh");
@@ -347,6 +415,7 @@ pub async fn issue_standalone_bootstrap_access_credential(
     persist_signed_session(
         pg,
         &context,
+        scope,
         &signing_key,
         &auth_token_hash,
         &access_token_hash,
@@ -364,6 +433,7 @@ pub async fn issue_standalone_bootstrap_access_credential(
         organization_id,
         app_id: token_app_id,
         tenant_application_id: tenant_application.id.clone(),
+        ownership_scope: scope,
         expires_at: expires_at.to_rfc3339(),
     })
 }
@@ -455,6 +525,43 @@ pub async fn resolve_deployment_bootstrap_access_token(
     Ok(Some(issued.access_credential))
 }
 
+/// Ensures the recorded owner of a `USER`-scoped installation is a live user of
+/// the tenant.
+///
+/// The bootstrap credential of a personal installation is issued for the owner
+/// (`APPLICATION_IDENTITY_SPEC.md` §4.1 rule 8), and the session resolver joins
+/// `iam_user` and requires an active row. Checking here turns "the owner was
+/// deleted or disabled" into a named issuance error instead of a credential that
+/// silently resolves to nothing.
+async fn ensure_active_bootstrap_owner(
+    pg: &PgPool,
+    tenant_id: &str,
+    owner_user_id: &str,
+) -> Result<(), String> {
+    let row = sqlx::query(
+        "SELECT status FROM iam_user \
+         WHERE id = $1 AND tenant_id = $2 AND is_deleted = 0 LIMIT 1",
+    )
+    .bind(owner_user_id)
+    .bind(tenant_id)
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| format!("load installation owner failed: {error}"))?;
+    let Some(row) = row else {
+        return Err(format!(
+            "USER-scoped installation owner {owner_user_id} was not found in tenant {tenant_id}; \
+             a personal release cannot issue a credential for a missing owner"
+        ));
+    };
+    let status: String = row.get(0);
+    if status != "active" {
+        return Err(format!(
+            "USER-scoped installation owner {owner_user_id} is not active (status={status})"
+        ));
+    }
+    Ok(())
+}
+
 /// Ensures the synthetic `system` user used as the bootstrap principal.
 ///
 /// `find_iam_context_from_access_token` joins `iam_user` and requires an
@@ -484,6 +591,7 @@ async fn ensure_bootstrap_system_user(pg: &PgPool, tenant_id: &str) -> Result<()
 async fn persist_signed_session(
     pg: &PgPool,
     context: &IamAppContext,
+    scope: ApplicationOwnershipScope,
     signing_key: &TenantSigningKey,
     auth_token_hash: &str,
     access_token_hash: &str,
@@ -496,9 +604,9 @@ async fn persist_signed_session(
          principal_kind, principal_id, app_id, environment, deployment_mode, auth_level, \
          auth_token_hash, auth_token_kid, access_token_hash, access_token_kid, \
          refresh_token_hash, refresh_token_kid, sharding_key, sharding_strategy, \
-         data_scope_json, permission_scope_json, expires_at, created_at, updated_at) \
+         data_scope_json, permission_scope_json, scope_kind, expires_at, created_at, updated_at) \
          VALUES ($1, $2, $3, $4, $5, 'user', $5, $6, $7, $8, $9, \
-                 $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)",
+                 $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)",
     )
     .bind(&context.session_id)
     .bind(&context.tenant_id)
@@ -519,6 +627,7 @@ async fn persist_signed_session(
     .bind("tenant")
     .bind(Json(&context.data_scope))
     .bind(Json(&context.permission_scope))
+    .bind(scope.as_str())
     .bind(expires_at)
     .bind(now)
     .bind(now)
@@ -538,6 +647,7 @@ pub fn issued_access_credential_to_json(issued: &IssuedAccessCredential) -> Valu
         "organizationId": issued.organization_id,
         "appId": issued.app_id,
         "tenantApplicationId": issued.tenant_application_id,
+        "ownershipScope": issued.ownership_scope.as_str(),
         "expiresAt": issued.expires_at,
     })
 }
@@ -612,8 +722,15 @@ fn sign_local_session_token(
     signing_key: &TenantSigningKey,
     token_type: &str,
     context: &IamAppContext,
+    scope: ApplicationOwnershipScope,
 ) -> String {
-    sign_local_session_token_with_ttl(signing_key, token_type, context, LOCAL_TOKEN_TTL_SECONDS)
+    sign_local_session_token_with_ttl(
+        signing_key,
+        token_type,
+        context,
+        scope,
+        LOCAL_TOKEN_TTL_SECONDS,
+    )
 }
 
 /// Signs one local dual-token (`auth`/`access`) JWT.
@@ -627,10 +744,16 @@ fn sign_local_session_token(
 /// `runtimeConfig.oauth.relyingParty.clientId`); `iam_session` records the deploy
 /// application anchor only, and signing an unadmitted claim would break the
 /// dual-token claim contract before the table admits it.
+///
+/// `ownership_scope` is admitted (IAM_SPEC §5.2): it is the installation's
+/// release level, a fixed-size identity fact that does not change for the
+/// lifetime of the credential, and it is what lets a data plane filter by the
+/// right isolation key without a second lookup.
 pub(crate) fn sign_local_session_token_with_ttl(
     signing_key: &TenantSigningKey,
     token_type: &str,
     context: &IamAppContext,
+    scope: ApplicationOwnershipScope,
     ttl_seconds: u128,
 ) -> String {
     let issued_at = current_millis() / 1000;
@@ -662,6 +785,7 @@ pub(crate) fn sign_local_session_token_with_ttl(
         "iss": "sdkwork-iam-local",
         "login_scope": login_scope_to_string(&context.login_scope),
         "organization_id": organization_id,
+        "ownership_scope": scope.as_str(),
         "session_id": context.session_id,
         "tenant_id": context.tenant_id,
         "token_type": token_type,
@@ -778,6 +902,8 @@ mod tests {
             access_permissions: vec!["iam.credential_entry".to_owned()],
             runtime_config: json!({}),
             deploy_application_id: deploy_application_id.map(str::to_owned),
+            ownership_scope: ApplicationOwnershipScope::Tenant,
+            owner_user_id: None,
         }
     }
 
@@ -844,8 +970,18 @@ mod tests {
         };
 
         for token in [
-            sign_local_session_token(&signing_key, "access", &context),
-            sign_local_session_token(&signing_key, "auth", &context),
+            sign_local_session_token(
+                &signing_key,
+                "access",
+                &context,
+                ApplicationOwnershipScope::Tenant,
+            ),
+            sign_local_session_token(
+                &signing_key,
+                "auth",
+                &context,
+                ApplicationOwnershipScope::Tenant,
+            ),
         ] {
             let payload = access_token_payload(&token);
             assert_eq!(payload["app_id"], "deploy-app-7");
@@ -903,6 +1039,7 @@ mod tests {
             &signing_key,
             "access",
             &context,
+            ApplicationOwnershipScope::Organization,
             LOCAL_TOKEN_TTL_SECONDS,
         );
         let parts: Vec<&str> = token.split('.').collect();
@@ -925,6 +1062,7 @@ mod tests {
             "iss",
             "login_scope",
             "organization_id",
+            "ownership_scope",
             "session_id",
             "tenant_id",
             "token_type",
@@ -973,10 +1111,60 @@ mod tests {
         assert_eq!(payload["user_id"], "user-1");
         assert_eq!(payload["session_id"], "session-1");
         assert_eq!(payload["token_type"], "access");
+        // The release scope is the installation's, and it is the claim a data
+        // plane reads to pick its isolation key.
+        assert_eq!(payload["ownership_scope"], "ORGANIZATION");
+        assert_eq!(payload["organization_id"], "org-1");
         // Hard budget that prevents HTTP 431 (Request Header Fields Too Large)
         // on the reverse-proxy edge: the full 3-part compact JWT must stay
         // under 8 KiB even for an unusually large scope set.
         assert!(token.len() < 8192, "token too long: {}", token.len());
+    }
+
+    /// The three release levels produce the claims the standard requires: the
+    /// organization claim follows the scope, not the session, and the scope is
+    /// always present.
+    #[test]
+    fn release_scope_decides_the_organization_claim_of_the_token() {
+        let signing_key = TenantSigningKey {
+            kid: "kid-1".to_owned(),
+            secret: b"0123456789abcdef0123456789abcdef".to_vec(),
+        };
+        let cases = [
+            (ApplicationOwnershipScope::Tenant, "0", "TENANT", "TENANT"),
+            (
+                ApplicationOwnershipScope::Organization,
+                "42",
+                "ORGANIZATION",
+                "ORGANIZATION",
+            ),
+            (ApplicationOwnershipScope::User, "0", "TENANT", "USER"),
+        ];
+        for (scope, installation_organization_id, login_scope, claim) in cases {
+            let context = IamAppContext::new(
+                "100001".to_owned(),
+                Some(installation_organization_id),
+                "user-1".to_owned(),
+                "session-1".to_owned(),
+                "deploy-app-7".to_owned(),
+                Environment::Prod,
+                DeploymentMode::Local,
+                AuthLevel::System,
+                Vec::new(),
+                Vec::new(),
+            );
+            let token =
+                sign_local_session_token_with_ttl(&signing_key, "access", &context, scope, 3600);
+            let payload = access_token_payload(&token);
+            assert_eq!(payload["ownership_scope"], claim);
+            assert_eq!(payload["login_scope"], login_scope);
+            let expected_organization_id = if scope == ApplicationOwnershipScope::Organization {
+                installation_organization_id
+            } else {
+                "0"
+            };
+            assert_eq!(payload["organization_id"], expected_organization_id);
+        }
     }
 
     /// IAM_SPEC §5.2: the authored payload is identity-only, so a rendered token
@@ -1011,6 +1199,7 @@ mod tests {
             &signing_key,
             "access",
             &context,
+            ApplicationOwnershipScope::Tenant,
             LOCAL_TOKEN_TTL_SECONDS,
         );
         ensure_entrypoint_token_budget(&token).expect("identity-only token must pass the budget");

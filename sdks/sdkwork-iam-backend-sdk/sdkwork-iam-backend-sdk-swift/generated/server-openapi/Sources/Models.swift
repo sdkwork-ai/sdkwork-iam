@@ -150,6 +150,188 @@ public struct SdkWorkCommandResponse: Codable {
     }
 }
 
+public struct IamInstallationEnvironment: Codable {
+    public let environmentId: String?
+    public let tenantId: String?
+    public let organizationId: String?
+    public let installationId: String?
+    public let environmentKey: String?
+    public let primaryDomain: String?
+    public let domainConfig: [String: Any]?
+    public let status: String?
+    public let createdAt: String?
+    public let updatedAt: String?
+
+
+    public init(environmentId: String? = nil, tenantId: String? = nil, organizationId: String? = nil, installationId: String? = nil, environmentKey: String? = nil, primaryDomain: String? = nil, domainConfig: [String: Any]? = nil, status: String? = nil, createdAt: String? = nil, updatedAt: String? = nil) {
+        self.environmentId = environmentId
+        self.tenantId = tenantId
+        self.organizationId = organizationId
+        self.installationId = installationId
+        self.environmentKey = environmentKey
+        self.primaryDomain = primaryDomain
+        self.domainConfig = domainConfig
+        self.status = status
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct IamInstallationEnvironmentUpsertCommand: Codable {
+    public let environmentKey: String?
+    public let primaryDomain: String?
+    public let domainConfig: [String: Any]?
+    public let status: String?
+
+
+    public init(environmentKey: String? = nil, primaryDomain: String? = nil, domainConfig: [String: Any]? = nil, status: String? = nil) {
+        self.environmentKey = environmentKey
+        self.primaryDomain = primaryDomain
+        self.domainConfig = domainConfig
+        self.status = status
+    }
+}
+
+public struct IamInstallationCredential: Codable {
+    public let credentialId: String?
+    public let tenantId: String?
+    public let installationEnvironmentId: String?
+    public let environmentKey: String?
+    public let clientId: String?
+    public let redirectUris: [String]?
+    public let grantedScopes: [String]?
+    public let status: String?
+    public let rotatedAt: String?
+    public let retiredAt: String?
+    public let createdAt: String?
+    public let updatedAt: String?
+
+
+    public init(credentialId: String? = nil, tenantId: String? = nil, installationEnvironmentId: String? = nil, environmentKey: String? = nil, clientId: String? = nil, redirectUris: [String]? = nil, grantedScopes: [String]? = nil, status: String? = nil, rotatedAt: String? = nil, retiredAt: String? = nil, createdAt: String? = nil, updatedAt: String? = nil) {
+        self.credentialId = credentialId
+        self.tenantId = tenantId
+        self.installationEnvironmentId = installationEnvironmentId
+        self.environmentKey = environmentKey
+        self.clientId = clientId
+        self.redirectUris = redirectUris
+        self.grantedScopes = grantedScopes
+        self.status = status
+        self.rotatedAt = rotatedAt
+        self.retiredAt = retiredAt
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct IamInstallationCredentialWithSecret: Codable {
+    public let credentialId: String?
+    public let tenantId: String?
+    public let installationEnvironmentId: String?
+    public let environmentKey: String?
+    public let clientId: String?
+    public let clientSecret: String?
+    public let redirectUris: [String]?
+    public let grantedScopes: [String]?
+    public let status: String?
+    public let rotatedAt: String?
+    public let retiredAt: String?
+    public let createdAt: String?
+    public let updatedAt: String?
+
+
+    public init(credentialId: String? = nil, tenantId: String? = nil, installationEnvironmentId: String? = nil, environmentKey: String? = nil, clientId: String? = nil, clientSecret: String? = nil, redirectUris: [String]? = nil, grantedScopes: [String]? = nil, status: String? = nil, rotatedAt: String? = nil, retiredAt: String? = nil, createdAt: String? = nil, updatedAt: String? = nil) {
+        self.credentialId = credentialId
+        self.tenantId = tenantId
+        self.installationEnvironmentId = installationEnvironmentId
+        self.environmentKey = environmentKey
+        self.clientId = clientId
+        self.clientSecret = clientSecret
+        self.redirectUris = redirectUris
+        self.grantedScopes = grantedScopes
+        self.status = status
+        self.rotatedAt = rotatedAt
+        self.retiredAt = retiredAt
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct IamInstallationCredentialCreateCommand: Codable {
+    public let environmentKey: String?
+    public let clientId: String?
+    public let redirectUris: [String]?
+    public let grantedScopes: [String]?
+
+
+    public init(environmentKey: String? = nil, clientId: String? = nil, redirectUris: [String]? = nil, grantedScopes: [String]? = nil) {
+        self.environmentKey = environmentKey
+        self.clientId = clientId
+        self.redirectUris = redirectUris
+        self.grantedScopes = grantedScopes
+    }
+}
+
+public struct IamInstallationCredentialRotateCommand: Codable {
+    public let clientId: String?
+
+
+    public init(clientId: String? = nil) {
+        self.clientId = clientId
+    }
+}
+
+public struct IamInstallationEnvironmentListResponse: Codable {
+    public let code: Int?
+    public let data: Any?
+    public let traceId: String?
+
+
+    public init(code: Int? = nil, data: Any? = nil, traceId: String? = nil) {
+        self.code = code
+        self.data = data
+        self.traceId = traceId
+    }
+}
+
+public struct IamInstallationEnvironmentResponse: Codable {
+    public let code: Int?
+    public let data: Any?
+    public let traceId: String?
+
+
+    public init(code: Int? = nil, data: Any? = nil, traceId: String? = nil) {
+        self.code = code
+        self.data = data
+        self.traceId = traceId
+    }
+}
+
+public struct IamInstallationCredentialResponse: Codable {
+    public let code: Int?
+    public let data: Any?
+    public let traceId: String?
+
+
+    public init(code: Int? = nil, data: Any? = nil, traceId: String? = nil) {
+        self.code = code
+        self.data = data
+        self.traceId = traceId
+    }
+}
+
+public struct IamInstallationCredentialListResponse: Codable {
+    public let code: Int?
+    public let data: Any?
+    public let traceId: String?
+
+
+    public init(code: Int? = nil, data: Any? = nil, traceId: String? = nil) {
+        self.code = code
+        self.data = data
+        self.traceId = traceId
+    }
+}
+
 public struct IamOauthClientCreateCommand: Codable {
     public let integrationId: String?
     public let providerCode: String?
@@ -179,10 +361,12 @@ public struct IamTenantApplicationManagementProvisionCommand: Codable {
     public let accessPermissions: [String]?
     public let runtimeConfig: [String: Any]?
     public let deployApplicationId: String?
+    public let ownershipScope: String?
+    public let ownerUserId: String?
     public let provisioningIdempotencyKey: String?
 
 
-    public init(organizationId: String? = nil, instanceKey: String? = nil, displayName: String? = nil, environment: String? = nil, applicationType: String? = nil, primaryDomain: String? = nil, accessPermissions: [String]? = nil, runtimeConfig: [String: Any]? = nil, deployApplicationId: String? = nil, provisioningIdempotencyKey: String? = nil) {
+    public init(organizationId: String? = nil, instanceKey: String? = nil, displayName: String? = nil, environment: String? = nil, applicationType: String? = nil, primaryDomain: String? = nil, accessPermissions: [String]? = nil, runtimeConfig: [String: Any]? = nil, deployApplicationId: String? = nil, ownershipScope: String? = nil, ownerUserId: String? = nil, provisioningIdempotencyKey: String? = nil) {
         self.organizationId = organizationId
         self.instanceKey = instanceKey
         self.displayName = displayName
@@ -192,6 +376,8 @@ public struct IamTenantApplicationManagementProvisionCommand: Codable {
         self.accessPermissions = accessPermissions
         self.runtimeConfig = runtimeConfig
         self.deployApplicationId = deployApplicationId
+        self.ownershipScope = ownershipScope
+        self.ownerUserId = ownerUserId
         self.provisioningIdempotencyKey = provisioningIdempotencyKey
     }
 }
@@ -228,10 +414,12 @@ public struct AppbaseTenantApplicationProvisionCommand: Codable {
     public let accessPermissions: [String]?
     public let runtimeConfig: [String: Any]?
     public let deployApplicationId: String?
+    public let ownershipScope: String?
+    public let ownerUserId: String?
     public let provisioningIdempotencyKey: String?
 
 
-    public init(authToken: String? = nil, username: String? = nil, email: String? = nil, phone: String? = nil, password: String? = nil, tenantId: String? = nil, organizationId: String? = nil, instanceKey: String? = nil, displayName: String? = nil, environment: String? = nil, applicationType: String? = nil, primaryDomain: String? = nil, accessPermissions: [String]? = nil, runtimeConfig: [String: Any]? = nil, deployApplicationId: String? = nil, provisioningIdempotencyKey: String? = nil) {
+    public init(authToken: String? = nil, username: String? = nil, email: String? = nil, phone: String? = nil, password: String? = nil, tenantId: String? = nil, organizationId: String? = nil, instanceKey: String? = nil, displayName: String? = nil, environment: String? = nil, applicationType: String? = nil, primaryDomain: String? = nil, accessPermissions: [String]? = nil, runtimeConfig: [String: Any]? = nil, deployApplicationId: String? = nil, ownershipScope: String? = nil, ownerUserId: String? = nil, provisioningIdempotencyKey: String? = nil) {
         self.authToken = authToken
         self.username = username
         self.email = email
@@ -247,6 +435,8 @@ public struct AppbaseTenantApplicationProvisionCommand: Codable {
         self.accessPermissions = accessPermissions
         self.runtimeConfig = runtimeConfig
         self.deployApplicationId = deployApplicationId
+        self.ownershipScope = ownershipScope
+        self.ownerUserId = ownerUserId
         self.provisioningIdempotencyKey = provisioningIdempotencyKey
     }
 }
@@ -304,9 +494,10 @@ public struct AppbaseAccessCredentialCreateCommand: Codable {
     public let tenantApplicationId: String?
     public let appId: String?
     public let instanceKey: String?
+    public let ownershipScope: String?
 
 
-    public init(authToken: String? = nil, username: String? = nil, email: String? = nil, phone: String? = nil, password: String? = nil, tenantId: String? = nil, organizationId: String? = nil, tenantApplicationId: String? = nil, appId: String? = nil, instanceKey: String? = nil) {
+    public init(authToken: String? = nil, username: String? = nil, email: String? = nil, phone: String? = nil, password: String? = nil, tenantId: String? = nil, organizationId: String? = nil, tenantApplicationId: String? = nil, appId: String? = nil, instanceKey: String? = nil, ownershipScope: String? = nil) {
         self.authToken = authToken
         self.username = username
         self.email = email
@@ -317,6 +508,7 @@ public struct AppbaseAccessCredentialCreateCommand: Codable {
         self.tenantApplicationId = tenantApplicationId
         self.appId = appId
         self.instanceKey = instanceKey
+        self.ownershipScope = ownershipScope
     }
 }
 

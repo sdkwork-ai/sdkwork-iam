@@ -47,6 +47,12 @@ final class AppbaseTenantApplicationProvisionCommand
     /** Deploy application this installation serves. It is the identity every access token carries, and the one-to-one relation is enforced by the database. */
     public ?string $deployApplicationId = null;
 
+    /** Release scope of the installation (`APPLICATION_IDENTITY_SPEC.md` section 4.1). TENANT is the default: the application serves the whole tenant and its isolation key is (tenantId, appId). ORGANIZATION serves one organization and requires a non-zero organizationId. USER serves one person and requires ownerUserId. The scope is immutable once provisioned; publishing at another level needs a new installation. */
+    public ?string $ownershipScope = null;
+
+    /** Owner of a USER-scoped installation. Required for ownershipScope USER and rejected for the other two levels. */
+    public ?string $ownerUserId = null;
+
     /** Replay-safe key for the cross-module provisioning call. */
     public ?string $provisioningIdempotencyKey = null;
 
@@ -99,6 +105,12 @@ final class AppbaseTenantApplicationProvisionCommand
         $this->deployApplicationId = array_key_exists('deployApplicationId', $data)
             ? $data['deployApplicationId']
             : null;
+        $this->ownershipScope = array_key_exists('ownershipScope', $data)
+            ? $data['ownershipScope']
+            : null;
+        $this->ownerUserId = array_key_exists('ownerUserId', $data)
+            ? $data['ownerUserId']
+            : null;
         $this->provisioningIdempotencyKey = array_key_exists('provisioningIdempotencyKey', $data)
             ? $data['provisioningIdempotencyKey']
             : null;
@@ -127,6 +139,8 @@ final class AppbaseTenantApplicationProvisionCommand
             'accessPermissions' => array_values(array_map(static fn($item) => $item, $this->accessPermissions)),
             'runtimeConfig' => $this->runtimeConfig,
             'deployApplicationId' => $this->deployApplicationId,
+            'ownershipScope' => $this->ownershipScope,
+            'ownerUserId' => $this->ownerUserId,
             'provisioningIdempotencyKey' => $this->provisioningIdempotencyKey,
         ];
     }

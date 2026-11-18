@@ -15,4 +15,6 @@ export interface AppbaseAccessCredentialCreateCommand {
   tenantApplicationId?: string;
   appId?: string;
   instanceKey?: string;
+  /** Release scope the caller declares. It is checked against the installation, never used to select one: a value the installation was not released at fails closed (`APPLICATION_IDENTITY_SPEC.md` section 4.1 rule 3). Omit it to inherit the installation scope. */
+  ownershipScope?: 'TENANT' | 'ORGANIZATION' | 'USER';
 }

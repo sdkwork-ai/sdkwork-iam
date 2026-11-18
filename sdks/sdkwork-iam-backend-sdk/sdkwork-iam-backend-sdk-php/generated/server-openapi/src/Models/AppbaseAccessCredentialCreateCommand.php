@@ -34,6 +34,9 @@ final class AppbaseAccessCredentialCreateCommand
 
     public ?string $instanceKey = null;
 
+    /** Release scope the caller declares. It is checked against the installation, never used to select one: a value the installation was not released at fails closed (`APPLICATION_IDENTITY_SPEC.md` section 4.1 rule 3). Omit it to inherit the installation scope. */
+    public ?string $ownershipScope = null;
+
     public function __construct(array $data = [])
     {
         $this->authToken = array_key_exists('authToken', $data)
@@ -66,6 +69,9 @@ final class AppbaseAccessCredentialCreateCommand
         $this->instanceKey = array_key_exists('instanceKey', $data)
             ? $data['instanceKey']
             : null;
+        $this->ownershipScope = array_key_exists('ownershipScope', $data)
+            ? $data['ownershipScope']
+            : null;
     }
 
     public static function fromArray(?array $data): ?self
@@ -86,6 +92,7 @@ final class AppbaseAccessCredentialCreateCommand
             'tenantApplicationId' => $this->tenantApplicationId,
             'appId' => $this->appId,
             'instanceKey' => $this->instanceKey,
+            'ownershipScope' => $this->ownershipScope,
         ];
     }
 }

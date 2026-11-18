@@ -11,6 +11,7 @@ use std::sync::Arc;
 
 use crate::api_key_lookup::IamApiKeyLookupService;
 use crate::application_access_token::resolve_application_access_token_context;
+use crate::application_scope::ApplicationOwnershipScope;
 use crate::dev_runtime::allows_dev_authentication_fallback;
 use crate::iam_session::{
     resolve_iam_app_context_from_access_token, resolve_iam_app_context_from_access_token_pool,
@@ -130,6 +131,80 @@ impl IamDatabaseWebRequestContextResolver {
             ))
         }
     }
+
+    /// Attaches the release scope of the application the credential names.
+    ///
+    /// `APPLICATION_IDENTITY_SPEC.md` §4.1: the scope is a property of the
+    /// installation, and a data plane needs it to choose the isolation key
+    /// (`(tenant_id, app_id)` versus the organization or user tuple). It is read
+    /// from the installation — never from the caller — through the small
+    /// positive cache, because the value is immutable for the installation's
+    /// lifetime.
+    ///
+    /// When the anchor names no installation the credential is not a deployment
+    /// credential (an IAM platform application, a framework-default parser's
+    /// token): the legacy tenant/organization derivation is attached instead, and
+    /// `USER` is never inferred.
+    async fn with_application_scope(
+        &self,
+        mut principal: WebRequestPrincipal,
+    ) -> Result<WebRequestPrincipal, WebFrameworkError> {
+        let Some(pool) = self.iam_pool.as_deref() else {
+            return Ok(principal);
+        };
+        let tenant_id = principal.tenant_id().to_owned();
+        let app_id = principal.app_id().to_owned();
+        match crate::application_registry::resolve_installation_ownership_scope(
+            pool, &tenant_id, &app_id,
+        )
+        .await
+        {
+            Ok(Some(scope)) => {
+                principal.app.ownership_scope = Some(scope.as_str().to_owned());
+                Ok(principal)
+            }
+            Ok(None) => {
+                let scope = ApplicationOwnershipScope::derive_from_organization_scope(
+                    principal.organization_id(),
+                );
+                principal.app.ownership_scope = Some(scope.as_str().to_owned());
+                Ok(principal)
+            }
+            Err(error) => {
+                // A principal whose release scope cannot be read cannot be
+                // filtered correctly, so it is rejected instead of being
+                // authorized against a guessed tenant-wide key.
+                tracing::warn!(
+                    tenant_id = %tenant_id,
+                    app_id = %app_id,
+                    error = %error,
+                    "IAM application release scope resolution failed",
+                );
+                Err(WebFrameworkError::invalid_credentials(
+                    "IAM application release scope is unavailable for this credential",
+                ))
+            }
+        }
+    }
+
+    /// Validates the production audience policy and attaches the application
+    /// release scope.
+    async fn authorize_principal(
+        &self,
+        principal: WebRequestPrincipal,
+    ) -> Result<WebRequestPrincipal, WebFrameworkError> {
+        let principal = self.validate_production_principal(principal)?;
+        self.with_application_scope(principal).await
+    }
+
+    /// Projects a verified IAM context into the framework principal.
+    async fn project_context(
+        &self,
+        context: sdkwork_iam_context_service::IamAppContext,
+    ) -> Result<WebRequestPrincipal, WebFrameworkError> {
+        self.authorize_principal(web_request_principal_from_iam(context))
+            .await
+    }
 }
 
 fn iam_database_unavailable_error() -> WebFrameworkError {
@@ -158,7 +233,8 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
     ) -> Result<WebRequestPrincipal, WebFrameworkError> {
         if let Some(resolver) = &self.open_api_database {
             return self
-                .validate_production_principal(resolver.resolve_api_key(raw_api_key).await?);
+                .authorize_principal(resolver.resolve_api_key(raw_api_key).await?)
+                .await;
         }
         if allows_dev_authentication_fallback() {
             return self
@@ -174,15 +250,15 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
         raw_bearer_token: &str,
     ) -> Result<WebRequestPrincipal, WebFrameworkError> {
         if let Some(resolver) = &self.open_api_database {
-            return self.validate_production_principal(
-                resolver.resolve_oauth_bearer(raw_bearer_token).await?,
-            );
+            return self
+                .authorize_principal(resolver.resolve_oauth_bearer(raw_bearer_token).await?)
+                .await;
         }
         if let Some(pool) = &self.iam_database_pool {
             if let Some(context) =
                 resolve_iam_app_context_from_oauth_bearer_pool(pool, raw_bearer_token).await
             {
-                return self.validate_production_principal(web_request_principal_from_iam(context));
+                return self.project_context(context).await;
             }
             if allows_dev_authentication_fallback() {
                 return self
@@ -198,7 +274,7 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
             if let Some(context) =
                 resolve_iam_app_context_from_oauth_bearer(pool, raw_bearer_token).await
             {
-                return self.validate_production_principal(web_request_principal_from_iam(context));
+                return self.project_context(context).await;
             }
             return Err(WebFrameworkError::invalid_credentials(
                 "invalid or expired IAM OAuth bearer token",
@@ -237,7 +313,7 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
             .await
             {
                 Some(context) => {
-                    self.validate_production_principal(web_request_principal_from_iam(context))
+                    self.project_context(context).await
                 }
                 None => Err(WebFrameworkError::invalid_credentials(
                     "invalid or expired IAM session",
@@ -257,7 +333,7 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
         match resolve_iam_app_context_from_dual_tokens(pool, raw_auth_token, raw_access_token).await
         {
             Some(context) => {
-                self.validate_production_principal(web_request_principal_from_iam(context))
+                self.project_context(context).await
             }
             None => Err(WebFrameworkError::invalid_credentials(
                 "invalid or expired IAM session",
@@ -273,7 +349,7 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
             if let Some(context) =
                 resolve_iam_app_context_from_access_token_pool(pool, raw_access_token).await
             {
-                return self.validate_production_principal(web_request_principal_from_iam(context));
+                return self.project_context(context).await;
             }
             // Public application access token (`token_class:application`): the
             // spec resolves it from its claims and the enabled tenant
@@ -284,8 +360,7 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
                 if let Some(context) =
                     resolve_application_access_token_context(pg, raw_access_token).await
                 {
-                    return self
-                        .validate_production_principal(web_request_principal_from_iam(context));
+                    return self.project_context(context).await;
                 }
             }
             if allows_dev_authentication_fallback() {
@@ -302,12 +377,12 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
             if let Some(context) =
                 resolve_iam_app_context_from_access_token(pool, raw_access_token).await
             {
-                return self.validate_production_principal(web_request_principal_from_iam(context));
+                return self.project_context(context).await;
             }
             if let Some(context) =
                 resolve_application_access_token_context(pool.as_ref(), raw_access_token).await
             {
-                return self.validate_production_principal(web_request_principal_from_iam(context));
+                return self.project_context(context).await;
             }
             if allows_dev_authentication_fallback() {
                 return self

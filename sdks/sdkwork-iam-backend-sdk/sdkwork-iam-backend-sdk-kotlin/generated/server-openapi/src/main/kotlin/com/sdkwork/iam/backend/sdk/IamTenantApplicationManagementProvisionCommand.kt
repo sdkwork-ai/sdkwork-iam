@@ -10,5 +10,7 @@ data class IamTenantApplicationManagementProvisionCommand(
     val accessPermissions: List<String>? = null,
     val runtimeConfig: Map<String, Any>? = null,
     val deployApplicationId: String? = null,
+    val ownershipScope: String? = null,
+    val ownerUserId: String? = null,
     val provisioningIdempotencyKey: String? = null
 )

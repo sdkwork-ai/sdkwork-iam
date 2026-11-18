@@ -30,6 +30,25 @@ function readProfileDotenv(mode: string): Record<string, string> {
   return entries;
 }
 
+/**
+ * Deploy application anchor: the identity the public application access token
+ * must carry.
+ *
+ * IAM makes the deploy application the identity of every access token, so the
+ * expected 'app_id' is 'SDKWORK_DEPLOY_APPLICATION_ID', never the repository
+ * runtime id this config used to compile in (APP_ACCESS_TOKEN_SPEC.md section
+ * 3.1.1). A source checkout has no anchor: the committed profile then carries
+ * the '__SDKWORK_DEPLOY_APPLICATION_ID__' placeholder, and 'undefined' here
+ * makes the plugin skip the app_id comparison instead of comparing against a
+ * retired identity, so the placeholder or a real launching-environment token
+ * override both stay accepted. Packaging exports the anchor, which turns the
+ * comparison on.
+ * @returns the anchor when the build host sets it, else undefined.
+ */
+function readDeployApplicationId(): string | undefined {
+  return process.env.SDKWORK_DEPLOY_APPLICATION_ID?.trim() || undefined;
+}
+
 export default defineConfig(({ mode }) => {
   // The committed profile document is the authority for the public application
   // access token. loadEnv cannot be the only reader: it lets a launching
@@ -51,7 +70,7 @@ export default defineConfig(({ mode }) => {
       // (IAM_CREDENTIAL_ENTRY_SPEC.md section 4).
       createSdkworkPublicApplicationAccessTokenVitePlugin({
         accessToken: profileEnv.SDKWORK_ACCESS_TOKEN ?? env.SDKWORK_ACCESS_TOKEN,
-        applicationId: 'sdkwork-iam',
+        applicationId: readDeployApplicationId(),
         environment,
         profileId,
       }),

@@ -21,6 +21,8 @@ namespace SDKWork.Iam.BackendSdk.Models
         public List<string>? AccessPermissions { get; set; }
         public Dictionary<string, object>? RuntimeConfig { get; set; }
         public string? DeployApplicationId { get; set; }
+        public string? OwnershipScope { get; set; }
+        public string? OwnerUserId { get; set; }
         public string? ProvisioningIdempotencyKey { get; set; }
     }
 }

@@ -59,6 +59,31 @@ outside the caller's tenant scope.
 Runtime enforcement (token issuance and session creation) is documented in the
 repository `README.md`; OpenAPI describes the management surface only.
 
+## Installation Release Scope
+
+Provisioning (`tenantApplications.management.create` and
+`tenantApplications.create`) accepts two release-scope fields
+(`APPLICATION_IDENTITY_SPEC.md` §4.1):
+
+| Field | Rule |
+| --- | --- |
+| `ownershipScope` | `TENANT` (default) \| `ORGANIZATION` \| `USER`. Absent means `TENANT`; the value is immutable after provisioning. |
+| `ownerUserId` | Required for `USER`, rejected for the other two levels. The personal installation's credentials are bound to this user. |
+
+`organizationId` must agree with the level: `TENANT` and `USER` require `"0"`,
+`ORGANIZATION` requires a positive numeric organization id. A mismatched command is
+rejected as `400 iam_tenant_application_provision_invalid` (operator surface) or
+`400 iam_tenant_application_management_provision_invalid` before any write, and a
+re-provision that declares a different level is refused as a conflict naming the
+stored one.
+
+`accessCredentials.create` accepts the same `ownershipScope` as a **declaration**:
+it is checked against the installation and never selects one, so a value the
+installation was not released at fails closed.
+
+The installation representation in every tenant-application response carries
+`ownershipScope` and `ownerUserId`, next to `deployApplicationId`.
+
 ## Role Catalog Display Text
 
 `iam.roles.list` and `iam.roles.retrieve` carry catalog display text as machine

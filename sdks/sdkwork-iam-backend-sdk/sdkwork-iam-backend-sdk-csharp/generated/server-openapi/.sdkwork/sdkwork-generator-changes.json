@@ -9,25 +9,36 @@
     "protocol": "http",
     "packageName": "SDKWork.Iam.BackendSdk"
   },
-  "changeFingerprint": "bf5e0acb52e483b253c8ae1317ff05be753922a5ede9c91f3a7799c3c5feda4e",
+  "changeFingerprint": "06a623637af45eaed9c2bcc4db2859537225999489b00241e109de5e09d4937a",
   "changes": {
-    "createdGeneratedFiles": [],
+    "createdGeneratedFiles": [
+      "Models/IamInstallationCredential.cs",
+      "Models/IamInstallationCredentialCreateCommand.cs",
+      "Models/IamInstallationCredentialListResponse.cs",
+      "Models/IamInstallationCredentialResponse.cs",
+      "Models/IamInstallationCredentialRotateCommand.cs",
+      "Models/IamInstallationCredentialWithSecret.cs",
+      "Models/IamInstallationEnvironment.cs",
+      "Models/IamInstallationEnvironmentListResponse.cs",
+      "Models/IamInstallationEnvironmentResponse.cs",
+      "Models/IamInstallationEnvironmentUpsertCommand.cs"
+    ],
     "updatedGeneratedFiles": [
       "Api/IamApi.cs",
-      "Api/IamOauthApi.cs",
+      "Models/AppbaseAccessCredentialCreateCommand.cs",
       "Models/AppbaseTenantApplicationProvisionCommand.cs",
       "Models/IamTenantApplicationManagementProvisionCommand.cs"
     ],
     "unchangedGeneratedFiles": [
       "Api/Api.cs",
       "Api/ApiPaths.cs",
+      "Api/IamOauthApi.cs",
       "bin/publish-core.mjs",
       "bin/publish.ps1",
       "bin/publish.sh",
       "CHANGELOG.md",
       "Http/HttpClient.cs",
       "LICENSE",
-      "Models/AppbaseAccessCredentialCreateCommand.cs",
       "Models/AppbaseTenantApplicationEnableCommand.cs",
       "Models/AppbaseTenantApplicationUpdateCommand.cs",
       "Models/FieldError.cs",
@@ -51,9 +62,7 @@
       "SDKWork.Iam.BackendSdk.csproj",
       "SdkworkBackendClient.cs"
     ],
-    "deletedGeneratedFiles": [
-      "Models/AppbaseApplicationRegisterCommand.cs"
-    ],
+    "deletedGeneratedFiles": [],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
@@ -70,15 +79,24 @@
       {
         "area": "api-surface",
         "paths": [
-          "Api/IamApi.cs",
-          "Api/IamOauthApi.cs"
+          "Api/IamApi.cs"
         ]
       },
       {
         "area": "models",
         "paths": [
-          "Models/AppbaseApplicationRegisterCommand.cs",
+          "Models/AppbaseAccessCredentialCreateCommand.cs",
           "Models/AppbaseTenantApplicationProvisionCommand.cs",
+          "Models/IamInstallationCredential.cs",
+          "Models/IamInstallationCredentialCreateCommand.cs",
+          "Models/IamInstallationCredentialListResponse.cs",
+          "Models/IamInstallationCredentialResponse.cs",
+          "Models/IamInstallationCredentialRotateCommand.cs",
+          "Models/IamInstallationCredentialWithSecret.cs",
+          "Models/IamInstallationEnvironment.cs",
+          "Models/IamInstallationEnvironmentListResponse.cs",
+          "Models/IamInstallationEnvironmentResponse.cs",
+          "Models/IamInstallationEnvironmentUpsertCommand.cs",
           "Models/IamTenantApplicationManagementProvisionCommand.cs"
         ]
       }
@@ -113,14 +131,12 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "deleted-generated-files",
-      "manual-review-required",
       "verification-required"
     ]
   },

@@ -11,8 +11,8 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": true,
-  "changeFingerprint": "b8221e9e85d3d9adbdd6c8f2ea5c2d5022a402a4635e85d772ae795247cf97cf",
+  "hasDestructiveChanges": false,
+  "changeFingerprint": "ba13aa39fbf8b86caf71d79d6e49d641e7dffab45dbb7f424f7f0c5a4f6dd33f",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
@@ -23,15 +23,24 @@
       {
         "area": "api-surface",
         "paths": [
-          "src/Api/Iam.php",
-          "src/Api/IamOauth.php"
+          "src/Api/Iam.php"
         ]
       },
       {
         "area": "models",
         "paths": [
-          "src/Models/AppbaseApplicationRegisterCommand.php",
+          "src/Models/AppbaseAccessCredentialCreateCommand.php",
           "src/Models/AppbaseTenantApplicationProvisionCommand.php",
+          "src/Models/IamInstallationCredential.php",
+          "src/Models/IamInstallationCredentialCreateCommand.php",
+          "src/Models/IamInstallationCredentialListResponse.php",
+          "src/Models/IamInstallationCredentialResponse.php",
+          "src/Models/IamInstallationCredentialRotateCommand.php",
+          "src/Models/IamInstallationCredentialWithSecret.php",
+          "src/Models/IamInstallationEnvironment.php",
+          "src/Models/IamInstallationEnvironmentListResponse.php",
+          "src/Models/IamInstallationEnvironmentResponse.php",
+          "src/Models/IamInstallationEnvironmentUpsertCommand.php",
           "src/Models/IamTenantApplicationManagementProvisionCommand.php"
         ]
       }
@@ -41,14 +50,12 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "deleted-generated-files",
-      "manual-review-required",
       "verification-required"
     ]
   },
@@ -115,8 +122,8 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 36,
-    "models": 21,
+    "totalFiles": 46,
+    "models": 31,
     "apis": 2,
     "types": 0
   },
@@ -124,17 +131,28 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 4,
+    "writtenFiles": 14,
     "skippedScaffoldFiles": 1,
     "skippedUnchangedGeneratedFiles": 31,
-    "deletedGeneratedFiles": 1,
+    "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "b8221e9e85d3d9adbdd6c8f2ea5c2d5022a402a4635e85d772ae795247cf97cf",
+    "changeFingerprint": "ba13aa39fbf8b86caf71d79d6e49d641e7dffab45dbb7f424f7f0c5a4f6dd33f",
     "changes": {
-      "createdGeneratedFiles": [],
+      "createdGeneratedFiles": [
+        "src/Models/IamInstallationCredential.php",
+        "src/Models/IamInstallationCredentialCreateCommand.php",
+        "src/Models/IamInstallationCredentialListResponse.php",
+        "src/Models/IamInstallationCredentialResponse.php",
+        "src/Models/IamInstallationCredentialRotateCommand.php",
+        "src/Models/IamInstallationCredentialWithSecret.php",
+        "src/Models/IamInstallationEnvironment.php",
+        "src/Models/IamInstallationEnvironmentListResponse.php",
+        "src/Models/IamInstallationEnvironmentResponse.php",
+        "src/Models/IamInstallationEnvironmentUpsertCommand.php"
+      ],
       "updatedGeneratedFiles": [
         "src/Api/Iam.php",
-        "src/Api/IamOauth.php",
+        "src/Models/AppbaseAccessCredentialCreateCommand.php",
         "src/Models/AppbaseTenantApplicationProvisionCommand.php",
         "src/Models/IamTenantApplicationManagementProvisionCommand.php"
       ],
@@ -148,8 +166,8 @@
         "README.md",
         "sdkwork-sdk.json",
         "src/Api/BaseApi.php",
+        "src/Api/IamOauth.php",
         "src/Http/HttpClient.php",
-        "src/Models/AppbaseAccessCredentialCreateCommand.php",
         "src/Models/AppbaseTenantApplicationEnableCommand.php",
         "src/Models/AppbaseTenantApplicationUpdateCommand.php",
         "src/Models/FieldError.php",
@@ -171,9 +189,7 @@
         "src/SdkConfig.php",
         "src/SdkworkBackendClient.php"
       ],
-      "deletedGeneratedFiles": [
-        "src/Models/AppbaseApplicationRegisterCommand.php"
-      ],
+      "deletedGeneratedFiles": [],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/README.md"
@@ -190,15 +206,24 @@
         {
           "area": "api-surface",
           "paths": [
-            "src/Api/Iam.php",
-            "src/Api/IamOauth.php"
+            "src/Api/Iam.php"
           ]
         },
         {
           "area": "models",
           "paths": [
-            "src/Models/AppbaseApplicationRegisterCommand.php",
+            "src/Models/AppbaseAccessCredentialCreateCommand.php",
             "src/Models/AppbaseTenantApplicationProvisionCommand.php",
+            "src/Models/IamInstallationCredential.php",
+            "src/Models/IamInstallationCredentialCreateCommand.php",
+            "src/Models/IamInstallationCredentialListResponse.php",
+            "src/Models/IamInstallationCredentialResponse.php",
+            "src/Models/IamInstallationCredentialRotateCommand.php",
+            "src/Models/IamInstallationCredentialWithSecret.php",
+            "src/Models/IamInstallationEnvironment.php",
+            "src/Models/IamInstallationEnvironmentListResponse.php",
+            "src/Models/IamInstallationEnvironmentResponse.php",
+            "src/Models/IamInstallationEnvironmentUpsertCommand.php",
             "src/Models/IamTenantApplicationManagementProvisionCommand.php"
           ]
         }
@@ -233,14 +258,12 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "high",
+      "riskLevel": "medium",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
-        "deleted-generated-files",
-        "manual-review-required",
         "verification-required"
       ]
     },

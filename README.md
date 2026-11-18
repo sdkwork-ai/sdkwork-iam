@@ -52,6 +52,61 @@ on IAM `auth_token` + `access_token`. Per-application policy lives in
 
 See `../sdkwork-specs/IAM_OAUTH_SPEC.md` for the full contract.
 
+## Release scope (tenant / organization / personal)
+
+One source tree produces different deployments, and the only difference between
+them is the level the application was published at. That level is stored on the
+installation as `iam_application_installation.ownership_scope`, and it (not the
+request) decides the access-token claims and the isolation key:
+
+| `ownership_scope` | Meaning | `organization_id` | `owner_user_id` | Isolation key | Token claim |
+| --- | --- | --- | --- | --- | --- |
+| `TENANT` (default) | whole tenant | `0` | absent | `(tenant_id, app_id)` | `ownership_scope: TENANT`, `organization_id: 0` |
+| `ORGANIZATION` | one organization | non-zero | absent | `(tenant_id, organization_id, app_id)` | `ownership_scope: ORGANIZATION`, `organization_id: <installation org>` |
+| `USER` | one person | `0` | required | `(tenant_id, app_id, user_id)` | `ownership_scope: USER`, `organization_id: 0` |
+
+Rules enforced in code and in the database (`APPLICATION_IDENTITY_SPEC.md` §4.1,
+`IAM_SPEC.md` §3/§5.2):
+
+- `TENANT` is the only default: an omitted `ownershipScope` on provisioning, a
+  delegated credential request, or a public application token can never produce a
+  narrower level.
+- The scope is **immutable**: re-provisioning with a different level, or a
+  different owner, is a conflict naming the stored one. Publishing at another
+  level needs a new installation.
+- Issuance reads the scope from the installation row. A request that declares a
+  different scope fails closed; `USER` issuance also fails closed for any subject
+  other than the installation's owner (its bootstrap credential is issued for the
+  owner, and a deactivated owner stops the deployment from authenticating).
+- A login into an `ORGANIZATION`-released application must carry that
+  organization's context, and a login into a `USER`-released application must be a
+  personal login by the owner. A `TENANT`-released application keeps the ordinary
+  personal/organization login context.
+- `iam_session.scope_kind` records the level a session was issued for, and the
+  resolver projects it to `WebRequestPrincipal.app.ownershipScope` so a data plane
+  can pick the right isolation key without a second lookup
+  (`sdkwork-web-core` `WebAppContext::ownership_scope`).
+
+Database enforcement (migration `0044_application_installation_ownership_scope`):
+`chk_iam_application_installation_ownership_scope`,
+`chk_iam_application_installation_ownership_alignment`, `chk_iam_session_scope_kind`,
+`chk_iam_session_scope_kind_alignment`. The migration derives existing rows from
+`organization_id` (`0` → `TENANT`, non-zero → `ORGANIZATION`) and **stops,
+naming every row**, when a legacy `organization_id` is not a positive decimal or
+when a session's `login_scope` and `organization_id` already contradict each
+other. `USER` is never inferred.
+
+Provisioning accepts `ownershipScope` (default `TENANT`) and `ownerUserId`
+(required for `USER`, rejected otherwise) on both operator and bootstrap
+provisioning; the OpenAPI authority and generated SDKs carry both fields.
+
+Live-PostgreSQL coverage:
+
+```bash
+SDKWORK_DATABASE_URL=postgresql://user:pass@127.0.0.1:5432/db \
+  cargo test -p sdkwork-iam-web-adapter --test installation_ownership_scope_postgres -- --ignored
+```
+
 ## Installation environments and credentials
 
 An installation (`iam_application_installation`) is one-to-one with a deploy

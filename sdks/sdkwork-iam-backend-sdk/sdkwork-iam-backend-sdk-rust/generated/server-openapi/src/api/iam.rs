@@ -5,7 +5,7 @@ use reqwest::Method;
 use crate::api::paths::backend_path;
 use crate::api::paths::append_query_string;
 use crate::http::{SdkworkError, SdkworkHttpClient};
-use crate::models::{AppbaseAccessCredentialCreateCommand, AppbaseTenantApplicationEnableCommand, AppbaseTenantApplicationProvisionCommand, AppbaseTenantApplicationUpdateCommand, IamTenantApplicationManagementProvisionCommand, IamTenantApplicationManagementUpdateCommand, IamTenantApplicationStatusCommand, SdkWorkCommandData, SdkWorkPageData, ServiceAccountCredentialCreateCommand, ServiceAccountCredentialRevokeCommand, ServiceAccountTokenExchangeCommand};
+use crate::models::{AppbaseAccessCredentialCreateCommand, AppbaseTenantApplicationEnableCommand, AppbaseTenantApplicationProvisionCommand, AppbaseTenantApplicationUpdateCommand, IamInstallationCredentialCreateCommand, IamInstallationCredentialRotateCommand, IamInstallationCredentialWithSecret, IamInstallationEnvironment, IamInstallationEnvironmentUpsertCommand, IamTenantApplicationManagementProvisionCommand, IamTenantApplicationManagementUpdateCommand, IamTenantApplicationStatusCommand, SdkWorkCommandData, SdkWorkPageData, ServiceAccountCredentialCreateCommand, ServiceAccountCredentialRevokeCommand, ServiceAccountTokenExchangeCommand};
 
 #[derive(Clone)]
 pub struct IamApi {
@@ -762,6 +762,37 @@ impl IamApi {
         self.client.patch(&path, Some(body), None, None, Some("application/json")).await
     }
 
+    /// Tenant Applications credentials list.
+    pub async fn tenant_applications_credentials_list(&self, tenant_id: &str, tenant_application_id: &str, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>) -> Result<serde_json::Value, SdkworkError> {
+        let query = build_query_string(&[
+            QueryParameterSpec::new("page", page, "form", true, false, None),
+            QueryParameterSpec::new("page_size", page_size, "form", true, false, None),
+            QueryParameterSpec::new("cursor", cursor, "form", true, false, None),
+            QueryParameterSpec::new("sort", sort, "form", true, false, None),
+            QueryParameterSpec::new("q", q, "form", true, false, None),
+        ]);
+        let path = append_query_string(backend_path(&format!("/iam/tenants/{}/applications/{}/credentials", serialize_path_parameter(tenant_id, PathParameterSpec::new("tenantId", "simple", false)), serialize_path_parameter(tenant_application_id, PathParameterSpec::new("tenantApplicationId", "simple", false)))), &query);
+        self.client.get(&path, None, None).await
+    }
+
+    /// Tenant Applications credentials create.
+    pub async fn tenant_applications_credentials_create(&self, tenant_id: &str, tenant_application_id: &str, body: &IamInstallationCredentialCreateCommand) -> Result<IamInstallationCredentialWithSecret, SdkworkError> {
+        let path = backend_path(&format!("/iam/tenants/{}/applications/{}/credentials", serialize_path_parameter(tenant_id, PathParameterSpec::new("tenantId", "simple", false)), serialize_path_parameter(tenant_application_id, PathParameterSpec::new("tenantApplicationId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Tenant Applications credentials revoke.
+    pub async fn tenant_applications_credentials_revoke(&self, tenant_id: &str, tenant_application_id: &str, credential_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<SdkWorkCommandData, SdkworkError> {
+        let path = backend_path(&format!("/iam/tenants/{}/applications/{}/credentials/{}/revoke", serialize_path_parameter(tenant_id, PathParameterSpec::new("tenantId", "simple", false)), serialize_path_parameter(tenant_application_id, PathParameterSpec::new("tenantApplicationId", "simple", false)), serialize_path_parameter(credential_id, PathParameterSpec::new("credentialId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Tenant Applications credentials rotate.
+    pub async fn tenant_applications_credentials_rotate(&self, tenant_id: &str, tenant_application_id: &str, credential_id: &str, body: &IamInstallationCredentialRotateCommand) -> Result<IamInstallationCredentialWithSecret, SdkworkError> {
+        let path = backend_path(&format!("/iam/tenants/{}/applications/{}/credentials/{}/rotate", serialize_path_parameter(tenant_id, PathParameterSpec::new("tenantId", "simple", false)), serialize_path_parameter(tenant_application_id, PathParameterSpec::new("tenantApplicationId", "simple", false)), serialize_path_parameter(credential_id, PathParameterSpec::new("credentialId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
     /// Tenant Applications management disable.
     pub async fn tenant_applications_management_disable(&self, tenant_id: &str, tenant_application_id: &str, body: &IamTenantApplicationStatusCommand) -> Result<SdkWorkCommandData, SdkworkError> {
         let path = backend_path(&format!("/iam/tenants/{}/applications/{}/disable", serialize_path_parameter(tenant_id, PathParameterSpec::new("tenantId", "simple", false)), serialize_path_parameter(tenant_application_id, PathParameterSpec::new("tenantApplicationId", "simple", false))));
@@ -772,6 +803,31 @@ impl IamApi {
     pub async fn tenant_applications_management_enable(&self, tenant_id: &str, tenant_application_id: &str, body: &IamTenantApplicationStatusCommand) -> Result<SdkWorkCommandData, SdkworkError> {
         let path = backend_path(&format!("/iam/tenants/{}/applications/{}/enable", serialize_path_parameter(tenant_id, PathParameterSpec::new("tenantId", "simple", false)), serialize_path_parameter(tenant_application_id, PathParameterSpec::new("tenantApplicationId", "simple", false))));
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Tenant Applications environments list.
+    pub async fn tenant_applications_environments_list(&self, tenant_id: &str, tenant_application_id: &str, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>) -> Result<serde_json::Value, SdkworkError> {
+        let query = build_query_string(&[
+            QueryParameterSpec::new("page", page, "form", true, false, None),
+            QueryParameterSpec::new("page_size", page_size, "form", true, false, None),
+            QueryParameterSpec::new("cursor", cursor, "form", true, false, None),
+            QueryParameterSpec::new("sort", sort, "form", true, false, None),
+            QueryParameterSpec::new("q", q, "form", true, false, None),
+        ]);
+        let path = append_query_string(backend_path(&format!("/iam/tenants/{}/applications/{}/environments", serialize_path_parameter(tenant_id, PathParameterSpec::new("tenantId", "simple", false)), serialize_path_parameter(tenant_application_id, PathParameterSpec::new("tenantApplicationId", "simple", false)))), &query);
+        self.client.get(&path, None, None).await
+    }
+
+    /// Tenant Applications environments delete.
+    pub async fn tenant_applications_environments_delete(&self, tenant_id: &str, tenant_application_id: &str, environment_key: &str) -> Result<(), SdkworkError> {
+        let path = backend_path(&format!("/iam/tenants/{}/applications/{}/environments/{}", serialize_path_parameter(tenant_id, PathParameterSpec::new("tenantId", "simple", false)), serialize_path_parameter(tenant_application_id, PathParameterSpec::new("tenantApplicationId", "simple", false)), serialize_path_parameter(environment_key, PathParameterSpec::new("environmentKey", "simple", false))));
+        self.client.delete(&path, None, None).await
+    }
+
+    /// Tenant Applications environments update.
+    pub async fn tenant_applications_environments_update(&self, tenant_id: &str, tenant_application_id: &str, environment_key: &str, body: &IamInstallationEnvironmentUpsertCommand) -> Result<IamInstallationEnvironment, SdkworkError> {
+        let path = backend_path(&format!("/iam/tenants/{}/applications/{}/environments/{}", serialize_path_parameter(tenant_id, PathParameterSpec::new("tenantId", "simple", false)), serialize_path_parameter(tenant_application_id, PathParameterSpec::new("tenantApplicationId", "simple", false)), serialize_path_parameter(environment_key, PathParameterSpec::new("environmentKey", "simple", false))));
+        self.client.put(&path, Some(body), None, None, Some("application/json")).await
     }
 
     /// Tenant Applications summary retrieve.

@@ -9,12 +9,23 @@
     "protocol": "http",
     "packageName": "com.sdkwork:sdkwork-iam-backend-sdk"
   },
-  "changeFingerprint": "c0c640d5b4a415f73ebc9fe3a3e8aa5cd7418a7b5c83087d1036f21a4f1434fe",
+  "changeFingerprint": "5655ecf70e67da12a79f0777864419b349aa8f94c53c3fd8221d1cc6873200ba",
   "changes": {
-    "createdGeneratedFiles": [],
+    "createdGeneratedFiles": [
+      "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredential.java",
+      "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredentialCreateCommand.java",
+      "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredentialListResponse.java",
+      "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredentialResponse.java",
+      "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredentialRotateCommand.java",
+      "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredentialWithSecret.java",
+      "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationEnvironment.java",
+      "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationEnvironmentListResponse.java",
+      "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationEnvironmentResponse.java",
+      "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationEnvironmentUpsertCommand.java"
+    ],
     "updatedGeneratedFiles": [
       "src/main/java/com/sdkwork/iam/backend/sdk/api/IamApi.java",
-      "src/main/java/com/sdkwork/iam/backend/sdk/api/IamOauthApi.java",
+      "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseAccessCredentialCreateCommand.java",
       "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationProvisionCommand.java",
       "src/main/java/com/sdkwork/iam/backend/sdk/model/IamTenantApplicationManagementProvisionCommand.java"
     ],
@@ -28,9 +39,9 @@
       "README.md",
       "sdkwork-sdk.json",
       "src/main/java/com/sdkwork/iam/backend/sdk/api/ApiPaths.java",
+      "src/main/java/com/sdkwork/iam/backend/sdk/api/IamOauthApi.java",
       "src/main/java/com/sdkwork/iam/backend/sdk/api/package-info.java",
       "src/main/java/com/sdkwork/iam/backend/sdk/http/HttpClient.java",
-      "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseAccessCredentialCreateCommand.java",
       "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationEnableCommand.java",
       "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationUpdateCommand.java",
       "src/main/java/com/sdkwork/iam/backend/sdk/model/FieldError.java",
@@ -51,9 +62,7 @@
       "src/main/java/com/sdkwork/iam/backend/sdk/model/ServiceAccountTokenExchangeCommand.java",
       "src/main/java/com/sdkwork/iam/backend/sdk/SdkworkBackendClient.java"
     ],
-    "deletedGeneratedFiles": [
-      "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseApplicationRegisterCommand.java"
-    ],
+    "deletedGeneratedFiles": [],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
@@ -70,15 +79,24 @@
       {
         "area": "api-surface",
         "paths": [
-          "src/main/java/com/sdkwork/iam/backend/sdk/api/IamApi.java",
-          "src/main/java/com/sdkwork/iam/backend/sdk/api/IamOauthApi.java"
+          "src/main/java/com/sdkwork/iam/backend/sdk/api/IamApi.java"
         ]
       },
       {
         "area": "models",
         "paths": [
-          "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseApplicationRegisterCommand.java",
+          "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseAccessCredentialCreateCommand.java",
           "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationProvisionCommand.java",
+          "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredential.java",
+          "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredentialCreateCommand.java",
+          "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredentialListResponse.java",
+          "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredentialResponse.java",
+          "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredentialRotateCommand.java",
+          "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationCredentialWithSecret.java",
+          "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationEnvironment.java",
+          "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationEnvironmentListResponse.java",
+          "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationEnvironmentResponse.java",
+          "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationEnvironmentUpsertCommand.java",
           "src/main/java/com/sdkwork/iam/backend/sdk/model/IamTenantApplicationManagementProvisionCommand.java"
         ]
       }
@@ -113,14 +131,12 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "deleted-generated-files",
-      "manual-review-required",
       "verification-required"
     ]
   },

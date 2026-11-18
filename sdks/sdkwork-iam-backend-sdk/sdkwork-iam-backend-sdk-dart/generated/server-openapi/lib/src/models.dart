@@ -369,6 +369,444 @@ class SdkWorkCommandResponse {
   }
 }
 
+class IamInstallationEnvironment {
+  final String? environmentId;
+  final String? tenantId;
+  final String? organizationId;
+  final String? installationId;
+  final String? environmentKey;
+  final String? primaryDomain;
+  final Map<String, dynamic>? domainConfig;
+  final String? status;
+  final String? createdAt;
+  final String? updatedAt;
+
+  IamInstallationEnvironment({
+    this.environmentId,
+    this.tenantId,
+    this.organizationId,
+    this.installationId,
+    this.environmentKey,
+    this.primaryDomain,
+    this.domainConfig,
+    this.status,
+    this.createdAt,
+    this.updatedAt
+  });
+
+  factory IamInstallationEnvironment.fromJson(Map<String, dynamic> json) {
+    return IamInstallationEnvironment(
+      environmentId: json['environmentId']?.toString(),
+      tenantId: json['tenantId']?.toString(),
+      organizationId: json['organizationId']?.toString(),
+      installationId: json['installationId']?.toString(),
+      environmentKey: json['environmentKey']?.toString(),
+      primaryDomain: json['primaryDomain']?.toString(),
+      domainConfig: _sdkworkAsMap(json['domainConfig']),
+      status: json['status']?.toString(),
+      createdAt: json['createdAt']?.toString(),
+      updatedAt: json['updatedAt']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'environmentId': environmentId,
+      'tenantId': tenantId,
+      'organizationId': organizationId,
+      'installationId': installationId,
+      'environmentKey': environmentKey,
+      'primaryDomain': primaryDomain,
+      'domainConfig': domainConfig,
+      'status': status,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
+  }
+}
+
+class IamInstallationEnvironmentUpsertCommand {
+  final String? environmentKey;
+  final String? primaryDomain;
+  final Map<String, dynamic>? domainConfig;
+  final String? status;
+
+  IamInstallationEnvironmentUpsertCommand({
+    this.environmentKey,
+    this.primaryDomain,
+    this.domainConfig,
+    this.status
+  });
+
+  factory IamInstallationEnvironmentUpsertCommand.fromJson(Map<String, dynamic> json) {
+    return IamInstallationEnvironmentUpsertCommand(
+      environmentKey: json['environmentKey']?.toString(),
+      primaryDomain: json['primaryDomain']?.toString(),
+      domainConfig: _sdkworkAsMap(json['domainConfig']),
+      status: json['status']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'environmentKey': environmentKey,
+      'primaryDomain': primaryDomain,
+      'domainConfig': domainConfig,
+      'status': status,
+    };
+  }
+}
+
+class IamInstallationCredential {
+  final String? credentialId;
+  final String? tenantId;
+  final String? installationEnvironmentId;
+  final String? environmentKey;
+  final String? clientId;
+  final List<String>? redirectUris;
+  final List<String>? grantedScopes;
+  final String? status;
+  final String? rotatedAt;
+  final String? retiredAt;
+  final String? createdAt;
+  final String? updatedAt;
+
+  IamInstallationCredential({
+    this.credentialId,
+    this.tenantId,
+    this.installationEnvironmentId,
+    this.environmentKey,
+    this.clientId,
+    this.redirectUris,
+    this.grantedScopes,
+    this.status,
+    this.rotatedAt,
+    this.retiredAt,
+    this.createdAt,
+    this.updatedAt
+  });
+
+  factory IamInstallationCredential.fromJson(Map<String, dynamic> json) {
+    return IamInstallationCredential(
+      credentialId: json['credentialId']?.toString(),
+      tenantId: json['tenantId']?.toString(),
+      installationEnvironmentId: json['installationEnvironmentId']?.toString(),
+      environmentKey: json['environmentKey']?.toString(),
+      clientId: json['clientId']?.toString(),
+      redirectUris: (() {
+        final list = _sdkworkAsList(json['redirectUris']);
+        if (list == null) {
+          return null;
+        }
+        return list
+            .map((item) => item?.toString())
+            .whereType<String>()
+            .toList();
+      })(),
+      grantedScopes: (() {
+        final list = _sdkworkAsList(json['grantedScopes']);
+        if (list == null) {
+          return null;
+        }
+        return list
+            .map((item) => item?.toString())
+            .whereType<String>()
+            .toList();
+      })(),
+      status: json['status']?.toString(),
+      rotatedAt: json['rotatedAt']?.toString(),
+      retiredAt: json['retiredAt']?.toString(),
+      createdAt: json['createdAt']?.toString(),
+      updatedAt: json['updatedAt']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'credentialId': credentialId,
+      'tenantId': tenantId,
+      'installationEnvironmentId': installationEnvironmentId,
+      'environmentKey': environmentKey,
+      'clientId': clientId,
+      'redirectUris': redirectUris?.map((item) => item).toList(),
+      'grantedScopes': grantedScopes?.map((item) => item).toList(),
+      'status': status,
+      'rotatedAt': rotatedAt,
+      'retiredAt': retiredAt,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
+  }
+}
+
+class IamInstallationCredentialWithSecret {
+  final String? credentialId;
+  final String? tenantId;
+  final String? installationEnvironmentId;
+  final String? environmentKey;
+  final String? clientId;
+  final String? clientSecret;
+  final List<String>? redirectUris;
+  final List<String>? grantedScopes;
+  final String? status;
+  final String? rotatedAt;
+  final String? retiredAt;
+  final String? createdAt;
+  final String? updatedAt;
+
+  IamInstallationCredentialWithSecret({
+    this.credentialId,
+    this.tenantId,
+    this.installationEnvironmentId,
+    this.environmentKey,
+    this.clientId,
+    this.clientSecret,
+    this.redirectUris,
+    this.grantedScopes,
+    this.status,
+    this.rotatedAt,
+    this.retiredAt,
+    this.createdAt,
+    this.updatedAt
+  });
+
+  factory IamInstallationCredentialWithSecret.fromJson(Map<String, dynamic> json) {
+    return IamInstallationCredentialWithSecret(
+      credentialId: json['credentialId']?.toString(),
+      tenantId: json['tenantId']?.toString(),
+      installationEnvironmentId: json['installationEnvironmentId']?.toString(),
+      environmentKey: json['environmentKey']?.toString(),
+      clientId: json['clientId']?.toString(),
+      clientSecret: json['clientSecret']?.toString(),
+      redirectUris: (() {
+        final list = _sdkworkAsList(json['redirectUris']);
+        if (list == null) {
+          return null;
+        }
+        return list
+            .map((item) => item?.toString())
+            .whereType<String>()
+            .toList();
+      })(),
+      grantedScopes: (() {
+        final list = _sdkworkAsList(json['grantedScopes']);
+        if (list == null) {
+          return null;
+        }
+        return list
+            .map((item) => item?.toString())
+            .whereType<String>()
+            .toList();
+      })(),
+      status: json['status']?.toString(),
+      rotatedAt: json['rotatedAt']?.toString(),
+      retiredAt: json['retiredAt']?.toString(),
+      createdAt: json['createdAt']?.toString(),
+      updatedAt: json['updatedAt']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'credentialId': credentialId,
+      'tenantId': tenantId,
+      'installationEnvironmentId': installationEnvironmentId,
+      'environmentKey': environmentKey,
+      'clientId': clientId,
+      'clientSecret': clientSecret,
+      'redirectUris': redirectUris?.map((item) => item).toList(),
+      'grantedScopes': grantedScopes?.map((item) => item).toList(),
+      'status': status,
+      'rotatedAt': rotatedAt,
+      'retiredAt': retiredAt,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
+  }
+}
+
+class IamInstallationCredentialCreateCommand {
+  final String? environmentKey;
+  final String? clientId;
+  final List<String>? redirectUris;
+  final List<String>? grantedScopes;
+
+  IamInstallationCredentialCreateCommand({
+    this.environmentKey,
+    this.clientId,
+    this.redirectUris,
+    this.grantedScopes
+  });
+
+  factory IamInstallationCredentialCreateCommand.fromJson(Map<String, dynamic> json) {
+    return IamInstallationCredentialCreateCommand(
+      environmentKey: json['environmentKey']?.toString(),
+      clientId: json['clientId']?.toString(),
+      redirectUris: (() {
+        final list = _sdkworkAsList(json['redirectUris']);
+        if (list == null) {
+          return null;
+        }
+        return list
+            .map((item) => item?.toString())
+            .whereType<String>()
+            .toList();
+      })(),
+      grantedScopes: (() {
+        final list = _sdkworkAsList(json['grantedScopes']);
+        if (list == null) {
+          return null;
+        }
+        return list
+            .map((item) => item?.toString())
+            .whereType<String>()
+            .toList();
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'environmentKey': environmentKey,
+      'clientId': clientId,
+      'redirectUris': redirectUris?.map((item) => item).toList(),
+      'grantedScopes': grantedScopes?.map((item) => item).toList(),
+    };
+  }
+}
+
+class IamInstallationCredentialRotateCommand {
+  final String? clientId;
+
+  IamInstallationCredentialRotateCommand({
+    this.clientId
+  });
+
+  factory IamInstallationCredentialRotateCommand.fromJson(Map<String, dynamic> json) {
+    return IamInstallationCredentialRotateCommand(
+      clientId: json['clientId']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'clientId': clientId,
+    };
+  }
+}
+
+class IamInstallationEnvironmentListResponse {
+  final int? code;
+  final dynamic data;
+  final String? traceId;
+
+  IamInstallationEnvironmentListResponse({
+    this.code,
+    this.data,
+    this.traceId
+  });
+
+  factory IamInstallationEnvironmentListResponse.fromJson(Map<String, dynamic> json) {
+    return IamInstallationEnvironmentListResponse(
+      code: json['code'] is int ? json['code'] : null,
+      data: _sdkworkAsMap(json['data']),
+      traceId: json['traceId']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'data': data,
+      'traceId': traceId,
+    };
+  }
+}
+
+class IamInstallationEnvironmentResponse {
+  final int? code;
+  final dynamic data;
+  final String? traceId;
+
+  IamInstallationEnvironmentResponse({
+    this.code,
+    this.data,
+    this.traceId
+  });
+
+  factory IamInstallationEnvironmentResponse.fromJson(Map<String, dynamic> json) {
+    return IamInstallationEnvironmentResponse(
+      code: json['code'] is int ? json['code'] : null,
+      data: _sdkworkAsMap(json['data']),
+      traceId: json['traceId']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'data': data,
+      'traceId': traceId,
+    };
+  }
+}
+
+class IamInstallationCredentialResponse {
+  final int? code;
+  final dynamic data;
+  final String? traceId;
+
+  IamInstallationCredentialResponse({
+    this.code,
+    this.data,
+    this.traceId
+  });
+
+  factory IamInstallationCredentialResponse.fromJson(Map<String, dynamic> json) {
+    return IamInstallationCredentialResponse(
+      code: json['code'] is int ? json['code'] : null,
+      data: _sdkworkAsMap(json['data']),
+      traceId: json['traceId']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'data': data,
+      'traceId': traceId,
+    };
+  }
+}
+
+class IamInstallationCredentialListResponse {
+  final int? code;
+  final dynamic data;
+  final String? traceId;
+
+  IamInstallationCredentialListResponse({
+    this.code,
+    this.data,
+    this.traceId
+  });
+
+  factory IamInstallationCredentialListResponse.fromJson(Map<String, dynamic> json) {
+    return IamInstallationCredentialListResponse(
+      code: json['code'] is int ? json['code'] : null,
+      data: _sdkworkAsMap(json['data']),
+      traceId: json['traceId']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'data': data,
+      'traceId': traceId,
+    };
+  }
+}
+
 class IamOauthClientCreateCommand {
   final String? integrationId;
   final String? providerCode;
@@ -419,6 +857,8 @@ class IamTenantApplicationManagementProvisionCommand {
   final List<String>? accessPermissions;
   final Map<String, dynamic>? runtimeConfig;
   final String? deployApplicationId;
+  final String? ownershipScope;
+  final String? ownerUserId;
   final String? provisioningIdempotencyKey;
 
   IamTenantApplicationManagementProvisionCommand({
@@ -431,6 +871,8 @@ class IamTenantApplicationManagementProvisionCommand {
     this.accessPermissions,
     this.runtimeConfig,
     this.deployApplicationId,
+    this.ownershipScope,
+    this.ownerUserId,
     this.provisioningIdempotencyKey
   });
 
@@ -454,6 +896,8 @@ class IamTenantApplicationManagementProvisionCommand {
       })(),
       runtimeConfig: _sdkworkAsMap(json['runtimeConfig']),
       deployApplicationId: json['deployApplicationId']?.toString(),
+      ownershipScope: json['ownershipScope']?.toString(),
+      ownerUserId: json['ownerUserId']?.toString(),
       provisioningIdempotencyKey: json['provisioningIdempotencyKey']?.toString()
     );
   }
@@ -469,6 +913,8 @@ class IamTenantApplicationManagementProvisionCommand {
       'accessPermissions': accessPermissions?.map((item) => item).toList(),
       'runtimeConfig': runtimeConfig,
       'deployApplicationId': deployApplicationId,
+      'ownershipScope': ownershipScope,
+      'ownerUserId': ownerUserId,
       'provisioningIdempotencyKey': provisioningIdempotencyKey,
     };
   }
@@ -537,6 +983,8 @@ class AppbaseTenantApplicationProvisionCommand {
   final List<String>? accessPermissions;
   final Map<String, dynamic>? runtimeConfig;
   final String? deployApplicationId;
+  final String? ownershipScope;
+  final String? ownerUserId;
   final String? provisioningIdempotencyKey;
 
   AppbaseTenantApplicationProvisionCommand({
@@ -555,6 +1003,8 @@ class AppbaseTenantApplicationProvisionCommand {
     this.accessPermissions,
     this.runtimeConfig,
     this.deployApplicationId,
+    this.ownershipScope,
+    this.ownerUserId,
     this.provisioningIdempotencyKey
   });
 
@@ -584,6 +1034,8 @@ class AppbaseTenantApplicationProvisionCommand {
       })(),
       runtimeConfig: _sdkworkAsMap(json['runtimeConfig']),
       deployApplicationId: json['deployApplicationId']?.toString(),
+      ownershipScope: json['ownershipScope']?.toString(),
+      ownerUserId: json['ownerUserId']?.toString(),
       provisioningIdempotencyKey: json['provisioningIdempotencyKey']?.toString()
     );
   }
@@ -605,6 +1057,8 @@ class AppbaseTenantApplicationProvisionCommand {
       'accessPermissions': accessPermissions?.map((item) => item).toList(),
       'runtimeConfig': runtimeConfig,
       'deployApplicationId': deployApplicationId,
+      'ownershipScope': ownershipScope,
+      'ownerUserId': ownerUserId,
       'provisioningIdempotencyKey': provisioningIdempotencyKey,
     };
   }
@@ -718,6 +1172,7 @@ class AppbaseAccessCredentialCreateCommand {
   final String? tenantApplicationId;
   final String? appId;
   final String? instanceKey;
+  final String? ownershipScope;
 
   AppbaseAccessCredentialCreateCommand({
     this.authToken,
@@ -729,7 +1184,8 @@ class AppbaseAccessCredentialCreateCommand {
     this.organizationId,
     this.tenantApplicationId,
     this.appId,
-    this.instanceKey
+    this.instanceKey,
+    this.ownershipScope
   });
 
   factory AppbaseAccessCredentialCreateCommand.fromJson(Map<String, dynamic> json) {
@@ -743,7 +1199,8 @@ class AppbaseAccessCredentialCreateCommand {
       organizationId: json['organizationId']?.toString(),
       tenantApplicationId: json['tenantApplicationId']?.toString(),
       appId: json['appId']?.toString(),
-      instanceKey: json['instanceKey']?.toString()
+      instanceKey: json['instanceKey']?.toString(),
+      ownershipScope: json['ownershipScope']?.toString()
     );
   }
 
@@ -759,6 +1216,7 @@ class AppbaseAccessCredentialCreateCommand {
       'tenantApplicationId': tenantApplicationId,
       'appId': appId,
       'instanceKey': instanceKey,
+      'ownershipScope': ownershipScope,
     };
   }
 }

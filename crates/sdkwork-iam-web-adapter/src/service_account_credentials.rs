@@ -326,9 +326,22 @@ pub async fn exchange_service_account_credential(
 
     let environment = environment_from_string(&credential.environment);
     let session_id = generate_opaque_token("session");
+    // The service-account credential is bound to the installation, so it signs
+    // the installation's release scope and organization claim
+    // (`APPLICATION_IDENTITY_SPEC.md` §4.1). A personal release credentials only
+    // its owner, so a service account cannot exchange into one.
+    let scope = tenant_application.ownership_scope;
+    crate::application_scope::ensure_subject_is_installation_owner(
+        scope,
+        tenant_application.owner_user_id.as_deref(),
+        &credential.service_account_id,
+    )?;
+    let organization_id = scope
+        .organization_claim(tenant_application.organization_id.as_str())
+        .to_owned();
     let context = IamAppContext::new(
         credential.tenant_id.clone(),
-        credential.organization_id.as_deref(),
+        Some(organization_id.as_str()),
         credential.service_account_id.clone(),
         session_id.clone(),
         credential.app_id.clone(),
@@ -345,12 +358,14 @@ pub async fn exchange_service_account_credential(
         &signing_key,
         "access",
         &context,
+        scope,
         SERVICE_ACCOUNT_TOKEN_TTL_SECONDS,
     );
     let auth_token = sign_local_session_token_with_ttl(
         &signing_key,
         "auth",
         &context,
+        scope,
         SERVICE_ACCOUNT_TOKEN_TTL_SECONDS,
     );
     let now = chrono::Utc::now();
@@ -365,13 +380,13 @@ pub async fn exchange_service_account_credential(
          (id, tenant_id, organization_id, login_scope, user_id, principal_kind, principal_id, \
           credential_id, app_id, environment, deployment_mode, auth_level, auth_token_hash, \
           auth_token_kid, access_token_hash, access_token_kid, sharding_key, sharding_strategy, \
-          data_scope_json, permission_scope_json, expires_at, created_at, updated_at) \
+          data_scope_json, permission_scope_json, scope_kind, expires_at, created_at, updated_at) \
          VALUES ($1, $2, $3, $4, NULL, 'service_account', $5, $6, $7, $8, $9, $10, \
-                 $11, $12, $13, $12, $2, 'tenant', $14, $15, $16, $17, $17)",
+                 $11, $12, $13, $12, $2, 'tenant', $14, $15, $16, $17, $18, $18)",
     )
     .bind(&session_id)
     .bind(&credential.tenant_id)
-    .bind(&credential.organization_id)
+    .bind(&organization_id)
     .bind(login_scope_to_string(&context.login_scope))
     .bind(&credential.service_account_id)
     .bind(&credential.id)
@@ -384,6 +399,7 @@ pub async fn exchange_service_account_credential(
     .bind(hash_token(&access_token))
     .bind(Json(&context.data_scope))
     .bind(Json(&context.permission_scope))
+    .bind(scope.as_str())
     .bind(expires_at)
     .bind(now)
     .execute(&mut *transaction)

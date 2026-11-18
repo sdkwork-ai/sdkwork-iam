@@ -12,6 +12,7 @@ public class AppbaseAccessCredentialCreateCommand {
     private String tenantApplicationId;
     private String appId;
     private String instanceKey;
+    private String ownershipScope;
 
     public String getAuthToken() {
         return this.authToken;
@@ -91,5 +92,13 @@ public class AppbaseAccessCredentialCreateCommand {
 
     public void setInstanceKey(String instanceKey) {
         this.instanceKey = instanceKey;
+    }
+
+    public String getOwnershipScope() {
+        return this.ownershipScope;
+    }
+
+    public void setOwnershipScope(String ownershipScope) {
+        this.ownershipScope = ownershipScope;
     }
 }

@@ -23,6 +23,10 @@ export interface AppbaseTenantApplicationProvisionCommand {
   runtimeConfig?: Record<string, unknown>;
   /** Deploy application this installation serves. It is the identity every access token carries, and the one-to-one relation is enforced by the database. */
   deployApplicationId?: string;
+  /** Release scope of the installation (`APPLICATION_IDENTITY_SPEC.md` section 4.1). TENANT is the default: the application serves the whole tenant and its isolation key is (tenantId, appId). ORGANIZATION serves one organization and requires a non-zero organizationId. USER serves one person and requires ownerUserId. The scope is immutable once provisioned; publishing at another level needs a new installation. */
+  ownershipScope?: 'TENANT' | 'ORGANIZATION' | 'USER';
+  /** Owner of a USER-scoped installation. Required for ownershipScope USER and rejected for the other two levels. */
+  ownerUserId?: string;
   /** Replay-safe key for the cross-module provisioning call. */
   provisioningIdempotencyKey?: string;
 }

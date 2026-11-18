@@ -20,6 +20,7 @@ use sqlx::PgPool;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::application_registry::resolve_tenant_application_by_deploy_application_id;
+use crate::application_scope::ApplicationOwnershipScope;
 
 const PUBLIC_APPLICATION_ACCESS_TOKEN_KID: &str = "public-app-token";
 const PUBLIC_APPLICATION_ACCESS_TOKEN_SIGNATURE: &str = "public";
@@ -36,6 +37,12 @@ pub struct PublicApplicationAccessTokenClaims {
     pub organization_id: String,
     pub login_scope_is_organization: bool,
     pub app_id: String,
+    /// Release scope the token declares, or the legacy derivation from its
+    /// organization scope when it declares none (`APPLICATION_IDENTITY_SPEC.md`
+    /// §4.1 rule 6). A personal release `MUST` declare it: the derivation can
+    /// never produce `USER`, so an undeclared personal token resolves to
+    /// `TENANT` and is rejected by the installation check.
+    pub ownership_scope: ApplicationOwnershipScope,
     pub environment: Environment,
     pub deployment_mode: DeploymentMode,
     pub session_id: String,
@@ -134,6 +141,18 @@ pub fn parse_public_application_access_token(
     let deployment_mode = normalize_deployment_mode(
         &claim_text(&payload, "deployment_mode").unwrap_or_else(|| "saas".to_owned()),
     );
+    let ownership_scope = match claim_text(&payload, "ownership_scope") {
+        Some(value) => ApplicationOwnershipScope::parse(&value)?,
+        None => ApplicationOwnershipScope::derive_from_organization_scope(Some(&organization_id)),
+    };
+    // A `USER` release is tenant-level in organization terms, so a non-zero
+    // organization cannot belong to it; the same holds for a tenant release.
+    if ownership_scope == ApplicationOwnershipScope::Organization && !login_scope_is_organization {
+        return None;
+    }
+    if ownership_scope != ApplicationOwnershipScope::Organization && login_scope_is_organization {
+        return None;
+    }
     let session_id =
         claim_text(&payload, "session_id").unwrap_or_else(|| format!("bootstrap-public-{app_id}"));
     if let Some(exp) = payload.get("exp").and_then(Value::as_i64) {
@@ -146,6 +165,7 @@ pub fn parse_public_application_access_token(
         organization_id,
         login_scope_is_organization,
         app_id,
+        ownership_scope,
         environment,
         deployment_mode,
         session_id,
@@ -181,6 +201,13 @@ pub async fn resolve_application_access_token_context(
         return None;
     }
     if application.organization_id != claims.organization_id {
+        return None;
+    }
+    // The token's release scope must be the installation's: a public token that
+    // claims a wider level than the installation was published at would let a
+    // client read rows outside its isolation key (`APPLICATION_IDENTITY_SPEC.md`
+    // §4.1 rule 10).
+    if application.ownership_scope != claims.ownership_scope {
         return None;
     }
     if !application.environment.trim().is_empty()

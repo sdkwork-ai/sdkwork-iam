@@ -740,6 +740,37 @@ class IamApi(private val client: HttpClient) {
         return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
+    /** Tenant Applications credentials list. */
+    suspend fun tenantApplicationsCredentialsList(tenantId: String, tenantApplicationId: String, page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): IamInstallationCredentialListResponse? {
+        val query = buildQueryString(listOf(
+            QueryParameterSpec("page", page, "form", true, false, null),
+            QueryParameterSpec("page_size", pageSize, "form", true, false, null),
+            QueryParameterSpec("cursor", cursor, "form", true, false, null),
+            QueryParameterSpec("sort", sort, "form", true, false, null),
+            QueryParameterSpec("q", q, "form", true, false, null)
+        ))
+        val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/tenants/${serializePathParameter(tenantId, PathParameterSpec("tenantId", "simple", false))}/applications/${serializePathParameter(tenantApplicationId, PathParameterSpec("tenantApplicationId", "simple", false))}/credentials"), query))
+        return client.convertValue(raw, object : TypeReference<IamInstallationCredentialListResponse>() {})
+    }
+
+    /** Tenant Applications credentials create. */
+    suspend fun tenantApplicationsCredentialsCreate(tenantId: String, tenantApplicationId: String, body: IamInstallationCredentialCreateCommand): IamInstallationCredentialResponse? {
+        val raw = client.post(ApiPaths.backendPath("/iam/tenants/${serializePathParameter(tenantId, PathParameterSpec("tenantId", "simple", false))}/applications/${serializePathParameter(tenantApplicationId, PathParameterSpec("tenantApplicationId", "simple", false))}/credentials"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<IamInstallationCredentialResponse>() {})
+    }
+
+    /** Tenant Applications credentials revoke. */
+    suspend fun tenantApplicationsCredentialsRevoke(tenantId: String, tenantApplicationId: String, credentialId: String, body: Map<String, Any>): SdkWorkCommandResponse? {
+        val raw = client.post(ApiPaths.backendPath("/iam/tenants/${serializePathParameter(tenantId, PathParameterSpec("tenantId", "simple", false))}/applications/${serializePathParameter(tenantApplicationId, PathParameterSpec("tenantApplicationId", "simple", false))}/credentials/${serializePathParameter(credentialId, PathParameterSpec("credentialId", "simple", false))}/revoke"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<SdkWorkCommandResponse>() {})
+    }
+
+    /** Tenant Applications credentials rotate. */
+    suspend fun tenantApplicationsCredentialsRotate(tenantId: String, tenantApplicationId: String, credentialId: String, body: IamInstallationCredentialRotateCommand): IamInstallationCredentialResponse? {
+        val raw = client.post(ApiPaths.backendPath("/iam/tenants/${serializePathParameter(tenantId, PathParameterSpec("tenantId", "simple", false))}/applications/${serializePathParameter(tenantApplicationId, PathParameterSpec("tenantApplicationId", "simple", false))}/credentials/${serializePathParameter(credentialId, PathParameterSpec("credentialId", "simple", false))}/rotate"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<IamInstallationCredentialResponse>() {})
+    }
+
     /** Tenant Applications management disable. */
     suspend fun tenantApplicationsManagementDisable(tenantId: String, tenantApplicationId: String, body: IamTenantApplicationStatusCommand): SdkWorkCommandResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/tenants/${serializePathParameter(tenantId, PathParameterSpec("tenantId", "simple", false))}/applications/${serializePathParameter(tenantApplicationId, PathParameterSpec("tenantApplicationId", "simple", false))}/disable"), body, null, null, "application/json")
@@ -750,6 +781,30 @@ class IamApi(private val client: HttpClient) {
     suspend fun tenantApplicationsManagementEnable(tenantId: String, tenantApplicationId: String, body: IamTenantApplicationStatusCommand): SdkWorkCommandResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/tenants/${serializePathParameter(tenantId, PathParameterSpec("tenantId", "simple", false))}/applications/${serializePathParameter(tenantApplicationId, PathParameterSpec("tenantApplicationId", "simple", false))}/enable"), body, null, null, "application/json")
         return client.convertValue(raw, object : TypeReference<SdkWorkCommandResponse>() {})
+    }
+
+    /** Tenant Applications environments list. */
+    suspend fun tenantApplicationsEnvironmentsList(tenantId: String, tenantApplicationId: String, page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): IamInstallationEnvironmentListResponse? {
+        val query = buildQueryString(listOf(
+            QueryParameterSpec("page", page, "form", true, false, null),
+            QueryParameterSpec("page_size", pageSize, "form", true, false, null),
+            QueryParameterSpec("cursor", cursor, "form", true, false, null),
+            QueryParameterSpec("sort", sort, "form", true, false, null),
+            QueryParameterSpec("q", q, "form", true, false, null)
+        ))
+        val raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/tenants/${serializePathParameter(tenantId, PathParameterSpec("tenantId", "simple", false))}/applications/${serializePathParameter(tenantApplicationId, PathParameterSpec("tenantApplicationId", "simple", false))}/environments"), query))
+        return client.convertValue(raw, object : TypeReference<IamInstallationEnvironmentListResponse>() {})
+    }
+
+    /** Tenant Applications environments delete. */
+    suspend fun tenantApplicationsEnvironmentsDelete(tenantId: String, tenantApplicationId: String, environmentKey: String): Unit {
+        client.delete(ApiPaths.backendPath("/iam/tenants/${serializePathParameter(tenantId, PathParameterSpec("tenantId", "simple", false))}/applications/${serializePathParameter(tenantApplicationId, PathParameterSpec("tenantApplicationId", "simple", false))}/environments/${serializePathParameter(environmentKey, PathParameterSpec("environmentKey", "simple", false))}"))
+    }
+
+    /** Tenant Applications environments update. */
+    suspend fun tenantApplicationsEnvironmentsUpdate(tenantId: String, tenantApplicationId: String, environmentKey: String, body: IamInstallationEnvironmentUpsertCommand): IamInstallationEnvironmentResponse? {
+        val raw = client.put(ApiPaths.backendPath("/iam/tenants/${serializePathParameter(tenantId, PathParameterSpec("tenantId", "simple", false))}/applications/${serializePathParameter(tenantApplicationId, PathParameterSpec("tenantApplicationId", "simple", false))}/environments/${serializePathParameter(environmentKey, PathParameterSpec("environmentKey", "simple", false))}"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<IamInstallationEnvironmentResponse>() {})
     }
 
     /** Tenant Applications summary retrieve. */

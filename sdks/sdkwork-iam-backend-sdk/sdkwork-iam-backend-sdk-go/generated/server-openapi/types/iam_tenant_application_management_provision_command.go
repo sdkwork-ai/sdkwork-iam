@@ -11,5 +11,7 @@ type IamTenantApplicationManagementProvisionCommand struct {
 	AccessPermissions []string `json:"accessPermissions"`
 	RuntimeConfig map[string]interface{} `json:"runtimeConfig"`
 	DeployApplicationId string `json:"deployApplicationId"`
+	OwnershipScope string `json:"ownershipScope"`
+	OwnerUserId string `json:"ownerUserId"`
 	ProvisioningIdempotencyKey string `json:"provisioningIdempotencyKey"`
 }

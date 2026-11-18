@@ -15,4 +15,6 @@ class IamTenantApplicationManagementProvisionCommand:
     access_permissions: Optional[List[str]] = None
     runtime_config: Optional[Dict[str, Any]] = None
     deploy_application_id: Optional[str] = None
+    ownership_scope: Optional[str] = None
+    owner_user_id: Optional[str] = None
     provisioning_idempotency_key: Optional[str] = None

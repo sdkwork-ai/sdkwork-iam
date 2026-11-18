@@ -19,6 +19,8 @@ public class AppbaseTenantApplicationProvisionCommand {
     private List<String> accessPermissions;
     private Map<String, Object> runtimeConfig;
     private String deployApplicationId;
+    private String ownershipScope;
+    private String ownerUserId;
     private String provisioningIdempotencyKey;
 
     public String getAuthToken() {
@@ -139,6 +141,22 @@ public class AppbaseTenantApplicationProvisionCommand {
 
     public void setDeployApplicationId(String deployApplicationId) {
         this.deployApplicationId = deployApplicationId;
+    }
+
+    public String getOwnershipScope() {
+        return this.ownershipScope;
+    }
+
+    public void setOwnershipScope(String ownershipScope) {
+        this.ownershipScope = ownershipScope;
+    }
+
+    public String getOwnerUserId() {
+        return this.ownerUserId;
+    }
+
+    public void setOwnerUserId(String ownerUserId) {
+        this.ownerUserId = ownerUserId;
     }
 
     public String getProvisioningIdempotencyKey() {
