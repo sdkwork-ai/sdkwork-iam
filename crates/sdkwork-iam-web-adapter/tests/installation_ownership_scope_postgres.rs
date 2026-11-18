@@ -9,6 +9,8 @@
 //! * a mismatched scope/organization/owner request is refused before any write,
 //! * a re-provision cannot change the level (the row is immutable),
 //! * the resolver returns the stored level for the token anchor,
+//! * a public application access token binds a `USER` installation to its owner
+//!   and keeps `TENANT`/`ORGANIZATION` tokens on the shared `system` subject,
 //! * the CHECK constraints refuse a hand-written row that contradicts its scope.
 //!
 //! Run with a migrated database:
@@ -22,10 +24,12 @@
 //! migration 0044 has not been applied, so the suite reports the reason instead
 //! of failing on provisioning.
 
+use sdkwork_iam_context_service::{AuthLevel, IamPrincipalKind, LoginScope};
 use sdkwork_iam_web_adapter::{
     enable_tenant_application, issue_standalone_bootstrap_access_credential,
-    provision_tenant_application, resolve_installation_ownership_scope, ApplicationOwnershipScope,
-    TenantApplicationProvisionCommand,
+    provision_tenant_application, resolve_application_access_token_context,
+    resolve_installation_ownership_scope, try_resolve_application_access_token_context,
+    ApplicationOwnershipScope, TenantApplicationProvisionCommand,
 };
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use sqlx::postgres::PgPoolOptions;
@@ -130,6 +134,69 @@ fn command(
         owner_user_id: owner_user_id.map(str::to_owned),
         provisioning_idempotency_key: Some(unique_id("idem")),
     }
+}
+
+/// A unique *numeric* user id: the public application token's `user_id` claim
+/// must be a positive decimal snowflake (`IAM_SPEC.md` §5.2), so the fixtures for
+/// that path cannot reuse [`unique_id`].
+fn unique_numeric_user_id() -> String {
+    let raw = (uuid::Uuid::now_v7().as_u128() % 9_000_000_000_000) + 1_000_000_000_000;
+    raw.to_string()
+}
+
+async fn seed_user(pg: &PgPool, tenant_id: &str, user_id: &str) {
+    sqlx::query(
+        "INSERT INTO iam_user \
+         (id, tenant_id, username, display_name, email, status, created_at, updated_at, locale, \
+          timezone, source, is_deleted) \
+         VALUES ($2, $1, $2, 'Owner', $3, 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'en-US', \
+                 'UTC', 'scope-verify', 0)",
+    )
+    .bind(tenant_id)
+    .bind(user_id)
+    .bind(format!("{user_id}@example.test"))
+    .execute(pg)
+    .await
+    .expect("insert user");
+}
+
+/// Builds the public application access token the specs materializer emits for
+/// one installation (`APP_ACCESS_TOKEN_SPEC.md` §3.2.1).
+fn public_application_token(
+    tenant_id: &str,
+    deploy_application_id: &str,
+    organization_id: &str,
+    ownership_scope: &str,
+    user_id: Option<&str>,
+) -> String {
+    let encode = |value: &serde_json::Value| {
+        URL_SAFE_NO_PAD.encode(serde_json::to_vec(value).expect("json"))
+    };
+    let header = serde_json::json!({ "alg": "none", "kid": "public-app-token", "typ": "JWT" });
+    let mut payload = serde_json::json!({
+        "app_id": deploy_application_id,
+        "aud": deploy_application_id,
+        "deployment_mode": "private",
+        "deployment_profile": "standalone",
+        "environment": "production",
+        "exp": 0,
+        "iss": "sdkwork-iam-public",
+        "login_scope": if organization_id == "0" { "TENANT" } else { "ORGANIZATION" },
+        "organization_id": organization_id,
+        "ownership_scope": ownership_scope,
+        "session_id": format!("bootstrap-public-{deploy_application_id}-standalone.production"),
+        "tenant_id": tenant_id,
+        "token_class": "application",
+        "token_type": "access",
+        "token_version": 1,
+    });
+    match user_id {
+        Some(value) => payload["user_id"] = serde_json::json!(value),
+        None => {
+            payload.as_object_mut().expect("object").remove("user_id");
+        }
+    }
+    format!("{}.{}.public", encode(&header), encode(&payload))
 }
 
 async fn cleanup(pg: &PgPool, tenant_id: &str) {
@@ -452,6 +519,186 @@ async fn the_database_refuses_a_row_that_contradicts_its_scope() {
         5,
         "every contradictory row must be refused: {violations:?}"
     );
+
+    cleanup(&pg, &tenant_id).await;
+}
+
+/// `APPLICATION_IDENTITY_SPEC.md` §4.1 rule 10 and `APP_ACCESS_TOKEN_SPEC.md`
+/// §3.2.1: a public application token of a `USER`-scoped installation must carry
+/// the installation owner's `user_id`, and that owner becomes the credential's
+/// subject. `TENANT` and `ORGANIZATION` releases keep the isolation-only
+/// `system` subject and do not need the claim.
+#[tokio::test]
+#[ignore = "requires a migrated PostgreSQL (SDKWORK_DATABASE_URL)"]
+async fn a_public_token_binds_a_personal_installation_to_its_owner() {
+    let Some(pg) = connect().await else {
+        return;
+    };
+    let (tenant_id, _, organization_id, _) = seed_tenant(&pg).await;
+    let owner_user_id = unique_numeric_user_id();
+    seed_user(&pg, &tenant_id, &owner_user_id).await;
+
+    // Tenant release: no `user_id` claim, historical `system` subject.
+    let tenant_application =
+        provision_tenant_application(&pg, &command(&tenant_id, "0", None, None))
+            .await
+            .expect("tenant provisioning");
+    enable_tenant_application(&pg, &tenant_id, &tenant_application.id)
+        .await
+        .expect("enable tenant installation");
+    let tenant_anchor = tenant_application
+        .deploy_application_id
+        .as_deref()
+        .expect("tenant deploy anchor");
+    let tenant_token =
+        public_application_token(&tenant_id, tenant_anchor, "0", "TENANT", None);
+    let tenant_context = try_resolve_application_access_token_context(&pg, &tenant_token)
+        .await
+        .expect("a tenant token without user_id stays accepted")
+        .expect("tenant context");
+    assert_eq!(tenant_context.user_id, "system");
+    assert_eq!(
+        tenant_context.principal_kind,
+        IamPrincipalKind::ServiceAccount
+    );
+    assert_eq!(tenant_context.app_id, tenant_anchor);
+    assert_eq!(tenant_context.organization_scope(), "0");
+    assert!(tenant_context.permission_scope.is_empty());
+
+    // Organization release: no `user_id` claim, unchanged as well.
+    let organization_application = provision_tenant_application(
+        &pg,
+        &command(&tenant_id, &organization_id, Some("ORGANIZATION"), None),
+    )
+    .await
+    .expect("organization provisioning");
+    enable_tenant_application(&pg, &tenant_id, &organization_application.id)
+        .await
+        .expect("enable organization installation");
+    let organization_anchor = organization_application
+        .deploy_application_id
+        .as_deref()
+        .expect("organization deploy anchor");
+    let organization_token = public_application_token(
+        &tenant_id,
+        organization_anchor,
+        &organization_id,
+        "ORGANIZATION",
+        None,
+    );
+    let organization_context =
+        try_resolve_application_access_token_context(&pg, &organization_token)
+            .await
+            .expect("an organization token without user_id stays accepted")
+            .expect("organization context");
+    assert_eq!(organization_context.user_id, "system");
+    assert_eq!(
+        organization_context.principal_kind,
+        IamPrincipalKind::ServiceAccount
+    );
+    assert_eq!(organization_context.organization_scope(), organization_id);
+
+    // Personal release: the owner's claim is the subject.
+    let personal_application = provision_tenant_application(
+        &pg,
+        &command(&tenant_id, "0", Some("USER"), Some(&owner_user_id)),
+    )
+    .await
+    .expect("personal provisioning");
+    enable_tenant_application(&pg, &tenant_id, &personal_application.id)
+        .await
+        .expect("enable personal installation");
+    let personal_anchor = personal_application
+        .deploy_application_id
+        .as_deref()
+        .expect("personal deploy anchor");
+    let owner_token = public_application_token(
+        &tenant_id,
+        personal_anchor,
+        "0",
+        "USER",
+        Some(&owner_user_id),
+    );
+    let personal_context = try_resolve_application_access_token_context(&pg, &owner_token)
+        .await
+        .expect("the owner's token is accepted")
+        .expect("personal context");
+    assert_eq!(personal_context.user_id, owner_user_id);
+    assert_eq!(personal_context.principal_id, owner_user_id);
+    assert_eq!(personal_context.principal_kind, IamPrincipalKind::User);
+    assert_eq!(personal_context.login_scope, LoginScope::Tenant);
+    assert_eq!(personal_context.auth_level, AuthLevel::System);
+    assert_eq!(personal_context.app_id, personal_anchor);
+    assert!(personal_context.permission_scope.is_empty());
+    assert!(
+        personal_context
+            .data_scope
+            .contains(&format!("user:{owner_user_id}")),
+        "the personal scope must reach downstream filtering: {:?}",
+        personal_context.data_scope
+    );
+    // The infallible wrapper the framework wiring uses agrees.
+    let projected = resolve_application_access_token_context(&pg, &owner_token)
+        .await
+        .expect("infallible wrapper resolves the owner token");
+    assert_eq!(projected.user_id, owner_user_id);
+
+    // A different (still legal) subject is refused, naming the installation, the
+    // claim, and the expected owner.
+    let other_user_id = unique_numeric_user_id();
+    let foreign_token = public_application_token(
+        &tenant_id,
+        personal_anchor,
+        "0",
+        "USER",
+        Some(&other_user_id),
+    );
+    let error = try_resolve_application_access_token_context(&pg, &foreign_token)
+        .await
+        .expect_err("a personal token must not name another subject");
+    assert!(
+        error.contains(&personal_application.id),
+        "the rejection must name the installation: {error}"
+    );
+    assert!(
+        error.contains("user_id"),
+        "the rejection must name the claim: {error}"
+    );
+    assert!(
+        error.contains(&other_user_id),
+        "the rejection must name the claimed subject: {error}"
+    );
+    assert!(
+        error.contains(&owner_user_id),
+        "the rejection must name the expected owner: {error}"
+    );
+    assert!(
+        resolve_application_access_token_context(&pg, &foreign_token)
+            .await
+            .is_none()
+    );
+
+    // A missing subject claim is refused before any identity comparison.
+    let missing_subject_token =
+        public_application_token(&tenant_id, personal_anchor, "0", "USER", None);
+    let error = try_resolve_application_access_token_context(&pg, &missing_subject_token)
+        .await
+        .expect_err("a personal token without user_id must fail closed");
+    assert!(error.contains("user_id"), "{error}");
+    assert!(error.contains("USER"), "{error}");
+
+    // An unknown release scope is refused as well.
+    let unknown_scope_token = public_application_token(
+        &tenant_id,
+        personal_anchor,
+        "0",
+        "PLATFORM",
+        Some(&owner_user_id),
+    );
+    let error = try_resolve_application_access_token_context(&pg, &unknown_scope_token)
+        .await
+        .expect_err("an unknown release scope must fail closed");
+    assert!(error.contains("ownership_scope"), "{error}");
 
     cleanup(&pg, &tenant_id).await;
 }

@@ -10,7 +10,7 @@ use sqlx::PgPool;
 use std::sync::Arc;
 
 use crate::api_key_lookup::IamApiKeyLookupService;
-use crate::application_access_token::resolve_application_access_token_context;
+use crate::application_access_token::try_resolve_application_access_token_context;
 use crate::application_scope::ApplicationOwnershipScope;
 use crate::dev_runtime::allows_dev_authentication_fallback;
 use crate::iam_session::{
@@ -205,6 +205,40 @@ impl IamDatabaseWebRequestContextResolver {
         self.authorize_principal(web_request_principal_from_iam(context))
             .await
     }
+
+    /// Resolves a public application access token on the Access-Token channel.
+    ///
+    /// `APP_ACCESS_TOKEN_SPEC.md` §5: the credential is isolation-only input and
+    /// is accepted only here — the auth and dual-token channels keep their
+    /// verified-session contract, so a public application token is never
+    /// promoted into a session. A `USER`-scoped installation contributes its
+    /// owner as the credential subject (`APPLICATION_IDENTITY_SPEC.md` §4.1
+    /// rule 10), and a token bound to any other subject is rejected.
+    ///
+    /// A rejection is final: the credential *is* an application token, so it is
+    /// not handed to the development payload-only fallback. That fallback exists
+    /// for a host without an IAM database, and letting it authorize a credential
+    /// whose owner binding just failed would turn a fail-closed rejection into an
+    /// anonymous acceptance.
+    async fn resolve_public_application_token(
+        &self,
+        pg: &PgPool,
+        raw_access_token: &str,
+    ) -> Result<Option<WebRequestPrincipal>, WebFrameworkError> {
+        match try_resolve_application_access_token_context(pg, raw_access_token).await {
+            Ok(Some(context)) => Ok(Some(self.project_context(context).await?)),
+            Ok(None) => Ok(None),
+            Err(error) => {
+                tracing::warn!(
+                    error = %error,
+                    "public application access token rejected",
+                );
+                Err(WebFrameworkError::invalid_credentials(
+                    "invalid or expired IAM access token",
+                ))
+            }
+        }
+    }
 }
 
 fn iam_database_unavailable_error() -> WebFrameworkError {
@@ -357,10 +391,11 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
             // (`APP_ACCESS_TOKEN_SPEC.md` section 5). This is the credential the
             // packaged renderer carries before any interactive session exists.
             if let Some(pg) = pool.as_postgres() {
-                if let Some(context) =
-                    resolve_application_access_token_context(pg, raw_access_token).await
+                if let Some(principal) = self
+                    .resolve_public_application_token(pg, raw_access_token)
+                    .await?
                 {
-                    return self.project_context(context).await;
+                    return Ok(principal);
                 }
             }
             if allows_dev_authentication_fallback() {
@@ -379,10 +414,11 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
             {
                 return self.project_context(context).await;
             }
-            if let Some(context) =
-                resolve_application_access_token_context(pool.as_ref(), raw_access_token).await
+            if let Some(principal) = self
+                .resolve_public_application_token(pool.as_ref(), raw_access_token)
+                .await?
             {
-                return self.project_context(context).await;
+                return Ok(principal);
             }
             if allows_dev_authentication_fallback() {
                 return self

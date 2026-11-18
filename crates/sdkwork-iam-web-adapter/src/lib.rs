@@ -71,6 +71,7 @@ pub use app_manifest::{
 };
 pub use application_access_token::{
     parse_public_application_access_token, resolve_application_access_token_context,
+    try_resolve_application_access_token_context, validate_public_application_access_token,
     PublicApplicationAccessTokenClaims, APPLICATION_ACCESS_TOKEN_NO_EXPIRY,
 };
 pub use application_registry::{
@@ -91,9 +92,9 @@ pub use application_registry::{
     PLATFORM_INSTALLATION_ANCHOR,
 };
 pub use application_scope::{
-    ensure_requested_scope_matches_installation, ensure_subject_is_installation_owner,
-    resolve_installation_scope, ApplicationIsolationKey, ApplicationOwnershipScope,
-    ResolvedInstallationScope,
+    ensure_public_token_subject_is_installation_owner, ensure_requested_scope_matches_installation,
+    ensure_subject_is_installation_owner, is_valid_user_id_claim, resolve_installation_scope,
+    ApplicationIsolationKey, ApplicationOwnershipScope, ResolvedInstallationScope,
 };
 pub use installation_scope_cache::invalidate_installation_scope;
 pub use authorization_policy::IamAuthorizationPolicy;

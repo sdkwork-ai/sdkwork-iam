@@ -1599,4 +1599,93 @@ mod tests {
         legacy_access["organization_id"] = json!("0");
         assert!(session_token_claims_match(&legacy_auth, &legacy_access));
     }
+
+    /// `APPLICATION_IDENTITY_SPEC.md` §4.1 rules 8 and 10: a personal release
+    /// credentials exactly its owner, and the rule applies to both halves of a
+    /// dual-token pair. Each credential's `user_id` claim must equal the subject
+    /// the session row was issued for, so a pair naming any other subject is
+    /// rejected before authorization.
+    #[test]
+    fn a_personal_dual_token_pair_must_name_the_installation_owner() {
+        let context = IamAppContext::new(
+            "100001".to_owned(),
+            Some("0"),
+            "900001".to_owned(),
+            "session-1".to_owned(),
+            "deploy-app-7".to_owned(),
+            Environment::Prod,
+            DeploymentMode::Private,
+            AuthLevel::System,
+            vec!["tenant:100001".to_owned(), "user:900001".to_owned()],
+            Vec::new(),
+        );
+        let mut auth = scoped_claims("USER", "0", "TENANT");
+        auth["user_id"] = json!("900001");
+        let access = auth.clone();
+        assert!(session_claims_match_context(&auth, &context));
+        assert!(session_claims_match_context(&access, &context));
+
+        let mut foreign = auth.clone();
+        foreign["user_id"] = json!("900002");
+        assert!(
+            !session_claims_match_context(&foreign, &context),
+            "a personal credential must name the installation owner"
+        );
+        assert!(
+            !session_token_claims_match(&auth, &foreign),
+            "both halves of the pair must name the same subject"
+        );
+    }
+
+    /// `APP_ACCESS_TOKEN_SPEC.md` §5: the public application token is
+    /// isolation-only input for the Access-Token channel, never a session
+    /// credential. The auth/access dual-token path keeps proving a signed pair, so
+    /// a public token — including a `USER`-scoped one bound to its owner — cannot
+    /// authenticate there, and the owner binding added for `USER` releases is not
+    /// a second way in.
+    #[tokio::test]
+    async fn a_public_application_token_is_not_a_dual_token_credential() {
+        // A lazy pool that cannot connect: every session lookup fails, which is
+        // exactly the "public token is not a signed session" outcome under test.
+        // The acquire timeout keeps the failure immediate instead of waiting out
+        // the default pool timeout.
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .acquire_timeout(std::time::Duration::from_millis(250))
+            .connect_lazy("postgresql://sdkwork@127.0.0.1:1/sdkwork")
+            .expect("lazy PostgreSQL pool");
+        let header = json!({"alg": "none", "kid": "public-app-token", "typ": "JWT"});
+        let payload = json!({
+            "app_id": "sdkwork-cloudrouter",
+            "aud": "sdkwork-cloudrouter",
+            "deployment_mode": "private",
+            "environment": "production",
+            "exp": 0,
+            "login_scope": "TENANT",
+            "organization_id": "0",
+            "ownership_scope": "USER",
+            "session_id": "bootstrap-public-sdkwork-cloudrouter",
+            "tenant_id": "100001",
+            "token_class": "application",
+            "token_type": "access",
+            "user_id": "900001"
+        });
+        let token = format!(
+            "{}.{}.public",
+            encode_jwt_part(&header),
+            encode_jwt_part(&payload)
+        );
+
+        assert!(
+            resolve_iam_app_context_from_dual_tokens(&pool, &token, &token)
+                .await
+                .is_none(),
+            "the dual-token channel must not accept a public application token"
+        );
+        assert!(
+            resolve_iam_app_context_from_auth_token(&pool, &token)
+                .await
+                .is_none(),
+            "the auth-token channel must not accept a public application token"
+        );
+    }
 }

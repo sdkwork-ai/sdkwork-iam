@@ -293,6 +293,78 @@ pub fn ensure_requested_scope_matches_installation(
     ))
 }
 
+/// Whether a claim value can name an IAM user.
+///
+/// `IAM_SPEC.md` §5.2 and `SUBJECT_ID_SPEC.md` §3 require a `user_id` claim to be
+/// a positive numeric snowflake string; `0` is the tenant-level sentinel and
+/// never names a user. An opaque or non-numeric value is therefore not a
+/// subject id, and comparing it with `owner_user_id` would accept a malformed
+/// claim whenever the installation happened to store the same string.
+pub fn is_valid_user_id_claim(value: &str) -> bool {
+    let value = value.trim();
+    !value.is_empty()
+        && value.bytes().all(|byte| byte.is_ascii_digit())
+        && value.parse::<i64>().is_ok_and(|id| id > 0)
+}
+
+/// Fails closed when a public application access token's `user_id` claim is not
+/// the owner of the `USER`-scoped installation it names.
+///
+/// `APPLICATION_IDENTITY_SPEC.md` §4.1 rules 7, 8, and 10 and
+/// `APP_ACCESS_TOKEN_SPEC.md` §3.2.1: a personal release credentials exactly its
+/// owner, so the credential's subject claim `MUST` be present, `MUST` be a legal
+/// IAM user id, and `MUST` equal `iam_application_installation.owner_user_id`.
+/// The error names the installation, the claim, and the expected owner, so an
+/// operator can diagnose the rejection without inspecting the token payload.
+///
+/// Returns the owner user id the caller must project as the credential subject.
+pub fn ensure_public_token_subject_is_installation_owner(
+    installation_id: &str,
+    owner_user_id: Option<&str>,
+    claim_user_id: Option<&str>,
+) -> Result<String, String> {
+    let owner_user_id = owner_user_id
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| {
+            format!(
+                "USER-scoped installation {installation_id} has no owner_user_id; \
+                 a public application token cannot be bound to a subject"
+            )
+        })?;
+    if !is_valid_user_id_claim(owner_user_id) {
+        return Err(format!(
+            "USER-scoped installation {installation_id} records owner_user_id {owner_user_id:?}, \
+             which is not a positive decimal IAM user id; the installation cannot accept a public \
+             application token until the owner is repaired"
+        ));
+    }
+    let Some(claim_user_id) = claim_user_id
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    else {
+        return Err(format!(
+            "USER-scoped installation {installation_id} requires the public application token's \
+             user_id claim to equal its owner {owner_user_id}, but the claim is absent"
+        ));
+    };
+    if !is_valid_user_id_claim(claim_user_id) {
+        return Err(format!(
+            "public application token user_id claim {claim_user_id:?} is not a positive decimal \
+             IAM user id; USER-scoped installation {installation_id} requires its owner \
+             {owner_user_id}"
+        ));
+    }
+    if claim_user_id != owner_user_id {
+        return Err(format!(
+            "USER-scoped installation {installation_id} accepts only its owner's public \
+             application token: user_id claim {claim_user_id} does not equal the installation \
+             owner {owner_user_id}"
+        ));
+    }
+    Ok(owner_user_id.to_owned())
+}
+
 /// Fails closed when a `USER`-scoped installation would issue a credential for a
 /// subject other than its owner.
 pub fn ensure_subject_is_installation_owner(
@@ -483,5 +555,78 @@ mod tests {
         // Tenant and organization releases are not subject-bound.
         ensure_subject_is_installation_owner(ApplicationOwnershipScope::Tenant, None, "anyone")
             .expect("tenant release");
+    }
+
+    #[test]
+    fn a_user_id_claim_must_be_a_positive_decimal_snowflake() {
+        for accepted in ["1", "900001", " 4000382910274560001 "] {
+            assert!(is_valid_user_id_claim(accepted), "{accepted:?} should be legal");
+        }
+        for rejected in [
+            "", " ", "0", "00", "-1", "+1", "1.0", "1e3", "abc", "iamu_abc", "user_1",
+            "1 2", "99999999999999999999999999",
+        ] {
+            assert!(
+                !is_valid_user_id_claim(rejected),
+                "{rejected:?} must not name an IAM user"
+            );
+        }
+    }
+
+    #[test]
+    fn a_public_token_must_carry_the_personal_installation_owner() {
+        let owner = ensure_public_token_subject_is_installation_owner(
+            "install-1",
+            Some("900001"),
+            Some("900001"),
+        )
+        .expect("the owner's own credential is accepted");
+        assert_eq!(owner, "900001");
+
+        let absent = ensure_public_token_subject_is_installation_owner(
+            "install-1",
+            Some("900001"),
+            None,
+        )
+        .expect_err("a public token without a subject claim must fail closed");
+        assert!(absent.contains("install-1"), "{absent}");
+        assert!(absent.contains("user_id"), "{absent}");
+        assert!(absent.contains("900001"), "{absent}");
+
+        let wrong = ensure_public_token_subject_is_installation_owner(
+            "install-1",
+            Some("900001"),
+            Some("900002"),
+        )
+        .expect_err("another subject must not receive the personal credential");
+        assert!(wrong.contains("install-1"), "{wrong}");
+        assert!(wrong.contains("900002"), "{wrong}");
+        assert!(wrong.contains("900001"), "{wrong}");
+
+        let illegal = ensure_public_token_subject_is_installation_owner(
+            "install-1",
+            Some("900001"),
+            Some("owner-1"),
+        )
+        .expect_err("an opaque claim is not a subject id");
+        assert!(illegal.contains("user_id"), "{illegal}");
+        assert!(illegal.contains("900001"), "{illegal}");
+
+        let tenant_sentinel = ensure_public_token_subject_is_installation_owner(
+            "install-1",
+            Some("900001"),
+            Some("0"),
+        )
+        .expect_err("the tenant sentinel never names a personal owner");
+        assert!(tenant_sentinel.contains("user_id"), "{tenant_sentinel}");
+
+        let unowned = ensure_public_token_subject_is_installation_owner(
+            "install-1",
+            None,
+            Some("900001"),
+        )
+        .expect_err("a personal installation without an owner cannot bind a token");
+        assert!(unowned.contains("install-1"), "{unowned}");
+        assert!(unowned.contains("owner_user_id"), "{unowned}");
     }
 }
