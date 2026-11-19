@@ -90,6 +90,7 @@ export {
   manifestToProvisionCommand,
   mapManifestAppTypeToApplicationType,
   resolveDeployApplicationId,
+  resolveManifestApplicationType,
   tenantApplicationInstanceKey,
   validateBootstrapEnvironment,
   validateManifestForBootstrap,

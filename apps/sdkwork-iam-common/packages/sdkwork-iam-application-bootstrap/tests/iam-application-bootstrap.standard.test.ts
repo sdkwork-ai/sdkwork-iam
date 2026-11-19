@@ -12,6 +12,7 @@ import {
   mapManifestAppTypeToApplicationType,
   mergeBootstrapAuth,
   resolveBootstrapEnvironmentFromEnv,
+  resolveManifestApplicationType,
   tenantApplicationInstanceKey,
   validateManifestForBootstrap,
   validateTenantApplicationProvisionCommand,
@@ -330,6 +331,53 @@ describe("@sdkwork/iam-application-bootstrap", () => {
     expect(first).toBe(second);
     expect(first).toMatch(/^iam-bootstrap-[0-9a-f]{40}$/u);
     expect(deriveProvisioningIdempotencyKey({ ...deployCommand, instanceKey: "other_dev" })).not.toBe(first);
+  });
+
+  it("resolves the application type from the runtime surface, not the framework appType", () => {
+    expect(resolveManifestApplicationType({
+      ...manifest,
+      runtime: {
+        clientArchitectures: ["mini-program"],
+        defaultArchitecture: "mini-program",
+        defaultPlatform: "MP_WEIXIN",
+        family: "mini-program",
+        framework: "mp-weixin",
+        targetPlatforms: ["mini-program"],
+      },
+    })).toBe("miniprogram");
+    expect(resolveManifestApplicationType({
+      ...manifest,
+      app: { ...manifest.app, appType: "APP_HTML" },
+      runtime: { defaultArchitecture: "x64", defaultPlatform: "WEB", family: "desktop", framework: "tauri" },
+    })).toBe("desktop");
+    expect(resolveManifestApplicationType({
+      ...manifest,
+      runtime: { defaultArchitecture: "h5", defaultPlatform: "H5", family: "mobile" },
+    })).toBe("h5");
+    expect(resolveManifestApplicationType({
+      ...manifest,
+      app: { ...manifest.app, appType: "APP_UNIAPP" },
+      runtime: { defaultArchitecture: "uniappx", defaultPlatform: "APP_ANDROID", family: "mobile" },
+    })).toBe("android");
+    expect(resolveManifestApplicationType({
+      ...manifest,
+      app: { ...manifest.app, appType: "SDK" },
+      runtime: { family: "server", framework: "rust-service" },
+    })).toBe("api");
+    expect(resolveManifestApplicationType({
+      ...manifest,
+      app: { ...manifest.app, appType: "APP_HTML" },
+      publish: { installPlatforms: ["WEB"], platforms: ["WEB"] },
+      runtime: { family: "server", framework: "rust-axum" },
+    })).toBe("api");
+    // No runtime surface: the framework fallback still applies.
+    expect(resolveManifestApplicationType(manifest)).toBe("pc");
+
+    // The provisioning command inherits the resolved value.
+    expect(manifestToProvisionCommand({
+      ...manifest,
+      runtime: { defaultArchitecture: "mini-program", defaultPlatform: "MP_WEIXIN", family: "mini-program" },
+    }, environment).applicationType).toBe("miniprogram");
   });
 
   it("formats bootstrap env output for local runtime handoff", () => {

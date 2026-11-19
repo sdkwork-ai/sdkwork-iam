@@ -90,6 +90,84 @@ export function mapManifestAppTypeToApplicationType(
 }
 
 /**
+ * Resolves the product-semantic application type of a manifest.
+ *
+ * `app.appType` names a framework family, not an endpoint: `APP_REACT` is used
+ * by both a PC web shell and a WeChat mini program, and `APP_UNIAPP` ships to
+ * native Android/iOS/HarmonyOS as well as to mini programs. The runtime surface
+ * (`runtime.defaultPlatform`, family, architectures and publish platforms) is
+ * therefore authoritative; `appType` is only the fallback for a manifest that
+ * declares no surface.
+ * @param manifest - parsed `agent.app.config.json`
+ * @returns the resolved tenant application type, or `undefined` when neither a
+ * runtime surface nor an app type is present
+ */
+export function resolveManifestApplicationType(
+  manifest: SdkworkAppManifest,
+): IamTenantApplicationType | undefined {
+  const appType = trimToUndefined(manifest.app?.appType)?.toUpperCase();
+  if (appType === "APP_FLUTTER" || appType === "FLUTTER") {
+    // Flutter is one codebase delivered to several stores; the kind is the
+    // multi-target build, not one of its platform targets.
+    return "flutter";
+  }
+  const runtime = manifest.runtime ?? {};
+  const publish = manifest.publish ?? {};
+  const signals = [
+    runtime.family,
+    runtime.framework,
+    runtime.defaultPlatform,
+    runtime.defaultArchitecture,
+    ...(runtime.runtimes ?? []),
+    ...(runtime.targetPlatforms ?? []),
+    ...(runtime.clientArchitectures ?? []),
+    ...(publish.platforms ?? []),
+    ...(publish.installPlatforms ?? []),
+  ]
+    .map((value) => `${value ?? ""}`.trim().toLowerCase())
+    .filter((value) => value.length > 0);
+  const has = (needle: string): boolean => signals.some((signal) => signal === needle || signal.includes(needle));
+
+  // A desktop shell is a desktop app even though its renderer is web.
+  if (has("tauri") || has("electron") || has("desktop")) {
+    return "desktop";
+  }
+  if (has("mini-program") || has("miniprogram") || has("mp-weixin") || has("mp_weixin")) {
+    return "miniprogram";
+  }
+  const platform = `${runtime.defaultPlatform ?? ""}`.trim().toLowerCase();
+  switch (platform) {
+    case "app_ios":
+    case "ios":
+    case "iphone":
+    case "ipad":
+      return "ios";
+    case "app_android":
+    case "android":
+      return "android";
+    case "app_harmony":
+    case "harmony":
+    case "harmonyos":
+    case "openharmony":
+      return "harmonyos";
+    default:
+      break;
+  }
+  // A server/runtime service is an API application even when its manifest also
+  // advertises a web install platform (the IAM root manifest does).
+  if (has("api") || has("server") || has("rust-axum") || has("rust-service")) {
+    return "api";
+  }
+  if (has("h5")) {
+    return "h5";
+  }
+  if (has("pc") || has("web") || has("browser") || has("universal")) {
+    return "pc";
+  }
+  return mapManifestAppTypeToApplicationType(appType);
+}
+
+/**
  * Validate an explicit `applicationType` and normalize its casing.
  * @param value - caller-supplied application type
  * @returns the normalized application type
@@ -253,7 +331,7 @@ export function manifestToProvisionCommand(
 
   const applicationType = trimToUndefined(provision?.applicationType)
     ? assertIamTenantApplicationType(provision?.applicationType)
-    : mapManifestAppTypeToApplicationType(app.appType);
+    : resolveManifestApplicationType(manifest);
   if (!applicationType) {
     throw new Error(
       "applicationType is required to provision a tenant application; set app.appType "

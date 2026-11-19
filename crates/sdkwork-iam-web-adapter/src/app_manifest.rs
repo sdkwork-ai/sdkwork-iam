@@ -42,6 +42,10 @@ pub struct SdkworkAppManifest {
     #[serde(default)]
     pub backend: ManifestBackendSection,
     #[serde(default)]
+    pub runtime: ManifestRuntimeSection,
+    #[serde(default)]
+    pub publish: ManifestPublishSection,
+    #[serde(default)]
     pub release: ManifestReleaseSection,
     /// OAuth relying-party registration declared by the application.
     ///
@@ -50,6 +54,41 @@ pub struct SdkworkAppManifest {
     /// auto-registration policy allows it for the lifecycle.
     #[serde(default)]
     pub oauth: Option<Value>,
+}
+
+/// The manifest `runtime` block that names the concrete application surface.
+///
+/// `app.appType` is a framework family (`APP_REACT` covers both a PC web shell
+/// and a WeChat mini program), so the runtime surface is the authoritative
+/// signal for the IAM application type.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManifestRuntimeSection {
+    #[serde(default)]
+    pub family: Option<String>,
+    #[serde(default)]
+    pub framework: Option<String>,
+    #[serde(default)]
+    pub default_platform: Option<String>,
+    #[serde(default)]
+    pub default_architecture: Option<String>,
+    #[serde(default)]
+    pub runtimes: Vec<String>,
+    #[serde(default)]
+    pub target_platforms: Vec<String>,
+    #[serde(default)]
+    pub client_architectures: Vec<String>,
+}
+
+/// The manifest `publish` block; its platforms are a second surface signal for
+/// manifests that omit the richer `runtime` block.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManifestPublishSection {
+    #[serde(default)]
+    pub platforms: Vec<String>,
+    #[serde(default)]
+    pub install_platforms: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -125,6 +164,93 @@ pub fn load_manifest_from_path(manifest_path: &Path) -> Result<SdkworkAppManifes
             manifest_path.display()
         )
     })
+}
+
+/// Resolves the product-semantic application type of a manifest.
+///
+/// `app.appType` names a framework family, not an endpoint: `APP_REACT` is used
+/// by both a PC web shell and a WeChat mini program, and `APP_UNIAPP` ships to
+/// native Android/iOS/HarmonyOS as well as to mini programs. The runtime
+/// surface (`runtime.defaultPlatform`, family, architectures and publish
+/// platforms) is therefore authoritative; `appType` is only the fallback for a
+/// manifest that declares no surface.
+#[must_use]
+pub fn resolve_manifest_application_type(manifest: &SdkworkAppManifest) -> String {
+    let app_type = manifest.app.app_type.as_deref().unwrap_or("").trim();
+    if matches!(app_type.to_ascii_uppercase().as_str(), "APP_FLUTTER" | "FLUTTER") {
+        // Flutter is one codebase delivered to several stores; the kind is the
+        // multi-target build, not one of its platform targets.
+        return "flutter".to_owned();
+    }
+
+    let runtime = &manifest.runtime;
+    let mut signals: Vec<String> = Vec::new();
+    for value in [
+        runtime.family.as_deref(),
+        runtime.framework.as_deref(),
+        runtime.default_platform.as_deref(),
+        runtime.default_architecture.as_deref(),
+    ]
+    .into_iter()
+    .flatten()
+    {
+        push_surface_signal(&mut signals, value);
+    }
+    for value in runtime
+        .runtimes
+        .iter()
+        .chain(runtime.target_platforms.iter())
+        .chain(runtime.client_architectures.iter())
+        .chain(manifest.publish.platforms.iter())
+        .chain(manifest.publish.install_platforms.iter())
+    {
+        push_surface_signal(&mut signals, value);
+    }
+    let has = |needle: &str| {
+        signals
+            .iter()
+            .any(|signal| signal == needle || signal.contains(needle))
+    };
+
+    // A desktop shell is a desktop app even though its renderer is web.
+    if has("tauri") || has("electron") || has("desktop") {
+        return "desktop".to_owned();
+    }
+    if has("mini-program") || has("miniprogram") || has("mp-weixin") || has("mp_weixin") {
+        return "miniprogram".to_owned();
+    }
+    // The default platform is the concrete delivery target of a native app.
+    let platform = runtime
+        .default_platform
+        .as_deref()
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+    match platform.as_str() {
+        "app_ios" | "ios" | "iphone" | "ipad" => return "ios".to_owned(),
+        "app_android" | "android" => return "android".to_owned(),
+        "app_harmony" | "harmony" | "harmonyos" | "openharmony" => return "harmonyos".to_owned(),
+        _ => {}
+    }
+    // A server/runtime service is an API application even when its manifest
+    // also advertises a web install platform (the IAM root manifest does).
+    if has("api") || has("server") || has("rust-axum") || has("rust-service") {
+        return "api".to_owned();
+    }
+    if has("h5") {
+        return "h5".to_owned();
+    }
+    if has("pc") || has("web") || has("browser") || has("universal") {
+        return "pc".to_owned();
+    }
+    crate::application_registry::map_manifest_app_type_to_application_type(app_type)
+}
+
+fn push_surface_signal(signals: &mut Vec<String>, value: &str) {
+    let normalized = value.trim().to_ascii_lowercase();
+    if !normalized.is_empty() {
+        signals.push(normalized);
+    }
 }
 
 pub fn validate_manifest_for_embedded_bootstrap(
@@ -262,13 +388,7 @@ pub fn manifest_to_ensure_command(
         .unwrap_or(manifest.app.name.as_str())
         .trim()
         .to_owned();
-    let app_type = manifest
-        .app
-        .app_type
-        .as_deref()
-        .unwrap_or("APP_HTML")
-        .trim()
-        .to_owned();
+    let app_type = resolve_manifest_application_type(manifest);
     let (version, channel) = manifest_release_identity(manifest, options);
     let environment = normalize_bootstrap_environment(&options.environment);
     let instance_key = binding
@@ -425,6 +545,141 @@ mod tests {
     use super::*;
     use serde_json::json;
 
+    fn surface_manifest(
+        app_type: &str,
+        runtime: ManifestRuntimeSection,
+        publish: ManifestPublishSection,
+    ) -> SdkworkAppManifest {
+        SdkworkAppManifest {
+            app: ManifestAppSection {
+                key: "surface-app".to_owned(),
+                name: "Surface app".to_owned(),
+                display_name: None,
+                app_type: Some(app_type.to_owned()),
+            },
+            backend: ManifestBackendSection {
+                access_token_permission_scope: Some(vec!["iam.self".to_owned()]),
+                ..ManifestBackendSection::default()
+            },
+            runtime,
+            publish,
+            release: ManifestReleaseSection::default(),
+            oauth: None,
+        }
+    }
+
+    /// `appType` names a framework family, so the runtime surface must decide
+    /// the IAM application type: a React mini program is not a PC web app.
+    #[test]
+    fn runtime_surface_wins_over_the_framework_app_type() {
+        let mini = surface_manifest(
+            "APP_REACT",
+            ManifestRuntimeSection {
+                default_platform: Some("MP_WEIXIN".to_owned()),
+                family: Some("mini-program".to_owned()),
+                ..ManifestRuntimeSection::default()
+            },
+            ManifestPublishSection::default(),
+        );
+        assert_eq!(resolve_manifest_application_type(&mini), "miniprogram");
+
+        let h5 = surface_manifest(
+            "APP_REACT",
+            ManifestRuntimeSection {
+                default_architecture: Some("h5".to_owned()),
+                default_platform: Some("H5".to_owned()),
+                family: Some("mobile".to_owned()),
+                ..ManifestRuntimeSection::default()
+            },
+            ManifestPublishSection::default(),
+        );
+        assert_eq!(resolve_manifest_application_type(&h5), "h5");
+
+        let pc = surface_manifest(
+            "APP_REACT",
+            ManifestRuntimeSection {
+                default_architecture: Some("universal".to_owned()),
+                default_platform: Some("WEB".to_owned()),
+                family: Some("web".to_owned()),
+                ..ManifestRuntimeSection::default()
+            },
+            ManifestPublishSection::default(),
+        );
+        assert_eq!(resolve_manifest_application_type(&pc), "pc");
+
+        let desktop = surface_manifest(
+            "APP_HTML",
+            ManifestRuntimeSection {
+                default_platform: Some("WEB".to_owned()),
+                family: Some("desktop".to_owned()),
+                framework: Some("tauri".to_owned()),
+                ..ManifestRuntimeSection::default()
+            },
+            ManifestPublishSection::default(),
+        );
+        assert_eq!(resolve_manifest_application_type(&desktop), "desktop");
+
+        let android = surface_manifest(
+            "APP_UNIAPP",
+            ManifestRuntimeSection {
+                default_platform: Some("APP_ANDROID".to_owned()),
+                family: Some("mobile".to_owned()),
+                framework: Some("uni-app-x".to_owned()),
+                ..ManifestRuntimeSection::default()
+            },
+            ManifestPublishSection::default(),
+        );
+        assert_eq!(resolve_manifest_application_type(&android), "android");
+
+        let flutter = surface_manifest(
+            "APP_FLUTTER",
+            ManifestRuntimeSection {
+                default_platform: Some("APP_ANDROID".to_owned()),
+                ..ManifestRuntimeSection::default()
+            },
+            ManifestPublishSection::default(),
+        );
+        assert_eq!(resolve_manifest_application_type(&flutter), "flutter");
+
+        let server = surface_manifest(
+            "APP_HTML",
+            ManifestRuntimeSection {
+                family: Some("server".to_owned()),
+                framework: Some("rust-axum".to_owned()),
+                ..ManifestRuntimeSection::default()
+            },
+            ManifestPublishSection {
+                // The IAM root manifest advertises a WEB install platform even
+                // though the app itself is the API service.
+                install_platforms: vec!["WEB".to_owned()],
+                platforms: vec!["WEB".to_owned()],
+            },
+        );
+        assert_eq!(resolve_manifest_application_type(&server), "api");
+
+        // No surface at all: the framework fallback still applies.
+        let fallback = surface_manifest(
+            "APP_REACT",
+            ManifestRuntimeSection::default(),
+            ManifestPublishSection::default(),
+        );
+        assert_eq!(resolve_manifest_application_type(&fallback), "pc");
+    }
+
+    /// The publish block is a second signal for manifests without `runtime`.
+    #[test]
+    fn publish_platforms_resolve_a_missing_runtime_surface() {
+        let mini = surface_manifest(
+            "APP_UNIAPP",
+            ManifestRuntimeSection::default(),
+            ManifestPublishSection {
+                install_platforms: vec!["MP_WEIXIN".to_owned()],
+                platforms: vec!["MP_WEIXIN".to_owned()],
+            },
+        );
+        assert_eq!(resolve_manifest_application_type(&mini), "miniprogram");
+    }
+
     #[test]
     fn manifest_maps_the_oauth_relying_party_registration() {
         let manifest: SdkworkAppManifest = serde_json::from_value(json!({
@@ -502,6 +757,8 @@ mod tests {
                 access_token_permission_scope: Some(vec!["iam.self".to_owned()]),
                 ..ManifestBackendSection::default()
             },
+            runtime: ManifestRuntimeSection::default(),
+            publish: ManifestPublishSection::default(),
             release: ManifestReleaseSection::default(),
             oauth: None,
         };
@@ -538,6 +795,8 @@ mod tests {
                 access_token_permission_scope: Some(vec!["iam.self".to_owned()]),
                 ..ManifestBackendSection::default()
             },
+            runtime: ManifestRuntimeSection::default(),
+            publish: ManifestPublishSection::default(),
             release: ManifestReleaseSection::default(),
             oauth: None,
         };
@@ -576,6 +835,8 @@ mod tests {
                 access_token_permission_scope: Some(vec!["iam.self".to_owned()]),
                 ..ManifestBackendSection::default()
             },
+            runtime: ManifestRuntimeSection::default(),
+            publish: ManifestPublishSection::default(),
             release: ManifestReleaseSection::default(),
             oauth: None,
         };
@@ -602,6 +863,8 @@ mod tests {
                 access_token_permission_scope: Some(vec!["iam.self".to_owned()]),
                 ..ManifestBackendSection::default()
             },
+            runtime: ManifestRuntimeSection::default(),
+            publish: ManifestPublishSection::default(),
             release: ManifestReleaseSection::default(),
             oauth: None,
         };
@@ -667,6 +930,8 @@ mod tests {
                 access_token_permission_scope: Some(vec!["iam.self".to_owned()]),
                 ..ManifestBackendSection::default()
             },
+            runtime: ManifestRuntimeSection::default(),
+            publish: ManifestPublishSection::default(),
             release: ManifestReleaseSection::default(),
             oauth: None,
         };

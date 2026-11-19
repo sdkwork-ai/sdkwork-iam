@@ -157,6 +157,27 @@ export interface SdkworkAppManifest {
     key?: string;
     name?: string;
   };
+  /**
+   * The concrete application surface.
+   *
+   * `app.appType` is a framework family (`APP_REACT` covers PC web and WeChat
+   * mini programs), so the runtime block is the authoritative source of the
+   * tenant-application `applicationType`.
+   */
+  runtime?: {
+    family?: string;
+    framework?: string;
+    defaultPlatform?: string;
+    defaultArchitecture?: string;
+    runtimes?: string[];
+    targetPlatforms?: string[];
+    clientArchitectures?: string[];
+  };
+  /** Publish/install platforms; a second surface signal for old manifests. */
+  publish?: {
+    platforms?: string[];
+    installPlatforms?: string[];
+  };
   artifacts?: {
     installConfig?: {
       packages?: Array<Record<string, unknown>>;
@@ -200,7 +221,6 @@ export interface SdkworkAppManifest {
    * party registers none.
    */
   oauth?: Record<string, unknown>;
-  publish?: Record<string, unknown>;
   release?: {
     notes?: Array<{
       channel?: string;
@@ -208,7 +228,6 @@ export interface SdkworkAppManifest {
       version?: string;
     }>;
   };
-  runtime?: Record<string, unknown>;
   security?: Record<string, unknown>;
 }
 

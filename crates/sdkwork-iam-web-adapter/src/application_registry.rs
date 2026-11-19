@@ -579,7 +579,7 @@ fn normalize_application_type(value: &str) -> String {
 /// `miniprogram` rather than to the web type its shell also renders. The
 /// deployment kind remains the authority for the concrete endpoint; this value
 /// is the IAM catalogue facet and must stay aligned with it.
-fn map_manifest_app_type_to_application_type(manifest_app_type: &str) -> String {
+pub(crate) fn map_manifest_app_type_to_application_type(manifest_app_type: &str) -> String {
     match manifest_app_type.trim().to_ascii_uppercase().as_str() {
         "APP_HTML" | "APP_H5" | "H5" => "h5",
         "APP_FLUTTER" | "FLUTTER" => "flutter",
