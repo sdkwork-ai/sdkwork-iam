@@ -1522,6 +1522,78 @@ pub async fn resolve_tenant_application_by_deploy_application_id(
     Ok(row.map(map_tenant_application_row))
 }
 
+/// Relinks one installation from a legacy deploy anchor to its canonical anchor.
+///
+/// Older installer runs named the installation with the deploy application's
+/// public uuid; the deploy plane now names the same application with the decimal
+/// `deploy_app.id`. Both anchors are globally unique, so leaving the legacy row
+/// in place would make the canonical lookup miss and mint a second installation.
+/// This is a controlled repair, not an update path: the caller must prove the
+/// legacy anchor belongs to the same Deploy application, and the rewrite is
+/// refused when the legacy row's `instance_key` does not contain that anchor or
+/// when the target anchor is already claimed.
+///
+/// @param pg - shared PostgreSQL pool.
+/// @param tenant_id - tenant that owns the installation.
+/// @param from_anchor - legacy anchor (deploy uuid).
+/// @param to_anchor - canonical anchor (decimal deploy id).
+/// @returns the relinked installation, or `None` when no legacy row exists.
+pub async fn relink_tenant_application_deploy_application_id(
+    pg: &PgPool,
+    tenant_id: &str,
+    from_anchor: &str,
+    to_anchor: &str,
+) -> Result<Option<TenantApplication>, String> {
+    let from = from_anchor.trim();
+    let to = to_anchor.trim();
+    if crate::is_blank(Some(from)) || crate::is_blank(Some(to)) {
+        return Err("both the legacy and canonical deploy application ids are required".to_owned());
+    }
+    if from == to {
+        return Ok(None);
+    }
+    let Some(existing) =
+        resolve_tenant_application_by_deploy_application_id(pg, tenant_id, from).await?
+    else {
+        return Ok(None);
+    };
+    if let Some(collision) =
+        resolve_tenant_application_by_deploy_application_id(pg, tenant_id, to).await?
+    {
+        if collision.id != existing.id {
+            return Err(format!(
+                "deploy application {to} is already linked to installation {}; refusing to relink {}",
+                collision.id, existing.id
+            ));
+        }
+        return Ok(Some(collision));
+    }
+    let instance_key = existing.instance_key.trim();
+    if instance_key != from && !instance_key.starts_with(&format!("{from}_")) {
+        return Err(format!(
+            "installation {} carries instance key {instance_key}, which does not prove deploy application {from}; refusing to relink",
+            existing.id
+        ));
+    }
+
+    sqlx::query(
+        "UPDATE iam_application_installation
+         SET deploy_application_id = $3, updated_at = NOW()
+         WHERE tenant_id = $1 AND id = $2 AND deploy_application_id = $4",
+    )
+    .bind(tenant_id)
+    .bind(&existing.id)
+    .bind(to)
+    .bind(from)
+    .execute(pg)
+    .await
+    .map_err(|error| format!("relink tenant application deploy anchor failed: {error}"))?;
+
+    invalidate_installation_scope(tenant_id, from);
+    invalidate_installation_scope(tenant_id, to);
+    resolve_tenant_application_by_deploy_application_id(pg, tenant_id, to).await
+}
+
 pub fn intersect_permission_scopes(
     actor_scope: &[String],
     app_scope: &[String],
