@@ -137,9 +137,12 @@ pub(crate) async fn start_wechat_payment_oauth(
         &session.user.tenant_id,
         STATE_TTL_SECONDS,
     );
-    // Pin the callback to the same integration scope this start resolved.
+    // Pin the callback to the same integration scope this start resolved. An
+    // empty scope clears a stale cookie left by a previous application.
     let app_scope = session.context.app_id.trim();
-    if !app_scope.is_empty() {
+    if app_scope.is_empty() {
+        append_payment_oauth_cookie(&mut response, APP_COOKIE, "", 0);
+    } else {
         append_payment_oauth_cookie(&mut response, APP_COOKIE, app_scope, STATE_TTL_SECONDS);
     }
     response
@@ -249,6 +252,9 @@ pub(crate) async fn start_wechat_payment_oauth_for_cashier(
         &format!("{}|{}", claims.token_id, claims.epoch),
         STATE_TTL_SECONDS,
     );
+    // An anonymous cashier has no application scope; clear any stale scope left
+    // by a previous signed-in start in the same browser.
+    append_payment_oauth_cookie(&mut response, APP_COOKIE, "", 0);
     response
 }
 
