@@ -56,7 +56,8 @@ pub struct TenantApplicationProvisionCommand {
     pub display_name: String,
     pub environment: String,
     /// Product-semantic application type (`api` | `h5` | `pc` | `flutter` |
-    /// `other`). Required.
+    /// `miniprogram` | `ios` | `android` | `harmonyos` | `desktop` | `other`).
+    /// Required.
     pub application_type: Option<String>,
     pub primary_domain: Option<String>,
     /// Access permissions granted to the installation. An empty list is a valid
