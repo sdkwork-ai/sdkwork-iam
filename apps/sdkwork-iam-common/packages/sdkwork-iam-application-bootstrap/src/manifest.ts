@@ -153,6 +153,21 @@ export function resolveManifestApplicationType(
     default:
       break;
   }
+  // A manifest that only advertises native publish platforms (no runtime
+  // defaultPlatform) is still a native app, not the ambiguous `APP_UNIAPP`
+  // framework family.
+  const hasWebSurface = has("h5") || has("web") || has("pc") || has("browser") || has("universal");
+  if (!hasWebSurface) {
+    if (has("android")) {
+      return "android";
+    }
+    if (has("ios") || has("iphone") || has("ipad")) {
+      return "ios";
+    }
+    if (has("harmony") || has("harmonyos") || has("openharmony")) {
+      return "harmonyos";
+    }
+  }
   // A server/runtime service is an API application even when its manifest also
   // advertises a web install platform (the IAM root manifest does).
   if (has("api") || has("server") || has("rust-axum") || has("rust-service")) {

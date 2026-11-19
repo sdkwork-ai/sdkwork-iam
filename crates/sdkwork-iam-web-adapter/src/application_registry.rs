@@ -1027,6 +1027,10 @@ pub struct EnsureTenantApplicationCommand {
     pub app_key: String,
     pub name: String,
     pub display_name: String,
+    /// Resolved product-semantic application type (`api|h5|pc|flutter|miniprogram|ios|android|harmonyos|desktop|other`).
+    ///
+    /// The embedded bootstrap resolves it from the manifest runtime surface, so
+    /// this is not necessarily the raw `app.appType` framework family.
     pub app_type: String,
     pub version: String,
     pub channel: String,

@@ -378,6 +378,11 @@ describe("@sdkwork/iam-application-bootstrap", () => {
       ...manifest,
       runtime: { defaultArchitecture: "mini-program", defaultPlatform: "MP_WEIXIN", family: "mini-program" },
     }, environment).applicationType).toBe("miniprogram");
+    expect(resolveManifestApplicationType({
+      ...manifest,
+      app: { ...manifest.app, appType: "APP_UNIAPP" },
+      publish: { installPlatforms: ["APP_ANDROID", "APP_IOS"], platforms: ["APP_ANDROID", "APP_IOS"] },
+    })).toBe("android");
   });
 
   it("formats bootstrap env output for local runtime handoff", () => {

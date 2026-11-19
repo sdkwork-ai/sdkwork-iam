@@ -232,6 +232,21 @@ pub fn resolve_manifest_application_type(manifest: &SdkworkAppManifest) -> Strin
         "app_harmony" | "harmony" | "harmonyos" | "openharmony" => return "harmonyos".to_owned(),
         _ => {}
     }
+    // A manifest that only advertises native publish platforms (no runtime
+    // defaultPlatform) is still a native app, not the ambiguous `APP_UNIAPP`
+    // framework family.
+    let has_web_surface = has("h5") || has("web") || has("pc") || has("browser") || has("universal");
+    if !has_web_surface {
+        if has("android") {
+            return "android".to_owned();
+        }
+        if has("ios") || has("iphone") || has("ipad") {
+            return "ios".to_owned();
+        }
+        if has("harmony") || has("harmonyos") || has("openharmony") {
+            return "harmonyos".to_owned();
+        }
+    }
     // A server/runtime service is an API application even when its manifest
     // also advertises a web install platform (the IAM root manifest does).
     if has("api") || has("server") || has("rust-axum") || has("rust-service") {
@@ -678,6 +693,16 @@ mod tests {
             },
         );
         assert_eq!(resolve_manifest_application_type(&mini), "miniprogram");
+
+        let native = surface_manifest(
+            "APP_UNIAPP",
+            ManifestRuntimeSection::default(),
+            ManifestPublishSection {
+                install_platforms: vec!["APP_ANDROID".to_owned(), "APP_IOS".to_owned()],
+                platforms: vec!["APP_ANDROID".to_owned(), "APP_IOS".to_owned()],
+            },
+        );
+        assert_eq!(resolve_manifest_application_type(&native), "android");
     }
 
     #[test]
