@@ -113,6 +113,61 @@ pub fn parse_access_credential_create_request(
     })
 }
 
+/// Resolves the installation an access-credential request addresses.
+///
+/// `appId` is the installation's deploy application anchor (the registration
+/// plane speaks the same identity as the token), while
+/// `tenantApplicationId`/`instanceKey` still address the row directly. Every
+/// caller resolves through here so the backend operator path and the
+/// user-facing application-token path cannot disagree about which installation a
+/// request names.
+pub async fn resolve_installation_for_access_credential(
+    pg: &PgPool,
+    tenant_id: &str,
+    request: &AccessCredentialCreateRequest,
+) -> Result<crate::application_registry::TenantApplication, String> {
+    let tenant_application = match request
+        .tenant_application_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        Some(tenant_application_id) => {
+            resolve_tenant_application(pg, tenant_id, Some(tenant_application_id), None, None)
+                .await?
+        }
+        None => match request
+            .app_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+        {
+            Some(deploy_application_id) => {
+                resolve_tenant_application_by_deploy_application_id(
+                    pg,
+                    tenant_id,
+                    deploy_application_id,
+                )
+                .await?
+            }
+            None => {
+                resolve_tenant_application(
+                    pg,
+                    tenant_id,
+                    None,
+                    None,
+                    request.instance_key.as_deref(),
+                )
+                .await?
+            }
+        },
+    }
+    .ok_or_else(|| {
+        "tenant application was not found; register application and provision tenant application before issuing access credential".to_string()
+    })?;
+    Ok(tenant_application)
+}
+
 /// Issues a delegated access credential whose subject is the installation's
 /// deploy application.
 ///
@@ -128,54 +183,8 @@ pub async fn issue_delegated_access_credential(
     ensure_tenant_exists(pg, &request.tenant_id).await?;
     ensure_organization_exists(pg, &request.tenant_id, &request.organization_id).await?;
 
-    // `appId` in the request is the installation's deploy application anchor (the
-    // registration plane speaks the same identity as the token), while
-    // `tenantApplicationId`/`instanceKey` still address the row directly.
-    let tenant_application = match request
-        .tenant_application_id
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-    {
-        Some(tenant_application_id) => {
-            resolve_tenant_application(
-                pg,
-                &request.tenant_id,
-                Some(tenant_application_id),
-                None,
-                None,
-            )
-            .await?
-        }
-        None => match request
-            .app_id
-            .as_deref()
-            .map(str::trim)
-            .filter(|value| !value.is_empty())
-        {
-            Some(deploy_application_id) => {
-                resolve_tenant_application_by_deploy_application_id(
-                    pg,
-                    &request.tenant_id,
-                    deploy_application_id,
-                )
-                .await?
-            }
-            None => {
-                resolve_tenant_application(
-                    pg,
-                    &request.tenant_id,
-                    None,
-                    None,
-                    request.instance_key.as_deref(),
-                )
-                .await?
-            }
-        },
-    }
-    .ok_or_else(|| {
-        "tenant application was not found; register application and provision tenant application before issuing access credential".to_string()
-    })?;
+    let tenant_application =
+        resolve_installation_for_access_credential(pg, &request.tenant_id, request).await?;
 
     if tenant_application.status != "enabled" {
         return Err(

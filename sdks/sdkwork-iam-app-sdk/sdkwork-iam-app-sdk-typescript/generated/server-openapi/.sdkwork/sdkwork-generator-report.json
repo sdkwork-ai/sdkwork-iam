@@ -11,36 +11,42 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": true,
-  "changeFingerprint": "e6bd5c51da1ce36404be9a82272c4af19e251e8c2dcca3ea970516145a6212b9",
+  "hasDestructiveChanges": false,
+  "changeFingerprint": "ad6b318d8f183f69954daa4edda247d98bf558635fa091a6cddb5798da860e90",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface"
+      "api-surface",
+      "models"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "src/api/iam.d.ts",
-          "src/api/oauth.d.ts"
+          "src/api/iam.ts"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "src/types/iam-app-access-token-create-command.ts",
+          "src/types/iam-app-access-token-response.ts",
+          "src/types/iam-app-access-token.ts",
+          "src/types/index.ts"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface. Verification is required."
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "backed-up-generated-files",
-      "deleted-generated-files",
-      "manual-review-required",
       "verification-required"
     ]
   },
@@ -52,7 +58,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -70,7 +76,7 @@
         "id": "verify-build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -89,13 +95,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -113,7 +119,7 @@
         "id": "build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -143,24 +149,31 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 60,
-    "models": 33,
+    "totalFiles": 63,
+    "models": 36,
     "apis": 4,
-    "types": 35
+    "types": 38
   },
   "warnings": [],
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 0,
+    "writtenFiles": 5,
     "skippedScaffoldFiles": 2,
-    "skippedUnchangedGeneratedFiles": 58,
-    "deletedGeneratedFiles": 2,
+    "skippedUnchangedGeneratedFiles": 56,
+    "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "e6bd5c51da1ce36404be9a82272c4af19e251e8c2dcca3ea970516145a6212b9",
+    "changeFingerprint": "ad6b318d8f183f69954daa4edda247d98bf558635fa091a6cddb5798da860e90",
     "changes": {
-      "createdGeneratedFiles": [],
-      "updatedGeneratedFiles": [],
+      "createdGeneratedFiles": [
+        "src/types/iam-app-access-token-create-command.ts",
+        "src/types/iam-app-access-token-response.ts",
+        "src/types/iam-app-access-token.ts"
+      ],
+      "updatedGeneratedFiles": [
+        "src/api/iam.ts",
+        "src/types/index.ts"
+      ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
         "bin/publish.ps1",
@@ -174,7 +187,6 @@
         "sdkwork-sdk.json",
         "src/api/auth.ts",
         "src/api/base.ts",
-        "src/api/iam.ts",
         "src/api/index.ts",
         "src/api/oauth.ts",
         "src/api/paths.ts",
@@ -204,7 +216,6 @@
         "src/types/iam-user-persona-response.ts",
         "src/types/iam-user-persona-update-command.ts",
         "src/types/iam-user-persona.ts",
-        "src/types/index.ts",
         "src/types/oauth-phone-binding-session-create-command.ts",
         "src/types/oauth-phone-binding-verification-code-request-command.ts",
         "src/types/page-info.ts",
@@ -221,47 +232,50 @@
         "src/types/wechat-mini-program-session-create-command.ts",
         "tsconfig.json"
       ],
-      "deletedGeneratedFiles": [
-        "src/api/iam.d.ts",
-        "src/api/oauth.d.ts"
-      ],
+      "deletedGeneratedFiles": [],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/build-runtime.mjs",
         "custom/README.md"
       ],
-      "backedUpFiles": [
-        "src/api/iam.d.ts",
-        "src/api/oauth.d.ts"
-      ]
+      "backedUpFiles": []
     },
     "impact": {
       "schemaVersion": 1,
       "areas": [
-        "api-surface"
+        "api-surface",
+        "models"
       ],
       "details": [
         {
           "area": "api-surface",
           "paths": [
-            "src/api/iam.d.ts",
-            "src/api/oauth.d.ts"
+            "src/api/iam.ts"
+          ]
+        },
+        {
+          "area": "models",
+          "paths": [
+            "src/types/iam-app-access-token-create-command.ts",
+            "src/types/iam-app-access-token-response.ts",
+            "src/types/iam-app-access-token.ts",
+            "src/types/index.ts"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface. Verification is required."
+      "summary": "Detected impact areas: api-surface, models. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -279,7 +293,7 @@
           "id": "build",
           "title": "Unified package build",
           "required": true,
-          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface.",
+          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -297,22 +311,16 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "high",
+      "riskLevel": "medium",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
-        "backed-up-generated-files",
-        "deleted-generated-files",
-        "manual-review-required",
         "verification-required"
       ]
     },
-    "backedUpFiles": [
-      "src/api/iam.d.ts",
-      "src/api/oauth.d.ts"
-    ],
+    "backedUpFiles": [],
     "preservedLegacyFiles": false
   }
 }

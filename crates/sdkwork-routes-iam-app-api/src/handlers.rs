@@ -10,9 +10,11 @@ use sdkwork_iam_context_service::{
 };
 use sdkwork_iam_web_adapter::{
     account_binding_policy_to_json, contact_binding_allowed, default_account_binding_policy,
+    issue_user_application_access_credential, issued_access_credential_to_json,
     load_account_binding_policy, merge_account_binding_policy, oauth_binding_allowed,
-    oauth_login_allowed, validate_enabled_tenant_runtime_app, AccountBindingPolicyDocument,
-    ContactBindingActionKind, OauthBindingActionKind,
+    oauth_login_allowed, validate_enabled_tenant_runtime_app, AccessTokenActor,
+    AccountBindingPolicyDocument, AppTokenExchangeError, ContactBindingActionKind,
+    OauthBindingActionKind, UserApplicationTokenRequest,
 };
 use sdkwork_web_core::WebRequestContext;
 use serde_json::{json, Value};
@@ -165,6 +167,10 @@ fn build_sdkwork_iam_app_api_core_router(state: LocalIamState) -> Router {
             post(logout_current_session),
         )
         .route("/app/v3/api/auth/sessions/refresh", post(refresh_session))
+        .route(
+            "/app/v3/api/iam/app_access_tokens",
+            post(create_app_access_token),
+        )
         .route("/app/v3/api/auth/registrations", post(create_registration))
         .route(
             "/app/v3/api/auth/password_reset_requests",
@@ -1250,6 +1256,51 @@ async fn update_current_session(
             "iam_session_update_failed",
             &error,
         ),
+    }
+}
+
+/// `appAccessTokens.create` — mint an application access token for the caller.
+///
+/// Ownership is the control, not an operator permission: a `USER` installation
+/// only answers its owner, an `ORGANIZATION` installation its active members, and
+/// a `TENANT` installation any active member of the caller's tenant. The signed
+/// access/auth pair comes from the single issuance path and expires after one
+/// hour, so it is revocable and auditable like every other IAM session.
+async fn create_app_access_token(
+    State(state): State<LocalIamState>,
+    headers: HeaderMap,
+    Json(body): Json<Value>,
+) -> Response {
+    let pg = match postgres_pool_or_error(&state) {
+        Ok(pg) => pg,
+        Err(response) => return response,
+    };
+    let Some(session) = resolve_session_from_headers(pg, &headers).await else {
+        return iam_session_required_error();
+    };
+    let request = match UserApplicationTokenRequest::parse(&body) {
+        Ok(request) => request,
+        Err(error) => {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_app_access_token_invalid",
+                &error,
+            )
+        }
+    };
+    let actor = AccessTokenActor::from_iam_context(&session.context);
+    match issue_user_application_access_credential(pg, &actor, &request).await {
+        Ok(issued) => appbase_created(issued_access_credential_to_json(&issued)),
+        Err(error) => {
+            let status = match &error {
+                AppTokenExchangeError::Unauthenticated(_) => StatusCode::UNAUTHORIZED,
+                AppTokenExchangeError::Denied(_) => StatusCode::FORBIDDEN,
+                AppTokenExchangeError::NotFound(_) => StatusCode::NOT_FOUND,
+                AppTokenExchangeError::Conflict(_) => StatusCode::CONFLICT,
+                AppTokenExchangeError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            };
+            appbase_error(status, "iam_app_access_token_denied", error.message())
+        }
     }
 }
 

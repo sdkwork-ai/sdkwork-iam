@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/iam.ts",
-      "sha256": "00fd771636a3e49fa3b66f200213c59256e51531a4de41aaa86fd428f5a4672b"
+      "sha256": "f25066b35724b06ea430c4f64a17a7825d548109ada10a6a6d09e44faab93b52"
     },
     {
       "path": "src/api/index.ts",
@@ -139,6 +139,18 @@
       "sha256": "7688827a804d5c888fdf626b89e3356832f858e24f0657069b6b842a31ae6907"
     },
     {
+      "path": "src/types/iam-app-access-token-create-command.ts",
+      "sha256": "ac3d620d1ecad191476f16730ed11dbd27a22e447a6c25b37e652e6a0e1beca7"
+    },
+    {
+      "path": "src/types/iam-app-access-token-response.ts",
+      "sha256": "fe76dfc6daf75b63fe595f149b3a1e476898f0983d7518922d8b0d371e000024"
+    },
+    {
+      "path": "src/types/iam-app-access-token.ts",
+      "sha256": "5d63499079c0629dcbd619b42e8c66b225ae13e58fb783a9918c2575dbb176eb"
+    },
+    {
       "path": "src/types/iam-organization-member-list-response.ts",
       "sha256": "4436563873e24d801f49be0287bb54be222cd74ed1d75028d396f88dc0785f58"
     },
@@ -180,7 +192,7 @@
     },
     {
       "path": "src/types/index.ts",
-      "sha256": "fb18a4846e3abd6464a728c113dba458c984aabcbed67f10be7c4eea912f3fb9"
+      "sha256": "861db6806b6d3bb87f5a3c1ea78c49662b405a67450bef8aa5aa1ba59cba9417"
     },
     {
       "path": "src/types/oauth-phone-binding-session-create-command.ts",

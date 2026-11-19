@@ -50,6 +50,17 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
         "auth",
         "sessions.refresh",
     ),
+    // Application access token exchange: a signed-in user mints the access
+    // credential of an application they own, that their organization owns, or
+    // that their tenant owns. Ownership is decisive; the declared permission
+    // keeps non-member service principals out of the tenant/organization arms.
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/iam/app_access_tokens",
+        "iam",
+        "appAccessTokens.create",
+    )
+    .with_required_permission("iam.app_tokens.create"),
     HttpRoute::credential_entry_bootstrap(
         HttpMethod::Post,
         "/app/v3/api/auth/password_reset_requests",

@@ -27,6 +27,18 @@ pub fn iam_api_success(data: Value) -> Response {
     response
 }
 
+/// `201 Created` with the SDKWork envelope (`API_SPEC.md` §15.4 create semantics).
+///
+/// Used by `create` operations that persist a new resource, for example the
+/// application access credential session minted by `appAccessTokens.create`.
+pub fn iam_api_created(data: Value) -> Response {
+    let trace_id = next_trace_id();
+    let envelope = SdkWorkApiResponse::success(data, trace_id.clone());
+    let mut response = (StatusCode::CREATED, Json(envelope)).into_response();
+    attach_trace_header(&mut response, &trace_id);
+    response
+}
+
 /// Maps an HTTP status onto its platform result code (`API_SPEC.md` §15.3).
 ///
 /// Every status a handler may deliberately return MUST have an arm here.

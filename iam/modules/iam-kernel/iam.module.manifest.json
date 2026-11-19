@@ -36,6 +36,15 @@
         "replacementCode": null
       },
       {
+        "code": "iam.app_tokens.create",
+        "name": "Create application access tokens",
+        "resource": "iam.app_tokens",
+        "action": "create",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
         "code": "iam.account_binding_policy.read",
         "name": "Read account binding policy",
         "resource": "iam.account_binding_policy",
@@ -912,6 +921,7 @@
           "iam.profile.read",
           "iam.profile.update",
           "iam.sessions.read",
+          "iam.app_tokens.create",
           "iam.organizations.read",
           "iam.memberships.read",
           "iam.departments.read",

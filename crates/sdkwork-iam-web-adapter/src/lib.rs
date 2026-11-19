@@ -2,6 +2,7 @@ mod access_token_issue;
 mod account_binding_policy;
 mod api_key_lookup;
 mod app_manifest;
+mod app_token_exchange;
 mod application_access_token;
 mod application_registry;
 mod application_scope;
@@ -48,8 +49,12 @@ pub use access_token_issue::{
     issue_delegated_access_credential, issue_standalone_bootstrap_access_credential,
     issued_access_credential_to_json, parse_access_credential_create_request,
     principal_has_permission, resolve_deployment_bootstrap_access_token,
-    AccessCredentialCreateRequest, IssuedAccessCredential,
-    IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
+    resolve_installation_for_access_credential, AccessCredentialCreateRequest,
+    IssuedAccessCredential, IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
+};
+pub use app_token_exchange::{
+    ensure_actor_entitled_to_installation, issue_user_application_access_credential,
+    AppTokenExchangeError, UserApplicationTokenRequest, IAM_APP_TOKENS_CREATE_PERMISSION,
 };
 pub use account_binding_policy::{
     account_binding_policy_to_json, contact_binding_allowed, decide_oauth_phone_association,
@@ -115,7 +120,7 @@ pub use ephemeral_rate_limit::check_rate_limit;
 #[cfg(feature = "sqlite")]
 pub use ephemeral_rate_limit::check_rate_limit_sqlite;
 pub use framework_events::{IamAuditEmitter, IamSecurityEventEmitter};
-pub use http_responses::{iam_api_error, iam_api_success, iam_wire_result_code};
+pub use http_responses::{iam_api_created, iam_api_error, iam_api_success, iam_wire_result_code};
 pub use iam_audit::{
     backend_environment_from_context, hash_session_id, record_audit_event, record_audit_event_tx,
     record_security_event,

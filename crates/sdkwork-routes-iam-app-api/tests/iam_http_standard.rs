@@ -902,6 +902,7 @@ fn app_route_manifest_matches_the_standard_operation_surface() {
     operation_ids.sort();
 
     let mut expected_operation_ids = vec![
+        "appAccessTokens.create",
         "departmentAssignments.list",
         "departments.list",
         "departments.tree.retrieve",

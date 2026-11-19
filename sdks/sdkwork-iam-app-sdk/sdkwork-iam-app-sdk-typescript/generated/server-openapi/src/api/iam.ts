@@ -1,7 +1,7 @@
 import { appApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { AppbaseOperationCommand, IamOrganizationMember, IamPersonaCatalog, IamUserPersona, IamUserPersonaUpdateCommand, PageInfo, SdkWorkPageData } from '../types';
+import type { AppbaseOperationCommand, IamAppAccessToken, IamAppAccessTokenCreateCommand, IamOrganizationMember, IamPersonaCatalog, IamUserPersona, IamUserPersonaUpdateCommand, PageInfo, SdkWorkPageData } from '../types';
 
 
 export class IamUsersCurrentPhoneBindingsApi {
@@ -508,7 +508,22 @@ export class IamDepartmentAssignmentsApi {
   }
 }
 
+export class IamAppAccessTokensApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** App Access Tokens create. */
+  async create(body: IamAppAccessTokenCreateCommand, requestOptions?: ApiRequestOptions): Promise<IamAppAccessToken> {
+    return this.client.request<IamAppAccessToken>(appApiPath(`/iam/app_access_tokens`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export class IamApi {
+  public readonly appAccessTokens: IamAppAccessTokensApi;
   public readonly departmentAssignments: IamDepartmentAssignmentsApi;
   public readonly departments: IamDepartmentsApi;
   public readonly oauth: IamOauthApi;
@@ -521,6 +536,7 @@ export class IamApi {
   public readonly users: IamUsersApi;
 
   constructor(client: HttpClient) {
+    this.appAccessTokens = new IamAppAccessTokensApi(client);
     this.departmentAssignments = new IamDepartmentAssignmentsApi(client);
     this.departments = new IamDepartmentsApi(client);
     this.oauth = new IamOauthApi(client);

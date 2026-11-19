@@ -1,10 +1,15 @@
 use axum::{http::StatusCode, response::Response};
-use sdkwork_iam_web_adapter::{iam_api_error, iam_api_success};
+use sdkwork_iam_web_adapter::{iam_api_created, iam_api_error, iam_api_success};
 use sdkwork_web_core::WebRequestContext;
 use sqlx::PgPool;
 
 pub(crate) fn appbase_ok(data: serde_json::Value) -> Response {
     iam_api_success(data)
+}
+
+/// `201 Created` for a create operation that persists a resource (API_SPEC §15.4).
+pub(crate) fn appbase_created(data: serde_json::Value) -> Response {
+    iam_api_created(data)
 }
 
 pub(crate) fn appbase_error(status: StatusCode, code: &str, message: &str) -> Response {

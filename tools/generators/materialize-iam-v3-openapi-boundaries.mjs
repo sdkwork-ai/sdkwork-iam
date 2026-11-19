@@ -938,6 +938,9 @@ function buildOperation(surface, route) {
 }
 
 function requestBodySchemaRef(route) {
+  if (route.operationId === 'appAccessTokens.create') {
+    return '#/components/schemas/IamAppAccessTokenCreateCommand';
+  }
   if (route.operationId === 'users.current.persona.update') {
     return '#/components/schemas/IamUserPersonaUpdateCommand';
   }
@@ -1071,6 +1074,8 @@ function typedListSuccessSchemaRef(route) {
  */
 function typedResourceSuccessSchemaRef(route) {
   switch (route.operationId) {
+    case 'appAccessTokens.create':
+      return '#/components/schemas/IamAppAccessTokenResponse';
     case 'tenantApplications.environments.update':
       return '#/components/schemas/IamInstallationEnvironmentResponse';
     case 'tenantApplications.credentials.create':
@@ -1086,6 +1091,113 @@ function buildSchemas() {
 
   return {
     ...sdkWorkEnvelopeComponentSchemas,
+    // Application access token exchange (appAccessTokens.create). A signed-in user
+    // asks IAM for the signed access credential of an application they own, that
+    // their organization owns, or that their tenant owns. Typed end to end so the
+    // generated SDK call is
+    // `iam.appAccessTokens.create({ appId })` returning the credential item.
+    IamAppAccessTokenCreateCommand: {
+      type: 'object',
+      additionalProperties: false,
+      description:
+        'Selectors for the application whose access credential is requested. Supply at least '
+        + 'one; the tenant and the organization are derived from the authenticated session and '
+        + 'the installation, never from this body.',
+      properties: {
+        appId: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 128,
+          description:
+            'Installation deploy application anchor (iam_application_installation'
+            + '.deploy_application_id). Preferred selector: it is the identity the deployment '
+            + 'plane publishes.',
+        },
+        tenantApplicationId: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 128,
+          description: "IAM installation row id (tapp_...) of the caller's tenant.",
+        },
+        instanceKey: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 128,
+          description: "Installation instance key of the caller's tenant.",
+        },
+      },
+    },
+    IamAppAccessToken: {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'accessToken',
+        'authToken',
+        'expiresAt',
+        'appId',
+        'tenantApplicationId',
+        'ownershipScope',
+      ],
+      description:
+        'Signed application access credential. It is a session-class credential: it expires '
+        + 'after one hour and can be revoked like any other IAM session.',
+      properties: {
+        accessToken: {
+          type: 'string',
+          description: 'Signed access token; send it as the Access-Token header.',
+        },
+        authToken: {
+          type: 'string',
+          description: 'Signed auth token; send it as the Authorization: Bearer header.',
+        },
+        expiresAt: {
+          type: 'string',
+          format: 'date-time',
+          description: 'Credential expiry instant.',
+        },
+        appId: {
+          type: 'string',
+          description: 'Deploy application anchor carried as the token app_id/aud.',
+        },
+        tenantApplicationId: {
+          type: 'string',
+          description: 'Installation the credential was issued for.',
+        },
+        organizationId: {
+          type: 'string',
+          description:
+            'Organization claim of the installation; 0 for tenant- and user-released '
+            + 'installations.',
+        },
+        ownershipScope: {
+          type: 'string',
+          enum: ['TENANT', 'ORGANIZATION', 'USER'],
+          description: 'Release scope of the installation.',
+        },
+        sessionId: {
+          type: 'string',
+          description: 'Persisted session that can be revoked.',
+        },
+      },
+    },
+    IamAppAccessTokenResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              required: ['item'],
+              properties: {
+                item: { $ref: '#/components/schemas/IamAppAccessToken' },
+              },
+            },
+          },
+        },
+      ],
+    },
     IamInstallationEnvironment: {
       type: 'object',
       additionalProperties: false,
