@@ -79,12 +79,24 @@ export interface SdkworkIamTenantMemberDraft {
 
 /**
  * The product-semantic application types the backend accepts when an
- * installation is provisioned (`api | h5 | pc | flutter | other`).
+ * installation is provisioned.
  *
- * Application templates are retired, so this list is the only source of
- * `applicationType`: nothing else can infer it.
+ * The value names the endpoint the installation serves, not its rendering
+ * technology. Application templates are retired, so this list is the only
+ * source of `applicationType`: nothing else can infer it.
  */
-export const SDKWORK_IAM_TENANT_APPLICATION_TYPES = ["api", "h5", "pc", "flutter", "other"] as const;
+export const SDKWORK_IAM_TENANT_APPLICATION_TYPES = [
+  "api",
+  "h5",
+  "pc",
+  "flutter",
+  "miniprogram",
+  "ios",
+  "android",
+  "harmonyos",
+  "desktop",
+  "other",
+] as const;
 
 /** One product-semantic application type; the backend rejects anything else. */
 export type SdkworkIamTenantApplicationType = (typeof SDKWORK_IAM_TENANT_APPLICATION_TYPES)[number];

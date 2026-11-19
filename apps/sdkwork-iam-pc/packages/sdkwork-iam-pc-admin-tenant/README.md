@@ -54,8 +54,9 @@ never exposed through this browser package.
 
 - `deployApplicationId` is required: it is the identity every access token carries, and one deploy
   application binds to one tenant installation. The `appKey`/`templateId` fields no longer exist.
-- `applicationType` (`api | h5 | pc | flutter | other`) is required and has no default, because no
-  template supplies one any more.
+- `applicationType` (`api | h5 | pc | flutter | miniprogram | ios | android | harmonyos | desktop |
+  other`) is required and has no default, because no template supplies one any more. The value names
+  the endpoint the installation serves, not the rendering technology.
 - `instanceKey` still defaults to a slug of `deployApplicationId` plus the environment and stays
   editable; `displayName`, `environment`, and `organizationId` are unchanged.
 - `primaryDomain` is optional and omitted from the payload when blank (`minLength: 1` on the wire);

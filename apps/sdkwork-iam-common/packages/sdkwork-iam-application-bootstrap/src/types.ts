@@ -4,14 +4,21 @@ import type { SdkworkDeploymentMode, SdkworkRuntimeEnvironment } from "@sdkwork/
  * Product-semantic application types accepted by
  * `POST /backend/v3/api/iam/tenant_applications`.
  *
- * Application templates are retired, so nothing else can supply this value: a
- * provisioning command that omits it fails closed instead of inheriting one.
+ * The value names the endpoint the installation serves, not the rendering
+ * technology. Application templates are retired, so nothing else can supply
+ * this value: a provisioning command that omits it fails closed instead of
+ * inheriting one.
  */
 export const IAM_TENANT_APPLICATION_TYPES = [
   "api",
   "h5",
   "pc",
   "flutter",
+  "miniprogram",
+  "ios",
+  "android",
+  "harmonyos",
+  "desktop",
   "other",
 ] as const;
 

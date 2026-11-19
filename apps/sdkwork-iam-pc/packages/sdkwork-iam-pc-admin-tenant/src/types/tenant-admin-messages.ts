@@ -77,9 +77,14 @@ export interface SdkworkIamTenantAdminMessages {
       status: string;
     };
     types: {
+      android: string;
       api: string;
+      desktop: string;
       flutter: string;
+      harmonyos: string;
       h5: string;
+      ios: string;
+      miniprogram: string;
       other: string;
       pc: string;
       unknown: string;

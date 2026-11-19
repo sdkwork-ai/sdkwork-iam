@@ -210,8 +210,11 @@ describe("@sdkwork/iam-application-bootstrap", () => {
 
   it("rejects an applicationType outside the published enum", () => {
     expect(() =>
+      validateTenantApplicationProvisionCommand({ ...deployCommand, applicationType: "watchos" }),
+    ).toThrow(/applicationType "watchos" is not a valid tenant application type/u);
+    expect(() =>
       validateTenantApplicationProvisionCommand({ ...deployCommand, applicationType: "desktop" }),
-    ).toThrow(/applicationType "desktop" is not a valid tenant application type/u);
+    ).not.toThrow();
   });
 
   it("lets explicit deploy-application input override manifest defaults", () => {
@@ -314,6 +317,12 @@ describe("@sdkwork/iam-application-bootstrap", () => {
     expect(mapManifestAppTypeToApplicationType("APP_HTML")).toBe("h5");
     expect(mapManifestAppTypeToApplicationType("APP_FLUTTER")).toBe("flutter");
     expect(mapManifestAppTypeToApplicationType("APP_API")).toBe("api");
+    expect(mapManifestAppTypeToApplicationType("APP_UNIAPP")).toBe("miniprogram");
+    expect(mapManifestAppTypeToApplicationType("APP_MINIPROGRAM")).toBe("miniprogram");
+    expect(mapManifestAppTypeToApplicationType("APP_IOS")).toBe("ios");
+    expect(mapManifestAppTypeToApplicationType("APP_ANDROID")).toBe("android");
+    expect(mapManifestAppTypeToApplicationType("APP_HARMONY")).toBe("harmonyos");
+    expect(mapManifestAppTypeToApplicationType("APP_DESKTOP")).toBe("desktop");
     expect(mapManifestAppTypeToApplicationType(undefined)).toBeUndefined();
 
     const first = deriveProvisioningIdempotencyKey(deployCommand);

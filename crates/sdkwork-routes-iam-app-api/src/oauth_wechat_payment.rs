@@ -42,6 +42,14 @@ const PAYMENT_OAUTH_COOKIE_PATH: &str = "/app/v3/api/oauth/wechat/payment";
 const STATE_COOKIE: &str = "sdkwork_wpoauth_state";
 const REDIRECT_COOKIE: &str = "sdkwork_wpoauth_redirect";
 const TENANT_COOKIE: &str = "sdkwork_wpoauth_tenant";
+/// Runtime application id the authorize URL was resolved for.
+///
+/// The callback is unauthenticated, so without this cookie it re-resolved the
+/// tenant's first active WeChat integration. A tenant with more than one
+/// official account would then exchange the code against the wrong AppID and
+/// secret, which WeChat rejects and which would bind the payer's openid to the
+/// wrong application.
+const APP_COOKIE: &str = "sdkwork_wpoauth_app";
 /// Capability-token id of the anonymous cashier flow that started this OAuth.
 ///
 /// Present only when the payer paid through a scanned cashier link: it is what
@@ -129,6 +137,11 @@ pub(crate) async fn start_wechat_payment_oauth(
         &session.user.tenant_id,
         STATE_TTL_SECONDS,
     );
+    // Pin the callback to the same integration scope this start resolved.
+    let app_scope = session.context.app_id.trim();
+    if !app_scope.is_empty() {
+        append_payment_oauth_cookie(&mut response, APP_COOKIE, app_scope, STATE_TTL_SECONDS);
+    }
     response
 }
 
@@ -462,16 +475,26 @@ pub(crate) async fn handle_wechat_payment_oauth_callback(
         _ => return payment_oauth_redirect_response(&redirect, "error", "context_missing"),
     };
     let callback_url = payment_oauth_callback_url(&headers);
-    let provider_ctx =
-        match load_oauth_integration_exchange_context_for_app(pg, &tenant_id, "wechat", None, None)
-            .await
-        {
-            Ok(Some(ctx)) => ctx,
-            Ok(None) => {
-                return payment_oauth_redirect_response(&redirect, "error", "not_configured");
-            }
-            Err(_) => return payment_oauth_redirect_response(&redirect, "error", "lookup_failed"),
-        };
+    // Restore the scope the start request used; an anonymous cashier link has
+    // no application scope and keeps the tenant-wide resolution.
+    let app_scope = read_payment_oauth_cookie(&headers, APP_COOKIE)
+        .map(|value| value.trim().to_owned())
+        .filter(|value| !value.is_empty());
+    let provider_ctx = match load_oauth_integration_exchange_context_for_app(
+        pg,
+        &tenant_id,
+        "wechat",
+        app_scope.as_deref(),
+        None,
+    )
+    .await
+    {
+        Ok(Some(ctx)) => ctx,
+        Ok(None) => {
+            return payment_oauth_redirect_response(&redirect, "error", "not_configured");
+        }
+        Err(_) => return payment_oauth_redirect_response(&redirect, "error", "lookup_failed"),
+    };
     let profile =
         match exchange_oauth_authorization_code(&provider_ctx, &code, &callback_url, None, None)
             .await

@@ -894,7 +894,7 @@ function buildOperation(surface, route) {
       queryParameter('environment', { type: 'string' }),
       queryParameter('application_type', {
         type: 'string',
-        description: 'Exact product-semantic application type filter (api | h5 | pc | flutter | other).',
+        description: 'Exact product-semantic application type filter (api | h5 | pc | flutter | miniprogram | ios | android | harmonyos | desktop | other).',
       }),
     );
   }
@@ -1894,8 +1894,8 @@ function buildSchemas() {
         applicationType: {
           type: 'string',
           description:
-            'Product-semantic application type (api | h5 | pc | flutter | other). Required: application templates are retired, so nothing else can supply it.',
-          enum: ['api', 'h5', 'pc', 'flutter', 'other'],
+            'Product-semantic application type (api | h5 | pc | flutter | miniprogram | ios | android | harmonyos | desktop | other). Names the endpoint the installation serves, not the rendering technology. Required: application templates are retired, so nothing else can supply it.',
+          enum: ['api', 'h5', 'pc', 'flutter', 'miniprogram', 'ios', 'android', 'harmonyos', 'desktop', 'other'],
         },
         primaryDomain: { type: 'string', minLength: 1, maxLength: 255 },
         accessPermissions: {
@@ -1972,8 +1972,8 @@ function buildSchemas() {
         applicationType: {
           type: 'string',
           description:
-            'Product-semantic application type (api | h5 | pc | flutter | other). Required: application templates are retired, so nothing else can supply it.',
-          enum: ['api', 'h5', 'pc', 'flutter', 'other'],
+            'Product-semantic application type (api | h5 | pc | flutter | miniprogram | ios | android | harmonyos | desktop | other). Names the endpoint the installation serves, not the rendering technology. Required: application templates are retired, so nothing else can supply it.',
+          enum: ['api', 'h5', 'pc', 'flutter', 'miniprogram', 'ios', 'android', 'harmonyos', 'desktop', 'other'],
         },
         primaryDomain: { type: 'string' },
         accessPermissions: {

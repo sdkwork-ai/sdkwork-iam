@@ -4,8 +4,8 @@ export interface IamTenantApplicationManagementProvisionCommand {
   instanceKey: string;
   displayName: string;
   environment: string;
-  /** Product-semantic application type (api | h5 | pc | flutter | other). Required: application templates are retired, so nothing else can supply it. */
-  applicationType: 'api' | 'h5' | 'pc' | 'flutter' | 'other';
+  /** Product-semantic application type (api | h5 | pc | flutter | miniprogram | ios | android | harmonyos | desktop | other). Names the endpoint the installation serves, not the rendering technology. Required: application templates are retired, so nothing else can supply it. */
+  applicationType: 'api' | 'h5' | 'pc' | 'flutter' | 'miniprogram' | 'ios' | 'android' | 'harmonyos' | 'desktop' | 'other';
   primaryDomain?: string;
   /** Access permissions granted to the installation. An empty array or null is a valid explicit choice: the installation grants no API scope. */
   accessPermissions?: string[] | null;

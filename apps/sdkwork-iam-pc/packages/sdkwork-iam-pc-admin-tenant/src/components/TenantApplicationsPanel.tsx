@@ -804,12 +804,32 @@ function applicationFiltersToQuery(filters: ApplicationFilters): Record<string, 
   };
 }
 
-function applicationTypeLabel(applicationType: string, messages: { api: string; flutter: string; h5: string; other: string; pc: string; unknown: string }) {
+function applicationTypeLabel(
+  applicationType: string,
+  messages: {
+    android: string;
+    api: string;
+    desktop: string;
+    flutter: string;
+    harmonyos: string;
+    h5: string;
+    ios: string;
+    miniprogram: string;
+    other: string;
+    pc: string;
+    unknown: string;
+  },
+) {
   switch (applicationType.trim().toLowerCase()) {
     case "api": return messages.api;
     case "flutter": return messages.flutter;
     case "h5": return messages.h5;
     case "pc": return messages.pc;
+    case "miniprogram": return messages.miniprogram;
+    case "ios": return messages.ios;
+    case "android": return messages.android;
+    case "harmonyos": return messages.harmonyos;
+    case "desktop": return messages.desktop;
     case "other": return messages.other;
     default: return messages.unknown;
   }
@@ -819,8 +839,15 @@ function applicationTypeIcon(applicationType: string, className: string) {
   switch (applicationType.trim().toLowerCase()) {
     case "api": return <Code2 className={className} />;
     case "h5": return <Globe2 className={className} />;
-    case "flutter": return <Smartphone className={className} />;
-    case "pc": return <Monitor className={className} />;
+    case "flutter":
+    case "miniprogram":
+    case "ios":
+    case "android":
+    case "harmonyos":
+      return <Smartphone className={className} />;
+    case "pc":
+    case "desktop":
+      return <Monitor className={className} />;
     default: return <AppWindow className={className} />;
   }
 }

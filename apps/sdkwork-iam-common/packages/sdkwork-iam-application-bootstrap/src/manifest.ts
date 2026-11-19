@@ -56,8 +56,30 @@ export function mapManifestAppTypeToApplicationType(
     case "APP_PC":
     case "PC":
     case "WEB":
-    case "DESKTOP":
       return "pc";
+    case "APP_UNIAPP":
+    case "APP_MINIPROGRAM":
+    case "APP_MINI_PROGRAM":
+    case "MINIPROGRAM":
+    case "MINI_PROGRAM":
+      return "miniprogram";
+    case "APP_IOS":
+    case "APP_IOS_NATIVE":
+    case "IOS":
+      return "ios";
+    case "APP_ANDROID":
+    case "APP_ANDROID_NATIVE":
+    case "ANDROID":
+      return "android";
+    case "APP_HARMONY":
+    case "APP_HARMONYOS":
+    case "HARMONYOS":
+      return "harmonyos";
+    case "APP_DESKTOP":
+    case "DESKTOP":
+    case "ELECTRON":
+    case "TAURI":
+      return "desktop";
     case "APP_API":
     case "API":
     case "SDK":

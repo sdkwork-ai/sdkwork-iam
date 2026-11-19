@@ -547,22 +547,50 @@ pub fn parse_tenant_application_update_command(
 }
 
 /// Product-semantic application type value domain shared by tenant
-/// application instances: `api`, `h5`, `pc`, `flutter`, and `other`.
+/// application instances.
+///
+/// The value names the endpoint the installation serves, not the rendering
+/// technology: `pc`/`h5` web surfaces, the two mini-program providers,
+/// `flutter`, the three native mobile kinds, desktop, and API services.
+/// Unknown explicit values collapse to `other` so a typo never becomes a new
+/// vocabulary entry.
 fn normalize_application_type(value: &str) -> String {
-    let normalized = value.trim().to_ascii_lowercase();
+    let normalized = value.trim().to_ascii_lowercase().replace(['-', '_', ' '], "");
     match normalized.as_str() {
-        "api" | "h5" | "pc" | "flutter" => normalized,
-        _ => "other".to_owned(),
+        "api" => "api",
+        "h5" | "html" => "h5",
+        "pc" | "react" | "vue" | "web" => "pc",
+        "flutter" => "flutter",
+        "miniprogram" | "miniapp" | "wechatminiprogram" | "wechatmini" => "miniprogram",
+        "ios" | "iosnative" => "ios",
+        "android" | "androidnative" => "android",
+        "harmonyos" | "harmony" | "openharmony" => "harmonyos",
+        "desktop" | "electron" | "tauri" => "desktop",
+        "other" | "unknown" | "none" => "other",
+        _ => "other",
     }
+    .to_owned()
 }
 
 /// Maps an application manifest `appType` (PlusProjectType) onto the
 /// product-semantic application type used by tenant application instances.
+///
+/// `APP_UNIAPP` is the cross-platform mini-program family, so it maps to
+/// `miniprogram` rather than to the web type its shell also renders. The
+/// deployment kind remains the authority for the concrete endpoint; this value
+/// is the IAM catalogue facet and must stay aligned with it.
 fn map_manifest_app_type_to_application_type(manifest_app_type: &str) -> String {
     match manifest_app_type.trim().to_ascii_uppercase().as_str() {
         "APP_HTML" | "APP_H5" | "H5" => "h5",
         "APP_FLUTTER" | "FLUTTER" => "flutter",
-        "APP_REACT" | "APP_VUE" | "APP_PC" | "PC" | "WEB" | "DESKTOP" => "pc",
+        "APP_REACT" | "APP_VUE" | "APP_PC" | "PC" | "WEB" => "pc",
+        "APP_UNIAPP" | "APP_MINIPROGRAM" | "APP_MINI_PROGRAM" | "MINIPROGRAM" | "MINI_PROGRAM" => {
+            "miniprogram"
+        }
+        "APP_IOS" | "APP_IOS_NATIVE" | "IOS" => "ios",
+        "APP_ANDROID" | "APP_ANDROID_NATIVE" | "ANDROID" => "android",
+        "APP_HARMONY" | "APP_HARMONYOS" | "HARMONYOS" => "harmonyos",
+        "APP_DESKTOP" | "DESKTOP" | "ELECTRON" | "TAURI" => "desktop",
         "APP_API" | "API" | "SDK" => "api",
         _ => "other",
     }
@@ -1963,6 +1991,44 @@ fn merge_relying_party_config(existing: &Value, patch: &Value) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Every endpoint kind the Deploy plane publishes has a product-semantic
+    /// IAM type; a mini program must never collapse into `other`.
+    #[test]
+    fn manifest_app_types_map_onto_the_endpoint_vocabulary() {
+        for app_type in [
+            "APP_UNIAPP",
+            "APP_MINIPROGRAM",
+            "APP_MINI_PROGRAM",
+            "MINIPROGRAM",
+            "MINI_PROGRAM",
+        ] {
+            assert_eq!(map_manifest_app_type_to_application_type(app_type), "miniprogram");
+        }
+        assert_eq!(map_manifest_app_type_to_application_type("APP_HARMONY"), "harmonyos");
+        assert_eq!(map_manifest_app_type_to_application_type("APP_IOS"), "ios");
+        assert_eq!(map_manifest_app_type_to_application_type("APP_ANDROID"), "android");
+        assert_eq!(map_manifest_app_type_to_application_type("APP_DESKTOP"), "desktop");
+        assert_eq!(map_manifest_app_type_to_application_type("DESKTOP"), "desktop");
+        assert_eq!(map_manifest_app_type_to_application_type("APP_REACT"), "pc");
+        assert_eq!(map_manifest_app_type_to_application_type("APP_HTML"), "h5");
+        assert_eq!(map_manifest_app_type_to_application_type("APP_FLUTTER"), "flutter");
+        assert_eq!(map_manifest_app_type_to_application_type("APP_API"), "api");
+        assert_eq!(map_manifest_app_type_to_application_type("SOMETHING_NEW"), "other");
+    }
+
+    #[test]
+    fn explicit_application_types_normalize_aliases_and_reject_typos() {
+        assert_eq!(normalize_application_type(" Mini-Program "), "miniprogram");
+        assert_eq!(normalize_application_type("WeChat Mini Program"), "miniprogram");
+        assert_eq!(normalize_application_type("HARMONY_OS"), "harmonyos");
+        assert_eq!(normalize_application_type("iOS-Native"), "ios");
+        assert_eq!(normalize_application_type("android"), "android");
+        assert_eq!(normalize_application_type("Electron"), "desktop");
+        assert_eq!(normalize_application_type("pc"), "pc");
+        assert_eq!(normalize_application_type("web"), "pc");
+        assert_eq!(normalize_application_type("not-a-kind"), "other");
+    }
 
     fn provision_target_fixture(
         id: &str,
