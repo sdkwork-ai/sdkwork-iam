@@ -46,15 +46,17 @@ use sdkwork_web_core::{
 };
 
 pub use access_token_issue::{
-    issue_delegated_access_credential, issue_standalone_bootstrap_access_credential,
-    issued_access_credential_to_json, parse_access_credential_create_request,
-    principal_has_permission, resolve_deployment_bootstrap_access_token,
-    resolve_installation_for_access_credential, AccessCredentialCreateRequest,
-    IssuedAccessCredential, IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
+    issue_delegated_access_credential, issue_delegated_access_credential_for_environment,
+    issue_standalone_bootstrap_access_credential, issued_access_credential_to_json,
+    parse_access_credential_create_request, principal_has_permission,
+    resolve_deployment_bootstrap_access_token, resolve_installation_for_access_credential,
+    AccessCredentialCreateRequest, IssuedAccessCredential, IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
 };
 pub use app_token_exchange::{
-    ensure_actor_entitled_to_installation, issue_user_application_access_credential,
-    AppTokenExchangeError, UserApplicationTokenRequest, IAM_APP_TOKENS_CREATE_PERMISSION,
+    ensure_actor_may_issue, issue_application_access_credential,
+    issue_user_application_access_credential, resolve_installation_environment,
+    resolve_scope_declaration, AppTokenExchangeError, UserApplicationTokenRequest,
+    IAM_APP_TOKENS_ADMIN_PERMISSION, IAM_APP_TOKENS_AUDIT_ACTION, IAM_APP_TOKENS_CREATE_PERMISSION,
 };
 pub use account_binding_policy::{
     account_binding_policy_to_json, contact_binding_allowed, decide_oauth_phone_association,

@@ -183,12 +183,22 @@ pub fn decide_installation_environment_access(
 ///
 /// A database failure is returned as an error: token issuance must fail closed
 /// rather than silently skip the check.
-pub async fn ensure_installation_environment_active(
+/// Every live `(env_key, env_status)` row of one installation.
+///
+/// Callers that must *choose* an environment (a token exchange initializing a
+/// freshly registered application) read the rows first, instead of probing one
+/// guess and parsing the failure.
+/// @param pg - IAM PostgreSQL pool.
+/// @param tenant_id - owning tenant.
+/// @param installation_id - installation row id.
+/// @returns the rows ordered by key; empty when the installation predates
+///   environment-scoped registration.
+/// @throws String when the rows cannot be read.
+pub async fn load_installation_environments(
     pg: &PgPool,
     tenant_id: &str,
     installation_id: &str,
-    requested_environment: &str,
-) -> Result<(), String> {
+) -> Result<Vec<(String, String)>, String> {
     let rows = sqlx::query(
         "SELECT env_key, env_status \
          FROM iam_application_installation_environment \
@@ -200,11 +210,19 @@ pub async fn ensure_installation_environment_active(
     .fetch_all(pg)
     .await
     .map_err(|error| format!("load installation environments failed: {error}"))?;
-
-    let registered = rows
+    Ok(rows
         .iter()
         .map(|row| (row.get::<String, _>(0), row.get::<String, _>(1)))
-        .collect::<Vec<_>>();
+        .collect())
+}
+
+pub async fn ensure_installation_environment_active(
+    pg: &PgPool,
+    tenant_id: &str,
+    installation_id: &str,
+    requested_environment: &str,
+) -> Result<(), String> {
+    let registered = load_installation_environments(pg, tenant_id, installation_id).await?;
     decide_installation_environment_access(installation_id, requested_environment, &registered)
 }
 

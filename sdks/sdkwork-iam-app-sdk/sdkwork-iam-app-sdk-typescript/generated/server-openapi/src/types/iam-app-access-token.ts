@@ -16,4 +16,6 @@ export interface IamAppAccessToken {
   ownershipScope: 'TENANT' | 'ORGANIZATION' | 'USER';
   /** Persisted session that can be revoked. */
   sessionId?: string;
+  /** Installation lifecycle environment the credential was gated on (development, production, ...). */
+  environment?: string;
 }

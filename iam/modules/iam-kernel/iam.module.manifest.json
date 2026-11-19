@@ -45,6 +45,15 @@
         "replacementCode": null
       },
       {
+        "code": "iam.app_tokens.admin",
+        "name": "Initialize application access tokens administratively",
+        "resource": "iam.app_tokens",
+        "action": "admin",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
         "code": "iam.account_binding_policy.read",
         "name": "Read account binding policy",
         "resource": "iam.account_binding_policy",

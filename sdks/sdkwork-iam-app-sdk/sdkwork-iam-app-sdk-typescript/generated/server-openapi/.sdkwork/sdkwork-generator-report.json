@@ -12,32 +12,22 @@
   "mode": "apply",
   "hasChanges": true,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "ad6b318d8f183f69954daa4edda247d98bf558635fa091a6cddb5798da860e90",
+  "changeFingerprint": "0fdac15d9e8e783d8c717fc1965002a76517acea7a18a18fa08d6d714fffae4a",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface",
       "models"
     ],
     "details": [
       {
-        "area": "api-surface",
-        "paths": [
-          "src/api/iam.ts"
-        ]
-      },
-      {
         "area": "models",
         "paths": [
-          "src/types/iam-app-access-token-create-command.ts",
-          "src/types/iam-app-access-token-response.ts",
-          "src/types/iam-app-access-token.ts",
-          "src/types/index.ts"
+          "src/types/iam-app-access-token-create-command.ts"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models. Verification is required."
+    "summary": "Detected impact areas: models. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
@@ -58,7 +48,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -76,7 +66,7 @@
         "id": "verify-build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -95,13 +85,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -119,7 +109,7 @@
         "id": "build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -158,21 +148,16 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 5,
+    "writtenFiles": 1,
     "skippedScaffoldFiles": 2,
-    "skippedUnchangedGeneratedFiles": 56,
+    "skippedUnchangedGeneratedFiles": 60,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "ad6b318d8f183f69954daa4edda247d98bf558635fa091a6cddb5798da860e90",
+    "changeFingerprint": "0fdac15d9e8e783d8c717fc1965002a76517acea7a18a18fa08d6d714fffae4a",
     "changes": {
-      "createdGeneratedFiles": [
-        "src/types/iam-app-access-token-create-command.ts",
-        "src/types/iam-app-access-token-response.ts",
-        "src/types/iam-app-access-token.ts"
-      ],
+      "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [
-        "src/api/iam.ts",
-        "src/types/index.ts"
+        "src/types/iam-app-access-token-create-command.ts"
       ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
@@ -187,6 +172,7 @@
         "sdkwork-sdk.json",
         "src/api/auth.ts",
         "src/api/base.ts",
+        "src/api/iam.ts",
         "src/api/index.ts",
         "src/api/oauth.ts",
         "src/api/paths.ts",
@@ -206,6 +192,8 @@
         "src/types/desktop-sessions-create-request.ts",
         "src/types/desktop-sessions-create-response.ts",
         "src/types/field-error.ts",
+        "src/types/iam-app-access-token-response.ts",
+        "src/types/iam-app-access-token.ts",
         "src/types/iam-organization-member-list-response.ts",
         "src/types/iam-organization-member.ts",
         "src/types/iam-persona-catalog-response.ts",
@@ -216,6 +204,7 @@
         "src/types/iam-user-persona-response.ts",
         "src/types/iam-user-persona-update-command.ts",
         "src/types/iam-user-persona.ts",
+        "src/types/index.ts",
         "src/types/oauth-phone-binding-session-create-command.ts",
         "src/types/oauth-phone-binding-verification-code-request-command.ts",
         "src/types/page-info.ts",
@@ -243,39 +232,29 @@
     "impact": {
       "schemaVersion": 1,
       "areas": [
-        "api-surface",
         "models"
       ],
       "details": [
         {
-          "area": "api-surface",
-          "paths": [
-            "src/api/iam.ts"
-          ]
-        },
-        {
           "area": "models",
           "paths": [
-            "src/types/iam-app-access-token-create-command.ts",
-            "src/types/iam-app-access-token-response.ts",
-            "src/types/iam-app-access-token.ts",
-            "src/types/index.ts"
+            "src/types/iam-app-access-token-create-command.ts"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface, models. Verification is required."
+      "summary": "Detected impact areas: models. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: models. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: models.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -293,7 +272,7 @@
           "id": "build",
           "title": "Unified package build",
           "required": true,
-          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: models.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
           "command": "node",
           "args": [

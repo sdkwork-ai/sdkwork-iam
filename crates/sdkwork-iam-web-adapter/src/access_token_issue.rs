@@ -57,7 +57,7 @@ pub struct AccessCredentialCreateRequest {
     /// Release scope the caller declares. It is a **declaration to be checked**,
     /// never a selector: the installation decides the level, and a value that
     /// disagrees with the installation fails closed
-    /// (`APPLICATION_IDENTITY_SPEC.md` §4.1 rule 3).
+    /// (`APPLICATION_IDENTITY_SPEC.md` 搂4.1 rule 3).
     pub ownership_scope: Option<String>,
 }
 
@@ -75,6 +75,10 @@ pub struct IssuedAccessCredential {
     pub tenant_application_id: String,
     /// Release scope the credential was signed for, read from the installation.
     pub ownership_scope: ApplicationOwnershipScope,
+    /// Installation lifecycle environment the credential was gated on
+    /// (`development`, `production`, ...). This is the exact key the
+    /// installation registered, not the coarse token claim.
+    pub environment: String,
     pub expires_at: String,
 }
 
@@ -180,6 +184,41 @@ pub async fn issue_delegated_access_credential(
     actor: &AccessTokenActor,
     request: &AccessCredentialCreateRequest,
 ) -> Result<IssuedAccessCredential, String> {
+    issue_delegated_access_credential_for_environment(
+        pg,
+        actor,
+        request,
+        actor.environment.clone(),
+        environment_to_string(&actor.environment),
+    )
+    .await
+}
+
+/// Issues a delegated access credential for an explicitly named installation
+/// environment.
+///
+/// The credential's `environment` claim is the coarse [`Environment`] the session
+/// plane understands, while the installation gate is evaluated against the exact
+/// lifecycle key the installation registered (`development`, `production`, ...).
+/// Splitting the two lets a caller initialize a credential for an installation
+/// lifecycle that does not equal its own session environment 鈥?an operator whose
+/// session is `prod` minting for a `development` installation, or a user
+/// initializing the app they just registered, whose first environment is the
+/// deployment default.
+/// @param pg - IAM PostgreSQL pool.
+/// @param actor - issuing actor (operator or signed-in user).
+/// @param request - installation selectors and the scope declaration.
+/// @param environment - coarse environment recorded in the token claims.
+/// @param environment_key - exact installation environment to gate on.
+/// @returns the signed access/auth pair and its session facts.
+/// @throws String when the installation, scope, owner, or environment refuses.
+pub async fn issue_delegated_access_credential_for_environment(
+    pg: &PgPool,
+    actor: &AccessTokenActor,
+    request: &AccessCredentialCreateRequest,
+    environment: Environment,
+    environment_key: &str,
+) -> Result<IssuedAccessCredential, String> {
     ensure_tenant_exists(pg, &request.tenant_id).await?;
     ensure_organization_exists(pg, &request.tenant_id, &request.organization_id).await?;
 
@@ -211,13 +250,12 @@ pub async fn issue_delegated_access_credential(
     )?;
     // Environment-scoped installations only issue credentials for a registered,
     // active environment. An installation without environment rows keeps the
-    // historical behavior. The requested environment is the operator context's
-    // environment, which is what the signed token records.
+    // historical behavior.
     ensure_installation_environment_active(
         pg,
         &request.tenant_id,
         &tenant_application.id,
-        environment_to_string(&actor.environment),
+        environment_key,
     )
     .await?;
 
@@ -251,7 +289,7 @@ pub async fn issue_delegated_access_credential(
         actor.user_id.clone(),
         session_id.clone(),
         app_id.clone(),
-        actor.environment.clone(),
+        environment,
         actor.deployment_mode.clone(),
         AuthLevel::System,
         data_scope,
@@ -289,6 +327,7 @@ pub async fn issue_delegated_access_credential(
         app_id,
         tenant_application_id: tenant_application.id.clone(),
         ownership_scope: scope,
+        environment: environment_key.to_owned(),
         expires_at: expires_at.to_rfc3339(),
     })
 }
@@ -298,7 +337,7 @@ pub async fn issue_delegated_access_credential(
 /// Deployment order is executed here so first boot is fully automatic:
 /// 1. the tenant application must be provisioned and enabled (the installer
 ///    creates it), 2. the bootstrap system user is ensured, 3. the **tenant
-///    signing key is ensured** — created on first boot, which is the "update
+///    signing key is ensured** 鈥?created on first boot, which is the "update
 ///    the tenant secret" step, 4. a signed JWT is issued with the tenant
 ///    application's access permissions as the token scope, 5. the session is
 ///    persisted. The gateway then resolves the token through the verified
@@ -346,7 +385,7 @@ pub async fn issue_standalone_bootstrap_access_credential(
     let token_app_id = resolve_access_token_app_id(&tenant_application)?;
     let scope = tenant_application.ownership_scope;
     // A personal release is one person's deployment: its ambient credential is
-    // issued for — and only for — the recorded owner, because the owner is the
+    // issued for 鈥?and only for 鈥?the recorded owner, because the owner is the
     // last column of that installation's isolation key. Issuing it for the
     // synthetic bootstrap user would file every row it writes under a user id
     // nobody owns. The owner must be a real active user of the tenant, so a
@@ -394,7 +433,7 @@ pub async fn issue_standalone_bootstrap_access_credential(
         subject_user_id.as_str(),
         session_id.clone(),
         token_app_id.clone(),
-        environment,
+        environment.clone(),
         DeploymentMode::Local,
         AuthLevel::System,
         vec![format!("tenant:{tenant_id}"), format!("user:{subject_user_id}")],
@@ -443,6 +482,7 @@ pub async fn issue_standalone_bootstrap_access_credential(
         app_id: token_app_id,
         tenant_application_id: tenant_application.id.clone(),
         ownership_scope: scope,
+        environment: environment_to_string(&environment).to_owned(),
         expires_at: expires_at.to_rfc3339(),
     })
 }
@@ -468,7 +508,7 @@ fn bootstrap_environment() -> Environment {
 /// 1. an explicitly configured `SDKWORK_ACCESS_TOKEN` wins unchanged;
 /// 2. otherwise a signed tenant-bound token is issued through
 ///    [`issue_standalone_bootstrap_access_credential`] (tenant signing key
-///    ensured first — the "update the tenant secret" step on first boot —
+///    ensured first 鈥?the "update the tenant secret" step on first boot 鈥?
 ///    then a signed JWT persisted as an IAM session). The bootstrap credential
 ///    never expires by default (`exp: 0`, session `expires_at` sentinel);
 /// 3. `Ok(None)` when no IAM database is configured, letting the caller fall
@@ -538,7 +578,7 @@ pub async fn resolve_deployment_bootstrap_access_token(
 /// the tenant.
 ///
 /// The bootstrap credential of a personal installation is issued for the owner
-/// (`APPLICATION_IDENTITY_SPEC.md` §4.1 rule 8), and the session resolver joins
+/// (`APPLICATION_IDENTITY_SPEC.md` 搂4.1 rule 8), and the session resolver joins
 /// `iam_user` and requires an active row. Checking here turns "the owner was
 /// deleted or disabled" into a named issuance error instead of a credential that
 /// silently resolves to nothing.
@@ -657,6 +697,7 @@ pub fn issued_access_credential_to_json(issued: &IssuedAccessCredential) -> Valu
         "appId": issued.app_id,
         "tenantApplicationId": issued.tenant_application_id,
         "ownershipScope": issued.ownership_scope.as_str(),
+        "environment": issued.environment,
         "expiresAt": issued.expires_at,
     })
 }
@@ -699,7 +740,12 @@ async fn ensure_organization_exists(
     }
 }
 
-async fn resolve_session_scopes(
+/// Resolves a user's effective `(data_scope, permission_scope)` for one scope.
+///
+/// Passing `None` resolves the tenant-scope bindings only; passing an organization
+/// id adds that organization's bindings. Entitlement checks use this so an
+/// organization grant can never be mistaken for a tenant grant.
+pub(crate) async fn resolve_session_scopes(
     pg: &PgPool,
     tenant_id: &str,
     user_id: &str,
@@ -744,9 +790,9 @@ fn sign_local_session_token(
 
 /// Signs one local dual-token (`auth`/`access`) JWT.
 ///
-/// The payload is the identity-only envelope of `IAM_SPEC.md` §5.2. Claim
-/// admission there is closed, and `azp` — the OAuth client id of the installation
-/// credential (`APPLICATION_IDENTITY_SPEC.md` §4) — is not among the admitted
+/// The payload is the identity-only envelope of `IAM_SPEC.md` 搂5.2. Claim
+/// admission there is closed, and `azp` 鈥?the OAuth client id of the installation
+/// credential (`APPLICATION_IDENTITY_SPEC.md` 搂4) 鈥?is not among the admitted
 /// claims, so it is deliberately not signed here. The installation's client
 /// credential remains a registration-plane fact
 /// (`iam_application_installation.app_id`, overridden by
@@ -754,7 +800,7 @@ fn sign_local_session_token(
 /// application anchor only, and signing an unadmitted claim would break the
 /// dual-token claim contract before the table admits it.
 ///
-/// `ownership_scope` is admitted (IAM_SPEC §5.2): it is the installation's
+/// `ownership_scope` is admitted (IAM_SPEC 搂5.2): it is the installation's
 /// release level, a fixed-size identity fact that does not change for the
 /// lifetime of the credential, and it is what lets a data plane filter by the
 /// right isolation key without a second lookup.
@@ -813,7 +859,7 @@ fn encode_jwt_json(value: &Value) -> String {
     URL_SAFE_NO_PAD.encode(serde_json::to_vec(value).expect("JWT JSON should serialize"))
 }
 
-/// IAM_SPEC §5.2 issuer-side assertion: a rendered session token `MUST` fit the
+/// IAM_SPEC 搂5.2 issuer-side assertion: a rendered session token `MUST` fit the
 /// entrypoint header budget. Identity-only claims leave ~10x headroom; tripping
 /// this means dynamic authorization content was signed back into the payload.
 pub(crate) fn ensure_entrypoint_token_budget(token: &str) -> Result<(), String> {
@@ -1086,7 +1132,7 @@ mod tests {
             "principal_id",
             "principal_kind",
             // Variable-length authorization content is server-resolved
-            // (IAM_SPEC §5.2): signing it in is what produced HTTP 431.
+            // (IAM_SPEC 搂5.2): signing it in is what produced HTTP 431.
             "data_scope",
             "permission_scope",
         ] {
@@ -1095,15 +1141,15 @@ mod tests {
                 "forbidden claim {key} should be absent"
             );
         }
-        // `APPLICATION_IDENTITY_SPEC.md` §4 lists `azp`, but the dual-token
-        // envelope is governed by `IAM_SPEC.md` §5.2, whose claim admission is
+        // `APPLICATION_IDENTITY_SPEC.md` 搂4 lists `azp`, but the dual-token
+        // envelope is governed by `IAM_SPEC.md` 搂5.2, whose claim admission is
         // closed: every claim outside its required-claims table is forbidden.
         // The session row carries the deploy application anchor and no client
         // credential, so this envelope stays without `azp` until that table
         // admits the claim (see the module report / spec amendment request).
         assert!(
             payload.get("azp").is_none(),
-            "azp is not an admitted claim of the dual-token envelope (IAM_SPEC §5.2)"
+            "azp is not an admitted claim of the dual-token envelope (IAM_SPEC 搂5.2)"
         );
         // Scope arrays must no longer be embedded in the local dual-token JWT:
         // they bloat the compact header and trigger HTTP 431 on proxy edges.
@@ -1176,7 +1222,7 @@ mod tests {
         }
     }
 
-    /// IAM_SPEC §5.2: the authored payload is identity-only, so a rendered token
+    /// IAM_SPEC 搂5.2: the authored payload is identity-only, so a rendered token
     /// must leave an order of magnitude of headroom under the entrypoint budget.
     /// Before the fix a tenant super-admin token rendered at 7882 bytes, i.e.
     /// 96% of the Nginx `large_client_header_buffers` single-buffer budget and

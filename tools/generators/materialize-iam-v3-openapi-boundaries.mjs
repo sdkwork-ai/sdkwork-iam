@@ -1125,6 +1125,24 @@ function buildSchemas() {
           maxLength: 128,
           description: "Installation instance key of the caller's tenant.",
         },
+        environment: {
+          type: 'string',
+          enum: ['development', 'test', 'staging', 'demo', 'production'],
+          description:
+            'Exact installation lifecycle to initialize. Omitted means the caller session '
+            + "environment when the installation registered it, otherwise the installation's only "
+            + 'active environment. An operator can initialize a lifecycle that differs from its own '
+            + 'session environment.',
+        },
+        ownershipScope: {
+          type: 'string',
+          enum: ['TENANT', 'ORGANIZATION', 'USER'],
+          description:
+            'Release scope the caller declares. It is a declaration to be checked, never a '
+            + 'selector: the installation decides the level. Omit it to inherit the installation '
+            + 'scope (a tenant-level application therefore yields a tenant-level credential); an '
+            + 'explicit value that disagrees with the installation is refused.',
+        },
       },
     },
     IamAppAccessToken: {
@@ -1177,6 +1195,12 @@ function buildSchemas() {
         sessionId: {
           type: 'string',
           description: 'Persisted session that can be revoked.',
+        },
+        environment: {
+          type: 'string',
+          description:
+            'Installation lifecycle environment the credential was gated on (development, '
+            + 'production, ...).',
         },
       },
     },

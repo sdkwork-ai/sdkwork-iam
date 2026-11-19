@@ -10,7 +10,7 @@ use sdkwork_iam_context_service::{
 };
 use sdkwork_iam_web_adapter::{
     account_binding_policy_to_json, contact_binding_allowed, default_account_binding_policy,
-    issue_user_application_access_credential, issued_access_credential_to_json,
+    issue_application_access_credential, issued_access_credential_to_json,
     load_account_binding_policy, merge_account_binding_policy, oauth_binding_allowed,
     oauth_login_allowed, validate_enabled_tenant_runtime_app, AccessTokenActor,
     AccountBindingPolicyDocument, AppTokenExchangeError, ContactBindingActionKind,
@@ -1259,6 +1259,44 @@ async fn update_current_session(
     }
 }
 
+/// Per-user throttle for application credential minting.
+///
+/// Minting persists a session, so an unthrottled caller could flood `iam_session`
+/// and the tenant signing path. The bucket is per (tenant, user) and reuses the IAM
+/// rate-limit window configuration; a storage failure fails closed so a degraded
+/// limiter cannot silently remove the guard.
+async fn enforce_app_token_rate_limit(
+    state: &LocalIamState,
+    session: &LocalSession,
+) -> Option<Response> {
+    let pg = match postgres_pool_or_error(state) {
+        Ok(pg) => pg,
+        Err(response) => return Some(response),
+    };
+    let bucket = format!("app-token:{}", session.user.id);
+    match crate::ephemeral::check_rate_limit(
+        pg,
+        &session.context.tenant_id,
+        &bucket,
+        state.config.rate_limit_max_requests,
+        state.config.rate_limit_window_seconds,
+    )
+    .await
+    {
+        Ok(true) => None,
+        Ok(false) => Some(appbase_error(
+            StatusCode::TOO_MANY_REQUESTS,
+            "iam_rate_limited",
+            "too many application access token requests — try again later",
+        )),
+        Err(_) => Some(appbase_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "iam_ephemeral_unavailable",
+            "ephemeral IAM state is temporarily unavailable",
+        )),
+    }
+}
+
 /// `appAccessTokens.create` — mint an application access token for the caller.
 ///
 /// Ownership is the control, not an operator permission: a `USER` installation
@@ -1278,6 +1316,9 @@ async fn create_app_access_token(
     let Some(session) = resolve_session_from_headers(pg, &headers).await else {
         return iam_session_required_error();
     };
+    if let Some(response) = enforce_app_token_rate_limit(&state, &session).await {
+        return response;
+    }
     let request = match UserApplicationTokenRequest::parse(&body) {
         Ok(request) => request,
         Err(error) => {
@@ -1289,7 +1330,11 @@ async fn create_app_access_token(
         }
     };
     let actor = AccessTokenActor::from_iam_context(&session.context);
-    match issue_user_application_access_credential(pg, &actor, &request).await {
+    // The installation's release scope decides the entitlement and the capability
+    // class: tenant-level needs a tenant-scope capability, organization-level needs
+    // the administrative capability granted for that organization, and a personal
+    // installation answers its owner alone.
+    match issue_application_access_credential(pg, &actor, &request).await {
         Ok(issued) => appbase_created(issued_access_credential_to_json(&issued)),
         Err(error) => {
             let status = match &error {

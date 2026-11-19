@@ -6,4 +6,8 @@ export interface IamAppAccessTokenCreateCommand {
   tenantApplicationId?: string;
   /** Installation instance key of the caller's tenant. */
   instanceKey?: string;
+  /** Exact installation lifecycle to initialize. Omitted means the caller session environment when the installation registered it, otherwise the installation's only active environment. An operator can initialize a lifecycle that differs from its own session environment. */
+  environment?: 'development' | 'test' | 'staging' | 'demo' | 'production';
+  /** Release scope the caller declares. It is a declaration to be checked, never a selector: the installation decides the level. Omit it to inherit the installation scope (a tenant-level application therefore yields a tenant-level credential); an explicit value that disagrees with the installation is refused. */
+  ownershipScope?: 'TENANT' | 'ORGANIZATION' | 'USER';
 }
