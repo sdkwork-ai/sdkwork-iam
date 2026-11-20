@@ -78,6 +78,8 @@ export const BACKEND_OAUTH_RESOURCE_TREE = {
     "customMenus": {
       "publish": [],
       "retrieve": [],
+      "rollback": [],
+      "sync": [],
       "update": []
     },
     "followQrCodes": {

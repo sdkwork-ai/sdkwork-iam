@@ -21,6 +21,14 @@ export function createDatabaseContractCheckPlan({ cwd = appRoot } = {}) {
       command: process.execPath,
       args: [path.join(cwd, 'tests/contract/iam-database-contract-alignment.test.mjs')],
     },
+    {
+      command: process.execPath,
+      args: [path.join(cwd, 'scripts/check-sql-tenant-scope.mjs'), '--root', cwd],
+    },
+    {
+      command: process.execPath,
+      args: [path.join(cwd, 'tests/contract/sql-scope.contract.test.mjs')],
+    },
   ];
 }
 

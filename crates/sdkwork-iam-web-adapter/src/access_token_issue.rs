@@ -409,7 +409,7 @@ pub async fn issue_standalone_bootstrap_access_credential(
         }
         ApplicationOwnershipScope::Tenant | ApplicationOwnershipScope::Organization => {
             ensure_bootstrap_system_user(pg, tenant_id).await?;
-            "system".to_owned()
+            bootstrap_system_user_id(tenant_id)
         }
     };
 
@@ -619,21 +619,37 @@ async fn ensure_active_bootstrap_owner(
     Ok(())
 }
 
-/// Ensures the synthetic `system` user used as the bootstrap principal.
+/// Deterministic tenant-scoped id of the synthetic bootstrap principal.
+///
+/// `iam_user.id` is a global primary key and the session row references
+/// `(tenant_id, user_id)`, so one shared `"system"` row would let exactly one
+/// tenant issue a standalone bootstrap credential; every later tenant would
+/// fail its foreign key or the primary key. The tenant suffix keeps each
+/// tenant's principal independent and deterministic, so a repeated issuance
+/// reuses the same row.
+fn bootstrap_system_user_id(tenant_id: &str) -> String {
+    format!("system:{tenant_id}")
+}
+
+/// Ensures the synthetic tenant-scoped `system` user used as the bootstrap principal.
 ///
 /// `find_iam_context_from_access_token` joins `iam_user` and requires an
 /// active row, so the bootstrap session needs this user to resolve through
 /// the verified database path.
 async fn ensure_bootstrap_system_user(pg: &PgPool, tenant_id: &str) -> Result<(), String> {
     let now = chrono::Utc::now().to_rfc3339();
+    // No conflict target: the row is identified by the global `id` primary key
+    // and the `(tenant_id, id)` uniqueness together, and either one must be
+    // tolerated on a repeated issuance.
     sqlx::query(
         "INSERT INTO iam_user \
          (id, tenant_id, username, display_name, email, status, created_at, updated_at, \
           locale, timezone, source, is_deleted) \
-         VALUES ('system', $1, 'system', 'System', 'system@localhost', 'active', $2, $2, \
+         VALUES ($1, $2, 'system', 'System', 'system@localhost', 'active', $3, $3, \
                  'en-US', 'UTC', 'bootstrap', 0) \
-         ON CONFLICT (id, tenant_id) DO NOTHING",
+         ON CONFLICT DO NOTHING",
     )
+    .bind(bootstrap_system_user_id(tenant_id))
     .bind(tenant_id)
     .bind(&now)
     .execute(pg)

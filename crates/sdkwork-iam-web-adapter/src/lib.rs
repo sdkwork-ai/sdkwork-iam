@@ -83,7 +83,8 @@ pub use application_access_token::{
 };
 pub use application_registry::{
     configured_deploy_application_id, derive_tenant_application_primary_domain_candidate,
-    disable_tenant_application, enable_tenant_application, ensure_platform_tenant_application,
+    disable_tenant_application, disable_tenant_application_by_deploy_application_id,
+    enable_tenant_application, ensure_platform_tenant_application,
     ensure_platform_tenant_application_with_deploy_application,
     ensure_tenant_application_runtime, intersect_permission_scopes, is_provision_attribute_error,
     parse_tenant_application_provision_command, parse_tenant_application_update_command,
@@ -95,7 +96,8 @@ pub use application_registry::{
     tenant_application_row_id, tenant_application_to_json, update_tenant_application,
     validate_enabled_tenant_runtime_app, EnsureTenantApplicationCommand, TenantApplication,
     TenantApplicationProvisionCommand, TenantApplicationUpdateCommand,
-    DEPLOY_APPLICATION_ID_ENV, IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION,
+    DEPLOY_APPLICATION_ID_ENV, IAM_TENANT_APPLICATIONS_DISABLE_PERMISSION,
+    IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION,
     IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION, IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION,
     PLATFORM_INSTALLATION_ANCHOR,
 };

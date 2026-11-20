@@ -1414,6 +1414,30 @@ mod postgres_tests {
     }
 
     async fn cleanup_installation(pg: &PgPool, tenant_id: &str, installation_id: &str) {
+        // Migration 0045 replaced the cascading delete of 0039 with RESTRICT, so
+        // the fixture removes its own children: a soft-deleted environment row
+        // still references the installation, and a fixture that leaned on the
+        // cascade would now fail here instead of at the code under test.
+        sqlx::query(
+            "DELETE FROM iam_application_installation_credential \
+             WHERE tenant_id = $1 AND installation_environment_id IN ( \
+                 SELECT id FROM iam_application_installation_environment \
+                  WHERE tenant_id = $1 AND installation_id = $2)",
+        )
+        .bind(tenant_id)
+        .bind(installation_id)
+        .execute(pg)
+        .await
+        .expect("delete installation credential fixtures");
+        sqlx::query(
+            "DELETE FROM iam_application_installation_environment \
+             WHERE tenant_id = $1 AND installation_id = $2",
+        )
+        .bind(tenant_id)
+        .bind(installation_id)
+        .execute(pg)
+        .await
+        .expect("delete installation environment fixtures");
         sqlx::query("DELETE FROM iam_application_installation WHERE tenant_id = $1 AND id = $2")
             .bind(tenant_id)
             .bind(installation_id)

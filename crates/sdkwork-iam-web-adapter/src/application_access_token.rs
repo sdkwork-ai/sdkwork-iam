@@ -325,6 +325,23 @@ fn shared_release_data_scope(claims: &PublicApplicationAccessTokenClaims) -> Vec
     data_scope
 }
 
+/// Whether one installation accepts the claims of a public application token.
+///
+/// The release scope decides the level and the organization claim decides the
+/// inner binding: a tenant installation accepts only `TENANT` claims carrying
+/// the sentinel `0`, and an organization installation accepts only
+/// `ORGANIZATION` claims carrying its own non-zero organization. The two levels
+/// are therefore mutually exclusive, which is what keeps a tenant token from
+/// resolving an organization installation (and the reverse).
+fn installation_accepts_public_claims(
+    installation_scope: ApplicationOwnershipScope,
+    installation_organization_id: &str,
+    claims: &PublicApplicationAccessTokenClaims,
+) -> bool {
+    installation_scope == claims.ownership_scope
+        && installation_organization_id.trim() == claims.organization_id
+}
+
 /// Resolve the isolation context of one public application access token,
 /// reporting why the credential was rejected.
 ///
@@ -363,14 +380,16 @@ pub async fn try_resolve_application_access_token_context(
     if application.status != "enabled" {
         return Ok(None);
     }
-    if application.organization_id != claims.organization_id {
-        return Ok(None);
-    }
-    // The token's release scope must be the installation's: a public token that
-    // claims a wider level than the installation was published at would let a
-    // client read rows outside its isolation key (`APPLICATION_IDENTITY_SPEC.md`
-    // §4.1 rule 10).
-    if application.ownership_scope != claims.ownership_scope {
+    // The token's release scope and organization must be the installation's: a
+    // public token that claims another level or another organization would read
+    // rows outside its isolation key (`APPLICATION_IDENTITY_SPEC.md` §4.1 rule
+    // 10). The tenant is the outer boundary for every release; the organization
+    // is the inner boundary only for an organization release.
+    if !installation_accepts_public_claims(
+        application.ownership_scope,
+        &application.organization_id,
+        &claims,
+    ) {
         return Ok(None);
     }
     // Environment gate. One deploy application serves several lifecycle
@@ -603,6 +622,57 @@ mod tests {
             shared_release_data_scope(&tenant),
             vec!["tenant:100001".to_owned()]
         );
+    }
+
+    #[test]
+    fn tenant_and_organization_installations_accept_only_their_own_level() {
+        let tenant = parse_public_application_access_token(&token(
+            public_header(),
+            public_payload(),
+            "public",
+        ))
+        .expect("a tenant token parses");
+        let organization = parse_public_application_access_token(&token(
+            public_header(),
+            organization_payload(),
+            "public",
+        ))
+        .expect("an organization token parses");
+
+        assert!(installation_accepts_public_claims(
+            ApplicationOwnershipScope::Tenant,
+            "0",
+            &tenant
+        ));
+        assert!(installation_accepts_public_claims(
+            ApplicationOwnershipScope::Organization,
+            "42",
+            &organization
+        ));
+
+        // Neither level resolves the other installation, and an organization
+        // installation resolves only its own organization.
+        assert!(!installation_accepts_public_claims(
+            ApplicationOwnershipScope::Organization,
+            "42",
+            &tenant
+        ));
+        assert!(!installation_accepts_public_claims(
+            ApplicationOwnershipScope::Tenant,
+            "0",
+            &organization
+        ));
+        assert!(!installation_accepts_public_claims(
+            ApplicationOwnershipScope::Organization,
+            "43",
+            &organization
+        ));
+        // A tenant installation never carries a non-zero organization binding.
+        assert!(!installation_accepts_public_claims(
+            ApplicationOwnershipScope::Tenant,
+            "42",
+            &tenant
+        ));
     }
 
     #[test]

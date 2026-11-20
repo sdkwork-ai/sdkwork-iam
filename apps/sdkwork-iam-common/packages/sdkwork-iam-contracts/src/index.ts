@@ -160,7 +160,6 @@ export const SDKWORK_IAM_TABLES = {
   tenant: "iam_tenant",
   user: "iam_user",
   userIdentity: "iam_user_identity",
-  userOfficialAccount: "iam_user_official_account",
   userPersona: "iam_user_persona",
   personaRole: "iam_persona_role",
   personaInterest: "iam_persona_interest",
@@ -856,6 +855,11 @@ export const SDKWORK_IAM_API_ROUTES = {
           retrieve: operation("GET", `${backend}/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus`, "iam", "iam.oauth.resourceAccounts.customMenus.retrieve", "dualToken"),
           update: operation("PATCH", `${backend}/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus`, "iam", "iam.oauth.resourceAccounts.customMenus.update", "dualToken"),
           publish: operation("POST", `${backend}/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/publish`, "iam", "iam.oauth.resourceAccounts.customMenus.publish", "dualToken"),
+          // Rollback and sync exist in the backend OpenAPI authority (and the
+          // generated SDK exposes them); the catalog was missing both, which made
+          // the service-facade parity test disagree with the SDK it mirrors.
+          rollback: operation("POST", `${backend}/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/rollback`, "iam", "iam.oauth.resourceAccounts.customMenus.rollback", "dualToken"),
+          sync: operation("POST", `${backend}/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/sync`, "iam", "iam.oauth.resourceAccounts.customMenus.sync", "dualToken"),
         },
         delete: operation("DELETE", `${backend}/iam/oauth/resource_accounts/{resourceAccountId}`, "iam", "iam.oauth.resourceAccounts.delete", "dualToken"),
         followQrCodes: {
@@ -1157,6 +1161,8 @@ export const SDKWORK_IAM_CAPABILITIES = [
       "iam.oauth.resourceAccounts.create",
       "iam.oauth.resourceAccounts.customMenus.publish",
       "iam.oauth.resourceAccounts.customMenus.retrieve",
+      "iam.oauth.resourceAccounts.customMenus.rollback",
+      "iam.oauth.resourceAccounts.customMenus.sync",
       "iam.oauth.resourceAccounts.customMenus.update",
       "iam.oauth.resourceAccounts.delete",
       "iam.oauth.resourceAccounts.followQrCodes.create",

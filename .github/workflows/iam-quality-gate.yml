@@ -40,6 +40,9 @@ jobs:
       - name: Run IAM static quality gate
         run: pnpm run check
 
+      - name: Run IAM database contract and SQL scope gate
+        run: pnpm run check:database
+
       - name: Run IAM governance
         run: pnpm run test:governance-node
 
@@ -48,3 +51,73 @@ jobs:
 
       - name: Run governed Rust workspace tests
         run: pnpm run test:rust-workspace
+
+  # Opt-in PostgreSQL integration lane. Enable by setting the repository variable
+  # SDKWORK_POSTGRES_CI=true. It provisions a disposable database, applies the IAM
+  # migrations, and runs the isolation suites that are skipped without a database
+  # (installation ownership/disable, provider scope). The admin credentials below
+  # belong to the throwaway service container only.
+  iam-postgres-tests:
+    if: vars.SDKWORK_POSTGRES_CI == 'true'
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SDKWORK_DATABASE_ENGINE: postgresql
+      SDKWORK_DATABASE_HOST: 127.0.0.1
+      SDKWORK_DATABASE_PORT: "5432"
+      SDKWORK_DATABASE_NAME: sdkwork_ai_dev
+      SDKWORK_DATABASE_SCHEMA: sdkwork_ai_dev
+      SDKWORK_DATABASE_USERNAME: sdkwork_ai_dev
+      SDKWORK_DATABASE_PASSWORD: sdkworkdev123
+      SDKWORK_DATABASE_SSL_MODE: disable
+      SDKWORK_DATABASE_ADMIN_HOST: 127.0.0.1
+      SDKWORK_DATABASE_ADMIN_PORT: "5432"
+      SDKWORK_DATABASE_ADMIN_USERNAME: postgres
+      SDKWORK_DATABASE_ADMIN_PASSWORD: postgres
+      SDKWORK_DATABASE_ADMIN_DATABASE: postgres
+      SDKWORK_DATABASE_ADMIN_SSL_MODE: disable
+      SDKWORK_DATABASE_URL: postgres://sdkwork_ai_dev:sdkworkdev123@127.0.0.1:5432/sdkwork_ai_dev
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Initialize and migrate the disposable database
+        run: |
+          pnpm run db:init
+          pnpm run db:migrate
+
+      - name: Run tenant isolation PostgreSQL suites
+        run: |
+          cargo test -p sdkwork-iam-web-adapter --test installation_ownership_scope_postgres -- --ignored
+          cargo test -p sdkwork-iam-web-adapter --test installation_disable_postgres -- --ignored
+          cargo test -p sdkwork-iam-provider-account-service --test provider_account_scope_visibility
+

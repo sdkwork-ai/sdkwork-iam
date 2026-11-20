@@ -14,6 +14,10 @@ use crate::installation_scope_cache::{
 pub const IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION: &str = "iam.tenant_applications.provision";
 pub const IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION: &str = "iam.tenant_applications.update";
 pub const IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION: &str = "iam.tenant_applications.enable";
+/// Permission for the machine-facing disable that the deploy uninstall sequence
+/// calls. Separate from `enable` because the two directions have different blast
+/// radius: disabling stops issuance, enabling resumes it.
+pub const IAM_TENANT_APPLICATIONS_DISABLE_PERMISSION: &str = "iam.tenant_applications.disable";
 
 /// Deterministic anchor of a tenant's platform installation.
 ///
@@ -1418,28 +1422,124 @@ pub async fn enable_tenant_application(
         .ok_or_else(|| "tenant application enable completed but lookup failed".to_string())
 }
 
+/// Disables one installation and every live environment of it, atomically.
+///
+/// The application-factory uninstall contract (`APPLICATION_FACTORY_DEPLOYMENT_SPEC.md`
+/// sections 3 and 9) stops issuance by disabling, never by deleting. The
+/// installation is the token anchor and its environments are what the runtime
+/// gate consults, so both have to move together: an installation whose anchor is
+/// `disabled` while one environment is still `active` would keep accepting
+/// credentials for an environment the operator just retired.
+///
+/// Idempotent by construction: an already-`disabled` installation and
+/// environment still match the predicates and end in the same state, and no row
+/// is deleted (migration 0045 makes a cascade impossible at the database).
+///
+/// @param pg - shared PostgreSQL pool.
+/// @param tenant_id - tenant that owns the installation.
+/// @param installation_id - installation row id.
+/// @returns `Ok(())` when the installation exists; `"tenant application was not
+///   found"` when no row of that tenant carries the id.
+async fn disable_installation_and_environments(
+    pg: &PgPool,
+    tenant_id: &str,
+    installation_id: &str,
+) -> Result<(), String> {
+    let now = chrono::Utc::now();
+    let mut transaction = pg
+        .begin()
+        .await
+        .map_err(|error| format!("begin installation disable failed: {error}"))?;
+
+    let installation = sqlx::query(
+        "UPDATE iam_application_installation SET status = 'disabled', updated_at = $2 \
+         WHERE id = $1 AND tenant_id = $3",
+    )
+    .bind(installation_id)
+    .bind(now)
+    .bind(tenant_id)
+    .execute(&mut *transaction)
+    .await
+    .map_err(|error| format!("disable tenant application failed: {error}"))?;
+    if installation.rows_affected() == 0 {
+        // Nothing to disable: release the write before reporting the miss so a
+        // retry re-reads the same state instead of inheriting a transaction.
+        transaction
+            .rollback()
+            .await
+            .map_err(|error| format!("rollback installation disable failed: {error}"))?;
+        return Err("tenant application was not found".to_string());
+    }
+
+    sqlx::query(
+        "UPDATE iam_application_installation_environment \
+            SET env_status = 'disabled', updated_at = $2, version = version + 1 \
+          WHERE tenant_id = $1 AND installation_id = $3 \
+            AND deleted_at IS NULL AND env_status <> 'disabled'",
+    )
+    .bind(tenant_id)
+    .bind(now)
+    .bind(installation_id)
+    .execute(&mut *transaction)
+    .await
+    .map_err(|error| format!("disable tenant application environments failed: {error}"))?;
+
+    transaction
+        .commit()
+        .await
+        .map_err(|error| format!("commit installation disable failed: {error}"))
+}
+
+/// Disables an installation by its row id.
+///
+/// This is the management surface's uninstall step; it delegates to
+/// [`disable_installation_and_environments`] so the handler and the deploy
+/// uninstall flow share one transaction shape.
 pub async fn disable_tenant_application(
     pg: &PgPool,
     tenant_id: &str,
     tenant_application_id: &str,
 ) -> Result<TenantApplication, String> {
+    disable_installation_and_environments(pg, tenant_id, tenant_application_id).await?;
+
     resolve_tenant_application(pg, tenant_id, Some(tenant_application_id), None, None)
         .await?
-        .ok_or_else(|| "tenant application was not found".to_string())?;
+        .ok_or_else(|| "tenant application disable completed but lookup failed".to_string())
+}
 
-    let now = chrono::Utc::now();
-    sqlx::query(
-        "UPDATE iam_application_installation SET status = 'disabled', updated_at = $2 \
-         WHERE id = $1 AND tenant_id = $3",
-    )
-    .bind(tenant_application_id)
-    .bind(now)
-    .bind(tenant_id)
-    .execute(pg)
-    .await
-    .map_err(|error| format!("disable tenant application failed: {error}"))?;
+/// Disables the installation that serves one deploy application.
+///
+/// The deploy plane addresses an installation by `deploy_application_id` and
+/// never holds the IAM row id, so the uninstall path resolves the anchor first
+/// and then applies the same atomic disable. A deploy application that is not
+/// bound to an installation of this tenant is reported as not found, which is
+/// the same contract as the id-addressed entry point.
+///
+/// @param pg - shared PostgreSQL pool.
+/// @param tenant_id - tenant that owns the installation.
+/// @param deploy_application_id - the deployment anchor of the installation.
+/// @returns the disabled installation, reloaded after the transaction commits.
+pub async fn disable_tenant_application_by_deploy_application_id(
+    pg: &PgPool,
+    tenant_id: &str,
+    deploy_application_id: &str,
+) -> Result<TenantApplication, String> {
+    let anchor = deploy_application_id.trim();
+    if crate::is_blank(Some(anchor)) {
+        return Err("no installation was found: the deploy application id is blank".to_string());
+    }
 
-    resolve_tenant_application(pg, tenant_id, Some(tenant_application_id), None, None)
+    let installation = resolve_tenant_application_by_deploy_application_id(pg, tenant_id, anchor)
+        .await?
+        .ok_or_else(|| {
+            format!(
+                "tenant application for deploy application {anchor} was not found in tenant {tenant_id}"
+            )
+        })?;
+
+    disable_installation_and_environments(pg, tenant_id, &installation.id).await?;
+
+    resolve_tenant_application(pg, tenant_id, Some(installation.id.as_str()), None, None)
         .await?
         .ok_or_else(|| "tenant application disable completed but lookup failed".to_string())
 }

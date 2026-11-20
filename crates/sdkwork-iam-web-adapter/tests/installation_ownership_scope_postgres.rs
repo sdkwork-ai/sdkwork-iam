@@ -377,19 +377,24 @@ async fn bootstrap_issuance_signs_the_installation_scope_in_all_three_states() {
     let (tenant_id, user_id, organization_id, _) = seed_tenant(&pg).await;
 
     let cases = [
-        (None, "0", None, "TENANT", "0", "system"),
+        (None, "0", None, "TENANT", "0", None),
         (
             Some("ORGANIZATION"),
             organization_id.as_str(),
             None,
             "ORGANIZATION",
             organization_id.as_str(),
-            "system",
+            None,
         ),
-        (Some("USER"), "0", Some(user_id.as_str()), "USER", "0", user_id.as_str()),
+        (Some("USER"), "0", Some(user_id.as_str()), "USER", "0", Some(user_id.as_str())),
     ];
 
     for (scope, organization, owner, claim, claim_organization, claim_user) in cases {
+        // A shared release is served by the tenant-scoped synthetic principal;
+        // a personal release by the installation owner.
+        let expected_user = claim_user
+            .map(str::to_owned)
+            .unwrap_or_else(|| format!("system:{tenant_id}"));
         let application = provision_tenant_application(
             &pg,
             &command(&tenant_id, organization, scope, owner),
@@ -428,7 +433,18 @@ async fn bootstrap_issuance_signs_the_installation_scope_in_all_three_states() {
         .expect("payload parses");
         assert_eq!(claims["ownership_scope"], claim);
         assert_eq!(claims["organization_id"], claim_organization);
-        assert_eq!(claims["user_id"], claim_user);
+        assert_eq!(claims["user_id"], expected_user);
+        // The synthetic principal row is tenant-scoped and stored exactly once
+        // per tenant, even across the three issuances of this loop.
+        let system_rows: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*)::bigint FROM iam_user WHERE tenant_id = $1 AND id = $2",
+        )
+        .bind(&tenant_id)
+        .bind(&expected_user)
+        .fetch_one(&pg)
+        .await
+        .expect("count the synthetic principal");
+        assert_eq!(system_rows, 1, "the synthetic principal is stored once");
         assert_eq!(claims["app_id"], claims["aud"], "aud == app_id");
         assert_eq!(
             claims["app_id"],
@@ -438,7 +454,7 @@ async fn bootstrap_issuance_signs_the_installation_scope_in_all_three_states() {
         // always present, and only an organization-level installation adds its
         // organization key (`APP_ACCESS_TOKEN_SPEC.md` §5,
         // `DATABASE_SPEC.md` §16).
-        let stored_scope: serde_json::Value = sqlx::query_scalar(
+        let stored_scope: String = sqlx::query_scalar(
             "SELECT data_scope_json FROM iam_session WHERE id = $1",
         )
         .bind(&issued.session_id)
@@ -446,7 +462,7 @@ async fn bootstrap_issuance_signs_the_installation_scope_in_all_three_states() {
         .await
         .expect("the issued session persists its data scope");
         let stored_scope: Vec<String> =
-            serde_json::from_value(stored_scope).expect("the data scope is a string array");
+            serde_json::from_str(&stored_scope).expect("the data scope is a string array");
         assert!(
             stored_scope.contains(&format!("tenant:{tenant_id}")),
             "every bootstrap credential keeps its tenant key: {stored_scope:?}"
@@ -468,6 +484,59 @@ async fn bootstrap_issuance_signs_the_installation_scope_in_all_three_states() {
     }
 
     cleanup(&pg, &tenant_id).await;
+}
+
+#[tokio::test]
+#[ignore = "requires a migrated PostgreSQL (SDKWORK_DATABASE_URL)"]
+async fn every_tenant_gets_its_own_bootstrap_principal() {
+    let Some(pg) = connect().await else {
+        return;
+    };
+    let (first_tenant, ..) = seed_tenant(&pg).await;
+    let (second_tenant, ..) = seed_tenant(&pg).await;
+    let mut principals = Vec::new();
+    for tenant_id in [&first_tenant, &second_tenant] {
+        let application = provision_tenant_application(
+            &pg,
+            &command(tenant_id, "0", None, None),
+        )
+        .await
+        .expect("provision installation");
+        enable_tenant_application(&pg, tenant_id, &application.id)
+            .await
+            .expect("enable installation");
+        let issued = issue_standalone_bootstrap_access_credential(
+            &pg,
+            tenant_id,
+            application
+                .deploy_application_id
+                .as_deref()
+                .expect("deploy anchor"),
+            None,
+        )
+        .await
+        .expect("every tenant must be able to issue its bootstrap credential");
+        let claims: serde_json::Value = serde_json::from_slice(
+            &URL_SAFE_NO_PAD
+                .decode(issued.access_credential.split('.').nth(1).expect("payload"))
+                .expect("payload decodes"),
+        )
+        .expect("payload parses");
+        principals.push(
+            claims["user_id"]
+                .as_str()
+                .expect("bootstrap principal claim")
+                .to_owned(),
+        );
+    }
+    assert_eq!(principals[0], format!("system:{first_tenant}"));
+    assert_eq!(principals[1], format!("system:{second_tenant}"));
+    assert_ne!(
+        principals[0], principals[1],
+        "each tenant's synthetic principal is independent"
+    );
+    cleanup(&pg, &first_tenant).await;
+    cleanup(&pg, &second_tenant).await;
 }
 
 #[tokio::test]
@@ -645,6 +714,41 @@ async fn a_public_token_binds_a_personal_installation_to_its_owner() {
             .any(|scope| scope.starts_with("organization:")),
         "a tenant-level token must not claim an organization scope: {:?}",
         tenant_context.data_scope
+    );
+
+    // The two levels are not interchangeable. A credential whose claims name the
+    // wrong level, or another organization, must not resolve the installation.
+    let tenant_claim_on_org_anchor =
+        public_application_token(&tenant_id, organization_anchor, "0", "TENANT", None);
+    assert!(
+        try_resolve_application_access_token_context(&pg, &tenant_claim_on_org_anchor)
+            .await
+            .expect("a scope contradiction is reported as unresolved, not as an error")
+            .is_none(),
+        "a tenant-level token must not resolve an organization installation"
+    );
+    let organization_claim_on_tenant_anchor = public_application_token(
+        &tenant_id,
+        tenant_anchor,
+        &organization_id,
+        "ORGANIZATION",
+        None,
+    );
+    assert!(
+        try_resolve_application_access_token_context(&pg, &organization_claim_on_tenant_anchor)
+            .await
+            .expect("a scope contradiction is reported as unresolved, not as an error")
+            .is_none(),
+        "an organization-level token must not resolve a tenant installation"
+    );
+    let foreign_organization_token =
+        public_application_token(&tenant_id, organization_anchor, "4201", "ORGANIZATION", None);
+    assert!(
+        try_resolve_application_access_token_context(&pg, &foreign_organization_token)
+            .await
+            .expect("a foreign organization is reported as unresolved, not as an error")
+            .is_none(),
+        "an organization token must not resolve another organization's installation"
     );
 
     // Personal release: the owner's claim is the subject.

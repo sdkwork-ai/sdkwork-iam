@@ -13,7 +13,8 @@ use axum::{
 use sdkwork_iam_bootstrap::DEFAULT_IAM_TENANT_ID;
 use sdkwork_iam_database_host;
 use sdkwork_iam_web_adapter::{
-    account_binding_policy_to_json, disable_tenant_application, enable_tenant_application,
+    account_binding_policy_to_json, disable_tenant_application,
+    disable_tenant_application_by_deploy_application_id, enable_tenant_application,
     ensure_actor_tenant_scope, ensure_bootstrap_permission, iam_api_error, iam_api_success,
     is_provision_attribute_error, issue_delegated_access_credential,
     issued_access_credential_to_json, load_account_binding_policy,
@@ -23,8 +24,8 @@ use sdkwork_iam_web_adapter::{
     resolve_bootstrap_actor, resolve_tenant_application, save_account_binding_policy,
     tenant_application_to_json, update_tenant_application, AccountBindingPolicyDocument,
     IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
-    IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION, IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION,
-    IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION,
+    IAM_TENANT_APPLICATIONS_DISABLE_PERMISSION, IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION,
+    IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION, IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION,
 };
 use sdkwork_utils_rust::sdkwork_resource_json;
 use sdkwork_web_core::WebRequestContext;
@@ -206,6 +207,10 @@ fn build_sdkwork_iam_backend_api_business_router_with_state(state: BackendIamSta
         .route(
             "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/disable",
             post(disable_tenant_application_management_handler),
+        )
+        .route(
+            "/backend/v3/api/iam/tenant_applications/by_deploy_application/{deployApplicationId}/disable",
+            post(disable_tenant_application_by_deploy_application_handler),
         );
 
     crate::installation_lifecycle::apply_installation_lifecycle_routes(
@@ -848,14 +853,156 @@ async fn disable_tenant_application_management_handler(
         .await
 }
 
+/// Machine-facing disable addressed by the deploy anchor.
+///
+/// The deploy plane stores `deploy_app.id` and never the IAM installation id, so
+/// a split deployment cannot call the id-addressed management route. This route
+/// is the anchor-addressed counterpart the deploy HTTP lifecycle adapter uses; it
+/// authenticates like the provisioning route (`authToken` in the body, bootstrap
+/// super-admin permission) instead of borrowing a dual-token session, because the
+/// caller is a background machine command with no end-user request.
+async fn disable_tenant_application_by_deploy_application_handler(
+    State(state): State<BackendIamState>,
+    Path(deploy_application_id): Path<String>,
+    Json(body): Json<Value>,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+    if let Some(response) = enforce_backend_rate_limit(
+        pg,
+        "backend:tenant_applications:disable_by_deploy",
+    )
+    .await
+    {
+        return response;
+    }
+    let tenant_id = match body
+        .get("tenantId")
+        .or_else(|| body.get("tenant_id"))
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        Some(value) => value.to_owned(),
+        None => {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_tenant_application_disable_invalid",
+                "tenantId is required",
+            )
+        }
+    };
+    let actor = match resolve_bootstrap_actor(pg, &body).await {
+        Ok(actor) => actor,
+        Err(message) if message.contains("invalid") || message.contains("required") => {
+            return appbase_error(
+                StatusCode::UNAUTHORIZED,
+                "iam_super_admin_auth_failed",
+                &message,
+            );
+        }
+        Err(message)
+            if message.contains("not a bootstrap operator")
+                || message.contains("not a super admin") =>
+        {
+            return appbase_error(
+                StatusCode::FORBIDDEN,
+                "iam_tenant_application_disable_forbidden",
+                &message,
+            );
+        }
+        Err(message) => {
+            return appbase_error(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "iam_super_admin_auth_unavailable",
+                &message,
+            );
+        }
+    };
+    if let Err(message) = ensure_bootstrap_permission(
+        pg,
+        &actor,
+        IAM_TENANT_APPLICATIONS_DISABLE_PERMISSION,
+    )
+    .await
+    {
+        return appbase_error(
+            StatusCode::FORBIDDEN,
+            "iam_tenant_application_disable_forbidden",
+            &message,
+        );
+    }
+
+    match disable_tenant_application_by_deploy_application_id(
+        pg,
+        &tenant_id,
+        &deploy_application_id,
+    )
+    .await
+    {
+        Ok(application) => {
+            // Machine calls still need a trail: the deploy uninstall records its
+            // own audit on the deployment side, and IAM records the identity-side
+            // step here so the two histories can be correlated by the
+            // installation id.
+            // The IAM `Environment` enum has no display impl and the backend crate
+            // does not depend on the context-service crate directly; the Debug
+            // spelling is stable (`Dev`/`Test`/`Prod`) and the audit column stores
+            // the lowercase form.
+            let environment = format!("{:?}", actor.environment).to_ascii_lowercase();
+            if let Err(error) = sdkwork_iam_web_adapter::record_audit_event_tx(
+                pg,
+                &tenant_id,
+                None,
+                Some(actor.user_id.as_str()),
+                "iam.tenantApplications.disableByDeployApplication",
+                "tenantApplications",
+                Some(application.id.as_str()),
+                None,
+                environment.as_str(),
+                serde_json::json!({
+                    "deployApplicationId": deploy_application_id,
+                    "installationId": application.id,
+                    "permission": IAM_TENANT_APPLICATIONS_DISABLE_PERMISSION,
+                }),
+            )
+            .await
+            {
+                // The disable already committed; a failed audit write must be
+                // visible but must not turn a successful stop into an error the
+                // caller retries against an already-disabled installation.
+                tracing::error!(
+                    tenant_id = %tenant_id,
+                    deploy_application_id = %deploy_application_id,
+                    %error,
+                    "IAM installation disable audit write failed"
+                );
+            }
+            appbase_ok(tenant_application_to_json(&application))
+        }
+        Err(message) if message.contains("not found") => appbase_error(
+            StatusCode::NOT_FOUND,
+            "iam_tenant_application_not_found",
+            &message,
+        ),
+        Err(message) => appbase_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "iam_tenant_application_disable_failed",
+            &message,
+        ),
+    }
+}
+
 async fn transition_tenant_application_status(
     state: &BackendIamState,
     ctx: &WebRequestContext,
     tenant_id: &str,
     tenant_application_id: &str,
     enabled: bool,
-) -> Response {
-    let Ok(pg) = postgres_pool_or_error(state) else {
+) -> Response {    let Ok(pg) = postgres_pool_or_error(state) else {
         return postgres_pool_or_error(state).err().expect("error response");
     };
     if let Err(response) = ensure_target_tenant_access(ctx, tenant_id) {

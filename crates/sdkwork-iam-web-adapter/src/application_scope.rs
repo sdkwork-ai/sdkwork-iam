@@ -515,6 +515,38 @@ mod tests {
     }
 
     #[test]
+    fn only_the_tenant_level_is_shared_and_forces_the_organization_sentinel() {
+        assert!(ApplicationOwnershipScope::Tenant.is_shared());
+        assert!(!ApplicationOwnershipScope::Organization.is_shared());
+        assert!(!ApplicationOwnershipScope::User.is_shared());
+
+        // The tenant level is keyed by the tenant alone; an organization binding
+        // that leaks in from an installation row cannot narrow or widen it.
+        let tenant = ApplicationOwnershipScope::Tenant.isolation_key(
+            "100001",
+            Some("42"),
+            "deploy-app",
+            Some("user-1"),
+        );
+        assert_eq!(tenant.organization_id, "0");
+        assert_eq!(
+            tenant.filter_columns(),
+            vec![("tenant_id", "100001"), ("app_id", "deploy-app")],
+            "a tenant-level key must not carry an organization predicate"
+        );
+
+        // The organization level is keyed by tenant, app, and that organization.
+        let organization = ApplicationOwnershipScope::Organization.isolation_key(
+            "100001",
+            Some("42"),
+            "deploy-app",
+            None,
+        );
+        assert_eq!(organization.organization_id, "42");
+        assert_eq!(organization.user_id, None);
+    }
+
+    #[test]
     fn issuance_rejects_a_scope_the_installation_does_not_have() {
         ensure_requested_scope_matches_installation(None, ApplicationOwnershipScope::User)
             .expect("an undeclared request inherits the installation scope");

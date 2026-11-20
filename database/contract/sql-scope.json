@@ -1,0 +1,292 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.database.sql-scope",
+  "module_id": "iam",
+  "description": "DB087/DB100-DB102 classification consumed by scripts/check-sql-tenant-scope.mjs: each runtime SQL statement must bind the scope columns of every table it references, unless an approved cross-tenant exception below matches its exact file, table, verb, and distinctive fragment.",
+  "tables": {
+    "iam_api_key": "tenant",
+    "iam_application_template": "platform",
+    "iam_application_template_package": "platform",
+    "iam_audit_event": "tenant",
+    "iam_authz_epoch": "platform",
+    "iam_catalog_materialization": "platform",
+    "iam_credential": "tenant",
+    "iam_department": "organization",
+    "iam_department_assignment": "organization",
+    "iam_department_closure": "organization",
+    "iam_device": "tenant",
+    "iam_ephemeral_artifact": "tenant",
+    "iam_group": "tenant",
+    "iam_group_member": "tenant",
+    "iam_mfa_factor": "tenant",
+    "iam_module_registry_entry": "platform",
+    "iam_module_registry_snapshot": "platform",
+    "iam_oauth_account_link": "tenant",
+    "iam_oauth_authorization_state": "tenant",
+    "iam_oauth_callback_event": "tenant",
+    "iam_oauth_claim_mapping": "tenant",
+    "iam_oauth_client": "tenant",
+    "iam_oauth_diagnostic_run": "tenant",
+    "iam_oauth_flow_config": "tenant",
+    "iam_oauth_grant": "tenant",
+    "iam_oauth_integration": "tenant",
+    "iam_oauth_operational_resource": "tenant",
+    "iam_oauth_operator_platform": "tenant",
+    "iam_oauth_policy": "tenant",
+    "iam_oauth_provider_catalog": "platform",
+    "iam_oauth_resource_account": "tenant",
+    "iam_oauth_resource_authorization": "tenant",
+    "iam_oauth_scan_login_config": "tenant",
+    "iam_oauth_scope_profile": "tenant",
+    "iam_oauth_secret": "tenant",
+    "iam_oauth_surface": "tenant",
+    "iam_oauth_tenant_binding": "tenant",
+    "iam_oauth_webhook_config": "tenant",
+    "iam_official_account_migration_orphan": "tenant",
+    "iam_organization": "tenant",
+    "iam_organization_closure": "tenant",
+    "iam_organization_membership": "organization",
+    "iam_password_history": "tenant",
+    "iam_permission": "platform",
+    "iam_policy": "tenant",
+    "iam_position": "organization",
+    "iam_position_assignment": "organization",
+    "iam_provider_account": "tenant",
+    "iam_provider_credential": "tenant",
+    "iam_role": "tenant",
+    "iam_role_binding": "tenant",
+    "iam_role_exclusion": "tenant",
+    "iam_role_permission": "tenant",
+    "iam_security_event": "tenant",
+    "iam_service_account": "tenant",
+    "iam_service_account_credential": "tenant",
+    "iam_session": "tenant",
+    "iam_tenant": "platform",
+    "iam_tenant_application": "tenant",
+    "iam_tenant_member": "tenant",
+    "iam_tenant_signing_key": "tenant",
+    "iam_user": "tenant",
+    "iam_user_identity": "tenant",
+    "iam_user_official_account": "tenant"
+  },
+  "exceptions": [
+    {
+      "file": "crates/sdkwork-iam-bootstrap/src/bootstrap_operator.rs",
+      "table": "iam_organization_membership",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "tenant-level membership roster/count for one user; the rows intentionally span organizations"
+    },
+    {
+      "file": "crates/sdkwork-iam-bootstrap/src/legacy_subject_repair.rs",
+      "table": "iam_organization_membership",
+      "verbs": [
+        "UPDATE"
+      ],
+      "reason": "reviewed administrative repair: migrates one user id across every organization of a tenant (DB088)"
+    },
+    {
+      "file": "crates/sdkwork-iam-bootstrap/src/legacy_subject_repair.rs",
+      "table": "iam_department_assignment",
+      "verbs": [
+        "UPDATE"
+      ],
+      "reason": "reviewed administrative repair: migrates one user id across every organization of a tenant (DB088)"
+    },
+    {
+      "file": "crates/sdkwork-iam-bootstrap/src/legacy_subject_repair.rs",
+      "table": "iam_position_assignment",
+      "verbs": [
+        "UPDATE"
+      ],
+      "reason": "reviewed administrative repair: migrates one user id across every organization of a tenant (DB088)"
+    },
+    {
+      "file": "crates/sdkwork-iam-bootstrap/src/oauth_rs256_signing.rs",
+      "table": "iam_tenant_signing_key",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "signing key selected by its global kid before the tenant is known"
+    },
+    {
+      "file": "crates/sdkwork-iam-bootstrap/src/rbac_scope.rs",
+      "table": "iam_organization_membership",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "RBAC aggregation over the caller bindings, which span organizations of one tenant"
+    },
+    {
+      "file": "crates/sdkwork-iam-provider-account-service/src/repository.rs",
+      "table": "iam_provider_account",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "visibility resolved through {CALLER_VISIBILITY_PREDICATE} or a pinned reference from the verified caller scope; provider DB integration covers the predicate"
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/ephemeral_rate_limit.rs",
+      "table": "iam_ephemeral_artifact",
+      "verbs": [
+        "SELECT",
+        "UPDATE"
+      ],
+      "reason": "opaque rate-limit artifact key"
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/iam_session.rs",
+      "table": "iam_session",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "session resolved by the presented access/auth token hash, the credential itself"
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/oauth_authorization_server.rs",
+      "table": "iam_oauth_grant",
+      "verbs": [
+        "SELECT",
+        "DELETE"
+      ],
+      "reason": "OAuth grant resolved by its presented token hash, or by the id this flow just generated for compensation"
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/oauth_provider_callback.rs",
+      "table": "iam_oauth_callback_event",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "idempotency check keyed by the resolved webhook config id and the provider event id"
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/super_admin_auth.rs",
+      "table": "iam_organization_membership",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "tenant-level admin membership check by tenant and user"
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/wechat_mp.rs",
+      "table": "iam_ephemeral_artifact",
+      "verbs": [
+        "SELECT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "reason": "opaque WeChat login artifact key"
+    },
+    {
+      "file": "crates/sdkwork-routes-iam-app-api/src/authorization.rs",
+      "table": "iam_organization_membership",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "tenant-level membership existence check for an authenticated user"
+    },
+    {
+      "file": "crates/sdkwork-routes-iam-app-api/src/directory.rs",
+      "table": "iam_organization_membership",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "tenant-level owner membership count"
+    },
+    {
+      "file": "crates/sdkwork-routes-iam-app-api/src/ephemeral.rs",
+      "table": "iam_ephemeral_artifact",
+      "verbs": [
+        "SELECT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "reason": "opaque artifact key and the global expiry sweep"
+    },
+    {
+      "file": "crates/sdkwork-routes-iam-app-api/src/ephemeral_pool.rs",
+      "table": "iam_ephemeral_artifact",
+      "verbs": [
+        "SELECT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "reason": "opaque artifact key of the client-local SQLite artifact pool"
+    },
+    {
+      "file": "crates/sdkwork-routes-iam-app-api/src/handlers.rs",
+      "table": "iam_organization_membership",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "role-binding list joins membership display data for tenant-scoped bindings"
+    },
+    {
+      "file": "crates/sdkwork-routes-iam-app-api/src/oauth_login.rs",
+      "table": "iam_oauth_integration",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "provider discovery before tenant resolution (app-scoped login start)"
+    },
+    {
+      "file": "crates/sdkwork-routes-iam-app-api/src/passwords.rs",
+      "table": "iam_user",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "global identity uniqueness check before tenant resolution (identity_exists_global)"
+    },
+    {
+      "file": "crates/sdkwork-routes-iam-app-api/src/scan_login.rs",
+      "table": "iam_oauth_resource_account",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "cross-tenant WeChat scan-login provider discovery"
+    },
+    {
+      "file": "crates/sdkwork-routes-iam-app-api/src/sqlite_sessions.rs",
+      "table": "iam_organization_membership",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "client-local SQLite session RBAC"
+    },
+    {
+      "file": "crates/sdkwork-routes-iam-app-api/src/state.rs",
+      "table": "iam_ephemeral_artifact",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "opaque artifact key"
+    },
+    {
+      "file": "crates/sdkwork-user-center-tauri-host/src/user_center_authority.rs",
+      "table": "iam_user",
+      "verbs": [
+        "SELECT",
+        "UPDATE"
+      ],
+      "reason": "client-local SQLite user-center host storing one local account profile"
+    },
+    {
+      "file": "crates/sdkwork-user-center-tauri-host/src/user_center_authority.rs",
+      "table": "iam_credential",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "client-local SQLite user-center host storing one local account profile"
+    },
+    {
+      "file": "crates/sdkwork-user-center-tauri-host/src/user_center_authority.rs",
+      "table": "iam_session",
+      "verbs": [
+        "SELECT",
+        "UPDATE"
+      ],
+      "reason": "client-local SQLite user-center host storing one local account session"
+    }
+  ]
+}

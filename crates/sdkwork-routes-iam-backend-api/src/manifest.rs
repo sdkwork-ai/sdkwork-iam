@@ -642,6 +642,13 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
     ),
     HttpRoute::bootstrap_body(
         HttpMethod::Post,
+        "/backend/v3/api/iam/tenant_applications/by_deploy_application/{deployApplicationId}/disable",
+        "iam",
+        "tenantApplications.disableByDeployApplication",
+    )
+    .with_required_permission("iam.tenant_applications.disable"),
+    HttpRoute::bootstrap_body(
+        HttpMethod::Post,
         "/backend/v3/api/iam/tenant_applications",
         "iam",
         "tenantApplications.create",

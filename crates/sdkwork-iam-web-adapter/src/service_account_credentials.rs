@@ -408,10 +408,11 @@ pub async fn exchange_service_account_credential(
     .map_err(|error| format!("insert service account session failed: {error}"))?;
     sqlx::query(
         "UPDATE iam_service_account_credential SET last_used_at = $2, updated_at = $2 \
-         WHERE id = $1 AND status = 'active'",
+         WHERE id = $1 AND status = 'active' AND tenant_id = $3",
     )
     .bind(&credential.id)
     .bind(now)
+    .bind(&context.tenant_id)
     .execute(&mut *transaction)
     .await
     .map_err(|error| format!("update credential usage failed: {error}"))?;
