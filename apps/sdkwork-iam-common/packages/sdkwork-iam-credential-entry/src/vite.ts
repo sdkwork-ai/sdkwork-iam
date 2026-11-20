@@ -84,6 +84,14 @@ const PUBLIC_APPLICATION_ACCESS_TOKEN_SIGNATURE = 'public';
 const PUBLIC_APPLICATION_ACCESS_TOKEN_CLASS = 'application';
 const PUBLIC_APPLICATION_ACCESS_TOKEN_TYPE = 'access';
 const PUBLIC_APPLICATION_ACCESS_TOKEN_ASSET_BASENAME = 'credential-entry-bootstrap';
+/**
+ * `exp` claim value that means "never expires" (`APP_ACCESS_TOKEN_SPEC.md`
+ * section 3, canonical generator `sdkwork-specs/tools/app-access-token.mjs`
+ * `PUBLIC_APP_ACCESS_TOKEN_NO_EXPIRY`): the committed public application token
+ * is permanent SaaS-isolation material, IAM reads the sentinel as no expiry,
+ * and a build-time lifetime gate must never treat it as a 1970 deadline.
+ */
+const PUBLIC_APPLICATION_ACCESS_TOKEN_NO_EXPIRY = 0;
 
 function createShortHash(value: string): string {
   return createHash('sha256').update(value).digest('hex').slice(0, 12);
@@ -239,7 +247,11 @@ function assertPublicApplicationAccessToken(
       + `which does not match this application (${options.applicationId}).`,
     );
   }
-  if (typeof payload.exp === 'number' && payload.exp * 1000 <= Date.now()) {
+  if (
+    typeof payload.exp === 'number'
+    && payload.exp !== PUBLIC_APPLICATION_ACCESS_TOKEN_NO_EXPIRY
+    && payload.exp * 1000 <= Date.now()
+  ) {
     throw new Error(
       `credential-entry token for ${profile} expired at ${new Date(payload.exp * 1000).toISOString()}; `
       + 'regenerate the selected profile with the canonical materializer.',
