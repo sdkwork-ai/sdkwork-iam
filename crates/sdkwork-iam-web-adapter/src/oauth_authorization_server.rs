@@ -1835,8 +1835,12 @@ mod tests {
             .split('.')
             .nth(1)
             .expect("a compact JWT carries a payload segment");
-        serde_json::from_slice(&URL_SAFE_NO_PAD.decode(payload).expect("payload should decode"))
-            .expect("payload should parse")
+        serde_json::from_slice(
+            &URL_SAFE_NO_PAD
+                .decode(payload)
+                .expect("payload should decode"),
+        )
+        .expect("payload should parse")
     }
 
     /// Renders the payload the same way the issuer does and decodes the resulting

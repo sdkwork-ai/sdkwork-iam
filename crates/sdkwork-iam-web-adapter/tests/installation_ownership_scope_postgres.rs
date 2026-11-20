@@ -24,6 +24,7 @@
 //! migration 0044 has not been applied, so the suite reports the reason instead
 //! of failing on provisioning.
 
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use sdkwork_iam_context_service::{AuthLevel, IamPrincipalKind, LoginScope};
 use sdkwork_iam_web_adapter::{
     enable_tenant_application, issue_standalone_bootstrap_access_credential,
@@ -31,7 +32,6 @@ use sdkwork_iam_web_adapter::{
     resolve_installation_ownership_scope, try_resolve_application_access_token_context,
     ApplicationOwnershipScope, TenantApplicationProvisionCommand,
 };
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use std::collections::HashMap;
@@ -257,12 +257,10 @@ async fn provisioning_defaults_to_tenant_and_persists_the_requested_level() {
         ApplicationOwnershipScope::Organization
     );
 
-    let personal = provision_tenant_application(
-        &pg,
-        &command(&tenant_id, "0", Some("USER"), Some(&user_id)),
-    )
-    .await
-    .expect("personal provisioning");
+    let personal =
+        provision_tenant_application(&pg, &command(&tenant_id, "0", Some("USER"), Some(&user_id)))
+            .await
+            .expect("personal provisioning");
     assert_eq!(personal.ownership_scope, ApplicationOwnershipScope::User);
     assert_eq!(personal.owner_user_id.as_deref(), Some(user_id.as_str()));
 
@@ -271,7 +269,10 @@ async fn provisioning_defaults_to_tenant_and_persists_the_requested_level() {
         let resolved = resolve_installation_ownership_scope(
             &pg,
             &tenant_id,
-            application.deploy_application_id.as_deref().expect("anchor"),
+            application
+                .deploy_application_id
+                .as_deref()
+                .expect("anchor"),
         )
         .await
         .expect("resolve scope")
@@ -294,28 +295,31 @@ async fn a_mismatched_scope_request_is_refused_before_any_write() {
         (Some("TENANT"), organization_id.as_str(), None),
         (Some("ORGANIZATION"), "0", None),
         (Some("USER"), "0", None),
-        (Some("USER"), organization_id.as_str(), Some(user_id.as_str())),
+        (
+            Some("USER"),
+            organization_id.as_str(),
+            Some(user_id.as_str()),
+        ),
         (Some("PLATFORM"), "0", None),
         (Some("TENANT"), "0", Some(user_id.as_str())),
     ] {
-        let error = provision_tenant_application(
-            &pg,
-            &command(&tenant_id, organization, scope, owner),
-        )
-        .await
-        .expect_err("a mismatched scope request must fail closed");
+        let error =
+            provision_tenant_application(&pg, &command(&tenant_id, organization, scope, owner))
+                .await
+                .expect_err("a mismatched scope request must fail closed");
         assert!(
             !error.is_empty(),
             "the refusal must name its reason for {scope:?}"
         );
     }
 
-    let written: i64 =
-        sqlx::query_scalar("SELECT COUNT(*)::BIGINT FROM iam_application_installation WHERE tenant_id = $1")
-            .bind(&tenant_id)
-            .fetch_one(&pg)
-            .await
-            .expect("count installations");
+    let written: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*)::BIGINT FROM iam_application_installation WHERE tenant_id = $1",
+    )
+    .bind(&tenant_id)
+    .fetch_one(&pg)
+    .await
+    .expect("count installations");
     assert_eq!(written, 0, "a refused command must not write a row");
 
     cleanup(&pg, &tenant_id).await;
@@ -329,12 +333,10 @@ async fn a_provisioned_scope_is_immutable() {
     };
     let (tenant_id, user_id, organization_id, _) = seed_tenant(&pg).await;
 
-    let personal = provision_tenant_application(
-        &pg,
-        &command(&tenant_id, "0", Some("USER"), Some(&user_id)),
-    )
-    .await
-    .expect("personal provisioning");
+    let personal =
+        provision_tenant_application(&pg, &command(&tenant_id, "0", Some("USER"), Some(&user_id)))
+            .await
+            .expect("personal provisioning");
 
     let mut widen = command(&tenant_id, "0", Some("TENANT"), None);
     widen.deploy_application_id = personal.deploy_application_id.clone();
@@ -360,7 +362,9 @@ async fn a_provisioned_scope_is_immutable() {
     other_owner.deploy_application_id = personal.deploy_application_id.clone();
     other_owner.instance_key = personal.instance_key.clone();
     assert!(
-        provision_tenant_application(&pg, &other_owner).await.is_err(),
+        provision_tenant_application(&pg, &other_owner)
+            .await
+            .is_err(),
         "a different owner needs a new installation"
     );
 
@@ -386,7 +390,14 @@ async fn bootstrap_issuance_signs_the_installation_scope_in_all_three_states() {
             organization_id.as_str(),
             None,
         ),
-        (Some("USER"), "0", Some(user_id.as_str()), "USER", "0", Some(user_id.as_str())),
+        (
+            Some("USER"),
+            "0",
+            Some(user_id.as_str()),
+            "USER",
+            "0",
+            Some(user_id.as_str()),
+        ),
     ];
 
     for (scope, organization, owner, claim, claim_organization, claim_user) in cases {
@@ -395,12 +406,10 @@ async fn bootstrap_issuance_signs_the_installation_scope_in_all_three_states() {
         let expected_user = claim_user
             .map(str::to_owned)
             .unwrap_or_else(|| format!("system:{tenant_id}"));
-        let application = provision_tenant_application(
-            &pg,
-            &command(&tenant_id, organization, scope, owner),
-        )
-        .await
-        .expect("provision installation");
+        let application =
+            provision_tenant_application(&pg, &command(&tenant_id, organization, scope, owner))
+                .await
+                .expect("provision installation");
         enable_tenant_application(&pg, &tenant_id, &application.id)
             .await
             .expect("enable installation");
@@ -454,13 +463,12 @@ async fn bootstrap_issuance_signs_the_installation_scope_in_all_three_states() {
         // always present, and only an organization-level installation adds its
         // organization key (`APP_ACCESS_TOKEN_SPEC.md` §5,
         // `DATABASE_SPEC.md` §16).
-        let stored_scope: String = sqlx::query_scalar(
-            "SELECT data_scope_json FROM iam_session WHERE id = $1",
-        )
-        .bind(&issued.session_id)
-        .fetch_one(&pg)
-        .await
-        .expect("the issued session persists its data scope");
+        let stored_scope: String =
+            sqlx::query_scalar("SELECT data_scope_json FROM iam_session WHERE id = $1")
+                .bind(&issued.session_id)
+                .fetch_one(&pg)
+                .await
+                .expect("the issued session persists its data scope");
         let stored_scope: Vec<String> =
             serde_json::from_str(&stored_scope).expect("the data scope is a string array");
         assert!(
@@ -496,12 +504,9 @@ async fn every_tenant_gets_its_own_bootstrap_principal() {
     let (second_tenant, ..) = seed_tenant(&pg).await;
     let mut principals = Vec::new();
     for tenant_id in [&first_tenant, &second_tenant] {
-        let application = provision_tenant_application(
-            &pg,
-            &command(tenant_id, "0", None, None),
-        )
-        .await
-        .expect("provision installation");
+        let application = provision_tenant_application(&pg, &command(tenant_id, "0", None, None))
+            .await
+            .expect("provision installation");
         enable_tenant_application(&pg, tenant_id, &application.id)
             .await
             .expect("enable installation");
@@ -547,12 +552,10 @@ async fn personal_issuance_fails_closed_when_the_owner_is_not_active() {
     };
     let (tenant_id, user_id, _, _) = seed_tenant(&pg).await;
 
-    let application = provision_tenant_application(
-        &pg,
-        &command(&tenant_id, "0", Some("USER"), Some(&user_id)),
-    )
-    .await
-    .expect("personal installation");
+    let application =
+        provision_tenant_application(&pg, &command(&tenant_id, "0", Some("USER"), Some(&user_id)))
+            .await
+            .expect("personal installation");
     enable_tenant_application(&pg, &tenant_id, &application.id)
         .await
         .expect("enable installation");
@@ -650,8 +653,7 @@ async fn a_public_token_binds_a_personal_installation_to_its_owner() {
         .deploy_application_id
         .as_deref()
         .expect("tenant deploy anchor");
-    let tenant_token =
-        public_application_token(&tenant_id, tenant_anchor, "0", "TENANT", None);
+    let tenant_token = public_application_token(&tenant_id, tenant_anchor, "0", "TENANT", None);
     let tenant_context = try_resolve_application_access_token_context(&pg, &tenant_token)
         .await
         .expect("a tenant token without user_id stays accepted")
@@ -741,8 +743,13 @@ async fn a_public_token_binds_a_personal_installation_to_its_owner() {
             .is_none(),
         "an organization-level token must not resolve a tenant installation"
     );
-    let foreign_organization_token =
-        public_application_token(&tenant_id, organization_anchor, "4201", "ORGANIZATION", None);
+    let foreign_organization_token = public_application_token(
+        &tenant_id,
+        organization_anchor,
+        "4201",
+        "ORGANIZATION",
+        None,
+    );
     assert!(
         try_resolve_application_access_token_context(&pg, &foreign_organization_token)
             .await

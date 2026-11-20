@@ -72,6 +72,10 @@ export function createOauthServiceMock() {
             }),
             update: vi.fn().mockResolvedValue({}),
             publish: vi.fn(),
+            // The custom-menu port also exposes the rollback/sync commands; the
+            // mock must carry them so the fixture still satisfies the port type.
+            sync: vi.fn().mockResolvedValue({}),
+            rollback: vi.fn().mockResolvedValue({}),
           },
         },
         resourceAuthorizations: { list: vi.fn().mockResolvedValue({ items: [] }), create: vi.fn(), update: vi.fn() },

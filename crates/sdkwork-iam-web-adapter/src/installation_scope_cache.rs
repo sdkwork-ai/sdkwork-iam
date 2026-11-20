@@ -47,7 +47,9 @@ impl InstallationScopeCache {
         let key = (tenant_id.to_owned(), app_id.to_owned());
         let now = Instant::now();
         match entries.get(&key) {
-            Some(entry) if now.duration_since(entry.inserted_at) <= INSTALLATION_SCOPE_CACHE_TTL => {
+            Some(entry)
+                if now.duration_since(entry.inserted_at) <= INSTALLATION_SCOPE_CACHE_TTL =>
+            {
                 Some(entry.scope)
             }
             Some(_) => {
@@ -93,18 +95,11 @@ fn shared_cache() -> &'static InstallationScopeCache {
     CACHE.get_or_init(InstallationScopeCache::new)
 }
 
-pub fn get_installation_scope(
-    tenant_id: &str,
-    app_id: &str,
-) -> Option<ApplicationOwnershipScope> {
+pub fn get_installation_scope(tenant_id: &str, app_id: &str) -> Option<ApplicationOwnershipScope> {
     shared_cache().get(tenant_id, app_id)
 }
 
-pub fn insert_installation_scope(
-    tenant_id: &str,
-    app_id: &str,
-    scope: ApplicationOwnershipScope,
-) {
+pub fn insert_installation_scope(tenant_id: &str, app_id: &str, scope: ApplicationOwnershipScope) {
     shared_cache().insert(tenant_id, app_id, scope);
 }
 

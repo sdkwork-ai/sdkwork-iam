@@ -17,6 +17,7 @@ const SETTINGS: SdkworkIamOauthScanLoginSettings = {
   enabled: true,
   modes: [],
   officialAccounts: [],
+  serverIps: [],
   urlLogin: {
     enabled: true,
     h5LoginOrigin: "https://m.example.com",
@@ -167,6 +168,7 @@ describe("SDKWork IAM OAuth scan login sections", () => {
       enabled: true,
       modes: [{ enabled: true, mode: "official_account", qrMode: "official_account", sortOrder: 10 }],
       officialAccounts: [],
+      serverIps: [],
       urlLogin: { enabled: true, h5LoginOrigin: "" },
     };
     const updateScanLoginSettings = vi.fn().mockResolvedValue(settings);
@@ -237,6 +239,7 @@ describe("SDKWork IAM OAuth scan login sections", () => {
       enabled: true,
       modes: [{ enabled: true, mode: "url", qrMode: "url", sortOrder: 10 }],
       officialAccounts: [],
+      serverIps: [],
       urlLogin: { enabled: true, h5LoginOrigin: "https://m.example.com" },
     };
     const updateScanLoginSettings = vi.fn().mockResolvedValue({

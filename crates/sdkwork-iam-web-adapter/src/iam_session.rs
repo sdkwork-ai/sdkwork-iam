@@ -947,10 +947,7 @@ fn claims_ownership_scope_consistent(claims: &Value) -> bool {
 
 /// The credential and the session row must agree on the release scope, and a
 /// `USER`-scoped row demands the claim explicitly.
-fn session_scope_matches_claims(
-    claims: &Value,
-    row_scope: ApplicationOwnershipScope,
-) -> bool {
+fn session_scope_matches_claims(claims: &Value, row_scope: ApplicationOwnershipScope) -> bool {
     match (claimed_ownership_scope(claims), row_scope) {
         (Some(claim), row) => claim == row,
         // A personal release is only ever issued with the claim, so its absence
@@ -960,7 +957,8 @@ fn session_scope_matches_claims(
     }
 }
 
-fn json_string_vec_from_row(row: &sqlx::postgres::PgRow, index: usize) -> Vec<String> {    if let Ok(Json(value)) = row.try_get::<Json<Value>, _>(index) {
+fn json_string_vec_from_row(row: &sqlx::postgres::PgRow, index: usize) -> Vec<String> {
+    if let Ok(Json(value)) = row.try_get::<Json<Value>, _>(index) {
         return serde_json::from_value(value).unwrap_or_default();
     }
     if let Ok(text) = row.try_get::<String, _>(index) {
@@ -1501,14 +1499,10 @@ mod tests {
     #[test]
     fn scope_claim_must_agree_with_the_organization_claim() {
         assert!(claims_ownership_scope_consistent(&scoped_claims(
-            "TENANT",
-            "0",
-            "TENANT"
+            "TENANT", "0", "TENANT"
         )));
         assert!(claims_ownership_scope_consistent(&scoped_claims(
-            "USER",
-            "0",
-            "TENANT"
+            "USER", "0", "TENANT"
         )));
         assert!(claims_ownership_scope_consistent(&scoped_claims(
             "ORGANIZATION",
@@ -1535,13 +1529,14 @@ mod tests {
         )));
         // Unknown level: rejected, never defaulted.
         assert!(!claims_ownership_scope_consistent(&scoped_claims(
-            "GLOBAL",
-            "0",
-            "TENANT"
+            "GLOBAL", "0", "TENANT"
         )));
         // Legacy credential without the claim stays accepted.
         let mut legacy = scoped_claims("TENANT", "0", "TENANT");
-        legacy.as_object_mut().expect("object").remove("ownership_scope");
+        legacy
+            .as_object_mut()
+            .expect("object")
+            .remove("ownership_scope");
         assert!(claims_ownership_scope_consistent(&legacy));
     }
 
@@ -1556,7 +1551,10 @@ mod tests {
             ApplicationOwnershipScope::Tenant
         ));
         let mut legacy = tenant.clone();
-        legacy.as_object_mut().expect("object").remove("ownership_scope");
+        legacy
+            .as_object_mut()
+            .expect("object")
+            .remove("ownership_scope");
         assert!(session_scope_matches_claims(
             &legacy,
             ApplicationOwnershipScope::Tenant

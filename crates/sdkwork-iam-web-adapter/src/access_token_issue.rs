@@ -1,8 +1,8 @@
 //! Admin-scoped delegated access token issuance for backend IAM operators.
 
 use crate::application_registry::{
-    intersect_permission_scopes, resolve_access_token_app_id,
-    resolve_tenant_application, resolve_tenant_application_by_deploy_application_id,
+    intersect_permission_scopes, resolve_access_token_app_id, resolve_tenant_application,
+    resolve_tenant_application_by_deploy_application_id,
 };
 use crate::application_scope::{
     ensure_requested_scope_matches_installation, ensure_subject_is_installation_owner,
@@ -356,14 +356,13 @@ pub async fn issue_standalone_bootstrap_access_credential(
 ) -> Result<IssuedAccessCredential, String> {
     ensure_tenant_exists(pg, tenant_id).await?;
 
-    let tenant_application =
-        resolve_tenant_application_by_deploy_application_id(pg, tenant_id, app_id)
-            .await?
-            .ok_or_else(|| {
-                format!(
-                    "deploy application {app_id} is not bound to an installation of tenant {tenant_id}"
-                )
-            })?;
+    let tenant_application = resolve_tenant_application_by_deploy_application_id(
+        pg, tenant_id, app_id,
+    )
+    .await?
+    .ok_or_else(|| {
+        format!("deploy application {app_id} is not bound to an installation of tenant {tenant_id}")
+    })?;
     if tenant_application.status != "enabled" {
         return Err(format!(
             "tenant application {app_id} must be enabled before issuing a bootstrap access credential"
@@ -413,12 +412,17 @@ pub async fn issue_standalone_bootstrap_access_credential(
         }
     };
 
-    let organization_id = scope.organization_claim(&tenant_application.organization_id).to_owned();
+    let organization_id = scope
+        .organization_claim(&tenant_application.organization_id)
+        .to_owned();
     // The bootstrap credential projects the same isolation keys a session does:
     // an organization-level installation binds its organization beside the
     // tenant, so a data plane filtering by data scope cannot read the whole
     // tenant (`APP_ACCESS_TOKEN_SPEC.md` §5, `DATABASE_SPEC.md` §16).
-    let mut data_scope = vec![format!("tenant:{tenant_id}"), format!("user:{subject_user_id}")];
+    let mut data_scope = vec![
+        format!("tenant:{tenant_id}"),
+        format!("user:{subject_user_id}"),
+    ];
     if scope == ApplicationOwnershipScope::Organization {
         data_scope.push(format!("organization:{organization_id}"));
     }
@@ -452,13 +456,8 @@ pub async fn issue_standalone_bootstrap_access_credential(
     // before signing, so the issued token is always bound to the tenant
     // secret and the database session.
     let signing_key = ensure_tenant_signing_key(pg, tenant_id).await?;
-    let access_token = sign_local_session_token_with_ttl(
-        &signing_key,
-        "access",
-        &context,
-        scope,
-        ttl as u128,
-    );
+    let access_token =
+        sign_local_session_token_with_ttl(&signing_key, "access", &context, scope, ttl as u128);
     let auth_token =
         sign_local_session_token_with_ttl(&signing_key, "auth", &context, scope, ttl as u128);
     ensure_entrypoint_token_budget(&access_token)?;
@@ -1083,8 +1082,9 @@ mod tests {
     fn access_token_issuance_fails_closed_without_a_deploy_application_link() {
         for deploy_application_id in [None, Some(""), Some("   ")] {
             let tenant_application = tenant_application(deploy_application_id);
-            let error = crate::application_registry::resolve_access_token_app_id(&tenant_application)
-                .expect_err("an installation without a deploy link must not issue a token");
+            let error =
+                crate::application_registry::resolve_access_token_app_id(&tenant_application)
+                    .expect_err("an installation without a deploy link must not issue a token");
             assert!(
                 error.contains("not bound to a deploy application"),
                 "error must state the missing binding: {error}"

@@ -323,12 +323,8 @@ pub async fn ensure_platform_tenant_application_with_deploy_application(
 
     let tenant_application_id =
         tenant_application_row_id(tenant_id, "0", PLATFORM_INSTALLATION_ANCHOR);
-    ensure_deploy_application_unclaimed(
-        pg,
-        &deploy_application_id,
-        tenant_application_id.as_str(),
-    )
-    .await?;
+    ensure_deploy_application_unclaimed(pg, &deploy_application_id, tenant_application_id.as_str())
+        .await?;
     // The platform installation is the tenant's own IAM runtime, so it is always
     // a TENANT release. Resetting it is a delete-plus-insert, which would
     // silently reclassify a row that a release scope was recorded for; refuse
@@ -496,10 +492,8 @@ pub fn parse_tenant_application_provision_command(
         .cloned()
         .unwrap_or_else(|| json!({}));
 
-    let deploy_application_id = read_optional_string(
-        body,
-        &["deployApplicationId", "deploy_application_id"],
-    );
+    let deploy_application_id =
+        read_optional_string(body, &["deployApplicationId", "deploy_application_id"]);
     let ownership_scope = read_optional_string(body, &["ownershipScope", "ownership_scope"]);
     let owner_user_id = read_optional_string(body, &["ownerUserId", "owner_user_id"]);
     let provisioning_idempotency_key = read_optional_string(
@@ -560,7 +554,10 @@ pub fn parse_tenant_application_update_command(
 /// Unknown explicit values collapse to `other` so a typo never becomes a new
 /// vocabulary entry.
 fn normalize_application_type(value: &str) -> String {
-    let normalized = value.trim().to_ascii_lowercase().replace(['-', '_', ' '], "");
+    let normalized = value
+        .trim()
+        .to_ascii_lowercase()
+        .replace(['-', '_', ' '], "");
     match normalized.as_str() {
         "api" => "api",
         "h5" | "html" => "h5",
@@ -659,9 +656,7 @@ fn resolve_provision_attributes(
     let application_type = match command.application_type.as_deref() {
         Some(value) if !crate::is_blank(Some(value)) => normalize_application_type(value),
         _ => {
-            return Err(
-                "applicationType is required to provision a tenant application".to_string(),
-            )
+            return Err("applicationType is required to provision a tenant application".to_string())
         }
     };
 
@@ -714,9 +709,7 @@ pub fn is_provision_attribute_error(message: &str) -> bool {
 /// The deploy application is the installation identity; without one the required
 /// instance key supplies the per-tenant identity. It is only an id-building
 /// input: the anchor itself is `deploy_application_id` on the row.
-fn tenant_application_anchor(
-    command: &TenantApplicationProvisionCommand,
-) -> Result<&str, String> {
+fn tenant_application_anchor(command: &TenantApplicationProvisionCommand) -> Result<&str, String> {
     if let Some(deploy_application_id) = command
         .deploy_application_id
         .as_deref()
@@ -769,10 +762,14 @@ pub async fn provision_tenant_application(
     let instance_key_match = if deploy_match.is_some() {
         None
     } else {
-        find_tenant_application_by_instance_key(pg, &command.tenant_id, &command.instance_key).await?
+        find_tenant_application_by_instance_key(pg, &command.tenant_id, &command.instance_key)
+            .await?
     };
-    let existing =
-        select_provision_target(deploy_match, instance_key_match, requested_deploy_application_id)?;
+    let existing = select_provision_target(
+        deploy_match,
+        instance_key_match,
+        requested_deploy_application_id,
+    )?;
     let tenant_application_id = match existing.as_ref() {
         Some(app) => app.id.clone(),
         None => tenant_application_row_id(
@@ -1066,11 +1063,7 @@ pub struct EnsureTenantApplicationCommand {
 /// key depending on the provisioning path; a `tmpl_` prefix is stripped for
 /// backward compatibility with rows created under the retired template model, so
 /// existing manifest installations keep their id.
-pub fn tenant_application_row_id(
-    tenant_id: &str,
-    organization_id: &str,
-    anchor: &str,
-) -> String {
+pub fn tenant_application_row_id(tenant_id: &str, organization_id: &str, anchor: &str) -> String {
     let suffix = anchor
         .strip_prefix("tmpl_")
         .unwrap_or(anchor)
@@ -1196,12 +1189,8 @@ async fn upsert_tenant_application_row(
     command: &EnsureTenantApplicationCommand,
 ) -> Result<String, String> {
     let tenant_application_id = resolve_tenant_application_row_id(pg, command).await?;
-    clear_postgres_tenant_application_competing_rows(
-        pg,
-        command,
-        tenant_application_id.as_str(),
-    )
-    .await?;
+    clear_postgres_tenant_application_competing_rows(pg, command, tenant_application_id.as_str())
+        .await?;
     let primary_domain = resolve_tenant_application_primary_domain(
         pg,
         &command.tenant_id,
@@ -1218,8 +1207,12 @@ async fn upsert_tenant_application_row(
         .map(str::trim)
         .filter(|value| !value.is_empty())
     {
-        ensure_deploy_application_unclaimed(pg, deploy_application_id, tenant_application_id.as_str())
-            .await?;
+        ensure_deploy_application_unclaimed(
+            pg,
+            deploy_application_id,
+            tenant_application_id.as_str(),
+        )
+        .await?;
     }
 
     // Manifest-driven OAuth registration lands here. The patch is merged over
@@ -1846,11 +1839,12 @@ async fn load_tenant_application_runtime_config(
     pg: &PgPool,
     tenant_application_id: &str,
 ) -> Result<Value, String> {
-    let row = sqlx::query("SELECT runtime_config_json FROM iam_application_installation WHERE id = $1")
-        .bind(tenant_application_id)
-        .fetch_optional(pg)
-        .await
-        .map_err(|error| format!("load tenant application runtime config failed: {error}"))?;
+    let row =
+        sqlx::query("SELECT runtime_config_json FROM iam_application_installation WHERE id = $1")
+            .bind(tenant_application_id)
+            .fetch_optional(pg)
+            .await
+            .map_err(|error| format!("load tenant application runtime config failed: {error}"))?;
     Ok(row
         .map(|row| json_value_from_row(&row, 0))
         .unwrap_or_else(|| json!({})))
@@ -2180,24 +2174,48 @@ mod tests {
             "MINIPROGRAM",
             "MINI_PROGRAM",
         ] {
-            assert_eq!(map_manifest_app_type_to_application_type(app_type), "miniprogram");
+            assert_eq!(
+                map_manifest_app_type_to_application_type(app_type),
+                "miniprogram"
+            );
         }
-        assert_eq!(map_manifest_app_type_to_application_type("APP_HARMONY"), "harmonyos");
+        assert_eq!(
+            map_manifest_app_type_to_application_type("APP_HARMONY"),
+            "harmonyos"
+        );
         assert_eq!(map_manifest_app_type_to_application_type("APP_IOS"), "ios");
-        assert_eq!(map_manifest_app_type_to_application_type("APP_ANDROID"), "android");
-        assert_eq!(map_manifest_app_type_to_application_type("APP_DESKTOP"), "desktop");
-        assert_eq!(map_manifest_app_type_to_application_type("DESKTOP"), "desktop");
+        assert_eq!(
+            map_manifest_app_type_to_application_type("APP_ANDROID"),
+            "android"
+        );
+        assert_eq!(
+            map_manifest_app_type_to_application_type("APP_DESKTOP"),
+            "desktop"
+        );
+        assert_eq!(
+            map_manifest_app_type_to_application_type("DESKTOP"),
+            "desktop"
+        );
         assert_eq!(map_manifest_app_type_to_application_type("APP_REACT"), "pc");
         assert_eq!(map_manifest_app_type_to_application_type("APP_HTML"), "h5");
-        assert_eq!(map_manifest_app_type_to_application_type("APP_FLUTTER"), "flutter");
+        assert_eq!(
+            map_manifest_app_type_to_application_type("APP_FLUTTER"),
+            "flutter"
+        );
         assert_eq!(map_manifest_app_type_to_application_type("APP_API"), "api");
-        assert_eq!(map_manifest_app_type_to_application_type("SOMETHING_NEW"), "other");
+        assert_eq!(
+            map_manifest_app_type_to_application_type("SOMETHING_NEW"),
+            "other"
+        );
     }
 
     #[test]
     fn explicit_application_types_normalize_aliases_and_reject_typos() {
         assert_eq!(normalize_application_type(" Mini-Program "), "miniprogram");
-        assert_eq!(normalize_application_type("WeChat Mini Program"), "miniprogram");
+        assert_eq!(
+            normalize_application_type("WeChat Mini Program"),
+            "miniprogram"
+        );
         assert_eq!(normalize_application_type("HARMONY_OS"), "harmonyos");
         assert_eq!(normalize_application_type("iOS-Native"), "ios");
         assert_eq!(normalize_application_type("android"), "android");
@@ -2256,10 +2274,7 @@ mod tests {
         command.owner_user_id = Some("user-7".to_owned());
         let attributes = resolve_provision_attributes(&command).expect("personal release");
         assert_eq!(attributes.scope.scope, ApplicationOwnershipScope::User);
-        assert_eq!(
-            attributes.scope.owner_user_id.as_deref(),
-            Some("user-7")
-        );
+        assert_eq!(attributes.scope.owner_user_id.as_deref(), Some("user-7"));
 
         // A mismatched request fails on its own inputs, before any DB work.
         command.owner_user_id = None;
@@ -2276,7 +2291,10 @@ mod tests {
         command.ownership_scope = Some("PLATFORM".to_owned());
         command.organization_id = "0".to_owned();
         let error = resolve_provision_attributes(&command).expect_err("unknown level");
-        assert!(error.contains("unknown application ownership scope"), "{error}");
+        assert!(
+            error.contains("unknown application ownership scope"),
+            "{error}"
+        );
         assert!(is_provision_attribute_error(&error));
     }
 
@@ -2358,16 +2376,23 @@ mod tests {
     /// rejected instead of silently overwriting the existing link.
     #[test]
     fn provision_rejects_a_second_deploy_application_on_the_same_installation_row() {
-        let existing = provision_target_fixture("tapp-bound", "sdkwork-cloudrouter", Some("deploy-a"));
+        let existing =
+            provision_target_fixture("tapp-bound", "sdkwork-cloudrouter", Some("deploy-a"));
 
         let error = select_provision_target(None, Some(existing.clone()), Some("deploy-b"))
             .expect_err("a different anchor must conflict");
-        assert!(error.contains("deploy-a"), "error must name the bound anchor: {error}");
+        assert!(
+            error.contains("deploy-a"),
+            "error must name the bound anchor: {error}"
+        );
         assert!(
             error.contains("deploy-b"),
             "error must name the requested anchor: {error}"
         );
-        assert!(error.contains("tapp-bound"), "error must name the row: {error}");
+        assert!(
+            error.contains("tapp-bound"),
+            "error must name the row: {error}"
+        );
     }
 
     /// An anchorless registration keeps the instance-key dedupe, and an unbound
@@ -2407,7 +2432,10 @@ mod tests {
             error.contains("not bound to an enabled installation"),
             "unexpected gate error: {error}"
         );
-        assert!(error.contains("deployApplicationId"), "unexpected gate error: {error}");
+        assert!(
+            error.contains("deployApplicationId"),
+            "unexpected gate error: {error}"
+        );
     }
 
     /// A disabled installation or an inactive/absent tenant fails closed too.
@@ -2425,20 +2453,29 @@ mod tests {
             Some(("enabled".to_owned(), Some("suspended".to_owned()))),
         )
         .is_err());
-        assert!(
-            ensure_enabled_installation("100001", "deploy-a", Some(("enabled".to_owned(), None)))
-                .is_err()
-        );
-        assert!(ensure_enabled_installation("100001", "   ", Some(("enabled".to_owned(), Some("active".to_owned())))).is_err());
+        assert!(ensure_enabled_installation(
+            "100001",
+            "deploy-a",
+            Some(("enabled".to_owned(), None))
+        )
+        .is_err());
+        assert!(ensure_enabled_installation(
+            "100001",
+            "   ",
+            Some(("enabled".to_owned(), Some("active".to_owned())))
+        )
+        .is_err());
     }
 
     /// The self-bootstrapped platform installation takes its anchor from
     /// configuration and can issue a deployment credential afterwards.
     #[test]
     fn platform_installation_anchor_comes_from_configuration_and_is_issuable() {
-        let configured =
-            deploy_application_id_from_configured_value(Some(" deploy-platform "), DEPLOY_APPLICATION_ID_ENV)
-                .expect("a configured anchor must be accepted");
+        let configured = deploy_application_id_from_configured_value(
+            Some(" deploy-platform "),
+            DEPLOY_APPLICATION_ID_ENV,
+        )
+        .expect("a configured anchor must be accepted");
         assert_eq!(configured, "deploy-platform");
 
         let platform_installation = provision_target_fixture(
@@ -2455,7 +2492,10 @@ mod tests {
             let error =
                 deploy_application_id_from_configured_value(missing, DEPLOY_APPLICATION_ID_ENV)
                     .expect_err("unconfigured anchor must fail closed");
-            assert!(error.contains(DEPLOY_APPLICATION_ID_ENV), "unexpected error: {error}");
+            assert!(
+                error.contains(DEPLOY_APPLICATION_ID_ENV),
+                "unexpected error: {error}"
+            );
             assert!(
                 error.contains("must not be bootstrapped with the IAM runtime app id"),
                 "unexpected error: {error}"
@@ -2762,10 +2802,7 @@ mod tests {
             .expect("a command with explicit attributes must derive");
 
         assert_eq!(attributes.application_type, "h5");
-        assert_eq!(
-            attributes.access_permissions,
-            vec!["iam.self".to_owned()]
-        );
+        assert_eq!(attributes.access_permissions, vec!["iam.self".to_owned()]);
         assert_eq!(attributes.runtime_config, command.runtime_config);
         assert_eq!(
             tenant_application_anchor(&command).expect("deploy-application anchor"),
@@ -2864,4 +2901,5 @@ mod tests {
             resolve_provision_attributes(&command).is_err(),
             "an incomplete command must still fail provisioning"
         );
-    }}
+    }
+}

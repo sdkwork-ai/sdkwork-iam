@@ -17,13 +17,12 @@ use sdkwork_iam_web_adapter::{
     disable_tenant_application_by_deploy_application_id, enable_tenant_application,
     ensure_actor_tenant_scope, ensure_bootstrap_permission, iam_api_error, iam_api_success,
     is_provision_attribute_error, issue_delegated_access_credential,
-    issued_access_credential_to_json, load_account_binding_policy,
-    oauth_relying_party_summary, parse_access_credential_create_request,
-    parse_account_binding_policy, parse_tenant_application_provision_command,
-    parse_tenant_application_update_command, provision_tenant_application,
-    resolve_bootstrap_actor, resolve_tenant_application, save_account_binding_policy,
-    tenant_application_to_json, update_tenant_application, AccountBindingPolicyDocument,
-    IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
+    issued_access_credential_to_json, load_account_binding_policy, oauth_relying_party_summary,
+    parse_access_credential_create_request, parse_account_binding_policy,
+    parse_tenant_application_provision_command, parse_tenant_application_update_command,
+    provision_tenant_application, resolve_bootstrap_actor, resolve_tenant_application,
+    save_account_binding_policy, tenant_application_to_json, update_tenant_application,
+    AccountBindingPolicyDocument, IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
     IAM_TENANT_APPLICATIONS_DISABLE_PERMISSION, IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION,
     IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION, IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION,
 };
@@ -216,9 +215,7 @@ fn build_sdkwork_iam_backend_api_business_router_with_state(state: BackendIamSta
     crate::installation_lifecycle::apply_installation_lifecycle_routes(
         oauth_management::apply_oauth_routes(management::apply_management_routes(
             crate::provider_accounts::apply_provider_account_routes(
-                crate::service_account_credentials::apply_service_account_credential_routes(
-                    router,
-                ),
+                crate::service_account_credentials::apply_service_account_credential_routes(router),
             ),
         )),
     )
@@ -871,11 +868,8 @@ async fn disable_tenant_application_by_deploy_application_handler(
             .err()
             .expect("error response");
     };
-    if let Some(response) = enforce_backend_rate_limit(
-        pg,
-        "backend:tenant_applications:disable_by_deploy",
-    )
-    .await
+    if let Some(response) =
+        enforce_backend_rate_limit(pg, "backend:tenant_applications:disable_by_deploy").await
     {
         return response;
     }
@@ -922,12 +916,8 @@ async fn disable_tenant_application_by_deploy_application_handler(
             );
         }
     };
-    if let Err(message) = ensure_bootstrap_permission(
-        pg,
-        &actor,
-        IAM_TENANT_APPLICATIONS_DISABLE_PERMISSION,
-    )
-    .await
+    if let Err(message) =
+        ensure_bootstrap_permission(pg, &actor, IAM_TENANT_APPLICATIONS_DISABLE_PERMISSION).await
     {
         return appbase_error(
             StatusCode::FORBIDDEN,
@@ -1002,7 +992,8 @@ async fn transition_tenant_application_status(
     tenant_id: &str,
     tenant_application_id: &str,
     enabled: bool,
-) -> Response {    let Ok(pg) = postgres_pool_or_error(state) else {
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(state) else {
         return postgres_pool_or_error(state).err().expect("error response");
     };
     if let Err(response) = ensure_target_tenant_access(ctx, tenant_id) {

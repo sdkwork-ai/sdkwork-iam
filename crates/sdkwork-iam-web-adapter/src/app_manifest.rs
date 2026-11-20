@@ -177,7 +177,10 @@ pub fn load_manifest_from_path(manifest_path: &Path) -> Result<SdkworkAppManifes
 #[must_use]
 pub fn resolve_manifest_application_type(manifest: &SdkworkAppManifest) -> String {
     let app_type = manifest.app.app_type.as_deref().unwrap_or("").trim();
-    if matches!(app_type.to_ascii_uppercase().as_str(), "APP_FLUTTER" | "FLUTTER") {
+    if matches!(
+        app_type.to_ascii_uppercase().as_str(),
+        "APP_FLUTTER" | "FLUTTER"
+    ) {
         // Flutter is one codebase delivered to several stores; the kind is the
         // multi-target build, not one of its platform targets.
         return "flutter".to_owned();
@@ -235,7 +238,8 @@ pub fn resolve_manifest_application_type(manifest: &SdkworkAppManifest) -> Strin
     // A manifest that only advertises native publish platforms (no runtime
     // defaultPlatform) is still a native app, not the ambiguous `APP_UNIAPP`
     // framework family.
-    let has_web_surface = has("h5") || has("web") || has("pc") || has("browser") || has("universal");
+    let has_web_surface =
+        has("h5") || has("web") || has("pc") || has("browser") || has("universal");
     if !has_web_surface {
         if has("android") {
             return "android".to_owned();

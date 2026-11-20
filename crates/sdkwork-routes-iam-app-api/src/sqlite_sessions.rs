@@ -291,8 +291,7 @@ async fn create_session(
         sdkwork_iam_web_adapter::ApplicationOwnershipScope::derive_from_organization_scope(Some(
             organization_id.as_str(),
         ));
-    let access_token =
-        sign_local_session_token(&signing_key, "access", &context, ownership_scope);
+    let access_token = sign_local_session_token(&signing_key, "access", &context, ownership_scope);
     let auth_token = sign_local_session_token(&signing_key, "auth", &context, ownership_scope);
     let refresh_token = generate_opaque_token("refresh");
     let expires_at = (now + chrono::Duration::seconds(LOCAL_TOKEN_TTL_SECONDS as i64)).to_rfc3339();

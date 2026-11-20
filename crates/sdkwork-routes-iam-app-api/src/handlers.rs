@@ -4349,11 +4349,8 @@ async fn create_provider_scan_login(
     // deploy application anchor; the platform installation is bootstrapped from
     // configuration, never from a synthesized IAM runtime app id.
     let platform_deploy_application_id =
-        sdkwork_iam_web_adapter::platform_deploy_application_id_for_tenant(
-            pg,
-            &integration_tenant,
-        )
-        .await?;
+        sdkwork_iam_web_adapter::platform_deploy_application_id_for_tenant(pg, &integration_tenant)
+            .await?;
     // Register the state server-side: the exchange endpoint validates the
     // echoed state against this record (provider / redirect / tenant / app).
     match crate::ephemeral::upsert_oauth_state(
@@ -4640,10 +4637,8 @@ async fn complete_follow_login_scan(
             // The webhook has no request-side application context, so the
             // session is issued for the tenant's platform installation — whose
             // deploy application anchor is configured, not synthesized.
-            match sdkwork_iam_web_adapter::platform_deploy_application_id_for_tenant(
-                pg, &tenant_id,
-            )
-            .await
+            match sdkwork_iam_web_adapter::platform_deploy_application_id_for_tenant(pg, &tenant_id)
+                .await
             {
                 Ok(deploy_application_id) => deploy_application_id,
                 Err(error) => {

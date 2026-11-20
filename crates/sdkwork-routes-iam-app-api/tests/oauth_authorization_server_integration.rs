@@ -9,8 +9,8 @@ use http_body_util::BodyExt;
 use sdkwork_iam_context_service::{AuthLevel, DeploymentMode, Environment, IamAppContext};
 use sdkwork_iam_web_adapter::{
     build_userinfo_claims, complete_authorization_state, create_pending_authorization_state,
-    ensure_platform_tenant_application_with_deploy_application, exchange_authorization_code, load_oauth_bearer_scopes,
-    parse_relying_party_config, resolve_relying_party_client,
+    ensure_platform_tenant_application_with_deploy_application, exchange_authorization_code,
+    load_oauth_bearer_scopes, parse_relying_party_config, resolve_relying_party_client,
     revoke_oauth_token, seed_builtin_oauth_provider_catalog, validate_authorize_request,
     AuthorizeRequest,
 };
@@ -149,9 +149,13 @@ async fn seed_oauth_e2e_fixtures() {
     // The credential-entry login leg resolves its runtime app scope through
     // the tenant's platform application (`app_<tenant>`); on a fresh test
     // database nothing else provisions it.
-    ensure_platform_tenant_application_with_deploy_application(&pg, OAUTH_E2E_TENANT_ID, test_deploy_application_id(OAUTH_E2E_TENANT_ID).as_str())
-        .await
-        .expect("provision oauth e2e platform tenant application");
+    ensure_platform_tenant_application_with_deploy_application(
+        &pg,
+        OAUTH_E2E_TENANT_ID,
+        test_deploy_application_id(OAUTH_E2E_TENANT_ID).as_str(),
+    )
+    .await
+    .expect("provision oauth e2e platform tenant application");
 
     sqlx::query(
         "INSERT INTO iam_user (id, tenant_id, username, display_name, email, phone, \
@@ -194,9 +198,13 @@ async fn seed_oauth_e2e_fixtures() {
     .await
     .expect("insert oauth e2e tenant member");
 
-    sdkwork_iam_web_adapter::ensure_platform_tenant_application_with_deploy_application(&pg, OAUTH_E2E_TENANT_ID, test_deploy_application_id(OAUTH_E2E_TENANT_ID).as_str())
-        .await
-        .expect("ensure platform tenant application for oauth e2e tenant");
+    sdkwork_iam_web_adapter::ensure_platform_tenant_application_with_deploy_application(
+        &pg,
+        OAUTH_E2E_TENANT_ID,
+        test_deploy_application_id(OAUTH_E2E_TENANT_ID).as_str(),
+    )
+    .await
+    .expect("ensure platform tenant application for oauth e2e tenant");
 
     seed_builtin_oauth_provider_catalog(&pg)
         .await

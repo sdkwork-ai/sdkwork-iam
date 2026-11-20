@@ -119,7 +119,10 @@ fn exposes_canonical_iam_table_constants() {
     assert_eq!("iam_user_identity", IamTables::USER_IDENTITY);
     assert_eq!("iam_credential", IamTables::CREDENTIAL);
     assert_eq!("iam_ephemeral_artifact", IamTables::EPHEMERAL_ARTIFACT);
-    assert_eq!("iam_application_installation", IamTables::APPLICATION_INSTALLATION);
+    assert_eq!(
+        "iam_application_installation",
+        IamTables::APPLICATION_INSTALLATION
+    );
     assert_eq!(
         "iam_application_installation_environment",
         IamTables::APPLICATION_INSTALLATION_ENVIRONMENT

@@ -50,13 +50,8 @@ pub use access_token_issue::{
     issue_standalone_bootstrap_access_credential, issued_access_credential_to_json,
     parse_access_credential_create_request, principal_has_permission,
     resolve_deployment_bootstrap_access_token, resolve_installation_for_access_credential,
-    AccessCredentialCreateRequest, IssuedAccessCredential, IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
-};
-pub use app_token_exchange::{
-    ensure_actor_may_issue, issue_application_access_credential,
-    issue_user_application_access_credential, resolve_installation_environment,
-    resolve_scope_declaration, AppTokenExchangeError, UserApplicationTokenRequest,
-    IAM_APP_TOKENS_ADMIN_PERMISSION, IAM_APP_TOKENS_AUDIT_ACTION, IAM_APP_TOKENS_CREATE_PERMISSION,
+    AccessCredentialCreateRequest, IssuedAccessCredential,
+    IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
 };
 pub use account_binding_policy::{
     account_binding_policy_to_json, contact_binding_allowed, decide_oauth_phone_association,
@@ -76,6 +71,12 @@ pub use app_manifest::{
     EmbeddedApplicationBootstrapOptions, EmbeddedApplicationRuntimeBinding, ManifestAppSection,
     ManifestBackendSection, ManifestReleaseNote, ManifestReleaseSection, SdkworkAppManifest,
 };
+pub use app_token_exchange::{
+    ensure_actor_may_issue, issue_application_access_credential,
+    issue_user_application_access_credential, resolve_installation_environment,
+    resolve_scope_declaration, AppTokenExchangeError, UserApplicationTokenRequest,
+    IAM_APP_TOKENS_ADMIN_PERMISSION, IAM_APP_TOKENS_AUDIT_ACTION, IAM_APP_TOKENS_CREATE_PERMISSION,
+};
 pub use application_access_token::{
     parse_public_application_access_token, resolve_application_access_token_context,
     try_resolve_application_access_token_context, validate_public_application_access_token,
@@ -85,19 +86,17 @@ pub use application_registry::{
     configured_deploy_application_id, derive_tenant_application_primary_domain_candidate,
     disable_tenant_application, disable_tenant_application_by_deploy_application_id,
     enable_tenant_application, ensure_platform_tenant_application,
-    ensure_platform_tenant_application_with_deploy_application,
-    ensure_tenant_application_runtime, intersect_permission_scopes, is_provision_attribute_error,
+    ensure_platform_tenant_application_with_deploy_application, ensure_tenant_application_runtime,
+    intersect_permission_scopes, is_provision_attribute_error,
     parse_tenant_application_provision_command, parse_tenant_application_update_command,
     platform_deploy_application_id_for_tenant, platform_runtime_app_id_for_tenant,
     provision_tenant_application, relink_tenant_application_deploy_application_id,
-    resolve_access_token_app_id,
-    resolve_installation_ownership_scope, resolve_tenant_application,
+    resolve_access_token_app_id, resolve_installation_ownership_scope, resolve_tenant_application,
     resolve_tenant_application_by_deploy_application_id, tenant_application_instance_key,
     tenant_application_row_id, tenant_application_to_json, update_tenant_application,
     validate_enabled_tenant_runtime_app, EnsureTenantApplicationCommand, TenantApplication,
-    TenantApplicationProvisionCommand, TenantApplicationUpdateCommand,
-    DEPLOY_APPLICATION_ID_ENV, IAM_TENANT_APPLICATIONS_DISABLE_PERMISSION,
-    IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION,
+    TenantApplicationProvisionCommand, TenantApplicationUpdateCommand, DEPLOY_APPLICATION_ID_ENV,
+    IAM_TENANT_APPLICATIONS_DISABLE_PERMISSION, IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION,
     IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION, IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION,
     PLATFORM_INSTALLATION_ANCHOR,
 };
@@ -106,7 +105,6 @@ pub use application_scope::{
     ensure_subject_is_installation_owner, is_valid_user_id_claim, resolve_installation_scope,
     ApplicationIsolationKey, ApplicationOwnershipScope, ResolvedInstallationScope,
 };
-pub use installation_scope_cache::invalidate_installation_scope;
 pub use authorization_policy::IamAuthorizationPolicy;
 pub use authorization_scope::{
     iam_authorization_scope_provider_from_env, IamSessionAuthorizationScopeSource,
@@ -147,18 +145,18 @@ pub use installation_lifecycle::{
     delete_installation_environment, ensure_deploy_application_environment_active,
     ensure_installation_environment_active, installation_credential_to_json,
     installation_environment_to_json, installation_lifecycle_error_detail,
-    list_installation_credentials, list_installation_environments,
-    normalize_environment_key, parse_installation_credential_create_command,
-    parse_installation_credential_rotate_command, parse_installation_environment_upsert_command,
-    revoke_installation_credential, rotate_installation_credential,
-    upsert_installation_environment, InstallationCredential, InstallationCredentialCreateCommand,
-    InstallationCredentialPage, InstallationCredentialRotateCommand, InstallationEnvironment,
-    InstallationEnvironmentPage, InstallationEnvironmentUpsertCommand,
-    InstallationLifecycleErrorKind, INSTALLATION_CREDENTIAL_STATUS_ACTIVE,
-    INSTALLATION_CREDENTIAL_STATUS_RETIRED, INSTALLATION_CREDENTIAL_STATUS_ROTATED,
-    INSTALLATION_ENVIRONMENT_STATUS_ACTIVE, INSTALLATION_ENVIRONMENT_STATUS_DISABLED,
-    INSTALLATION_ENVIRONMENT_STATUS_PENDING,
+    list_installation_credentials, list_installation_environments, normalize_environment_key,
+    parse_installation_credential_create_command, parse_installation_credential_rotate_command,
+    parse_installation_environment_upsert_command, revoke_installation_credential,
+    rotate_installation_credential, upsert_installation_environment, InstallationCredential,
+    InstallationCredentialCreateCommand, InstallationCredentialPage,
+    InstallationCredentialRotateCommand, InstallationEnvironment, InstallationEnvironmentPage,
+    InstallationEnvironmentUpsertCommand, InstallationLifecycleErrorKind,
+    INSTALLATION_CREDENTIAL_STATUS_ACTIVE, INSTALLATION_CREDENTIAL_STATUS_RETIRED,
+    INSTALLATION_CREDENTIAL_STATUS_ROTATED, INSTALLATION_ENVIRONMENT_STATUS_ACTIVE,
+    INSTALLATION_ENVIRONMENT_STATUS_DISABLED, INSTALLATION_ENVIRONMENT_STATUS_PENDING,
 };
+pub use installation_scope_cache::invalidate_installation_scope;
 pub use messaging_verification::{
     messaging_verification_code_hash, messaging_verification_enabled,
     messaging_verification_table_available, messaging_verification_target_hash,

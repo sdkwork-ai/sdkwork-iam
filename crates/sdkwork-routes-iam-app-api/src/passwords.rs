@@ -158,13 +158,15 @@ pub(crate) async fn finalize_successful_password_login(pg: &PgPool, user: &Local
     .bind(&user.tenant_id)
     .execute(pg)
     .await;
-    let _ = sqlx::query("UPDATE iam_user SET last_login_at = $2, updated_at = $3 WHERE id = $1 AND tenant_id = $4")
-        .bind(&user.id)
-        .bind(&now)
-        .bind(&now)
-        .bind(&user.tenant_id)
-        .execute(pg)
-        .await;
+    let _ = sqlx::query(
+        "UPDATE iam_user SET last_login_at = $2, updated_at = $3 WHERE id = $1 AND tenant_id = $4",
+    )
+    .bind(&user.id)
+    .bind(&now)
+    .bind(&now)
+    .bind(&user.tenant_id)
+    .execute(pg)
+    .await;
 }
 
 /// The failure counter a new mistake continues from.

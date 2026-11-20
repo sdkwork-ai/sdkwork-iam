@@ -63,8 +63,10 @@ impl IamTables {
     pub const OAUTH_SCAN_LOGIN_CONFIG: &'static str = "iam_oauth_scan_login_config";
     pub const EPHEMERAL_ARTIFACT: &'static str = "iam_ephemeral_artifact";
     pub const APPLICATION_INSTALLATION: &'static str = "iam_application_installation";
-    pub const APPLICATION_INSTALLATION_ENVIRONMENT: &'static str = "iam_application_installation_environment";
-    pub const APPLICATION_INSTALLATION_CREDENTIAL: &'static str = "iam_application_installation_credential";
+    pub const APPLICATION_INSTALLATION_ENVIRONMENT: &'static str =
+        "iam_application_installation_environment";
+    pub const APPLICATION_INSTALLATION_CREDENTIAL: &'static str =
+        "iam_application_installation_credential";
     pub const MODULE_REGISTRY_ENTRY: &'static str = "iam_module_registry_entry";
     pub const MODULE_REGISTRY_SNAPSHOT: &'static str = "iam_module_registry_snapshot";
     pub const CATALOG_MATERIALIZATION: &'static str = "iam_catalog_materialization";

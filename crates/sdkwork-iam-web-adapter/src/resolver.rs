@@ -346,9 +346,7 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
             )
             .await
             {
-                Some(context) => {
-                    self.project_context(context).await
-                }
+                Some(context) => self.project_context(context).await,
                 None => Err(WebFrameworkError::invalid_credentials(
                     "invalid or expired IAM session",
                 )),
@@ -366,9 +364,7 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
 
         match resolve_iam_app_context_from_dual_tokens(pool, raw_auth_token, raw_access_token).await
         {
-            Some(context) => {
-                self.project_context(context).await
-            }
+            Some(context) => self.project_context(context).await,
             None => Err(WebFrameworkError::invalid_credentials(
                 "invalid or expired IAM session",
             )),

@@ -113,9 +113,8 @@ impl ApplicationOwnershipScope {
         app_id: &str,
         user_id: Option<&str>,
     ) -> ApplicationIsolationKey {
-        let organization_scope = sdkwork_iam_context_service::normalize_resolved_organization_scope(
-            organization_id,
-        );
+        let organization_scope =
+            sdkwork_iam_context_service::normalize_resolved_organization_scope(organization_id);
         ApplicationIsolationKey {
             scope: self,
             tenant_id: tenant_id.to_owned(),
@@ -126,7 +125,10 @@ impl ApplicationOwnershipScope {
                 "0".to_owned()
             },
             user_id: match self {
-                Self::User => user_id.map(str::trim).filter(|v| !v.is_empty()).map(str::to_owned),
+                Self::User => user_id
+                    .map(str::trim)
+                    .filter(|v| !v.is_empty())
+                    .map(str::to_owned),
                 _ => None,
             },
         }
@@ -550,15 +552,14 @@ mod tests {
     fn issuance_rejects_a_scope_the_installation_does_not_have() {
         ensure_requested_scope_matches_installation(None, ApplicationOwnershipScope::User)
             .expect("an undeclared request inherits the installation scope");
-        ensure_requested_scope_matches_installation(
-            Some("user"),
+        ensure_requested_scope_matches_installation(Some("user"), ApplicationOwnershipScope::User)
+            .expect("matching scope");
+
+        let error = ensure_requested_scope_matches_installation(
+            Some("TENANT"),
             ApplicationOwnershipScope::User,
         )
-        .expect("matching scope");
-
-        let error =
-            ensure_requested_scope_matches_installation(Some("TENANT"), ApplicationOwnershipScope::User)
-                .expect_err("widening the installation scope must fail closed");
+        .expect_err("widening the installation scope must fail closed");
         assert!(error.contains("USER"), "{error}");
         assert!(error.contains("TENANT"), "{error}");
     }
@@ -580,10 +581,12 @@ mod tests {
         .expect_err("a personal release must not credential another subject");
         assert!(error.contains("owner-1"), "{error}");
 
-        assert!(
-            ensure_subject_is_installation_owner(ApplicationOwnershipScope::User, None, "owner-1")
-                .is_err()
-        );
+        assert!(ensure_subject_is_installation_owner(
+            ApplicationOwnershipScope::User,
+            None,
+            "owner-1"
+        )
+        .is_err());
         // Tenant and organization releases are not subject-bound.
         ensure_subject_is_installation_owner(ApplicationOwnershipScope::Tenant, None, "anyone")
             .expect("tenant release");
@@ -592,11 +595,25 @@ mod tests {
     #[test]
     fn a_user_id_claim_must_be_a_positive_decimal_snowflake() {
         for accepted in ["1", "900001", " 4000382910274560001 "] {
-            assert!(is_valid_user_id_claim(accepted), "{accepted:?} should be legal");
+            assert!(
+                is_valid_user_id_claim(accepted),
+                "{accepted:?} should be legal"
+            );
         }
         for rejected in [
-            "", " ", "0", "00", "-1", "+1", "1.0", "1e3", "abc", "iamu_abc", "user_1",
-            "1 2", "99999999999999999999999999",
+            "",
+            " ",
+            "0",
+            "00",
+            "-1",
+            "+1",
+            "1.0",
+            "1e3",
+            "abc",
+            "iamu_abc",
+            "user_1",
+            "1 2",
+            "99999999999999999999999999",
         ] {
             assert!(
                 !is_valid_user_id_claim(rejected),
@@ -615,12 +632,9 @@ mod tests {
         .expect("the owner's own credential is accepted");
         assert_eq!(owner, "900001");
 
-        let absent = ensure_public_token_subject_is_installation_owner(
-            "install-1",
-            Some("900001"),
-            None,
-        )
-        .expect_err("a public token without a subject claim must fail closed");
+        let absent =
+            ensure_public_token_subject_is_installation_owner("install-1", Some("900001"), None)
+                .expect_err("a public token without a subject claim must fail closed");
         assert!(absent.contains("install-1"), "{absent}");
         assert!(absent.contains("user_id"), "{absent}");
         assert!(absent.contains("900001"), "{absent}");
@@ -652,12 +666,9 @@ mod tests {
         .expect_err("the tenant sentinel never names a personal owner");
         assert!(tenant_sentinel.contains("user_id"), "{tenant_sentinel}");
 
-        let unowned = ensure_public_token_subject_is_installation_owner(
-            "install-1",
-            None,
-            Some("900001"),
-        )
-        .expect_err("a personal installation without an owner cannot bind a token");
+        let unowned =
+            ensure_public_token_subject_is_installation_owner("install-1", None, Some("900001"))
+                .expect_err("a personal installation without an owner cannot bind a token");
         assert!(unowned.contains("install-1"), "{unowned}");
         assert!(unowned.contains("owner_user_id"), "{unowned}");
     }

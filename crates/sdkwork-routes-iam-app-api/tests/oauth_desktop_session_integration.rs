@@ -25,8 +25,7 @@ use sdkwork_iam_web_adapter::{
     complete_authorization_state, create_pending_authorization_state,
     default_account_binding_policy, ensure_platform_tenant_application_with_deploy_application,
     exchange_authorization_code, introspect_oauth_token, parse_relying_party_config,
-    resolve_relying_party_client, revoke_oauth_token,
-    validate_authorize_request, AuthorizeRequest,
+    resolve_relying_party_client, revoke_oauth_token, validate_authorize_request, AuthorizeRequest,
 };
 use sdkwork_web_core::bootstrap_access_token_jwt;
 use serde_json::{json, Value};
@@ -196,9 +195,13 @@ async fn seed_desktop_e2e_fixtures(pg: &PgPool) -> String {
 
     // The personal-login session of the desktop user persists organization_id
     // "0"; the default tenant owns that sentinel organization row.
-    ensure_platform_tenant_application_with_deploy_application(pg, DESKTOP_E2E_TENANT_ID, test_deploy_application_id(DESKTOP_E2E_TENANT_ID).as_str())
-        .await
-        .expect("provision desktop e2e platform tenant application");
+    ensure_platform_tenant_application_with_deploy_application(
+        pg,
+        DESKTOP_E2E_TENANT_ID,
+        test_deploy_application_id(DESKTOP_E2E_TENANT_ID).as_str(),
+    )
+    .await
+    .expect("provision desktop e2e platform tenant application");
 
     // The hosted login completes the authorization over HTTP with the session
     // dual tokens, so the tenant needs its signing key the same way a deployed

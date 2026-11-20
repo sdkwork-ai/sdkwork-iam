@@ -278,24 +278,25 @@ pub async fn issue_application_access_credential(
         ));
     }
 
-    let installation =
-        resolve_installation_for_access_credential(pg, &actor.tenant_id, &request.selector(&actor.tenant_id))
-            .await
-            .map_err(AppTokenExchangeError::classify_issuance_error)?;
+    let installation = resolve_installation_for_access_credential(
+        pg,
+        &actor.tenant_id,
+        &request.selector(&actor.tenant_id),
+    )
+    .await
+    .map_err(AppTokenExchangeError::classify_issuance_error)?;
 
     ensure_actor_may_issue(pg, actor, &installation).await?;
 
-    let declared_scope = resolve_scope_declaration(request.ownership_scope.as_deref(), &installation)?;
+    let declared_scope =
+        resolve_scope_declaration(request.ownership_scope.as_deref(), &installation)?;
 
     let (environment, environment_key) =
         resolve_installation_environment(pg, actor, &installation, request.environment.as_deref())
             .await?;
 
-    let internal = request.internal_request(
-        &actor.tenant_id,
-        &installation,
-        declared_scope.as_deref(),
-    );
+    let internal =
+        request.internal_request(&actor.tenant_id, &installation, declared_scope.as_deref());
     let issued = issue_delegated_access_credential_for_environment(
         pg,
         actor,
@@ -561,15 +562,14 @@ async fn resolve_scope_capabilities(
     actor: &AccessTokenActor,
     organization_id: Option<&str>,
 ) -> Result<Vec<String>, AppTokenExchangeError> {
-    let (_, permission_scope) =
-        crate::access_token_issue::resolve_session_scopes(
-            pg,
-            &actor.tenant_id,
-            &actor.user_id,
-            organization_id,
-        )
-        .await
-        .map_err(AppTokenExchangeError::Internal)?;
+    let (_, permission_scope) = crate::access_token_issue::resolve_session_scopes(
+        pg,
+        &actor.tenant_id,
+        &actor.user_id,
+        organization_id,
+    )
+    .await
+    .map_err(AppTokenExchangeError::Internal)?;
     Ok(permission_scope)
 }
 
@@ -587,9 +587,7 @@ fn require_capability(
     let admin = crate::principal_has_permission(granted, IAM_APP_TOKENS_ADMIN_PERMISSION);
     match scope {
         IssuanceScope::Tenant => {
-            if admin
-                || crate::principal_has_permission(granted, IAM_APP_TOKENS_CREATE_PERMISSION)
-            {
+            if admin || crate::principal_has_permission(granted, IAM_APP_TOKENS_CREATE_PERMISSION) {
                 Ok(())
             } else {
                 Err(AppTokenExchangeError::Denied(format!(
@@ -676,9 +674,7 @@ async fn ensure_active_organization_membership(
     .fetch_one(pg)
     .await
     .map_err(|error| {
-        AppTokenExchangeError::Internal(format!(
-            "resolve organization membership failed: {error}"
-        ))
+        AppTokenExchangeError::Internal(format!("resolve organization membership failed: {error}"))
     })?;
     if count > 0 {
         Ok(())
@@ -781,10 +777,17 @@ mod tests {
             resolve_scope_declaration(Some("TENANT"), &tenant).expect("agrees"),
             Some("TENANT".to_owned())
         );
-        let error = resolve_scope_declaration(Some("USER"), &tenant)
-            .expect_err("scope is immutable");
-        assert!(matches!(error, AppTokenExchangeError::Conflict(_)), "{error:?}");
-        assert!(error.message().contains("ownershipScope=TENANT"), "{}", error.message());
+        let error =
+            resolve_scope_declaration(Some("USER"), &tenant).expect_err("scope is immutable");
+        assert!(
+            matches!(error, AppTokenExchangeError::Conflict(_)),
+            "{error:?}"
+        );
+        assert!(
+            error.message().contains("ownershipScope=TENANT"),
+            "{}",
+            error.message()
+        );
     }
 
     #[test]
@@ -793,10 +796,17 @@ mod tests {
         assert!(require_capability(Tenant, &codes(&["iam.app_tokens.create"])).is_ok());
         assert!(require_capability(Tenant, &codes(&["iam.app_tokens.admin"])).is_ok());
         assert!(require_capability(Tenant, &codes(&["iam.*"])).is_ok());
-        let denied = require_capability(Tenant, &codes(&["iam.profile.read"]))
-            .expect_err("no capability");
-        assert!(matches!(denied, AppTokenExchangeError::Denied(_)), "{denied:?}");
-        assert!(denied.message().contains("tenant-scope"), "{}", denied.message());
+        let denied =
+            require_capability(Tenant, &codes(&["iam.profile.read"])).expect_err("no capability");
+        assert!(
+            matches!(denied, AppTokenExchangeError::Denied(_)),
+            "{denied:?}"
+        );
+        assert!(
+            denied.message().contains("tenant-scope"),
+            "{}",
+            denied.message()
+        );
     }
 
     #[test]
@@ -806,8 +816,15 @@ mod tests {
         assert!(require_capability(Organization, &codes(&["iam.*"])).is_ok());
         let denied = require_capability(Organization, &codes(&["iam.app_tokens.create"]))
             .expect_err("membership alone is not enough for an organization credential");
-        assert!(matches!(denied, AppTokenExchangeError::Denied(_)), "{denied:?}");
-        assert!(denied.message().contains("organization"), "{}", denied.message());
+        assert!(
+            matches!(denied, AppTokenExchangeError::Denied(_)),
+            "{denied:?}"
+        );
+        assert!(
+            denied.message().contains("organization"),
+            "{}",
+            denied.message()
+        );
     }
 
     #[test]
@@ -824,7 +841,10 @@ mod tests {
         assert_eq!(internal.tenant_id, "100001");
         assert_eq!(internal.organization_id, "42");
         assert_eq!(internal.tenant_application_id.as_deref(), Some("tapp_1"));
-        assert!(internal.app_id.is_none(), "the selector is narrowed to the row");
+        assert!(
+            internal.app_id.is_none(),
+            "the selector is narrowed to the row"
+        );
         assert_eq!(internal.ownership_scope.as_deref(), Some("ORGANIZATION"));
     }
 

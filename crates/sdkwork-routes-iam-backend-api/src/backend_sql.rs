@@ -258,9 +258,7 @@ pub(crate) fn role_binding_list_filter_sql(
 pub(crate) fn role_binding_list_filter_values(query: &HashMap<String, String>) -> Vec<String> {
     ROLE_BINDING_LIST_FILTER_COLUMNS
         .iter()
-        .filter_map(|(_, canonical, legacy)| {
-            optional_query_value_any(query, &[canonical, legacy])
-        })
+        .filter_map(|(_, canonical, legacy)| optional_query_value_any(query, &[canonical, legacy]))
         .collect()
 }
 

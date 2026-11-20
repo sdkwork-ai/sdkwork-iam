@@ -188,9 +188,13 @@ async fn ensure_default_credential_entry_tenant() {
     sdkwork_iam_bootstrap::upsert_postgres_default_subject(&pg)
         .await
         .expect("default credential entry tenant subject");
-    ensure_platform_tenant_application_with_deploy_application(&pg, "100001", test_deploy_application_id("100001").as_str())
-        .await
-        .expect("default credential entry tenant application");
+    ensure_platform_tenant_application_with_deploy_application(
+        &pg,
+        "100001",
+        test_deploy_application_id("100001").as_str(),
+    )
+    .await
+    .expect("default credential entry tenant application");
 }
 
 async fn seed_contact_unbind_policy_for_tenant(tenant_id: &str) {
@@ -376,17 +380,11 @@ fn test_bootstrap_access_token() -> String {
 }
 
 fn test_open_registration_bootstrap_access_token() -> String {
-    bootstrap_access_token_jwt(
-        "100001",
-        test_deploy_application_id("100001").as_str(),
-    )
+    bootstrap_access_token_jwt("100001", test_deploy_application_id("100001").as_str())
 }
 
 fn test_bootstrap_access_token_for_tenant(tenant_id: &str) -> String {
-    bootstrap_access_token_jwt(
-        tenant_id,
-        test_deploy_application_id(tenant_id).as_str(),
-    )
+    bootstrap_access_token_jwt(tenant_id, test_deploy_application_id(tenant_id).as_str())
 }
 
 async fn request_json_with_auth(
@@ -3768,9 +3766,13 @@ async fn prepare_open_registration_database() {
     sdkwork_iam_bootstrap::upsert_postgres_default_subject(&pg)
         .await
         .expect("default IAM subject should be available for open registration tests");
-    ensure_platform_tenant_application_with_deploy_application(&pg, DEFAULT_OPEN_REGISTRATION_TENANT_ID, test_deploy_application_id(DEFAULT_OPEN_REGISTRATION_TENANT_ID).as_str())
-        .await
-        .expect("platform tenant application should be available for open registration tests");
+    ensure_platform_tenant_application_with_deploy_application(
+        &pg,
+        DEFAULT_OPEN_REGISTRATION_TENANT_ID,
+        test_deploy_application_id(DEFAULT_OPEN_REGISTRATION_TENANT_ID).as_str(),
+    )
+    .await
+    .expect("platform tenant application should be available for open registration tests");
 }
 
 async fn cleanup_secondary_tenant_login_fixtures() {
@@ -4181,9 +4183,13 @@ async fn seed_login_account_for_tenant(
     use argon2::Argon2;
 
     let pg = postgres_pool_for_tests().await;
-    ensure_platform_tenant_application_with_deploy_application(&pg, tenant_id, test_deploy_application_id(tenant_id).as_str())
-        .await
-        .expect("platform tenant application should be available for login tests");
+    ensure_platform_tenant_application_with_deploy_application(
+        &pg,
+        tenant_id,
+        test_deploy_application_id(tenant_id).as_str(),
+    )
+    .await
+    .expect("platform tenant application should be available for login tests");
     let password_hash = Argon2::default()
         .hash_password(password.as_bytes(), &SaltString::generate(&mut OsRng))
         .expect("hash password for tenant login seed")
@@ -4293,9 +4299,13 @@ async fn seed_cross_tenant_login_account(email: &str, password: &str) {
             .await
             .expect("provision cross-tenant login signing key");
 
-        ensure_platform_tenant_application_with_deploy_application(&pg, tenant_id, test_deploy_application_id(tenant_id).as_str())
-            .await
-            .expect("platform tenant application should be available for cross-tenant login tests");
+        ensure_platform_tenant_application_with_deploy_application(
+            &pg,
+            tenant_id,
+            test_deploy_application_id(tenant_id).as_str(),
+        )
+        .await
+        .expect("platform tenant application should be available for cross-tenant login tests");
 
         sqlx::query(
             "INSERT INTO iam_user (id, tenant_id, username, display_name, email, phone, \
@@ -4375,9 +4385,13 @@ async fn local_app_router_open_registration_defaults_to_canonical_tenant_with_mu
         sdkwork_iam_bootstrap::ensure_postgres_tenant_signing_key(&pg, tenant_id)
             .await
             .expect("provision open registration tenant signing key");
-        ensure_platform_tenant_application_with_deploy_application(&pg, tenant_id, test_deploy_application_id(tenant_id).as_str())
-            .await
-            .expect("provision open registration tenant application");
+        ensure_platform_tenant_application_with_deploy_application(
+            &pg,
+            tenant_id,
+            test_deploy_application_id(tenant_id).as_str(),
+        )
+        .await
+        .expect("provision open registration tenant application");
     }
 
     let default_username = unique_registration_username("open-registration-default");

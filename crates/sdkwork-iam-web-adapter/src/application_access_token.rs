@@ -195,9 +195,8 @@ pub fn validate_public_application_access_token(
     let tenant_id = claim_text(&payload, "tenant_id").ok_or_else(|| {
         "public application access token is missing its tenant_id claim".to_owned()
     })?;
-    let app_id = claim_text(&payload, "app_id").ok_or_else(|| {
-        "public application access token is missing its app_id claim".to_owned()
-    })?;
+    let app_id = claim_text(&payload, "app_id")
+        .ok_or_else(|| "public application access token is missing its app_id claim".to_owned())?;
     let audience = claim_text(&payload, "aud").unwrap_or_else(|| app_id.clone());
     if audience != app_id {
         return Err(format!(
@@ -205,8 +204,7 @@ pub fn validate_public_application_access_token(
              claim {app_id:?}"
         ));
     }
-    let organization_id =
-        claim_text(&payload, "organization_id").unwrap_or_else(|| "0".to_owned());
+    let organization_id = claim_text(&payload, "organization_id").unwrap_or_else(|| "0".to_owned());
     let login_scope_is_organization = organization_id != "0";
     if let Some(login_scope) = claim_text(&payload, "login_scope") {
         let expected = if login_scope_is_organization {
@@ -221,11 +219,10 @@ pub fn validate_public_application_access_token(
             ));
         }
     }
-    let environment = normalize_environment(
-        &claim_text(&payload, "environment").ok_or_else(|| {
+    let environment =
+        normalize_environment(&claim_text(&payload, "environment").ok_or_else(|| {
             "public application access token is missing its environment claim".to_owned()
-        })?,
-    );
+        })?);
     let deployment_mode = normalize_deployment_mode(
         &claim_text(&payload, "deployment_mode").unwrap_or_else(|| "saas".to_owned()),
     );
@@ -273,8 +270,8 @@ pub fn validate_public_application_access_token(
             ));
         }
     }
-    let session_id = claim_text(&payload, "session_id")
-        .unwrap_or_else(|| format!("bootstrap-public-{app_id}"));
+    let session_id =
+        claim_text(&payload, "session_id").unwrap_or_else(|| format!("bootstrap-public-{app_id}"));
     if let Some(exp) = payload.get("exp").and_then(Value::as_i64) {
         if exp != APPLICATION_ACCESS_TOKEN_NO_EXPIRY && exp < current_unix_seconds() {
             return Err(format!(
@@ -305,7 +302,9 @@ pub fn validate_public_application_access_token(
 pub fn parse_public_application_access_token(
     token: &str,
 ) -> Option<PublicApplicationAccessTokenClaims> {
-    validate_public_application_access_token(token).ok().flatten()
+    validate_public_application_access_token(token)
+        .ok()
+        .flatten()
 }
 
 /// Data scopes projected for a shared (`TENANT`/`ORGANIZATION`) release.
@@ -362,18 +361,15 @@ pub async fn try_resolve_application_access_token_context(
     let Some(claims) = validate_public_application_access_token(token)? else {
         return Ok(None);
     };
-    let Some(application) = resolve_tenant_application_by_deploy_application_id(
-        pg,
-        &claims.tenant_id,
-        &claims.app_id,
-    )
-    .await
-    .map_err(|error| {
-        format!(
-            "load installation for public application access token of {} failed: {error}",
-            claims.app_id
-        )
-    })?
+    let Some(application) =
+        resolve_tenant_application_by_deploy_application_id(pg, &claims.tenant_id, &claims.app_id)
+            .await
+            .map_err(|error| {
+                format!(
+                    "load installation for public application access token of {} failed: {error}",
+                    claims.app_id
+                )
+            })?
     else {
         return Ok(None);
     };
@@ -408,7 +404,8 @@ pub async fn try_resolve_application_access_token_context(
                 claims.app_id
             )
         })?;
-    if !installation_environment_accepts(&registered, &application.environment, &claims.environment) {
+    if !installation_environment_accepts(&registered, &application.environment, &claims.environment)
+    {
         return Ok(None);
     }
     let is_personal = claims.ownership_scope == ApplicationOwnershipScope::User;
@@ -537,10 +534,7 @@ mod tests {
         match user_id {
             Some(value) => payload["user_id"] = serde_json::json!(value),
             None => {
-                payload
-                    .as_object_mut()
-                    .expect("object")
-                    .remove("user_id");
+                payload.as_object_mut().expect("object").remove("user_id");
             }
         }
         payload
@@ -551,10 +545,7 @@ mod tests {
         payload["login_scope"] = serde_json::json!("ORGANIZATION");
         payload["organization_id"] = serde_json::json!("42");
         payload["ownership_scope"] = serde_json::json!("ORGANIZATION");
-        payload
-            .as_object_mut()
-            .expect("object")
-            .remove("user_id");
+        payload.as_object_mut().expect("object").remove("user_id");
         payload
     }
 
@@ -604,10 +595,7 @@ mod tests {
         assert!(organization.login_scope_is_organization);
         assert_eq!(
             shared_release_data_scope(&organization),
-            vec![
-                "tenant:100001".to_owned(),
-                "organization:42".to_owned()
-            ]
+            vec!["tenant:100001".to_owned(), "organization:42".to_owned()]
         );
 
         // A tenant-level release stays keyed by the tenant alone.
@@ -698,10 +686,12 @@ mod tests {
         // access credential: the auth channel never accepts the public token.
         let mut auth_typed = public_payload();
         auth_typed["token_type"] = serde_json::json!("auth");
-        assert!(
-            parse_public_application_access_token(&token(public_header(), auth_typed, "public",))
-                .is_none()
-        );
+        assert!(parse_public_application_access_token(&token(
+            public_header(),
+            auth_typed,
+            "public",
+        ))
+        .is_none());
 
         let mut signed_header = public_header();
         signed_header["alg"] = serde_json::json!("HS256");

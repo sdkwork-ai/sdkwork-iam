@@ -1825,9 +1825,13 @@ async fn ensure_credential_entry_bootstrap_runtime_app() {
     }
     unified_database_env::apply_workspace_postgres_env();
     let pg = unified_database_env::postgres_pool_for_integration_tests().await;
-    ensure_platform_tenant_application_with_deploy_application(&pg, OPEN_REGISTRATION_TENANT_ID, test_deploy_application_id(OPEN_REGISTRATION_TENANT_ID).as_str())
-        .await
-        .expect("platform tenant application should be available for credential-entry routes");
+    ensure_platform_tenant_application_with_deploy_application(
+        &pg,
+        OPEN_REGISTRATION_TENANT_ID,
+        test_deploy_application_id(OPEN_REGISTRATION_TENANT_ID).as_str(),
+    )
+    .await
+    .expect("platform tenant application should be available for credential-entry routes");
 }
 
 async fn reset_iam_tenants_for_open_registration() {
@@ -1839,9 +1843,13 @@ async fn reset_iam_tenants_for_open_registration() {
     sdkwork_iam_bootstrap::upsert_postgres_default_subject(&pg)
         .await
         .expect("default IAM subject should be available for open registration tests");
-    ensure_platform_tenant_application_with_deploy_application(&pg, unified_database_env::OPEN_REGISTRATION_TENANT_ID, test_deploy_application_id(unified_database_env::OPEN_REGISTRATION_TENANT_ID).as_str())
-        .await
-        .expect("platform tenant application should be available for open registration tests");
+    ensure_platform_tenant_application_with_deploy_application(
+        &pg,
+        unified_database_env::OPEN_REGISTRATION_TENANT_ID,
+        test_deploy_application_id(unified_database_env::OPEN_REGISTRATION_TENANT_ID).as_str(),
+    )
+    .await
+    .expect("platform tenant application should be available for open registration tests");
 }
 
 fn set_real_local_iam_runtime_env() -> (MutexGuard<'static, ()>, EnvSnapshot) {
