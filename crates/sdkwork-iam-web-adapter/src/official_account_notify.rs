@@ -242,7 +242,9 @@ pub fn decrypt_wechat_blob(
     split_wechat_plain(plain)
 }
 
-fn decode_encoding_aes_key(encoding_aes_key: &str) -> Result<Vec<u8>, WechatNotifyError> {
+pub(crate) fn decode_encoding_aes_key(
+    encoding_aes_key: &str,
+) -> Result<Vec<u8>, WechatNotifyError> {
     let trimmed = encoding_aes_key.trim();
     let padded = match trimmed.chars().count() {
         43 => format!("{trimmed}="),
@@ -295,7 +297,7 @@ pub fn extract_encrypted_payload(body: &str) -> Result<String, WechatNotifyError
         .ok_or_else(|| WechatNotifyError::InvalidRequest("Encrypt element is missing".to_string()))
 }
 
-fn extract_tag(
+pub(crate) fn extract_tag(
     xml: &str,
     tag: &str,
     max_bytes: usize,
@@ -337,7 +339,7 @@ fn decode_simple_xml_text(raw: &str) -> String {
 }
 
 /// Validates a callback timestamp against the five-minute replay window.
-fn ensure_timestamp_fresh(timestamp: &str) -> Result<(), WechatNotifyError> {
+pub(crate) fn ensure_timestamp_fresh(timestamp: &str) -> Result<(), WechatNotifyError> {
     if timestamp.is_empty() || timestamp.len() > MAX_TIMESTAMP_CHARS {
         return Err(WechatNotifyError::InvalidRequest(
             "timestamp is missing or out of bounds".to_string(),
@@ -358,7 +360,7 @@ fn ensure_timestamp_fresh(timestamp: &str) -> Result<(), WechatNotifyError> {
     Ok(())
 }
 
-fn ensure_query_bounds(nonce: &str, timestamp: &str) -> Result<(), WechatNotifyError> {
+pub(crate) fn ensure_query_bounds(nonce: &str, timestamp: &str) -> Result<(), WechatNotifyError> {
     if nonce.is_empty() || nonce.len() > MAX_NONCE_CHARS {
         return Err(WechatNotifyError::InvalidRequest(
             "nonce is missing or out of bounds".to_string(),

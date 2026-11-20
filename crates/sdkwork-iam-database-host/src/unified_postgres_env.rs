@@ -88,6 +88,7 @@ mod tests {
             std::process::id()
         ));
         std::fs::create_dir_all(&app_root).unwrap();
+        std::fs::create_dir_all(app_root.join("config/host")).unwrap();
         std::fs::write(
             app_root.join("config/host/postgres.env"),
             "SDKWORK_DATABASE_URL=postgresql://ignored/ignored\n",
@@ -123,6 +124,7 @@ mod tests {
             std::process::id()
         ));
         std::fs::create_dir_all(&app_root).unwrap();
+        std::fs::create_dir_all(app_root.join("config/host")).unwrap();
         std::fs::write(
             app_root.join("config/host/postgres.env"),
             "SDKWORK_DATABASE_ENGINE=postgresql\nSDKWORK_DATABASE_HOST=127.0.0.1\nSDKWORK_DATABASE_PORT=5432\nSDKWORK_DATABASE_NAME=sdkwork_ai_dev\nSDKWORK_DATABASE_USERNAME=sdkwork_ai_dev\nSDKWORK_DATABASE_PASSWORD=sdkworkdev123\n",

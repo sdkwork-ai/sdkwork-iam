@@ -111,6 +111,10 @@ const openApiAuthorityExternalWireOperations = {
   'wechatPaymentOauth.cashierStart': 'wechat-payment-redirect',
   'iam.oauth.officialAccounts.wechatNotify.verify': 'wechat-official-account-callback',
   'iam.oauth.officialAccounts.wechatNotify.receive': 'wechat-official-account-callback',
+  'iam.oauth.wechatComponentCallbacks.verify': 'wechat-component-callback',
+  'iam.oauth.wechatComponentCallbacks.receive': 'wechat-component-callback',
+  'iam.oauth.wechatAuthorizerCallbacks.verify': 'wechat-authorizer-callback',
+  'iam.oauth.wechatAuthorizerCallbacks.receive': 'wechat-authorizer-callback',
 };
 
 const credentialHeaderForbiddenAppOperationIds = new Set([

@@ -573,6 +573,10 @@ pub fn apply_oauth_routes(router: Router<BackendIamState>) -> Router<BackendIamS
             post(create_pre_authorization),
         )
         .route(
+            "/backend/v3/api/iam/oauth/operator_platforms/{operatorPlatformId}/component_credentials",
+            post(create_operator_platform_component_credentials),
+        )
+        .route(
             "/backend/v3/api/iam/oauth/resource_accounts",
             get(list_resource_accounts).post(create_resource_account),
         )

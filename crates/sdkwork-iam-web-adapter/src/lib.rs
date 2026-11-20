@@ -35,6 +35,17 @@ mod session_scope_cache;
 mod signing_secrets;
 mod super_admin_auth;
 mod tenant_signing_key_store;
+mod wechat_component;
+mod wechat_component_api;
+mod wechat_component_authorization;
+mod wechat_component_authorizer;
+mod wechat_component_callback;
+mod wechat_component_grant;
+mod wechat_component_message;
+mod wechat_component_ticket;
+mod wechat_component_ticket_pg;
+mod wechat_component_token;
+mod wechat_component_token_pg;
 mod wechat_mp;
 
 pub(crate) use sdkwork_utils_rust::is_blank;
@@ -221,6 +232,69 @@ pub use official_account_notify::{
 pub use production_runtime::{
     allows_oauth_client_secret_env_override, assert_production_hardening,
     is_explicit_development_iam_deployment, is_production_iam_deployment,
+};
+pub use wechat_component::{
+    component_full_release_action, component_signature, parse_component_callback,
+    verify_component_url, WechatComponentCallbackRequest, WechatComponentError,
+    WechatComponentEvent, WechatComponentInfoType, WechatComponentTestAction,
+    WechatComponentUrlVerificationRequest, COMPONENT_QUERY_AUTH_CODE_PREFIX, COMPONENT_TEST_TEXT,
+    COMPONENT_TEST_TEXT_REPLY, COMPONENT_VERIFY_TICKET_TTL_SECONDS,
+};
+pub use wechat_component_api::{
+    authorization_entry_url, component_token_is_usable, component_token_needs_refresh,
+    AuthorizationFuncScope, AuthorizerAccessToken, AuthorizerAuthorization, ComponentAccessToken,
+    PreAuthCode, ReqwestWechatComponentTransport, WechatComponentApi, WechatComponentApiError,
+    WechatComponentAuthorizationScope, WechatComponentAuthorizationSurface,
+    WechatComponentTransport, AUTHORIZER_TOKEN_PATH, COMPONENT_H5_AUTHORIZATION_PAGE,
+    COMPONENT_PC_AUTHORIZATION_PAGE, COMPONENT_TOKEN_PATH, COMPONENT_TOKEN_REFRESH_LEAD_SECONDS,
+    COMPONENT_TOKEN_SAFETY_MARGIN_SECONDS, CUSTOM_TEXT_MESSAGE_PATH, PRE_AUTH_CODE_PATH,
+    QUERY_AUTH_PATH, START_PUSH_TICKET_PATH,
+};
+pub use wechat_component_authorization::{
+    begin_authorization, validate_platform_for_authorization, AuthorizationEntryRequest,
+    ComponentAuthorizationEntry, ComponentPlatformConfig, ComponentPlatformConfigReader,
+    PgComponentPlatformConfigReader, WechatComponentAuthorizationError, PLATFORM_TYPE_CUSTOMIZED,
+    PLATFORM_TYPE_PLATFORM,
+};
+pub use wechat_component_authorizer::{
+    authorizer_token_is_usable, is_refresh_token_invalid_code, next_authorizer_refresh_at,
+    AuthorizerTokenLease, PgAuthorizerTokenService, WechatComponentAuthorizerError,
+    AUTHORIZER_REFRESH_BACKOFF_SECONDS, AUTHORIZER_TOKEN_ARTIFACT_KIND,
+    AUTHORIZER_TOKEN_SAFETY_MARGIN_SECONDS,
+};
+pub use wechat_component_callback::{
+    callback_dedupe_key, ComponentCallbackConfig, ComponentCallbackConfigError,
+    ComponentCallbackConfigReader, PgComponentCallbackConfigReader, SECRET_KIND_CALLBACK_TOKEN,
+    SECRET_KIND_ENCODING_AES_KEY,
+};
+pub use wechat_component_grant::{
+    build_authorizer_grant, complete_authorization, validate_resource_account_kind,
+    AuthorizationCompletionRequest, AuthorizerGrant, AuthorizerGrantStore, CompletedAuthorization,
+    PgAuthorizerGrantStore, ResourceAccountKind, WechatComponentGrantError,
+    ACCESS_MODE_OPERATOR_AUTHORIZED, AUTHORIZATION_MODE_OPERATOR_CODE,
+    AUTHORIZER_TOKEN_REFRESH_LEAD_SECONDS, RESOURCE_ACCOUNT_KIND_MINI_PROGRAM,
+    RESOURCE_ACCOUNT_KIND_OFFICIAL_ACCOUNT,
+};
+pub use wechat_component_message::{
+    build_text_reply, decide_message_action, encrypt_reply_envelope, message_dedupe_key,
+    parse_authorizer_message, AuthorizerMessage, AuthorizerMessageAction,
+    WechatComponentMessageError,
+};
+pub use wechat_component_ticket::{
+    should_replace_ticket, ticket_alert, ticket_validity_seconds, ComponentTicketAcceptance,
+    ComponentTicketAlert, ComponentTicketStore, InMemoryComponentTicketStore,
+    WechatComponentTicket, WechatComponentTicketError, WechatComponentTicketService,
+    TICKET_RESTART_PUSH_SECONDS, TICKET_STALE_ALERT_SECONDS,
+};
+pub use wechat_component_ticket_pg::PgComponentTicketStore;
+pub use wechat_component_token::{
+    component_token_cache_key, component_token_cache_ttl_seconds, now_epoch_seconds,
+    CachedComponentToken, ComponentTokenCache, InMemoryComponentTokenCache,
+    WechatComponentTokenError, WechatComponentTokenService,
+};
+pub use wechat_component_token_pg::{
+    advisory_lock_key, PgComponentTokenCache, COMPONENT_TOKEN_ARTIFACT_KIND,
+    COMPONENT_TOKEN_ARTIFACT_SCOPE,
 };
 pub use wechat_mp::{
     create_wechat_mp_permanent_qr_code, create_wechat_mp_temp_qr_code,

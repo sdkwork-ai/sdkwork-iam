@@ -538,6 +538,20 @@ export class IamOauthIamOauthOperatorPlatformsPreAuthorizationsApi {
   }
 }
 
+export class IamOauthIamOauthOperatorPlatformsComponentCredentialsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Iam oauth operator Platforms component Credentials create. */
+  async create(operatorPlatformId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/oauth/operator_platforms/${serializePathParameter(operatorPlatformId, { name: 'operatorPlatformId', style: 'simple', explode: false })}/component_credentials`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export interface IamOauthIamOauthOperatorPlatformsListParams {
   page?: number;
   pageSize?: number;
@@ -548,10 +562,12 @@ export interface IamOauthIamOauthOperatorPlatformsListParams {
 
 export class IamOauthIamOauthOperatorPlatformsApi {
   private client: HttpClient;
+  public readonly componentCredentials: IamOauthIamOauthOperatorPlatformsComponentCredentialsApi;
   public readonly preAuthorizations: IamOauthIamOauthOperatorPlatformsPreAuthorizationsApi;
 
   constructor(client: HttpClient) {
     this.client = client;
+    this.componentCredentials = new IamOauthIamOauthOperatorPlatformsComponentCredentialsApi(client);
     this.preAuthorizations = new IamOauthIamOauthOperatorPlatformsPreAuthorizationsApi(client);
   }
 

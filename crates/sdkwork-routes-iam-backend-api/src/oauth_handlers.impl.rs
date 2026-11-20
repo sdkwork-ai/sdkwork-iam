@@ -1,3 +1,10 @@
+use sdkwork_iam_web_adapter::{
+    begin_authorization, now_epoch_seconds, AuthorizationEntryRequest,
+    PgComponentPlatformConfigReader, PgComponentTokenCache, ReqwestWechatComponentTransport,
+    WechatComponentApi, WechatComponentAuthorizationError, WechatComponentAuthorizationScope,
+    WechatComponentAuthorizationSurface, WechatComponentTokenService,
+};
+
 const RESOURCE_ACCOUNT_CLIENT_BINDING_CONFLICT: &str =
     "oauth resource account client binding is missing, ambiguous, or inconsistent";
 const RESOURCE_ACCOUNT_IDENTITY_CONFLICT: &str =
@@ -2386,13 +2393,353 @@ async fn create_pre_authorization(
     State(state): State<BackendIamState>,
     ctx: WebRequestContext,
     Path(operator_platform_id): Path<String>,
+) -> Response {
+    let pg = match postgres_pool_or_error(&state) {
+        Ok(pg) => pg,
+        Err(response) => return response,
+    };
+    let tenant_id = match tenant_id_from_context(&ctx) {
+        Ok(tenant_id) => tenant_id,
+        Err(response) => return response,
+    };
+    let callback_url = match sqlx::query(
+        "SELECT authorization_callback_url FROM iam_oauth_operator_platform \
+         WHERE tenant_id = $1 AND id = $2",
+    )
+    .bind(&tenant_id)
+    .bind(&operator_platform_id)
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(Some(row)) => row.get::<Option<String>, _>(0),
+        Ok(None) => {
+            return appbase_error(
+                StatusCode::NOT_FOUND,
+                "iam_oauth_operator_platform_not_found",
+                "operator platform not found",
+            )
+        }
+        Err(error) => {
+            return internal_handler_error("iam_oauth_pre_authorization_failed", error.to_string())
+        }
+    };
+    let Some(callback_url) = callback_url
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+    else {
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_oauth_operator_platform_callback_missing",
+            "configure the operator platform authorization callback URL before creating an authorization entry",
+        );
+    };
+    let token_transport = match ReqwestWechatComponentTransport::new() {
+        Ok(transport) => transport,
+        Err(error) => {
+            return internal_handler_error("iam_oauth_pre_authorization_failed", error.to_string())
+        }
+    };
+    let api_transport = match ReqwestWechatComponentTransport::new() {
+        Ok(transport) => transport,
+        Err(error) => {
+            return internal_handler_error("iam_oauth_pre_authorization_failed", error.to_string())
+        }
+    };
+    let tokens = WechatComponentTokenService::new(
+        PgComponentTokenCache::new((*pg).clone()),
+        WechatComponentApi::new(token_transport),
+    );
+    let api = WechatComponentApi::new(api_transport);
+    let reader = PgComponentPlatformConfigReader::new((*pg).clone());
+    let entry = match begin_authorization(
+        &reader,
+        &tokens,
+        &api,
+        &AuthorizationEntryRequest {
+            platform_id: &operator_platform_id,
+            redirect_uri: &callback_url,
+            surface: WechatComponentAuthorizationSurface::PcScan,
+            scope: WechatComponentAuthorizationScope::Both,
+            now: now_epoch_seconds(),
+        },
+    )
+    .await
+    {
+        Ok(entry) => entry,
+        Err(error) => return pre_authorization_error(error),
+    };
+    let mut response = appbase_ok(json!({
+        "item": {
+            "url": entry.url,
+            "expiresIn": entry.pre_auth_code_expires_in,
+        }
+    }));
+    *response.status_mut() = StatusCode::CREATED;
+    response
+}
+
+async fn create_operator_platform_component_credentials(
+    State(state): State<BackendIamState>,
+    ctx: WebRequestContext,
+    Path(operator_platform_id): Path<String>,
     Json(body): Json<Value>,
 ) -> Response {
-    let mut payload = body;
-    if let Value::Object(ref mut map) = payload {
-        map.insert("operatorPlatformId".to_owned(), json!(operator_platform_id));
+    let pg = match postgres_pool_or_error(&state) {
+        Ok(pg) => pg,
+        Err(response) => return response,
+    };
+    let tenant_id = match tenant_id_from_context(&ctx) {
+        Ok(tenant_id) => tenant_id,
+        Err(response) => return response,
+    };
+    let Some(component_app_id) =
+        read_string_field(&body, &["componentAppId", "component_appid"])
+    else {
+        return appbase_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "iam_oauth_operator_platform_component_invalid",
+            "componentAppId is required",
+        );
+    };
+    let Some(component_app_secret) =
+        read_string_field(&body, &["componentAppSecret", "component_app_secret"])
+    else {
+        return appbase_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "iam_oauth_operator_platform_component_invalid",
+            "componentAppSecret is required",
+        );
+    };
+    let Some(encoding_aes_key) =
+        read_string_field(&body, &["encodingAesKey", "encoding_aes_key"])
+    else {
+        return appbase_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "iam_oauth_operator_platform_component_invalid",
+            "encodingAesKey is required",
+        );
+    };
+    let Some(authorization_callback_url) = read_string_field(
+        &body,
+        &["authorizationCallbackUrl", "authorization_callback_url"],
+    ) else {
+        return appbase_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "iam_oauth_operator_platform_component_invalid",
+            "authorizationCallbackUrl is required",
+        );
+    };
+    if !matches!(encoding_aes_key.chars().count(), 43 | 44) {
+        return appbase_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "iam_oauth_operator_platform_component_invalid",
+            "encodingAesKey must be 43 base64 characters",
+        );
     }
-    insert_diagnostic_run(&state, &ctx, &payload, "pre_authorization").await
+    if !authorization_callback_url.starts_with("https://")
+        && !authorization_callback_url.starts_with("http://")
+    {
+        return appbase_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "iam_oauth_operator_platform_component_invalid",
+            "authorizationCallbackUrl must be an absolute http(s) url",
+        );
+    }
+    let event_callback_url = read_string_field(&body, &["eventCallbackUrl", "event_callback_url"]);
+    let message_callback_url =
+        read_string_field(&body, &["messageCallbackUrl", "message_callback_url"]);
+    let callback_token = read_string_field(&body, &["callbackToken", "callback_token"]);
+    let now = Utc::now().to_rfc3339();
+    let generated_callback_public_id = format!("wxc{}", Uuid::new_v4().simple());
+    let mut transaction = match pg.begin().await {
+        Ok(transaction) => transaction,
+        Err(error) => {
+            return internal_handler_error(
+                "iam_oauth_operator_platform_component_failed",
+                error.to_string(),
+            )
+        }
+    };
+    let updated = match sqlx::query_scalar::<_, String>(
+        "UPDATE iam_oauth_operator_platform SET \
+            component_appid = $3, \
+            platform_type = 'platform', \
+            authorization_callback_url = $4, \
+            event_callback_url = COALESCE($5, event_callback_url), \
+            message_callback_url = COALESCE($6, message_callback_url), \
+            callback_public_id = COALESCE(callback_public_id, $8), \
+            updated_at = $7, \
+            version = version + 1 \
+         WHERE tenant_id = $1 AND id = $2 \
+         RETURNING callback_public_id",
+    )
+    .bind(&tenant_id)
+    .bind(&operator_platform_id)
+    .bind(&component_app_id)
+    .bind(&authorization_callback_url)
+    .bind(&event_callback_url)
+    .bind(&message_callback_url)
+    .bind(&now)
+    .bind(&generated_callback_public_id)
+    .fetch_optional(&mut *transaction)
+    .await
+    {
+        Ok(updated) => updated,
+        Err(error) => {
+            return internal_handler_error(
+                "iam_oauth_operator_platform_component_failed",
+                error.to_string(),
+            )
+        }
+    };
+    let Some(callback_public_id) = updated else {
+        let _ = transaction.rollback().await;
+        return appbase_error(
+            StatusCode::NOT_FOUND,
+            "iam_oauth_operator_platform_not_found",
+            "operator platform not found",
+        );
+    };
+    let mut secrets: Vec<(&str, &str)> = vec![
+        ("component_app_secret", component_app_secret.as_str()),
+        ("encoding_aes_key", encoding_aes_key.as_str()),
+    ];
+    if let Some(callback_token) = callback_token.as_deref() {
+        secrets.push(("component_callback_token", callback_token));
+    }
+    for (secret_kind, secret_value) in secrets {
+        if let Err(error) = upsert_operator_platform_secret_tx(
+            &mut transaction,
+            &tenant_id,
+            &operator_platform_id,
+            secret_kind,
+            secret_value,
+            &now,
+        )
+        .await
+        {
+            return internal_handler_error(
+                "iam_oauth_operator_platform_component_failed",
+                error.to_string(),
+            );
+        }
+    }
+    if let Err(error) = transaction.commit().await {
+        return internal_handler_error(
+            "iam_oauth_operator_platform_component_failed",
+            error.to_string(),
+        );
+    }
+    let mut configured_secret_kinds = vec!["component_app_secret", "encoding_aes_key"];
+    if callback_token.is_some() {
+        configured_secret_kinds.push("component_callback_token");
+    }
+    let mut response = appbase_ok(json!({
+        "item": {
+            "operatorPlatformId": operator_platform_id,
+            "componentAppId": component_app_id,
+            "callbackPublicId": callback_public_id,
+            "configuredSecretKinds": configured_secret_kinds,
+        }
+    }));
+    *response.status_mut() = StatusCode::CREATED;
+    response
+}
+
+async fn upsert_operator_platform_secret_tx(
+    transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    tenant_id: &str,
+    platform_id: &str,
+    secret_kind: &str,
+    secret_value: &str,
+    now: &str,
+) -> Result<(), sqlx::Error> {
+    let secret_ref = sdkwork_iam_bootstrap::encode_signing_secret_ref(secret_value.as_bytes());
+    let secret_hash = sdkwork_iam_bootstrap::hash_secret_ref(&secret_ref);
+    let active_secret_id = sqlx::query_scalar::<_, String>(
+        "SELECT id FROM iam_oauth_secret \
+         WHERE operator_platform_id = $1 AND secret_kind = $2 AND status = 'active' \
+         ORDER BY active_from DESC, updated_at DESC, id DESC \
+         LIMIT 1 FOR UPDATE",
+    )
+    .bind(platform_id)
+    .bind(secret_kind)
+    .fetch_optional(&mut **transaction)
+    .await?;
+    match active_secret_id {
+        Some(secret_id) => {
+            sqlx::query(
+                "UPDATE iam_oauth_secret SET secret_ref = $1, secret_hash = $2, \
+                        version = version + 1, updated_at = $3 \
+                 WHERE tenant_id = $4 AND id = $5",
+            )
+            .bind(&secret_ref)
+            .bind(&secret_hash)
+            .bind(now)
+            .bind(tenant_id)
+            .bind(&secret_id)
+            .execute(&mut **transaction)
+            .await?;
+        }
+        None => {
+            sqlx::query(
+                "INSERT INTO iam_oauth_secret \
+                    (id, uuid, tenant_id, secret_owner_kind, secret_owner_id, \
+                     operator_platform_id, secret_kind, secret_ref, secret_hash, \
+                     active_from, status, created_at, updated_at) \
+                 VALUES ($1, $2, $3, 'operator_platform', $4, $4, $5, $6, $7, $8, 'active', $8, $8)",
+            )
+            .bind(format!("iamos-{}", Uuid::new_v4()))
+            .bind(Uuid::new_v4().to_string())
+            .bind(tenant_id)
+            .bind(platform_id)
+            .bind(secret_kind)
+            .bind(&secret_ref)
+            .bind(&secret_hash)
+            .bind(now)
+            .execute(&mut **transaction)
+            .await?;
+        }
+    }
+    Ok(())
+}
+
+fn pre_authorization_error(error: WechatComponentAuthorizationError) -> Response {
+    match error {
+        WechatComponentAuthorizationError::PlatformNotFound(_) => appbase_error(
+            StatusCode::NOT_FOUND,
+            "iam_oauth_operator_platform_not_found",
+            "operator platform not found",
+        ),
+        WechatComponentAuthorizationError::CustomizedPlatform(_) => appbase_error(
+            StatusCode::CONFLICT,
+            "iam_oauth_operator_platform_not_authorizable",
+            "a customized-type operator platform cannot authorize accounts",
+        ),
+        WechatComponentAuthorizationError::MissingSecret(kind) => appbase_error(
+            StatusCode::CONFLICT,
+            "iam_oauth_operator_platform_secret_missing",
+            &format!("operator platform is missing the {kind} secret"),
+        ),
+        WechatComponentAuthorizationError::InvalidRedirect(detail) => appbase_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "iam_oauth_operator_platform_callback_invalid",
+            &detail,
+        ),
+        WechatComponentAuthorizationError::Api(provider) => appbase_error(
+            StatusCode::BAD_GATEWAY,
+            "iam_oauth_provider_unavailable",
+            &provider.to_string(),
+        ),
+        WechatComponentAuthorizationError::Token(token) => appbase_error(
+            StatusCode::BAD_GATEWAY,
+            "iam_oauth_provider_unavailable",
+            &token.to_string(),
+        ),
+        WechatComponentAuthorizationError::Store(detail) => {
+            internal_handler_error("iam_oauth_pre_authorization_failed", detail)
+        }
+    }
 }
 
 async fn create_resource_account_verification(

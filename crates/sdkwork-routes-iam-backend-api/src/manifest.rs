@@ -954,6 +954,12 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         "iam.oauth.operatorPlatforms.preAuthorizations.create",
     ),
     HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/oauth/operator_platforms/{operatorPlatformId}/component_credentials",
+        "iam.oauth",
+        "iam.oauth.operatorPlatforms.componentCredentials.create",
+    ),
+    HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/iam/oauth/resource_accounts",
         "iam.oauth",
