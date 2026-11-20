@@ -150,17 +150,19 @@ pub(crate) async fn finalize_successful_password_login(pg: &PgPool, user: &Local
     let now = current_timestamp_utc();
     let _ = sqlx::query(
         "UPDATE iam_credential SET failed_attempts = 0, locked_until = NULL, last_used_at = $2, updated_at = $3 \
-         WHERE user_id = $1 AND credential_type = 'password'",
+         WHERE user_id = $1 AND credential_type = 'password' AND tenant_id = $4",
     )
     .bind(&user.id)
     .bind(&now)
     .bind(&now)
+    .bind(&user.tenant_id)
     .execute(pg)
     .await;
-    let _ = sqlx::query("UPDATE iam_user SET last_login_at = $2, updated_at = $3 WHERE id = $1")
+    let _ = sqlx::query("UPDATE iam_user SET last_login_at = $2, updated_at = $3 WHERE id = $1 AND tenant_id = $4")
         .bind(&user.id)
         .bind(&now)
         .bind(&now)
+        .bind(&user.tenant_id)
         .execute(pg)
         .await;
 }
@@ -198,12 +200,13 @@ async fn record_failed_password_attempt(
     let lock_until_text = lock.as_ref().map(chrono::DateTime::to_rfc3339);
     let _ = sqlx::query(
         "UPDATE iam_credential SET failed_attempts = $2, locked_until = $3, updated_at = $4 \
-         WHERE user_id = $1 AND credential_type = 'password'",
+         WHERE user_id = $1 AND credential_type = 'password' AND tenant_id = $5",
     )
     .bind(user_id)
     .bind(new_attempts)
     .bind(&lock_until_text)
     .bind(&now)
+    .bind(tenant_id)
     .execute(pg)
     .await;
     if lock.is_some() {

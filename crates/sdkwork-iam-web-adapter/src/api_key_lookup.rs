@@ -140,12 +140,15 @@ impl ApiKeyLookupService for IamApiKeyLookupService {
             })
             .unwrap_or(true);
         if last_used_is_stale {
-            let _ =
-                sqlx::query("UPDATE iam_api_key SET last_used_at = $2::timestamptz WHERE id = $1")
-                    .bind(&api_key_id)
-                    .bind(now.to_rfc3339())
-                    .execute(self.pool.as_ref())
-                    .await;
+            let _ = sqlx::query(
+                "UPDATE iam_api_key SET last_used_at = $2::timestamptz \
+                 WHERE id = $1 AND tenant_id = $3",
+            )
+            .bind(&api_key_id)
+            .bind(now.to_rfc3339())
+            .bind(&tenant_id)
+            .execute(self.pool.as_ref())
+            .await;
         }
 
         Ok(ApiKeyPrincipalRecord {

@@ -464,13 +464,17 @@ pub(crate) async fn remove_session(
     session: &LocalSession,
 ) -> Result<(), String> {
     let now = current_timestamp_utc();
-    sqlx::query("UPDATE iam_session SET revoked_at = $2, updated_at = $3 WHERE id = $1 AND revoked_at IS NULL")
-        .bind(&session.session_id)
-        .bind(&now)
-        .bind(&now)
-        .execute(pg)
-        .await
-        .map_err(|e| format!("revoke session failed: {e}"))?;
+    sqlx::query(
+        "UPDATE iam_session SET revoked_at = $2, updated_at = $3 \
+         WHERE id = $1 AND revoked_at IS NULL AND tenant_id = $4",
+    )
+    .bind(&session.session_id)
+    .bind(&now)
+    .bind(&now)
+    .bind(&session.context.tenant_id)
+    .execute(pg)
+    .await
+    .map_err(|e| format!("revoke session failed: {e}"))?;
     crate::security_events::record_session_revoked(
         pg,
         &session.context.tenant_id,
@@ -938,11 +942,12 @@ pub(crate) async fn claim_session_for_refresh(
 
     let revoked = sqlx::query(
         "UPDATE iam_session SET revoked_at = $2, updated_at = $3 \
-         WHERE id = $1 AND revoked_at IS NULL",
+         WHERE id = $1 AND revoked_at IS NULL AND tenant_id = $4",
     )
     .bind(&session.session_id)
     .bind(&now)
     .bind(&now)
+    .bind(&session.context.tenant_id)
     .execute(&mut *tx)
     .await
     .map_err(|error| format!("revoke refresh session failed: {error}"))?;
@@ -1124,7 +1129,7 @@ pub(crate) async fn rotate_current_session_context(
          auth_token_kid = $7, access_token_kid = $7, refresh_token_kid = $7, \
          data_scope_json = $8, permission_scope_json = $9, updated_at = $10, scope_kind = $13 \
          WHERE id = $1 AND revoked_at IS NULL AND expires_at::timestamptz > $10::timestamptz \
-           AND auth_token_hash = $11 AND access_token_hash = $12",
+           AND auth_token_hash = $11 AND access_token_hash = $12 AND tenant_id = $14",
     )
     .bind(&session.session_id)
     .bind(&target_organization_id)
@@ -1139,6 +1144,7 @@ pub(crate) async fn rotate_current_session_context(
     .bind(&expected_auth_hash)
     .bind(&expected_access_hash)
     .bind(ownership_scope.as_str())
+    .bind(&session.user.tenant_id)
     .execute(pg)
     .await
     .map_err(|error| format!("rotate session failed: {error}"))?;
@@ -1230,7 +1236,7 @@ pub(crate) async fn refresh_session_scopes_from_rbac(
     let updated = sqlx::query(
         "UPDATE iam_session SET data_scope_json = $2, permission_scope_json = $3, updated_at = $4 \
          WHERE id = $1 AND revoked_at IS NULL AND expires_at::timestamptz > $4::timestamptz \
-           AND auth_token_hash = $5 AND access_token_hash = $6",
+           AND auth_token_hash = $5 AND access_token_hash = $6 AND tenant_id = $7",
     )
     .bind(&session.session_id)
     .bind(Json(&context.data_scope))
@@ -1238,6 +1244,7 @@ pub(crate) async fn refresh_session_scopes_from_rbac(
     .bind(&now)
     .bind(&expected_auth_hash)
     .bind(&expected_access_hash)
+    .bind(&session.user.tenant_id)
     .execute(pg)
     .await
     .map_err(|error| format!("refresh session scopes failed: {error}"))?;

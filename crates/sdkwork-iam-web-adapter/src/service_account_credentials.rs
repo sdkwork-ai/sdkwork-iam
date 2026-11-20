@@ -231,10 +231,11 @@ pub async fn revoke_service_account_credential(
     }
     sqlx::query(
         "UPDATE iam_session SET revoked_at = $2, updated_at = $2 \
-         WHERE credential_id = $1 AND revoked_at IS NULL",
+         WHERE credential_id = $1 AND revoked_at IS NULL AND tenant_id = $3",
     )
     .bind(credential_id)
     .bind(now)
+    .bind(tenant_id)
     .execute(&mut *transaction)
     .await
     .map_err(|error| format!("revoke credential sessions failed: {error}"))?;

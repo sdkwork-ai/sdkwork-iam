@@ -1175,9 +1175,12 @@ pub async fn upsert_active_credential(
         .await
         .map_err(|error| unavailable("write provider credential", error))?;
 
-    let sql = format!("SELECT {CREDENTIAL_COLUMNS} FROM iam_provider_credential WHERE id = $1");
+    let sql = format!(
+        "SELECT {CREDENTIAL_COLUMNS} FROM iam_provider_credential WHERE id = $1 AND tenant_id = $2"
+    );
     let row = sqlx::query(sqlx::AssertSqlSafe(sql))
         .bind(&credential_id)
+        .bind(&tenant_id)
         .fetch_one(pg)
         .await
         .map_err(|error| unavailable("read provider credential", error))?;

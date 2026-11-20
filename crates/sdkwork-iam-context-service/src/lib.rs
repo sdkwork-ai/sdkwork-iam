@@ -405,10 +405,12 @@ mod tests {
         assert_eq!(context.login_scope, LoginScope::Organization);
         assert_eq!(context.organization_scope(), "100002");
         assert!(!context.is_tenant_level());
-        assert_eq!(
-            IamShardingStrategy::Organization,
-            IamShardingContext::from_app_context(&context).sharding_strategy
-        );
+        let sharding = IamShardingContext::from_app_context(&context);
+        assert_eq!(IamShardingStrategy::Organization, sharding.sharding_strategy);
+        // Database isolation for an organization release is keyed by the
+        // organization id, exactly as a tenant-level session is keyed by its
+        // tenant id (`DATABASE_SPEC.md` §16).
+        assert_eq!("100002", sharding.sharding_key);
     }
 
     #[test]

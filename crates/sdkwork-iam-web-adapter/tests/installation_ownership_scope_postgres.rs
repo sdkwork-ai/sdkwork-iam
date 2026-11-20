@@ -434,6 +434,37 @@ async fn bootstrap_issuance_signs_the_installation_scope_in_all_three_states() {
             claims["app_id"],
             serde_json::json!(application.deploy_application_id.clone())
         );
+        // The persisted session carries the same projection: the tenant key is
+        // always present, and only an organization-level installation adds its
+        // organization key (`APP_ACCESS_TOKEN_SPEC.md` §5,
+        // `DATABASE_SPEC.md` §16).
+        let stored_scope: serde_json::Value = sqlx::query_scalar(
+            "SELECT data_scope_json FROM iam_session WHERE id = $1",
+        )
+        .bind(&issued.session_id)
+        .fetch_one(&pg)
+        .await
+        .expect("the issued session persists its data scope");
+        let stored_scope: Vec<String> =
+            serde_json::from_value(stored_scope).expect("the data scope is a string array");
+        assert!(
+            stored_scope.contains(&format!("tenant:{tenant_id}")),
+            "every bootstrap credential keeps its tenant key: {stored_scope:?}"
+        );
+        let organization_scope = format!("organization:{claim_organization}");
+        if claim == "ORGANIZATION" {
+            assert!(
+                stored_scope.contains(&organization_scope),
+                "an organization credential must bind its organization: {stored_scope:?}"
+            );
+        } else {
+            assert!(
+                !stored_scope
+                    .iter()
+                    .any(|scope| scope.starts_with("organization:")),
+                "a shared tenant or personal credential must not claim an organization: {stored_scope:?}"
+            );
+        }
     }
 
     cleanup(&pg, &tenant_id).await;
@@ -597,6 +628,24 @@ async fn a_public_token_binds_a_personal_installation_to_its_owner() {
         IamPrincipalKind::ServiceAccount
     );
     assert_eq!(organization_context.organization_scope(), organization_id);
+    // Organization isolation reaches downstream filtering: an organization-level
+    // token carries `organization:<id>` beside the tenant key, exactly like a
+    // session token, and the tenant-level token above carries no organization key.
+    assert!(
+        organization_context
+            .data_scope
+            .contains(&format!("organization:{organization_id}")),
+        "the organization scope must reach downstream filtering: {:?}",
+        organization_context.data_scope
+    );
+    assert!(
+        !tenant_context
+            .data_scope
+            .iter()
+            .any(|scope| scope.starts_with("organization:")),
+        "a tenant-level token must not claim an organization scope: {:?}",
+        tenant_context.data_scope
+    );
 
     // Personal release: the owner's claim is the subject.
     let personal_application = provision_tenant_application(

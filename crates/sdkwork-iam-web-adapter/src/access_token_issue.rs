@@ -414,6 +414,14 @@ pub async fn issue_standalone_bootstrap_access_credential(
     };
 
     let organization_id = scope.organization_claim(&tenant_application.organization_id).to_owned();
+    // The bootstrap credential projects the same isolation keys a session does:
+    // an organization-level installation binds its organization beside the
+    // tenant, so a data plane filtering by data scope cannot read the whole
+    // tenant (`APP_ACCESS_TOKEN_SPEC.md` §5, `DATABASE_SPEC.md` §16).
+    let mut data_scope = vec![format!("tenant:{tenant_id}"), format!("user:{subject_user_id}")];
+    if scope == ApplicationOwnershipScope::Organization {
+        data_scope.push(format!("organization:{organization_id}"));
+    }
     let session_id = generate_opaque_token("session");
     let now = chrono::Utc::now();
     // Default: no expiry (`ttl_seconds = None` or `Some(0)`). The bootstrap
@@ -436,7 +444,7 @@ pub async fn issue_standalone_bootstrap_access_credential(
         environment.clone(),
         DeploymentMode::Local,
         AuthLevel::System,
-        vec![format!("tenant:{tenant_id}"), format!("user:{subject_user_id}")],
+        data_scope,
         tenant_application.access_permissions.clone(),
     );
 

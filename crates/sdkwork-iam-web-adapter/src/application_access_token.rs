@@ -35,6 +35,9 @@ use crate::application_scope::{
     ensure_public_token_subject_is_installation_owner, is_valid_user_id_claim,
     ApplicationOwnershipScope,
 };
+use crate::installation_lifecycle::{
+    load_installation_environments, INSTALLATION_ENVIRONMENT_STATUS_ACTIVE,
+};
 
 const PUBLIC_APPLICATION_ACCESS_TOKEN_KID: &str = "public-app-token";
 const PUBLIC_APPLICATION_ACCESS_TOKEN_SIGNATURE: &str = "public";
@@ -96,6 +99,34 @@ fn normalize_environment(value: &str) -> Environment {
         "test" | "testing" => Environment::Test,
         _ => Environment::Prod,
     }
+}
+
+/// Decides whether an installation's registered lifecycles accept one token claim.
+///
+/// `registered` is every live `(env_key, env_status)` row of the installation.
+///
+/// * An installation **with** rows is gated exactly like issuance and session
+///   creation (`decide_installation_environment_access`): the claimed
+///   environment needs an `active` row. The claim is the coarse session-plane
+///   value (`Dev`/`Test`/`Prod`) while the rows are exact lifecycle keys, so
+///   `staging` and `demo` satisfy a `Prod` claim
+///   (`APP_ACCESS_TOKEN_SPEC.md` §8.4).
+/// * An installation **without** rows predates lifecycle registration and keeps
+///   the historical single-column comparison, including its "blank column means
+///   no constraint" behaviour.
+fn installation_environment_accepts(
+    registered: &[(String, String)],
+    installation_environment: &str,
+    claimed: &Environment,
+) -> bool {
+    if registered.is_empty() {
+        return installation_environment.trim().is_empty()
+            || normalize_environment(installation_environment) == *claimed;
+    }
+    registered.iter().any(|(env_key, env_status)| {
+        env_status == INSTALLATION_ENVIRONMENT_STATUS_ACTIVE
+            && normalize_environment(env_key) == *claimed
+    })
 }
 
 fn normalize_deployment_mode(value: &str) -> DeploymentMode {
@@ -277,6 +308,23 @@ pub fn parse_public_application_access_token(
     validate_public_application_access_token(token).ok().flatten()
 }
 
+/// Data scopes projected for a shared (`TENANT`/`ORGANIZATION`) release.
+///
+/// The tenant is always the outer isolation key. An organization-level release
+/// additionally binds its organization, exactly as session tokens project
+/// `organization:<id>` (`sdkwork-iam-bootstrap::resolve_session_scopes`,
+/// `sqlite_sessions`). Without that entry an organization credential would reach
+/// every row of its tenant on a data plane that filters by `data_scope`, even
+/// though `IamShardingContext` already routes it to the organization partition
+/// (`DATABASE_SPEC.md` §16, `API_SPEC.md` §10.4).
+fn shared_release_data_scope(claims: &PublicApplicationAccessTokenClaims) -> Vec<String> {
+    let mut data_scope = vec![format!("tenant:{}", claims.tenant_id)];
+    if claims.login_scope_is_organization {
+        data_scope.push(format!("organization:{}", claims.organization_id));
+    }
+    data_scope
+}
+
 /// Resolve the isolation context of one public application access token,
 /// reporting why the credential was rejected.
 ///
@@ -325,9 +373,23 @@ pub async fn try_resolve_application_access_token_context(
     if application.ownership_scope != claims.ownership_scope {
         return Ok(None);
     }
-    if !application.environment.trim().is_empty()
-        && normalize_environment(&application.environment) != claims.environment
-    {
+    // Environment gate. One deploy application serves several lifecycle
+    // environments, each with its own public domain (`installation_lifecycle.rs`),
+    // and both issuance and session creation gate on the registered
+    // `iam_application_installation_environment` rows. The single legacy
+    // `environment` column records the context the installation was registered
+    // from, so comparing it with the claim rejected a valid `production` claim
+    // whenever that registration happened in development, even though the
+    // installation's `production` row was `active`.
+    let registered = load_installation_environments(pg, &claims.tenant_id, &application.id)
+        .await
+        .map_err(|error| {
+            format!(
+                "load installation environments for public application access token of {} failed: {error}",
+                claims.app_id
+            )
+        })?;
+    if !installation_environment_accepts(&registered, &application.environment, &claims.environment) {
         return Ok(None);
     }
     let is_personal = claims.ownership_scope == ApplicationOwnershipScope::User;
@@ -350,7 +412,7 @@ pub async fn try_resolve_application_access_token_context(
     } else {
         (
             PUBLIC_APPLICATION_SYSTEM_SUBJECT.to_owned(),
-            vec![format!("tenant:{}", claims.tenant_id)],
+            shared_release_data_scope(&claims),
         )
     };
     let mut context = IamAppContext::new(
@@ -513,6 +575,37 @@ mod tests {
     }
 
     #[test]
+    fn shared_releases_project_the_organization_scope() {
+        let organization = parse_public_application_access_token(&token(
+            public_header(),
+            organization_payload(),
+            "public",
+        ))
+        .expect("an organization token parses");
+        assert!(organization.login_scope_is_organization);
+        assert_eq!(
+            shared_release_data_scope(&organization),
+            vec![
+                "tenant:100001".to_owned(),
+                "organization:42".to_owned()
+            ]
+        );
+
+        // A tenant-level release stays keyed by the tenant alone.
+        let tenant = parse_public_application_access_token(&token(
+            public_header(),
+            public_payload(),
+            "public",
+        ))
+        .expect("a tenant token parses");
+        assert!(!tenant.login_scope_is_organization);
+        assert_eq!(
+            shared_release_data_scope(&tenant),
+            vec!["tenant:100001".to_owned()]
+        );
+    }
+
+    #[test]
     fn rejects_an_expired_application_token() {
         let mut expired = public_payload();
         expired["exp"] = serde_json::json!(1_i64);
@@ -654,5 +747,78 @@ mod tests {
                 "the rejection must name the claim: {error}"
             );
         }
+    }
+
+    #[test]
+    fn a_multi_lifecycle_installation_accepts_each_active_lifecycle() {
+        // One deploy application, two active lifecycles: the same installation
+        // serves the development and the production renderer, and each packaged
+        // token claims its own coarse environment. The legacy column records
+        // only the registration context, so it must not decide the outcome.
+        let registered = vec![
+            ("development".to_owned(), "active".to_owned()),
+            ("production".to_owned(), "active".to_owned()),
+        ];
+        assert!(installation_environment_accepts(
+            &registered,
+            "development",
+            &Environment::Prod
+        ));
+        assert!(installation_environment_accepts(
+            &registered,
+            "development",
+            &Environment::Dev
+        ));
+    }
+
+    #[test]
+    fn a_staging_or_demo_lifecycle_satisfies_the_coarse_prod_claim() {
+        // `APP_ACCESS_TOKEN_SPEC.md` §8.4: the claim is the session-plane value
+        // while the gate runs against the exact lifecycle key.
+        for lifecycle in ["production", "staging", "demo"] {
+            let registered = vec![(lifecycle.to_owned(), "active".to_owned())];
+            assert!(
+                installation_environment_accepts(&registered, "", &Environment::Prod),
+                "{lifecycle} must satisfy a Prod claim"
+            );
+        }
+    }
+
+    #[test]
+    fn a_non_active_or_missing_lifecycle_is_rejected() {
+        let pending = vec![("production".to_owned(), "pending".to_owned())];
+        assert!(!installation_environment_accepts(
+            &pending,
+            "production",
+            &Environment::Prod
+        ));
+        let disabled = vec![("production".to_owned(), "disabled".to_owned())];
+        assert!(!installation_environment_accepts(
+            &disabled,
+            "production",
+            &Environment::Prod
+        ));
+        let other = vec![("development".to_owned(), "active".to_owned())];
+        assert!(
+            !installation_environment_accepts(&other, "development", &Environment::Prod),
+            "a production token must not be served by a development-only installation"
+        );
+    }
+
+    #[test]
+    fn an_installation_without_lifecycle_rows_keeps_the_legacy_column_gate() {
+        assert!(installation_environment_accepts(
+            &[],
+            "production",
+            &Environment::Prod
+        ));
+        assert!(
+            !installation_environment_accepts(&[], "development", &Environment::Prod),
+            "the legacy column still separates environments without lifecycle rows"
+        );
+        assert!(
+            installation_environment_accepts(&[], "", &Environment::Prod),
+            "a blank legacy column means no environment constraint"
+        );
     }
 }
