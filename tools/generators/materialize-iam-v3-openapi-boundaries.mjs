@@ -103,6 +103,14 @@ const openApiAuthorityExternalWireOperations = {
   'iam.oauth.userinfo.retrieve': 'oidc-userinfo',
   'iam.oauth.providerCallbacks.create': 'wechat-provider-callback',
   'iam.oauth.providerCallbacks.retrieve': 'wechat-provider-callback-verification',
+  // WeChat payment entry points are vendor redirects/callbacks, not SDKWork JSON
+  // operations: `start`/`cashier/start` answer a 302 to the WeChat cashier and
+  // `callback` receives the vendor notification.
+  'wechatPaymentOauth.callback': 'wechat-payment-callback',
+  'wechatPaymentOauth.start': 'wechat-payment-redirect',
+  'wechatPaymentOauth.cashierStart': 'wechat-payment-redirect',
+  'iam.oauth.officialAccounts.wechatNotify.verify': 'wechat-official-account-callback',
+  'iam.oauth.officialAccounts.wechatNotify.receive': 'wechat-official-account-callback',
 };
 
 const credentialHeaderForbiddenAppOperationIds = new Set([
@@ -718,9 +726,9 @@ function buildOperation(surface, route) {
         },
       },
     };
-    delete operation.responses[200];
     delete operation.responses[201];
-    operation.responses[204] = { description: 'Session revoked.' };
+    delete operation.responses[204];
+    operation.responses[200] = jsonResponse('Session revoked.', successSchemaRef);
   }
 
   if (route.operationId === 'authorizations.create') {
@@ -834,20 +842,20 @@ function buildOperation(surface, route) {
 
   if (route.operationId === 'providerAccounts.list') {
     operation.parameters.push(
-      queryParameter('vendorCode', {
+      queryParameter('vendor_code', {
         type: 'string',
         description: 'Exact cloud vendor code filter (for example aliyun).',
       }),
-      queryParameter('scopeType', {
+      queryParameter('scope_type', {
         type: 'string',
         description:
           'Restrict to a single account scope: platform | tenant | organization | user.',
       }),
-      queryParameter('ownerUserId', {
+      queryParameter('owner_user_id', {
         type: 'string',
         description: 'Restrict to the personal accounts of one owner.',
       }),
-      queryParameter('organizationId', { type: 'string', description: 'Exact organization id filter.' }),
+      queryParameter('organization_id', { type: 'string', description: 'Exact organization id filter.' }),
       queryParameter('status', {
         type: 'string',
         description: 'Exact account status filter (active | disabled | deleted).',
@@ -856,7 +864,7 @@ function buildOperation(surface, route) {
         type: 'boolean',
         description: 'Return only the personal accounts owned by the caller.',
       }),
-      queryParameter('includePlatform', {
+      queryParameter('include_platform', {
         type: 'boolean',
         default: true,
         description: 'Include the globally shared platform-scope accounts.',
@@ -865,14 +873,14 @@ function buildOperation(surface, route) {
   }
 
   if (route.operationId === 'providerAccounts.resolve') {
-    const vendorCode = queryParameter('vendorCode', {
+    const vendorCode = queryParameter('vendor_code', {
       type: 'string',
       description: 'Cloud vendor code to resolve, for example aliyun.',
     });
     vendorCode.required = true;
     operation.parameters.push(
       vendorCode,
-      queryParameter('capabilityCode', {
+      queryParameter('capability_code', {
         type: 'string',
         description: 'Cloud capability the account must serve, for example object_storage.',
       }),
@@ -880,11 +888,11 @@ function buildOperation(surface, route) {
         type: 'string',
         description: 'Exact environment filter (development | sandbox | production).',
       }),
-      queryParameter('userId', {
+      queryParameter('user_id', {
         type: 'string',
         description: 'Resolve on behalf of this user; defaults to the caller.',
       }),
-      queryParameter('organizationId', { type: 'string', description: 'Exact organization id filter.' }),
+      queryParameter('organization_id', { type: 'string', description: 'Exact organization id filter.' }),
     );
   }
 
@@ -909,12 +917,16 @@ function buildOperation(surface, route) {
   }
 
   if (route.operationId === 'roleBindings.list') {
+    // `API_SPEC.md` section 13: query parameters are lower_snake_case. The
+    // handler still accepts the legacy camelCase spellings as aliases
+    // (`backend_sql.rs::optional_query_value_any`), but the published contract
+    // and every generated SDK expose only the canonical names.
     operation.parameters.push(
-      queryParameter('roleId', { type: 'string', description: 'Exact role id filter.' }),
-      queryParameter('principalKind', { type: 'string', description: 'Exact principal kind filter.' }),
-      queryParameter('principalId', { type: 'string', description: 'Exact principal id filter.' }),
-      queryParameter('scopeKind', { type: 'string', description: 'Exact scope kind filter.' }),
-      queryParameter('scopeId', { type: 'string', description: 'Exact scope id filter.' }),
+      queryParameter('role_id', { type: 'string', description: 'Exact role id filter.' }),
+      queryParameter('principal_kind', { type: 'string', description: 'Exact principal kind filter.' }),
+      queryParameter('principal_id', { type: 'string', description: 'Exact principal id filter.' }),
+      queryParameter('scope_kind', { type: 'string', description: 'Exact scope kind filter.' }),
+      queryParameter('scope_id', { type: 'string', description: 'Exact scope id filter.' }),
     );
   }
 
@@ -932,6 +944,22 @@ function buildOperation(surface, route) {
         description: 'Upstream OAuth/OIDC discovery metadata document.',
       });
     }
+  }
+
+  // Create operations that answer a bespoke payload still owe the `201` +
+  // `data.item` contract; wrapping keeps the generated SDK's return value equal
+  // to the object the bespoke `data` schema described.
+  if (
+    route.operationId === 'authorizations.create' ||
+    route.operationId === 'authorizations.completions.create' ||
+    route.operationId === 'desktopSessions.create'
+  ) {
+    promoteCreateResponse(
+      operation,
+      route.operationId === 'desktopSessions.create'
+        ? 'Dual-token desktop session installed by the native app.'
+        : 'Created',
+    );
   }
 
   return operation;
@@ -2078,6 +2106,27 @@ function buildSchemas() {
   };
 }
 
+/**
+ * Re-shapes a bespoke create response into the `201` + `data.item` contract
+ * (API_SPEC section 15.4) without changing the object the generated SDK returns:
+ * the schema's `data` object moves under `data.item`, so an SDK that unwraps
+ * `data.item` yields exactly the previous `data` payload.
+ */
+function promoteCreateResponse(operation, description) {
+  const ok = operation.responses[200];
+  if (!ok) return;
+  const schema = ok.content?.['application/json']?.schema;
+  const data = schema?.properties?.data;
+  if (data) {
+    schema.properties.data = {
+      type: 'object',
+      required: ['item'],
+      properties: { item: data },
+    };
+  }
+  operation.responses[201] = { ...ok, description };
+  delete operation.responses[200];
+}
 function jsonResponse(description, schemaRef) {
   return {
     description,

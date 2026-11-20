@@ -1427,7 +1427,10 @@ async fn logout_current_session(
             .expect("error response");
     };
     match revoke_session_by_refresh_token(pg, &state.config, &refresh_token_hash).await {
-        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        // `logout` is classified as a command (`API_SPEC.md` section 15.4), so it
+        // answers `200` with `data.accepted` instead of a bodiless `204`: a command
+        // result is JSON, and the SDK shape stays `Record<string, unknown>`.
+        Ok(()) => appbase_ok(json!({ "accepted": true })),
         Err(error) => appbase_error(
             StatusCode::INTERNAL_SERVER_ERROR,
             "iam_session_revoke_failed",
@@ -3701,9 +3704,11 @@ async fn create_oauth_authorization(
                 + chrono::Duration::seconds(
                     sdkwork_iam_web_adapter::AUTHORIZATION_CODE_TTL_SECONDS,
                 );
-            appbase_ok(json!({
-                "authorizationStateId": authorization_state_id,
-                "expiresAt": expires_at.to_rfc3339(),
+            appbase_created(json!({
+                "item": {
+                    "authorizationStateId": authorization_state_id,
+                    "expiresAt": expires_at.to_rfc3339(),
+                },
             }))
         }
         Err(error) => appbase_error(
@@ -3735,9 +3740,11 @@ async fn complete_oauth_authorization(
     )
     .await
     {
-        Ok(completion) => appbase_ok(json!({
-            "authorizationCode": completion.authorization_code,
-            "redirectUrl": completion.redirect_url,
+        Ok(completion) => appbase_created(json!({
+            "item": {
+                "authorizationCode": completion.authorization_code,
+                "redirectUrl": completion.redirect_url,
+            },
         })),
         Err(error) => appbase_error(
             StatusCode::BAD_REQUEST,
@@ -3914,7 +3921,7 @@ async fn create_desktop_session(
     )
     .await;
 
-    appbase_ok(session_to_json(&session))
+    appbase_created(json!({ "item": session_to_json(&session) }))
 }
 
 async fn retrieve_runtime(State(state): State<LocalIamState>, ctx: WebRequestContext) -> Response {

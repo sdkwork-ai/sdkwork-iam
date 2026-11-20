@@ -257,11 +257,27 @@ export class IamTenantApplicationsCredentialsApi {
   }
 }
 
-export class IamTenantApplicationsManagementApi {
+export class IamTenantApplicationsManagementByDeployApplicationApi {
   private client: HttpClient;
 
   constructor(client: HttpClient) {
     this.client = client;
+  }
+
+
+/** Tenant Applications management by Deploy Application disable. */
+  async disable(deployApplicationId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
+    return this.client.request<SdkWorkCommandData>(backendApiPath(`/iam/tenant_applications/by_deploy_application/${serializePathParameter(deployApplicationId, { name: 'deployApplicationId', style: 'simple', explode: false })}/disable`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true, sdkworkUnwrapKind: 'command' });
+  }
+}
+
+export class IamTenantApplicationsManagementApi {
+  private client: HttpClient;
+  public readonly byDeployApplication: IamTenantApplicationsManagementByDeployApplicationApi;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+    this.byDeployApplication = new IamTenantApplicationsManagementByDeployApplicationApi(client);
   }
 
 
@@ -331,11 +347,6 @@ export class IamTenantApplicationsApi {
 /** Tenant Applications enable. */
   async enable(tenantApplicationId: string, body: AppbaseTenantApplicationEnableCommand, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
     return this.client.request<SdkWorkCommandData>(backendApiPath(`/iam/tenant_applications/${serializePathParameter(tenantApplicationId, { name: 'tenantApplicationId', style: 'simple', explode: false })}/enable`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true, sdkworkUnwrapKind: 'command' });
-  }
-
-/** Tenant Applications disable By Deploy Application. */
-  async disableByDeployApplication(deployApplicationId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
-    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/tenant_applications/by_deploy_application/${serializePathParameter(deployApplicationId, { name: 'deployApplicationId', style: 'simple', explode: false })}/disable`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true, sdkworkUnwrapKind: 'item' });
   }
 
 /** Tenant Applications list. */
@@ -600,11 +611,11 @@ export class IamRoleBindingsApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
-      { name: 'roleId', value: params?.roleId, style: 'form', explode: true, allowReserved: false },
-      { name: 'principalKind', value: params?.principalKind, style: 'form', explode: true, allowReserved: false },
-      { name: 'principalId', value: params?.principalId, style: 'form', explode: true, allowReserved: false },
-      { name: 'scopeKind', value: params?.scopeKind, style: 'form', explode: true, allowReserved: false },
-      { name: 'scopeId', value: params?.scopeId, style: 'form', explode: true, allowReserved: false },
+      { name: 'role_id', value: params?.roleId, style: 'form', explode: true, allowReserved: false },
+      { name: 'principal_kind', value: params?.principalKind, style: 'form', explode: true, allowReserved: false },
+      { name: 'principal_id', value: params?.principalId, style: 'form', explode: true, allowReserved: false },
+      { name: 'scope_kind', value: params?.scopeKind, style: 'form', explode: true, allowReserved: false },
+      { name: 'scope_id', value: params?.scopeId, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/iam/role_bindings`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
@@ -634,6 +645,34 @@ export class IamProviderCredentialsApi {
   }
 }
 
+export class IamProviderAccountsResolveApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Provider Accounts resolve retrieve. */
+  async retrieve(requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/provider_accounts/resolve`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+}
+
+export class IamProviderAccountsCredentialsRevealApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Provider Accounts credentials reveal retrieve. */
+  async retrieve(providerAccountId: string, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/provider_accounts/${serializePathParameter(providerAccountId, { name: 'providerAccountId', style: 'simple', explode: false })}/credentials/reveal`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export interface IamProviderAccountsCredentialsListParams {
   page?: number;
   pageSize?: number;
@@ -644,9 +683,11 @@ export interface IamProviderAccountsCredentialsListParams {
 
 export class IamProviderAccountsCredentialsApi {
   private client: HttpClient;
+  public readonly reveal: IamProviderAccountsCredentialsRevealApi;
 
   constructor(client: HttpClient) {
     this.client = client;
+    this.reveal = new IamProviderAccountsCredentialsRevealApi(client);
   }
 
 
@@ -666,11 +707,6 @@ export class IamProviderAccountsCredentialsApi {
   async create(providerAccountId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
     return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/provider_accounts/${serializePathParameter(providerAccountId, { name: 'providerAccountId', style: 'simple', explode: false })}/credentials`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
-
-/** Provider Accounts credentials reveal. */
-  async reveal(providerAccountId: string, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
-    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/provider_accounts/${serializePathParameter(providerAccountId, { name: 'providerAccountId', style: 'simple', explode: false })}/credentials/reveal`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
-  }
 }
 
 export interface IamProviderAccountsListParams {
@@ -688,21 +724,15 @@ export interface IamProviderAccountsListParams {
   includePlatform?: boolean;
 }
 
-export interface IamProviderAccountsResolveParams {
-  vendorCode: string;
-  capabilityCode?: string;
-  environment?: string;
-  userId?: string;
-  organizationId?: string;
-}
-
 export class IamProviderAccountsApi {
   private client: HttpClient;
   public readonly credentials: IamProviderAccountsCredentialsApi;
+  public readonly resolve: IamProviderAccountsResolveApi;
 
   constructor(client: HttpClient) {
     this.client = client;
     this.credentials = new IamProviderAccountsCredentialsApi(client);
+    this.resolve = new IamProviderAccountsResolveApi(client);
   }
 
 
@@ -714,13 +744,13 @@ export class IamProviderAccountsApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
-      { name: 'vendorCode', value: params?.vendorCode, style: 'form', explode: true, allowReserved: false },
-      { name: 'scopeType', value: params?.scopeType, style: 'form', explode: true, allowReserved: false },
-      { name: 'ownerUserId', value: params?.ownerUserId, style: 'form', explode: true, allowReserved: false },
-      { name: 'organizationId', value: params?.organizationId, style: 'form', explode: true, allowReserved: false },
+      { name: 'vendor_code', value: params?.vendorCode, style: 'form', explode: true, allowReserved: false },
+      { name: 'scope_type', value: params?.scopeType, style: 'form', explode: true, allowReserved: false },
+      { name: 'owner_user_id', value: params?.ownerUserId, style: 'form', explode: true, allowReserved: false },
+      { name: 'organization_id', value: params?.organizationId, style: 'form', explode: true, allowReserved: false },
       { name: 'status', value: params?.status, style: 'form', explode: true, allowReserved: false },
       { name: 'mine', value: params?.mine, style: 'form', explode: true, allowReserved: false },
-      { name: 'includePlatform', value: params?.includePlatform, style: 'form', explode: true, allowReserved: false },
+      { name: 'include_platform', value: params?.includePlatform, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/iam/provider_accounts`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
@@ -745,21 +775,9 @@ export class IamProviderAccountsApi {
     return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/provider_accounts/${serializePathParameter(providerAccountId, { name: 'providerAccountId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PATCH' as any, ...(body !== undefined ? { body, contentType: 'application/json' } : {}), sdkworkUnwrapKind: 'item' });
   }
 
-/** Provider Accounts set Default. */
-  async setDefault(providerAccountId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+/** Provider Accounts default. */
+  async default(providerAccountId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
     return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/provider_accounts/${serializePathParameter(providerAccountId, { name: 'providerAccountId', style: 'simple', explode: false })}/default`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
-  }
-
-/** Provider Accounts resolve. */
-  async resolve(params: IamProviderAccountsResolveParams, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
-    const query = buildQueryString([
-      { name: 'vendorCode', value: params.vendorCode, style: 'form', explode: true, allowReserved: false },
-      { name: 'capabilityCode', value: params.capabilityCode, style: 'form', explode: true, allowReserved: false },
-      { name: 'environment', value: params.environment, style: 'form', explode: true, allowReserved: false },
-      { name: 'userId', value: params.userId, style: 'form', explode: true, allowReserved: false },
-      { name: 'organizationId', value: params.organizationId, style: 'form', explode: true, allowReserved: false },
-    ]);
-    return this.client.request<Record<string, unknown>>(appendQueryString(backendApiPath(`/iam/provider_accounts/resolve`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 

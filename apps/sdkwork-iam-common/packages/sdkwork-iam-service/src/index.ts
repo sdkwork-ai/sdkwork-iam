@@ -273,9 +273,9 @@ export interface SdkworkIamService {
       create(body: Record<string, unknown>): Promise<unknown>;
       delete(providerAccountId: string): Promise<unknown>;
       list(params?: Record<string, unknown>): Promise<unknown>;
-      resolve(params: Record<string, unknown>): Promise<unknown>;
+      resolve: { retrieve(params: Record<string, unknown>): Promise<unknown> };
       retrieve(providerAccountId: string): Promise<unknown>;
-      setDefault(providerAccountId: string, body: Record<string, unknown>): Promise<unknown>;
+      default(providerAccountId: string, body: Record<string, unknown>): Promise<unknown>;
       update(providerAccountId: string, body: Record<string, unknown>): Promise<unknown>;
       credentials: {
         create(providerAccountId: string, body: Record<string, unknown>): Promise<unknown>;
@@ -722,9 +722,9 @@ export function createSdkworkIamService(input: CreateSdkworkIamServiceInput): Sd
         create: (body) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "create", "iam.providerAccounts.create", body),
         delete: (providerAccountId) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "delete", "iam.providerAccounts.delete", providerAccountId),
         list: (params) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "list", "iam.providerAccounts.list", iamListQuery(params)),
-        resolve: (params) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "resolve", "iam.providerAccounts.resolve", params),
+        resolve: { retrieve: (params) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.resolve, "retrieve", "iam.providerAccounts.resolve.retrieve", params) },
         retrieve: (providerAccountId) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "retrieve", "iam.providerAccounts.retrieve", providerAccountId),
-        setDefault: (providerAccountId, body) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "setDefault", "iam.providerAccounts.setDefault", providerAccountId, body),
+        default: (providerAccountId, body) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "default", "iam.providerAccounts.default", providerAccountId, body),
         update: (providerAccountId, body) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "update", "iam.providerAccounts.update", providerAccountId, body),
         credentials: {
           create: (providerAccountId, body) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.credentials, "create", "iam.providerAccounts.credentials.create", providerAccountId, body),
@@ -732,9 +732,9 @@ export function createSdkworkIamService(input: CreateSdkworkIamServiceInput): Sd
           // `credentials.reveal` is optional in the SDK port contract: only surface
           // it when the generated backend client actually carries the method, so
           // the facade surface equals the canonical port surface.
-          ...(typeof (backendIam?.providerAccounts?.credentials as Record<string, unknown> | undefined)?.reveal === "function"
+          ...(typeof (backendIam?.providerAccounts?.credentials?.reveal as Record<string, unknown> | undefined)?.retrieve === "function"
             ? {
-                reveal: (providerAccountId: string) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.credentials, "reveal", "iam.providerAccounts.credentials.reveal", providerAccountId),
+                reveal: (providerAccountId: string) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.credentials?.reveal, "retrieve", "iam.providerAccounts.credentials.reveal.retrieve", providerAccountId),
               }
             : {}),
         },

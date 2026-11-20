@@ -30,8 +30,8 @@ export type { OauthPhoneBindingVerificationCodeRequestCommand } from './oauth-ph
 export type { AppbaseSessionCreateCommand } from './appbase-session-create-command';
 export type { SessionsCurrentLogoutRequest } from './sessions-current-logout-request';
 export type { AuthorizationsCreateRequest } from './authorizations-create-request';
-export type { AuthorizationsCreateResponse } from './authorizations-create-response';
+export type { AuthorizationsCreateResponse201 } from './authorizations-create-response201';
 export type { AuthorizationsCompletionsCreateRequest } from './authorizations-completions-create-request';
-export type { AuthorizationsCompletionsCreateResponse } from './authorizations-completions-create-response';
+export type { AuthorizationsCompletionsCreateResponse201 } from './authorizations-completions-create-response201';
 export type { DesktopSessionsCreateRequest } from './desktop-sessions-create-request';
-export type { DesktopSessionsCreateResponse } from './desktop-sessions-create-response';
+export type { DesktopSessionsCreateResponse201 } from './desktop-sessions-create-response201';

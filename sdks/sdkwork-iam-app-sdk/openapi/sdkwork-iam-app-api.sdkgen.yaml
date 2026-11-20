@@ -976,8 +976,15 @@
         "operationId": "sessions.current.logout",
         "parameters": [],
         "responses": {
-          "204": {
-            "description": "Session revoked."
+          "200": {
+            "description": "Session revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkWorkCommandResponse"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad request",
@@ -2260,8 +2267,8 @@
         "tags": [
           "iam"
         ],
-        "summary": "Iam oauth official Account Settings retrieve.",
-        "operationId": "iam.oauth.officialAccountSettings.retrieve",
+        "summary": "Oauth official Account Settings retrieve.",
+        "operationId": "oauth.officialAccountSettings.retrieve",
         "parameters": [],
         "responses": {
           "200": {
@@ -2376,11 +2383,10 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-app-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "iam.oauth.officialAccountSettings",
+        "x-sdkwork-resource": "oauth.officialAccountSettings",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
-        "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.read"
+        "x-sdkwork-server-request-id": true
       }
     },
     "/app/v3/api/iam/oauth/official_accounts": {
@@ -2388,8 +2394,8 @@
         "tags": [
           "iam"
         ],
-        "summary": "Iam oauth official Accounts list.",
-        "operationId": "iam.oauth.officialAccounts.list",
+        "summary": "Oauth official Accounts list.",
+        "operationId": "oauth.officialAccounts.list",
         "parameters": [
           {
             "name": "page",
@@ -2550,18 +2556,17 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-app-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "iam.oauth.officialAccounts",
+        "x-sdkwork-resource": "oauth.officialAccounts",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
-        "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.read"
+        "x-sdkwork-server-request-id": true
       },
       "post": {
         "tags": [
           "iam"
         ],
-        "summary": "Iam oauth official Accounts create.",
-        "operationId": "iam.oauth.officialAccounts.create",
+        "summary": "Oauth official Accounts create.",
+        "operationId": "oauth.officialAccounts.create",
         "parameters": [],
         "responses": {
           "201": {
@@ -2676,11 +2681,10 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-app-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "iam.oauth.officialAccounts",
+        "x-sdkwork-resource": "oauth.officialAccounts",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "requestBody": {
           "required": true,
           "content": {
@@ -2698,8 +2702,8 @@
         "tags": [
           "iam"
         ],
-        "summary": "Iam oauth official Accounts delete.",
-        "operationId": "iam.oauth.officialAccounts.delete",
+        "summary": "Oauth official Accounts delete.",
+        "operationId": "oauth.officialAccounts.delete",
         "parameters": [
           {
             "name": "officialAccountId",
@@ -2816,18 +2820,17 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-app-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "iam.oauth.officialAccounts",
+        "x-sdkwork-resource": "oauth.officialAccounts",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
-        "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage"
+        "x-sdkwork-server-request-id": true
       },
       "get": {
         "tags": [
           "iam"
         ],
-        "summary": "Iam oauth official Accounts retrieve.",
-        "operationId": "iam.oauth.officialAccounts.retrieve",
+        "summary": "Oauth official Accounts retrieve.",
+        "operationId": "oauth.officialAccounts.retrieve",
         "parameters": [
           {
             "name": "officialAccountId",
@@ -2951,18 +2954,17 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-app-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "iam.oauth.officialAccounts",
+        "x-sdkwork-resource": "oauth.officialAccounts",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
-        "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.read"
+        "x-sdkwork-server-request-id": true
       },
       "patch": {
         "tags": [
           "iam"
         ],
-        "summary": "Iam oauth official Accounts update.",
-        "operationId": "iam.oauth.officialAccounts.update",
+        "summary": "Oauth official Accounts update.",
+        "operationId": "oauth.officialAccounts.update",
         "parameters": [
           {
             "name": "officialAccountId",
@@ -3086,11 +3088,10 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-app-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "iam.oauth.officialAccounts",
+        "x-sdkwork-resource": "oauth.officialAccounts",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "requestBody": {
           "required": false,
           "content": {
@@ -3108,8 +3109,8 @@
         "tags": [
           "iam"
         ],
-        "summary": "Iam oauth official Accounts custom Menus publish.",
-        "operationId": "iam.oauth.officialAccounts.customMenus.publish",
+        "summary": "Oauth official Accounts custom Menus publish.",
+        "operationId": "oauth.officialAccounts.customMenus.publish",
         "parameters": [
           {
             "name": "officialAccountId",
@@ -3233,11 +3234,10 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-app-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "iam.oauth.officialAccounts.customMenus",
+        "x-sdkwork-resource": "oauth.officialAccounts.customMenus",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "requestBody": {
           "required": true,
           "content": {
@@ -3255,8 +3255,8 @@
         "tags": [
           "iam"
         ],
-        "summary": "Iam oauth official Accounts custom Menus rollback.",
-        "operationId": "iam.oauth.officialAccounts.customMenus.rollback",
+        "summary": "Oauth official Accounts custom Menus rollback.",
+        "operationId": "oauth.officialAccounts.customMenus.rollback",
         "parameters": [
           {
             "name": "officialAccountId",
@@ -3380,11 +3380,10 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-app-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "iam.oauth.officialAccounts.customMenus",
+        "x-sdkwork-resource": "oauth.officialAccounts.customMenus",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "requestBody": {
           "required": true,
           "content": {
@@ -3402,8 +3401,8 @@
         "tags": [
           "iam"
         ],
-        "summary": "Iam oauth official Accounts custom Menus sync.",
-        "operationId": "iam.oauth.officialAccounts.customMenus.sync",
+        "summary": "Oauth official Accounts custom Menus sync.",
+        "operationId": "oauth.officialAccounts.customMenus.sync",
         "parameters": [
           {
             "name": "officialAccountId",
@@ -3527,11 +3526,10 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-app-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "iam.oauth.officialAccounts.customMenus",
+        "x-sdkwork-resource": "oauth.officialAccounts.customMenus",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage",
         "requestBody": {
           "required": true,
           "content": {
@@ -4746,7 +4744,7 @@
             }
           },
           {
-            "name": "roleId",
+            "name": "role_id",
             "in": "query",
             "required": false,
             "schema": {
@@ -4755,7 +4753,7 @@
             }
           },
           {
-            "name": "principalKind",
+            "name": "principal_kind",
             "in": "query",
             "required": false,
             "schema": {
@@ -4764,7 +4762,7 @@
             }
           },
           {
-            "name": "principalId",
+            "name": "principal_id",
             "in": "query",
             "required": false,
             "schema": {
@@ -4773,7 +4771,7 @@
             }
           },
           {
-            "name": "scopeKind",
+            "name": "scope_kind",
             "in": "query",
             "required": false,
             "schema": {
@@ -4782,7 +4780,7 @@
             }
           },
           {
-            "name": "scopeId",
+            "name": "scope_id",
             "in": "query",
             "required": false,
             "schema": {
@@ -6657,8 +6655,8 @@
         "operationId": "authorizations.create",
         "parameters": [],
         "responses": {
-          "200": {
-            "description": "Pending authorization state created for the hosted web login.",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -6678,16 +6676,24 @@
                     "data": {
                       "type": "object",
                       "required": [
-                        "authorizationStateId",
-                        "expiresAt"
+                        "item"
                       ],
                       "properties": {
-                        "authorizationStateId": {
-                          "type": "string"
-                        },
-                        "expiresAt": {
-                          "type": "string",
-                          "format": "date-time"
+                        "item": {
+                          "type": "object",
+                          "required": [
+                            "authorizationStateId",
+                            "expiresAt"
+                          ],
+                          "properties": {
+                            "authorizationStateId": {
+                              "type": "string"
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
                         }
                       }
                     }
@@ -6870,8 +6876,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Issued authorization code and the registered redirect URL that carries it.",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -6891,16 +6897,24 @@
                     "data": {
                       "type": "object",
                       "required": [
-                        "authorizationCode",
-                        "redirectUrl"
+                        "item"
                       ],
                       "properties": {
-                        "authorizationCode": {
-                          "type": "string"
-                        },
-                        "redirectUrl": {
-                          "type": "string",
-                          "format": "uri"
+                        "item": {
+                          "type": "object",
+                          "required": [
+                            "authorizationCode",
+                            "redirectUrl"
+                          ],
+                          "properties": {
+                            "authorizationCode": {
+                              "type": "string"
+                            },
+                            "redirectUrl": {
+                              "type": "string",
+                              "format": "uri"
+                            }
+                          }
                         }
                       }
                     }
@@ -7315,7 +7329,7 @@
         "operationId": "desktopSessions.create",
         "parameters": [],
         "responses": {
-          "200": {
+          "201": {
             "description": "Dual-token desktop session installed by the native app.",
             "content": {
               "application/json": {
@@ -7336,29 +7350,37 @@
                     "data": {
                       "type": "object",
                       "required": [
-                        "accessToken",
-                        "authToken"
+                        "item"
                       ],
                       "properties": {
-                        "accessToken": {
-                          "type": "string"
-                        },
-                        "authToken": {
-                          "type": "string"
-                        },
-                        "refreshToken": {
-                          "type": "string"
-                        },
-                        "sessionId": {
-                          "type": "string"
-                        },
-                        "context": {
+                        "item": {
                           "type": "object",
-                          "additionalProperties": true
-                        },
-                        "user": {
-                          "type": "object",
-                          "additionalProperties": true
+                          "required": [
+                            "accessToken",
+                            "authToken"
+                          ],
+                          "properties": {
+                            "accessToken": {
+                              "type": "string"
+                            },
+                            "authToken": {
+                              "type": "string"
+                            },
+                            "refreshToken": {
+                              "type": "string"
+                            },
+                            "sessionId": {
+                              "type": "string"
+                            },
+                            "context": {
+                              "type": "object",
+                              "additionalProperties": true
+                            },
+                            "user": {
+                              "type": "object",
+                              "additionalProperties": true
+                            }
+                          }
                         }
                       }
                     }
@@ -9665,7 +9687,9 @@
         "x-sdkwork-resource": "wechatPaymentOauth",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
-        "x-sdkwork-server-request-id": true
+        "x-sdkwork-server-request-id": true,
+        "x-sdkwork-wire-protocol": "external",
+        "x-sdkwork-external-protocol-id": "wechat-payment-callback"
       }
     },
     "/app/v3/api/oauth/wechat/payment/cashier/start": {
@@ -9787,7 +9811,9 @@
         "x-sdkwork-resource": "wechatPaymentOauth",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
-        "x-sdkwork-server-request-id": true
+        "x-sdkwork-server-request-id": true,
+        "x-sdkwork-wire-protocol": "external",
+        "x-sdkwork-external-protocol-id": "wechat-payment-redirect"
       }
     },
     "/app/v3/api/oauth/wechat/payment/start": {
@@ -9924,7 +9950,9 @@
         "x-sdkwork-resource": "wechatPaymentOauth",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
-        "x-sdkwork-server-request-id": true
+        "x-sdkwork-server-request-id": true,
+        "x-sdkwork-wire-protocol": "external",
+        "x-sdkwork-external-protocol-id": "wechat-payment-redirect"
       }
     },
     "/app/v3/api/system/iam/account_binding_policy": {

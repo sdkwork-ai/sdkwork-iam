@@ -696,9 +696,9 @@ describe("SDKWork IAM generated SDK adapters", () => {
           create: vi.fn().mockResolvedValue({ data: { id: "pa-1" } }),
           delete: vi.fn().mockResolvedValue({ data: true }),
           list: vi.fn().mockResolvedValue({ data: [] }),
-          resolve: vi.fn().mockResolvedValue({ data: { id: "pa-1" } }),
+          resolve: { retrieve: vi.fn().mockResolvedValue({ data: { id: "pa-1" } }) },
           retrieve: vi.fn().mockResolvedValue({ data: { id: "pa-1" } }),
-          setDefault: vi.fn().mockResolvedValue({ data: { id: "pa-1" } }),
+          default: vi.fn().mockResolvedValue({ data: { id: "pa-1" } }),
           update: vi.fn().mockResolvedValue({ data: { id: "pa-1" } }),
           credentials: {
             create: vi.fn().mockResolvedValue({ data: { id: "pc-1" } }),
@@ -1184,9 +1184,9 @@ function createGeneratedBackendClient(overrides: AnyRecord = {}): AnyRecord {
         create: vi.fn().mockResolvedValue({ data: null }),
         delete: vi.fn().mockResolvedValue({ data: null }),
         list: vi.fn().mockResolvedValue({ data: null }),
-        resolve: vi.fn().mockResolvedValue({ data: null }),
+        resolve: { retrieve: vi.fn().mockResolvedValue({ data: null }) },
         retrieve: vi.fn().mockResolvedValue({ data: null }),
-        setDefault: vi.fn().mockResolvedValue({ data: null }),
+        default: vi.fn().mockResolvedValue({ data: null }),
         update: vi.fn().mockResolvedValue({ data: null }),
         credentials: {
           create: vi.fn().mockResolvedValue({ data: null }),

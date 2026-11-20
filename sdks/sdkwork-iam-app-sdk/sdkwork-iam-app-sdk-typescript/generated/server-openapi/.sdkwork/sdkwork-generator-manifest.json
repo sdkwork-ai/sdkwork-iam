@@ -52,7 +52,7 @@
     },
     {
       "path": "src/api/auth.ts",
-      "sha256": "778b3c131c639499a480e8535b69166bc9e1608817ed59d4fd37d07eccb3ef10"
+      "sha256": "d829da0a74f48b24060476b8dcc4de14cba0810b478807c72b8452584798d50d"
     },
     {
       "path": "src/api/base.ts",
@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/iam.ts",
-      "sha256": "f25066b35724b06ea430c4f64a17a7825d548109ada10a6a6d09e44faab93b52"
+      "sha256": "1899677e3f40411d999a2337d6a6b339186b4e147e33165f9acd920c69b5a198"
     },
     {
       "path": "src/api/index.ts",
@@ -68,7 +68,7 @@
     },
     {
       "path": "src/api/oauth.ts",
-      "sha256": "3fa8fc10cad78a10ae7fd811aa92b756ee8e6aa9964bc1d29afda95c70a4299d"
+      "sha256": "b689aa9d6f8ab79a4079f40ecd808d19526ca7fcaea6392b4ae3c6ccb2a3428b"
     },
     {
       "path": "src/api/paths.ts",
@@ -111,16 +111,16 @@
       "sha256": "8aaacf8ee525345a7d571ac0bee54489c541404ffa1272c36fc8996a05100f66"
     },
     {
-      "path": "src/types/authorizations-completions-create-response.ts",
-      "sha256": "dd1335d32cf68a7f17f97ddbe587402f6015b43d429869edd38fac71d32f7c65"
+      "path": "src/types/authorizations-completions-create-response201.ts",
+      "sha256": "68d1a31a9a5f0512604228218d0d2fdce517bbe441673fe8e774b788c6b4e50c"
     },
     {
       "path": "src/types/authorizations-create-request.ts",
       "sha256": "5202a34f899d3b89c5c551f6484728a9a31c57ea191291c88f96d3897c00e141"
     },
     {
-      "path": "src/types/authorizations-create-response.ts",
-      "sha256": "4240837fe96114773f09a45d23310b6d1d9c2cf49296f2de16472e83c5886814"
+      "path": "src/types/authorizations-create-response201.ts",
+      "sha256": "9d039d8a66b2ae1fd6f454b360f61483fed006a1cb90085b86d1c8fe391dcf9c"
     },
     {
       "path": "src/types/common.ts",
@@ -131,8 +131,8 @@
       "sha256": "296fbfcdbe2d4314373b5f887ad4f5c46e564f789a8c4668ade0f5087ebe0fb1"
     },
     {
-      "path": "src/types/desktop-sessions-create-response.ts",
-      "sha256": "bc0762215cd4df1e05cd4c63b4467e22428383e58fcd2be30db8c7e63d2d75f6"
+      "path": "src/types/desktop-sessions-create-response201.ts",
+      "sha256": "7d4834c1cacf8a5fe21a361fcaf73cec0bbe26bbcc90f89916cd240082f1a10a"
     },
     {
       "path": "src/types/field-error.ts",
@@ -192,7 +192,7 @@
     },
     {
       "path": "src/types/index.ts",
-      "sha256": "861db6806b6d3bb87f5a3c1ea78c49662b405a67450bef8aa5aa1ba59cba9417"
+      "sha256": "4252634b8532095ee63ffc3303b717c0f21d5f2dd6a3764a7b849eaf14cdac46"
     },
     {
       "path": "src/types/oauth-phone-binding-session-create-command.ts",

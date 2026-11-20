@@ -337,6 +337,38 @@ fn query_bool(query: &HashMap<String, String>, key: &str, default: bool) -> bool
     }
 }
 
+/// Read a query value under its canonical lower_snake_case name, falling back to
+/// the legacy camelCase spelling.
+///
+/// `API_SPEC.md` section 13 publishes query parameters in lower_snake_case and
+/// the generated SDKs now send only that spelling; the alias keeps an older
+/// console working instead of silently dropping its filters.
+fn query_value_any<'a>(
+    query: &'a HashMap<String, String>,
+    canonical: &str,
+    legacy: &str,
+) -> Option<&'a str> {
+    query
+        .get(canonical)
+        .or_else(|| query.get(legacy))
+        .map(String::as_str)
+}
+
+fn query_bool_any(
+    query: &HashMap<String, String>,
+    canonical: &str,
+    legacy: &str,
+    default: bool,
+) -> bool {
+    match query_value_any(query, canonical, legacy) {
+        Some(value) => {
+            let normalized = value.trim().to_ascii_lowercase();
+            normalized == "true" || normalized == "1"
+        }
+        None => default,
+    }
+}
+
 /// Credential projection: deliberately has no ciphertext field.
 fn credential_to_json(credential: &ProviderCredential) -> Value {
     json!({
@@ -377,11 +409,9 @@ async fn list_provider_accounts(
         Ok(params) => params,
         Err(response) => return response,
     };
-    let organization_filter = query
-        .get("organizationId")
-        .map(String::as_str)
+    let organization_filter = query_value_any(&query, "organization_id", "organizationId")
         .or(scope.organization_id.as_deref());
-    let vendor_filter = query.get("vendorCode").map(String::as_str);
+    let vendor_filter = query_value_any(&query, "vendor_code", "vendorCode");
     let status_filter = query.get("status").map(String::as_str);
     let search = query.get("q").map(String::as_str);
 
@@ -391,16 +421,16 @@ async fn list_provider_accounts(
     let scope_type_filter = if mine {
         Some(ACCOUNT_SCOPE_USER.to_owned())
     } else {
-        query.get("scopeType").cloned()
+        query_value_any(&query, "scope_type", "scopeType").map(str::to_owned)
     };
     let owner_filter = if mine {
         scope.user_id().map(str::to_owned)
     } else {
-        query.get("ownerUserId").cloned()
+        query_value_any(&query, "owner_user_id", "ownerUserId").map(str::to_owned)
     };
 
     let visibility = scope.visibility(
-        query_bool(&query, "includePlatform", true),
+        query_bool_any(&query, "include_platform", "includePlatform", true),
         scope_type_filter,
         owner_filter,
     );
@@ -443,9 +473,7 @@ async fn resolve_provider_account(
         Err(response) => return response,
     };
 
-    let Some(vendor_code) = query
-        .get("vendorCode")
-        .map(String::as_str)
+    let Some(vendor_code) = query_value_any(&query, "vendor_code", "vendorCode")
         .map(str::trim)
         .filter(|value| !value.is_empty())
     else {
@@ -458,9 +486,7 @@ async fn resolve_provider_account(
 
     // Default to the caller: resolving for another user would leak which
     // personal account they hold.
-    let user_id = query
-        .get("userId")
-        .map(String::as_str)
+    let user_id = query_value_any(&query, "user_id", "userId")
         .map(str::trim)
         .filter(|value| !value.is_empty())
         .map(str::to_owned)
@@ -470,11 +496,11 @@ async fn resolve_provider_account(
         tenant_id: scope.tenant_id.clone(),
         user_id,
         vendor_code: vendor_code.to_owned(),
-        capability_code: query.get("capabilityCode").cloned(),
+        capability_code: query_value_any(&query, "capability_code", "capabilityCode")
+            .map(str::to_owned),
         environment: query.get("environment").cloned(),
-        organization_id: query
-            .get("organizationId")
-            .cloned()
+        organization_id: query_value_any(&query, "organization_id", "organizationId")
+            .map(str::to_owned)
             .or_else(|| scope.organization_id.clone()),
     };
 

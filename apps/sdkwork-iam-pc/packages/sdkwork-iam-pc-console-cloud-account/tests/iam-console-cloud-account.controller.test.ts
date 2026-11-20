@@ -15,9 +15,9 @@ function serviceStub() {
     },
     delete: vi.fn().mockResolvedValue({ accepted: true }),
     list: vi.fn().mockResolvedValue({ items: [] }),
-    resolve: vi.fn(),
+    resolve: { retrieve: vi.fn() },
     retrieve: vi.fn(),
-    setDefault: vi.fn(),
+    default: vi.fn(),
     update: vi.fn(),
   };
   return {
@@ -167,7 +167,7 @@ describe("@sdkwork/iam-pc-console-cloud-account", () => {
         accountItem({ id: "acct-4", isDefault: true, vendorCode: "aws" }),
       ],
     });
-    stub.providerAccounts.setDefault.mockResolvedValue(
+    stub.providerAccounts.default.mockResolvedValue(
       accountItem({ id: "acct-2", isDefault: true }),
     );
     const controller = createSdkworkIamConsoleCloudAccountController({ service: { iam: stub } as never });
@@ -175,7 +175,7 @@ describe("@sdkwork/iam-pc-console-cloud-account", () => {
     await controller.listMyAccounts();
     await controller.setDefaultAccount("acct-2");
 
-    expect(stub.providerAccounts.setDefault).toHaveBeenCalledWith("acct-2", {});
+    expect(stub.providerAccounts.default).toHaveBeenCalledWith("acct-2", {});
     const state = controller.getState();
     expect(state.accounts.map((account) => account.vendorCode)).toEqual([
       "aliyun",
@@ -320,7 +320,7 @@ describe("@sdkwork/iam-pc-console-cloud-account", () => {
 
   it("reads the resolution preview's string counts as numbers", async () => {
     const stub = serviceStub();
-    stub.providerAccounts.resolve.mockResolvedValue({
+    stub.providerAccounts.resolve.retrieve.mockResolvedValue({
       account: accountItem({ scopeType: "organization" }),
       candidatesByScope: [
         { count: "2", scopeType: "organization" },
@@ -333,7 +333,7 @@ describe("@sdkwork/iam-pc-console-cloud-account", () => {
 
     const resolution = await controller.resolveAccount({ vendorCode: "aliyun" });
 
-    expect(stub.providerAccounts.resolve).toHaveBeenCalledWith({ vendorCode: "aliyun" });
+    expect(stub.providerAccounts.resolve.retrieve).toHaveBeenCalledWith({ vendorCode: "aliyun" });
     // int64 crosses the wire as a string (API_SPEC §13.6), so the counts must be
     // parsed rather than rendered raw.
     expect(resolution?.candidatesByScope).toEqual([

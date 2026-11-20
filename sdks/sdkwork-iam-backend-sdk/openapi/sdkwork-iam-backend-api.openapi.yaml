@@ -19190,7 +19190,7 @@
             }
           },
           {
-            "name": "vendorCode",
+            "name": "vendor_code",
             "in": "query",
             "required": false,
             "schema": {
@@ -19199,7 +19199,7 @@
             }
           },
           {
-            "name": "scopeType",
+            "name": "scope_type",
             "in": "query",
             "required": false,
             "schema": {
@@ -19208,7 +19208,7 @@
             }
           },
           {
-            "name": "ownerUserId",
+            "name": "owner_user_id",
             "in": "query",
             "required": false,
             "schema": {
@@ -19217,7 +19217,7 @@
             }
           },
           {
-            "name": "organizationId",
+            "name": "organization_id",
             "in": "query",
             "required": false,
             "schema": {
@@ -19244,7 +19244,7 @@
             }
           },
           {
-            "name": "includePlatform",
+            "name": "include_platform",
             "in": "query",
             "required": false,
             "schema": {
@@ -20259,8 +20259,8 @@
         "tags": [
           "iam"
         ],
-        "summary": "Provider Accounts credentials reveal.",
-        "operationId": "providerAccounts.credentials.reveal",
+        "summary": "Provider Accounts credentials reveal retrieve.",
+        "operationId": "providerAccounts.credentials.reveal.retrieve",
         "parameters": [
           {
             "name": "providerAccountId",
@@ -20384,11 +20384,11 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "providerAccounts.credentials",
+        "x-sdkwork-resource": "providerAccounts.credentials.reveal",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.provider_credentials.reveal",
+        "x-sdkwork-permission": "iam.provider_credentials.read",
         "x-sdkwork-required-surface": "organizationMember"
       }
     },
@@ -20397,8 +20397,8 @@
         "tags": [
           "iam"
         ],
-        "summary": "Provider Accounts set Default.",
-        "operationId": "providerAccounts.setDefault",
+        "summary": "Provider Accounts default.",
+        "operationId": "providerAccounts.default",
         "parameters": [
           {
             "name": "providerAccountId",
@@ -20526,7 +20526,6 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.provider_accounts.update",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": true,
@@ -20545,55 +20544,9 @@
         "tags": [
           "iam"
         ],
-        "summary": "Provider Accounts resolve.",
-        "operationId": "providerAccounts.resolve",
-        "parameters": [
-          {
-            "name": "vendorCode",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Cloud vendor code to resolve, for example aliyun."
-            }
-          },
-          {
-            "name": "capabilityCode",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "Cloud capability the account must serve, for example object_storage."
-            }
-          },
-          {
-            "name": "environment",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "Exact environment filter (development | sandbox | production)."
-            }
-          },
-          {
-            "name": "userId",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "Resolve on behalf of this user; defaults to the caller."
-            }
-          },
-          {
-            "name": "organizationId",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "Exact organization id filter."
-            }
-          }
-        ],
+        "summary": "Provider Accounts resolve retrieve.",
+        "operationId": "providerAccounts.resolve.retrieve",
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Success",
@@ -20707,11 +20660,11 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "providerAccounts",
+        "x-sdkwork-resource": "providerAccounts.resolve",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.provider_accounts.resolve",
+        "x-sdkwork-permission": "iam.provider_accounts.read",
         "x-sdkwork-required-surface": "organizationMember"
       }
     },
@@ -20917,7 +20870,7 @@
             }
           },
           {
-            "name": "roleId",
+            "name": "role_id",
             "in": "query",
             "required": false,
             "schema": {
@@ -20926,7 +20879,7 @@
             }
           },
           {
-            "name": "principalKind",
+            "name": "principal_kind",
             "in": "query",
             "required": false,
             "schema": {
@@ -20935,7 +20888,7 @@
             }
           },
           {
-            "name": "principalId",
+            "name": "principal_id",
             "in": "query",
             "required": false,
             "schema": {
@@ -20944,7 +20897,7 @@
             }
           },
           {
-            "name": "scopeKind",
+            "name": "scope_kind",
             "in": "query",
             "required": false,
             "schema": {
@@ -20953,7 +20906,7 @@
             }
           },
           {
-            "name": "scopeId",
+            "name": "scope_id",
             "in": "query",
             "required": false,
             "schema": {
@@ -24562,8 +24515,8 @@
         "tags": [
           "iam"
         ],
-        "summary": "Tenant Applications disable By Deploy Application.",
-        "operationId": "tenantApplications.disableByDeployApplication",
+        "summary": "Tenant Applications management by Deploy Application disable.",
+        "operationId": "tenantApplications.management.byDeployApplication.disable",
         "parameters": [
           {
             "name": "deployApplicationId",
@@ -24580,7 +24533,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SdkWorkResourceResponse"
+                  "$ref": "#/components/schemas/SdkWorkCommandResponse"
                 }
               }
             }
@@ -24682,7 +24635,7 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications",
+        "x-sdkwork-resource": "tenantApplications.management.byDeployApplication",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,

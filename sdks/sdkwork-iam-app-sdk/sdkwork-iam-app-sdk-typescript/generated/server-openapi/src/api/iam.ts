@@ -145,11 +145,11 @@ export class IamRoleBindingsApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
-      { name: 'roleId', value: params?.roleId, style: 'form', explode: true, allowReserved: false },
-      { name: 'principalKind', value: params?.principalKind, style: 'form', explode: true, allowReserved: false },
-      { name: 'principalId', value: params?.principalId, style: 'form', explode: true, allowReserved: false },
-      { name: 'scopeKind', value: params?.scopeKind, style: 'form', explode: true, allowReserved: false },
-      { name: 'scopeId', value: params?.scopeId, style: 'form', explode: true, allowReserved: false },
+      { name: 'role_id', value: params?.roleId, style: 'form', explode: true, allowReserved: false },
+      { name: 'principal_kind', value: params?.principalKind, style: 'form', explode: true, allowReserved: false },
+      { name: 'principal_id', value: params?.principalId, style: 'form', explode: true, allowReserved: false },
+      { name: 'scope_kind', value: params?.scopeKind, style: 'form', explode: true, allowReserved: false },
+      { name: 'scope_id', value: params?.scopeId, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<SdkWorkPageData>(appendQueryString(appApiPath(`/iam/role_bindings`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
@@ -342,17 +342,17 @@ export class IamOauthOfficialAccountsCustomMenusApi {
   }
 
 
-/** Iam oauth official Accounts custom Menus publish. */
+/** Oauth official Accounts custom Menus publish. */
   async publish(officialAccountId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
     return this.client.request<Record<string, unknown>>(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: 'officialAccountId', style: 'simple', explode: false })}/custom_menus/publish`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
-/** Iam oauth official Accounts custom Menus rollback. */
+/** Oauth official Accounts custom Menus rollback. */
   async rollback(officialAccountId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
     return this.client.request<Record<string, unknown>>(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: 'officialAccountId', style: 'simple', explode: false })}/custom_menus/rollback`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
-/** Iam oauth official Accounts custom Menus sync. */
+/** Oauth official Accounts custom Menus sync. */
   async sync(officialAccountId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
     return this.client.request<Record<string, unknown>>(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: 'officialAccountId', style: 'simple', explode: false })}/custom_menus/sync`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
@@ -376,7 +376,7 @@ export class IamOauthOfficialAccountsApi {
   }
 
 
-/** Iam oauth official Accounts list. */
+/** Oauth official Accounts list. */
   async list(params?: IamOauthOfficialAccountsListParams, requestOptions?: ApiRequestOptions): Promise<SdkWorkPageData> {
     const query = buildQueryString([
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
@@ -388,22 +388,22 @@ export class IamOauthOfficialAccountsApi {
     return this.client.request<SdkWorkPageData>(appendQueryString(appApiPath(`/iam/oauth/official_accounts`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
-/** Iam oauth official Accounts create. */
+/** Oauth official Accounts create. */
   async create(body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
     return this.client.request<Record<string, unknown>>(appApiPath(`/iam/oauth/official_accounts`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
-/** Iam oauth official Accounts delete. */
+/** Oauth official Accounts delete. */
   async delete(officialAccountId: string, requestOptions?: ApiRequestOptions): Promise<void> {
     return this.client.request<void>(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: 'officialAccountId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'DELETE' as any });
   }
 
-/** Iam oauth official Accounts retrieve. */
+/** Oauth official Accounts retrieve. */
   async retrieve(officialAccountId: string, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
     return this.client.request<Record<string, unknown>>(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: 'officialAccountId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 
-/** Iam oauth official Accounts update. */
+/** Oauth official Accounts update. */
   async update(officialAccountId: string, body?: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
     return this.client.request<Record<string, unknown>>(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: 'officialAccountId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PATCH' as any, ...(body !== undefined ? { body, contentType: 'application/json' } : {}), sdkworkUnwrapKind: 'item' });
   }
@@ -417,7 +417,7 @@ export class IamOauthOfficialAccountSettingsApi {
   }
 
 
-/** Iam oauth official Account Settings retrieve. */
+/** Oauth official Account Settings retrieve. */
   async retrieve(requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
     return this.client.request<Record<string, unknown>>(appApiPath(`/iam/oauth/official_account_settings`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }

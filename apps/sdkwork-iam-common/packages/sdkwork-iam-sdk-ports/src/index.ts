@@ -233,14 +233,14 @@ export interface IamBackendIamResourceClient {
     create?: IamSdkMethod;
     delete?: IamSdkMethod;
     list?: IamSdkMethod;
-    resolve?: IamSdkMethod;
+    resolve?: { retrieve?: IamSdkMethod };
     retrieve?: IamSdkMethod;
-    setDefault?: IamSdkMethod;
+    default?: IamSdkMethod;
     update?: IamSdkMethod;
     credentials?: {
       create?: IamSdkMethod;
       list?: IamSdkMethod;
-      reveal?: IamSdkMethod;
+      reveal?: { retrieve?: IamSdkMethod };
     };
   };
   providerCredentials?: {

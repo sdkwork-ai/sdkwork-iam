@@ -213,14 +213,28 @@ pub(crate) fn optional_query_value(query: &HashMap<String, String>, key: &str) -
         .map(str::to_owned)
 }
 
+/// Optional exact-match query value under any accepted spelling, or `None` when
+/// every spelling is missing or blank.
+///
+/// Accepts legacy camelCase aliases while the published contract uses
+/// lower_snake_case (`API_SPEC.md` section 13): an existing console that still
+/// sends `principalKind` keeps working, and the OpenAPI/SDK surface advertises
+/// only the canonical name.
+pub(crate) fn optional_query_value_any(
+    query: &HashMap<String, String>,
+    keys: &[&str],
+) -> Option<String> {
+    keys.iter().find_map(|key| optional_query_value(query, key))
+}
+
 /// Role binding list filter columns in bind order; column SQL and values must
 /// stay aligned through the shared constant.
-const ROLE_BINDING_LIST_FILTER_COLUMNS: [(&str, &str); 5] = [
-    ("b.role_id", "roleId"),
-    ("b.principal_kind", "principalKind"),
-    ("b.principal_id", "principalId"),
-    ("b.scope_kind", "scopeKind"),
-    ("b.scope_id", "scopeId"),
+const ROLE_BINDING_LIST_FILTER_COLUMNS: [(&str, &str, &str); 5] = [
+    ("b.role_id", "role_id", "roleId"),
+    ("b.principal_kind", "principal_kind", "principalKind"),
+    ("b.principal_id", "principal_id", "principalId"),
+    ("b.scope_kind", "scope_kind", "scopeKind"),
+    ("b.scope_id", "scope_id", "scopeId"),
 ];
 
 /// Exact-match `AND` clauses for role binding list filters, numbered from
@@ -231,8 +245,8 @@ pub(crate) fn role_binding_list_filter_sql(
 ) -> String {
     let mut sql = String::new();
     let mut index = start_index;
-    for (column, key) in ROLE_BINDING_LIST_FILTER_COLUMNS {
-        if optional_query_value(query, key).is_some() {
+    for (column, canonical, legacy) in ROLE_BINDING_LIST_FILTER_COLUMNS {
+        if optional_query_value_any(query, &[canonical, legacy]).is_some() {
             sql.push_str(&format!(" AND {column} = ${index}"));
             index += 1;
         }
@@ -244,7 +258,9 @@ pub(crate) fn role_binding_list_filter_sql(
 pub(crate) fn role_binding_list_filter_values(query: &HashMap<String, String>) -> Vec<String> {
     ROLE_BINDING_LIST_FILTER_COLUMNS
         .iter()
-        .filter_map(|(_, key)| optional_query_value(query, key))
+        .filter_map(|(_, canonical, legacy)| {
+            optional_query_value_any(query, &[canonical, legacy])
+        })
         .collect()
 }
 
@@ -529,15 +545,30 @@ mod tests {
     #[test]
     fn role_binding_list_filters_number_from_start_index() {
         let mut query = HashMap::new();
-        query.insert("roleId".to_owned(), "role-1".to_owned());
-        query.insert("scopeId".to_owned(), "scope-9".to_owned());
-        query.insert("scopeKind".to_owned(), "  ".to_owned());
+        query.insert("role_id".to_owned(), "role-1".to_owned());
+        query.insert("scope_id".to_owned(), "scope-9".to_owned());
+        query.insert("scope_kind".to_owned(), "  ".to_owned());
         assert_eq!(
             " AND b.role_id = $6 AND b.scope_id = $7",
             role_binding_list_filter_sql(&query, 6),
         );
         assert_eq!(
             vec!["role-1".to_owned(), "scope-9".to_owned()],
+            role_binding_list_filter_values(&query),
+        );
+    }
+
+    #[test]
+    fn role_binding_list_filters_still_accept_legacy_camel_case_aliases() {
+        let mut query = HashMap::new();
+        query.insert("roleId".to_owned(), "role-1".to_owned());
+        query.insert("principalKind".to_owned(), "user".to_owned());
+        assert_eq!(
+            " AND b.role_id = $1 AND b.principal_kind = $2",
+            role_binding_list_filter_sql(&query, 1),
+        );
+        assert_eq!(
+            vec!["role-1".to_owned(), "user".to_owned()],
             role_binding_list_filter_values(&query),
         );
     }

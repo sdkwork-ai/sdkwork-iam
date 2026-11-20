@@ -318,63 +318,63 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
         HttpMethod::Get,
         "/app/v3/api/iam/oauth/official_account_settings",
         "iam",
-        "iam.oauth.officialAccountSettings.retrieve",
+        "oauth.officialAccountSettings.retrieve",
     )
     .with_required_permission("iam:self"),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/app/v3/api/iam/oauth/official_accounts",
         "iam",
-        "iam.oauth.officialAccounts.list",
+        "oauth.officialAccounts.list",
     )
     .with_required_permission("iam:self"),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/app/v3/api/iam/oauth/official_accounts",
         "iam",
-        "iam.oauth.officialAccounts.create",
+        "oauth.officialAccounts.create",
     )
     .with_required_permission("iam.profile.update"),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}",
         "iam",
-        "iam.oauth.officialAccounts.retrieve",
+        "oauth.officialAccounts.retrieve",
     )
     .with_required_permission("iam:self"),
     HttpRoute::dual_token(
         HttpMethod::Patch,
         "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}",
         "iam",
-        "iam.oauth.officialAccounts.update",
+        "oauth.officialAccounts.update",
     )
     .with_required_permission("iam.profile.update"),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}/custom_menus/sync",
         "iam",
-        "iam.oauth.officialAccounts.customMenus.sync",
+        "oauth.officialAccounts.customMenus.sync",
     )
     .with_required_permission("iam.profile.update"),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}/custom_menus/publish",
         "iam",
-        "iam.oauth.officialAccounts.customMenus.publish",
+        "oauth.officialAccounts.customMenus.publish",
     )
     .with_required_permission("iam.profile.update"),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}/custom_menus/rollback",
         "iam",
-        "iam.oauth.officialAccounts.customMenus.rollback",
+        "oauth.officialAccounts.customMenus.rollback",
     )
     .with_required_permission("iam.profile.update"),
     HttpRoute::dual_token(
         HttpMethod::Delete,
         "/app/v3/api/iam/oauth/official_accounts/{officialAccountId}",
         "iam",
-        "iam.oauth.officialAccounts.delete",
+        "oauth.officialAccounts.delete",
     )
     .with_required_permission("iam.profile.update"),
     HttpRoute::dual_token(

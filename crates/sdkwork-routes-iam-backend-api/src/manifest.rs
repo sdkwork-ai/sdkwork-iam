@@ -392,7 +392,7 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         HttpMethod::Get,
         "/backend/v3/api/iam/provider_accounts/resolve",
         "iam",
-        "providerAccounts.resolve",
+        "providerAccounts.resolve.retrieve",
     ),
     HttpRoute::dual_token(
         HttpMethod::Get,
@@ -416,7 +416,7 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/backend/v3/api/iam/provider_accounts/{providerAccountId}/default",
         "iam",
-        "providerAccounts.setDefault",
+        "providerAccounts.default",
     ),
     HttpRoute::dual_token(
         HttpMethod::Get,
@@ -434,7 +434,7 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         HttpMethod::Get,
         "/backend/v3/api/iam/provider_accounts/{providerAccountId}/credentials/reveal",
         "iam",
-        "providerAccounts.credentials.reveal",
+        "providerAccounts.credentials.reveal.retrieve",
     ),
     HttpRoute::dual_token(
         HttpMethod::Post,
@@ -644,7 +644,7 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/backend/v3/api/iam/tenant_applications/by_deploy_application/{deployApplicationId}/disable",
         "iam",
-        "tenantApplications.disableByDeployApplication",
+        "tenantApplications.management.byDeployApplication.disable",
     )
     .with_required_permission("iam.tenant_applications.disable"),
     HttpRoute::bootstrap_body(

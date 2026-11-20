@@ -4,37 +4,6 @@ import type { ApiRequestOptions, HttpClient } from '../http/client';
 import type { AppbaseOperationCommand, AppbaseSessionCreateCommand, AuthorizationsCompletionsCreateRequest, AuthorizationsCreateRequest, DesktopSessionsCreateRequest, OauthPhoneBindingSessionCreateCommand, OauthPhoneBindingVerificationCodeRequestCommand, SdkWorkPageData, WechatMiniProgramSessionCreateCommand } from '../types';
 
 
-export interface OauthWechatPaymentOauthStartParams {
-  redirect: string;
-}
-
-export class OauthWechatPaymentOauthApi {
-  private client: HttpClient;
-
-  constructor(client: HttpClient) {
-    this.client = client;
-  }
-
-
-/** Wechat Payment Oauth callback. */
-  async callback(requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
-    return this.client.request<Record<string, unknown>>(appApiPath(`/oauth/wechat/payment/callback`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, skipAuth: true, sdkworkUnwrapKind: 'item' });
-  }
-
-/** Wechat Payment Oauth cashier Start. */
-  async cashierStart(requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
-    return this.client.request<Record<string, unknown>>(appApiPath(`/oauth/wechat/payment/cashier/start`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, skipAuth: true, sdkworkUnwrapKind: 'item' });
-  }
-
-/** Wechat Payment Oauth start. */
-  async start(params: OauthWechatPaymentOauthStartParams, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
-    const query = buildQueryString([
-      { name: 'redirect', value: params.redirect, style: 'form', explode: true, allowReserved: false },
-    ]);
-    return this.client.request<Record<string, unknown>>(appendQueryString(appApiPath(`/oauth/wechat/payment/start`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
-  }
-}
-
 export class OauthSessionsApi {
   private client: HttpClient;
 
@@ -278,7 +247,7 @@ export class OauthDesktopSessionsApi {
 
 /** Desktop Sessions create. */
   async create(body: DesktopSessionsCreateRequest, requestOptions?: ApiRequestOptions): Promise<{ accessToken: string; authToken: string; refreshToken?: string; sessionId?: string; context?: Record<string, unknown>; user?: Record<string, unknown>; }> {
-    return this.client.request<{ accessToken: string; authToken: string; refreshToken?: string; sessionId?: string; context?: Record<string, unknown>; user?: Record<string, unknown>; }>(appApiPath(`/oauth/desktop_sessions`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true, sdkworkUnwrapKind: 'data' });
+    return this.client.request<{ accessToken: string; authToken: string; refreshToken?: string; sessionId?: string; context?: Record<string, unknown>; user?: Record<string, unknown>; }>(appApiPath(`/oauth/desktop_sessions`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -311,7 +280,7 @@ export class OauthAuthorizationsCompletionsApi {
 
 /** Authorizations completions create. */
   async create(authorizationStateId: string, body: AuthorizationsCompletionsCreateRequest, requestOptions?: ApiRequestOptions): Promise<{ authorizationCode: string; redirectUrl: string; }> {
-    return this.client.request<{ authorizationCode: string; redirectUrl: string; }>(appApiPath(`/oauth/authorizations/${serializePathParameter(authorizationStateId, { name: 'authorizationStateId', style: 'simple', explode: false })}/completions`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'data' });
+    return this.client.request<{ authorizationCode: string; redirectUrl: string; }>(appApiPath(`/oauth/authorizations/${serializePathParameter(authorizationStateId, { name: 'authorizationStateId', style: 'simple', explode: false })}/completions`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -327,7 +296,7 @@ export class OauthAuthorizationsApi {
 
 /** Authorizations create. */
   async create(body: AuthorizationsCreateRequest, requestOptions?: ApiRequestOptions): Promise<{ authorizationStateId: string; expiresAt: string; }> {
-    return this.client.request<{ authorizationStateId: string; expiresAt: string; }>(appApiPath(`/oauth/authorizations`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true, sdkworkUnwrapKind: 'data' });
+    return this.client.request<{ authorizationStateId: string; expiresAt: string; }>(appApiPath(`/oauth/authorizations`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -392,7 +361,6 @@ export class OauthApi {
   public readonly providers: OauthProvidersApi;
   public readonly scanLoginModes: OauthScanLoginModesApi;
   public readonly sessions: OauthSessionsApi;
-  public readonly wechatPaymentOauth: OauthWechatPaymentOauthApi;
 
   constructor(client: HttpClient) {
     this.accountLinks = new OauthAccountLinksApi(client);
@@ -407,7 +375,6 @@ export class OauthApi {
     this.providers = new OauthProvidersApi(client);
     this.scanLoginModes = new OauthScanLoginModesApi(client);
     this.sessions = new OauthSessionsApi(client);
-    this.wechatPaymentOauth = new OauthWechatPaymentOauthApi(client);
   }
 
 }

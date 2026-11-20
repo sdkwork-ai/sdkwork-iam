@@ -410,7 +410,9 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "open-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.oauth.manage"
+        "x-sdkwork-permission": "iam.oauth.manage",
+        "x-sdkwork-wire-protocol": "external",
+        "x-sdkwork-external-protocol-id": "wechat-official-account-callback"
       },
       "post": {
         "tags": [
@@ -550,7 +552,9 @@
               }
             }
           }
-        }
+        },
+        "x-sdkwork-wire-protocol": "external",
+        "x-sdkwork-external-protocol-id": "wechat-official-account-callback"
       }
     },
     "/iam/v3/api/oauth/authorize": {

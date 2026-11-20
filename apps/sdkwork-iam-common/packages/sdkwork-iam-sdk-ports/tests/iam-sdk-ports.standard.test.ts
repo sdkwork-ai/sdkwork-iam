@@ -758,9 +758,9 @@ function createBackendIamManagementResources(options?: { usersRoles?: boolean })
         create: vi.fn(),
         delete: vi.fn(),
         list: vi.fn(),
-        resolve: vi.fn(),
+        resolve: { retrieve: vi.fn() },
         retrieve: vi.fn(),
-        setDefault: vi.fn(),
+        default: vi.fn(),
         update: vi.fn(),
         credentials: {
           create: vi.fn(),

@@ -376,14 +376,14 @@ export function createIamBackendSdkAdapter(client: unknown): IamBackendSdkClient
         create: standardResourceMethod(toRecord(iam.providerAccounts), "create", "appbaseBackend.iam.providerAccounts.create"),
         delete: standardResourceMethod(toRecord(iam.providerAccounts), "delete", "appbaseBackend.iam.providerAccounts.delete"),
         list: standardResourceMethod(toRecord(iam.providerAccounts), "list", "appbaseBackend.iam.providerAccounts.list"),
-        resolve: standardResourceMethod(toRecord(iam.providerAccounts), "resolve", "appbaseBackend.iam.providerAccounts.resolve"),
+        resolve: { retrieve: standardResourceMethod(toRecord(iam.providerAccounts?.resolve), "retrieve", "appbaseBackend.iam.providerAccounts.resolve.retrieve") },
         retrieve: standardResourceMethod(toRecord(iam.providerAccounts), "retrieve", "appbaseBackend.iam.providerAccounts.retrieve"),
-        setDefault: standardResourceMethod(toRecord(iam.providerAccounts), "setDefault", "appbaseBackend.iam.providerAccounts.setDefault"),
+        default: standardResourceMethod(toRecord(iam.providerAccounts), "default", "appbaseBackend.iam.providerAccounts.default"),
         update: standardResourceMethod(toRecord(iam.providerAccounts), "update", "appbaseBackend.iam.providerAccounts.update"),
         credentials: {
           create: standardResourceMethod(toRecord(iam.providerAccounts?.credentials), "create", "appbaseBackend.iam.providerAccounts.credentials.create"),
           list: standardResourceMethod(toRecord(iam.providerAccounts?.credentials), "list", "appbaseBackend.iam.providerAccounts.credentials.list"),
-          reveal: standardResourceMethod(toRecord(iam.providerAccounts?.credentials), "reveal", "appbaseBackend.iam.providerAccounts.credentials.reveal"),
+          reveal: { retrieve: standardResourceMethod(toRecord(iam.providerAccounts?.credentials?.reveal), "retrieve", "appbaseBackend.iam.providerAccounts.credentials.reveal.retrieve") },
         },
       },
       providerCredentials: {

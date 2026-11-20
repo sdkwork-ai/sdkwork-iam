@@ -253,7 +253,7 @@ export function createSdkworkIamConsoleCloudAccountController(
         // local projection clears every sibling default of the same level, vendor,
         // and environment rather than only setting the new one.
         const promoted = toAccount(
-          await service.iam.providerAccounts.setDefault(accountId, {}),
+          await service.iam.providerAccounts.default(accountId, {}),
         );
         const accounts = state.accounts.map((account) => {
           if (account.id === accountId) {
@@ -378,7 +378,7 @@ export function createSdkworkIamConsoleCloudAccountController(
     resolveAccount: async (params) => {
       setState({ status: "loading" });
       try {
-        const resolved = toResolution(await service.iam.providerAccounts.resolve(params));
+        const resolved = toResolution(await service.iam.providerAccounts.resolve.retrieve(params));
         setState({ status: "ready" });
         return resolved;
       } catch (error) {
