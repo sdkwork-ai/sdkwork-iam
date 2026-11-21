@@ -3489,3 +3489,63 @@ CREATE TRIGGER trg_iam_application_installation_guard_release_scope
     ON iam_application_installation
     FOR EACH ROW
     EXECUTE FUNCTION iam_application_installation_guard_release_scope();
+
+-- folded migration: migrations/postgres/0021_iam_user_persona.up.sql
+CREATE TABLE IF NOT EXISTS iam_persona_role (
+  id TEXT PRIMARY KEY,
+  owner_tenant_id TEXT NOT NULL DEFAULT '0',
+  code TEXT NOT NULL,
+  iam_role_code TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'active',
+  label_i18n TEXT NOT NULL DEFAULT '{}',
+  description_i18n TEXT NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uk_iam_persona_role_owner_code UNIQUE (owner_tenant_id, code),
+  CONSTRAINT ck_iam_persona_role_code CHECK (code ~ '^[a-z][a-z0-9-]{0,63}$'),
+  CONSTRAINT ck_iam_persona_role_status CHECK (status IN ('active', 'disabled')),
+  CONSTRAINT ck_iam_persona_role_sort CHECK (sort_order >= 0),
+  CONSTRAINT ck_iam_persona_role_label_i18n CHECK (jsonb_typeof(label_i18n::jsonb) = 'object'),
+  CONSTRAINT ck_iam_persona_role_description_i18n CHECK (jsonb_typeof(description_i18n::jsonb) = 'object')
+);
+
+CREATE INDEX IF NOT EXISTS idx_iam_persona_role_owner_status
+  ON iam_persona_role (owner_tenant_id, status, sort_order);
+
+CREATE TABLE IF NOT EXISTS iam_persona_interest (
+  id TEXT PRIMARY KEY,
+  owner_tenant_id TEXT NOT NULL DEFAULT '0',
+  code TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'active',
+  label_i18n TEXT NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uk_iam_persona_interest_owner_code UNIQUE (owner_tenant_id, code),
+  CONSTRAINT ck_iam_persona_interest_code CHECK (code ~ '^[a-z][a-z0-9-]{0,63}$'),
+  CONSTRAINT ck_iam_persona_interest_status CHECK (status IN ('active', 'disabled')),
+  CONSTRAINT ck_iam_persona_interest_sort CHECK (sort_order >= 0),
+  CONSTRAINT ck_iam_persona_interest_label_i18n CHECK (jsonb_typeof(label_i18n::jsonb) = 'object')
+);
+
+CREATE INDEX IF NOT EXISTS idx_iam_persona_interest_owner_status
+  ON iam_persona_interest (owner_tenant_id, status, sort_order);
+
+CREATE TABLE IF NOT EXISTS iam_user_persona (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  role_code TEXT,
+  interests TEXT NOT NULL DEFAULT '[]',
+  prompt_dismissed INTEGER NOT NULL DEFAULT 0,
+  catalog_version TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uk_iam_user_persona_tenant_user UNIQUE (tenant_id, user_id),
+  CONSTRAINT ck_iam_user_persona_prompt_dismissed CHECK (prompt_dismissed IN (0, 1)),
+  CONSTRAINT ck_iam_user_persona_interests CHECK (jsonb_typeof(interests::jsonb) = 'array')
+);
+
+CREATE INDEX IF NOT EXISTS idx_iam_user_persona_tenant_role
+  ON iam_user_persona (tenant_id, role_code);
