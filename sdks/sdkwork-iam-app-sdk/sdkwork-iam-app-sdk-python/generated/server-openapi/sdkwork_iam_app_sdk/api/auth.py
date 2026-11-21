@@ -95,7 +95,7 @@ class AuthSessionsCurrentApi:
         """Sessions current update."""
         return self._client.patch(f"/app/v3/api/auth/sessions/current", json=body)
 
-    def logout(self, body: SessionsCurrentLogoutRequest) -> None:
+    def logout(self, body: SessionsCurrentLogoutRequest) -> SdkWorkCommandResponse:
         """Sessions current logout."""
         return self._client.post(f"/app/v3/api/auth/sessions/current/logout", json=body, skip_auth=True)
 

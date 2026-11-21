@@ -12,7 +12,7 @@
   "generatedFiles": [
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -24,7 +24,7 @@
     },
     {
       "path": "Cargo.toml",
-      "sha256": "b0abfc9ab55b2b1833d97c518fd1d5c46b5337bdb03b9f44e2b659eecb9e0b5e"
+      "sha256": "aaf94e1d4bff2518e0f386818e6edb2431506e611a7d0a18d132bc5f1ce05f82"
     },
     {
       "path": "CHANGELOG.md",
@@ -36,23 +36,19 @@
     },
     {
       "path": "README.md",
-      "sha256": "061dfa1eb8cf7df68cf4c462d45ec3687846734ce9b9e0ba04a1ab5a5860bfa6"
+      "sha256": "9ae6eaaf1c968d722f97501632bf873b2c2d313b7ef7b024d92dd48b7136ca83"
     },
     {
       "path": "sdkwork-sdk.json",
-      "sha256": "cb921bc242600df7bd1d3183b2d7fa6ffde81cfee75f9d6c7bb552a40df591dd"
+      "sha256": "dbfaebba7c1520e94e848754f9f599cffdd33b2ac7151d83b91b4b23a37bdb30"
     },
     {
       "path": "src/api/base.rs",
       "sha256": "b9899ea896a1c0bced3569faa891a744343bee482d9c0c7ff13add3800b8f01f"
     },
     {
-      "path": "src/api/iam_oauth.rs",
-      "sha256": "acc9156d7ef258923e8576810b46447aff8eedd5088292babe5bc7d78ebe5a94"
-    },
-    {
       "path": "src/api/mod.rs",
-      "sha256": "b1edb39f69070b4fa79881ec888f8aa454e5bf27e5428280aa232708e0868021"
+      "sha256": "9bf4192ddb676cdd99b81b9f72f17e3f73b0ab4e73456d919c9117389dd8c43c"
     },
     {
       "path": "src/api/paths.rs",
@@ -60,47 +56,19 @@
     },
     {
       "path": "src/client.rs",
-      "sha256": "3019c093ed8feea5dbfc53ce30a953e339b79d19a539a8b6e17175ad390dd44f"
+      "sha256": "c1b75fbe94a7966f7e6420e76e6f0b2aee49fe7bb84e8878f18f66795ed20a55"
     },
     {
       "path": "src/http/client.rs",
-      "sha256": "063e20ccd0fb74e12444add838b4da2b9c7fc3d30a1b1cd7e404c582d5760ba4"
+      "sha256": "c3d1f9e4ab9680f2583b9c5e58cafaf2006609e67983130fbc317a5944e97514"
     },
     {
       "path": "src/http/mod.rs",
-      "sha256": "fdf16d487ebd9180fb423d5630d4401ff18180721b86636dec085ad83940bb3d"
+      "sha256": "d09ef1f29c3fa0e631fc4f7287fc93dc7d3cee7e7261ac85091852a09243e90a"
     },
     {
       "path": "src/lib.rs",
       "sha256": "015a6abfc4c3393df8f0e721cda37311295c0440ac8eb91d3145ae162d58b194"
-    },
-    {
-      "path": "src/models/appbase_access_credential_create_command.rs",
-      "sha256": "736b87b95508719e080be06da76815e39699d2ce58113bfdf00757d5cddf1688"
-    },
-    {
-      "path": "src/models/appbase_api_result.rs",
-      "sha256": "1f1baec7697e3eabf3195a9927ecdd084bc1d6b08a4e077159451fb7076cb1e4"
-    },
-    {
-      "path": "src/models/appbase_application_register_command.rs",
-      "sha256": "a984b7359002104b10cc4b99df041887d336a125e04af01ecb4aaad5921e481f"
-    },
-    {
-      "path": "src/models/appbase_session_create_command.rs",
-      "sha256": "5d3f3f8f27c6270a390200ac06d93547952a36230cf3e625d34d6f290e214e5f"
-    },
-    {
-      "path": "src/models/appbase_tenant_application_enable_command.rs",
-      "sha256": "9197b64d8bd3603b6c67363adfc45114afa7322ff174c5dd649a84c070edc1b8"
-    },
-    {
-      "path": "src/models/appbase_tenant_application_provision_command.rs",
-      "sha256": "961c1c4b58a3b2c98458173fc18166e9a2f6fe11557df7a703a70ea6ec408383"
-    },
-    {
-      "path": "src/models/appbase_tenant_application_update_command.rs",
-      "sha256": "47db72d9a0f2288d5054d7510f8b5376388b1bc2cded1621a7a34f0d9b5a2f72"
     },
     {
       "path": "src/models/common.rs",
@@ -108,15 +76,15 @@
     },
     {
       "path": "src/models/field_error.rs",
-      "sha256": "fc7aa3d12832fb2a8321974ab429ec3782cf0f465d8940e9ed73477dc4e1f61c"
+      "sha256": "09c55595520768e5c816f456def08f58d4c6c445b825b0ca907eefe464ad57b9"
     },
     {
       "path": "src/models/mod.rs",
-      "sha256": "b789ab62a47402b582ceb94aabfeb7af07203b6c495cc7a6514e65e5a7b3fb3b"
+      "sha256": "f4977dcccb430141dfd1979b6ae398fa53f8a487821677cdfadb0f3e5d5d41e0"
     },
     {
       "path": "src/models/problem_detail.rs",
-      "sha256": "fccd084df605e1cc18531b6f26436910c62c2ea625aadda2163ed6fbace1d881"
+      "sha256": "fc67e2b4d891df3540eabb76fbbae0437eba09ed0a0c0320ebfcd632082e7a36"
     }
   ],
   "scaffoldFiles": [

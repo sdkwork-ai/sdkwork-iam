@@ -36,7 +36,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "7c4c0144d73da4d8766dcc3a7e9dc49428a4dd01510c824a35fdd21e1f0eca58"
+      "sha256": "544a469c2ac91a72048c944a9718166cf6b0da17b3be553ec98ab6119a657283"
     },
     {
       "path": "sdkwork-sdk.json",
@@ -48,15 +48,15 @@
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/api/AuthApi.java",
-      "sha256": "7a8d113ff2084b3513775bca024296e3429456e37c7469a7a33c1e8b48d1162f"
+      "sha256": "95aba39fadc2c6d01b853246e58d13ea7dd606c18f50437316090028f681706d"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/api/IamApi.java",
-      "sha256": "933eb7cd5296286d3ff54bf0243913e6c5f2c2cc88943731dc00e55837e94256"
+      "sha256": "de9127cf06ab4de50fd1877b594b8f2e646b0c24147b1c0eb7e950bfe9712c64"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/api/OauthApi.java",
-      "sha256": "ae4596a3d61f35684840f271d8ab3d4a6d7e8fdb0b45030488f4669b873aa5c2"
+      "sha256": "ac7cb07d79351693ee5e089debef87bbe7725c471f2f8f2778a9ba683bb7ff55"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/api/package-info.java",
@@ -79,28 +79,40 @@
       "sha256": "a9069d37cff5dfbd9d8356711a580f1c5a96840d00fba40b8ac79767d9e0e7b2"
     },
     {
-      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCompletionsCreateResponse.java",
-      "sha256": "5779eccd11e740d1dff65123cfec37366800b9da5b6fea93db63fe3de2a52639"
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCompletionsCreateResponse201.java",
+      "sha256": "be6a5c95579e0a9216f784cac47d1af26c1baad5967fb4db9a5d545c33b000f0"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCreateRequest.java",
       "sha256": "f591159e7d57f36c32a8d9e806356df3d1790dec1b7a245611a3b9c58a28ad0b"
     },
     {
-      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCreateResponse.java",
-      "sha256": "e898919043437b4a9fe34233cf2258f0a103a9a2405a945ab3f6eef54d4e142e"
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/AuthorizationsCreateResponse201.java",
+      "sha256": "1ebb69543fb383c6106c0eafaf34dd6fc98d80777f3ae3fddf1ed2fae6b6bbd8"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/model/DesktopSessionsCreateRequest.java",
       "sha256": "c8c81f0d24850e7c5a6ddef0550b5111e1fec3d719101b584613f7c2c0f93b53"
     },
     {
-      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/DesktopSessionsCreateResponse.java",
-      "sha256": "cf0453f1a37bac8a42dfb68fcfac30f4e0f765562f6878489a656979f4aa308d"
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/DesktopSessionsCreateResponse201.java",
+      "sha256": "29a6ee58f5ceb93e906271cd1d27b250e1bfbdbae0de9c3cbe3c4abce02c55c5"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/model/FieldError.java",
       "sha256": "267ba360b2d6445f5f1ef2c57afeb250ea7d96de5776cea25542c114ea3b1d32"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/IamAppAccessToken.java",
+      "sha256": "a3121ea76b29d8df3948fa854621ed12dcbf845781af0c1f102083df1aa82418"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/IamAppAccessTokenCreateCommand.java",
+      "sha256": "a7e787fdf6497b876b6aeebeba0f45ccf678967c39b6b38bdc335238afc0826b"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/app/sdk/model/IamAppAccessTokenResponse.java",
+      "sha256": "9375db1fd09ce85fb92cba166eac37a5180174e96c0c21fc7d0f8be2b47986ec"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/app/sdk/model/IamOrganizationMember.java",

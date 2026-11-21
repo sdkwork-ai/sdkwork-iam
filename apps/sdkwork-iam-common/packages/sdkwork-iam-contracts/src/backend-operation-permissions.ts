@@ -49,23 +49,44 @@ function isOauthAccountMaintenanceOperation(operationId: string): boolean {
 function explicitBootstrapPermission(operationId: string): string | undefined {
   switch (operationId) {
     case "tenantApplications.create":
-      return "iam.tenant_applications.provision";
+      return "iam.installations.provision";
     case "tenantApplications.list":
     case "tenantApplications.summary.retrieve":
-      return "iam.tenant_applications.update";
+      return "iam.installations.update";
     case "tenantApplications.management.create":
-      return "iam.tenant_applications.provision";
+      return "iam.installations.provision";
     case "tenantApplications.management.update":
     case "tenantApplications.management.disable":
-      return "iam.tenant_applications.update";
+      return "iam.installations.update";
     case "tenantApplications.management.enable":
-      return "iam.tenant_applications.enable";
+      return "iam.installations.enable";
     case "tenantApplications.update":
-      return "iam.tenant_applications.update";
+      return "iam.installations.update";
     case "tenantApplications.retrieve":
-      return "iam.tenant_applications.update";
+      return "iam.installations.update";
     case "tenantApplications.enable":
-      return "iam.tenant_applications.enable";
+      return "iam.installations.enable";
+    // Canonical installation operations. The permission codes keep their
+    // historical spelling until the permission migration renames them; the
+    // operation ids already use the installation vocabulary.
+    case "installations.create":
+      return "iam.installations.provision";
+    case "installations.list":
+    case "installations.summary.retrieve":
+      return "iam.installations.update";
+    case "installations.management.create":
+      return "iam.installations.provision";
+    case "installations.management.update":
+    case "installations.management.disable":
+      return "iam.installations.update";
+    case "installations.management.enable":
+      return "iam.installations.enable";
+    case "installations.update":
+      return "iam.installations.update";
+    case "installations.retrieve":
+      return "iam.installations.update";
+    case "installations.enable":
+      return "iam.installations.enable";
     case "accessCredentials.create":
       return "iam.access_credentials.create";
     case "serviceAccounts.credentials.create":

@@ -483,6 +483,7 @@ class IamOauthIamOauthOperatorPlatformsApi:
 
     def __init__(self, client: HttpClient):
         self._client = client
+        self.component_credentials = IamOauthIamOauthOperatorPlatformsComponentCredentialsApi(client)
         self.pre_authorizations = IamOauthIamOauthOperatorPlatformsPreAuthorizationsApi(client)
 
 
@@ -504,6 +505,17 @@ class IamOauthIamOauthOperatorPlatformsApi:
     def update(self, operator_platform_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
         """Iam oauth operator Platforms update."""
         return self._client.patch(f"/backend/v3/api/iam/oauth/operator_platforms/{serialize_path_parameter(operator_platform_id, {'name': 'operatorPlatformId', 'style': 'simple', 'explode': False})}", json=body)
+
+class IamOauthIamOauthOperatorPlatformsComponentCredentialsApi:
+    """iam_oauth iam_oauth.iam.oauth.operator_platforms.component_credentials API client."""
+
+    def __init__(self, client: HttpClient):
+        self._client = client
+
+
+    def create(self, operator_platform_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
+        """Iam oauth operator Platforms component Credentials create."""
+        return self._client.post(f"/backend/v3/api/iam/oauth/operator_platforms/{serialize_path_parameter(operator_platform_id, {'name': 'operatorPlatformId', 'style': 'simple', 'explode': False})}/component_credentials", json=body)
 
 class IamOauthIamOauthOperatorPlatformsPreAuthorizationsApi:
     """iam_oauth iam_oauth.iam.oauth.operator_platforms.pre_authorizations API client."""

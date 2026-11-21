@@ -351,7 +351,7 @@ public struct IamOauthClientCreateCommand: Codable {
     }
 }
 
-public struct IamTenantApplicationManagementProvisionCommand: Codable {
+public struct IamInstallationManagementProvisionCommand: Codable {
     public let organizationId: String?
     public let instanceKey: String?
     public let displayName: String?
@@ -382,7 +382,7 @@ public struct IamTenantApplicationManagementProvisionCommand: Codable {
     }
 }
 
-public struct IamTenantApplicationManagementUpdateCommand: Codable {
+public struct IamInstallationManagementUpdateCommand: Codable {
     public let primaryDomain: String?
     public let accessPermissions: [String]?
 
@@ -393,12 +393,12 @@ public struct IamTenantApplicationManagementUpdateCommand: Codable {
     }
 }
 
-public struct IamTenantApplicationStatusCommand: Codable {
+public struct IamInstallationStatusCommand: Codable {
 
     public init() {}
 }
 
-public struct AppbaseTenantApplicationProvisionCommand: Codable {
+public struct AppbaseInstallationProvisionCommand: Codable {
     public let authToken: String?
     public let username: String?
     public let email: String?
@@ -441,7 +441,7 @@ public struct AppbaseTenantApplicationProvisionCommand: Codable {
     }
 }
 
-public struct AppbaseTenantApplicationUpdateCommand: Codable {
+public struct AppbaseInstallationUpdateCommand: Codable {
     public let authToken: String?
     public let username: String?
     public let email: String?
@@ -466,7 +466,7 @@ public struct AppbaseTenantApplicationUpdateCommand: Codable {
     }
 }
 
-public struct AppbaseTenantApplicationEnableCommand: Codable {
+public struct AppbaseInstallationEnableCommand: Codable {
     public let authToken: String?
     public let username: String?
     public let email: String?
@@ -491,13 +491,13 @@ public struct AppbaseAccessCredentialCreateCommand: Codable {
     public let password: String?
     public let tenantId: String?
     public let organizationId: String?
-    public let tenantApplicationId: String?
+    public let installationId: String?
     public let appId: String?
     public let instanceKey: String?
     public let ownershipScope: String?
 
 
-    public init(authToken: String? = nil, username: String? = nil, email: String? = nil, phone: String? = nil, password: String? = nil, tenantId: String? = nil, organizationId: String? = nil, tenantApplicationId: String? = nil, appId: String? = nil, instanceKey: String? = nil, ownershipScope: String? = nil) {
+    public init(authToken: String? = nil, username: String? = nil, email: String? = nil, phone: String? = nil, password: String? = nil, tenantId: String? = nil, organizationId: String? = nil, installationId: String? = nil, appId: String? = nil, instanceKey: String? = nil, ownershipScope: String? = nil) {
         self.authToken = authToken
         self.username = username
         self.email = email
@@ -505,7 +505,7 @@ public struct AppbaseAccessCredentialCreateCommand: Codable {
         self.password = password
         self.tenantId = tenantId
         self.organizationId = organizationId
-        self.tenantApplicationId = tenantApplicationId
+        self.installationId = installationId
         self.appId = appId
         self.instanceKey = instanceKey
         self.ownershipScope = ownershipScope
@@ -513,12 +513,12 @@ public struct AppbaseAccessCredentialCreateCommand: Codable {
 }
 
 public struct ServiceAccountCredentialCreateCommand: Codable {
-    public let tenantApplicationId: String?
+    public let installationId: String?
     public let expiresAt: String?
 
 
-    public init(tenantApplicationId: String? = nil, expiresAt: String? = nil) {
-        self.tenantApplicationId = tenantApplicationId
+    public init(installationId: String? = nil, expiresAt: String? = nil) {
+        self.installationId = installationId
         self.expiresAt = expiresAt
     }
 }

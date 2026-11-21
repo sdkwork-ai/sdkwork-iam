@@ -17,7 +17,7 @@ export const sdkworkIamTenantAdminMessages: SdkworkIamTenantAdminMessages = {
       reveal: "显示令牌",
       securityNote: "访问令牌等同于该应用的调用凭证，请勿在客户端或公开渠道泄露；令牌到期后需要重新签发。",
       sessionId: "会话 ID",
-      tenantApplicationId: "IAM 租户应用 ID",
+      installationId: "IAM 租户应用 ID",
       title: "应用访问令牌",
       tokenLabel: "访问令牌",
       unavailable: "该应用当前不是启用状态，无法签发访问令牌。请启用应用后重试。",

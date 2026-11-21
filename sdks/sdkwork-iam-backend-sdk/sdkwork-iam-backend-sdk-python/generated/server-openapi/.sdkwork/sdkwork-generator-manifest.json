@@ -56,11 +56,11 @@
     },
     {
       "path": "sdkwork_iam_backend_sdk/api/iam_oauth.py",
-      "sha256": "95677f0cdae9f5ff7b729ccb1a42db26c1483df8568df048ba69df4d605d149f"
+      "sha256": "50efac9797085bd7f91bbcb5f0e835b4752ab96124df0006793b316dd8b2d6f4"
     },
     {
       "path": "sdkwork_iam_backend_sdk/api/iam.py",
-      "sha256": "2f7b286336339358a5a2bc340efbf4721bbac4b6d07020d7b023cba372691b08"
+      "sha256": "cf482563857bc1e729c8b439b0c78f529aa02f6bbc625c310ec65437eaba0d6e"
     },
     {
       "path": "sdkwork_iam_backend_sdk/client.py",
@@ -72,23 +72,23 @@
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/__init__.py",
-      "sha256": "49c43a6048dd9d614b6d2d5b4a69504d772b34331aba20f9e8f544b08cb0bdaa"
+      "sha256": "2df02c5dfc4ff713f0cae203f2e873b27ccb22a9c8f7fe0a2392ca17e618d0cb"
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/appbase_access_credential_create_command.py",
-      "sha256": "da4d6b09ca529b1972f9a5971a38e76b56ea8cf1a98d03cad937be1192c8a18b"
+      "sha256": "5c33b3b3f1236f6d9729a390e1995bde60fb4b53428c9349b56ef0dedae10ced"
     },
     {
-      "path": "sdkwork_iam_backend_sdk/models/appbase_tenant_application_enable_command.py",
-      "sha256": "b0805b88891a523d00319d45a748be08c9c35403fbc8bf440b22336ef678422b"
+      "path": "sdkwork_iam_backend_sdk/models/appbase_installation_enable_command.py",
+      "sha256": "946cd5941c74ab50a96578666b67b5183f054ee48ec7653a191aeba75e201b4a"
     },
     {
-      "path": "sdkwork_iam_backend_sdk/models/appbase_tenant_application_provision_command.py",
-      "sha256": "44894c3972b6980f6e7ecca681ee0a322dd0e81c0cc9daaee30a834cd17b56bf"
+      "path": "sdkwork_iam_backend_sdk/models/appbase_installation_provision_command.py",
+      "sha256": "3e43397da37fecf537dd79a1e1c11016e4aa2667b5ec59441ef36ba2b939fc97"
     },
     {
-      "path": "sdkwork_iam_backend_sdk/models/appbase_tenant_application_update_command.py",
-      "sha256": "3749c323ce091b7947dbad82255a79c35f4b72f6b3bddfbea4e6d7c7bf37eaab"
+      "path": "sdkwork_iam_backend_sdk/models/appbase_installation_update_command.py",
+      "sha256": "6e8228d9091511a44e3b1643ecee16a5fe85c781f3dc6d7c0dd0ae5e1a90f4ec"
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/field_error.py",
@@ -135,20 +135,20 @@
       "sha256": "37d1448d7bca5f87c4a028fe2a2b29a009d303f7ed2e88128723ab2b9665e0ee"
     },
     {
+      "path": "sdkwork_iam_backend_sdk/models/iam_installation_management_provision_command.py",
+      "sha256": "afd2d2a1e0156271860ab4c494154d0a31d71a2cefca86b6cf248d0d50c35b82"
+    },
+    {
+      "path": "sdkwork_iam_backend_sdk/models/iam_installation_management_update_command.py",
+      "sha256": "df5b24abe839e3d62e9d9183d44ffbfeaa62617a319fae15ef514ddf221035bf"
+    },
+    {
+      "path": "sdkwork_iam_backend_sdk/models/iam_installation_status_command.py",
+      "sha256": "42209866314a890f4d82ad599d112003e233c178c8eed94511b33d37b085c91e"
+    },
+    {
       "path": "sdkwork_iam_backend_sdk/models/iam_oauth_client_create_command.py",
       "sha256": "1577bd8478d98273e19f9bd04cc98324d2e1b2bba01191c6913d2b31b2c43a0e"
-    },
-    {
-      "path": "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_provision_command.py",
-      "sha256": "8c2ac519f899466399025bce1ce08c17fea5cb2bf5802686287849b253fa1a24"
-    },
-    {
-      "path": "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_update_command.py",
-      "sha256": "ee1f8b8e485b5d54e14a7e96111d7043e0abbac55ee27ca7ca21a63fb6504799"
-    },
-    {
-      "path": "sdkwork_iam_backend_sdk/models/iam_tenant_application_status_command.py",
-      "sha256": "4ba926e33d0b2199615db308d483299781c284efc36de62cce76a1e2c592923a"
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/page_info.py",
@@ -188,7 +188,7 @@
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/service_account_credential_create_command.py",
-      "sha256": "a31259cc7b3c277d6eddea2c5f54eb6e1b4aa31437447dbced083ae494bf81e7"
+      "sha256": "6ebb977258eaf6254ab892da5039503f907ceb404eb334efdce789b5ec518942"
     },
     {
       "path": "sdkwork_iam_backend_sdk/models/service_account_credential_revoke_command.py",

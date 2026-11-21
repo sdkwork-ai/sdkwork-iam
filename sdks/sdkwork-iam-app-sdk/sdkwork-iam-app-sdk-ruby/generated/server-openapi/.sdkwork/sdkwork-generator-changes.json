@@ -9,15 +9,38 @@
     "protocol": "http",
     "packageName": "sdkwork-iam-app-sdk"
   },
-  "changeFingerprint": "862f00886c712f4bed3e643244047fe488665caf81cd2ebdb6167f3d97a1620b",
+  "changeFingerprint": "66ac082f603f3fb6146724f7ccf05a9b50f8bbac4a0a10e2ce16d983ffd4a889",
   "changes": {
     "createdGeneratedFiles": [
+      "lib/sdkwork/app_sdk/models/authorizations_completions_create_response201.rb",
+      "lib/sdkwork/app_sdk/models/authorizations_create_response201.rb",
+      "lib/sdkwork/app_sdk/models/desktop_sessions_create_response201.rb",
+      "lib/sdkwork/app_sdk/models/iam_app_access_token_create_command.rb",
+      "lib/sdkwork/app_sdk/models/iam_app_access_token_response.rb",
+      "lib/sdkwork/app_sdk/models/iam_app_access_token.rb"
+    ],
+    "updatedGeneratedFiles": [
+      "lib/sdkwork/app_sdk.rb",
+      "lib/sdkwork/app_sdk/api/auth.rb",
+      "lib/sdkwork/app_sdk/api/iam.rb",
+      "lib/sdkwork/app_sdk/api/oauth.rb",
+      "README.md"
+    ],
+    "unchangedGeneratedFiles": [
+      "bin/publish-core.mjs",
+      "bin/publish.ps1",
+      "bin/publish.sh",
+      "CHANGELOG.md",
+      "Gemfile",
+      "lib/sdkwork/app_sdk/api/base_api.rb",
+      "lib/sdkwork/app_sdk/api/system.rb",
+      "lib/sdkwork/app_sdk/client.rb",
+      "lib/sdkwork/app_sdk/http/client.rb",
+      "lib/sdkwork/app_sdk/models/appbase_session_create_command.rb",
       "lib/sdkwork/app_sdk/models/authorizations_completions_create_request.rb",
-      "lib/sdkwork/app_sdk/models/authorizations_completions_create_response.rb",
       "lib/sdkwork/app_sdk/models/authorizations_create_request.rb",
-      "lib/sdkwork/app_sdk/models/authorizations_create_response.rb",
       "lib/sdkwork/app_sdk/models/desktop_sessions_create_request.rb",
-      "lib/sdkwork/app_sdk/models/desktop_sessions_create_response.rb",
+      "lib/sdkwork/app_sdk/models/field_error.rb",
       "lib/sdkwork/app_sdk/models/iam_organization_member_list_response.rb",
       "lib/sdkwork/app_sdk/models/iam_organization_member.rb",
       "lib/sdkwork/app_sdk/models/iam_persona_catalog_response.rb",
@@ -29,24 +52,6 @@
       "lib/sdkwork/app_sdk/models/iam_user_persona.rb",
       "lib/sdkwork/app_sdk/models/oauth_phone_binding_session_create_command.rb",
       "lib/sdkwork/app_sdk/models/oauth_phone_binding_verification_code_request_command.rb",
-      "lib/sdkwork/app_sdk/models/sessions_current_logout_request.rb"
-    ],
-    "updatedGeneratedFiles": [
-      "bin/publish-core.mjs",
-      "bin/publish.ps1",
-      "bin/publish.sh",
-      "CHANGELOG.md",
-      "Gemfile",
-      "lib/sdkwork/app_sdk.rb",
-      "lib/sdkwork/app_sdk/api/auth.rb",
-      "lib/sdkwork/app_sdk/api/base_api.rb",
-      "lib/sdkwork/app_sdk/api/iam.rb",
-      "lib/sdkwork/app_sdk/api/oauth.rb",
-      "lib/sdkwork/app_sdk/api/system.rb",
-      "lib/sdkwork/app_sdk/client.rb",
-      "lib/sdkwork/app_sdk/http/client.rb",
-      "lib/sdkwork/app_sdk/models/appbase_session_create_command.rb",
-      "lib/sdkwork/app_sdk/models/field_error.rb",
       "lib/sdkwork/app_sdk/models/page_info.rb",
       "lib/sdkwork/app_sdk/models/problem_detail.rb",
       "lib/sdkwork/app_sdk/models/sdk_work_api_response.rb",
@@ -56,62 +61,30 @@
       "lib/sdkwork/app_sdk/models/sdk_work_page_data.rb",
       "lib/sdkwork/app_sdk/models/sdk_work_resource_data.rb",
       "lib/sdkwork/app_sdk/models/sdk_work_resource_response.rb",
+      "lib/sdkwork/app_sdk/models/sessions_current_logout_request.rb",
       "lib/sdkwork/app_sdk/models/wechat_mini_program_session_create_command.rb",
       "lib/sdkwork/app_sdk/sdk_config.rb",
       "lib/sdkwork/app_sdk/version.rb",
       "LICENSE",
-      "README.md",
       "sdkwork-iam-app-sdk.gemspec",
       "sdkwork-sdk.json"
     ],
-    "unchangedGeneratedFiles": [],
-    "deletedGeneratedFiles": [],
+    "deletedGeneratedFiles": [
+      "lib/sdkwork/app_sdk/models/authorizations_completions_create_response.rb",
+      "lib/sdkwork/app_sdk/models/authorizations_create_response.rb",
+      "lib/sdkwork/app_sdk/models/desktop_sessions_create_response.rb"
+    ],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
     ],
-    "backedUpFiles": [
-      "bin/publish-core.mjs",
-      "bin/publish.ps1",
-      "bin/publish.sh",
-      "CHANGELOG.md",
-      "Gemfile",
-      "lib/sdkwork/app_sdk.rb",
-      "lib/sdkwork/app_sdk/api/auth.rb",
-      "lib/sdkwork/app_sdk/api/base_api.rb",
-      "lib/sdkwork/app_sdk/api/iam.rb",
-      "lib/sdkwork/app_sdk/api/oauth.rb",
-      "lib/sdkwork/app_sdk/api/system.rb",
-      "lib/sdkwork/app_sdk/client.rb",
-      "lib/sdkwork/app_sdk/http/client.rb",
-      "lib/sdkwork/app_sdk/models/appbase_session_create_command.rb",
-      "lib/sdkwork/app_sdk/models/field_error.rb",
-      "lib/sdkwork/app_sdk/models/page_info.rb",
-      "lib/sdkwork/app_sdk/models/problem_detail.rb",
-      "lib/sdkwork/app_sdk/models/sdk_work_api_response.rb",
-      "lib/sdkwork/app_sdk/models/sdk_work_command_data.rb",
-      "lib/sdkwork/app_sdk/models/sdk_work_command_response.rb",
-      "lib/sdkwork/app_sdk/models/sdk_work_list_response.rb",
-      "lib/sdkwork/app_sdk/models/sdk_work_page_data.rb",
-      "lib/sdkwork/app_sdk/models/sdk_work_resource_data.rb",
-      "lib/sdkwork/app_sdk/models/sdk_work_resource_response.rb",
-      "lib/sdkwork/app_sdk/models/wechat_mini_program_session_create_command.rb",
-      "lib/sdkwork/app_sdk/sdk_config.rb",
-      "lib/sdkwork/app_sdk/version.rb",
-      "LICENSE",
-      "README.md",
-      "sdkwork-iam-app-sdk.gemspec",
-      "sdkwork-sdk.json"
-    ]
+    "backedUpFiles": []
   },
   "impact": {
     "schemaVersion": 1,
     "areas": [
       "api-surface",
       "models",
-      "runtime",
-      "build-metadata",
-      "publish-workflow",
       "documentation",
       "unknown"
     ],
@@ -120,101 +93,50 @@
         "area": "api-surface",
         "paths": [
           "lib/sdkwork/app_sdk/api/auth.rb",
-          "lib/sdkwork/app_sdk/api/base_api.rb",
           "lib/sdkwork/app_sdk/api/iam.rb",
-          "lib/sdkwork/app_sdk/api/oauth.rb",
-          "lib/sdkwork/app_sdk/api/system.rb",
-          "lib/sdkwork/app_sdk/client.rb",
-          "lib/sdkwork/app_sdk/http/client.rb"
+          "lib/sdkwork/app_sdk/api/oauth.rb"
         ]
       },
       {
         "area": "models",
         "paths": [
-          "lib/sdkwork/app_sdk/models/appbase_session_create_command.rb",
-          "lib/sdkwork/app_sdk/models/authorizations_completions_create_request.rb",
           "lib/sdkwork/app_sdk/models/authorizations_completions_create_response.rb",
-          "lib/sdkwork/app_sdk/models/authorizations_create_request.rb",
+          "lib/sdkwork/app_sdk/models/authorizations_completions_create_response201.rb",
           "lib/sdkwork/app_sdk/models/authorizations_create_response.rb",
-          "lib/sdkwork/app_sdk/models/desktop_sessions_create_request.rb",
+          "lib/sdkwork/app_sdk/models/authorizations_create_response201.rb",
           "lib/sdkwork/app_sdk/models/desktop_sessions_create_response.rb",
-          "lib/sdkwork/app_sdk/models/field_error.rb",
-          "lib/sdkwork/app_sdk/models/iam_organization_member_list_response.rb",
-          "lib/sdkwork/app_sdk/models/iam_organization_member.rb",
-          "lib/sdkwork/app_sdk/models/iam_persona_catalog_response.rb",
-          "lib/sdkwork/app_sdk/models/iam_persona_catalog.rb",
-          "lib/sdkwork/app_sdk/models/iam_persona_interest.rb",
-          "lib/sdkwork/app_sdk/models/iam_persona_role.rb",
-          "lib/sdkwork/app_sdk/models/iam_user_persona_response.rb",
-          "lib/sdkwork/app_sdk/models/iam_user_persona_update_command.rb",
-          "lib/sdkwork/app_sdk/models/iam_user_persona.rb",
-          "lib/sdkwork/app_sdk/models/oauth_phone_binding_session_create_command.rb",
-          "lib/sdkwork/app_sdk/models/oauth_phone_binding_verification_code_request_command.rb",
-          "lib/sdkwork/app_sdk/models/page_info.rb",
-          "lib/sdkwork/app_sdk/models/problem_detail.rb",
-          "lib/sdkwork/app_sdk/models/sdk_work_api_response.rb",
-          "lib/sdkwork/app_sdk/models/sdk_work_command_data.rb",
-          "lib/sdkwork/app_sdk/models/sdk_work_command_response.rb",
-          "lib/sdkwork/app_sdk/models/sdk_work_list_response.rb",
-          "lib/sdkwork/app_sdk/models/sdk_work_page_data.rb",
-          "lib/sdkwork/app_sdk/models/sdk_work_resource_data.rb",
-          "lib/sdkwork/app_sdk/models/sdk_work_resource_response.rb",
-          "lib/sdkwork/app_sdk/models/sessions_current_logout_request.rb",
-          "lib/sdkwork/app_sdk/models/wechat_mini_program_session_create_command.rb"
-        ]
-      },
-      {
-        "area": "runtime",
-        "paths": [
-          "lib/sdkwork/app_sdk/http/client.rb"
-        ]
-      },
-      {
-        "area": "build-metadata",
-        "paths": [
-          "Gemfile",
-          "sdkwork-iam-app-sdk.gemspec",
-          "sdkwork-sdk.json"
-        ]
-      },
-      {
-        "area": "publish-workflow",
-        "paths": [
-          "bin/publish-core.mjs",
-          "bin/publish.ps1",
-          "bin/publish.sh"
+          "lib/sdkwork/app_sdk/models/desktop_sessions_create_response201.rb",
+          "lib/sdkwork/app_sdk/models/iam_app_access_token_create_command.rb",
+          "lib/sdkwork/app_sdk/models/iam_app_access_token_response.rb",
+          "lib/sdkwork/app_sdk/models/iam_app_access_token.rb"
         ]
       },
       {
         "area": "documentation",
         "paths": [
-          "CHANGELOG.md",
           "README.md"
         ]
       },
       {
         "area": "unknown",
         "paths": [
-          "lib/sdkwork/app_sdk.rb",
-          "lib/sdkwork/app_sdk/sdk_config.rb",
-          "lib/sdkwork/app_sdk/version.rb",
-          "LICENSE"
+          "lib/sdkwork/app_sdk.rb"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required."
+    "summary": "Detected impact areas: api-surface, models, documentation, unknown. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation, unknown.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-ruby\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -238,7 +160,7 @@
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "backed-up-generated-files",
+      "deleted-generated-files",
       "manual-review-required",
       "unknown-impact",
       "verification-required"

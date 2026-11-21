@@ -648,20 +648,20 @@ export const SDKWORK_IAM_API_ROUTES = {
     accessCredentials: {
       create: operation("POST", `${backend}/iam/access_credentials`, "iam", "accessCredentials.create", "public"),
     },
-    tenantApplications: {
-      list: operation("GET", `${backend}/iam/tenants/{tenantId}/applications`, "iam", "tenantApplications.list", "dualToken"),
-      create: operation("POST", `${backend}/iam/tenant_applications`, "iam", "tenantApplications.create", "public"),
-      retrieve: operation("GET", `${backend}/iam/tenant_applications/{tenantApplicationId}`, "iam", "tenantApplications.retrieve", "dualToken"),
-      enable: operation("POST", `${backend}/iam/tenant_applications/{tenantApplicationId}/enable`, "iam", "tenantApplications.enable", "public"),
-      update: operation("PATCH", `${backend}/iam/tenant_applications/{tenantApplicationId}`, "iam", "tenantApplications.update", "public"),
+    installations: {
+      list: operation("GET", `${backend}/iam/tenants/{tenantId}/installations`, "iam", "installations.list", "dualToken"),
+      create: operation("POST", `${backend}/iam/installations`, "iam", "installations.create", "public"),
+      retrieve: operation("GET", `${backend}/iam/installations/{installationId}`, "iam", "installations.retrieve", "dualToken"),
+      enable: operation("POST", `${backend}/iam/installations/{installationId}/enable`, "iam", "installations.enable", "public"),
+      update: operation("PATCH", `${backend}/iam/installations/{installationId}`, "iam", "installations.update", "public"),
       management: {
-        create: operation("POST", `${backend}/iam/tenants/{tenantId}/applications`, "iam", "tenantApplications.management.create", "dualToken"),
-        update: operation("PATCH", `${backend}/iam/tenants/{tenantId}/applications/{tenantApplicationId}`, "iam", "tenantApplications.management.update", "dualToken"),
-        enable: operation("POST", `${backend}/iam/tenants/{tenantId}/applications/{tenantApplicationId}/enable`, "iam", "tenantApplications.management.enable", "dualToken"),
-        disable: operation("POST", `${backend}/iam/tenants/{tenantId}/applications/{tenantApplicationId}/disable`, "iam", "tenantApplications.management.disable", "dualToken"),
+        create: operation("POST", `${backend}/iam/tenants/{tenantId}/installations`, "iam", "installations.management.create", "dualToken"),
+        update: operation("PATCH", `${backend}/iam/tenants/{tenantId}/installations/{installationId}`, "iam", "installations.management.update", "dualToken"),
+        enable: operation("POST", `${backend}/iam/tenants/{tenantId}/installations/{installationId}/enable`, "iam", "installations.management.enable", "dualToken"),
+        disable: operation("POST", `${backend}/iam/tenants/{tenantId}/installations/{installationId}/disable`, "iam", "installations.management.disable", "dualToken"),
       },
       summary: {
-        retrieve: operation("GET", `${backend}/iam/tenants/{tenantId}/applications/summary`, "iam", "tenantApplications.summary.retrieve", "dualToken"),
+        retrieve: operation("GET", `${backend}/iam/tenants/{tenantId}/installations/summary`, "iam", "installations.summary.retrieve", "dualToken"),
       },
     },
     auditEvents: {
@@ -1104,7 +1104,7 @@ export const SDKWORK_IAM_CAPABILITIES = [
     "apiAccess",
     ["iam"],
     ["apiKey"],
-    ["apiKeys.list", "apiKeys.revoke", "accessCredentials.create", "tenantApplications.list", "tenantApplications.create", "tenantApplications.retrieve", "tenantApplications.update", "tenantApplications.enable", "tenantApplications.management.create", "tenantApplications.management.update", "tenantApplications.management.enable", "tenantApplications.management.disable", "tenantApplications.summary.retrieve"],
+    ["apiKeys.list", "apiKeys.revoke", "accessCredentials.create", "installations.list", "installations.create", "installations.retrieve", "installations.update", "installations.enable", "installations.management.create", "installations.management.update", "installations.management.enable", "installations.management.disable", "installations.summary.retrieve"],
   ),
   capability(
     "securityAudit",

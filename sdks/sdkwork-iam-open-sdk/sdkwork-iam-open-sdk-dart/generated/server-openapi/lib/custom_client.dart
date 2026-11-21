@@ -1,16 +1,16 @@
 import 'src/http/client.dart';
 import 'src/http/sdk_config.dart';
-import 'src/api/iam_oauth.dart';
+
 
 class SdkworkCustomClient {
   final HttpClient _httpClient;
 
-  late final IamOauthApi iamOauth;
+
 
   SdkworkCustomClient({
     required SdkConfig config,
   }) : _httpClient = HttpClient(config: config) {
-    iamOauth = IamOauthApi(_httpClient);
+
   }
 
   factory SdkworkCustomClient.withBaseUrl({

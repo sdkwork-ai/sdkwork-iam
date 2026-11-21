@@ -97,14 +97,13 @@ pub fn parse_access_credential_create_request(
 ) -> Result<AccessCredentialCreateRequest, String> {
     let tenant_id = read_required_string(body, &["tenantId", "tenant_id"])?;
     let organization_id = read_required_string(body, &["organizationId", "organization_id"])?;
-    let tenant_application_id =
-        read_optional_string(body, &["tenantApplicationId", "tenant_application_id"]);
+    let tenant_application_id = read_optional_string(body, &["installationId", "installation_id"]);
     let app_id = read_optional_string(body, &["appId", "app_id"]);
     let instance_key = read_optional_string(body, &["instanceKey", "instance_key"]);
     let ownership_scope = read_optional_string(body, &["ownershipScope", "ownership_scope"]);
 
     if tenant_application_id.is_none() && app_id.is_none() && instance_key.is_none() {
-        return Err("tenantApplicationId, appId, or instanceKey is required".to_string());
+        return Err("installationId, appId, or instanceKey is required".to_string());
     }
 
     Ok(AccessCredentialCreateRequest {
@@ -121,10 +120,10 @@ pub fn parse_access_credential_create_request(
 ///
 /// `appId` is the installation's deploy application anchor (the registration
 /// plane speaks the same identity as the token), while
-/// `tenantApplicationId`/`instanceKey` still address the row directly. Every
-/// caller resolves through here so the backend operator path and the
-/// user-facing application-token path cannot disagree about which installation a
-/// request names.
+/// `installationId`/`instanceKey` address the row directly. Every caller
+/// resolves through here so the backend operator path and the user-facing
+/// application-token path cannot disagree about which installation a request
+/// names.
 pub async fn resolve_installation_for_access_credential(
     pg: &PgPool,
     tenant_id: &str,
@@ -718,7 +717,7 @@ pub fn issued_access_credential_to_json(issued: &IssuedAccessCredential) -> Valu
         "tenantId": issued.tenant_id,
         "organizationId": issued.organization_id,
         "appId": issued.app_id,
-        "tenantApplicationId": issued.tenant_application_id,
+        "installationId": issued.tenant_application_id,
         "ownershipScope": issued.ownership_scope.as_str(),
         "environment": issued.environment,
         "expiresAt": issued.expires_at,
@@ -1001,7 +1000,7 @@ mod tests {
         let body = json!({
             "tenantId": "100001",
             "organizationId": "org-1",
-            "tenantApplicationId": "tapp-1"
+            "installationId": "tapp-1"
         });
         let request = parse_access_credential_create_request(&body).expect("parse request");
         assert_eq!(request.tenant_id, "100001");

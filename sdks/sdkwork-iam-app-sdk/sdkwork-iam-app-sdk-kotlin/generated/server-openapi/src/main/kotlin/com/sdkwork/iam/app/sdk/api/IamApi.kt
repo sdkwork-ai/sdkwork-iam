@@ -8,6 +8,12 @@ import com.sdkwork.iam.app.sdk.http.HttpClient
 
 class IamApi(private val client: HttpClient) {
 
+    /** App Access Tokens create. */
+    suspend fun appAccessTokensCreate(body: IamAppAccessTokenCreateCommand): IamAppAccessTokenResponse? {
+        val raw = client.post(ApiPaths.appPath("/iam/app_access_tokens"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<IamAppAccessTokenResponse>() {})
+    }
+
     /** Department Assignments list. */
     suspend fun departmentAssignmentsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
@@ -40,13 +46,13 @@ class IamApi(private val client: HttpClient) {
         return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
-    /** Iam oauth official Account Settings retrieve. */
+    /** Oauth official Account Settings retrieve. */
     suspend fun oauthOfficialAccountSettingsRetrieve(): SdkWorkResourceResponse? {
         val raw = client.get(ApiPaths.appPath("/iam/oauth/official_account_settings"))
         return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
-    /** Iam oauth official Accounts list. */
+    /** Oauth official Accounts list. */
     suspend fun oauthOfficialAccountsList(page: Int? = null, pageSize: Int? = null, cursor: String? = null, sort: String? = null, q: String? = null): SdkWorkListResponse? {
         val query = buildQueryString(listOf(
             QueryParameterSpec("page", page, "form", true, false, null),
@@ -59,42 +65,42 @@ class IamApi(private val client: HttpClient) {
         return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})
     }
 
-    /** Iam oauth official Accounts create. */
+    /** Oauth official Accounts create. */
     suspend fun oauthOfficialAccountsCreate(body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.appPath("/iam/oauth/official_accounts"), body, null, null, "application/json")
         return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
-    /** Iam oauth official Accounts delete. */
+    /** Oauth official Accounts delete. */
     suspend fun oauthOfficialAccountsDelete(officialAccountId: String): Unit {
         client.delete(ApiPaths.appPath("/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, PathParameterSpec("officialAccountId", "simple", false))}"))
     }
 
-    /** Iam oauth official Accounts retrieve. */
+    /** Oauth official Accounts retrieve. */
     suspend fun oauthOfficialAccountsRetrieve(officialAccountId: String): SdkWorkResourceResponse? {
         val raw = client.get(ApiPaths.appPath("/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, PathParameterSpec("officialAccountId", "simple", false))}"))
         return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
-    /** Iam oauth official Accounts update. */
+    /** Oauth official Accounts update. */
     suspend fun oauthOfficialAccountsUpdate(officialAccountId: String, body: Map<String, Any>? = null): SdkWorkResourceResponse? {
         val raw = client.patch(ApiPaths.appPath("/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, PathParameterSpec("officialAccountId", "simple", false))}"), body, null, null, "application/json")
         return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
-    /** Iam oauth official Accounts custom Menus publish. */
+    /** Oauth official Accounts custom Menus publish. */
     suspend fun oauthOfficialAccountsCustomMenusPublish(officialAccountId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.appPath("/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, PathParameterSpec("officialAccountId", "simple", false))}/custom_menus/publish"), body, null, null, "application/json")
         return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
-    /** Iam oauth official Accounts custom Menus rollback. */
+    /** Oauth official Accounts custom Menus rollback. */
     suspend fun oauthOfficialAccountsCustomMenusRollback(officialAccountId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.appPath("/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, PathParameterSpec("officialAccountId", "simple", false))}/custom_menus/rollback"), body, null, null, "application/json")
         return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
-    /** Iam oauth official Accounts custom Menus sync. */
+    /** Oauth official Accounts custom Menus sync. */
     suspend fun oauthOfficialAccountsCustomMenusSync(officialAccountId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.appPath("/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, PathParameterSpec("officialAccountId", "simple", false))}/custom_menus/sync"), body, null, null, "application/json")
         return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
@@ -186,11 +192,11 @@ class IamApi(private val client: HttpClient) {
             QueryParameterSpec("cursor", cursor, "form", true, false, null),
             QueryParameterSpec("sort", sort, "form", true, false, null),
             QueryParameterSpec("q", q, "form", true, false, null),
-            QueryParameterSpec("roleId", roleId, "form", true, false, null),
-            QueryParameterSpec("principalKind", principalKind, "form", true, false, null),
-            QueryParameterSpec("principalId", principalId, "form", true, false, null),
-            QueryParameterSpec("scopeKind", scopeKind, "form", true, false, null),
-            QueryParameterSpec("scopeId", scopeId, "form", true, false, null)
+            QueryParameterSpec("role_id", roleId, "form", true, false, null),
+            QueryParameterSpec("principal_kind", principalKind, "form", true, false, null),
+            QueryParameterSpec("principal_id", principalId, "form", true, false, null),
+            QueryParameterSpec("scope_kind", scopeKind, "form", true, false, null),
+            QueryParameterSpec("scope_id", scopeId, "form", true, false, null)
         ))
         val raw = client.get(ApiPaths.appendQueryString(ApiPaths.appPath("/iam/role_bindings"), query))
         return client.convertValue(raw, object : TypeReference<SdkWorkListResponse>() {})

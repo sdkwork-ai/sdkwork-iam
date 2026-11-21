@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   createSdkworkIamTenantController,
-  SdkworkIamTenantApplicationsAdminWorkspace,
+  SdkworkIamInstallationsAdminWorkspace,
 } from "../src";
 
 afterEach(() => {
@@ -20,7 +20,7 @@ describe("tenant applications admin workspace", () => {
             items: [{ code: "ACME", name: "Acme", status: "active", tenantId: "tenant-1" }],
           }),
         },
-        tenantApplications: {
+        installations: {
           list: vi.fn().mockResolvedValue({
             items: [{
               accessPermissions: ["iam.users.read"],
@@ -33,7 +33,7 @@ describe("tenant applications admin workspace", () => {
               primaryDomain: "crm.example.com",
               status: "enabled",
               deployApplicationId: "deploy-crm",
-              tenantApplicationId: "tapp_crm",
+              installationId: "tapp_crm",
               tenantId: "tenant-1",
             }],
           }),
@@ -50,14 +50,14 @@ describe("tenant applications admin workspace", () => {
       },
     };
     const controller = createSdkworkIamTenantController({
-      permissionScope: ["iam.tenant_applications.*"],
+      permissionScope: ["iam.installations.*"],
       selectedTenantId: "tenant-1",
       service: service as never,
     });
 
     render(
       <SdkworkI18nProvider locale="zh-CN">
-        <SdkworkIamTenantApplicationsAdminWorkspace controller={controller} />
+        <SdkworkIamInstallationsAdminWorkspace controller={controller} />
       </SdkworkI18nProvider>,
     );
 
@@ -71,8 +71,8 @@ describe("tenant applications admin workspace", () => {
     // The application type column renders from the response payload.
     expect(screen.getAllByText("PC").length).toBeGreaterThan(0);
     expect(screen.getAllByText("应用类型").length).toBeGreaterThan(0);
-    expect(service.iam.tenantApplications.list).toHaveBeenCalledWith("tenant-1", { page: 1, page_size: 20 });
-    await waitFor(() => expect(service.iam.tenantApplications.summary.retrieve).toHaveBeenCalledWith("tenant-1"));
+    expect(service.iam.installations.list).toHaveBeenCalledWith("tenant-1", { page: 1, page_size: 20 });
+    await waitFor(() => expect(service.iam.installations.summary.retrieve).toHaveBeenCalledWith("tenant-1"));
   });
 
   it("issues a tenant application access token from the row action", async () => {
@@ -81,7 +81,7 @@ describe("tenant applications admin workspace", () => {
       appId: "app_crm_prod",
       expiresAt: "2026-11-07T10:00:00Z",
       sessionId: "session-1",
-      tenantApplicationId: "tapp_crm",
+      installationId: "tapp_crm",
     });
     const service = {
       iam: {
@@ -91,7 +91,7 @@ describe("tenant applications admin workspace", () => {
             items: [{ code: "ACME", name: "Acme", status: "active", tenantId: "tenant-1" }],
           }),
         },
-        tenantApplications: {
+        installations: {
           list: vi.fn().mockResolvedValue({
             items: [{
               accessPermissions: ["iam.users.read"],
@@ -103,7 +103,7 @@ describe("tenant applications admin workspace", () => {
               organizationId: "0",
               status: "enabled",
               deployApplicationId: "deploy-crm",
-              tenantApplicationId: "tapp_crm",
+              installationId: "tapp_crm",
               tenantId: "tenant-1",
             }],
           }),
@@ -121,7 +121,7 @@ describe("tenant applications admin workspace", () => {
 
     render(
       <SdkworkI18nProvider locale="zh-CN">
-        <SdkworkIamTenantApplicationsAdminWorkspace controller={controller} />
+        <SdkworkIamInstallationsAdminWorkspace controller={controller} />
       </SdkworkI18nProvider>,
     );
 
@@ -131,7 +131,7 @@ describe("tenant applications admin workspace", () => {
     expect(await screen.findByText("应用访问令牌")).toBeTruthy();
     expect(create).toHaveBeenCalledWith({
       organizationId: "0",
-      tenantApplicationId: "tapp_crm",
+      installationId: "tapp_crm",
       tenantId: "tenant-1",
     });
     expect(screen.getByText(/\*{8}/)).toBeTruthy();

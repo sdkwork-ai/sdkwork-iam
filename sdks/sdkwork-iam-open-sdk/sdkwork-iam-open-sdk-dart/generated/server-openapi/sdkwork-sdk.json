@@ -5,6 +5,8 @@
   "language": "dart",
   "sdkType": "custom",
   "packageName": "sdkwork_iam_open_sdk",
+  "transportPackageName": "sdkwork_iam_open_sdk",
+  "consumerPackageName": "sdkwork_iam_open_sdk",
   "generator": "@sdkwork/sdk-generator",
   "capabilities": {
     "supportsGeneratedTests": true,

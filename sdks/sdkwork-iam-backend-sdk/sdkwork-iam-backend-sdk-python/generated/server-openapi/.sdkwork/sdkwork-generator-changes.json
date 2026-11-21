@@ -9,26 +9,22 @@
     "protocol": "http",
     "packageName": "sdkwork-iam-backend-sdk"
   },
-  "changeFingerprint": "daf6f8fac6ea878f4aa98606093df9cba0b72f5a8df5a0ffe938cbe2a546b8e0",
+  "changeFingerprint": "0d5d4f8986cec73ee4b5c56585efd2dbd09424cea9ebcac557de4cb078459bc6",
   "changes": {
     "createdGeneratedFiles": [
-      "sdkwork_iam_backend_sdk/models/iam_installation_credential_create_command.py",
-      "sdkwork_iam_backend_sdk/models/iam_installation_credential_list_response.py",
-      "sdkwork_iam_backend_sdk/models/iam_installation_credential_response.py",
-      "sdkwork_iam_backend_sdk/models/iam_installation_credential_rotate_command.py",
-      "sdkwork_iam_backend_sdk/models/iam_installation_credential_with_secret.py",
-      "sdkwork_iam_backend_sdk/models/iam_installation_credential.py",
-      "sdkwork_iam_backend_sdk/models/iam_installation_environment_list_response.py",
-      "sdkwork_iam_backend_sdk/models/iam_installation_environment_response.py",
-      "sdkwork_iam_backend_sdk/models/iam_installation_environment_upsert_command.py",
-      "sdkwork_iam_backend_sdk/models/iam_installation_environment.py"
+      "sdkwork_iam_backend_sdk/models/appbase_installation_enable_command.py",
+      "sdkwork_iam_backend_sdk/models/appbase_installation_provision_command.py",
+      "sdkwork_iam_backend_sdk/models/appbase_installation_update_command.py",
+      "sdkwork_iam_backend_sdk/models/iam_installation_management_provision_command.py",
+      "sdkwork_iam_backend_sdk/models/iam_installation_management_update_command.py",
+      "sdkwork_iam_backend_sdk/models/iam_installation_status_command.py"
     ],
     "updatedGeneratedFiles": [
+      "sdkwork_iam_backend_sdk/api/iam_oauth.py",
       "sdkwork_iam_backend_sdk/api/iam.py",
       "sdkwork_iam_backend_sdk/models/__init__.py",
       "sdkwork_iam_backend_sdk/models/appbase_access_credential_create_command.py",
-      "sdkwork_iam_backend_sdk/models/appbase_tenant_application_provision_command.py",
-      "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_provision_command.py"
+      "sdkwork_iam_backend_sdk/models/service_account_credential_create_command.py"
     ],
     "unchangedGeneratedFiles": [
       "bin/publish-core.mjs",
@@ -42,15 +38,20 @@
       "requirements.txt",
       "sdkwork_iam_backend_sdk/__init__.py",
       "sdkwork_iam_backend_sdk/api/__init__.py",
-      "sdkwork_iam_backend_sdk/api/iam_oauth.py",
       "sdkwork_iam_backend_sdk/client.py",
       "sdkwork_iam_backend_sdk/http_client.py",
-      "sdkwork_iam_backend_sdk/models/appbase_tenant_application_enable_command.py",
-      "sdkwork_iam_backend_sdk/models/appbase_tenant_application_update_command.py",
       "sdkwork_iam_backend_sdk/models/field_error.py",
+      "sdkwork_iam_backend_sdk/models/iam_installation_credential_create_command.py",
+      "sdkwork_iam_backend_sdk/models/iam_installation_credential_list_response.py",
+      "sdkwork_iam_backend_sdk/models/iam_installation_credential_response.py",
+      "sdkwork_iam_backend_sdk/models/iam_installation_credential_rotate_command.py",
+      "sdkwork_iam_backend_sdk/models/iam_installation_credential_with_secret.py",
+      "sdkwork_iam_backend_sdk/models/iam_installation_credential.py",
+      "sdkwork_iam_backend_sdk/models/iam_installation_environment_list_response.py",
+      "sdkwork_iam_backend_sdk/models/iam_installation_environment_response.py",
+      "sdkwork_iam_backend_sdk/models/iam_installation_environment_upsert_command.py",
+      "sdkwork_iam_backend_sdk/models/iam_installation_environment.py",
       "sdkwork_iam_backend_sdk/models/iam_oauth_client_create_command.py",
-      "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_update_command.py",
-      "sdkwork_iam_backend_sdk/models/iam_tenant_application_status_command.py",
       "sdkwork_iam_backend_sdk/models/page_info.py",
       "sdkwork_iam_backend_sdk/models/problem_detail.py",
       "sdkwork_iam_backend_sdk/models/sdk_work_api_response.py",
@@ -60,13 +61,19 @@
       "sdkwork_iam_backend_sdk/models/sdk_work_page_data.py",
       "sdkwork_iam_backend_sdk/models/sdk_work_resource_data.py",
       "sdkwork_iam_backend_sdk/models/sdk_work_resource_response.py",
-      "sdkwork_iam_backend_sdk/models/service_account_credential_create_command.py",
       "sdkwork_iam_backend_sdk/models/service_account_credential_revoke_command.py",
       "sdkwork_iam_backend_sdk/models/service_account_token_exchange_command.py",
       "sdkwork-sdk.json",
       "setup.py"
     ],
-    "deletedGeneratedFiles": [],
+    "deletedGeneratedFiles": [
+      "sdkwork_iam_backend_sdk/models/appbase_tenant_application_enable_command.py",
+      "sdkwork_iam_backend_sdk/models/appbase_tenant_application_provision_command.py",
+      "sdkwork_iam_backend_sdk/models/appbase_tenant_application_update_command.py",
+      "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_provision_command.py",
+      "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_update_command.py",
+      "sdkwork_iam_backend_sdk/models/iam_tenant_application_status_command.py"
+    ],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
@@ -83,6 +90,7 @@
       {
         "area": "api-surface",
         "paths": [
+          "sdkwork_iam_backend_sdk/api/iam_oauth.py",
           "sdkwork_iam_backend_sdk/api/iam.py",
           "sdkwork_iam_backend_sdk/models/__init__.py"
         ]
@@ -92,18 +100,19 @@
         "paths": [
           "sdkwork_iam_backend_sdk/models/__init__.py",
           "sdkwork_iam_backend_sdk/models/appbase_access_credential_create_command.py",
+          "sdkwork_iam_backend_sdk/models/appbase_installation_enable_command.py",
+          "sdkwork_iam_backend_sdk/models/appbase_installation_provision_command.py",
+          "sdkwork_iam_backend_sdk/models/appbase_installation_update_command.py",
+          "sdkwork_iam_backend_sdk/models/appbase_tenant_application_enable_command.py",
           "sdkwork_iam_backend_sdk/models/appbase_tenant_application_provision_command.py",
-          "sdkwork_iam_backend_sdk/models/iam_installation_credential_create_command.py",
-          "sdkwork_iam_backend_sdk/models/iam_installation_credential_list_response.py",
-          "sdkwork_iam_backend_sdk/models/iam_installation_credential_response.py",
-          "sdkwork_iam_backend_sdk/models/iam_installation_credential_rotate_command.py",
-          "sdkwork_iam_backend_sdk/models/iam_installation_credential_with_secret.py",
-          "sdkwork_iam_backend_sdk/models/iam_installation_credential.py",
-          "sdkwork_iam_backend_sdk/models/iam_installation_environment_list_response.py",
-          "sdkwork_iam_backend_sdk/models/iam_installation_environment_response.py",
-          "sdkwork_iam_backend_sdk/models/iam_installation_environment_upsert_command.py",
-          "sdkwork_iam_backend_sdk/models/iam_installation_environment.py",
-          "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_provision_command.py"
+          "sdkwork_iam_backend_sdk/models/appbase_tenant_application_update_command.py",
+          "sdkwork_iam_backend_sdk/models/iam_installation_management_provision_command.py",
+          "sdkwork_iam_backend_sdk/models/iam_installation_management_update_command.py",
+          "sdkwork_iam_backend_sdk/models/iam_installation_status_command.py",
+          "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_provision_command.py",
+          "sdkwork_iam_backend_sdk/models/iam_tenant_application_management_update_command.py",
+          "sdkwork_iam_backend_sdk/models/iam_tenant_application_status_command.py",
+          "sdkwork_iam_backend_sdk/models/service_account_credential_create_command.py"
         ]
       }
     ],
@@ -137,12 +146,14 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },

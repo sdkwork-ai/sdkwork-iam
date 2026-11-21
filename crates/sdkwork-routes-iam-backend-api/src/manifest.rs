@@ -58,84 +58,19 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         "iam",
         "tenants.members.delete",
     ),
-    HttpRoute::dual_token(
-        HttpMethod::Get,
-        "/backend/v3/api/iam/tenants/{tenantId}/applications",
-        "iam",
-        "tenantApplications.list",
-    ),
-    HttpRoute::dual_token(
-        HttpMethod::Post,
-        "/backend/v3/api/iam/tenants/{tenantId}/applications",
-        "iam",
-        "tenantApplications.management.create",
-    ),
-    HttpRoute::dual_token(
-        HttpMethod::Get,
-        "/backend/v3/api/iam/tenants/{tenantId}/applications/summary",
-        "iam",
-        "tenantApplications.summary.retrieve",
-    ),
-    HttpRoute::dual_token(
-        HttpMethod::Patch,
-        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}",
-        "iam",
-        "tenantApplications.management.update",
-    ),
-    HttpRoute::dual_token(
-        HttpMethod::Post,
-        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/enable",
-        "iam",
-        "tenantApplications.management.enable",
-    ),
-    HttpRoute::dual_token(
-        HttpMethod::Post,
-        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/disable",
-        "iam",
-        "tenantApplications.management.disable",
-    ),
-    HttpRoute::dual_token(
-        HttpMethod::Get,
-        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments",
-        "iam",
-        "tenantApplications.environments.list",
-    ),
-    HttpRoute::dual_token(
-        HttpMethod::Put,
-        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments/{environmentKey}",
-        "iam",
-        "tenantApplications.environments.update",
-    ),
-    HttpRoute::dual_token(
-        HttpMethod::Delete,
-        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments/{environmentKey}",
-        "iam",
-        "tenantApplications.environments.delete",
-    ),
-    HttpRoute::dual_token(
-        HttpMethod::Get,
-        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials",
-        "iam",
-        "tenantApplications.credentials.list",
-    ),
-    HttpRoute::dual_token(
-        HttpMethod::Post,
-        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials",
-        "iam",
-        "tenantApplications.credentials.create",
-    ),
-    HttpRoute::dual_token(
-        HttpMethod::Post,
-        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials/{credentialId}/rotate",
-        "iam",
-        "tenantApplications.credentials.rotate",
-    ),
-    HttpRoute::dual_token(
-        HttpMethod::Post,
-        "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials/{credentialId}/revoke",
-        "iam",
-        "tenantApplications.credentials.revoke",
-    ),
+
+
+
+
+
+
+
+
+
+
+
+
+
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/iam/organizations",
@@ -640,37 +575,11 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         "iam",
         "apiKeys.create",
     ),
-    HttpRoute::bootstrap_body(
-        HttpMethod::Post,
-        "/backend/v3/api/iam/tenant_applications/by_deploy_application/{deployApplicationId}/disable",
-        "iam",
-        "tenantApplications.management.byDeployApplication.disable",
-    )
-    .with_required_permission("iam.tenant_applications.disable"),
-    HttpRoute::bootstrap_body(
-        HttpMethod::Post,
-        "/backend/v3/api/iam/tenant_applications",
-        "iam",
-        "tenantApplications.create",
-    ),
-    HttpRoute::dual_token(
-        HttpMethod::Get,
-        "/backend/v3/api/iam/tenant_applications/{tenantApplicationId}",
-        "iam",
-        "tenantApplications.retrieve",
-    ),
-    HttpRoute::bootstrap_body(
-        HttpMethod::Patch,
-        "/backend/v3/api/iam/tenant_applications/{tenantApplicationId}",
-        "iam",
-        "tenantApplications.update",
-    ),
-    HttpRoute::bootstrap_body(
-        HttpMethod::Post,
-        "/backend/v3/api/iam/tenant_applications/{tenantApplicationId}/enable",
-        "iam",
-        "tenantApplications.enable",
-    ),
+
+
+
+
+
     HttpRoute::bootstrap_body(
         HttpMethod::Post,
         "/backend/v3/api/iam/access_credentials",
@@ -1180,6 +1089,118 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         "/backend/v3/api/iam/oauth/scan_login_previews",
         "iam.oauth",
         "iam.oauth.scanLoginPreviews.create",
+    ),
+    // Canonical installation surface. One operation per installation action;
+    // permissions keep the historical `iam.installations.*` codes until
+    // the permission migration renames them.
+    HttpRoute::bootstrap_body(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/installations",
+        "iam",
+        "installations.create",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/iam/installations/{installationId}",
+        "iam",
+        "installations.retrieve",
+    ),
+    HttpRoute::bootstrap_body(
+        HttpMethod::Patch,
+        "/backend/v3/api/iam/installations/{installationId}",
+        "iam",
+        "installations.update",
+    ),
+    HttpRoute::bootstrap_body(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/installations/{installationId}/enable",
+        "iam",
+        "installations.enable",
+    ),
+    HttpRoute::bootstrap_body(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/installations/by_deploy_application/{deployApplicationId}/disable",
+        "iam",
+        "installations.management.byDeployApplication.disable",
+    )
+    .with_required_permission("iam.installations.disable"),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/iam/tenants/{tenantId}/installations",
+        "iam",
+        "installations.list",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/tenants/{tenantId}/installations",
+        "iam",
+        "installations.management.create",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/iam/tenants/{tenantId}/installations/summary",
+        "iam",
+        "installations.summary.retrieve",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Patch,
+        "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}",
+        "iam",
+        "installations.management.update",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/enable",
+        "iam",
+        "installations.management.enable",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/disable",
+        "iam",
+        "installations.management.disable",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/environments",
+        "iam",
+        "installations.environments.list",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Put,
+        "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/environments/{environmentKey}",
+        "iam",
+        "installations.environments.update",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Delete,
+        "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/environments/{environmentKey}",
+        "iam",
+        "installations.environments.delete",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials",
+        "iam",
+        "installations.credentials.list",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials",
+        "iam",
+        "installations.credentials.create",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials/{credentialId}/rotate",
+        "iam",
+        "installations.credentials.rotate",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials/{credentialId}/revoke",
+        "iam",
+        "installations.credentials.revoke",
     ),
 ];
 

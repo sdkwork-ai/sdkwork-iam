@@ -1,5 +1,5 @@
 from .http_client import HttpClient, SdkConfig
-from .api.iam_oauth import IamOauthApi
+
 
 
 class SdkworkCustomClient:
@@ -7,10 +7,10 @@ class SdkworkCustomClient:
 
     def __init__(self, config: SdkConfig):
         self._client = HttpClient(config)
-        self.iam_oauth: IamOauthApi
+
 
         # Initialize API modules
-        self.iam_oauth = IamOauthApi(self._client)
+
 
     def set_api_key(self, api_key: str) -> 'SdkworkCustomClient':
         """Set API key for authentication."""

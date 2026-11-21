@@ -85,7 +85,7 @@ pub async fn postgres_iam_foundation_schema_ready(pg: &PgPool) -> Result<bool, S
 }
 
 /// Ensures tenant applications from a manifest on a specific pool.
-pub async fn ensure_tenant_applications_on_pool(
+pub async fn ensure_installations_on_pool(
     pg: &PgPool,
     manifest: &SdkworkAppManifest,
     options: &EmbeddedApplicationBootstrapOptions,
@@ -155,7 +155,7 @@ pub async fn ensure_tenant_application_from_app_root(
 }
 
 /// Ensures every application manifest under an application root using an existing pool.
-pub async fn ensure_tenant_applications_from_app_root_on_pool(
+pub async fn ensure_installations_from_app_root_on_pool(
     pg: &PgPool,
     app_root: &Path,
     options: &EmbeddedApplicationBootstrapOptions,
@@ -296,7 +296,7 @@ async fn ensure_one_manifest_root_on_pool(
     additional_runtimes: &[EmbeddedApplicationRuntimeBinding],
 ) -> Result<(), String> {
     let manifest = load_manifest_from_app_root(app_root)?;
-    ensure_tenant_applications_on_pool(pg, &manifest, options, primary_runtime, additional_runtimes)
+    ensure_installations_on_pool(pg, &manifest, options, primary_runtime, additional_runtimes)
         .await
 }
 

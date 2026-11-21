@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SDKWork\\Iam\\AppSdk\Api;
 
+use SDKWork\\Iam\\AppSdk\Models\IamAppAccessTokenCreateCommand;
+use SDKWork\\Iam\\AppSdk\Models\IamAppAccessTokenResponse;
 use SDKWork\\Iam\\AppSdk\Models\IamOrganizationMemberListResponse;
 use SDKWork\\Iam\\AppSdk\Models\IamPersonaCatalogResponse;
 use SDKWork\\Iam\\AppSdk\Models\IamUserPersonaResponse;
@@ -13,6 +15,17 @@ use SDKWork\\Iam\\AppSdk\Models\SdkWorkResourceResponse;
 
 final class IamApi extends BaseApi
 {
+    /** App Access Tokens create. */
+    public function appAccessTokensCreate(array|IamAppAccessTokenCreateCommand $body): ?IamAppAccessTokenResponse
+    {
+        $path = '/app/v3/api/iam/app_access_tokens';
+        $payload = $body instanceof IamAppAccessTokenCreateCommand ? $body->toArray() : $body;
+        $result = $this->client->request('POST', $path, [
+            'json' => $payload,
+        ]);
+        return is_array($result) ? IamAppAccessTokenResponse::fromArray($result) : null;
+    }
+
     /** Department Assignments list. */
     public function departmentAssignmentsList(?int $page = null, ?int $pageSize = null, ?string $cursor = null, ?string $sort = null, ?string $q = null): ?SdkWorkListResponse
     {
@@ -53,7 +66,7 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
-    /** Iam oauth official Account Settings retrieve. */
+    /** Oauth official Account Settings retrieve. */
     public function oauthOfficialAccountSettingsRetrieve(): ?SdkWorkResourceResponse
     {
         $path = '/app/v3/api/iam/oauth/official_account_settings';
@@ -61,7 +74,7 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
-    /** Iam oauth official Accounts list. */
+    /** Oauth official Accounts list. */
     public function oauthOfficialAccountsList(?int $page = null, ?int $pageSize = null, ?string $cursor = null, ?string $sort = null, ?string $q = null): ?SdkWorkListResponse
     {
         $path = '/app/v3/api/iam/oauth/official_accounts';
@@ -77,7 +90,7 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkListResponse::fromArray($result) : null;
     }
 
-    /** Iam oauth official Accounts create. */
+    /** Oauth official Accounts create. */
     public function oauthOfficialAccountsCreate(array $body): ?SdkWorkResourceResponse
     {
         $path = '/app/v3/api/iam/oauth/official_accounts';
@@ -88,7 +101,7 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
-    /** Iam oauth official Accounts delete. */
+    /** Oauth official Accounts delete. */
     public function oauthOfficialAccountsDelete(string $officialAccountId): mixed
     {
         $path = $this->interpolatePath('/app/v3/api/iam/oauth/official_accounts/{officialAccountId}', ['officialAccountId' => $this->serializePathParameter($officialAccountId, new PathParameterSpec('officialAccountId', 'simple', false))]);
@@ -96,7 +109,7 @@ final class IamApi extends BaseApi
         return $result;
     }
 
-    /** Iam oauth official Accounts retrieve. */
+    /** Oauth official Accounts retrieve. */
     public function oauthOfficialAccountsRetrieve(string $officialAccountId): ?SdkWorkResourceResponse
     {
         $path = $this->interpolatePath('/app/v3/api/iam/oauth/official_accounts/{officialAccountId}', ['officialAccountId' => $this->serializePathParameter($officialAccountId, new PathParameterSpec('officialAccountId', 'simple', false))]);
@@ -104,7 +117,7 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
-    /** Iam oauth official Accounts update. */
+    /** Oauth official Accounts update. */
     public function oauthOfficialAccountsUpdate(string $officialAccountId, ?array $body = null): ?SdkWorkResourceResponse
     {
         $path = $this->interpolatePath('/app/v3/api/iam/oauth/official_accounts/{officialAccountId}', ['officialAccountId' => $this->serializePathParameter($officialAccountId, new PathParameterSpec('officialAccountId', 'simple', false))]);
@@ -115,7 +128,7 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
-    /** Iam oauth official Accounts custom Menus publish. */
+    /** Oauth official Accounts custom Menus publish. */
     public function oauthOfficialAccountsCustomMenusPublish(string $officialAccountId, array $body): ?SdkWorkResourceResponse
     {
         $path = $this->interpolatePath('/app/v3/api/iam/oauth/official_accounts/{officialAccountId}/custom_menus/publish', ['officialAccountId' => $this->serializePathParameter($officialAccountId, new PathParameterSpec('officialAccountId', 'simple', false))]);
@@ -126,7 +139,7 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
-    /** Iam oauth official Accounts custom Menus rollback. */
+    /** Oauth official Accounts custom Menus rollback. */
     public function oauthOfficialAccountsCustomMenusRollback(string $officialAccountId, array $body): ?SdkWorkResourceResponse
     {
         $path = $this->interpolatePath('/app/v3/api/iam/oauth/official_accounts/{officialAccountId}/custom_menus/rollback', ['officialAccountId' => $this->serializePathParameter($officialAccountId, new PathParameterSpec('officialAccountId', 'simple', false))]);
@@ -137,7 +150,7 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
-    /** Iam oauth official Accounts custom Menus sync. */
+    /** Oauth official Accounts custom Menus sync. */
     public function oauthOfficialAccountsCustomMenusSync(string $officialAccountId, array $body): ?SdkWorkResourceResponse
     {
         $path = $this->interpolatePath('/app/v3/api/iam/oauth/official_accounts/{officialAccountId}/custom_menus/sync', ['officialAccountId' => $this->serializePathParameter($officialAccountId, new PathParameterSpec('officialAccountId', 'simple', false))]);
@@ -255,11 +268,11 @@ final class IamApi extends BaseApi
             new QueryParameterSpec('cursor', $cursor, 'form', true, false, null),
             new QueryParameterSpec('sort', $sort, 'form', true, false, null),
             new QueryParameterSpec('q', $q, 'form', true, false, null),
-            new QueryParameterSpec('roleId', $roleId, 'form', true, false, null),
-            new QueryParameterSpec('principalKind', $principalKind, 'form', true, false, null),
-            new QueryParameterSpec('principalId', $principalId, 'form', true, false, null),
-            new QueryParameterSpec('scopeKind', $scopeKind, 'form', true, false, null),
-            new QueryParameterSpec('scopeId', $scopeId, 'form', true, false, null),
+            new QueryParameterSpec('role_id', $roleId, 'form', true, false, null),
+            new QueryParameterSpec('principal_kind', $principalKind, 'form', true, false, null),
+            new QueryParameterSpec('principal_id', $principalId, 'form', true, false, null),
+            new QueryParameterSpec('scope_kind', $scopeKind, 'form', true, false, null),
+            new QueryParameterSpec('scope_id', $scopeId, 'form', true, false, null),
         ]);
         $path = $this->appendQueryString($path, $query);
         $result = $this->client->request('GET', $path, []);

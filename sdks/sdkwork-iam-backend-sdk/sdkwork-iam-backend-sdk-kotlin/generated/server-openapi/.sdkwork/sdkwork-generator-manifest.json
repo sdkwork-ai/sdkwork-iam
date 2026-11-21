@@ -56,27 +56,27 @@
     },
     {
       "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt",
-      "sha256": "6bf186383a119ff7bfdabd29ee37907e2ece4c539dc6504eb2c4797e75cba40d"
+      "sha256": "588009fe58a081eeb6076f5f89072c0be54074cc3cd52b6f67b6f6e228bf1cb7"
     },
     {
       "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamOauthApi.kt",
-      "sha256": "03c389b1f083c25ab79d12c017e40594c1f300b73761e5e0de545133d5935326"
+      "sha256": "9e3008830b7d476bc069d469d000c23095b980360be8a8111c1a2b0439d4942f"
     },
     {
       "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseAccessCredentialCreateCommand.kt",
-      "sha256": "3e566a0c12da0c9ff21ef29c624778e24eaea70f44b8ce392f08e1c262fe718d"
+      "sha256": "b60582632e560c5f3adeb4f6ebe0181d607d793dd5509a15a1d35eedfb9deea7"
     },
     {
-      "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationEnableCommand.kt",
-      "sha256": "f2e76361188a101931f1de7126a94b79a8f01f6656907017cd0e39d887f54a57"
+      "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseInstallationEnableCommand.kt",
+      "sha256": "a31ef65ae98283feeb805240845b3cd70bcf331d98dc8bdef70ab00e9c6b76e8"
     },
     {
-      "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationProvisionCommand.kt",
-      "sha256": "4c0743b8a2a95c42b5d2b6f93408a4b1c6d0637278e96ea550506be20cf37f77"
+      "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseInstallationProvisionCommand.kt",
+      "sha256": "ce57a9c1b2f7e0a9af83b477451681375390d054f6d8e6bfd8da33ed56835bf2"
     },
     {
-      "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationUpdateCommand.kt",
-      "sha256": "2531dcc92aa8548b7afe8fb77e62c68e82741b25a38cd9a5e037753fc2363123"
+      "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseInstallationUpdateCommand.kt",
+      "sha256": "896da2a00c8b7c48b4e494bbe80700e977a9a02f2a36751f3a7eabb12e03a1af"
     },
     {
       "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/FieldError.kt",
@@ -127,20 +127,20 @@
       "sha256": "9e40e3de637eee221939262fe3e3c66a6d67354a5df395c1c638119ecdb78230"
     },
     {
+      "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationManagementProvisionCommand.kt",
+      "sha256": "ac0147dad47dc1a4c16c80fb5689728e74326e19652dcdee21b53b216915d567"
+    },
+    {
+      "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationManagementUpdateCommand.kt",
+      "sha256": "e8d20f9e080ee89dfd9d7b28da720a4033c3939b59ac241a921bdfbfcdb41b12"
+    },
+    {
+      "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationStatusCommand.kt",
+      "sha256": "0544573e0bdc51663ed125a3af331a8e6fd91b443a3374446d706377fc84c104"
+    },
+    {
       "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamOauthClientCreateCommand.kt",
       "sha256": "701b0bda0d1e7ad43cb5e2fccc0274c2d5e46cac4c1d539d3bf5eaf80699bacb"
-    },
-    {
-      "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementProvisionCommand.kt",
-      "sha256": "1501c3153af744cd1529041fcd3ad988701847b132a10771bd85326b223e3197"
-    },
-    {
-      "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementUpdateCommand.kt",
-      "sha256": "e63009906157aa0b3ac2afb6fcae82b21058dd6ef26c689ea8c7b0b027069e7d"
-    },
-    {
-      "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationStatusCommand.kt",
-      "sha256": "f12a98fecf268f48b62747e0c3742e764a195e46f4013eebe2ebf9a982cedce2"
     },
     {
       "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/PageInfo.kt",
@@ -184,7 +184,7 @@
     },
     {
       "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/ServiceAccountCredentialCreateCommand.kt",
-      "sha256": "2a05f62b422d50d88dc2eeac66e964d41cbb04f614d2f232318fa9a67ccf61ac"
+      "sha256": "f8199e2dceb768bda42cd483c805a0d716f4722344f2fe863d41912abdf492ad"
     },
     {
       "path": "src/main/kotlin/com/sdkwork/iam/backend/sdk/ServiceAccountCredentialRevokeCommand.kt",

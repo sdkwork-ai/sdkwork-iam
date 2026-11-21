@@ -150,6 +150,61 @@ public struct SdkWorkCommandResponse: Codable {
     }
 }
 
+public struct IamAppAccessTokenCreateCommand: Codable {
+    public let appId: String?
+    public let installationId: String?
+    public let instanceKey: String?
+    public let environment: String?
+    public let ownershipScope: String?
+
+
+    public init(appId: String? = nil, installationId: String? = nil, instanceKey: String? = nil, environment: String? = nil, ownershipScope: String? = nil) {
+        self.appId = appId
+        self.installationId = installationId
+        self.instanceKey = instanceKey
+        self.environment = environment
+        self.ownershipScope = ownershipScope
+    }
+}
+
+public struct IamAppAccessToken: Codable {
+    public let accessToken: String?
+    public let authToken: String?
+    public let expiresAt: String?
+    public let appId: String?
+    public let installationId: String?
+    public let organizationId: String?
+    public let ownershipScope: String?
+    public let sessionId: String?
+    public let environment: String?
+
+
+    public init(accessToken: String? = nil, authToken: String? = nil, expiresAt: String? = nil, appId: String? = nil, installationId: String? = nil, organizationId: String? = nil, ownershipScope: String? = nil, sessionId: String? = nil, environment: String? = nil) {
+        self.accessToken = accessToken
+        self.authToken = authToken
+        self.expiresAt = expiresAt
+        self.appId = appId
+        self.installationId = installationId
+        self.organizationId = organizationId
+        self.ownershipScope = ownershipScope
+        self.sessionId = sessionId
+        self.environment = environment
+    }
+}
+
+public struct IamAppAccessTokenResponse: Codable {
+    public let code: Int?
+    public let data: Any?
+    public let traceId: String?
+
+
+    public init(code: Int? = nil, data: Any? = nil, traceId: String? = nil) {
+        self.code = code
+        self.data = data
+        self.traceId = traceId
+    }
+}
+
 public struct IamPersonaRole: Codable {
     public let code: String?
     public let iamRoleCode: String?
@@ -393,7 +448,7 @@ public struct AuthorizationsCreateRequest: Codable {
     }
 }
 
-public struct AuthorizationsCreateResponse: Codable {
+public struct AuthorizationsCreateResponse201: Codable {
     public let code: Int?
     public let traceId: String?
     public let data: [String: Any]?
@@ -411,7 +466,7 @@ public struct AuthorizationsCompletionsCreateRequest: Codable {
     public init() {}
 }
 
-public struct AuthorizationsCompletionsCreateResponse: Codable {
+public struct AuthorizationsCompletionsCreateResponse201: Codable {
     public let code: Int?
     public let traceId: String?
     public let data: [String: Any]?
@@ -443,7 +498,7 @@ public struct DesktopSessionsCreateRequest: Codable {
     }
 }
 
-public struct DesktopSessionsCreateResponse: Codable {
+public struct DesktopSessionsCreateResponse201: Codable {
     public let code: Int?
     public let traceId: String?
     public let data: [String: Any]?

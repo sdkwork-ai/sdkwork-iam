@@ -10645,7 +10645,7 @@
             "maxLength": 128,
             "description": "Installation deploy application anchor (iam_application_installation.deploy_application_id). Preferred selector: it is the identity the deployment plane publishes."
           },
-          "tenantApplicationId": {
+          "installationId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 128,
@@ -10687,7 +10687,7 @@
           "authToken",
           "expiresAt",
           "appId",
-          "tenantApplicationId",
+          "installationId",
           "ownershipScope"
         ],
         "description": "Signed application access credential. It is a session-class credential: it expires after one hour and can be revoked like any other IAM session.",
@@ -10709,7 +10709,7 @@
             "type": "string",
             "description": "Deploy application anchor carried as the token app_id/aud."
           },
-          "tenantApplicationId": {
+          "installationId": {
             "type": "string",
             "description": "Installation the credential was issued for."
           },

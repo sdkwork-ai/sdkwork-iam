@@ -17,11 +17,9 @@ config = Sdkwork::CustomSdk::SdkConfig.new(base_url: 'http://localhost:8080')
 client = Sdkwork::CustomSdk::SdkworkCustomClient.new(config)
 client.set_api_key('your-api-key')
 
-callback_public_id = '1'
-result = client.iam_oauth.provider_callbacks_handle_get(callback_public_id)
+result = client.example.list
 
 
-puts result.inspect
 ```
 
 ## Authentication Modes (Mutually Exclusive)
@@ -63,25 +61,17 @@ client.set_header('X-Custom-Header', 'value')
 
 ## API Modules
 
-- `client.iam_oauth` - iam_oauth API
+
 
 ## Usage Examples
 
-### iam_oauth
-
-```ruby
-# Iam oauth provider Callbacks handle Get.
-callback_public_id = '1'
-result = client.iam_oauth.provider_callbacks_handle_get(callback_public_id)
-puts result.inspect
-```
+No examples available.
 
 ## Error Handling
 
 ```ruby
 begin
-  callback_public_id = '1'
-  client.iam_oauth.provider_callbacks_handle_get(callback_public_id)
+  client.example.list
 rescue StandardError => e
   warn("Error: #{e.message}")
 end

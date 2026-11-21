@@ -49,7 +49,7 @@ import {
   readResourceAccountId,
   readWebhookConfigId,
   splitMultilineList,
-  parseRelyingPartyDraftFromTenantApplication,
+  parseRelyingPartyDraftFromInstallation,
 } from "../utils/oauth-admin-utils";
 import { buildAccountCallbackUri } from "../utils/official-account-domains";
 import { validateCustomMenuDraft } from "../utils/custom-menu-rules";
@@ -1116,22 +1116,22 @@ export function createSdkworkIamOauthAdminController(
         true,
       );
     },
-    loadRelyingPartyConfig(tenantId, tenantApplicationId) {
+    loadRelyingPartyConfig(tenantId, installationId) {
       setState({ status: "saving", lastError: undefined });
       const normalizedTenantId = tenantId.trim();
-      const normalizedApplicationId = tenantApplicationId.trim();
+      const normalizedApplicationId = installationId.trim();
       // The tenant-scoped management list is the authenticated read surface:
       // it carries the hash-free `oauthRelyingParty` summary for every row, so
       // an admin session needs no bootstrap-operator credential to load it.
-      return service.iam.tenantApplications.list(normalizedTenantId, { page: 1, page_size: 200 })
+      return service.iam.installations.list(normalizedTenantId, { page: 1, page_size: 200 })
         .then((page) => {
           const draft = normalizeList(page)
-            .map((item) => parseRelyingPartyDraftFromTenantApplication(
+            .map((item) => parseRelyingPartyDraftFromInstallation(
               item,
               normalizedTenantId,
               normalizedApplicationId,
             ))
-            .find((candidate) => candidate.tenantApplicationId === normalizedApplicationId);
+            .find((candidate) => candidate.installationId === normalizedApplicationId);
           if (draft === undefined) {
             throw new Error(
               `Tenant application ${normalizedApplicationId} is not visible in tenant ${normalizedTenantId}`,
@@ -1174,9 +1174,9 @@ export function createSdkworkIamOauthAdminController(
               relyingParty.clientSecret = secret;
             }
           }
-          return service.iam.tenantApplications.management.update(
+          return service.iam.installations.management.update(
             body.tenantId.trim(),
-            body.tenantApplicationId.trim(),
+            body.installationId.trim(),
             { runtimeConfig: { oauth: { relyingParty } } },
           );
         },

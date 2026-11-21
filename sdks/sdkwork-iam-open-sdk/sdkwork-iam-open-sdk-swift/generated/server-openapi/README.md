@@ -23,9 +23,7 @@ let client = SdkworkCustomClient(config: config)
 client.setApiKey("your-api-key")
 
 // Use the SDK
-let callbackPublicId = "1"
-let result = try await client.iamOauth.providerCallbacksHandleGet(callbackPublicId: callbackPublicId)
-print(result)
+// No API operations available.
 ```
 
 ## Authentication Modes (Mutually Exclusive)
@@ -67,25 +65,17 @@ client.setHeader("X-Custom-Header", value: "value")
 
 ## API Modules
 
-- `client.iamOauth` - iam_oauth API
+
 
 ## Usage Examples
 
-### iam_oauth
-
-```swift
-// Iam oauth provider Callbacks handle Get.
-let callbackPublicId = "1"
-let result = try await client.iamOauth.providerCallbacksHandleGet(callbackPublicId: callbackPublicId)
-print(result)
-```
+No examples available.
 
 ## Error Handling
 
 ```swift
 do {
-    let callbackPublicId = "1"
-    try await client.iamOauth.providerCallbacksHandleGet(callbackPublicId: callbackPublicId)
+    // No API operations available.
 } catch {
     print("Error: \(error)")
 }

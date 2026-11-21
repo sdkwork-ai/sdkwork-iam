@@ -32,7 +32,7 @@ import {
   Textarea,
 } from "@sdkwork/ui-pc-react";
 
-import { TenantApplicationsPanel } from "../components/TenantApplicationsPanel";
+import { InstallationsPanel } from "../components/InstallationsPanel";
 import { useSdkworkIamTenantAdminMessages } from "../i18n";
 import type { SdkworkIamTenantAdminMessages } from "../types/tenant-admin-messages";
 import type {
@@ -481,7 +481,7 @@ export function SdkworkIamTenantAdminWorkspace({
 
             <div className="mt-5 flex min-h-0 flex-1 flex-col">
               {activeTab === "applications"
-                ? <TenantApplicationsPanel controller={controller} tenant={selectedTenant} />
+                ? <InstallationsPanel controller={controller} tenant={selectedTenant} />
                 : (
                   <DataTable
                     className="min-h-0 flex-1"

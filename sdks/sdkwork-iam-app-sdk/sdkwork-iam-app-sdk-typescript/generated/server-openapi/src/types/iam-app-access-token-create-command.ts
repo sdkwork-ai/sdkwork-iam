@@ -3,7 +3,7 @@ export interface IamAppAccessTokenCreateCommand {
   /** Installation deploy application anchor (iam_application_installation.deploy_application_id). Preferred selector: it is the identity the deployment plane publishes. */
   appId?: string;
   /** IAM installation row id (tapp_...) of the caller's tenant. */
-  tenantApplicationId?: string;
+  installationId?: string;
   /** Installation instance key of the caller's tenant. */
   instanceKey?: string;
   /** Exact installation lifecycle to initialize. Omitted means the caller session environment when the installation registered it, otherwise the installation's only active environment. An operator can initialize a lifecycle that differs from its own session environment. */

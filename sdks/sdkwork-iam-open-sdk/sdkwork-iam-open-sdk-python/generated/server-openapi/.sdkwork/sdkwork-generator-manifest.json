@@ -12,7 +12,7 @@
   "generatedFiles": [
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -40,7 +40,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "8da61d45141c3b18bec9f4f8e37882dfa49d0db2169308133b921ebf341b2cb7"
+      "sha256": "466d074e60c95361ea207fcbc4d2c719c62c7484bf88ed5aa25549e3aaa71284"
     },
     {
       "path": "requirements.txt",
@@ -52,63 +52,31 @@
     },
     {
       "path": "sdkwork_iam_open_sdk/api/__init__.py",
-      "sha256": "82993e1b6418ce515cb0b12ee411ce4e161cce0ce1a9311fab18aaf9a21c4e0d"
-    },
-    {
-      "path": "sdkwork_iam_open_sdk/api/iam_oauth.py",
-      "sha256": "c83d53e5907189261d78518f2207ab65889a9076d27d4bb457d099a3a73318db"
+      "sha256": "75ad4f4c2943325f88064ad2beae890b59674be2bf0404b30afc5584dc4de4bb"
     },
     {
       "path": "sdkwork_iam_open_sdk/client.py",
-      "sha256": "cb3ba8e20badee8e01504357348785119126d37535e83e39bce8ca36e37a2fe7"
+      "sha256": "ea3948208e6dc39d38d4b93ca255dd89fab31d4a589336e143fab0ae2b03c908"
     },
     {
       "path": "sdkwork_iam_open_sdk/http_client.py",
-      "sha256": "07779594e33195d0d2f17b0cd8539f32edd95c7a3a9bb8fd6aaa87745dd30cab"
+      "sha256": "d587e45f9bca33b663d3c87f4eedaeb22bf8f15392de09cb75402c5a1400b8bf"
     },
     {
       "path": "sdkwork_iam_open_sdk/models/__init__.py",
-      "sha256": "506cea44c13d74eea09d231945ee85ea62686fc9a4b4eb44dd005c9bcc9a1185"
-    },
-    {
-      "path": "sdkwork_iam_open_sdk/models/appbase_access_credential_create_command.py",
-      "sha256": "5203488f27ddde0d379908a0ca3adae6ec666a12abeb3edad7e25eeaad8b0d16"
-    },
-    {
-      "path": "sdkwork_iam_open_sdk/models/appbase_api_result.py",
-      "sha256": "f394489fcc63d11d19df62a86ed6d8860ce0513e36b22809cf7bf11ce7f6e806"
-    },
-    {
-      "path": "sdkwork_iam_open_sdk/models/appbase_application_register_command.py",
-      "sha256": "7d5afca9321685587d62d991d218df911c6b629227b6235f1f825a522518e0e8"
-    },
-    {
-      "path": "sdkwork_iam_open_sdk/models/appbase_session_create_command.py",
-      "sha256": "9c5caacc0324fbea1f3576dd22a97fab8f4c1d8e62964edf932c212e6a8102ba"
-    },
-    {
-      "path": "sdkwork_iam_open_sdk/models/appbase_tenant_application_enable_command.py",
-      "sha256": "b0805b88891a523d00319d45a748be08c9c35403fbc8bf440b22336ef678422b"
-    },
-    {
-      "path": "sdkwork_iam_open_sdk/models/appbase_tenant_application_provision_command.py",
-      "sha256": "f20f1c45f2ccf55c38059b9d8aba0e514fcb1db9cc7db122f491da257425d85d"
-    },
-    {
-      "path": "sdkwork_iam_open_sdk/models/appbase_tenant_application_update_command.py",
-      "sha256": "3749c323ce091b7947dbad82255a79c35f4b72f6b3bddfbea4e6d7c7bf37eaab"
+      "sha256": "8425290a278aa2905148091bce795f9074b532531be43e2643c9d7ccdc758505"
     },
     {
       "path": "sdkwork_iam_open_sdk/models/field_error.py",
-      "sha256": "55a16fc5837525b2e8488b197409789d86b03b301f09a83ff5642260c83beae2"
+      "sha256": "5027c2d560e5a15664f62611f73bc8385794ac4dd43f169adae89cf2bd8a1a76"
     },
     {
       "path": "sdkwork_iam_open_sdk/models/problem_detail.py",
-      "sha256": "73139fe4e53a44b27b04ba096d97b1eedebc6e537f9e3777dbc01a7f659848e4"
+      "sha256": "2d8208f66783f1e1c85928f27376896046a0c85b995f633e499a28896f06012e"
     },
     {
       "path": "sdkwork-sdk.json",
-      "sha256": "793c3f47c7b0664cc3d94ae5f4a8073d9321806ca8a41467ca70b4ac0b7db651"
+      "sha256": "bc8d998c7b62697523fb91abc450c264ee66d1a30045577a7dff294ed33e01d2"
     },
     {
       "path": "setup.py",

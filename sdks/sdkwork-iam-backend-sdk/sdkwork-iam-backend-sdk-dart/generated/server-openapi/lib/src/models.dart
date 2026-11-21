@@ -847,7 +847,7 @@ class IamOauthClientCreateCommand {
   }
 }
 
-class IamTenantApplicationManagementProvisionCommand {
+class IamInstallationManagementProvisionCommand {
   final String? organizationId;
   final String? instanceKey;
   final String? displayName;
@@ -861,7 +861,7 @@ class IamTenantApplicationManagementProvisionCommand {
   final String? ownerUserId;
   final String? provisioningIdempotencyKey;
 
-  IamTenantApplicationManagementProvisionCommand({
+  IamInstallationManagementProvisionCommand({
     this.organizationId,
     this.instanceKey,
     this.displayName,
@@ -876,8 +876,8 @@ class IamTenantApplicationManagementProvisionCommand {
     this.provisioningIdempotencyKey
   });
 
-  factory IamTenantApplicationManagementProvisionCommand.fromJson(Map<String, dynamic> json) {
-    return IamTenantApplicationManagementProvisionCommand(
+  factory IamInstallationManagementProvisionCommand.fromJson(Map<String, dynamic> json) {
+    return IamInstallationManagementProvisionCommand(
       organizationId: json['organizationId']?.toString(),
       instanceKey: json['instanceKey']?.toString(),
       displayName: json['displayName']?.toString(),
@@ -920,17 +920,17 @@ class IamTenantApplicationManagementProvisionCommand {
   }
 }
 
-class IamTenantApplicationManagementUpdateCommand {
+class IamInstallationManagementUpdateCommand {
   final String? primaryDomain;
   final List<String>? accessPermissions;
 
-  IamTenantApplicationManagementUpdateCommand({
+  IamInstallationManagementUpdateCommand({
     this.primaryDomain,
     this.accessPermissions
   });
 
-  factory IamTenantApplicationManagementUpdateCommand.fromJson(Map<String, dynamic> json) {
-    return IamTenantApplicationManagementUpdateCommand(
+  factory IamInstallationManagementUpdateCommand.fromJson(Map<String, dynamic> json) {
+    return IamInstallationManagementUpdateCommand(
       primaryDomain: json['primaryDomain']?.toString(),
       accessPermissions: (() {
         final list = _sdkworkAsList(json['accessPermissions']);
@@ -953,13 +953,13 @@ class IamTenantApplicationManagementUpdateCommand {
   }
 }
 
-class IamTenantApplicationStatusCommand {
+class IamInstallationStatusCommand {
 
 
-  IamTenantApplicationStatusCommand();
+  IamInstallationStatusCommand();
 
-  factory IamTenantApplicationStatusCommand.fromJson(Map<String, dynamic> json) {
-    return IamTenantApplicationStatusCommand();
+  factory IamInstallationStatusCommand.fromJson(Map<String, dynamic> json) {
+    return IamInstallationStatusCommand();
   }
 
   Map<String, dynamic> toJson() {
@@ -967,7 +967,7 @@ class IamTenantApplicationStatusCommand {
   }
 }
 
-class AppbaseTenantApplicationProvisionCommand {
+class AppbaseInstallationProvisionCommand {
   final String? authToken;
   final String? username;
   final String? email;
@@ -987,7 +987,7 @@ class AppbaseTenantApplicationProvisionCommand {
   final String? ownerUserId;
   final String? provisioningIdempotencyKey;
 
-  AppbaseTenantApplicationProvisionCommand({
+  AppbaseInstallationProvisionCommand({
     this.authToken,
     this.username,
     this.email,
@@ -1008,8 +1008,8 @@ class AppbaseTenantApplicationProvisionCommand {
     this.provisioningIdempotencyKey
   });
 
-  factory AppbaseTenantApplicationProvisionCommand.fromJson(Map<String, dynamic> json) {
-    return AppbaseTenantApplicationProvisionCommand(
+  factory AppbaseInstallationProvisionCommand.fromJson(Map<String, dynamic> json) {
+    return AppbaseInstallationProvisionCommand(
       authToken: json['authToken']?.toString(),
       username: json['username']?.toString(),
       email: json['email']?.toString(),
@@ -1064,7 +1064,7 @@ class AppbaseTenantApplicationProvisionCommand {
   }
 }
 
-class AppbaseTenantApplicationUpdateCommand {
+class AppbaseInstallationUpdateCommand {
   final String? authToken;
   final String? username;
   final String? email;
@@ -1075,7 +1075,7 @@ class AppbaseTenantApplicationUpdateCommand {
   final List<String>? accessPermissions;
   final Map<String, dynamic>? runtimeConfig;
 
-  AppbaseTenantApplicationUpdateCommand({
+  AppbaseInstallationUpdateCommand({
     this.authToken,
     this.username,
     this.email,
@@ -1087,8 +1087,8 @@ class AppbaseTenantApplicationUpdateCommand {
     this.runtimeConfig
   });
 
-  factory AppbaseTenantApplicationUpdateCommand.fromJson(Map<String, dynamic> json) {
-    return AppbaseTenantApplicationUpdateCommand(
+  factory AppbaseInstallationUpdateCommand.fromJson(Map<String, dynamic> json) {
+    return AppbaseInstallationUpdateCommand(
       authToken: json['authToken']?.toString(),
       username: json['username']?.toString(),
       email: json['email']?.toString(),
@@ -1125,14 +1125,14 @@ class AppbaseTenantApplicationUpdateCommand {
   }
 }
 
-class AppbaseTenantApplicationEnableCommand {
+class AppbaseInstallationEnableCommand {
   final String? authToken;
   final String? username;
   final String? email;
   final String? phone;
   final String? password;
 
-  AppbaseTenantApplicationEnableCommand({
+  AppbaseInstallationEnableCommand({
     this.authToken,
     this.username,
     this.email,
@@ -1140,8 +1140,8 @@ class AppbaseTenantApplicationEnableCommand {
     this.password
   });
 
-  factory AppbaseTenantApplicationEnableCommand.fromJson(Map<String, dynamic> json) {
-    return AppbaseTenantApplicationEnableCommand(
+  factory AppbaseInstallationEnableCommand.fromJson(Map<String, dynamic> json) {
+    return AppbaseInstallationEnableCommand(
       authToken: json['authToken']?.toString(),
       username: json['username']?.toString(),
       email: json['email']?.toString(),
@@ -1169,7 +1169,7 @@ class AppbaseAccessCredentialCreateCommand {
   final String? password;
   final String? tenantId;
   final String? organizationId;
-  final String? tenantApplicationId;
+  final String? installationId;
   final String? appId;
   final String? instanceKey;
   final String? ownershipScope;
@@ -1182,7 +1182,7 @@ class AppbaseAccessCredentialCreateCommand {
     this.password,
     this.tenantId,
     this.organizationId,
-    this.tenantApplicationId,
+    this.installationId,
     this.appId,
     this.instanceKey,
     this.ownershipScope
@@ -1197,7 +1197,7 @@ class AppbaseAccessCredentialCreateCommand {
       password: json['password']?.toString(),
       tenantId: json['tenantId']?.toString(),
       organizationId: json['organizationId']?.toString(),
-      tenantApplicationId: json['tenantApplicationId']?.toString(),
+      installationId: json['installationId']?.toString(),
       appId: json['appId']?.toString(),
       instanceKey: json['instanceKey']?.toString(),
       ownershipScope: json['ownershipScope']?.toString()
@@ -1213,7 +1213,7 @@ class AppbaseAccessCredentialCreateCommand {
       'password': password,
       'tenantId': tenantId,
       'organizationId': organizationId,
-      'tenantApplicationId': tenantApplicationId,
+      'installationId': installationId,
       'appId': appId,
       'instanceKey': instanceKey,
       'ownershipScope': ownershipScope,
@@ -1222,24 +1222,24 @@ class AppbaseAccessCredentialCreateCommand {
 }
 
 class ServiceAccountCredentialCreateCommand {
-  final String? tenantApplicationId;
+  final String? installationId;
   final String? expiresAt;
 
   ServiceAccountCredentialCreateCommand({
-    this.tenantApplicationId,
+    this.installationId,
     this.expiresAt
   });
 
   factory ServiceAccountCredentialCreateCommand.fromJson(Map<String, dynamic> json) {
     return ServiceAccountCredentialCreateCommand(
-      tenantApplicationId: json['tenantApplicationId']?.toString(),
+      installationId: json['installationId']?.toString(),
       expiresAt: json['expiresAt']?.toString()
     );
   }
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
-      'tenantApplicationId': tenantApplicationId,
+      'installationId': installationId,
       'expiresAt': expiresAt,
     };
   }

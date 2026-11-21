@@ -48,11 +48,11 @@
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/api/IamApi.java",
-      "sha256": "9ae17df262c015568b0fcf98b634fdf1116b3269a652e7728ea851fb4883a958"
+      "sha256": "6bf8c1ef41af8c8c2005755f35f55ffe42c0ee1ab650f4a010592fcd52128917"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/api/IamOauthApi.java",
-      "sha256": "2e54e00a0e6c4de6e2d74e150b4dca4398c26aec5b59aa21613aae8df4ba2299"
+      "sha256": "e4d80bf2cb421b457de8c8f401421c97bd0cf1d08a23e4b5eddf0fa739bb4581"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/api/package-info.java",
@@ -64,19 +64,19 @@
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseAccessCredentialCreateCommand.java",
-      "sha256": "534a9a321c4976e3447613de75a7193485e1373d8fdba142a736bac56ed18c95"
+      "sha256": "d453e4a3e3adc9ac85044c20a652927873c31e0e5f55133ce85c6605ffc919fc"
     },
     {
-      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationEnableCommand.java",
-      "sha256": "befd070250ef470add45536677f81529b8fd316dc66bf1f8912d9954d89f9e4a"
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseInstallationEnableCommand.java",
+      "sha256": "bfe238367e5829537d0cb397900a8be11d0eacbc9bfdff80e0bc94b7750fb206"
     },
     {
-      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationProvisionCommand.java",
-      "sha256": "a96c96dfda21f2ed7f07c08fdf74a3441039e8cac3c5411b3443e1d90bc3e7ba"
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseInstallationProvisionCommand.java",
+      "sha256": "c692243bf7fdb8b3936f8cbe304c0949b107adc7769b82c941d2dc3773283c0a"
     },
     {
-      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseTenantApplicationUpdateCommand.java",
-      "sha256": "f7a63d45a81e8be49a82c6d75fc9ab9411291ebf80d12678d02685eb13b4ce5a"
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/AppbaseInstallationUpdateCommand.java",
+      "sha256": "0d942ace819169070d58ee76072a394c3bea8a30d0268f726991423ab9bf0e85"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/FieldError.java",
@@ -123,20 +123,20 @@
       "sha256": "114a7b8873f3b69114ff8e877c7b614964245a2bfd2256223ee5dc34bfe9494e"
     },
     {
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationManagementProvisionCommand.java",
+      "sha256": "992c8f909437dcbca525ba1a18ec7f94e0a6dc981ad477bfb7dea80fdf89d468"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationManagementUpdateCommand.java",
+      "sha256": "24fab56403796657840371c82ea40056a3ad55279509e4f6d7f55f77b626ee46"
+    },
+    {
+      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamInstallationStatusCommand.java",
+      "sha256": "3ffc0a0123b3c079168beb89ef825db7cf2cb20b29407383f68fbe63b95e8921"
+    },
+    {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamOauthClientCreateCommand.java",
       "sha256": "ef08ab77610b6232989bd902c79264aa64018918acdb9a89610eb5e07720d864"
-    },
-    {
-      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamTenantApplicationManagementProvisionCommand.java",
-      "sha256": "fa6ff1f0bf93a74a97378f583cd567034ccba8b7e9d857bb245ec83b96fcde52"
-    },
-    {
-      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamTenantApplicationManagementUpdateCommand.java",
-      "sha256": "269e6fa13e541984b3aa83e4b0cd34e3f94a32c6f7ad78022d3ff8e40a49c91d"
-    },
-    {
-      "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/IamTenantApplicationStatusCommand.java",
-      "sha256": "4c67e650da81de83383dbd4a1fddeab4333434f3a4d7f97c218d075fe9302098"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/PageInfo.java",
@@ -176,7 +176,7 @@
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/ServiceAccountCredentialCreateCommand.java",
-      "sha256": "25b3a5cfd4860d3988f2628af5b34e724a53911dd8ac6eb60476d4db1c7041fb"
+      "sha256": "bf42a5d4b22bdacc310f8615191aa60022b4c811f9fb4cab1a9bacaeee8df5d9"
     },
     {
       "path": "src/main/java/com/sdkwork/iam/backend/sdk/model/ServiceAccountCredentialRevokeCommand.java",

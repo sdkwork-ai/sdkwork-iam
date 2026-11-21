@@ -5,6 +5,8 @@
   "language": "csharp",
   "sdkType": "custom",
   "packageName": "SDKWork.Iam.OpenSdk",
+  "transportPackageName": "SDKWork.Iam.OpenSdk",
+  "consumerPackageName": "SDKWork.Iam.OpenSdk",
   "generator": "@sdkwork/sdk-generator",
   "capabilities": {
     "supportsGeneratedTests": true,

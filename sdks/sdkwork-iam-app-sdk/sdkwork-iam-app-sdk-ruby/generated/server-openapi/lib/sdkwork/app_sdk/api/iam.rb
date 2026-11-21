@@ -1,4 +1,6 @@
 require_relative 'base_api'
+require_relative '../models/iam_app_access_token_create_command'
+require_relative '../models/iam_app_access_token_response'
 require_relative '../models/iam_organization_member_list_response'
 require_relative '../models/iam_persona_catalog_response'
 require_relative '../models/iam_user_persona_response'
@@ -10,6 +12,16 @@ module Sdkwork
   module AppSdk
     module Api
       class IamApi < BaseApi
+          # App Access Tokens create.
+          def app_access_tokens_create(body: nil)
+            path = '/app/v3/api/iam/app_access_tokens'
+            payload = body.respond_to?(:to_hash) ? body.to_hash : body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::IamAppAccessTokenResponse.from_hash(result) : nil
+          end
+
           # Department Assignments list.
           def department_assignments_list(page: nil, page_size: nil, cursor: nil, sort: nil, q: nil)
             path = '/app/v3/api/iam/department_assignments'
@@ -53,7 +65,7 @@ module Sdkwork
             result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
-          # Iam oauth official Account Settings retrieve.
+          # Oauth official Account Settings retrieve.
           def oauth_official_account_settings_retrieve()
             path = '/app/v3/api/iam/oauth/official_account_settings'
             options = {}
@@ -62,7 +74,7 @@ module Sdkwork
             result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
-          # Iam oauth official Accounts list.
+          # Oauth official Accounts list.
           def oauth_official_accounts_list(page: nil, page_size: nil, cursor: nil, sort: nil, q: nil)
             path = '/app/v3/api/iam/oauth/official_accounts'
             query = build_query_string([
@@ -79,7 +91,7 @@ module Sdkwork
             result.is_a?(Hash) ? Models::SdkWorkListResponse.from_hash(result) : nil
           end
 
-          # Iam oauth official Accounts create.
+          # Oauth official Accounts create.
           def oauth_official_accounts_create(body: nil)
             path = '/app/v3/api/iam/oauth/official_accounts'
             payload = body
@@ -89,7 +101,7 @@ module Sdkwork
             result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
-          # Iam oauth official Accounts delete.
+          # Oauth official Accounts delete.
           def oauth_official_accounts_delete(official_account_id)
             path = interpolate_path('/app/v3/api/iam/oauth/official_accounts/{officialAccountId}', officialAccountId: serialize_path_parameter(official_account_id, PathParameterSpec.new('officialAccountId', 'simple', false)))
             options = {}
@@ -98,7 +110,7 @@ module Sdkwork
             result
           end
 
-          # Iam oauth official Accounts retrieve.
+          # Oauth official Accounts retrieve.
           def oauth_official_accounts_retrieve(official_account_id)
             path = interpolate_path('/app/v3/api/iam/oauth/official_accounts/{officialAccountId}', officialAccountId: serialize_path_parameter(official_account_id, PathParameterSpec.new('officialAccountId', 'simple', false)))
             options = {}
@@ -107,7 +119,7 @@ module Sdkwork
             result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
-          # Iam oauth official Accounts update.
+          # Oauth official Accounts update.
           def oauth_official_accounts_update(official_account_id, body: nil)
             path = interpolate_path('/app/v3/api/iam/oauth/official_accounts/{officialAccountId}', officialAccountId: serialize_path_parameter(official_account_id, PathParameterSpec.new('officialAccountId', 'simple', false)))
             payload = body
@@ -117,7 +129,7 @@ module Sdkwork
             result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
-          # Iam oauth official Accounts custom Menus publish.
+          # Oauth official Accounts custom Menus publish.
           def oauth_official_accounts_custom_menus_publish(official_account_id, body: nil)
             path = interpolate_path('/app/v3/api/iam/oauth/official_accounts/{officialAccountId}/custom_menus/publish', officialAccountId: serialize_path_parameter(official_account_id, PathParameterSpec.new('officialAccountId', 'simple', false)))
             payload = body
@@ -127,7 +139,7 @@ module Sdkwork
             result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
-          # Iam oauth official Accounts custom Menus rollback.
+          # Oauth official Accounts custom Menus rollback.
           def oauth_official_accounts_custom_menus_rollback(official_account_id, body: nil)
             path = interpolate_path('/app/v3/api/iam/oauth/official_accounts/{officialAccountId}/custom_menus/rollback', officialAccountId: serialize_path_parameter(official_account_id, PathParameterSpec.new('officialAccountId', 'simple', false)))
             payload = body
@@ -137,7 +149,7 @@ module Sdkwork
             result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
-          # Iam oauth official Accounts custom Menus sync.
+          # Oauth official Accounts custom Menus sync.
           def oauth_official_accounts_custom_menus_sync(official_account_id, body: nil)
             path = interpolate_path('/app/v3/api/iam/oauth/official_accounts/{officialAccountId}/custom_menus/sync', officialAccountId: serialize_path_parameter(official_account_id, PathParameterSpec.new('officialAccountId', 'simple', false)))
             payload = body
@@ -260,11 +272,11 @@ module Sdkwork
               QueryParameterSpec.new('cursor', cursor, 'form', true, false, nil),
               QueryParameterSpec.new('sort', sort, 'form', true, false, nil),
               QueryParameterSpec.new('q', q, 'form', true, false, nil),
-              QueryParameterSpec.new('roleId', role_id, 'form', true, false, nil),
-              QueryParameterSpec.new('principalKind', principal_kind, 'form', true, false, nil),
-              QueryParameterSpec.new('principalId', principal_id, 'form', true, false, nil),
-              QueryParameterSpec.new('scopeKind', scope_kind, 'form', true, false, nil),
-              QueryParameterSpec.new('scopeId', scope_id, 'form', true, false, nil),
+              QueryParameterSpec.new('role_id', role_id, 'form', true, false, nil),
+              QueryParameterSpec.new('principal_kind', principal_kind, 'form', true, false, nil),
+              QueryParameterSpec.new('principal_id', principal_id, 'form', true, false, nil),
+              QueryParameterSpec.new('scope_kind', scope_kind, 'form', true, false, nil),
+              QueryParameterSpec.new('scope_id', scope_id, 'form', true, false, nil),
             ])
             path = append_query_string(path, query)
             options = {}

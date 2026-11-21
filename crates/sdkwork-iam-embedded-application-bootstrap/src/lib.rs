@@ -9,7 +9,7 @@ pub use sdkwork_iam_web_adapter::{
     ensure_tenant_application_from_app_root, ensure_tenant_application_from_app_root_if_configured,
     ensure_tenant_application_from_app_root_with_env,
     ensure_tenant_application_from_app_root_with_env_and_fallback,
-    ensure_tenant_applications_from_app_root_on_pool, ensure_tenant_applications_on_pool,
+    ensure_installations_from_app_root_on_pool, ensure_installations_on_pool,
     load_manifest_from_app_root, load_manifest_from_path, manifest_runtime_bindings,
     manifest_to_ensure_command, manifest_to_ensure_commands, normalize_bootstrap_environment,
     postgres_iam_foundation_schema_ready, resolve_application_app_root,

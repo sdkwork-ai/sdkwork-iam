@@ -277,6 +277,12 @@ impl IamOauthApi {
         self.client.patch(&path, Some(body), None, None, Some("application/json")).await
     }
 
+    /// Iam oauth operator Platforms component Credentials create.
+    pub async fn operator_platforms_component_credentials_create(&self, operator_platform_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/oauth/operator_platforms/{}/component_credentials", serialize_path_parameter(operator_platform_id, PathParameterSpec::new("operatorPlatformId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
     /// Iam oauth operator Platforms pre Authorizations create.
     pub async fn operator_platforms_pre_authorizations_create(&self, operator_platform_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = backend_path(&format!("/iam/oauth/operator_platforms/{}/pre_authorizations", serialize_path_parameter(operator_platform_id, PathParameterSpec::new("operatorPlatformId", "simple", false))));

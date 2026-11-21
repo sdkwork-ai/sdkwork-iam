@@ -5,7 +5,7 @@ import { resolveBootstrapAuth, resolveBootstrapEnvironmentFromEnv } from "./auth
 import { bootstrapApplicationFromManifest } from "./bootstrap.ts";
 import { loadBootstrapAuthProfileFromHome } from "./bootstrap-auth-profile.ts";
 import { createFetchIamApplicationBootstrapClient } from "./fetch-client.ts";
-import { hashManifestContent } from "./manifest.ts";
+import { hashManifestContent, normalizeOwnershipScope } from "./manifest.ts";
 import { isBootstrapAccessTokenReusable } from "@sdkwork/iam-credential-entry/node-bootstrap";
 import type { IamApplicationBootstrapClient, SdkworkAppManifest } from "./types.ts";
 import {
@@ -177,7 +177,17 @@ export async function ensureRepoBootstrapAccessToken(
     });
     // The deploy application anchor the installation serves. `SDKWORK_DEPLOY_APPLICATION_ID`
     // overrides the manifest (`backend.deployApplicationId`, else `backend.appId`).
+    // The release scope belongs to the same publication decision: a `USER`
+    // installation also carries its owner, because the issued credential is bound
+    // to that subject (`APPLICATION_IDENTITY_SPEC.md` §4.1).
     const deployApplicationId = env.SDKWORK_DEPLOY_APPLICATION_ID?.trim();
+    const ownershipScope = env.SDKWORK_APPLICATION_OWNERSHIP_SCOPE?.trim();
+    const ownerUserId = env.SDKWORK_APPLICATION_OWNER_USER_ID?.trim();
+    const provision = {
+      ...(deployApplicationId ? { deployApplicationId } : {}),
+      ...(ownershipScope ? { ownershipScope: normalizeOwnershipScope(ownershipScope) } : {}),
+      ...(ownerUserId ? { ownerUserId } : {}),
+    };
     const result = await bootstrapApplicationFromManifest({
       client,
       manifest: manifest as never,
@@ -185,7 +195,7 @@ export async function ensureRepoBootstrapAccessToken(
       auth,
       profile: loadedProfile?.profile ?? null,
       environment,
-      ...(deployApplicationId ? { provision: { deployApplicationId } } : {}),
+      ...(Object.keys(provision).length > 0 ? { provision } : {}),
     });
     const token = result.env.SDKWORK_ACCESS_TOKEN?.trim();
     if (!token) {

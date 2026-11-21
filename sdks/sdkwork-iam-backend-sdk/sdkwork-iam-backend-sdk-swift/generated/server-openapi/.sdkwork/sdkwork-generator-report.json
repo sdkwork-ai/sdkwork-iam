@@ -12,7 +12,7 @@
   "mode": "apply",
   "hasChanges": true,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "abaa052f038e6d3b70c9e5f5f3e1560f337de77dc319698419a1769154ed3422",
+  "changeFingerprint": "302cbe1a85c747f70f073d8327c6d48c1d559da924c437bfea3cad190b2efe0b",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
@@ -23,7 +23,8 @@
       {
         "area": "api-surface",
         "paths": [
-          "Sources/API/IamApi.swift"
+          "Sources/API/IamApi.swift",
+          "Sources/API/IamOauthApi.swift"
         ]
       },
       {
@@ -119,16 +120,17 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 2,
+    "writtenFiles": 3,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 13,
+    "skippedUnchangedGeneratedFiles": 12,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "abaa052f038e6d3b70c9e5f5f3e1560f337de77dc319698419a1769154ed3422",
+    "changeFingerprint": "302cbe1a85c747f70f073d8327c6d48c1d559da924c437bfea3cad190b2efe0b",
     "changes": {
       "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [
         "Sources/API/IamApi.swift",
+        "Sources/API/IamOauthApi.swift",
         "Sources/Models.swift"
       ],
       "unchangedGeneratedFiles": [
@@ -142,7 +144,6 @@
         "sdkwork-sdk.json",
         "Sources/API/API.swift",
         "Sources/API/ApiPaths.swift",
-        "Sources/API/IamOauthApi.swift",
         "Sources/HTTP/HttpClient.swift",
         "Sources/SdkworkBackendClient.swift"
       ],
@@ -163,7 +164,8 @@
         {
           "area": "api-surface",
           "paths": [
-            "Sources/API/IamApi.swift"
+            "Sources/API/IamApi.swift",
+            "Sources/API/IamOauthApi.swift"
           ]
         },
         {

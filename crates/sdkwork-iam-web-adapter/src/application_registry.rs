@@ -11,13 +11,13 @@ use crate::installation_scope_cache::{
     get_installation_scope, insert_installation_scope, invalidate_installation_scope,
 };
 
-pub const IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION: &str = "iam.tenant_applications.provision";
-pub const IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION: &str = "iam.tenant_applications.update";
-pub const IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION: &str = "iam.tenant_applications.enable";
+pub const IAM_INSTALLATIONS_PROVISION_PERMISSION: &str = "iam.installations.provision";
+pub const IAM_INSTALLATIONS_UPDATE_PERMISSION: &str = "iam.installations.update";
+pub const IAM_INSTALLATIONS_ENABLE_PERMISSION: &str = "iam.installations.enable";
 /// Permission for the machine-facing disable that the deploy uninstall sequence
 /// calls. Separate from `enable` because the two directions have different blast
 /// radius: disabling stops issuance, enabling resumes it.
-pub const IAM_TENANT_APPLICATIONS_DISABLE_PERMISSION: &str = "iam.tenant_applications.disable";
+pub const IAM_INSTALLATIONS_DISABLE_PERMISSION: &str = "iam.installations.disable";
 
 /// Deterministic anchor of a tenant's platform installation.
 ///
@@ -281,6 +281,44 @@ pub fn resolve_access_token_app_id(
                 tenant_application.id, tenant_application.app_id
             )
         })
+}
+
+/// Refuses to register an OAuth relying party on an unanchored installation.
+///
+/// The relying party is a client credential of one installation, and the
+/// installation is one-to-one with the deploy application
+/// (`APPLICATION_IDENTITY_SPEC.md` §3). A client attached to a row without that
+/// link serves an authorization page whose code the session exchange can never
+/// redeem, because the token would name no deployment; the registration itself
+/// fails closed instead.
+/// @param deploy_application_id - the installation's deploy anchor, when linked
+/// @param runtime_config - runtime configuration that would be stored
+/// @returns `Ok(())` when the configuration registers no relying party, or the
+/// installation is anchored
+/// @throws when a relying party is registered without an anchor
+pub fn ensure_relying_party_requires_anchor(
+    deploy_application_id: Option<&str>,
+    runtime_config: &Value,
+) -> Result<(), String> {
+    let registers_relying_party = runtime_config
+        .pointer("/oauth/relyingParty")
+        .is_some_and(Value::is_object);
+    if !registers_relying_party {
+        return Ok(());
+    }
+    if deploy_application_id
+        .map(str::trim)
+        .filter(|value| !crate::is_blank(Some(value)))
+        .is_some()
+    {
+        return Ok(());
+    }
+    Err(
+        "OAuth relying party requires the installation's deploy application anchor \
+         (安装未绑定部署应用): provision the installation with deployApplicationId before \
+         registering a client"
+            .to_string(),
+    )
 }
 
 pub async fn ensure_platform_tenant_application(
@@ -735,6 +773,15 @@ pub async fn provision_tenant_application(
     // Derive the attributes before any dedupe lookup so an incomplete command
     // fails on its own inputs instead of on a lookup.
     let attributes = resolve_provision_attributes(command)?;
+    // A client credential is a property of the installation, and the
+    // installation is one-to-one with its deploy application: registering a
+    // relying party on an unlinked row would produce an authorization endpoint
+    // that can never redeem a code (the desktop session exchange requires the
+    // anchor). Refuse it at provisioning instead of at the first login.
+    ensure_relying_party_requires_anchor(
+        command.deploy_application_id.as_deref(),
+        &attributes.runtime_config,
+    )?;
 
     let now = chrono::Utc::now();
     let requested_deploy_application_id = command
@@ -991,6 +1038,14 @@ pub async fn update_tenant_application(
         &candidate_runtime_config,
         &existing.app_id,
         existing.runtime_config.pointer("/oauth/relyingParty"),
+    )?;
+    // The admin relying-party surface is how a tenant attaches a client to an
+    // existing installation. An installation without the deploy link cannot
+    // redeem an authorization code, so attaching a client there only creates a
+    // login that always fails; require the link first.
+    ensure_relying_party_requires_anchor(
+        existing.deploy_application_id.as_deref(),
+        &merged_runtime_config,
     )?;
     ensure_relying_party_client_id_available(
         pg,
@@ -1769,7 +1824,7 @@ pub async fn resolve_installation_ownership_scope(
 
 pub fn tenant_application_to_json(app: &TenantApplication) -> Value {
     json!({
-        "tenantApplicationId": app.id,
+        "installationId": app.id,
         "appId": app.app_id,
         "tenantId": app.tenant_id,
         "organizationId": app.organization_id,
@@ -2901,5 +2956,43 @@ mod tests {
             resolve_provision_attributes(&command).is_err(),
             "an incomplete command must still fail provisioning"
         );
+    }
+}
+
+#[cfg(test)]
+mod relying_party_anchor_tests {
+    use super::ensure_relying_party_requires_anchor;
+    use serde_json::json;
+
+    #[test]
+    fn a_relying_party_requires_the_deploy_anchor() {
+        let with_relying_party = json!({
+            "oauth": { "relyingParty": { "clientId": "birdcoder" } }
+        });
+        for anchor in [None, Some(""), Some("   ")] {
+            let error = ensure_relying_party_requires_anchor(anchor, &with_relying_party)
+                .expect_err("an unanchored installation must not register a client");
+            assert!(error.contains("deployApplicationId"), "{error}");
+            assert!(error.contains("deploy application anchor"), "{error}");
+        }
+        assert!(ensure_relying_party_requires_anchor(
+            Some("381158401561858048"),
+            &with_relying_party
+        )
+        .is_ok());
+    }
+
+    #[test]
+    fn installations_without_a_relying_party_may_stay_unanchored() {
+        for runtime_config in [
+            json!({}),
+            json!({ "oauth": {} }),
+            json!({ "oauth": { "relyingParty": null } }),
+        ] {
+            assert!(
+                ensure_relying_party_requires_anchor(None, &runtime_config).is_ok(),
+                "no client is registered by {runtime_config}"
+            );
+        }
     }
 }

@@ -11,8 +11,8 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "ba13aa39fbf8b86caf71d79d6e49d641e7dffab45dbb7f424f7f0c5a4f6dd33f",
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "270ea8a8ba8f1877a3c1d017dafd83c6d76dcf40f85da8236113d958872c442e",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
@@ -23,25 +23,27 @@
       {
         "area": "api-surface",
         "paths": [
-          "src/Api/Iam.php"
+          "src/Api/Iam.php",
+          "src/Api/IamOauth.php"
         ]
       },
       {
         "area": "models",
         "paths": [
           "src/Models/AppbaseAccessCredentialCreateCommand.php",
+          "src/Models/AppbaseInstallationEnableCommand.php",
+          "src/Models/AppbaseInstallationProvisionCommand.php",
+          "src/Models/AppbaseInstallationUpdateCommand.php",
+          "src/Models/AppbaseTenantApplicationEnableCommand.php",
           "src/Models/AppbaseTenantApplicationProvisionCommand.php",
-          "src/Models/IamInstallationCredential.php",
-          "src/Models/IamInstallationCredentialCreateCommand.php",
-          "src/Models/IamInstallationCredentialListResponse.php",
-          "src/Models/IamInstallationCredentialResponse.php",
-          "src/Models/IamInstallationCredentialRotateCommand.php",
-          "src/Models/IamInstallationCredentialWithSecret.php",
-          "src/Models/IamInstallationEnvironment.php",
-          "src/Models/IamInstallationEnvironmentListResponse.php",
-          "src/Models/IamInstallationEnvironmentResponse.php",
-          "src/Models/IamInstallationEnvironmentUpsertCommand.php",
-          "src/Models/IamTenantApplicationManagementProvisionCommand.php"
+          "src/Models/AppbaseTenantApplicationUpdateCommand.php",
+          "src/Models/IamInstallationManagementProvisionCommand.php",
+          "src/Models/IamInstallationManagementUpdateCommand.php",
+          "src/Models/IamInstallationStatusCommand.php",
+          "src/Models/IamTenantApplicationManagementProvisionCommand.php",
+          "src/Models/IamTenantApplicationManagementUpdateCommand.php",
+          "src/Models/IamTenantApplicationStatusCommand.php",
+          "src/Models/ServiceAccountCredentialCreateCommand.php"
         ]
       }
     ],
@@ -50,12 +52,14 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },
@@ -131,30 +135,26 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 14,
+    "writtenFiles": 10,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 31,
-    "deletedGeneratedFiles": 0,
+    "skippedUnchangedGeneratedFiles": 35,
+    "deletedGeneratedFiles": 6,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "ba13aa39fbf8b86caf71d79d6e49d641e7dffab45dbb7f424f7f0c5a4f6dd33f",
+    "changeFingerprint": "270ea8a8ba8f1877a3c1d017dafd83c6d76dcf40f85da8236113d958872c442e",
     "changes": {
       "createdGeneratedFiles": [
-        "src/Models/IamInstallationCredential.php",
-        "src/Models/IamInstallationCredentialCreateCommand.php",
-        "src/Models/IamInstallationCredentialListResponse.php",
-        "src/Models/IamInstallationCredentialResponse.php",
-        "src/Models/IamInstallationCredentialRotateCommand.php",
-        "src/Models/IamInstallationCredentialWithSecret.php",
-        "src/Models/IamInstallationEnvironment.php",
-        "src/Models/IamInstallationEnvironmentListResponse.php",
-        "src/Models/IamInstallationEnvironmentResponse.php",
-        "src/Models/IamInstallationEnvironmentUpsertCommand.php"
+        "src/Models/AppbaseInstallationEnableCommand.php",
+        "src/Models/AppbaseInstallationProvisionCommand.php",
+        "src/Models/AppbaseInstallationUpdateCommand.php",
+        "src/Models/IamInstallationManagementProvisionCommand.php",
+        "src/Models/IamInstallationManagementUpdateCommand.php",
+        "src/Models/IamInstallationStatusCommand.php"
       ],
       "updatedGeneratedFiles": [
         "src/Api/Iam.php",
+        "src/Api/IamOauth.php",
         "src/Models/AppbaseAccessCredentialCreateCommand.php",
-        "src/Models/AppbaseTenantApplicationProvisionCommand.php",
-        "src/Models/IamTenantApplicationManagementProvisionCommand.php"
+        "src/Models/ServiceAccountCredentialCreateCommand.php"
       ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
@@ -166,14 +166,19 @@
         "README.md",
         "sdkwork-sdk.json",
         "src/Api/BaseApi.php",
-        "src/Api/IamOauth.php",
         "src/Http/HttpClient.php",
-        "src/Models/AppbaseTenantApplicationEnableCommand.php",
-        "src/Models/AppbaseTenantApplicationUpdateCommand.php",
         "src/Models/FieldError.php",
+        "src/Models/IamInstallationCredential.php",
+        "src/Models/IamInstallationCredentialCreateCommand.php",
+        "src/Models/IamInstallationCredentialListResponse.php",
+        "src/Models/IamInstallationCredentialResponse.php",
+        "src/Models/IamInstallationCredentialRotateCommand.php",
+        "src/Models/IamInstallationCredentialWithSecret.php",
+        "src/Models/IamInstallationEnvironment.php",
+        "src/Models/IamInstallationEnvironmentListResponse.php",
+        "src/Models/IamInstallationEnvironmentResponse.php",
+        "src/Models/IamInstallationEnvironmentUpsertCommand.php",
         "src/Models/IamOauthClientCreateCommand.php",
-        "src/Models/IamTenantApplicationManagementUpdateCommand.php",
-        "src/Models/IamTenantApplicationStatusCommand.php",
         "src/Models/PageInfo.php",
         "src/Models/ProblemDetail.php",
         "src/Models/SdkWorkApiResponse.php",
@@ -183,13 +188,19 @@
         "src/Models/SdkWorkPageData.php",
         "src/Models/SdkWorkResourceData.php",
         "src/Models/SdkWorkResourceResponse.php",
-        "src/Models/ServiceAccountCredentialCreateCommand.php",
         "src/Models/ServiceAccountCredentialRevokeCommand.php",
         "src/Models/ServiceAccountTokenExchangeCommand.php",
         "src/SdkConfig.php",
         "src/SdkworkBackendClient.php"
       ],
-      "deletedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "src/Models/AppbaseTenantApplicationEnableCommand.php",
+        "src/Models/AppbaseTenantApplicationProvisionCommand.php",
+        "src/Models/AppbaseTenantApplicationUpdateCommand.php",
+        "src/Models/IamTenantApplicationManagementProvisionCommand.php",
+        "src/Models/IamTenantApplicationManagementUpdateCommand.php",
+        "src/Models/IamTenantApplicationStatusCommand.php"
+      ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/README.md"
@@ -206,25 +217,27 @@
         {
           "area": "api-surface",
           "paths": [
-            "src/Api/Iam.php"
+            "src/Api/Iam.php",
+            "src/Api/IamOauth.php"
           ]
         },
         {
           "area": "models",
           "paths": [
             "src/Models/AppbaseAccessCredentialCreateCommand.php",
+            "src/Models/AppbaseInstallationEnableCommand.php",
+            "src/Models/AppbaseInstallationProvisionCommand.php",
+            "src/Models/AppbaseInstallationUpdateCommand.php",
+            "src/Models/AppbaseTenantApplicationEnableCommand.php",
             "src/Models/AppbaseTenantApplicationProvisionCommand.php",
-            "src/Models/IamInstallationCredential.php",
-            "src/Models/IamInstallationCredentialCreateCommand.php",
-            "src/Models/IamInstallationCredentialListResponse.php",
-            "src/Models/IamInstallationCredentialResponse.php",
-            "src/Models/IamInstallationCredentialRotateCommand.php",
-            "src/Models/IamInstallationCredentialWithSecret.php",
-            "src/Models/IamInstallationEnvironment.php",
-            "src/Models/IamInstallationEnvironmentListResponse.php",
-            "src/Models/IamInstallationEnvironmentResponse.php",
-            "src/Models/IamInstallationEnvironmentUpsertCommand.php",
-            "src/Models/IamTenantApplicationManagementProvisionCommand.php"
+            "src/Models/AppbaseTenantApplicationUpdateCommand.php",
+            "src/Models/IamInstallationManagementProvisionCommand.php",
+            "src/Models/IamInstallationManagementUpdateCommand.php",
+            "src/Models/IamInstallationStatusCommand.php",
+            "src/Models/IamTenantApplicationManagementProvisionCommand.php",
+            "src/Models/IamTenantApplicationManagementUpdateCommand.php",
+            "src/Models/IamTenantApplicationStatusCommand.php",
+            "src/Models/ServiceAccountCredentialCreateCommand.php"
           ]
         }
       ],
@@ -258,12 +271,14 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "medium",
+      "riskLevel": "high",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
+        "deleted-generated-files",
+        "manual-review-required",
         "verification-required"
       ]
     },

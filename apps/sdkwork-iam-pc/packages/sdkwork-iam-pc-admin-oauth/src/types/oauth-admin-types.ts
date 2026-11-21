@@ -154,7 +154,7 @@ export interface SdkworkIamOauthRelyingPartyDraft {
   enabled: boolean;
   hasExistingSecret: boolean;
   redirectUrisText: string;
-  tenantApplicationId: string;
+  installationId: string;
   tenantId: string;
 }
 
@@ -299,7 +299,7 @@ export interface SdkworkIamOauthAdminState extends SdkworkIamOauthAdminResourceS
  * Structural port the OAuth administration capability actually reaches.
  *
  * Every call in `oauth-admin-controller.ts` goes through `service.iam.oauth.*`
- * or `service.iam.tenantApplications.*`; the other IAM resource groups and the
+ * or `service.iam.installations.*`; the other IAM resource groups and the
  * sibling `auth`, `oauth` and `system` port groups belong to different
  * capabilities and are never touched here. Declaring the whole
  * `SdkworkIamService` forced every embedding host and every test double to
@@ -310,8 +310,8 @@ export interface SdkworkIamOauthAdminState extends SdkworkIamOauthAdminResourceS
 export type SdkworkIamOauthAdminServicePort = {
   iam: {
     oauth: SdkworkIamService["iam"]["oauth"];
-    tenantApplications: Pick<
-      SdkworkIamService["iam"]["tenantApplications"],
+    installations: Pick<
+      SdkworkIamService["iam"]["installations"],
       "list" | "management"
     >;
   };
@@ -602,7 +602,7 @@ export interface SdkworkIamOauthAdminController {
   retrieveProviderCatalogEntry(providerCatalogId: string): Promise<unknown>;
   updateProviderCatalogStatus(providerCatalogId: string, active: boolean): Promise<unknown>;
   deleteOperationalResource(resourceId: string): Promise<unknown>;
-  loadRelyingPartyConfig(tenantId: string, tenantApplicationId: string): Promise<SdkworkIamOauthRelyingPartyDraft>;
+  loadRelyingPartyConfig(tenantId: string, installationId: string): Promise<SdkworkIamOauthRelyingPartyDraft>;
   updateRelyingParty(body: SdkworkIamOauthRelyingPartyDraft): Promise<unknown>;
   loadScanLoginSettings(): Promise<SdkworkIamOauthScanLoginSettings>;
   updateScanLoginSettings(body: SdkworkIamOauthScanLoginSettingsDraft): Promise<SdkworkIamOauthScanLoginSettings>;

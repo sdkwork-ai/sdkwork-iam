@@ -9,6 +9,11 @@ function read(relativePath) {
   return readFileSync(path.join(appbaseRoot, relativePath), "utf8");
 }
 
+function isAuthorizationServerIngress(apiPath) {
+  return apiPath.startsWith("/iam/v3/api/oauth/")
+    || apiPath.startsWith("/iam/v3/api/system/oauth/");
+}
+
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }
@@ -49,7 +54,7 @@ function listStoredCredentialSuppressedOperations(openApi) {
   ));
 }
 
-function assertNoRetiredGenericSdkDebt(relativePath) {
+function assertNoRetiredGenericSdkDebt(label, text) {
   const retiredFragments = [
     ["@sdkwork/", "app-sdk"].join(""),
     ["@sdkwork/", "backend-sdk"].join(""),
@@ -60,9 +65,9 @@ function assertNoRetiredGenericSdkDebt(relativePath) {
     ["magic-studio-v2/packages/", "sdkwork-", "app-sdk"].join(""),
   ];
   assert.doesNotMatch(
-    read(relativePath),
+    text,
     new RegExp(retiredFragments.join("|"), "u"),
-    `${relativePath} must not reference the retired generic SDK packages.`,
+    `${label} must not reference the retired generic SDK packages.`,
   );
 }
 
@@ -70,10 +75,21 @@ test("appbase workspace does not depend on retired generic app or backend SDK pa
   for (const relativePath of [
     "tsconfig.base.json",
     "pnpm-workspace.yaml",
-    "pnpm-lock.yaml",
   ]) {
-    assertNoRetiredGenericSdkDebt(relativePath);
+    assertNoRetiredGenericSdkDebt(relativePath, read(relativePath));
   }
+  // Only the workspace's own importers are a dependency surface. A published
+  // third-party package may itself depend on a retired generic SDK; the
+  // lockfile's `packages`/`snapshots` sections record that transitive fact and
+  // are not a workspace dependency.
+  const lockfile = read("pnpm-lock.yaml");
+  const importersStart = lockfile.indexOf("\nimporters:");
+  const packagesStart = lockfile.indexOf("\npackages:");
+  assert.ok(importersStart >= 0 && packagesStart > importersStart);
+  assertNoRetiredGenericSdkDebt(
+    "pnpm-lock.yaml importers",
+    lockfile.slice(importersStart, packagesStart),
+  );
 });
 
 test("appbase app SDK generated auth entry operations suppress stored credentials end to end", () => {
@@ -85,7 +101,15 @@ test("appbase app SDK generated auth entry operations suppress stored credential
     "sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi/src/http/client.ts",
   );
 
-  const suppressedOperations = listStoredCredentialSuppressedOperations(openApi);
+  const suppressedOperations = listStoredCredentialSuppressedOperations(openApi)
+    .filter((operation) => {
+      // External wire protocols are provider webhooks, not client SDK surface;
+      // the generator intentionally omits them. Their server ingress still
+      // forbids stored credential headers.
+      const pathItem = openApi.paths[operation.apiPath];
+      const wireOperation = pathItem?.[operation.method.toLowerCase()];
+      return wireOperation?.["x-sdkwork-wire-protocol"] !== "external";
+    });
   assert.ok(
     suppressedOperations.some((operation) => operation.operationId === "sessions.create"),
     "session creation must stay credential-entry-bootstrap and suppress stored credentials",
@@ -125,27 +149,27 @@ test("appbase app SDK generated auth entry operations suppress stored credential
 
   assert.match(
     httpClient,
-    /protected buildHeaders\(config: any, skipAuth = false\): Record<string, string> \{[\s\S]*config\?\.accessTokenOnly[\s\S]*stripCredentialHeaders\(headers, true\)/u,
+    /protected (?:override )?buildHeaders\(config: any, skipAuth = false\): Record<string, string> \{[\s\S]*config\?\.accessTokenOnly[\s\S]*stripCredentialHeaders\(headers, true\)/u,
     "generated HTTP client must strip forbidden credential-entry headers while preserving bootstrap Access-Token",
   );
   assert.match(
     httpClient,
-    /protected buildHeaders\(config: any, skipAuth = false\): Record<string, string> \{[\s\S]*!skipAuth && !config\?\.skipAuth[\s\S]*stripCredentialHeaders\(headers, false\)/u,
+    /protected (?:override )?buildHeaders\(config: any, skipAuth = false\): Record<string, string> \{[\s\S]*!skipAuth && !config\?\.skipAuth[\s\S]*stripCredentialHeaders\(headers, false\)/u,
     "generated HTTP client must strip stored credential and SDKWork context headers when skipAuth is set",
   );
   assert.match(
     httpClient,
-    /stripCredentialHeaders\([\s\S]*preserveAccessToken[\s\S]*'Access-Token'[\s\S]*'Authorization'[\s\S]*'X-Sdkwork-Tenant-Id'[\s\S]*'X-Sdkwork-Organization-Id'[\s\S]*'X-Sdkwork-User-Id'/u,
+    /stripCredentialHeaders\([\s\S]*preserveAccessToken[\s\S]*'Access-Token'[\s\S]*'Authorization'[\s\S]*'X-Sdkwork-Tenant-Id'[\s\S]*'X-Sdkwork-User-Id'[\s\S]*'X-Sdkwork-Organization-Id'/u,
     "generated HTTP client must centrally remove every SDKWork credential and context header",
   );
   assert.match(
     httpClient,
-    /execute\.call\(this, \{[\s\S]*skipAuth,[\s\S]*accessTokenOnly,[\s\S]*headers: preparedHeaders/u,
+    /execute\.call\(this, \{[\s\S]*skipAuth[\s\S]*accessTokenOnly[\s\S]*headers: preparedHeaders/u,
     "generated request transport must pass skipAuth and accessTokenOnly into BaseHttpClient.execute",
   );
   assert.match(
     httpClient,
-    /stream\.call\(this, path, \{[\s\S]*skipAuth,[\s\S]*accessTokenOnly,[\s\S]*headers: requestHeaders/u,
+    /stream\.call\(this, path, \{[\s\S]*skipAuth[\s\S]*accessTokenOnly[\s\S]*headers: requestHeaders/u,
     "generated stream transport must pass skipAuth and accessTokenOnly into BaseHttpClient.stream",
   );
 });
@@ -167,10 +191,11 @@ test("appbase backend SDK bootstrap-body operations suppress stored credentials 
     operations.map(({ operation }) => operation.operationId).sort(),
     [
       "accessCredentials.create",
+      "installations.create",
+      "installations.enable",
+      "installations.management.byDeployApplication.disable",
+      "installations.update",
       "serviceAccountTokens.create",
-      "tenantApplications.create",
-      "tenantApplications.enable",
-      "tenantApplications.update",
     ],
   );
   for (const { apiPath, method, operation } of operations) {
@@ -351,16 +376,14 @@ test("appbase app SDK generated credential suppression stays aligned across lang
   }
 });
 
-test("open-api generated ingress operations preserve auth classification and suppress stored credentials", () => {
+test("open-api authority preserves auth classification while external protocol operations are pruned from the SDK", () => {
   const openApiAuthority = JSON.parse(read("apis/open-api/iam/sdkwork-iam-open-api.openapi.yaml"));
   const openApi = JSON.parse(read("sdks/sdkwork-iam-open-sdk/openapi/sdkwork-iam-open-api.sdkgen.yaml"));
-  const oauthApi = read(
-    "sdks/sdkwork-iam-open-sdk/sdkwork-iam-open-sdk-typescript/generated/server-openapi/src/api/iam-oauth.ts",
-  );
 
   const authorityAnonymousOperations = Object.entries(openApiAuthority.paths).flatMap(([apiPath, pathItem]) => (
     Object.entries(pathItem)
       .filter(([, operation]) => operation["x-sdkwork-auth-mode"] === "anonymous")
+      .filter(() => isAuthorizationServerIngress(apiPath))
       .map(([method, operation]) => ({
         apiPath,
         method: method.toUpperCase(),
@@ -371,6 +394,11 @@ test("open-api generated ingress operations preserve auth classification and sup
   const anonymousOperations = Object.entries(openApi.paths).flatMap(([apiPath, pathItem]) => (
     Object.entries(pathItem)
       .filter(([, operation]) => operation["x-sdkwork-auth-mode"] === "anonymous")
+      // Every open-api operation carries the external OAuth protocol marker.
+      // The authorization-server ingress is the `/oauth/*` and
+      // `/system/oauth/*` surface; provider callbacks (`.../callbacks/...`,
+      // `.../wechat/notify`) are webhooks and are counted separately.
+      .filter(() => isAuthorizationServerIngress(apiPath))
       .map(([method, operation]) => ({
         apiPath,
         method: method.toUpperCase(),
@@ -444,24 +472,17 @@ test("open-api generated ingress operations preserve auth classification and sup
     anonymousOperations.every((operation) => operation.apiPath.startsWith("/iam/v3/api/")),
     "anonymous open-api SDK operations must stay under the IAM open-api prefix",
   );
-  assert.match(
-    oauthApi,
-    /customApiPath\(`\/oauth\/provider_callbacks\/\$\{serializePathParameter\(callbackPublicId,[\s\S]{0,420}method: 'GET' as any, skipAuth: true/u,
-    "open-api GET provider callback must suppress stored credentials",
+  const openSdkApiIndex = read(
+    "sdks/sdkwork-iam-open-sdk/sdkwork-iam-open-sdk-typescript/generated/server-openapi/src/api/index.ts",
+  );
+  assert.doesNotMatch(
+    openSdkApiIndex,
+    /oauth/iu,
+    "external-protocol OAuth operations must be pruned from the generated SDK surface",
   );
   assert.match(
-    oauthApi,
-    /customApiPath\(`\/oauth\/provider_callbacks\/\$\{serializePathParameter\(callbackPublicId,[\s\S]{0,520}method: 'POST' as any,[\s\S]{0,100}skipAuth: true/u,
-    "open-api POST provider callback must suppress stored credentials",
-  );
-  assert.match(
-    oauthApi,
-    /customApiPath\(`\/oauth\/token`\)[\s\S]*skipAuth:\s*true/u,
-    "open-api token endpoint must suppress stored credentials",
-  );
-  assert.match(
-    oauthApi,
-    /customApiPath\(`\/system\/oauth\/openid_configuration`\)[\s\S]*skipAuth:\s*true/u,
-    "open-api OIDC discovery endpoint must suppress stored credentials",
+    openSdkApiIndex,
+    /BaseApi/u,
+    "the pruned open SDK keeps its generated base surface",
   );
 });

@@ -69,8 +69,15 @@ print(result);
 ### oauth
 
 ```dart
-// Wechat Payment Oauth callback.
-final result = await client.oauth.wechatPaymentOauthCallback();
+// Account Links list.
+final params = <String, dynamic>{
+  'page': 1,
+  'page_size': 2,
+  'cursor': 'cursor',
+  'sort': 'sort',
+  'q': 'q',
+};
+final result = await client.oauth.accountLinksList(params);
 print(result);
 ```
 

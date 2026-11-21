@@ -11,8 +11,8 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "74a77ee2f25a6e110e3fbf7e035e272a1b830971248183c0fee66227d52a1f52",
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "5b5440480c998362d52799621ae9a0398d362c72135b88728d47fbf18f9fe1c8",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
@@ -22,7 +22,6 @@
       "build-metadata",
       "publish-workflow",
       "documentation",
-      "custom-scaffold",
       "unknown"
     ],
     "details": [
@@ -75,14 +74,7 @@
         "area": "documentation",
         "paths": [
           "CHANGELOG.md",
-          "custom/README.md",
           "README.md"
-        ]
-      },
-      {
-        "area": "custom-scaffold",
-        "paths": [
-          "custom/README.md"
         ]
       },
       {
@@ -96,7 +88,7 @@
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required."
+    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
@@ -106,8 +98,9 @@
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "backed-up-generated-files",
+      "deleted-generated-files",
       "manual-review-required",
-      "preserved-legacy-files",
       "unknown-impact",
       "verification-required"
     ]
@@ -120,8 +113,8 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
-        "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-open-sdk\\sdkwork-iam-open-sdk-ruby\\generated\\server-openapi",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-open-sdk\\sdkwork-iam-open-sdk-ruby\\generated\\server-openapi",
         "command": "node",
         "args": [
           "./bin/publish-core.mjs",
@@ -139,14 +132,14 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
-        "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-open-sdk\\sdkwork-iam-open-sdk-ruby\\generated\\server-openapi",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-open-sdk\\sdkwork-iam-open-sdk-ruby\\generated\\server-openapi",
         "command": "node",
         "args": [
           "./bin/publish-core.mjs",
@@ -167,7 +160,7 @@
     "language": "ruby",
     "sdkType": "custom",
     "protocol": "http",
-    "outputPath": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-open-sdk\\sdkwork-iam-open-sdk-ruby\\generated\\server-openapi",
+    "outputPath": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-open-sdk\\sdkwork-iam-open-sdk-ruby\\generated\\server-openapi",
     "packageName": "sdkwork-iam-open-sdk"
   },
   "versioning": {
@@ -175,23 +168,58 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 26,
-    "models": 9,
-    "apis": 1,
-    "types": 9
+    "totalFiles": 18,
+    "models": 2,
+    "apis": 0,
+    "types": 2
   },
   "warnings": [],
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 26,
-    "skippedScaffoldFiles": 0,
+    "writtenFiles": 17,
+    "skippedScaffoldFiles": 1,
     "skippedUnchangedGeneratedFiles": 0,
-    "deletedGeneratedFiles": 0,
+    "deletedGeneratedFiles": 8,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "74a77ee2f25a6e110e3fbf7e035e272a1b830971248183c0fee66227d52a1f52",
+    "changeFingerprint": "5b5440480c998362d52799621ae9a0398d362c72135b88728d47fbf18f9fe1c8",
     "changes": {
-      "createdGeneratedFiles": [
+      "createdGeneratedFiles": [],
+      "updatedGeneratedFiles": [
+        "bin/publish-core.mjs",
+        "bin/publish.ps1",
+        "bin/publish.sh",
+        "CHANGELOG.md",
+        "Gemfile",
+        "lib/sdkwork/custom_sdk.rb",
+        "lib/sdkwork/custom_sdk/api/base_api.rb",
+        "lib/sdkwork/custom_sdk/client.rb",
+        "lib/sdkwork/custom_sdk/http/client.rb",
+        "lib/sdkwork/custom_sdk/models/field_error.rb",
+        "lib/sdkwork/custom_sdk/models/problem_detail.rb",
+        "lib/sdkwork/custom_sdk/sdk_config.rb",
+        "lib/sdkwork/custom_sdk/version.rb",
+        "LICENSE",
+        "README.md",
+        "sdkwork-iam-open-sdk.gemspec",
+        "sdkwork-sdk.json"
+      ],
+      "unchangedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "lib/sdkwork/custom_sdk/api/iam_oauth.rb",
+        "lib/sdkwork/custom_sdk/models/appbase_access_credential_create_command.rb",
+        "lib/sdkwork/custom_sdk/models/appbase_api_result.rb",
+        "lib/sdkwork/custom_sdk/models/appbase_application_register_command.rb",
+        "lib/sdkwork/custom_sdk/models/appbase_session_create_command.rb",
+        "lib/sdkwork/custom_sdk/models/appbase_tenant_application_enable_command.rb",
+        "lib/sdkwork/custom_sdk/models/appbase_tenant_application_provision_command.rb",
+        "lib/sdkwork/custom_sdk/models/appbase_tenant_application_update_command.rb"
+      ],
+      "scaffoldedFiles": [],
+      "preservedScaffoldFiles": [
+        "custom/README.md"
+      ],
+      "backedUpFiles": [
         "bin/publish-core.mjs",
         "bin/publish.ps1",
         "bin/publish.sh",
@@ -217,15 +245,7 @@
         "README.md",
         "sdkwork-iam-open-sdk.gemspec",
         "sdkwork-sdk.json"
-      ],
-      "updatedGeneratedFiles": [],
-      "unchangedGeneratedFiles": [],
-      "deletedGeneratedFiles": [],
-      "scaffoldedFiles": [
-        "custom/README.md"
-      ],
-      "preservedScaffoldFiles": [],
-      "backedUpFiles": []
+      ]
     },
     "impact": {
       "schemaVersion": 1,
@@ -236,7 +256,6 @@
         "build-metadata",
         "publish-workflow",
         "documentation",
-        "custom-scaffold",
         "unknown"
       ],
       "details": [
@@ -289,14 +308,7 @@
           "area": "documentation",
           "paths": [
             "CHANGELOG.md",
-            "custom/README.md",
             "README.md"
-          ]
-        },
-        {
-          "area": "custom-scaffold",
-          "paths": [
-            "custom/README.md"
           ]
         },
         {
@@ -310,19 +322,19 @@
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required."
+      "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
-          "workingDirectory": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-open-sdk\\sdkwork-iam-open-sdk-ruby\\generated\\server-openapi",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+          "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-open-sdk\\sdkwork-iam-open-sdk-ruby\\generated\\server-openapi",
           "command": "node",
           "args": [
             "./bin/publish-core.mjs",
@@ -345,13 +357,40 @@
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
+        "backed-up-generated-files",
+        "deleted-generated-files",
         "manual-review-required",
-        "preserved-legacy-files",
         "unknown-impact",
         "verification-required"
       ]
     },
-    "backedUpFiles": [],
-    "preservedLegacyFiles": true
+    "backedUpFiles": [
+      "bin/publish-core.mjs",
+      "bin/publish.ps1",
+      "bin/publish.sh",
+      "CHANGELOG.md",
+      "Gemfile",
+      "lib/sdkwork/custom_sdk.rb",
+      "lib/sdkwork/custom_sdk/api/base_api.rb",
+      "lib/sdkwork/custom_sdk/api/iam_oauth.rb",
+      "lib/sdkwork/custom_sdk/client.rb",
+      "lib/sdkwork/custom_sdk/http/client.rb",
+      "lib/sdkwork/custom_sdk/models/appbase_access_credential_create_command.rb",
+      "lib/sdkwork/custom_sdk/models/appbase_api_result.rb",
+      "lib/sdkwork/custom_sdk/models/appbase_application_register_command.rb",
+      "lib/sdkwork/custom_sdk/models/appbase_session_create_command.rb",
+      "lib/sdkwork/custom_sdk/models/appbase_tenant_application_enable_command.rb",
+      "lib/sdkwork/custom_sdk/models/appbase_tenant_application_provision_command.rb",
+      "lib/sdkwork/custom_sdk/models/appbase_tenant_application_update_command.rb",
+      "lib/sdkwork/custom_sdk/models/field_error.rb",
+      "lib/sdkwork/custom_sdk/models/problem_detail.rb",
+      "lib/sdkwork/custom_sdk/sdk_config.rb",
+      "lib/sdkwork/custom_sdk/version.rb",
+      "LICENSE",
+      "README.md",
+      "sdkwork-iam-open-sdk.gemspec",
+      "sdkwork-sdk.json"
+    ],
+    "preservedLegacyFiles": false
   }
 }

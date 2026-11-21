@@ -5,6 +5,8 @@
   "language": "go",
   "sdkType": "custom",
   "packageName": "github.com/sdkwork/sdkwork-iam-open-sdk",
+  "transportPackageName": "github.com/sdkwork/sdkwork-iam-open-sdk",
+  "consumerPackageName": "github.com/sdkwork/sdkwork-iam-open-sdk",
   "generator": "@sdkwork/sdk-generator",
   "capabilities": {
     "supportsGeneratedTests": true,

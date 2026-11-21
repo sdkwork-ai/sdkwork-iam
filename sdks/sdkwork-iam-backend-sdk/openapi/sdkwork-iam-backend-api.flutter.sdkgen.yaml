@@ -3852,6 +3852,700 @@
         "x-sdkwork-required-surface": "organizationMember"
       }
     },
+    "/backend/v3/api/iam/installations": {
+      "post": {
+        "tags": [
+          "iam"
+        ],
+        "summary": "Installations create.",
+        "operationId": "installations.create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkWorkResourceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "x-sdkwork-auth-mode": "bootstrap-body",
+        "x-sdkwork-forbid-credential-headers": true,
+        "x-sdkwork-owner": "sdkwork-iam",
+        "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
+        "x-sdkwork-domain": "iam",
+        "x-sdkwork-resource": "installations",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-api-surface": "backend-api",
+        "x-sdkwork-server-request-id": true,
+        "x-sdkwork-permission": "iam.installations.provision",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppbaseInstallationProvisionCommand"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backend/v3/api/iam/installations/{installationId}": {
+      "get": {
+        "tags": [
+          "iam"
+        ],
+        "summary": "Installations retrieve.",
+        "operationId": "installations.retrieve",
+        "parameters": [
+          {
+            "name": "installationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkWorkResourceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-forbid-credential-headers": false,
+        "x-sdkwork-owner": "sdkwork-iam",
+        "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
+        "x-sdkwork-domain": "iam",
+        "x-sdkwork-resource": "installations",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-api-surface": "backend-api",
+        "x-sdkwork-server-request-id": true,
+        "x-sdkwork-permission": "iam.installations.update",
+        "x-sdkwork-required-surface": "organizationMember"
+      },
+      "patch": {
+        "tags": [
+          "iam"
+        ],
+        "summary": "Installations update.",
+        "operationId": "installations.update",
+        "parameters": [
+          {
+            "name": "installationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkWorkResourceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "x-sdkwork-auth-mode": "bootstrap-body",
+        "x-sdkwork-forbid-credential-headers": true,
+        "x-sdkwork-owner": "sdkwork-iam",
+        "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
+        "x-sdkwork-domain": "iam",
+        "x-sdkwork-resource": "installations",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-api-surface": "backend-api",
+        "x-sdkwork-server-request-id": true,
+        "x-sdkwork-permission": "iam.installations.update",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppbaseInstallationUpdateCommand"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backend/v3/api/iam/installations/{installationId}/enable": {
+      "post": {
+        "tags": [
+          "iam"
+        ],
+        "summary": "Installations enable.",
+        "operationId": "installations.enable",
+        "parameters": [
+          {
+            "name": "installationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkWorkCommandResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "x-sdkwork-auth-mode": "bootstrap-body",
+        "x-sdkwork-forbid-credential-headers": true,
+        "x-sdkwork-owner": "sdkwork-iam",
+        "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
+        "x-sdkwork-domain": "iam",
+        "x-sdkwork-resource": "installations",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-api-surface": "backend-api",
+        "x-sdkwork-server-request-id": true,
+        "x-sdkwork-permission": "iam.installations.enable",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppbaseInstallationEnableCommand"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backend/v3/api/iam/installations/by_deploy_application/{deployApplicationId}/disable": {
+      "post": {
+        "tags": [
+          "iam"
+        ],
+        "summary": "Installations management by Deploy Application disable.",
+        "operationId": "installations.management.byDeployApplication.disable",
+        "parameters": [
+          {
+            "name": "deployApplicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkWorkCommandResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "x-sdkwork-auth-mode": "bootstrap-body",
+        "x-sdkwork-forbid-credential-headers": true,
+        "x-sdkwork-owner": "sdkwork-iam",
+        "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
+        "x-sdkwork-domain": "iam",
+        "x-sdkwork-resource": "installations.management.byDeployApplication",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-api-surface": "backend-api",
+        "x-sdkwork-server-request-id": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppbaseOperationCommand"
+              }
+            }
+          }
+        }
+      }
+    },
     "/backend/v3/api/iam/oauth/account_links": {
       "get": {
         "tags": [
@@ -24106,699 +24800,6 @@
         }
       }
     },
-    "/backend/v3/api/iam/tenant_applications": {
-      "post": {
-        "tags": [
-          "iam"
-        ],
-        "summary": "Tenant Applications create.",
-        "operationId": "tenantApplications.create",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SdkWorkResourceResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable entity",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many requests",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service unavailable",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "security": [],
-        "x-sdkwork-auth-mode": "bootstrap-body",
-        "x-sdkwork-forbid-credential-headers": true,
-        "x-sdkwork-owner": "sdkwork-iam",
-        "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
-        "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications",
-        "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-api-surface": "backend-api",
-        "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.provision",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AppbaseTenantApplicationProvisionCommand"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/backend/v3/api/iam/tenant_applications/{tenantApplicationId}": {
-      "get": {
-        "tags": [
-          "iam"
-        ],
-        "summary": "Tenant Applications retrieve.",
-        "operationId": "tenantApplications.retrieve",
-        "parameters": [
-          {
-            "name": "tenantApplicationId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SdkWorkResourceResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable entity",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many requests",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service unavailable",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "AuthToken": [],
-            "AccessToken": []
-          }
-        ],
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-forbid-credential-headers": false,
-        "x-sdkwork-owner": "sdkwork-iam",
-        "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
-        "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications",
-        "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-api-surface": "backend-api",
-        "x-sdkwork-server-request-id": true,
-        "x-sdkwork-required-surface": "organizationMember"
-      },
-      "patch": {
-        "tags": [
-          "iam"
-        ],
-        "summary": "Tenant Applications update.",
-        "operationId": "tenantApplications.update",
-        "parameters": [
-          {
-            "name": "tenantApplicationId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SdkWorkResourceResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable entity",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many requests",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service unavailable",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "security": [],
-        "x-sdkwork-auth-mode": "bootstrap-body",
-        "x-sdkwork-forbid-credential-headers": true,
-        "x-sdkwork-owner": "sdkwork-iam",
-        "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
-        "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications",
-        "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-api-surface": "backend-api",
-        "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.update",
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AppbaseTenantApplicationUpdateCommand"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/backend/v3/api/iam/tenant_applications/{tenantApplicationId}/enable": {
-      "post": {
-        "tags": [
-          "iam"
-        ],
-        "summary": "Tenant Applications enable.",
-        "operationId": "tenantApplications.enable",
-        "parameters": [
-          {
-            "name": "tenantApplicationId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SdkWorkCommandResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable entity",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many requests",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service unavailable",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "security": [],
-        "x-sdkwork-auth-mode": "bootstrap-body",
-        "x-sdkwork-forbid-credential-headers": true,
-        "x-sdkwork-owner": "sdkwork-iam",
-        "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
-        "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications",
-        "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-api-surface": "backend-api",
-        "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.enable",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AppbaseTenantApplicationEnableCommand"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/backend/v3/api/iam/tenant_applications/by_deploy_application/{deployApplicationId}/disable": {
-      "post": {
-        "tags": [
-          "iam"
-        ],
-        "summary": "Tenant Applications management by Deploy Application disable.",
-        "operationId": "tenantApplications.management.byDeployApplication.disable",
-        "parameters": [
-          {
-            "name": "deployApplicationId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SdkWorkCommandResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable entity",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many requests",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service unavailable",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "security": [],
-        "x-sdkwork-auth-mode": "bootstrap-body",
-        "x-sdkwork-forbid-credential-headers": true,
-        "x-sdkwork-owner": "sdkwork-iam",
-        "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
-        "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications.management.byDeployApplication",
-        "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-api-surface": "backend-api",
-        "x-sdkwork-server-request-id": true,
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AppbaseOperationCommand"
-              }
-            }
-          }
-        }
-      }
-    },
     "/backend/v3/api/iam/tenants": {
       "get": {
         "tags": [
@@ -25524,13 +25525,13 @@
         }
       }
     },
-    "/backend/v3/api/iam/tenants/{tenantId}/applications": {
+    "/backend/v3/api/iam/tenants/{tenantId}/installations": {
       "get": {
         "tags": [
           "iam"
         ],
-        "summary": "Tenant Applications list.",
-        "operationId": "tenantApplications.list",
+        "summary": "Installations list.",
+        "operationId": "installations.list",
         "parameters": [
           {
             "name": "tenantId",
@@ -25724,19 +25725,19 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications",
+        "x-sdkwork-resource": "installations",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.update",
+        "x-sdkwork-permission": "iam.installations.update",
         "x-sdkwork-required-surface": "organizationMember"
       },
       "post": {
         "tags": [
           "iam"
         ],
-        "summary": "Tenant Applications management create.",
-        "operationId": "tenantApplications.management.create",
+        "summary": "Installations management create.",
+        "operationId": "installations.management.create",
         "parameters": [
           {
             "name": "tenantId",
@@ -25860,31 +25861,31 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications.management",
+        "x-sdkwork-resource": "installations.management",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.provision",
+        "x-sdkwork-permission": "iam.installations.provision",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/IamTenantApplicationManagementProvisionCommand"
+                "$ref": "#/components/schemas/IamInstallationManagementProvisionCommand"
               }
             }
           }
         }
       }
     },
-    "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}": {
+    "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}": {
       "patch": {
         "tags": [
           "iam"
         ],
-        "summary": "Tenant Applications management update.",
-        "operationId": "tenantApplications.management.update",
+        "summary": "Installations management update.",
+        "operationId": "installations.management.update",
         "parameters": [
           {
             "name": "tenantId",
@@ -25895,7 +25896,7 @@
             }
           },
           {
-            "name": "tenantApplicationId",
+            "name": "installationId",
             "in": "path",
             "required": true,
             "schema": {
@@ -26016,31 +26017,31 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications.management",
+        "x-sdkwork-resource": "installations.management",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.update",
+        "x-sdkwork-permission": "iam.installations.update",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": false,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/IamTenantApplicationManagementUpdateCommand"
+                "$ref": "#/components/schemas/IamInstallationManagementUpdateCommand"
               }
             }
           }
         }
       }
     },
-    "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials": {
+    "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials": {
       "get": {
         "tags": [
           "iam"
         ],
-        "summary": "Tenant Applications credentials list.",
-        "operationId": "tenantApplications.credentials.list",
+        "summary": "Installations credentials list.",
+        "operationId": "installations.credentials.list",
         "parameters": [
           {
             "name": "tenantId",
@@ -26051,7 +26052,7 @@
             }
           },
           {
-            "name": "tenantApplicationId",
+            "name": "installationId",
             "in": "path",
             "required": true,
             "schema": {
@@ -26217,19 +26218,19 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications.credentials",
+        "x-sdkwork-resource": "installations.credentials",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.update",
+        "x-sdkwork-permission": "iam.installations.update",
         "x-sdkwork-required-surface": "organizationMember"
       },
       "post": {
         "tags": [
           "iam"
         ],
-        "summary": "Tenant Applications credentials create.",
-        "operationId": "tenantApplications.credentials.create",
+        "summary": "Installations credentials create.",
+        "operationId": "installations.credentials.create",
         "parameters": [
           {
             "name": "tenantId",
@@ -26240,7 +26241,7 @@
             }
           },
           {
-            "name": "tenantApplicationId",
+            "name": "installationId",
             "in": "path",
             "required": true,
             "schema": {
@@ -26361,11 +26362,11 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications.credentials",
+        "x-sdkwork-resource": "installations.credentials",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.update",
+        "x-sdkwork-permission": "iam.installations.update",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": true,
@@ -26379,13 +26380,13 @@
         }
       }
     },
-    "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials/{credentialId}/revoke": {
+    "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials/{credentialId}/revoke": {
       "post": {
         "tags": [
           "iam"
         ],
-        "summary": "Tenant Applications credentials revoke.",
-        "operationId": "tenantApplications.credentials.revoke",
+        "summary": "Installations credentials revoke.",
+        "operationId": "installations.credentials.revoke",
         "parameters": [
           {
             "name": "tenantId",
@@ -26396,7 +26397,7 @@
             }
           },
           {
-            "name": "tenantApplicationId",
+            "name": "installationId",
             "in": "path",
             "required": true,
             "schema": {
@@ -26525,11 +26526,11 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications.credentials",
+        "x-sdkwork-resource": "installations.credentials",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.update",
+        "x-sdkwork-permission": "iam.installations.update",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": true,
@@ -26543,13 +26544,13 @@
         }
       }
     },
-    "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials/{credentialId}/rotate": {
+    "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials/{credentialId}/rotate": {
       "post": {
         "tags": [
           "iam"
         ],
-        "summary": "Tenant Applications credentials rotate.",
-        "operationId": "tenantApplications.credentials.rotate",
+        "summary": "Installations credentials rotate.",
+        "operationId": "installations.credentials.rotate",
         "parameters": [
           {
             "name": "tenantId",
@@ -26560,7 +26561,7 @@
             }
           },
           {
-            "name": "tenantApplicationId",
+            "name": "installationId",
             "in": "path",
             "required": true,
             "schema": {
@@ -26689,11 +26690,11 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications.credentials",
+        "x-sdkwork-resource": "installations.credentials",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.update",
+        "x-sdkwork-permission": "iam.installations.update",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": true,
@@ -26707,13 +26708,13 @@
         }
       }
     },
-    "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/disable": {
+    "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/disable": {
       "post": {
         "tags": [
           "iam"
         ],
-        "summary": "Tenant Applications management disable.",
-        "operationId": "tenantApplications.management.disable",
+        "summary": "Installations management disable.",
+        "operationId": "installations.management.disable",
         "parameters": [
           {
             "name": "tenantId",
@@ -26724,7 +26725,7 @@
             }
           },
           {
-            "name": "tenantApplicationId",
+            "name": "installationId",
             "in": "path",
             "required": true,
             "schema": {
@@ -26845,31 +26846,31 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications.management",
+        "x-sdkwork-resource": "installations.management",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.update",
+        "x-sdkwork-permission": "iam.installations.update",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/IamTenantApplicationStatusCommand"
+                "$ref": "#/components/schemas/IamInstallationStatusCommand"
               }
             }
           }
         }
       }
     },
-    "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/enable": {
+    "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/enable": {
       "post": {
         "tags": [
           "iam"
         ],
-        "summary": "Tenant Applications management enable.",
-        "operationId": "tenantApplications.management.enable",
+        "summary": "Installations management enable.",
+        "operationId": "installations.management.enable",
         "parameters": [
           {
             "name": "tenantId",
@@ -26880,7 +26881,7 @@
             }
           },
           {
-            "name": "tenantApplicationId",
+            "name": "installationId",
             "in": "path",
             "required": true,
             "schema": {
@@ -27001,31 +27002,31 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications.management",
+        "x-sdkwork-resource": "installations.management",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.enable",
+        "x-sdkwork-permission": "iam.installations.enable",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/IamTenantApplicationStatusCommand"
+                "$ref": "#/components/schemas/IamInstallationStatusCommand"
               }
             }
           }
         }
       }
     },
-    "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments": {
+    "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/environments": {
       "get": {
         "tags": [
           "iam"
         ],
-        "summary": "Tenant Applications environments list.",
-        "operationId": "tenantApplications.environments.list",
+        "summary": "Installations environments list.",
+        "operationId": "installations.environments.list",
         "parameters": [
           {
             "name": "tenantId",
@@ -27036,7 +27037,7 @@
             }
           },
           {
-            "name": "tenantApplicationId",
+            "name": "installationId",
             "in": "path",
             "required": true,
             "schema": {
@@ -27202,21 +27203,21 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications.environments",
+        "x-sdkwork-resource": "installations.environments",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.update",
+        "x-sdkwork-permission": "iam.installations.update",
         "x-sdkwork-required-surface": "organizationMember"
       }
     },
-    "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments/{environmentKey}": {
+    "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/environments/{environmentKey}": {
       "delete": {
         "tags": [
           "iam"
         ],
-        "summary": "Tenant Applications environments delete.",
-        "operationId": "tenantApplications.environments.delete",
+        "summary": "Installations environments delete.",
+        "operationId": "installations.environments.delete",
         "parameters": [
           {
             "name": "tenantId",
@@ -27227,7 +27228,7 @@
             }
           },
           {
-            "name": "tenantApplicationId",
+            "name": "installationId",
             "in": "path",
             "required": true,
             "schema": {
@@ -27349,19 +27350,19 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications.environments",
+        "x-sdkwork-resource": "installations.environments",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.update",
+        "x-sdkwork-permission": "iam.installations.update",
         "x-sdkwork-required-surface": "organizationMember"
       },
       "put": {
         "tags": [
           "iam"
         ],
-        "summary": "Tenant Applications environments update.",
-        "operationId": "tenantApplications.environments.update",
+        "summary": "Installations environments update.",
+        "operationId": "installations.environments.update",
         "parameters": [
           {
             "name": "tenantId",
@@ -27372,7 +27373,7 @@
             }
           },
           {
-            "name": "tenantApplicationId",
+            "name": "installationId",
             "in": "path",
             "required": true,
             "schema": {
@@ -27501,11 +27502,11 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications.environments",
+        "x-sdkwork-resource": "installations.environments",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.update",
+        "x-sdkwork-permission": "iam.installations.update",
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": true,
@@ -27519,13 +27520,13 @@
         }
       }
     },
-    "/backend/v3/api/iam/tenants/{tenantId}/applications/summary": {
+    "/backend/v3/api/iam/tenants/{tenantId}/installations/summary": {
       "get": {
         "tags": [
           "iam"
         ],
-        "summary": "Tenant Applications summary retrieve.",
-        "operationId": "tenantApplications.summary.retrieve",
+        "summary": "Installations summary retrieve.",
+        "operationId": "installations.summary.retrieve",
         "parameters": [
           {
             "name": "tenantId",
@@ -27649,11 +27650,11 @@
         "x-sdkwork-owner": "sdkwork-iam",
         "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
         "x-sdkwork-domain": "iam",
-        "x-sdkwork-resource": "tenantApplications.summary",
+        "x-sdkwork-resource": "installations.summary",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-server-request-id": true,
-        "x-sdkwork-permission": "iam.tenant_applications.update",
+        "x-sdkwork-permission": "iam.installations.update",
         "x-sdkwork-required-surface": "organizationMember"
       }
     },
@@ -30075,7 +30076,7 @@
           }
         }
       },
-      "IamTenantApplicationManagementProvisionCommand": {
+      "IamInstallationManagementProvisionCommand": {
         "type": "object",
         "additionalProperties": false,
         "description": "Provision a tenant installation from the deploy application it serves plus explicit attributes, through an authenticated operator workflow. Application templates are retired, so no template reference is accepted.",
@@ -30175,7 +30176,7 @@
           }
         }
       },
-      "IamTenantApplicationManagementUpdateCommand": {
+      "IamInstallationManagementUpdateCommand": {
         "type": "object",
         "additionalProperties": false,
         "description": "Update operator-managed tenant application domain and access permissions.",
@@ -30195,13 +30196,13 @@
           }
         }
       },
-      "IamTenantApplicationStatusCommand": {
+      "IamInstallationStatusCommand": {
         "type": "object",
         "additionalProperties": false,
         "description": "Authenticated operator command for a tenant application status transition.",
         "properties": {}
       },
-      "AppbaseTenantApplicationProvisionCommand": {
+      "AppbaseInstallationProvisionCommand": {
         "type": "object",
         "additionalProperties": true,
         "description": "Provision a tenant installation from the deploy application it serves plus explicit attributes. Application templates are retired, so no template reference is accepted.",
@@ -30307,7 +30308,7 @@
           }
         }
       },
-      "AppbaseTenantApplicationUpdateCommand": {
+      "AppbaseInstallationUpdateCommand": {
         "type": "object",
         "additionalProperties": true,
         "description": "Update tenant application access and runtime configuration.",
@@ -30352,7 +30353,7 @@
           }
         }
       },
-      "AppbaseTenantApplicationEnableCommand": {
+      "AppbaseInstallationEnableCommand": {
         "type": "object",
         "additionalProperties": true,
         "description": "Enable a provisioned tenant application before access credential issuance.",
@@ -30416,7 +30417,7 @@
           "organizationId": {
             "type": "string"
           },
-          "tenantApplicationId": {
+          "installationId": {
             "type": "string"
           },
           "appId": {
@@ -30440,11 +30441,11 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "tenantApplicationId"
+          "installationId"
         ],
         "description": "Create a one-time-returned workload credential bound to a service account and tenant application.",
         "properties": {
-          "tenantApplicationId": {
+          "installationId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 255

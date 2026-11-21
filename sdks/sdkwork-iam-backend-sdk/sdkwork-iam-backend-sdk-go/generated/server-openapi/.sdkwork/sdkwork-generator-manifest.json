@@ -20,11 +20,11 @@
     },
     {
       "path": "api/iam_oauth.go",
-      "sha256": "4a0c920db6375ce713bb563e06ebe03ecc61a5f2bcc16bcc6bc205b282ec7ac4"
+      "sha256": "55579b044198ee82e0d6c87bfaf59d4b181a899be589ed4e5e3688f934f7ea5b"
     },
     {
       "path": "api/iam.go",
-      "sha256": "24c39cdef682e593f70435cac43ce2ff3748c45e2e00876780a19ae5e498d58e"
+      "sha256": "4a957c3082f3e29b2d96bb6bfff01f1164b00f9779874ee47ae70c8952049286"
     },
     {
       "path": "api/paths.go",
@@ -80,23 +80,23 @@
     },
     {
       "path": "types/appbase_access_credential_create_command.go",
-      "sha256": "b1e3869774499c86d024f41ab277aecedccb1c1f31ec53356af618405331c93f"
+      "sha256": "e555d3bae4247055d2d1c19abcedf51a58067db8162cef2e88232dcf7e632bb4"
+    },
+    {
+      "path": "types/appbase_installation_enable_command.go",
+      "sha256": "0babd69f16e394b384610f0ea8a2b86f9dba3ff4545eef54c568fb989d4b2933"
+    },
+    {
+      "path": "types/appbase_installation_provision_command.go",
+      "sha256": "fd79616bbf7af3d844bf57be8ed367721d40f84e48cee19dc908c7d7e2a7c806"
+    },
+    {
+      "path": "types/appbase_installation_update_command.go",
+      "sha256": "97cdd925befd7bb60490d97f710b34dc61f337c15a09a1816388a457e2891a36"
     },
     {
       "path": "types/appbase_operation_command.go",
       "sha256": "94a49b82c73506dd6c5e6627496542598783f21a3eb69834809dc8ffd5011c3e"
-    },
-    {
-      "path": "types/appbase_tenant_application_enable_command.go",
-      "sha256": "6cb97a5d543ca6f922da1e1f2993c3b964c209439c13a2d15e710abb658eb544"
-    },
-    {
-      "path": "types/appbase_tenant_application_provision_command.go",
-      "sha256": "8d37b92279c01e4d5047c50ddd950df9115e1dd2f7f9bd14f91214b09eabe001"
-    },
-    {
-      "path": "types/appbase_tenant_application_update_command.go",
-      "sha256": "a9f2841e6f95b77507976d81ab1fe9b814fb20239374c95d507bcd33b385efcc"
     },
     {
       "path": "types/common.go",
@@ -151,20 +151,20 @@
       "sha256": "3aa70be32e3da5e1dac337073d8fabe007919adf8d4454ebe3abb1a5e4a4e43f"
     },
     {
+      "path": "types/iam_installation_management_provision_command.go",
+      "sha256": "796a80ed06e1f6049c3a1a80ae4e6e83eed524d0bb537c699faebfc329e44a40"
+    },
+    {
+      "path": "types/iam_installation_management_update_command.go",
+      "sha256": "270e739d32b428ede9f550fd6489ea459a01e7b9be05e76b1f8b4420db355a43"
+    },
+    {
+      "path": "types/iam_installation_status_command.go",
+      "sha256": "6bdd8c2da2e41daad946b6ca26139cd411bd0cae4c3eb0e2941241414a81e05d"
+    },
+    {
       "path": "types/iam_oauth_client_create_command.go",
       "sha256": "09c7533ac498bb5a8e1552512a5346ad790697943943964c9b9cdfd8967d69d0"
-    },
-    {
-      "path": "types/iam_tenant_application_management_provision_command.go",
-      "sha256": "c564b0f972fe2d546467972dda32c3db61506c3830036bc72666a53a7126264d"
-    },
-    {
-      "path": "types/iam_tenant_application_management_update_command.go",
-      "sha256": "896b3b4c96d59396ced44469fd2afbe351adf48fc225bb5812ca9a222f439833"
-    },
-    {
-      "path": "types/iam_tenant_application_status_command.go",
-      "sha256": "6c34c17b270833d175cd20a9d972f66f0f40e07f914950f67edaeaba613030a2"
     },
     {
       "path": "types/page_info.go",
@@ -208,7 +208,7 @@
     },
     {
       "path": "types/service_account_credential_create_command.go",
-      "sha256": "c57cdfcad1644fc446e80d5cdd0c6813c44197ec324734375e27a0c8e0629d22"
+      "sha256": "4e83869c4126eabd3648e577b2b78d8ba819b4b0e20d2e1ad96cd3579ac3a01a"
     },
     {
       "path": "types/service_account_credential_revoke_command.go",

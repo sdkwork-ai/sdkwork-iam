@@ -33,15 +33,15 @@ class OauthApi(private val client: HttpClient) {
     }
 
     /** Authorizations create. */
-    suspend fun authorizationsCreate(body: AuthorizationsCreateRequest): AuthorizationsCreateResponse? {
+    suspend fun authorizationsCreate(body: AuthorizationsCreateRequest): AuthorizationsCreateResponse201? {
         val raw = client.request("POST", ApiPaths.appPath("/oauth/authorizations"), body, null, null, "application/json", true, false)
-        return client.convertValue(raw, object : TypeReference<AuthorizationsCreateResponse>() {})
+        return client.convertValue(raw, object : TypeReference<AuthorizationsCreateResponse201>() {})
     }
 
     /** Authorizations completions create. */
-    suspend fun authorizationsCompletionsCreate(authorizationStateId: String, body: AuthorizationsCompletionsCreateRequest): AuthorizationsCompletionsCreateResponse? {
+    suspend fun authorizationsCompletionsCreate(authorizationStateId: String, body: AuthorizationsCompletionsCreateRequest): AuthorizationsCompletionsCreateResponse201? {
         val raw = client.post(ApiPaths.appPath("/oauth/authorizations/${serializePathParameter(authorizationStateId, PathParameterSpec("authorizationStateId", "simple", false))}/completions"), body, null, null, "application/json")
-        return client.convertValue(raw, object : TypeReference<AuthorizationsCompletionsCreateResponse>() {})
+        return client.convertValue(raw, object : TypeReference<AuthorizationsCompletionsCreateResponse201>() {})
     }
 
     /** Callbacks retrieve. */
@@ -57,9 +57,9 @@ class OauthApi(private val client: HttpClient) {
     }
 
     /** Desktop Sessions create. */
-    suspend fun desktopSessionsCreate(body: DesktopSessionsCreateRequest): DesktopSessionsCreateResponse? {
+    suspend fun desktopSessionsCreate(body: DesktopSessionsCreateRequest): DesktopSessionsCreateResponse201? {
         val raw = client.request("POST", ApiPaths.appPath("/oauth/desktop_sessions"), body, null, null, "application/json", true, false)
-        return client.convertValue(raw, object : TypeReference<DesktopSessionsCreateResponse>() {})
+        return client.convertValue(raw, object : TypeReference<DesktopSessionsCreateResponse201>() {})
     }
 
     /** Device Authorizations create. */
@@ -163,27 +163,6 @@ class OauthApi(private val client: HttpClient) {
     /** Sessions create. */
     suspend fun sessionsCreate(body: AppbaseSessionCreateCommand): SdkWorkResourceResponse? {
         val raw = client.request("POST", ApiPaths.appPath("/oauth/sessions"), body, null, null, "application/json", false, true)
-        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
-    }
-
-    /** Wechat Payment Oauth callback. */
-    suspend fun wechatPaymentOauthCallback(): SdkWorkResourceResponse? {
-        val raw = client.request("GET", ApiPaths.appPath("/oauth/wechat/payment/callback"), null, null, null, null, true, false)
-        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
-    }
-
-    /** Wechat Payment Oauth cashier Start. */
-    suspend fun wechatPaymentOauthCashierStart(): SdkWorkResourceResponse? {
-        val raw = client.request("GET", ApiPaths.appPath("/oauth/wechat/payment/cashier/start"), null, null, null, null, true, false)
-        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
-    }
-
-    /** Wechat Payment Oauth start. */
-    suspend fun wechatPaymentOauthStart(redirect: String): SdkWorkResourceResponse? {
-        val query = buildQueryString(listOf(
-            QueryParameterSpec("redirect", redirect, "form", true, false, null)
-        ))
-        val raw = client.get(ApiPaths.appendQueryString(ApiPaths.appPath("/oauth/wechat/payment/start"), query))
         return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 

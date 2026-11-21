@@ -36,7 +36,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "4d100b50549f2665501062deaa76b1b0d3aa1296237cd184dde6250eacef1e00"
+      "sha256": "2ff38b199f3b1f2dd6efbfc71324b07d6f3e5c946858e093bd819cfb5fac01dc"
     },
     {
       "path": "sdkwork-sdk.json",
@@ -52,15 +52,15 @@
     },
     {
       "path": "Sources/API/AuthApi.swift",
-      "sha256": "02aedf8916d66efdb0efea8e80bbab3bb25bad51b6ba49c545b60f01824ca615"
+      "sha256": "15badbc9b52708f804bb199ee921dafe767008288c4e70a0c6aa0df95f4bd799"
     },
     {
       "path": "Sources/API/IamApi.swift",
-      "sha256": "17a07954704e023cfdbf4c238a0a9a5b91663f2f85174a9157debac89487ea2a"
+      "sha256": "2618abb96279cc03576a01a3e2776e9ef44cfd607c843a6116fdd95f56879f47"
     },
     {
       "path": "Sources/API/OauthApi.swift",
-      "sha256": "e13aba06079badb2a886d3f8cd385d34273ef7ef634b1b852f9cc426b71ded02"
+      "sha256": "ebe6b5692bd6763bb2ffb209e3bd2f5c8a5b727f0b7e5fba1081614054c8042f"
     },
     {
       "path": "Sources/API/SystemApi.swift",
@@ -72,7 +72,7 @@
     },
     {
       "path": "Sources/Models.swift",
-      "sha256": "b6b438e2fe3731fdd4ae7155cd6fe3ece35caf40c3346405a0c649525a25d593"
+      "sha256": "8c938549a9b044cb71599ea720f69b7ebe46052f65e8608e4b1f215f9f2909bb"
     },
     {
       "path": "Sources/SdkworkAppClient.swift",

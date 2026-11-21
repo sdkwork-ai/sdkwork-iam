@@ -390,6 +390,16 @@ module Sdkwork
             result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 
+          # Iam oauth operator Platforms component Credentials create.
+          def operator_platforms_component_credentials_create(operator_platform_id, body: nil)
+            path = interpolate_path('/backend/v3/api/iam/oauth/operator_platforms/{operatorPlatformId}/component_credentials', operatorPlatformId: serialize_path_parameter(operator_platform_id, PathParameterSpec.new('operatorPlatformId', 'simple', false)))
+            payload = body
+            options = {}
+            options[:json] = payload unless payload.nil?
+            result = @client.request('POST', path, **options)
+            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
+          end
+
           # Iam oauth operator Platforms pre Authorizations create.
           def operator_platforms_pre_authorizations_create(operator_platform_id, body: nil)
             path = interpolate_path('/backend/v3/api/iam/oauth/operator_platforms/{operatorPlatformId}/pre_authorizations', operatorPlatformId: serialize_path_parameter(operator_platform_id, PathParameterSpec.new('operatorPlatformId', 'simple', false)))

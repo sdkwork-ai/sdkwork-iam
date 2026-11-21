@@ -7,7 +7,7 @@ import (
 
 type SdkworkCustomClient struct {
     http *sdkhttp.Client
-    IamOauth *api.IamOauthApi
+
 }
 
 func NewSdkworkCustomClient(baseURL string) *SdkworkCustomClient {
@@ -19,7 +19,7 @@ func NewSdkworkCustomClientWithConfig(config sdkhttp.Config) *SdkworkCustomClien
     client := sdkhttp.NewClient(config)
     return &SdkworkCustomClient{
         http: client,
-        IamOauth: api.NewIamOauthApi(client),
+
     }
 }
 

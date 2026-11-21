@@ -9,7 +9,7 @@ import type { SdkworkDeploymentMode, SdkworkRuntimeEnvironment } from "@sdkwork/
  * this value: a provisioning command that omits it fails closed instead of
  * inheriting one.
  */
-export const IAM_TENANT_APPLICATION_TYPES = [
+export const IAM_APPLICATION_TYPES = [
   "api",
   "h5",
   "pc",
@@ -22,7 +22,24 @@ export const IAM_TENANT_APPLICATION_TYPES = [
   "other",
 ] as const;
 
-export type IamTenantApplicationType = (typeof IAM_TENANT_APPLICATION_TYPES)[number];
+export type IamApplicationType = (typeof IAM_APPLICATION_TYPES)[number];
+
+/**
+ * Release scope of one installation (`APPLICATION_IDENTITY_SPEC.md` §4.1).
+ *
+ * The installation is the authority: the level is chosen at publication time,
+ * stored on the row, and immutable afterwards. It decides the access token's
+ * `ownership_scope` claim and the data-plane isolation key, so a bootstrap that
+ * omits it creates a `TENANT` installation and cannot widen it later.
+ */
+export const IAM_INSTALLATION_OWNERSHIP_SCOPES = [
+  "TENANT",
+  "ORGANIZATION",
+  "USER",
+] as const;
+
+export type IamInstallationOwnershipScope =
+  (typeof IAM_INSTALLATION_OWNERSHIP_SCOPES)[number];
 
 export interface IamApplicationBootstrapAuth {
   authToken?: string;
@@ -60,7 +77,7 @@ export interface IamApplicationBootstrapProvisionInput {
   /** Access permissions granted to the installation; an empty array is a valid explicit choice. */
   accessPermissions?: string[] | null;
   /** Product-semantic application type; required by the provisioning API. */
-  applicationType: IamTenantApplicationType;
+  applicationType: IamApplicationType;
   /** Deploy application this installation serves; the identity every access token carries. */
   deployApplicationId: string;
   displayName?: string;
@@ -69,6 +86,10 @@ export interface IamApplicationBootstrapProvisionInput {
   organizationId?: string;
   /** Installation primary domain; optional. */
   primaryDomain?: string;
+  /** Release scope of the installation; defaults to `TENANT` and is immutable afterwards. */
+  ownershipScope?: IamInstallationOwnershipScope;
+  /** Owner of a `USER` installation; required for `USER` and absent otherwise. */
+  ownerUserId?: string;
   /** Replay-safe provisioning key; derived deterministically when omitted. */
   provisioningIdempotencyKey?: string;
   /** Explicit runtime config, including `oauth.relyingParty`; absent registers none. */
@@ -83,36 +104,44 @@ export interface IamApplicationBootstrapProvisionInput {
  * index signature admits `authToken`/`username`/`email`/`phone`/`password`
  * without widening every field to `unknown`.
  */
-export interface IamTenantApplicationProvisionCommand {
+export interface IamInstallationProvisionCommand {
   [key: string]: unknown;
   accessPermissions?: string[] | null;
-  applicationType: IamTenantApplicationType;
+  applicationType: IamApplicationType;
   deployApplicationId: string;
   displayName: string;
   environment: string;
   instanceKey: string;
   organizationId: string;
+  ownershipScope?: IamInstallationOwnershipScope;
+  ownerUserId?: string;
   primaryDomain?: string;
   provisioningIdempotencyKey: string;
   runtimeConfig?: Record<string, unknown>;
   tenantId: string;
 }
 
-export interface ProvisionedTenantApplicationResult {
-  tenantApplicationId?: string;
+export interface ProvisionedInstallationResult {
+  installationId?: string;
   appId?: string;
   tenantId?: string;
   organizationId?: string;
   status?: string;
   applicationType?: string;
   deployApplicationId?: string;
+  ownershipScope?: string;
+  ownerUserId?: string | null;
   instanceKey?: string;
+  displayName?: string;
+  environment?: string;
+  accessPermissions?: string[] | null;
+  oauthRelyingParty?: Record<string, unknown> | null;
   primaryDomain?: string;
   [key: string]: unknown;
 }
 
-export interface EnabledTenantApplicationResult {
-  tenantApplicationId?: string;
+export interface EnabledInstallationResult {
+  installationId?: string;
   appId?: string;
   status?: string;
   [key: string]: unknown;
@@ -124,7 +153,7 @@ export interface IssuedAccessCredentialResult {
   authToken?: string;
   tenantId?: string;
   organizationId?: string;
-  tenantApplicationId?: string;
+  installationId?: string;
   appId?: string;
   sessionId?: string;
   expiresAt?: string;
@@ -133,17 +162,17 @@ export interface IssuedAccessCredentialResult {
 
 export interface IamApplicationBootstrapClient {
   createAccessCredential(body: Record<string, unknown>): Promise<IssuedAccessCredentialResult>;
-  enableTenantApplication(
-    tenantApplicationId: string,
+  enableInstallation(
+    installationId: string,
     body?: Record<string, unknown>,
-  ): Promise<EnabledTenantApplicationResult>;
-  provisionTenantApplication(
-    body: IamTenantApplicationProvisionCommand,
-  ): Promise<ProvisionedTenantApplicationResult>;
-  updateTenantApplication?(
-    tenantApplicationId: string,
+  ): Promise<EnabledInstallationResult>;
+  provisionInstallation(
+    body: IamInstallationProvisionCommand,
+  ): Promise<ProvisionedInstallationResult>;
+  updateInstallation?(
+    installationId: string,
     body?: Record<string, unknown>,
-  ): Promise<ProvisionedTenantApplicationResult>;
+  ): Promise<ProvisionedInstallationResult>;
 }
 
 export interface SdkworkAppManifest {
@@ -247,7 +276,7 @@ export interface ApplicationBootstrapFromCommandInput {
   auth: IamApplicationBootstrapAuth;
   client: IamApplicationBootstrapClient;
   /** Complete deploy-application provisioning command (no manifest involved). */
-  command: IamTenantApplicationProvisionCommand;
+  command: IamInstallationProvisionCommand;
   /** Replay cache for provisioning idempotency keys (shared by a module instance). */
   provisioningCache?: IamApplicationBootstrapReplayCache;
   /** Optional version label reported in the bootstrap result. */
@@ -257,15 +286,15 @@ export interface ApplicationBootstrapFromCommandInput {
 export interface ApplicationBootstrapResult {
   accessCredential?: string;
   appId?: string;
-  applicationType: IamTenantApplicationType;
+  applicationType: IamApplicationType;
   authToken?: string;
   deployApplicationId: string;
-  enabled: EnabledTenantApplicationResult;
+  enabled: EnabledInstallationResult;
   env: Record<string, string>;
   issued: IssuedAccessCredentialResult;
   provisioningIdempotencyKey: string;
-  provisioned: ProvisionedTenantApplicationResult;
-  tenantApplicationId: string;
+  provisioned: ProvisionedInstallationResult;
+  installationId: string;
   version?: string;
 }
 
@@ -295,17 +324,17 @@ export interface IamApplicationBootstrapModule {
   bootstrapDeployApplication(input: ApplicationBootstrapFromCommandInput): Promise<ApplicationBootstrapResult>;
   bootstrapFromManifest(input: ApplicationBootstrapFromManifestInput): Promise<ApplicationBootstrapResult>;
   createAccessCredential(body: Record<string, unknown>): Promise<IssuedAccessCredentialResult>;
-  enableTenantApplication(
-    tenantApplicationId: string,
+  enableInstallation(
+    installationId: string,
     body?: Record<string, unknown>,
-  ): Promise<EnabledTenantApplicationResult>;
+  ): Promise<EnabledInstallationResult>;
   name: "@sdkwork/iam-application-bootstrap";
-  provisionTenantApplication(
-    body: IamTenantApplicationProvisionCommand,
-  ): Promise<ProvisionedTenantApplicationResult>;
-  updateTenantApplication?(
-    tenantApplicationId: string,
+  provisionInstallation(
+    body: IamInstallationProvisionCommand,
+  ): Promise<ProvisionedInstallationResult>;
+  updateInstallation?(
+    installationId: string,
     body?: Record<string, unknown>,
-  ): Promise<ProvisionedTenantApplicationResult>;
+  ): Promise<ProvisionedInstallationResult>;
   version: "0.1.0";
 }

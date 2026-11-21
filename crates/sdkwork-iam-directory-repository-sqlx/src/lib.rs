@@ -59,6 +59,8 @@ impl IamTables {
     pub const OAUTH_ACCOUNT_LINK: &'static str = "iam_oauth_account_link";
     pub const OAUTH_GRANT: &'static str = "iam_oauth_grant";
     pub const OAUTH_CALLBACK_EVENT: &'static str = "iam_oauth_callback_event";
+    pub const OAUTH_AUTHORIZER_INBOX: &'static str = "iam_oauth_authorizer_inbox";
+    pub const OAUTH_CHANNEL_CALLBACK_EVENT: &'static str = "iam_oauth_channel_callback_event";
     pub const OAUTH_DIAGNOSTIC_RUN: &'static str = "iam_oauth_diagnostic_run";
     pub const OAUTH_SCAN_LOGIN_CONFIG: &'static str = "iam_oauth_scan_login_config";
     pub const EPHEMERAL_ARTIFACT: &'static str = "iam_ephemeral_artifact";

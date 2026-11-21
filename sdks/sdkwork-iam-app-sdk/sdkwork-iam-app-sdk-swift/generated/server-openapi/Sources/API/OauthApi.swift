@@ -30,13 +30,13 @@ public class OauthApi {
     }
 
     /// Authorizations create.
-    public func authorizationsCreate(body: AuthorizationsCreateRequest) async throws -> AuthorizationsCreateResponse? {
-        return try await client.request("POST", ApiPaths.appPath("/oauth/authorizations"), body: body, params: nil, headers: nil, contentType: "application/json", skipAuth: true, responseType: AuthorizationsCreateResponse.self)
+    public func authorizationsCreate(body: AuthorizationsCreateRequest) async throws -> AuthorizationsCreateResponse201? {
+        return try await client.request("POST", ApiPaths.appPath("/oauth/authorizations"), body: body, params: nil, headers: nil, contentType: "application/json", skipAuth: true, responseType: AuthorizationsCreateResponse201.self)
     }
 
     /// Authorizations completions create.
-    public func authorizationsCompletionsCreate(authorizationStateId: String, body: AuthorizationsCompletionsCreateRequest) async throws -> AuthorizationsCompletionsCreateResponse? {
-        return try await client.post(ApiPaths.appPath("/oauth/authorizations/\(serializePathParameter(authorizationStateId, PathParameterSpec(name: "authorizationStateId", style: "simple", explode: false)))/completions"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AuthorizationsCompletionsCreateResponse.self)
+    public func authorizationsCompletionsCreate(authorizationStateId: String, body: AuthorizationsCompletionsCreateRequest) async throws -> AuthorizationsCompletionsCreateResponse201? {
+        return try await client.post(ApiPaths.appPath("/oauth/authorizations/\(serializePathParameter(authorizationStateId, PathParameterSpec(name: "authorizationStateId", style: "simple", explode: false)))/completions"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: AuthorizationsCompletionsCreateResponse201.self)
     }
 
     /// Callbacks retrieve.
@@ -50,8 +50,8 @@ public class OauthApi {
     }
 
     /// Desktop Sessions create.
-    public func desktopSessionsCreate(body: DesktopSessionsCreateRequest) async throws -> DesktopSessionsCreateResponse? {
-        return try await client.request("POST", ApiPaths.appPath("/oauth/desktop_sessions"), body: body, params: nil, headers: nil, contentType: "application/json", skipAuth: true, responseType: DesktopSessionsCreateResponse.self)
+    public func desktopSessionsCreate(body: DesktopSessionsCreateRequest) async throws -> DesktopSessionsCreateResponse201? {
+        return try await client.request("POST", ApiPaths.appPath("/oauth/desktop_sessions"), body: body, params: nil, headers: nil, contentType: "application/json", skipAuth: true, responseType: DesktopSessionsCreateResponse201.self)
     }
 
     /// Device Authorizations create.
@@ -143,24 +143,6 @@ public class OauthApi {
     /// Sessions create.
     public func sessionsCreate(body: AppbaseSessionCreateCommand) async throws -> SdkWorkResourceResponse? {
         return try await client.request("POST", ApiPaths.appPath("/oauth/sessions"), body: body, params: nil, headers: nil, contentType: "application/json", accessTokenOnly: true, responseType: SdkWorkResourceResponse.self)
-    }
-
-    /// Wechat Payment Oauth callback.
-    public func wechatPaymentOauthCallback() async throws -> SdkWorkResourceResponse? {
-        return try await client.request("GET", ApiPaths.appPath("/oauth/wechat/payment/callback"), body: nil, params: nil, headers: nil, skipAuth: true, responseType: SdkWorkResourceResponse.self)
-    }
-
-    /// Wechat Payment Oauth cashier Start.
-    public func wechatPaymentOauthCashierStart() async throws -> SdkWorkResourceResponse? {
-        return try await client.request("GET", ApiPaths.appPath("/oauth/wechat/payment/cashier/start"), body: nil, params: nil, headers: nil, skipAuth: true, responseType: SdkWorkResourceResponse.self)
-    }
-
-    /// Wechat Payment Oauth start.
-    public func wechatPaymentOauthStart(redirect: String) async throws -> SdkWorkResourceResponse? {
-        let query = buildQueryString([
-            QueryParameterSpec(name: "redirect", value: redirect, style: "form", explode: true, allowReserved: false, contentType: nil)
-        ])
-        return try await client.get(ApiPaths.appendQueryString(ApiPaths.appPath("/oauth/wechat/payment/start"), query), responseType: SdkWorkResourceResponse.self)
     }
 
     private struct PathParameterSpec {

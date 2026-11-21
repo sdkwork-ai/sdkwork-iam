@@ -287,6 +287,55 @@ class IamApi {
     await _client.delete(ApiPaths.backendPath('/iam/groups/${serializePathParameter(groupId, const PathParameterSpec('groupId', 'simple', false))}/members/${serializePathParameter(memberId, const PathParameterSpec('memberId', 'simple', false))}'));
   }
 
+  /// Installations create.
+  Future<SdkWorkResourceResponse?> installationsCreate(AppbaseInstallationProvisionCommand body) async {
+    final payload = body.toJson();
+    final response = await _client.request('POST', ApiPaths.backendPath('/iam/installations'), body: payload, contentType: 'application/json', skipAuth: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Installations retrieve.
+  Future<SdkWorkResourceResponse?> installationsRetrieve(String installationId) async {
+    final response = await _client.get(ApiPaths.backendPath('/iam/installations/${serializePathParameter(installationId, const PathParameterSpec('installationId', 'simple', false))}'));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Installations update.
+  Future<SdkWorkResourceResponse?> installationsUpdate(String installationId, [AppbaseInstallationUpdateCommand? body]) async {
+    final payload = body?.toJson();
+    final response = await _client.request('PATCH', ApiPaths.backendPath('/iam/installations/${serializePathParameter(installationId, const PathParameterSpec('installationId', 'simple', false))}'), body: payload, contentType: 'application/json', skipAuth: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
+  /// Installations enable.
+  Future<SdkWorkCommandResponse?> installationsEnable(String installationId, AppbaseInstallationEnableCommand body) async {
+    final payload = body.toJson();
+    final response = await _client.request('POST', ApiPaths.backendPath('/iam/installations/${serializePathParameter(installationId, const PathParameterSpec('installationId', 'simple', false))}/enable'), body: payload, contentType: 'application/json', skipAuth: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkCommandResponse.fromJson(map);
+    })();
+  }
+
+  /// Installations management by Deploy Application disable.
+  Future<SdkWorkCommandResponse?> installationsManagementByDeployApplicationDisable(String deployApplicationId, Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.request('POST', ApiPaths.backendPath('/iam/installations/by_deploy_application/${serializePathParameter(deployApplicationId, const PathParameterSpec('deployApplicationId', 'simple', false))}/disable'), body: payload, contentType: 'application/json', skipAuth: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkCommandResponse.fromJson(map);
+    })();
+  }
+
   /// Organization Memberships list.
   Future<SdkWorkListResponse?> organizationMembershipsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
@@ -567,13 +616,13 @@ class IamApi {
       QueryParameterSpec('cursor', cursor, 'form', true, false, null),
       QueryParameterSpec('sort', sort, 'form', true, false, null),
       QueryParameterSpec('q', q, 'form', true, false, null),
-      QueryParameterSpec('vendorCode', vendorCode, 'form', true, false, null),
-      QueryParameterSpec('scopeType', scopeType, 'form', true, false, null),
-      QueryParameterSpec('ownerUserId', ownerUserId, 'form', true, false, null),
-      QueryParameterSpec('organizationId', organizationId, 'form', true, false, null),
+      QueryParameterSpec('vendor_code', vendorCode, 'form', true, false, null),
+      QueryParameterSpec('scope_type', scopeType, 'form', true, false, null),
+      QueryParameterSpec('owner_user_id', ownerUserId, 'form', true, false, null),
+      QueryParameterSpec('organization_id', organizationId, 'form', true, false, null),
       QueryParameterSpec('status', status, 'form', true, false, null),
       QueryParameterSpec('mine', mine, 'form', true, false, null),
-      QueryParameterSpec('includePlatform', includePlatform, 'form', true, false, null)
+      QueryParameterSpec('include_platform', includePlatform, 'form', true, false, null)
     ]);
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/provider_accounts'), query));
     return (() {
@@ -642,8 +691,8 @@ class IamApi {
     })();
   }
 
-  /// Provider Accounts credentials reveal.
-  Future<SdkWorkResourceResponse?> providerAccountsCredentialsReveal(String providerAccountId) async {
+  /// Provider Accounts credentials reveal retrieve.
+  Future<SdkWorkResourceResponse?> providerAccountsCredentialsRevealRetrieve(String providerAccountId) async {
     final response = await _client.get(ApiPaths.backendPath('/iam/provider_accounts/${serializePathParameter(providerAccountId, const PathParameterSpec('providerAccountId', 'simple', false))}/credentials/reveal'));
     return (() {
       final map = sdkworkResponseAsMap(response);
@@ -651,8 +700,8 @@ class IamApi {
     })();
   }
 
-  /// Provider Accounts set Default.
-  Future<SdkWorkResourceResponse?> providerAccountsSetDefault(String providerAccountId, Map<String, dynamic> body) async {
+  /// Provider Accounts default.
+  Future<SdkWorkResourceResponse?> providerAccountsDefault(String providerAccountId, Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.backendPath('/iam/provider_accounts/${serializePathParameter(providerAccountId, const PathParameterSpec('providerAccountId', 'simple', false))}/default'), body: payload, contentType: 'application/json');
     return (() {
@@ -661,16 +710,9 @@ class IamApi {
     })();
   }
 
-  /// Provider Accounts resolve.
-  Future<SdkWorkResourceResponse?> providerAccountsResolve(String vendorCode, [String? capabilityCode, String? environment, String? userId, String? organizationId]) async {
-    final query = buildQueryString([
-      QueryParameterSpec('vendorCode', vendorCode, 'form', true, false, null),
-      QueryParameterSpec('capabilityCode', capabilityCode, 'form', true, false, null),
-      QueryParameterSpec('environment', environment, 'form', true, false, null),
-      QueryParameterSpec('userId', userId, 'form', true, false, null),
-      QueryParameterSpec('organizationId', organizationId, 'form', true, false, null)
-    ]);
-    final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/provider_accounts/resolve'), query));
+  /// Provider Accounts resolve retrieve.
+  Future<SdkWorkResourceResponse?> providerAccountsResolveRetrieve() async {
+    final response = await _client.get(ApiPaths.backendPath('/iam/provider_accounts/resolve'));
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkResourceResponse.fromJson(map);
@@ -695,11 +737,11 @@ class IamApi {
       QueryParameterSpec('cursor', cursor, 'form', true, false, null),
       QueryParameterSpec('sort', sort, 'form', true, false, null),
       QueryParameterSpec('q', q, 'form', true, false, null),
-      QueryParameterSpec('roleId', roleId, 'form', true, false, null),
-      QueryParameterSpec('principalKind', principalKind, 'form', true, false, null),
-      QueryParameterSpec('principalId', principalId, 'form', true, false, null),
-      QueryParameterSpec('scopeKind', scopeKind, 'form', true, false, null),
-      QueryParameterSpec('scopeId', scopeId, 'form', true, false, null)
+      QueryParameterSpec('role_id', roleId, 'form', true, false, null),
+      QueryParameterSpec('principal_kind', principalKind, 'form', true, false, null),
+      QueryParameterSpec('principal_id', principalId, 'form', true, false, null),
+      QueryParameterSpec('scope_kind', scopeKind, 'form', true, false, null),
+      QueryParameterSpec('scope_id', scopeId, 'form', true, false, null)
     ]);
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/role_bindings'), query));
     return (() {
@@ -909,45 +951,6 @@ class IamApi {
     })();
   }
 
-  /// Tenant Applications create.
-  Future<SdkWorkResourceResponse?> tenantApplicationsCreate(AppbaseTenantApplicationProvisionCommand body) async {
-    final payload = body.toJson();
-    final response = await _client.request('POST', ApiPaths.backendPath('/iam/tenant_applications'), body: payload, contentType: 'application/json', skipAuth: true);
-    return (() {
-      final map = sdkworkResponseAsMap(response);
-      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
-    })();
-  }
-
-  /// Tenant Applications retrieve.
-  Future<SdkWorkResourceResponse?> tenantApplicationsRetrieve(String tenantApplicationId) async {
-    final response = await _client.get(ApiPaths.backendPath('/iam/tenant_applications/${serializePathParameter(tenantApplicationId, const PathParameterSpec('tenantApplicationId', 'simple', false))}'));
-    return (() {
-      final map = sdkworkResponseAsMap(response);
-      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
-    })();
-  }
-
-  /// Tenant Applications update.
-  Future<SdkWorkResourceResponse?> tenantApplicationsUpdate(String tenantApplicationId, [AppbaseTenantApplicationUpdateCommand? body]) async {
-    final payload = body?.toJson();
-    final response = await _client.request('PATCH', ApiPaths.backendPath('/iam/tenant_applications/${serializePathParameter(tenantApplicationId, const PathParameterSpec('tenantApplicationId', 'simple', false))}'), body: payload, contentType: 'application/json', skipAuth: true);
-    return (() {
-      final map = sdkworkResponseAsMap(response);
-      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
-    })();
-  }
-
-  /// Tenant Applications enable.
-  Future<SdkWorkCommandResponse?> tenantApplicationsEnable(String tenantApplicationId, AppbaseTenantApplicationEnableCommand body) async {
-    final payload = body.toJson();
-    final response = await _client.request('POST', ApiPaths.backendPath('/iam/tenant_applications/${serializePathParameter(tenantApplicationId, const PathParameterSpec('tenantApplicationId', 'simple', false))}/enable'), body: payload, contentType: 'application/json', skipAuth: true);
-    return (() {
-      final map = sdkworkResponseAsMap(response);
-      return map == null ? null : SdkWorkCommandResponse.fromJson(map);
-    })();
-  }
-
   /// Tenants list.
   Future<SdkWorkListResponse?> tenantsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
@@ -998,8 +1001,8 @@ class IamApi {
     })();
   }
 
-  /// Tenant Applications list.
-  Future<SdkWorkListResponse?> tenantApplicationsList(String tenantId, [int? page, int? pageSize, String? cursor, String? sort, String? q, String? status, String? environment, String? applicationType]) async {
+  /// Installations list.
+  Future<SdkWorkListResponse?> installationsList(String tenantId, [int? page, int? pageSize, String? cursor, String? sort, String? q, String? status, String? environment, String? applicationType]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -1010,56 +1013,133 @@ class IamApi {
       QueryParameterSpec('environment', environment, 'form', true, false, null),
       QueryParameterSpec('application_type', applicationType, 'form', true, false, null)
     ]);
-    final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/applications'), query));
+    final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/installations'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkListResponse.fromJson(map);
     })();
   }
 
-  /// Tenant Applications management create.
-  Future<SdkWorkResourceResponse?> tenantApplicationsManagementCreate(String tenantId, IamTenantApplicationManagementProvisionCommand body) async {
+  /// Installations management create.
+  Future<SdkWorkResourceResponse?> installationsManagementCreate(String tenantId, IamInstallationManagementProvisionCommand body) async {
     final payload = body.toJson();
-    final response = await _client.post(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/applications'), body: payload, contentType: 'application/json');
+    final response = await _client.post(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/installations'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
-  /// Tenant Applications management update.
-  Future<SdkWorkResourceResponse?> tenantApplicationsManagementUpdate(String tenantId, String tenantApplicationId, [IamTenantApplicationManagementUpdateCommand? body]) async {
+  /// Installations management update.
+  Future<SdkWorkResourceResponse?> installationsManagementUpdate(String tenantId, String installationId, [IamInstallationManagementUpdateCommand? body]) async {
     final payload = body?.toJson();
-    final response = await _client.patch(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/applications/${serializePathParameter(tenantApplicationId, const PathParameterSpec('tenantApplicationId', 'simple', false))}'), body: payload, contentType: 'application/json');
+    final response = await _client.patch(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/installations/${serializePathParameter(installationId, const PathParameterSpec('installationId', 'simple', false))}'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkResourceResponse.fromJson(map);
     })();
   }
 
-  /// Tenant Applications management disable.
-  Future<SdkWorkCommandResponse?> tenantApplicationsManagementDisable(String tenantId, String tenantApplicationId, IamTenantApplicationStatusCommand body) async {
+  /// Installations credentials list.
+  Future<IamInstallationCredentialListResponse?> installationsCredentialsList(String tenantId, String installationId, [int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+    final query = buildQueryString([
+      QueryParameterSpec('page', page, 'form', true, false, null),
+      QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
+      QueryParameterSpec('cursor', cursor, 'form', true, false, null),
+      QueryParameterSpec('sort', sort, 'form', true, false, null),
+      QueryParameterSpec('q', q, 'form', true, false, null)
+    ]);
+    final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/installations/${serializePathParameter(installationId, const PathParameterSpec('installationId', 'simple', false))}/credentials'), query));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamInstallationCredentialListResponse.fromJson(map);
+    })();
+  }
+
+  /// Installations credentials create.
+  Future<IamInstallationCredentialResponse?> installationsCredentialsCreate(String tenantId, String installationId, IamInstallationCredentialCreateCommand body) async {
     final payload = body.toJson();
-    final response = await _client.post(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/applications/${serializePathParameter(tenantApplicationId, const PathParameterSpec('tenantApplicationId', 'simple', false))}/disable'), body: payload, contentType: 'application/json');
+    final response = await _client.post(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/installations/${serializePathParameter(installationId, const PathParameterSpec('installationId', 'simple', false))}/credentials'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamInstallationCredentialResponse.fromJson(map);
+    })();
+  }
+
+  /// Installations credentials revoke.
+  Future<SdkWorkCommandResponse?> installationsCredentialsRevoke(String tenantId, String installationId, String credentialId, Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.post(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/installations/${serializePathParameter(installationId, const PathParameterSpec('installationId', 'simple', false))}/credentials/${serializePathParameter(credentialId, const PathParameterSpec('credentialId', 'simple', false))}/revoke'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkCommandResponse.fromJson(map);
     })();
   }
 
-  /// Tenant Applications management enable.
-  Future<SdkWorkCommandResponse?> tenantApplicationsManagementEnable(String tenantId, String tenantApplicationId, IamTenantApplicationStatusCommand body) async {
+  /// Installations credentials rotate.
+  Future<IamInstallationCredentialResponse?> installationsCredentialsRotate(String tenantId, String installationId, String credentialId, IamInstallationCredentialRotateCommand body) async {
     final payload = body.toJson();
-    final response = await _client.post(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/applications/${serializePathParameter(tenantApplicationId, const PathParameterSpec('tenantApplicationId', 'simple', false))}/enable'), body: payload, contentType: 'application/json');
+    final response = await _client.post(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/installations/${serializePathParameter(installationId, const PathParameterSpec('installationId', 'simple', false))}/credentials/${serializePathParameter(credentialId, const PathParameterSpec('credentialId', 'simple', false))}/rotate'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamInstallationCredentialResponse.fromJson(map);
+    })();
+  }
+
+  /// Installations management disable.
+  Future<SdkWorkCommandResponse?> installationsManagementDisable(String tenantId, String installationId, IamInstallationStatusCommand body) async {
+    final payload = body.toJson();
+    final response = await _client.post(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/installations/${serializePathParameter(installationId, const PathParameterSpec('installationId', 'simple', false))}/disable'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkCommandResponse.fromJson(map);
     })();
   }
 
-  /// Tenant Applications summary retrieve.
-  Future<SdkWorkResourceResponse?> tenantApplicationsSummaryRetrieve(String tenantId) async {
-    final response = await _client.get(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/applications/summary'));
+  /// Installations management enable.
+  Future<SdkWorkCommandResponse?> installationsManagementEnable(String tenantId, String installationId, IamInstallationStatusCommand body) async {
+    final payload = body.toJson();
+    final response = await _client.post(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/installations/${serializePathParameter(installationId, const PathParameterSpec('installationId', 'simple', false))}/enable'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkCommandResponse.fromJson(map);
+    })();
+  }
+
+  /// Installations environments list.
+  Future<IamInstallationEnvironmentListResponse?> installationsEnvironmentsList(String tenantId, String installationId, [int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+    final query = buildQueryString([
+      QueryParameterSpec('page', page, 'form', true, false, null),
+      QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
+      QueryParameterSpec('cursor', cursor, 'form', true, false, null),
+      QueryParameterSpec('sort', sort, 'form', true, false, null),
+      QueryParameterSpec('q', q, 'form', true, false, null)
+    ]);
+    final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/installations/${serializePathParameter(installationId, const PathParameterSpec('installationId', 'simple', false))}/environments'), query));
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamInstallationEnvironmentListResponse.fromJson(map);
+    })();
+  }
+
+  /// Installations environments delete.
+  Future<void> installationsEnvironmentsDelete(String tenantId, String installationId, String environmentKey) async {
+    await _client.delete(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/installations/${serializePathParameter(installationId, const PathParameterSpec('installationId', 'simple', false))}/environments/${serializePathParameter(environmentKey, const PathParameterSpec('environmentKey', 'simple', false))}'));
+  }
+
+  /// Installations environments update.
+  Future<IamInstallationEnvironmentResponse?> installationsEnvironmentsUpdate(String tenantId, String installationId, String environmentKey, IamInstallationEnvironmentUpsertCommand body) async {
+    final payload = body.toJson();
+    final response = await _client.put(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/installations/${serializePathParameter(installationId, const PathParameterSpec('installationId', 'simple', false))}/environments/${serializePathParameter(environmentKey, const PathParameterSpec('environmentKey', 'simple', false))}'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamInstallationEnvironmentResponse.fromJson(map);
+    })();
+  }
+
+  /// Installations summary retrieve.
+  Future<SdkWorkResourceResponse?> installationsSummaryRetrieve(String tenantId) async {
+    final response = await _client.get(ApiPaths.backendPath('/iam/tenants/${serializePathParameter(tenantId, const PathParameterSpec('tenantId', 'simple', false))}/installations/summary'));
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkResourceResponse.fromJson(map);

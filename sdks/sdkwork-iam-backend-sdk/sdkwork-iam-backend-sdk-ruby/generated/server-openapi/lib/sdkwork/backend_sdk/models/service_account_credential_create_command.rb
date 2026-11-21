@@ -3,11 +3,11 @@ module Sdkwork
     module Models
       class ServiceAccountCredentialCreateCommand
               # Create a one-time-returned workload credential bound to a service account and tenant application.
-              attr_accessor :tenant_application_id, :expires_at
+              attr_accessor :installation_id, :expires_at
 
               def initialize(attributes = {})
                 attributes = (attributes || {}).transform_keys(&:to_s)
-                @tenant_application_id = attributes['tenantApplicationId']
+                @installation_id = attributes['installationId']
                 @expires_at = attributes['expiresAt']
               end
 
@@ -19,7 +19,7 @@ module Sdkwork
 
               def to_hash
                 {
-                  'tenantApplicationId' => @tenant_application_id,
+                  'installationId' => @installation_id,
                   'expiresAt' => @expires_at,
                 }
               end

@@ -12,7 +12,7 @@
   "mode": "apply",
   "hasChanges": false,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "5221f16f9b14392a9ec225af519ccd91a23f35d8f09957d79843ae41b43ebcc7",
+  "changeFingerprint": "9e5dc2a98dd681f1d2768342c21c120b1b832e374c52cb60135379fea3e0a9cc",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [],
@@ -48,7 +48,7 @@
     "language": "typescript",
     "sdkType": "custom",
     "protocol": "http",
-    "outputPath": "E:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-open-sdk\\sdkwork-iam-open-sdk-typescript\\generated\\server-openapi",
+    "outputPath": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-open-sdk\\sdkwork-iam-open-sdk-typescript\\generated\\server-openapi",
     "packageName": "@sdkwork/iam-open-sdk"
   },
   "versioning": {
@@ -56,10 +56,10 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 33,
-    "models": 9,
-    "apis": 1,
-    "types": 11
+    "totalFiles": 26,
+    "models": 3,
+    "apis": 0,
+    "types": 5
   },
   "warnings": [],
   "syncSummary": {
@@ -67,10 +67,10 @@
     "controlPlaneEnabled": true,
     "writtenFiles": 0,
     "skippedScaffoldFiles": 2,
-    "skippedUnchangedGeneratedFiles": 31,
+    "skippedUnchangedGeneratedFiles": 24,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "5221f16f9b14392a9ec225af519ccd91a23f35d8f09957d79843ae41b43ebcc7",
+    "changeFingerprint": "9e5dc2a98dd681f1d2768342c21c120b1b832e374c52cb60135379fea3e0a9cc",
     "changes": {
       "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [],
@@ -86,7 +86,6 @@
         "README.md",
         "sdkwork-sdk.json",
         "src/api/base.ts",
-        "src/api/iam-oauth.ts",
         "src/api/index.ts",
         "src/api/paths.ts",
         "src/auth/index.ts",
@@ -94,17 +93,11 @@
         "src/http/index.ts",
         "src/index.ts",
         "src/sdk.ts",
-        "src/types/appbase-operation-command.ts",
         "src/types/common.ts",
         "src/types/field-error.ts",
-        "src/types/iam-oauth-provider-callbacks-create-request.ts",
-        "src/types/iam-oauth-provider-callbacks-create-response.ts",
         "src/types/index.ts",
         "src/types/problem-detail.ts",
-        "src/types/sdk-work-api-response.ts",
         "src/types/sdk-work-platform-error-code.ts",
-        "src/types/sdk-work-resource-data.ts",
-        "src/types/sdk-work-resource-response.ts",
         "tsconfig.json"
       ],
       "deletedGeneratedFiles": [],

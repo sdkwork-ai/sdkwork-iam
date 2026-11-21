@@ -21,11 +21,9 @@ $config = new SdkConfig(baseUrl: 'http://localhost:8080');
 $client = new SdkworkCustomClient($config);
 $client->setApiKey('your-api-key');
 
-$callbackPublicId = '1';
-$result = $client->iamOauth->providerCallbacksHandleGet($callbackPublicId);
+$result = $client->example->list();
 
 
-var_dump($result);
 ```
 
 ## Authentication Modes (Mutually Exclusive)
@@ -72,20 +70,11 @@ $client->setHeader('X-Custom-Header', 'value');
 
 ## API Modules
 
-- `$client->iamOauth` - iam_oauth API
+
 
 ## Usage Examples
 
-### iam_oauth
-
-```php
-<?php
-
-// Iam oauth provider Callbacks handle Get.
-$callbackPublicId = '1';
-$result = $client->iamOauth->providerCallbacksHandleGet($callbackPublicId);
-var_dump($result);
-```
+No examples available.
 
 ## Error Handling
 
@@ -100,8 +89,7 @@ $config = new SdkConfig(baseUrl: 'http://localhost:8080');
 $client = new SdkworkCustomClient($config);
 
 try {
-    $callbackPublicId = '1';
-    $client->iamOauth->providerCallbacksHandleGet($callbackPublicId);
+    $client->example->list();
 } catch (\Throwable $e) {
     echo "Error: {$e->getMessage()}\n";
 }

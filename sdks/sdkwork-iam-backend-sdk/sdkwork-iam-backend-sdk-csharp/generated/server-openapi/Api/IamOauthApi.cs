@@ -352,6 +352,14 @@ namespace SDKWork.Iam.BackendSdk.Api
         }
 
         /// <summary>
+        /// Iam oauth operator Platforms component Credentials create.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> OperatorPlatformsComponentCredentialsCreateAsync(string operatorPlatformId, Dictionary<string, object> body)
+        {
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/oauth/operator_platforms/{SerializePathParameter(operatorPlatformId, new PathParameterSpec("operatorPlatformId", "simple", false))}/component_credentials"), body, null, null, "application/json");
+        }
+
+        /// <summary>
         /// Iam oauth operator Platforms pre Authorizations create.
         /// </summary>
         public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> OperatorPlatformsPreAuthorizationsCreateAsync(string operatorPlatformId, Dictionary<string, object> body)

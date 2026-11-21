@@ -88,7 +88,7 @@ module Sdkwork
             options[:skip_auth] = true
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result
+            result.is_a?(Hash) ? Models::SdkWorkCommandResponse.from_hash(result) : nil
           end
 
           # Sessions login Context Selection create.

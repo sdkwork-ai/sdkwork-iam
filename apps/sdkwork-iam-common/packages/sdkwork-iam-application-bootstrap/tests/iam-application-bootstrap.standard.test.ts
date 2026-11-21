@@ -13,25 +13,25 @@ import {
   mergeBootstrapAuth,
   resolveBootstrapEnvironmentFromEnv,
   resolveManifestApplicationType,
-  tenantApplicationInstanceKey,
+  installationInstanceKey,
   validateManifestForBootstrap,
-  validateTenantApplicationProvisionCommand,
+  validateInstallationProvisionCommand,
 } from "../src/index";
 import type {
   ApplicationBootstrapResult,
-  IamTenantApplicationProvisionCommand,
+  IamInstallationProvisionCommand,
 } from "../src/index";
 
 type ClientMock = {
   createAccessCredential: Mock;
-  enableTenantApplication: Mock;
-  provisionTenantApplication: Mock;
+  enableInstallation: Mock;
+  provisionInstallation: Mock;
 };
 
 const TEST_ACCESS_CREDENTIAL = createTestJwt({
   tenant_id: "100001",
   organization_id: "0",
-  app_id: "app-1",
+  app_id: "demo-app",
   environment: "dev",
   deployment_mode: "saas",
 });
@@ -64,9 +64,9 @@ const environment = {
   instanceKey: "dev",
 };
 
-const deployCommand: IamTenantApplicationProvisionCommand = {
+const deployCommand: IamInstallationProvisionCommand = {
   applicationType: "h5",
-  deployApplicationId: "deploy-demo",
+  deployApplicationId: "demo-app",
   tenantId: "100001",
   organizationId: "0",
   instanceKey: "deploy_demo_dev",
@@ -78,15 +78,30 @@ const deployCommand: IamTenantApplicationProvisionCommand = {
 
 function createdClient(overrides: Partial<ClientMock> = {}): ClientMock {
   return {
-    provisionTenantApplication: vi.fn().mockResolvedValue({ tenantApplicationId: "ta-1", appId: "app-1" }),
-    enableTenantApplication: vi.fn().mockResolvedValue({
-      tenantApplicationId: "ta-1",
+    // Echo the command so a test that overrides one dimension still exercises
+    // the real "stored row reflects the command" contract.
+    provisionInstallation: vi.fn(async (body: IamInstallationProvisionCommand) => ({
+      installationId: "ta-1",
+      appId: "app-1",
+      deployApplicationId: body.deployApplicationId,
+      tenantId: body.tenantId,
+      organizationId: body.organizationId,
+      ownershipScope: body.ownershipScope,
+      applicationType: body.applicationType,
+      instanceKey: body.instanceKey,
+      displayName: body.displayName,
+      environment: body.environment,
+      primaryDomain: body.primaryDomain,
+      accessPermissions: body.accessPermissions ?? [],
+    })),
+    enableInstallation: vi.fn().mockResolvedValue({
+      installationId: "ta-1",
       appId: "app-1",
       status: "enabled",
     }),
     createAccessCredential: vi.fn().mockResolvedValue({
-      tenantApplicationId: "ta-1",
-      appId: "app-1",
+      installationId: "ta-1",
+      appId: "demo-app",
       accessCredential: TEST_ACCESS_CREDENTIAL,
       authToken: TEST_AUTH_TOKEN,
       tenantId: "100001",
@@ -97,10 +112,21 @@ function createdClient(overrides: Partial<ClientMock> = {}): ClientMock {
 }
 
 function expectEnvHandoff(result: ApplicationBootstrapResult) {
-  expect(result.env.SDKWORK_TENANT_APPLICATION_ID).toBe("ta-1");
-  expect(result.env.SDKWORK_APP_ID).toBe("app-1");
+  expect(result.env.SDKWORK_INSTALLATION_ID).toBe("ta-1");
+  expect(result.env.SDKWORK_DEPLOY_APPLICATION_ID).toBe("demo-app");
+  expect(result.env.SDKWORK_APP_ID).toBe("demo-app");
   expect(result.env.SDKWORK_APP_DOMAIN).toBe("demo.local");
   expect(result.env.SDKWORK_ACCESS_TOKEN).toBe(TEST_ACCESS_CREDENTIAL);
+}
+
+function bootstrapWith(client: ClientMock): Promise<ApplicationBootstrapResult> {
+  return createIamApplicationBootstrap({ client }).bootstrapFromManifest({
+    client,
+    manifest,
+    manifestHash: "abc",
+    auth: { username: "admin", password: "secret" },
+    environment,
+  });
 }
 
 describe("@sdkwork/iam-application-bootstrap", () => {
@@ -146,8 +172,8 @@ describe("@sdkwork/iam-application-bootstrap", () => {
       environment,
     });
 
-    expect(client.provisionTenantApplication).toHaveBeenCalledOnce();
-    const provisionBody = client.provisionTenantApplication.mock.calls[0]?.[0];
+    expect(client.provisionInstallation).toHaveBeenCalledOnce();
+    const provisionBody = client.provisionInstallation.mock.calls[0]?.[0];
     expect(provisionBody).toMatchObject({
       applicationType: "pc",
       deployApplicationId: "demo-app",
@@ -164,7 +190,7 @@ describe("@sdkwork/iam-application-bootstrap", () => {
     expect(provisionBody).not.toHaveProperty("templateId");
     expect(provisionBody).not.toHaveProperty("appKey");
 
-    expect(client.enableTenantApplication).toHaveBeenCalledWith(
+    expect(client.enableInstallation).toHaveBeenCalledWith(
       "ta-1",
       expect.objectContaining({ tenantId: "100001" }),
     );
@@ -172,15 +198,288 @@ describe("@sdkwork/iam-application-bootstrap", () => {
       expect.objectContaining({
         tenantId: "100001",
         organizationId: "0",
-        tenantApplicationId: "ta-1",
+        installationId: "ta-1",
       }),
     );
     expect(client).not.toHaveProperty("registerApplication");
 
     expect(result.deployApplicationId).toBe("demo-app");
     expect(result.applicationType).toBe("pc");
-    expect(result.tenantApplicationId).toBe("ta-1");
+    expect(result.installationId).toBe("ta-1");
     expectEnvHandoff(result);
+  });
+
+  it("carries the release scope and refuses a scope that contradicts the organization", () => {
+    const command = manifestToProvisionCommand(manifest, environment);
+    expect(command.ownershipScope).toBe("TENANT");
+
+    expect(manifestToProvisionCommand(manifest, environment, {
+      ownershipScope: "ORGANIZATION",
+      organizationId: "42",
+    })).toMatchObject({ ownershipScope: "ORGANIZATION", organizationId: "42" });
+
+    expect(() => manifestToProvisionCommand(manifest, environment, {
+      ownershipScope: "ORGANIZATION",
+    })).toThrow(/ORGANIZATION requires a non-zero organizationId/u);
+
+    expect(() => manifestToProvisionCommand(manifest, environment, {
+      ownershipScope: "USER",
+    })).toThrow(/USER requires ownerUserId/u);
+
+    expect(manifestToProvisionCommand(manifest, environment, {
+      ownershipScope: "USER",
+      ownerUserId: "7",
+    })).toMatchObject({ ownershipScope: "USER", ownerUserId: "7" });
+
+    expect(() => manifestToProvisionCommand(manifest, environment, {
+      ownerUserId: "7",
+    })).toThrow(/must not declare ownerUserId/u);
+
+    expect(() => validateInstallationProvisionCommand({
+      ...deployCommand,
+      ownershipScope: "SUPER",
+    })).toThrow(/ownershipScope must be one of TENANT\|ORGANIZATION\|USER/u);
+  });
+
+  it("repairs an installation the provisioning surface left unbound", async () => {
+    const provisionInstallation = vi
+      .fn()
+      .mockResolvedValueOnce({ installationId: "ta-1", appId: "app-1", ownershipScope: "TENANT" })
+      .mockResolvedValue({
+        installationId: "ta-1",
+        appId: "app-1",
+        deployApplicationId: "demo-app",
+        ownershipScope: "TENANT",
+      });
+    const client = createdClient({ provisionInstallation });
+
+    const result = await bootstrapWith(client);
+
+    expect(provisionInstallation).toHaveBeenCalledTimes(2);
+    expect(result.deployApplicationId).toBe("demo-app");
+    expect(result.env.SDKWORK_DEPLOY_APPLICATION_ID).toBe("demo-app");
+    expect(result.env.SDKWORK_ACCESS_TOKEN).toBe(TEST_ACCESS_CREDENTIAL);
+  });
+
+  it("refuses an installation bound to another deployment without retrying", async () => {
+    const provisionInstallation = vi.fn().mockResolvedValue({
+      installationId: "ta-1",
+      appId: "app-1",
+      deployApplicationId: "other-app",
+      ownershipScope: "TENANT",
+    });
+    const client = createdClient({ provisionInstallation });
+
+    await expect(bootstrapWith(client)).rejects.toThrow(
+      /bound to deploy application other-app, not the provisioned demo-app/u,
+    );
+    expect(client.createAccessCredential).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the anchor is still missing after the repair attempt", async () => {
+    const provisionInstallation = vi.fn().mockResolvedValue({
+      installationId: "ta-1",
+      appId: "app-1",
+      ownershipScope: "TENANT",
+    });
+    const client = createdClient({ provisionInstallation });
+
+    await expect(bootstrapWith(client)).rejects.toThrow(
+      /is not bound to deploy application demo-app; the provisioning surface did not persist the anchor/u,
+    );
+    expect(provisionInstallation).toHaveBeenCalledTimes(2);
+  });
+
+  it("refuses a release scope that contradicts the stored installation", async () => {
+    const client = createdClient({
+      provisionInstallation: vi.fn().mockResolvedValue({
+        installationId: "ta-1",
+        appId: "app-1",
+        deployApplicationId: "demo-app",
+        ownershipScope: "USER",
+      }),
+    });
+
+    await expect(bootstrapWith(client)).rejects.toThrow(
+      /ownershipScope USER is not the declared TENANT \(immutable\)/u,
+    );
+  });
+
+  it("refuses an installation that belongs to another tenant", async () => {
+    const client = createdClient({
+      provisionInstallation: vi.fn().mockResolvedValue({
+        installationId: "ta-1",
+        deployApplicationId: "demo-app",
+        tenantId: "200002",
+      }),
+    });
+
+    await expect(bootstrapWith(client)).rejects.toThrow(
+      /tenant 200002 is not the requested 100001 \(tenant isolation\)/u,
+    );
+    expect(client.createAccessCredential).not.toHaveBeenCalled();
+  });
+
+  it("reports every configuration disagreement before issuing", async () => {
+    const client = createdClient({
+      provisionInstallation: vi.fn().mockResolvedValue({
+        installationId: "ta-1",
+        deployApplicationId: "demo-app",
+        applicationType: "api",
+        instanceKey: "other",
+        environment: "staging",
+        primaryDomain: "other.local",
+        displayName: "Other",
+        accessPermissions: ["other:read"],
+      }),
+    });
+
+    await expect(bootstrapWith(client)).rejects.toThrow(
+      /installation ta-1 is incomplete: applicationType api is not the requested pc; instanceKey other is not the requested dev; environment staging is not the requested dev; primaryDomain other.local is not the requested demo.local; displayName "Other" is not the requested "Demo App"; accessPermissions \[other:read\] is not the requested \[iam.users.read\]/u,
+    );
+    expect(client.createAccessCredential).not.toHaveBeenCalled();
+  });
+
+  it("refuses an installation whose OAuth relying party is another client", async () => {
+    const client = createdClient({
+      provisionInstallation: vi.fn().mockResolvedValue({
+        installationId: "ta-1",
+        deployApplicationId: "demo-app",
+        oauthRelyingParty: { clientId: "other" },
+      }),
+    });
+
+    await expect(createIamApplicationBootstrap({ client }).bootstrapFromManifest({
+      client,
+      manifest: {
+        ...manifest,
+        oauth: { relyingParty: { clientId: "demo", redirectUris: ["https://demo.local/cb"] } },
+      },
+      manifestHash: "abc",
+      auth: { username: "admin", password: "secret" },
+      environment,
+    })).rejects.toThrow(/OAuth relying party other is not the declared demo/u);
+  });
+
+  it("refuses a credential minted for another tenant", async () => {
+    const client = createdClient({
+      createAccessCredential: vi.fn().mockResolvedValue({
+        installationId: "ta-1",
+        appId: "demo-app",
+        accessCredential: createTestJwt({ tenant_id: "200002", app_id: "demo-app" }),
+        tenantId: "100001",
+        organizationId: "0",
+      }),
+    });
+
+    await expect(bootstrapWith(client)).rejects.toThrow(
+      /access credential tenant 200002 does not match the provisioned tenant 100001; tenant isolation requires one tenant/u,
+    );
+  });
+
+  it("refuses a credential whose release scope contradicts the installation", async () => {
+    const client = createdClient({
+      createAccessCredential: vi.fn().mockResolvedValue({
+        installationId: "ta-1",
+        appId: "demo-app",
+        accessCredential: createTestJwt({
+          tenant_id: "100001",
+          app_id: "demo-app",
+          ownership_scope: "USER",
+        }),
+        tenantId: "100001",
+        organizationId: "0",
+      }),
+    });
+
+    await expect(bootstrapWith(client)).rejects.toThrow(
+      /access credential ownershipScope USER does not match the provisioned TENANT/u,
+    );
+  });
+
+  it("refuses a bootstrap whose installation did not reach enabled", async () => {
+    const client = createdClient({
+      enableInstallation: vi.fn().mockResolvedValue({
+        installationId: "ta-1",
+        appId: "app-1",
+        status: "pending_config",
+      }),
+    });
+
+    await expect(bootstrapWith(client)).rejects.toThrow(
+      /is not enabled after bootstrap \(status=pending_config\)/u,
+    );
+  });
+
+  it("refuses an access credential issued for another deploy application", async () => {
+    const client = createdClient({
+      createAccessCredential: vi.fn().mockResolvedValue({
+        installationId: "ta-1",
+        appId: "other-app",
+        accessCredential: createTestJwt({ tenant_id: "100001", app_id: "other-app" }),
+        tenantId: "100001",
+        organizationId: "0",
+      }),
+    });
+
+    await expect(bootstrapWith(client)).rejects.toThrow(
+      /names deploy application other-app, but this bootstrap provisioned demo-app/u,
+    );
+  });
+
+  it("refuses a credential that names no deploy application", async () => {
+    for (const accessCredential of [
+      createTestJwt({ tenant_id: "100001" }),
+      createTestJwt({ tenant_id: "100001", app_id: "   " }),
+      "header.%%%.signature",
+      "header..signature",
+    ]) {
+      const client = createdClient({
+        createAccessCredential: vi.fn().mockResolvedValue({
+          installationId: "ta-1",
+          accessCredential,
+          tenantId: "100001",
+          organizationId: "0",
+        }),
+      });
+
+      await expect(bootstrapWith(client)).rejects.toThrow(
+        /does not name the deploy application demo-app/u,
+      );
+    }
+  });
+
+  it("reads the anchor from the credential's own claim when the response omits its appId", async () => {
+    const client = createdClient({
+      createAccessCredential: vi.fn().mockResolvedValue({
+        installationId: "ta-1",
+        accessCredential: TEST_ACCESS_CREDENTIAL,
+        tenantId: "100001",
+        organizationId: "0",
+      }),
+    });
+
+    const result = await bootstrapWith(client);
+
+    expect(result.deployApplicationId).toBe("demo-app");
+    expect(result.env.SDKWORK_ACCESS_TOKEN).toBe(TEST_ACCESS_CREDENTIAL);
+  });
+
+  it("falls back to the reported appId when the credential carries no claim", async () => {
+    const client = createdClient({
+      createAccessCredential: vi.fn().mockResolvedValue({
+        installationId: "ta-1",
+        appId: "demo-app",
+        accessCredential: createTestJwt({ tenant_id: "100001" }),
+        tenantId: "100001",
+        organizationId: "0",
+      }),
+    });
+
+    const result = await bootstrapWith(client);
+
+    expect(result.deployApplicationId).toBe("demo-app");
+    expect(result.env.SDKWORK_ACCESS_TOKEN).toBeDefined();
   });
 
   it("names deployApplicationId when neither the caller nor the manifest declares an anchor", () => {
@@ -192,7 +491,7 @@ describe("@sdkwork/iam-application-bootstrap", () => {
     ).toThrow(/deployApplicationId is required to provision a tenant application/u);
 
     expect(() =>
-      validateTenantApplicationProvisionCommand({ ...deployCommand, deployApplicationId: undefined }),
+      validateInstallationProvisionCommand({ ...deployCommand, deployApplicationId: undefined }),
     ).toThrow(/^deployApplicationId is required to provision a tenant application$/u);
   });
 
@@ -205,16 +504,16 @@ describe("@sdkwork/iam-application-bootstrap", () => {
     ).toThrow(/applicationType is required to provision a tenant application/u);
 
     expect(() =>
-      validateTenantApplicationProvisionCommand({ ...deployCommand, applicationType: undefined }),
+      validateInstallationProvisionCommand({ ...deployCommand, applicationType: undefined }),
     ).toThrow(/^applicationType is required to provision a tenant application$/u);
   });
 
   it("rejects an applicationType outside the published enum", () => {
     expect(() =>
-      validateTenantApplicationProvisionCommand({ ...deployCommand, applicationType: "watchos" }),
+      validateInstallationProvisionCommand({ ...deployCommand, applicationType: "watchos" }),
     ).toThrow(/applicationType "watchos" is not a valid tenant application type/u);
     expect(() =>
-      validateTenantApplicationProvisionCommand({ ...deployCommand, applicationType: "desktop" }),
+      validateInstallationProvisionCommand({ ...deployCommand, applicationType: "desktop" }),
     ).not.toThrow();
   });
 
@@ -266,8 +565,8 @@ describe("@sdkwork/iam-application-bootstrap", () => {
     const first = await module.bootstrapDeployApplication(input);
     const second = await module.bootstrapDeployApplication(input);
 
-    expect(client.provisionTenantApplication).toHaveBeenCalledOnce();
-    expect(client.enableTenantApplication).toHaveBeenCalledOnce();
+    expect(client.provisionInstallation).toHaveBeenCalledOnce();
+    expect(client.enableInstallation).toHaveBeenCalledOnce();
     expect(client.createAccessCredential).toHaveBeenCalledOnce();
     expect(second).toBe(first);
     expect(second.provisioningIdempotencyKey).toBe("idem-explicit-1");
@@ -288,15 +587,20 @@ describe("@sdkwork/iam-application-bootstrap", () => {
       command: { ...deployCommand, provisioningIdempotencyKey: "idem-explicit-2" },
     });
 
-    expect(client.provisionTenantApplication).toHaveBeenCalledTimes(2);
+    expect(client.provisionInstallation).toHaveBeenCalledTimes(2);
   });
 
   it("evicts a failed idempotency key so a retry provisions again", async () => {
-    const provisionTenantApplication = vi
+    const provisionInstallation = vi
       .fn()
       .mockRejectedValueOnce(new Error("tenantApplications.create failed (HTTP 503)"))
-      .mockResolvedValue({ tenantApplicationId: "ta-1", appId: "app-1" });
-    const client = createdClient({ provisionTenantApplication });
+      .mockResolvedValue({
+        installationId: "ta-1",
+        appId: "app-1",
+        deployApplicationId: "demo-app",
+        ownershipScope: "TENANT",
+      });
+    const client = createdClient({ provisionInstallation });
     const module = createIamApplicationBootstrap({ client });
     const input = {
       client,
@@ -307,14 +611,14 @@ describe("@sdkwork/iam-application-bootstrap", () => {
     await expect(module.bootstrapDeployApplication(input)).rejects.toThrow(/HTTP 503/u);
     const retried = await module.bootstrapDeployApplication(input);
 
-    expect(provisionTenantApplication).toHaveBeenCalledTimes(2);
-    expect(retried.tenantApplicationId).toBe("ta-1");
+    expect(provisionInstallation).toHaveBeenCalledTimes(2);
+    expect(retried.installationId).toBe("ta-1");
   });
 
   it("derives a stable instance key and idempotency key from the installation identity", () => {
-    expect(tenantApplicationInstanceKey("sdkwork-demo", "development")).toBe("sdkwork_demo_dev");
-    expect(tenantApplicationInstanceKey("sdkwork-demo", "production")).toBe("sdkwork_demo_prod");
-    expect(tenantApplicationInstanceKey("sdkwork-demo", "staging")).toBe("sdkwork_demo_staging");
+    expect(installationInstanceKey("sdkwork-demo", "development")).toBe("sdkwork_demo_dev");
+    expect(installationInstanceKey("sdkwork-demo", "production")).toBe("sdkwork_demo_prod");
+    expect(installationInstanceKey("sdkwork-demo", "staging")).toBe("sdkwork_demo_staging");
     expect(mapManifestAppTypeToApplicationType("APP_HTML")).toBe("h5");
     expect(mapManifestAppTypeToApplicationType("APP_FLUTTER")).toBe("flutter");
     expect(mapManifestAppTypeToApplicationType("APP_API")).toBe("api");
@@ -389,27 +693,27 @@ describe("@sdkwork/iam-application-bootstrap", () => {
     const envFile = formatBootstrapEnvFile({
       primaryDomain: "demo.local",
       result: {
-        provisioned: { tenantApplicationId: "ta-1", tenantId: "100001", organizationId: "0" },
-        enabled: { tenantApplicationId: "ta-1", appId: "app-1" },
+        provisioned: { installationId: "ta-1", tenantId: "100001", organizationId: "0" },
+        enabled: { installationId: "ta-1", appId: "app-1" },
         issued: {
-          tenantApplicationId: "ta-1",
+          installationId: "ta-1",
           appId: "app-1",
           accessCredential: TEST_ACCESS_CREDENTIAL,
           authToken: TEST_AUTH_TOKEN,
           tenantId: "100001",
           organizationId: "0",
         },
-        tenantApplicationId: "ta-1",
+        installationId: "ta-1",
         deployApplicationId: "deploy-demo",
         applicationType: "h5",
         provisioningIdempotencyKey: "idem-explicit-1",
         env: buildBootstrapEnvRecord({
           primaryDomain: "demo.local",
           result: {
-            provisioned: { tenantApplicationId: "ta-1" },
-            enabled: { tenantApplicationId: "ta-1" },
+            provisioned: { installationId: "ta-1" },
+            enabled: { installationId: "ta-1" },
             issued: { accessCredential: TEST_ACCESS_CREDENTIAL, authToken: TEST_AUTH_TOKEN },
-            tenantApplicationId: "ta-1",
+            installationId: "ta-1",
             deployApplicationId: "deploy-demo",
             applicationType: "h5",
             provisioningIdempotencyKey: "idem-explicit-1",
@@ -425,7 +729,7 @@ describe("@sdkwork/iam-application-bootstrap", () => {
     expect(envFile).not.toContain("SDKWORK_APP_ACCESS_CREDENTIAL=");
   });
 
-  it("posts deploy-application onboarding to tenant_applications through the fetch transport", async () => {
+  it("maps the legacy wire installation id through the fetch transport", async () => {
     const calls: string[] = [];
     const fetchStub = vi.fn(async (url: string | URL | Request) => {
       calls.push(String(url));
@@ -439,10 +743,10 @@ describe("@sdkwork/iam-application-bootstrap", () => {
       fetch: fetchStub as unknown as typeof fetch,
     });
 
-    const provisioned = await client.provisionTenantApplication(deployCommand);
+    const provisioned = await client.provisionInstallation(deployCommand);
 
-    expect(provisioned.tenantApplicationId).toBe("ta-fetch");
-    expect(calls).toEqual(["http://127.0.0.1:3900/backend/v3/api/iam/tenant_applications"]);
+    expect(provisioned.installationId).toBe("ta-fetch");
+    expect(calls).toEqual(["http://127.0.0.1:3900/backend/v3/api/iam/installations"]);
   });
 
   it("reports the API problem detail when provisioning fails", async () => {

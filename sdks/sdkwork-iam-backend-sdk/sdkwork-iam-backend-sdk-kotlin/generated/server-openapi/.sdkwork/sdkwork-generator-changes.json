@@ -9,25 +9,21 @@
     "protocol": "http",
     "packageName": "com.sdkwork:sdkwork-iam-backend-sdk"
   },
-  "changeFingerprint": "60caa303a73be9700437f6ea59b72f50a98c8aec9b88c67cfb3df3ac39017f39",
+  "changeFingerprint": "c590913cbc5352f01221ab434507029c2fb386543f335107efb6028a3e87ecb7",
   "changes": {
     "createdGeneratedFiles": [
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredential.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredentialCreateCommand.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredentialListResponse.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredentialResponse.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredentialRotateCommand.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredentialWithSecret.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationEnvironment.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationEnvironmentListResponse.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationEnvironmentResponse.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationEnvironmentUpsertCommand.kt"
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseInstallationEnableCommand.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseInstallationProvisionCommand.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseInstallationUpdateCommand.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationManagementProvisionCommand.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationManagementUpdateCommand.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationStatusCommand.kt"
     ],
     "updatedGeneratedFiles": [
       "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamOauthApi.kt",
       "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseAccessCredentialCreateCommand.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationProvisionCommand.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementProvisionCommand.kt"
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/ServiceAccountCredentialCreateCommand.kt"
     ],
     "unchangedGeneratedFiles": [
       "bin/publish-core.mjs",
@@ -41,14 +37,19 @@
       "settings.gradle.kts",
       "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/Api.kt",
       "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/ApiPaths.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamOauthApi.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationEnableCommand.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationUpdateCommand.kt",
       "src/main/kotlin/com/sdkwork/iam/backend/sdk/FieldError.kt",
       "src/main/kotlin/com/sdkwork/iam/backend/sdk/http/HttpClient.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredential.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredentialCreateCommand.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredentialListResponse.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredentialResponse.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredentialRotateCommand.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredentialWithSecret.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationEnvironment.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationEnvironmentListResponse.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationEnvironmentResponse.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationEnvironmentUpsertCommand.kt",
       "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamOauthClientCreateCommand.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementUpdateCommand.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationStatusCommand.kt",
       "src/main/kotlin/com/sdkwork/iam/backend/sdk/PageInfo.kt",
       "src/main/kotlin/com/sdkwork/iam/backend/sdk/ProblemDetail.kt",
       "src/main/kotlin/com/sdkwork/iam/backend/sdk/SdkWorkApiResponse.kt",
@@ -59,11 +60,17 @@
       "src/main/kotlin/com/sdkwork/iam/backend/sdk/SdkWorkPageData.kt",
       "src/main/kotlin/com/sdkwork/iam/backend/sdk/SdkWorkResourceData.kt",
       "src/main/kotlin/com/sdkwork/iam/backend/sdk/SdkWorkResourceResponse.kt",
-      "src/main/kotlin/com/sdkwork/iam/backend/sdk/ServiceAccountCredentialCreateCommand.kt",
       "src/main/kotlin/com/sdkwork/iam/backend/sdk/ServiceAccountCredentialRevokeCommand.kt",
       "src/main/kotlin/com/sdkwork/iam/backend/sdk/ServiceAccountTokenExchangeCommand.kt"
     ],
-    "deletedGeneratedFiles": [],
+    "deletedGeneratedFiles": [
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationEnableCommand.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationProvisionCommand.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationUpdateCommand.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementProvisionCommand.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementUpdateCommand.kt",
+      "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationStatusCommand.kt"
+    ],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
@@ -80,25 +87,27 @@
       {
         "area": "api-surface",
         "paths": [
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt"
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamApi.kt",
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/api/IamOauthApi.kt"
         ]
       },
       {
         "area": "unknown",
         "paths": [
           "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseAccessCredentialCreateCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseInstallationEnableCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseInstallationProvisionCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseInstallationUpdateCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationEnableCommand.kt",
           "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationProvisionCommand.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredential.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredentialCreateCommand.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredentialListResponse.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredentialResponse.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredentialRotateCommand.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationCredentialWithSecret.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationEnvironment.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationEnvironmentListResponse.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationEnvironmentResponse.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationEnvironmentUpsertCommand.kt",
-          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementProvisionCommand.kt"
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/AppbaseTenantApplicationUpdateCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationManagementProvisionCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationManagementUpdateCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamInstallationStatusCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementProvisionCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationManagementUpdateCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/IamTenantApplicationStatusCommand.kt",
+          "src/main/kotlin/com/sdkwork/iam/backend/sdk/ServiceAccountCredentialCreateCommand.kt"
         ]
       }
     ],
@@ -138,6 +147,7 @@
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
       "manual-review-required",
       "unknown-impact",
       "verification-required"

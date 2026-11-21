@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 from ..http_client import HttpClient
-from ..models import IamOrganizationMemberListResponse, IamPersonaCatalogResponse, IamUserPersonaResponse, IamUserPersonaUpdateCommand, SdkWorkListResponse, SdkWorkResourceResponse
+from ..models import IamAppAccessTokenCreateCommand, IamAppAccessTokenResponse, IamOrganizationMemberListResponse, IamPersonaCatalogResponse, IamUserPersonaResponse, IamUserPersonaUpdateCommand, SdkWorkListResponse, SdkWorkResourceResponse
 
 def _append_query_string(path: str, raw_query_string: str) -> str:
     query = raw_query_string.lstrip('?')
@@ -189,6 +189,7 @@ class IamApi:
 
     def __init__(self, client: HttpClient):
         self._client = client
+        self.app_access_tokens = IamAppAccessTokensApi(client)
         self.department_assignments = IamDepartmentAssignmentsApi(client)
         self.departments = IamDepartmentsApi(client)
         self.oauth = IamOauthApi(client)
@@ -200,6 +201,17 @@ class IamApi:
         self.role_bindings = IamRoleBindingsApi(client)
         self.users = IamUsersApi(client)
 
+
+class IamAppAccessTokensApi:
+    """iam iam.app_access_tokens API client."""
+
+    def __init__(self, client: HttpClient):
+        self._client = client
+
+
+    def create(self, body: IamAppAccessTokenCreateCommand) -> IamAppAccessTokenResponse:
+        """App Access Tokens create."""
+        return self._client.post(f"/app/v3/api/iam/app_access_tokens", json=body)
 
 class IamDepartmentAssignmentsApi:
     """iam iam.department_assignments API client."""
@@ -265,8 +277,8 @@ class IamOauthOfficialAccountSettingsApi:
         self._client = client
 
 
-    def list(self) -> SdkWorkResourceResponse:
-        """Iam oauth official Account Settings retrieve."""
+    def retrieve(self) -> SdkWorkResourceResponse:
+        """Oauth official Account Settings retrieve."""
         return self._client.get(f"/app/v3/api/iam/oauth/official_account_settings")
 
 class IamOauthOfficialAccountsApi:
@@ -278,7 +290,7 @@ class IamOauthOfficialAccountsApi:
 
 
     def list(self, page: Optional[int] = None, page_size: Optional[int] = None, cursor: Optional[str] = None, sort: Optional[str] = None, q: Optional[str] = None) -> SdkWorkListResponse:
-        """Iam oauth official Accounts list."""
+        """Oauth official Accounts list."""
         query = build_query_string([
             {'name': 'page', 'value': page, 'style': 'form', 'explode': True, 'allow_reserved': False},
             {'name': 'page_size', 'value': page_size, 'style': 'form', 'explode': True, 'allow_reserved': False},
@@ -289,19 +301,19 @@ class IamOauthOfficialAccountsApi:
         return self._client.get(_append_query_string(f"/app/v3/api/iam/oauth/official_accounts", query))
 
     def create(self, body: Dict[str, Any]) -> SdkWorkResourceResponse:
-        """Iam oauth official Accounts create."""
+        """Oauth official Accounts create."""
         return self._client.post(f"/app/v3/api/iam/oauth/official_accounts", json=body)
 
     def delete(self, official_account_id: str) -> None:
-        """Iam oauth official Accounts delete."""
+        """Oauth official Accounts delete."""
         return self._client.delete(f"/app/v3/api/iam/oauth/official_accounts/{serialize_path_parameter(official_account_id, {'name': 'officialAccountId', 'style': 'simple', 'explode': False})}")
 
     def retrieve(self, official_account_id: str) -> SdkWorkResourceResponse:
-        """Iam oauth official Accounts retrieve."""
+        """Oauth official Accounts retrieve."""
         return self._client.get(f"/app/v3/api/iam/oauth/official_accounts/{serialize_path_parameter(official_account_id, {'name': 'officialAccountId', 'style': 'simple', 'explode': False})}")
 
     def update(self, official_account_id: str, body: Optional[Dict[str, Any]] = None) -> SdkWorkResourceResponse:
-        """Iam oauth official Accounts update."""
+        """Oauth official Accounts update."""
         return self._client.patch(f"/app/v3/api/iam/oauth/official_accounts/{serialize_path_parameter(official_account_id, {'name': 'officialAccountId', 'style': 'simple', 'explode': False})}", json=body)
 
 class IamOauthOfficialAccountsCustomMenusApi:
@@ -311,16 +323,16 @@ class IamOauthOfficialAccountsCustomMenusApi:
         self._client = client
 
 
-    def create_publish(self, official_account_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
-        """Iam oauth official Accounts custom Menus publish."""
+    def publish(self, official_account_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
+        """Oauth official Accounts custom Menus publish."""
         return self._client.post(f"/app/v3/api/iam/oauth/official_accounts/{serialize_path_parameter(official_account_id, {'name': 'officialAccountId', 'style': 'simple', 'explode': False})}/custom_menus/publish", json=body)
 
-    def create_rollback(self, official_account_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
-        """Iam oauth official Accounts custom Menus rollback."""
+    def rollback(self, official_account_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
+        """Oauth official Accounts custom Menus rollback."""
         return self._client.post(f"/app/v3/api/iam/oauth/official_accounts/{serialize_path_parameter(official_account_id, {'name': 'officialAccountId', 'style': 'simple', 'explode': False})}/custom_menus/rollback", json=body)
 
-    def create_sync(self, official_account_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
-        """Iam oauth official Accounts custom Menus sync."""
+    def sync(self, official_account_id: str, body: Dict[str, Any]) -> SdkWorkResourceResponse:
+        """Oauth official Accounts custom Menus sync."""
         return self._client.post(f"/app/v3/api/iam/oauth/official_accounts/{serialize_path_parameter(official_account_id, {'name': 'officialAccountId', 'style': 'simple', 'explode': False})}/custom_menus/sync", json=body)
 
 class IamOrganizationMembershipsApi:
@@ -453,11 +465,11 @@ class IamRoleBindingsApi:
             {'name': 'cursor', 'value': cursor, 'style': 'form', 'explode': True, 'allow_reserved': False},
             {'name': 'sort', 'value': sort, 'style': 'form', 'explode': True, 'allow_reserved': False},
             {'name': 'q', 'value': q, 'style': 'form', 'explode': True, 'allow_reserved': False},
-            {'name': 'roleId', 'value': role_id, 'style': 'form', 'explode': True, 'allow_reserved': False},
-            {'name': 'principalKind', 'value': principal_kind, 'style': 'form', 'explode': True, 'allow_reserved': False},
-            {'name': 'principalId', 'value': principal_id, 'style': 'form', 'explode': True, 'allow_reserved': False},
-            {'name': 'scopeKind', 'value': scope_kind, 'style': 'form', 'explode': True, 'allow_reserved': False},
-            {'name': 'scopeId', 'value': scope_id, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'role_id', 'value': role_id, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'principal_kind', 'value': principal_kind, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'principal_id', 'value': principal_id, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'scope_kind', 'value': scope_kind, 'style': 'form', 'explode': True, 'allow_reserved': False},
+            {'name': 'scope_id', 'value': scope_id, 'style': 'form', 'explode': True, 'allow_reserved': False},
         ])
         return self._client.get(_append_query_string(f"/app/v3/api/iam/role_bindings", query))
 

@@ -177,27 +177,6 @@ impl OauthApi {
         self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), false, true).await
     }
 
-    /// Wechat Payment Oauth callback.
-    pub async fn wechat_payment_oauth_callback(&self) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
-        let path = app_path(&"/oauth/wechat/payment/callback".to_string());
-        self.client.request_method(Method::GET, &path, Option::<&serde_json::Value>::None, None, None, None, true, false).await
-    }
-
-    /// Wechat Payment Oauth cashier Start.
-    pub async fn wechat_payment_oauth_cashier_start(&self) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
-        let path = app_path(&"/oauth/wechat/payment/cashier/start".to_string());
-        self.client.request_method(Method::GET, &path, Option::<&serde_json::Value>::None, None, None, None, true, false).await
-    }
-
-    /// Wechat Payment Oauth start.
-    pub async fn wechat_payment_oauth_start(&self, redirect: &str) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
-        let query = build_query_string(&[
-            QueryParameterSpec::new("redirect", redirect, "form", true, false, None),
-        ]);
-        let path = append_query_string(app_path(&"/oauth/wechat/payment/start".to_string()), &query);
-        self.client.get(&path, None, None).await
-    }
-
 }
 
 struct PathParameterSpec<'a> {

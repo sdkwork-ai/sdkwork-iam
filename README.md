@@ -124,13 +124,13 @@ Management APIs live on the backend surface and are tenant-scoped:
 
 | Operation | Method and path | Permission |
 | --- | --- | --- |
-| `tenantApplications.environments.list` | `GET /backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments` | `iam.tenant_applications.update` |
-| `tenantApplications.environments.update` | `PUT .../environments/{environmentKey}` (upsert) | `iam.tenant_applications.update` |
-| `tenantApplications.environments.delete` | `DELETE .../environments/{environmentKey}` | `iam.tenant_applications.update` |
-| `tenantApplications.credentials.list` | `GET .../credentials` | `iam.tenant_applications.update` |
-| `tenantApplications.credentials.create` | `POST .../credentials` | `iam.tenant_applications.update` |
-| `tenantApplications.credentials.rotate` | `POST .../credentials/{credentialId}/rotate` | `iam.tenant_applications.update` |
-| `tenantApplications.credentials.revoke` | `POST .../credentials/{credentialId}/revoke` | `iam.tenant_applications.update` |
+| `installations.environments.list` | `GET /backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/environments` | `iam.installations.update` |
+| `installations.environments.update` | `PUT .../environments/{environmentKey}` (upsert) | `iam.installations.update` |
+| `installations.environments.delete` | `DELETE .../environments/{environmentKey}` | `iam.installations.update` |
+| `installations.credentials.list` | `GET .../credentials` | `iam.installations.update` |
+| `installations.credentials.create` | `POST .../credentials` | `iam.installations.update` |
+| `installations.credentials.rotate` | `POST .../credentials/{credentialId}/rotate` | `iam.installations.update` |
+| `installations.credentials.revoke` | `POST .../credentials/{credentialId}/revoke` | `iam.installations.update` |
 
 The credential lifecycle never widens the existing installation-update boundary:
 no new permission code is seeded, and every path is scoped to the path tenant, so

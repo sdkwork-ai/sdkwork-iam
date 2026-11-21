@@ -266,7 +266,7 @@ export interface IamBackendIamResourceClient {
     list?: IamSdkMethod;
     retrieve?: IamSdkMethod;
   };
-  tenantApplications?: {
+  installations?: {
     enable?: IamSdkMethod;
     list?: IamSdkMethod;
     create?: IamSdkMethod;
@@ -324,7 +324,7 @@ export interface IamSdkResourceClient {
   roles?: IamBackendIamResourceClient["roles"];
   roleBindings?: NonNullable<IamAppIamResourceClient["roleBindings"]> & NonNullable<IamBackendIamResourceClient["roleBindings"]>;
   securityEvents?: IamBackendIamResourceClient["securityEvents"];
-  tenantApplications?: IamBackendIamResourceClient["tenantApplications"];
+  installations?: IamBackendIamResourceClient["installations"];
   tenants?: IamBackendIamResourceClient["tenants"];
   users?: NonNullable<IamAppIamResourceClient["users"]> & NonNullable<IamBackendIamResourceClient["users"]>;
   oauth?: IamBackendOAuthResourceClient;

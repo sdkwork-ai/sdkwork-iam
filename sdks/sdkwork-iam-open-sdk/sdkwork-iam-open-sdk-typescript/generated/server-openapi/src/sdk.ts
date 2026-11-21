@@ -1,16 +1,15 @@
 import { HttpClient, createHttpClient } from './http/client';
 import type { SdkworkCustomConfig } from './types/common';
 
-import { IamOauthApi, createIamOauthApi } from './api/iam-oauth';
+
 
 export class SdkworkCustomClient {
   private httpClient: HttpClient;
 
-  public readonly iamOauth: IamOauthApi;
 
   constructor(config: SdkworkCustomConfig) {
     this.httpClient = createHttpClient(config);
-    this.iamOauth = createIamOauthApi(this.httpClient);
+
   }
 
   setApiKey(apiKey: string): this {

@@ -74,9 +74,9 @@ namespace SDKWork.Iam.AppSdk.Api
         /// <summary>
         /// Sessions current logout.
         /// </summary>
-        public async Task SessionsCurrentLogoutAsync(SDKWork.Iam.AppSdk.Models.SessionsCurrentLogoutRequest body)
+        public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkCommandResponse?> SessionsCurrentLogoutAsync(SDKWork.Iam.AppSdk.Models.SessionsCurrentLogoutRequest body)
         {
-            await _client.RequestAsync<object>("POST", ApiPaths.AppPath("/auth/sessions/current/logout"), body, null, null, "application/json", true, false);
+            return await _client.RequestAsync<SDKWork.Iam.AppSdk.Models.SdkWorkCommandResponse>("POST", ApiPaths.AppPath("/auth/sessions/current/logout"), body, null, null, "application/json", true, false);
         }
 
         /// <summary>

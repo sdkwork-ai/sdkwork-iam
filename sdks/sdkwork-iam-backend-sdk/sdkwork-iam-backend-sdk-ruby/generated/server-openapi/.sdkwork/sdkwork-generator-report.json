@@ -11,8 +11,8 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "48de9c84b5fefb83b8cd046add9145189ad865bc3217880721d723fa6cfe96c0",
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "cbbcb277e2451a3892254d2eb43a82f2c1035d975751fa6648cb066435843e94",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
@@ -24,6 +24,7 @@
       {
         "area": "api-surface",
         "paths": [
+          "lib/sdkwork/backend_sdk/api/iam_oauth.rb",
           "lib/sdkwork/backend_sdk/api/iam.rb"
         ]
       },
@@ -31,18 +32,19 @@
         "area": "models",
         "paths": [
           "lib/sdkwork/backend_sdk/models/appbase_access_credential_create_command.rb",
+          "lib/sdkwork/backend_sdk/models/appbase_installation_enable_command.rb",
+          "lib/sdkwork/backend_sdk/models/appbase_installation_provision_command.rb",
+          "lib/sdkwork/backend_sdk/models/appbase_installation_update_command.rb",
+          "lib/sdkwork/backend_sdk/models/appbase_tenant_application_enable_command.rb",
           "lib/sdkwork/backend_sdk/models/appbase_tenant_application_provision_command.rb",
-          "lib/sdkwork/backend_sdk/models/iam_installation_credential_create_command.rb",
-          "lib/sdkwork/backend_sdk/models/iam_installation_credential_list_response.rb",
-          "lib/sdkwork/backend_sdk/models/iam_installation_credential_response.rb",
-          "lib/sdkwork/backend_sdk/models/iam_installation_credential_rotate_command.rb",
-          "lib/sdkwork/backend_sdk/models/iam_installation_credential_with_secret.rb",
-          "lib/sdkwork/backend_sdk/models/iam_installation_credential.rb",
-          "lib/sdkwork/backend_sdk/models/iam_installation_environment_list_response.rb",
-          "lib/sdkwork/backend_sdk/models/iam_installation_environment_response.rb",
-          "lib/sdkwork/backend_sdk/models/iam_installation_environment_upsert_command.rb",
-          "lib/sdkwork/backend_sdk/models/iam_installation_environment.rb",
-          "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_provision_command.rb"
+          "lib/sdkwork/backend_sdk/models/appbase_tenant_application_update_command.rb",
+          "lib/sdkwork/backend_sdk/models/iam_installation_management_provision_command.rb",
+          "lib/sdkwork/backend_sdk/models/iam_installation_management_update_command.rb",
+          "lib/sdkwork/backend_sdk/models/iam_installation_status_command.rb",
+          "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_provision_command.rb",
+          "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_update_command.rb",
+          "lib/sdkwork/backend_sdk/models/iam_tenant_application_status_command.rb",
+          "lib/sdkwork/backend_sdk/models/service_account_credential_create_command.rb"
         ]
       },
       {
@@ -63,6 +65,7 @@
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
       "manual-review-required",
       "unknown-impact",
       "verification-required"
@@ -140,14 +143,38 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 15,
+    "writtenFiles": 11,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 33,
-    "deletedGeneratedFiles": 0,
+    "skippedUnchangedGeneratedFiles": 37,
+    "deletedGeneratedFiles": 6,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "48de9c84b5fefb83b8cd046add9145189ad865bc3217880721d723fa6cfe96c0",
+    "changeFingerprint": "cbbcb277e2451a3892254d2eb43a82f2c1035d975751fa6648cb066435843e94",
     "changes": {
       "createdGeneratedFiles": [
+        "lib/sdkwork/backend_sdk/models/appbase_installation_enable_command.rb",
+        "lib/sdkwork/backend_sdk/models/appbase_installation_provision_command.rb",
+        "lib/sdkwork/backend_sdk/models/appbase_installation_update_command.rb",
+        "lib/sdkwork/backend_sdk/models/iam_installation_management_provision_command.rb",
+        "lib/sdkwork/backend_sdk/models/iam_installation_management_update_command.rb",
+        "lib/sdkwork/backend_sdk/models/iam_installation_status_command.rb"
+      ],
+      "updatedGeneratedFiles": [
+        "lib/sdkwork/backend_sdk.rb",
+        "lib/sdkwork/backend_sdk/api/iam_oauth.rb",
+        "lib/sdkwork/backend_sdk/api/iam.rb",
+        "lib/sdkwork/backend_sdk/models/appbase_access_credential_create_command.rb",
+        "lib/sdkwork/backend_sdk/models/service_account_credential_create_command.rb"
+      ],
+      "unchangedGeneratedFiles": [
+        "bin/publish-core.mjs",
+        "bin/publish.ps1",
+        "bin/publish.sh",
+        "CHANGELOG.md",
+        "Gemfile",
+        "lib/sdkwork/backend_sdk/api/base_api.rb",
+        "lib/sdkwork/backend_sdk/client.rb",
+        "lib/sdkwork/backend_sdk/http/client.rb",
+        "lib/sdkwork/backend_sdk/models/field_error.rb",
         "lib/sdkwork/backend_sdk/models/iam_installation_credential_create_command.rb",
         "lib/sdkwork/backend_sdk/models/iam_installation_credential_list_response.rb",
         "lib/sdkwork/backend_sdk/models/iam_installation_credential_response.rb",
@@ -157,31 +184,8 @@
         "lib/sdkwork/backend_sdk/models/iam_installation_environment_list_response.rb",
         "lib/sdkwork/backend_sdk/models/iam_installation_environment_response.rb",
         "lib/sdkwork/backend_sdk/models/iam_installation_environment_upsert_command.rb",
-        "lib/sdkwork/backend_sdk/models/iam_installation_environment.rb"
-      ],
-      "updatedGeneratedFiles": [
-        "lib/sdkwork/backend_sdk.rb",
-        "lib/sdkwork/backend_sdk/api/iam.rb",
-        "lib/sdkwork/backend_sdk/models/appbase_access_credential_create_command.rb",
-        "lib/sdkwork/backend_sdk/models/appbase_tenant_application_provision_command.rb",
-        "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_provision_command.rb"
-      ],
-      "unchangedGeneratedFiles": [
-        "bin/publish-core.mjs",
-        "bin/publish.ps1",
-        "bin/publish.sh",
-        "CHANGELOG.md",
-        "Gemfile",
-        "lib/sdkwork/backend_sdk/api/base_api.rb",
-        "lib/sdkwork/backend_sdk/api/iam_oauth.rb",
-        "lib/sdkwork/backend_sdk/client.rb",
-        "lib/sdkwork/backend_sdk/http/client.rb",
-        "lib/sdkwork/backend_sdk/models/appbase_tenant_application_enable_command.rb",
-        "lib/sdkwork/backend_sdk/models/appbase_tenant_application_update_command.rb",
-        "lib/sdkwork/backend_sdk/models/field_error.rb",
+        "lib/sdkwork/backend_sdk/models/iam_installation_environment.rb",
         "lib/sdkwork/backend_sdk/models/iam_oauth_client_create_command.rb",
-        "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_update_command.rb",
-        "lib/sdkwork/backend_sdk/models/iam_tenant_application_status_command.rb",
         "lib/sdkwork/backend_sdk/models/page_info.rb",
         "lib/sdkwork/backend_sdk/models/problem_detail.rb",
         "lib/sdkwork/backend_sdk/models/sdk_work_api_response.rb",
@@ -191,7 +195,6 @@
         "lib/sdkwork/backend_sdk/models/sdk_work_page_data.rb",
         "lib/sdkwork/backend_sdk/models/sdk_work_resource_data.rb",
         "lib/sdkwork/backend_sdk/models/sdk_work_resource_response.rb",
-        "lib/sdkwork/backend_sdk/models/service_account_credential_create_command.rb",
         "lib/sdkwork/backend_sdk/models/service_account_credential_revoke_command.rb",
         "lib/sdkwork/backend_sdk/models/service_account_token_exchange_command.rb",
         "lib/sdkwork/backend_sdk/sdk_config.rb",
@@ -201,7 +204,14 @@
         "sdkwork-iam-backend-sdk.gemspec",
         "sdkwork-sdk.json"
       ],
-      "deletedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "lib/sdkwork/backend_sdk/models/appbase_tenant_application_enable_command.rb",
+        "lib/sdkwork/backend_sdk/models/appbase_tenant_application_provision_command.rb",
+        "lib/sdkwork/backend_sdk/models/appbase_tenant_application_update_command.rb",
+        "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_provision_command.rb",
+        "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_update_command.rb",
+        "lib/sdkwork/backend_sdk/models/iam_tenant_application_status_command.rb"
+      ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/README.md"
@@ -219,6 +229,7 @@
         {
           "area": "api-surface",
           "paths": [
+            "lib/sdkwork/backend_sdk/api/iam_oauth.rb",
             "lib/sdkwork/backend_sdk/api/iam.rb"
           ]
         },
@@ -226,18 +237,19 @@
           "area": "models",
           "paths": [
             "lib/sdkwork/backend_sdk/models/appbase_access_credential_create_command.rb",
+            "lib/sdkwork/backend_sdk/models/appbase_installation_enable_command.rb",
+            "lib/sdkwork/backend_sdk/models/appbase_installation_provision_command.rb",
+            "lib/sdkwork/backend_sdk/models/appbase_installation_update_command.rb",
+            "lib/sdkwork/backend_sdk/models/appbase_tenant_application_enable_command.rb",
             "lib/sdkwork/backend_sdk/models/appbase_tenant_application_provision_command.rb",
-            "lib/sdkwork/backend_sdk/models/iam_installation_credential_create_command.rb",
-            "lib/sdkwork/backend_sdk/models/iam_installation_credential_list_response.rb",
-            "lib/sdkwork/backend_sdk/models/iam_installation_credential_response.rb",
-            "lib/sdkwork/backend_sdk/models/iam_installation_credential_rotate_command.rb",
-            "lib/sdkwork/backend_sdk/models/iam_installation_credential_with_secret.rb",
-            "lib/sdkwork/backend_sdk/models/iam_installation_credential.rb",
-            "lib/sdkwork/backend_sdk/models/iam_installation_environment_list_response.rb",
-            "lib/sdkwork/backend_sdk/models/iam_installation_environment_response.rb",
-            "lib/sdkwork/backend_sdk/models/iam_installation_environment_upsert_command.rb",
-            "lib/sdkwork/backend_sdk/models/iam_installation_environment.rb",
-            "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_provision_command.rb"
+            "lib/sdkwork/backend_sdk/models/appbase_tenant_application_update_command.rb",
+            "lib/sdkwork/backend_sdk/models/iam_installation_management_provision_command.rb",
+            "lib/sdkwork/backend_sdk/models/iam_installation_management_update_command.rb",
+            "lib/sdkwork/backend_sdk/models/iam_installation_status_command.rb",
+            "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_provision_command.rb",
+            "lib/sdkwork/backend_sdk/models/iam_tenant_application_management_update_command.rb",
+            "lib/sdkwork/backend_sdk/models/iam_tenant_application_status_command.rb",
+            "lib/sdkwork/backend_sdk/models/service_account_credential_create_command.rb"
           ]
         },
         {
@@ -283,6 +295,7 @@
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
+        "deleted-generated-files",
         "manual-review-required",
         "unknown-impact",
         "verification-required"

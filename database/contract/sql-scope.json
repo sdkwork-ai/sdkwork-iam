@@ -5,6 +5,8 @@
   "description": "DB087/DB100-DB102 classification consumed by scripts/check-sql-tenant-scope.mjs: each runtime SQL statement must bind the scope columns of every table it references, unless an approved cross-tenant exception below matches its exact file, table, verb, and distinctive fragment.",
   "tables": {
     "iam_api_key": "tenant",
+    "iam_application_installation_credential": "tenant",
+    "iam_application_installation_environment": "tenant",
     "iam_application_template": "platform",
     "iam_application_template_package": "platform",
     "iam_audit_event": "tenant",
@@ -287,6 +289,75 @@
         "UPDATE"
       ],
       "reason": "client-local SQLite user-center host storing one local account session"
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/wechat_component_authorizer.rs",
+      "table": "iam_oauth_resource_authorization",
+      "verbs": [
+        "SELECT",
+        "UPDATE"
+      ],
+      "reason": "WeChat component callback addresses an authorizer row by its globally unique id after the component platform secret authenticates the caller; tenant ownership is carried by that row"
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/wechat_component_authorizer.rs",
+      "table": "iam_ephemeral_artifact",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "opaque component token cache key; the key embeds the operator platform identity and is not tenant-addressable"
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/wechat_component_grant.rs",
+      "table": "iam_oauth_resource_authorization",
+      "verbs": [
+        "UPDATE"
+      ],
+      "reason": "component grant callback updates the authorizer row selected by globally unique id from the authenticated component callback"
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/wechat_component_ticket_pg.rs",
+      "table": "iam_oauth_operator_platform",
+      "verbs": [
+        "SELECT",
+        "UPDATE"
+      ],
+      "reason": "operator platform identity is component-global (keyed by component_appid); tenant scope is the platform owner row, not a caller-selected tenant"
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/wechat_component_ticket_pg.rs",
+      "table": "iam_oauth_secret",
+      "verbs": [
+        "SELECT",
+        "UPDATE"
+      ],
+      "reason": "component verify-ticket secret belongs to the operator platform and is selected by operator_platform_id; the platform row supplies tenant_id for inserts"
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/wechat_component_token_pg.rs",
+      "table": "iam_ephemeral_artifact",
+      "verbs": [
+        "SELECT",
+        "DELETE"
+      ],
+      "reason": "opaque component token cache key; the key embeds the operator platform identity and is not tenant-addressable"
+    },
+    {
+      "file": "crates/sdkwork-routes-iam-backend-api/src/oauth_handlers.impl.rs",
+      "table": "iam_oauth_secret",
+      "verbs": [
+        "UPDATE"
+      ],
+      "reason": "platform OAuth client secret identified by globally unique client id during OAuth client rotation"
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/installation_lifecycle.rs",
+      "table": "iam_application_installation_credential",
+      "verbs": [
+        "SELECT"
+      ],
+      "contains": "WHERE client_id = $1 LIMIT 1",
+      "reason": "global OAuth client-id uniqueness check before a tenant-scoped credential insert; binding tenant would miss another tenant already owning the client id"
     }
   ]
 }

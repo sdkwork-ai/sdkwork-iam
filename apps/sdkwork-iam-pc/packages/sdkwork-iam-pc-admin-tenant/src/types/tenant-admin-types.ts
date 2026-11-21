@@ -99,9 +99,9 @@ export const SDKWORK_IAM_TENANT_APPLICATION_TYPES = [
 ] as const;
 
 /** One product-semantic application type; the backend rejects anything else. */
-export type SdkworkIamTenantApplicationType = (typeof SDKWORK_IAM_TENANT_APPLICATION_TYPES)[number];
+export type SdkworkIamInstallationType = (typeof SDKWORK_IAM_TENANT_APPLICATION_TYPES)[number];
 
-export interface SdkworkIamTenantApplication {
+export interface SdkworkIamInstallation {
   accessPermissions: readonly string[];
   appId: string;
   applicationType: string;
@@ -117,7 +117,7 @@ export interface SdkworkIamTenantApplication {
   organizationId: string;
   primaryDomain?: string;
   status: string;
-  tenantApplicationId: string;
+  installationId: string;
   tenantId: string;
   updatedAt?: string;
 }
@@ -129,9 +129,9 @@ export interface SdkworkIamTenantApplication {
  * retired nothing supplies a default, so the empty string is the explicit
  * "not chosen yet" state the drawer validates against.
  */
-export interface SdkworkIamTenantApplicationDraft {
+export interface SdkworkIamInstallationDraft {
   accessPermissions: string[];
-  applicationType: SdkworkIamTenantApplicationType | "";
+  applicationType: SdkworkIamInstallationType | "";
   /** Deploy application this installation serves (`deployApplicationId`); required. */
   deployApplicationId: string;
   displayName: string;
@@ -145,30 +145,30 @@ export interface SdkworkIamTenantApplicationDraft {
   provisioningIdempotencyKey?: string;
 }
 
-export interface SdkworkIamTenantApplicationUpdateDraft {
+export interface SdkworkIamInstallationUpdateDraft {
   accessPermissions: string[];
   primaryDomain: string;
 }
 
 /** Short-lived delegated access credential issued for one tenant application. */
-export interface SdkworkIamTenantApplicationAccessToken {
+export interface SdkworkIamInstallationAccessToken {
   accessToken: string;
   appId?: string;
   expiresAt?: string;
   organizationId?: string;
   sessionId?: string;
-  tenantApplicationId?: string;
+  installationId?: string;
   tenantId?: string;
 }
 
-export interface SdkworkIamTenantApplicationSummary {
+export interface SdkworkIamInstallationSummary {
   disabled: number;
   enabled: number;
   pending: number;
   total: number;
 }
 
-export interface SdkworkIamTenantApplicationCapabilities {
+export interface SdkworkIamInstallationCapabilities {
   canEnable: boolean;
   canProvision: boolean;
   canUpdate: boolean;
@@ -180,8 +180,8 @@ export interface SdkworkIamTenantState {
     members?: SdkWorkPageInfo;
     tenants?: SdkWorkPageInfo;
   };
-  applications: readonly SdkworkIamTenantApplication[];
-  applicationSummary: SdkworkIamTenantApplicationSummary;
+  applications: readonly SdkworkIamInstallation[];
+  applicationSummary: SdkworkIamInstallationSummary;
   members: readonly SdkworkIamTenantMember[];
   selectedTenant?: SdkworkIamTenant;
   status: "idle" | "loading" | "ready" | "error";
@@ -196,28 +196,28 @@ export interface CreateSdkworkIamTenantControllerInput {
 
 export interface SdkworkIamTenantController {
   createTenant(body: SdkworkIamTenantDraft): Promise<SdkworkIamTenant>;
-  createTenantApplicationAccessToken(
+  createInstallationAccessToken(
     tenantId: string,
-    tenantApplicationId: string,
-  ): Promise<SdkworkIamTenantApplicationAccessToken>;
+    installationId: string,
+  ): Promise<SdkworkIamInstallationAccessToken>;
   createTenantMember(tenantId: string, body: SdkworkIamTenantMemberDraft): Promise<SdkworkIamTenantMember>;
   deleteTenant(tenantId: string): Promise<void>;
-  getApplicationCapabilities(): SdkworkIamTenantApplicationCapabilities;
+  getApplicationCapabilities(): SdkworkIamInstallationCapabilities;
   getSelectedTenant(): SdkworkIamTenant | undefined;
   getState(): SdkworkIamTenantState;
   listTenantMembers(tenantId: string, params?: Record<string, unknown>): Promise<readonly SdkworkIamTenantMember[]>;
-  listTenantApplications(tenantId: string, params?: Record<string, unknown>): Promise<readonly SdkworkIamTenantApplication[]>;
-  loadMoreTenantApplications(tenantId: string): Promise<readonly SdkworkIamTenantApplication[]>;
+  listInstallations(tenantId: string, params?: Record<string, unknown>): Promise<readonly SdkworkIamInstallation[]>;
+  loadMoreInstallations(tenantId: string): Promise<readonly SdkworkIamInstallation[]>;
   listTenants(params?: Record<string, unknown>): Promise<readonly SdkworkIamTenant[]>;
   loadMoreTenantMembers(tenantId: string): Promise<readonly SdkworkIamTenantMember[]>;
   loadMoreTenants(): Promise<readonly SdkworkIamTenant[]>;
   removeTenantMember(tenantId: string, userId: string): Promise<void>;
-  provisionTenantApplication(tenantId: string, body: SdkworkIamTenantApplicationDraft): Promise<SdkworkIamTenantApplication>;
-  retrieveTenantApplicationSummary(tenantId: string): Promise<SdkworkIamTenantApplicationSummary>;
-  setTenantApplicationEnabled(tenantId: string, tenantApplicationId: string, enabled: boolean): Promise<SdkworkIamTenantApplication>;
+  provisionInstallation(tenantId: string, body: SdkworkIamInstallationDraft): Promise<SdkworkIamInstallation>;
+  retrieveInstallationSummary(tenantId: string): Promise<SdkworkIamInstallationSummary>;
+  setInstallationEnabled(tenantId: string, installationId: string, enabled: boolean): Promise<SdkworkIamInstallation>;
   selectTenant(tenantId: string, params?: Record<string, unknown>): Promise<SdkworkIamTenant | undefined>;
   updateTenant(tenantId: string, body: Partial<SdkworkIamTenantDraft>): Promise<SdkworkIamTenant>;
-  updateTenantApplication(tenantId: string, tenantApplicationId: string, body: SdkworkIamTenantApplicationUpdateDraft): Promise<SdkworkIamTenantApplication>;
+  updateInstallation(tenantId: string, installationId: string, body: SdkworkIamInstallationUpdateDraft): Promise<SdkworkIamInstallation>;
   updateTenantMember(
     tenantId: string,
     userId: string,
@@ -258,6 +258,6 @@ export interface SdkworkIamTenantAdminWorkspaceProps {
   };
 }
 
-export interface SdkworkIamTenantApplicationsAdminWorkspaceProps {
+export interface SdkworkIamInstallationsAdminWorkspaceProps {
   controller: SdkworkIamTenantController;
 }

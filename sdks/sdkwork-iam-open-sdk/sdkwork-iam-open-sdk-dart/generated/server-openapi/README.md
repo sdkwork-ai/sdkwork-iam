@@ -21,9 +21,8 @@ final client = SdkworkCustomClient(
 client.setApiKey('your-api-key');
 
 // Use the SDK
-final callbackPublicId = '1';
-final result = await client.iamOauth.providerCallbacksHandleGet(callbackPublicId);
-print(result);
+await client.example.list();
+print('Request completed');
 ```
 
 ## Authentication Modes (Mutually Exclusive)
@@ -60,26 +59,18 @@ client.setHeader('X-Custom-Header', 'value');
 
 ## API Modules
 
-- `client.iamOauth` - iam_oauth API
+
 
 ## Usage Examples
 
-### iam_oauth
-
-```dart
-// Iam oauth provider Callbacks handle Get.
-final callbackPublicId = '1';
-final result = await client.iamOauth.providerCallbacksHandleGet(callbackPublicId);
-print(result);
-```
+No examples available.
 
 ## Error Handling
 
 ```dart
 try {
-  final callbackPublicId = '1';
-  final result = await client.iamOauth.providerCallbacksHandleGet(callbackPublicId);
-  print(result);
+  await client.example.list();
+  print('Request completed');
 } catch (error) {
   print('Error: $error');
 }

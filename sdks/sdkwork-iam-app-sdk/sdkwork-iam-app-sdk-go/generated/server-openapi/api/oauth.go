@@ -55,23 +55,23 @@ func (a *OauthApi) AuthorizationUrlsCreate(body sdktypes.AppbaseOperationCommand
 }
 
 // Authorizations create.
-func (a *OauthApi) AuthorizationsCreate(body sdktypes.AuthorizationsCreateRequest) (sdktypes.AuthorizationsCreateResponse, error) {
+func (a *OauthApi) AuthorizationsCreate(body sdktypes.AuthorizationsCreateRequest) (sdktypes.AuthorizationsCreateResponse201, error) {
     raw, err := a.client.Request("POST", AppApiPath("/oauth/authorizations"), body, nil, nil, "application/json", true, false)
     if err != nil {
-        var zero sdktypes.AuthorizationsCreateResponse
+        var zero sdktypes.AuthorizationsCreateResponse201
         return zero, err
     }
-    return decodeResult[sdktypes.AuthorizationsCreateResponse](raw)
+    return decodeResult[sdktypes.AuthorizationsCreateResponse201](raw)
 }
 
 // Authorizations completions create.
-func (a *OauthApi) AuthorizationsCompletionsCreate(authorizationStateId string, body sdktypes.AuthorizationsCompletionsCreateRequest) (sdktypes.AuthorizationsCompletionsCreateResponse, error) {
+func (a *OauthApi) AuthorizationsCompletionsCreate(authorizationStateId string, body sdktypes.AuthorizationsCompletionsCreateRequest) (sdktypes.AuthorizationsCompletionsCreateResponse201, error) {
     raw, err := a.client.Post(AppApiPath(fmt.Sprintf("/oauth/authorizations/%s/completions", SerializePathParameter(authorizationStateId, PathParameterSpec{Name: "authorizationStateId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
-        var zero sdktypes.AuthorizationsCompletionsCreateResponse
+        var zero sdktypes.AuthorizationsCompletionsCreateResponse201
         return zero, err
     }
-    return decodeResult[sdktypes.AuthorizationsCompletionsCreateResponse](raw)
+    return decodeResult[sdktypes.AuthorizationsCompletionsCreateResponse201](raw)
 }
 
 // Callbacks retrieve.
@@ -95,13 +95,13 @@ func (a *OauthApi) CallbacksCreate(providerCode string, body sdktypes.AppbaseOpe
 }
 
 // Desktop Sessions create.
-func (a *OauthApi) DesktopSessionsCreate(body sdktypes.DesktopSessionsCreateRequest) (sdktypes.DesktopSessionsCreateResponse, error) {
+func (a *OauthApi) DesktopSessionsCreate(body sdktypes.DesktopSessionsCreateRequest) (sdktypes.DesktopSessionsCreateResponse201, error) {
     raw, err := a.client.Request("POST", AppApiPath("/oauth/desktop_sessions"), body, nil, nil, "application/json", true, false)
     if err != nil {
-        var zero sdktypes.DesktopSessionsCreateResponse
+        var zero sdktypes.DesktopSessionsCreateResponse201
         return zero, err
     }
-    return decodeResult[sdktypes.DesktopSessionsCreateResponse](raw)
+    return decodeResult[sdktypes.DesktopSessionsCreateResponse201](raw)
 }
 
 // Device Authorizations create.
@@ -258,39 +258,6 @@ func (a *OauthApi) ScanLoginModesList(page *int, pageSize *int, cursor *string, 
 // Sessions create.
 func (a *OauthApi) SessionsCreate(body sdktypes.AppbaseSessionCreateCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Request("POST", AppApiPath("/oauth/sessions"), body, nil, nil, "application/json", false, true)
-    if err != nil {
-        var zero sdktypes.SdkWorkResourceResponse
-        return zero, err
-    }
-    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
-}
-
-// Wechat Payment Oauth callback.
-func (a *OauthApi) WechatPaymentOauthCallback() (sdktypes.SdkWorkResourceResponse, error) {
-    raw, err := a.client.Request("GET", AppApiPath("/oauth/wechat/payment/callback"), nil, nil, nil, "", true, false)
-    if err != nil {
-        var zero sdktypes.SdkWorkResourceResponse
-        return zero, err
-    }
-    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
-}
-
-// Wechat Payment Oauth cashier Start.
-func (a *OauthApi) WechatPaymentOauthCashierStart() (sdktypes.SdkWorkResourceResponse, error) {
-    raw, err := a.client.Request("GET", AppApiPath("/oauth/wechat/payment/cashier/start"), nil, nil, nil, "", true, false)
-    if err != nil {
-        var zero sdktypes.SdkWorkResourceResponse
-        return zero, err
-    }
-    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
-}
-
-// Wechat Payment Oauth start.
-func (a *OauthApi) WechatPaymentOauthStart(redirect string) (sdktypes.SdkWorkResourceResponse, error) {
-    query := BuildQueryString([]QueryParameterSpec{
-        {Name: "redirect", Value: redirect, Style: "form", Explode: true, AllowReserved: false},
-    })
-    raw, err := a.client.Get(AppendQueryString(AppApiPath("/oauth/wechat/payment/start"), query), nil, nil)
     if err != nil {
         var zero sdktypes.SdkWorkResourceResponse
         return zero, err

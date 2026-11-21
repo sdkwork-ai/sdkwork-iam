@@ -87,7 +87,7 @@ final class AuthApi extends BaseApi
     }
 
     /** Sessions current logout. */
-    public function sessionsCurrentLogout(array|SessionsCurrentLogoutRequest $body): mixed
+    public function sessionsCurrentLogout(array|SessionsCurrentLogoutRequest $body): ?SdkWorkCommandResponse
     {
         $path = '/app/v3/api/auth/sessions/current/logout';
         $payload = $body instanceof SessionsCurrentLogoutRequest ? $body->toArray() : $body;
@@ -95,7 +95,7 @@ final class AuthApi extends BaseApi
             'skipAuth' => true,
             'json' => $payload,
         ]);
-        return $result;
+        return is_array($result) ? SdkWorkCommandResponse::fromArray($result) : null;
     }
 
     /** Sessions login Context Selection create. */

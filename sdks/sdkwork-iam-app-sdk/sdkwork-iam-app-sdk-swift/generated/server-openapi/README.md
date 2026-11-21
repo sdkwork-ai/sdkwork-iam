@@ -74,8 +74,15 @@ print(result)
 ### oauth
 
 ```swift
-// Wechat Payment Oauth callback.
-let result = try await client.oauth.wechatPaymentOauthCallback()
+// Account Links list.
+let params: [String: Any] = [
+    "page": 1,
+    "page_size": 2,
+    "cursor": "cursor",
+    "sort": "sort",
+    "q": "q"
+]
+let result = try await client.oauth.accountLinksList(params: params)
 print(result)
 ```
 

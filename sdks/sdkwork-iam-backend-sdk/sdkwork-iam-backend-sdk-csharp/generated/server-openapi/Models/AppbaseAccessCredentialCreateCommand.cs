@@ -13,7 +13,7 @@ namespace SDKWork.Iam.BackendSdk.Models
         public string? Password { get; set; }
         public string TenantId { get; set; }
         public string OrganizationId { get; set; }
-        public string? TenantApplicationId { get; set; }
+        public string? InstallationId { get; set; }
         public string? AppId { get; set; }
         public string? InstanceKey { get; set; }
         public string? OwnershipScope { get; set; }

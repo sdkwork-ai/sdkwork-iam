@@ -900,7 +900,7 @@ function buildOperation(surface, route) {
     );
   }
 
-  if (route.operationId === 'tenantApplications.list') {
+  if (route.operationId === 'installations.list') {
     operation.parameters.push(
       queryParameter('status', { type: 'string' }),
       queryParameter('environment', { type: 'string' }),
@@ -970,6 +970,7 @@ function buildOperation(surface, route) {
 }
 
 function requestBodySchemaRef(route) {
+  const operationId = route.operationId;
   if (route.operationId === 'appAccessTokens.create') {
     return '#/components/schemas/IamAppAccessTokenCreateCommand';
   }
@@ -979,35 +980,35 @@ function requestBodySchemaRef(route) {
   if (route.operationId === 'sessions.create') {
     return '#/components/schemas/AppbaseSessionCreateCommand';
   }
-  if (route.operationId === 'tenantApplications.create') {
-    return '#/components/schemas/AppbaseTenantApplicationProvisionCommand';
+  if (operationId === 'installations.create') {
+    return '#/components/schemas/AppbaseInstallationProvisionCommand';
   }
-  if (route.operationId === 'tenantApplications.management.create') {
-    return '#/components/schemas/IamTenantApplicationManagementProvisionCommand';
+  if (operationId === 'installations.management.create') {
+    return '#/components/schemas/IamInstallationManagementProvisionCommand';
   }
-  if (route.operationId === 'tenantApplications.management.update') {
-    return '#/components/schemas/IamTenantApplicationManagementUpdateCommand';
+  if (operationId === 'installations.management.update') {
+    return '#/components/schemas/IamInstallationManagementUpdateCommand';
   }
   if (
-    route.operationId === 'tenantApplications.management.enable'
-    || route.operationId === 'tenantApplications.management.disable'
+    operationId === 'installations.management.enable'
+    || operationId === 'installations.management.disable'
   ) {
-    return '#/components/schemas/IamTenantApplicationStatusCommand';
+    return '#/components/schemas/IamInstallationStatusCommand';
   }
-  if (route.operationId === 'tenantApplications.update') {
-    return '#/components/schemas/AppbaseTenantApplicationUpdateCommand';
+  if (operationId === 'installations.update') {
+    return '#/components/schemas/AppbaseInstallationUpdateCommand';
   }
-  if (route.operationId === 'tenantApplications.environments.update') {
+  if (operationId === 'installations.environments.update') {
     return '#/components/schemas/IamInstallationEnvironmentUpsertCommand';
   }
-  if (route.operationId === 'tenantApplications.credentials.create') {
+  if (operationId === 'installations.credentials.create') {
     return '#/components/schemas/IamInstallationCredentialCreateCommand';
   }
-  if (route.operationId === 'tenantApplications.credentials.rotate') {
+  if (operationId === 'installations.credentials.rotate') {
     return '#/components/schemas/IamInstallationCredentialRotateCommand';
   }
-  if (route.operationId === 'tenantApplications.enable') {
-    return '#/components/schemas/AppbaseTenantApplicationEnableCommand';
+  if (operationId === 'installations.enable') {
+    return '#/components/schemas/AppbaseInstallationEnableCommand';
   }
   if (route.operationId === 'accessCredentials.create') {
     return '#/components/schemas/AppbaseAccessCredentialCreateCommand';
@@ -1089,9 +1090,9 @@ function typedListSuccessSchemaRef(route) {
   switch (route.operationId) {
     case 'organizations.members.list':
       return '#/components/schemas/IamOrganizationMemberListResponse';
-    case 'tenantApplications.environments.list':
+    case 'installations.environments.list':
       return '#/components/schemas/IamInstallationEnvironmentListResponse';
-    case 'tenantApplications.credentials.list':
+    case 'installations.credentials.list':
       return '#/components/schemas/IamInstallationCredentialListResponse';
     default:
       return undefined;
@@ -1108,10 +1109,10 @@ function typedResourceSuccessSchemaRef(route) {
   switch (route.operationId) {
     case 'appAccessTokens.create':
       return '#/components/schemas/IamAppAccessTokenResponse';
-    case 'tenantApplications.environments.update':
+    case 'installations.environments.update':
       return '#/components/schemas/IamInstallationEnvironmentResponse';
-    case 'tenantApplications.credentials.create':
-    case 'tenantApplications.credentials.rotate':
+    case 'installations.credentials.create':
+    case 'installations.credentials.rotate':
       return '#/components/schemas/IamInstallationCredentialResponse';
     default:
       return undefined;
@@ -1145,7 +1146,7 @@ function buildSchemas() {
             + '.deploy_application_id). Preferred selector: it is the identity the deployment '
             + 'plane publishes.',
         },
-        tenantApplicationId: {
+        installationId: {
           type: 'string',
           minLength: 1,
           maxLength: 128,
@@ -1185,7 +1186,7 @@ function buildSchemas() {
         'authToken',
         'expiresAt',
         'appId',
-        'tenantApplicationId',
+        'installationId',
         'ownershipScope',
       ],
       description:
@@ -1209,7 +1210,7 @@ function buildSchemas() {
           type: 'string',
           description: 'Deploy application anchor carried as the token app_id/aud.',
         },
-        tenantApplicationId: {
+        installationId: {
           type: 'string',
           description: 'Installation the credential was issued for.',
         },
@@ -1912,7 +1913,7 @@ function buildSchemas() {
         },
       },
     },
-    IamTenantApplicationManagementProvisionCommand: {
+    IamInstallationManagementProvisionCommand: {
       type: 'object',
       additionalProperties: false,
       description:
@@ -1970,7 +1971,7 @@ function buildSchemas() {
         },
       },
     },
-    IamTenantApplicationManagementUpdateCommand: {
+    IamInstallationManagementUpdateCommand: {
       type: 'object',
       additionalProperties: false,
       description: 'Update operator-managed tenant application domain and access permissions.',
@@ -1982,13 +1983,13 @@ function buildSchemas() {
         },
       },
     },
-    IamTenantApplicationStatusCommand: {
+    IamInstallationStatusCommand: {
       type: 'object',
       additionalProperties: false,
       description: 'Authenticated operator command for a tenant application status transition.',
       properties: {},
     },
-    AppbaseTenantApplicationProvisionCommand: {
+    AppbaseInstallationProvisionCommand: {
       type: 'object',
       additionalProperties: true,
       description:
@@ -2038,7 +2039,7 @@ function buildSchemas() {
         },
       },
     },
-    AppbaseTenantApplicationUpdateCommand: {
+    AppbaseInstallationUpdateCommand: {
       type: 'object',
       additionalProperties: true,
       description: 'Update tenant application access and runtime configuration.',
@@ -2053,7 +2054,7 @@ function buildSchemas() {
         runtimeConfig: { type: 'object', additionalProperties: true },
       },
     },
-    AppbaseTenantApplicationEnableCommand: {
+    AppbaseInstallationEnableCommand: {
       type: 'object',
       additionalProperties: true,
       description: 'Enable a provisioned tenant application before access credential issuance.',
@@ -2070,7 +2071,7 @@ function buildSchemas() {
         ...bootstrapAuth,
         tenantId: { type: 'string' },
         organizationId: { type: 'string' },
-        tenantApplicationId: { type: 'string' },
+        installationId: { type: 'string' },
         appId: { type: 'string' },
         instanceKey: { type: 'string' },
         ownershipScope: {
@@ -2084,10 +2085,10 @@ function buildSchemas() {
     ServiceAccountCredentialCreateCommand: {
       type: 'object',
       additionalProperties: false,
-      required: ['tenantApplicationId'],
+      required: ['installationId'],
       description: 'Create a one-time-returned workload credential bound to a service account and tenant application.',
       properties: {
-        tenantApplicationId: { type: 'string', minLength: 1, maxLength: 255 },
+        installationId: { type: 'string', minLength: 1, maxLength: 255 },
         expiresAt: { type: 'string', format: 'date-time' },
       },
     },

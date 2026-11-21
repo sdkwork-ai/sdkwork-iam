@@ -5,6 +5,8 @@
   "language": "python",
   "sdkType": "custom",
   "packageName": "sdkwork-iam-open-sdk",
+  "transportPackageName": "sdkwork-iam-open-sdk",
+  "consumerPackageName": "sdkwork-iam-open-sdk",
   "generator": "@sdkwork/sdk-generator",
   "capabilities": {
     "supportsGeneratedTests": true,

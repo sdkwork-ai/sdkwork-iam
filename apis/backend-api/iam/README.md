@@ -32,13 +32,13 @@ An installation owns one row per lifecycle environment
 
 | Operation ID | Method / path | Success shape |
 | --- | --- | --- |
-| `tenantApplications.environments.list` | `GET /backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments` | `IamInstallationEnvironmentListResponse` |
-| `tenantApplications.environments.update` | `PUT .../environments/{environmentKey}` | `IamInstallationEnvironmentResponse` |
-| `tenantApplications.environments.delete` | `DELETE .../environments/{environmentKey}` | `204` |
-| `tenantApplications.credentials.list` | `GET .../credentials` | `IamInstallationCredentialListResponse` |
-| `tenantApplications.credentials.create` | `POST .../credentials` | `201 IamInstallationCredentialResponse` |
-| `tenantApplications.credentials.rotate` | `POST .../credentials/{credentialId}/rotate` | `IamInstallationCredentialResponse` |
-| `tenantApplications.credentials.revoke` | `POST .../credentials/{credentialId}/revoke` | `SdkWorkCommandResponse` |
+| `installations.environments.list` | `GET /backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/environments` | `IamInstallationEnvironmentListResponse` |
+| `installations.environments.update` | `PUT .../environments/{environmentKey}` | `IamInstallationEnvironmentResponse` |
+| `installations.environments.delete` | `DELETE .../environments/{environmentKey}` | `204` |
+| `installations.credentials.list` | `GET .../credentials` | `IamInstallationCredentialListResponse` |
+| `installations.credentials.create` | `POST .../credentials` | `201 IamInstallationCredentialResponse` |
+| `installations.credentials.rotate` | `POST .../credentials/{credentialId}/rotate` | `IamInstallationCredentialResponse` |
+| `installations.credentials.revoke` | `POST .../credentials/{credentialId}/revoke` | `SdkWorkCommandResponse` |
 
 Every operation declares `x-sdkwork-permission: iam.tenant_applications.update`
 (the existing installation-update boundary; no new code is seeded) and
@@ -61,8 +61,8 @@ repository `README.md`; OpenAPI describes the management surface only.
 
 ## Installation Release Scope
 
-Provisioning (`tenantApplications.management.create` and
-`tenantApplications.create`) accepts two release-scope fields
+Provisioning (`installations.management.create` and
+`installations.create`) accepts two release-scope fields
 (`APPLICATION_IDENTITY_SPEC.md` §4.1):
 
 | Field | Rule |

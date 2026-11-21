@@ -318,7 +318,7 @@ export function createIamBackendSdkAdapter(client: unknown): IamBackendSdkClient
   const iamPositions = toRecord(iam.positions);
   const iamPositionAssignments = toRecord(iam.positionAssignments);
   const iamRoleBindings = toRecord(iam.roleBindings);
-  const iamTenantApplications = toRecord(iam.tenantApplications);
+  const iamInstallations = toRecord(iam.installations);
 
   const iamOauthRoot = toRecord(source.iamOauth);
   const iamOauthIam = toRecord(iamOauthRoot.iam);
@@ -422,20 +422,20 @@ export function createIamBackendSdkAdapter(client: unknown): IamBackendSdkClient
         list: standardResourceMethod(toRecord(iam.securityEvents), "list", "appbaseBackend.iam.securityEvents.list"),
         retrieve: standardResourceMethod(toRecord(iam.securityEvents), "retrieve", "appbaseBackend.iam.securityEvents.retrieve"),
       },
-      tenantApplications: {
-        enable: standardResourceMethod(iamTenantApplications, "enable", "appbaseBackend.iam.tenantApplications.enable"),
-        list: standardResourceMethod(iamTenantApplications, "list", "appbaseBackend.iam.tenantApplications.list"),
-        create: standardResourceMethod(iamTenantApplications, "create", "appbaseBackend.iam.tenantApplications.create"),
-        retrieve: standardResourceMethod(iamTenantApplications, "retrieve", "appbaseBackend.iam.tenantApplications.retrieve"),
-        update: standardResourceMethod(iamTenantApplications, "update", "appbaseBackend.iam.tenantApplications.update"),
+      installations: {
+        enable: standardResourceMethod(iamInstallations, "enable", "appbaseBackend.iam.installations.enable"),
+        list: standardResourceMethod(iamInstallations, "list", "appbaseBackend.iam.installations.list"),
+        create: standardResourceMethod(iamInstallations, "create", "appbaseBackend.iam.installations.create"),
+        retrieve: standardResourceMethod(iamInstallations, "retrieve", "appbaseBackend.iam.installations.retrieve"),
+        update: standardResourceMethod(iamInstallations, "update", "appbaseBackend.iam.installations.update"),
         management: {
-          disable: standardResourceMethod(toRecord(iamTenantApplications.management), "disable", "appbaseBackend.iam.tenantApplications.management.disable"),
-          enable: standardResourceMethod(toRecord(iamTenantApplications.management), "enable", "appbaseBackend.iam.tenantApplications.management.enable"),
-          create: standardResourceMethod(toRecord(iamTenantApplications.management), "create", "appbaseBackend.iam.tenantApplications.management.create"),
-          update: standardResourceMethod(toRecord(iamTenantApplications.management), "update", "appbaseBackend.iam.tenantApplications.management.update"),
+          disable: standardResourceMethod(toRecord(iamInstallations.management), "disable", "appbaseBackend.iam.installations.management.disable"),
+          enable: standardResourceMethod(toRecord(iamInstallations.management), "enable", "appbaseBackend.iam.installations.management.enable"),
+          create: standardResourceMethod(toRecord(iamInstallations.management), "create", "appbaseBackend.iam.installations.management.create"),
+          update: standardResourceMethod(toRecord(iamInstallations.management), "update", "appbaseBackend.iam.installations.management.update"),
         },
         summary: {
-          retrieve: standardResourceMethod(toRecord(iamTenantApplications.summary), "retrieve", "appbaseBackend.iam.tenantApplications.summary.retrieve"),
+          retrieve: standardResourceMethod(toRecord(iamInstallations.summary), "retrieve", "appbaseBackend.iam.installations.summary.retrieve"),
         },
       },
       tenants: {

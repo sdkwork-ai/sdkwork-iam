@@ -11,6 +11,16 @@ class IamApi {
 
   IamApi(this._client);
 
+  /// App Access Tokens create.
+  Future<IamAppAccessTokenResponse?> appAccessTokensCreate(IamAppAccessTokenCreateCommand body) async {
+    final payload = body.toJson();
+    final response = await _client.post(ApiPaths.appPath('/iam/app_access_tokens'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : IamAppAccessTokenResponse.fromJson(map);
+    })();
+  }
+
   /// Department Assignments list.
   Future<SdkWorkListResponse?> departmentAssignmentsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
@@ -52,7 +62,7 @@ class IamApi {
     })();
   }
 
-  /// Iam oauth official Account Settings retrieve.
+  /// Oauth official Account Settings retrieve.
   Future<SdkWorkResourceResponse?> oauthOfficialAccountSettingsRetrieve() async {
     final response = await _client.get(ApiPaths.appPath('/iam/oauth/official_account_settings'));
     return (() {
@@ -61,7 +71,7 @@ class IamApi {
     })();
   }
 
-  /// Iam oauth official Accounts list.
+  /// Oauth official Accounts list.
   Future<SdkWorkListResponse?> oauthOfficialAccountsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
@@ -77,7 +87,7 @@ class IamApi {
     })();
   }
 
-  /// Iam oauth official Accounts create.
+  /// Oauth official Accounts create.
   Future<SdkWorkResourceResponse?> oauthOfficialAccountsCreate(Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.appPath('/iam/oauth/official_accounts'), body: payload, contentType: 'application/json');
@@ -87,12 +97,12 @@ class IamApi {
     })();
   }
 
-  /// Iam oauth official Accounts delete.
+  /// Oauth official Accounts delete.
   Future<void> oauthOfficialAccountsDelete(String officialAccountId) async {
     await _client.delete(ApiPaths.appPath('/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, const PathParameterSpec('officialAccountId', 'simple', false))}'));
   }
 
-  /// Iam oauth official Accounts retrieve.
+  /// Oauth official Accounts retrieve.
   Future<SdkWorkResourceResponse?> oauthOfficialAccountsRetrieve(String officialAccountId) async {
     final response = await _client.get(ApiPaths.appPath('/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, const PathParameterSpec('officialAccountId', 'simple', false))}'));
     return (() {
@@ -101,7 +111,7 @@ class IamApi {
     })();
   }
 
-  /// Iam oauth official Accounts update.
+  /// Oauth official Accounts update.
   Future<SdkWorkResourceResponse?> oauthOfficialAccountsUpdate(String officialAccountId, [Map<String, dynamic>? body]) async {
     final payload = body;
     final response = await _client.patch(ApiPaths.appPath('/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, const PathParameterSpec('officialAccountId', 'simple', false))}'), body: payload, contentType: 'application/json');
@@ -111,7 +121,7 @@ class IamApi {
     })();
   }
 
-  /// Iam oauth official Accounts custom Menus publish.
+  /// Oauth official Accounts custom Menus publish.
   Future<SdkWorkResourceResponse?> oauthOfficialAccountsCustomMenusPublish(String officialAccountId, Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.appPath('/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, const PathParameterSpec('officialAccountId', 'simple', false))}/custom_menus/publish'), body: payload, contentType: 'application/json');
@@ -121,7 +131,7 @@ class IamApi {
     })();
   }
 
-  /// Iam oauth official Accounts custom Menus rollback.
+  /// Oauth official Accounts custom Menus rollback.
   Future<SdkWorkResourceResponse?> oauthOfficialAccountsCustomMenusRollback(String officialAccountId, Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.appPath('/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, const PathParameterSpec('officialAccountId', 'simple', false))}/custom_menus/rollback'), body: payload, contentType: 'application/json');
@@ -131,7 +141,7 @@ class IamApi {
     })();
   }
 
-  /// Iam oauth official Accounts custom Menus sync.
+  /// Oauth official Accounts custom Menus sync.
   Future<SdkWorkResourceResponse?> oauthOfficialAccountsCustomMenusSync(String officialAccountId, Map<String, dynamic> body) async {
     final payload = body;
     final response = await _client.post(ApiPaths.appPath('/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, const PathParameterSpec('officialAccountId', 'simple', false))}/custom_menus/sync'), body: payload, contentType: 'application/json');
@@ -248,11 +258,11 @@ class IamApi {
       QueryParameterSpec('cursor', cursor, 'form', true, false, null),
       QueryParameterSpec('sort', sort, 'form', true, false, null),
       QueryParameterSpec('q', q, 'form', true, false, null),
-      QueryParameterSpec('roleId', roleId, 'form', true, false, null),
-      QueryParameterSpec('principalKind', principalKind, 'form', true, false, null),
-      QueryParameterSpec('principalId', principalId, 'form', true, false, null),
-      QueryParameterSpec('scopeKind', scopeKind, 'form', true, false, null),
-      QueryParameterSpec('scopeId', scopeId, 'form', true, false, null)
+      QueryParameterSpec('role_id', roleId, 'form', true, false, null),
+      QueryParameterSpec('principal_kind', principalKind, 'form', true, false, null),
+      QueryParameterSpec('principal_id', principalId, 'form', true, false, null),
+      QueryParameterSpec('scope_kind', scopeKind, 'form', true, false, null),
+      QueryParameterSpec('scope_id', scopeId, 'form', true, false, null)
     ]);
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.appPath('/iam/role_bindings'), query));
     return (() {

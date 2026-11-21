@@ -12,7 +12,7 @@
   "generatedFiles": [
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -36,11 +36,11 @@
     },
     {
       "path": "README.md",
-      "sha256": "97126e5e5947792fb00409be32c6cf3ffc15ea9ab834c9c8c2fbf3cf2cbf2849"
+      "sha256": "f0aaba8c6d39843d5f78107d6ff79a68d8cbfe880f815b7e5362e91f0c13f9dc"
     },
     {
       "path": "sdkwork-sdk.json",
-      "sha256": "433a43876cd163108972964aaeec59c043798e44cb81b33e01f5235fa52b400f"
+      "sha256": "4bcc5f0706daa842eb012aa32e1b8d19009dc91aaa04bbe1e3b2e71f4b3cdeda"
     },
     {
       "path": "settings.gradle.kts",
@@ -48,59 +48,27 @@
     },
     {
       "path": "src/main/kotlin/com/sdkwork/iam/open/sdk/api/Api.kt",
-      "sha256": "3c90a1aef703c2df57e2474b19621e321c0a9c19c49e0a29f810b46f45e3a75f"
+      "sha256": "ad523c98ed6cf73591be58b711a2b2df0d4f83c09f12d171b5748f445d7de05d"
     },
     {
       "path": "src/main/kotlin/com/sdkwork/iam/open/sdk/api/ApiPaths.kt",
       "sha256": "28cfc7e9868fc6956379527090b6f514198e549506b950c54c973ffcb445ac16"
     },
     {
-      "path": "src/main/kotlin/com/sdkwork/iam/open/sdk/api/IamOauthApi.kt",
-      "sha256": "08a43203e80b5935318ddf92739390ad33aa021b043ad1b91505c7266dbd9472"
-    },
-    {
-      "path": "src/main/kotlin/com/sdkwork/iam/open/sdk/AppbaseAccessCredentialCreateCommand.kt",
-      "sha256": "778579a948b4932e334ccb7b472cdd60dee1e3d1bd9b3564a8befe6eababcacc"
-    },
-    {
-      "path": "src/main/kotlin/com/sdkwork/iam/open/sdk/AppbaseApiResult.kt",
-      "sha256": "d261fd4ef0c5dca66992b0eeab26c5f71ad9eebfe52407fc31e017269e3a2daa"
-    },
-    {
-      "path": "src/main/kotlin/com/sdkwork/iam/open/sdk/AppbaseApplicationRegisterCommand.kt",
-      "sha256": "d00b439ceee0ec99795105d1677689a07cd0e5c0ab99a3dbcdf0c42419a439c6"
-    },
-    {
-      "path": "src/main/kotlin/com/sdkwork/iam/open/sdk/AppbaseSessionCreateCommand.kt",
-      "sha256": "bcccf919ba5a37a6ae8cbedb3e92d1fac4ada3cb40eb7256e74a5df0ae77e4ca"
-    },
-    {
-      "path": "src/main/kotlin/com/sdkwork/iam/open/sdk/AppbaseTenantApplicationEnableCommand.kt",
-      "sha256": "7421208dbb08b32a4fa49ff5c2daa9034d6961a22c3351759856cc70235a1a16"
-    },
-    {
-      "path": "src/main/kotlin/com/sdkwork/iam/open/sdk/AppbaseTenantApplicationProvisionCommand.kt",
-      "sha256": "54addfb9671f385231ec02fc096a594f0c66c10b389f1f7c75f058ac279d8247"
-    },
-    {
-      "path": "src/main/kotlin/com/sdkwork/iam/open/sdk/AppbaseTenantApplicationUpdateCommand.kt",
-      "sha256": "6edb1bbe11e7cf1b3566cc0df3907eaeead1a8ac3c387334136f2d938552e61c"
-    },
-    {
       "path": "src/main/kotlin/com/sdkwork/iam/open/sdk/FieldError.kt",
-      "sha256": "9b0b7eba0cf1d491544a615ef8d8bbc1e2de9c428f7a929b2c1567da2afdadd3"
+      "sha256": "88af7b7cfe2f3982c80a53e9714e52e254fa2534a6546b36654cbb9f279c23d4"
     },
     {
       "path": "src/main/kotlin/com/sdkwork/iam/open/sdk/http/HttpClient.kt",
-      "sha256": "e229c95170b4e3b8838843f57ca060cc7f4ec91c25ff5fc06d59c4946a4434a0"
+      "sha256": "4e91dfae279f11dbf287c5de7885d7e219264de4c68a63832c91fb26885b1319"
     },
     {
       "path": "src/main/kotlin/com/sdkwork/iam/open/sdk/ProblemDetail.kt",
-      "sha256": "2dfa58788d0b082acfe0294b965b5700d88f0ecf3c7ac1eb508a77ddfcc3baa3"
+      "sha256": "809d3c4b175019acd12bb253a0a92f361c6c1d02e44f2250412e3885668acb21"
     },
     {
       "path": "src/main/kotlin/com/sdkwork/iam/open/sdk/SdkworkCustomClient.kt",
-      "sha256": "84df2cfe38dea36c1ea2a8fce4fafb8b8d3c7048b145a78ec298e423f49affde"
+      "sha256": "492ffab351e683b558565550f3577ffb6852fa8f6e599a32d636af6f5fab423b"
     }
   ],
   "scaffoldFiles": [

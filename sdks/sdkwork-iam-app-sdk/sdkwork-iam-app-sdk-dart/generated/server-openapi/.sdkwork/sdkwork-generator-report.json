@@ -12,18 +12,18 @@
   "mode": "apply",
   "hasChanges": true,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "0338b7db0425ef4070a6a0e6afbcdfaf5593415a4d7de6e309383568b1f4f616",
+  "changeFingerprint": "c338908fd2d82dd0ec4cdd0ef6606c78c3c94c51fe13c00850ecf7502563b83a",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
       "api-surface",
-      "models"
+      "models",
+      "documentation"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "lib/src/api/api.dart",
           "lib/src/api/auth.dart",
           "lib/src/api/iam.dart",
           "lib/src/api/oauth.dart"
@@ -34,10 +34,16 @@
         "paths": [
           "lib/src/models.dart"
         ]
+      },
+      {
+        "area": "documentation",
+        "paths": [
+          "README.md"
+        ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models. Verification is required."
+    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
@@ -58,7 +64,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-dart\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -77,13 +83,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-dart\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -114,7 +120,7 @@
   },
   "stats": {
     "totalFiles": 22,
-    "models": 30,
+    "models": 33,
     "apis": 4,
     "types": 1
   },
@@ -127,15 +133,15 @@
     "skippedUnchangedGeneratedFiles": 16,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "0338b7db0425ef4070a6a0e6afbcdfaf5593415a4d7de6e309383568b1f4f616",
+    "changeFingerprint": "c338908fd2d82dd0ec4cdd0ef6606c78c3c94c51fe13c00850ecf7502563b83a",
     "changes": {
       "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [
-        "lib/src/api/api.dart",
         "lib/src/api/auth.dart",
         "lib/src/api/iam.dart",
         "lib/src/api/oauth.dart",
-        "lib/src/models.dart"
+        "lib/src/models.dart",
+        "README.md"
       ],
       "unchangedGeneratedFiles": [
         "analysis_options.yaml",
@@ -145,6 +151,7 @@
         "CHANGELOG.md",
         "lib/app_client.dart",
         "lib/sdkwork_iam_app_sdk.dart",
+        "lib/src/api/api.dart",
         "lib/src/api/paths.dart",
         "lib/src/api/response_helpers.dart",
         "lib/src/api/system.dart",
@@ -152,7 +159,6 @@
         "lib/src/http/sdk_config.dart",
         "LICENSE",
         "pubspec.yaml",
-        "README.md",
         "sdkwork-sdk.json"
       ],
       "deletedGeneratedFiles": [],
@@ -166,13 +172,13 @@
       "schemaVersion": 1,
       "areas": [
         "api-surface",
-        "models"
+        "models",
+        "documentation"
       ],
       "details": [
         {
           "area": "api-surface",
           "paths": [
-            "lib/src/api/api.dart",
             "lib/src/api/auth.dart",
             "lib/src/api/iam.dart",
             "lib/src/api/oauth.dart"
@@ -183,21 +189,27 @@
           "paths": [
             "lib/src/models.dart"
           ]
+        },
+        {
+          "area": "documentation",
+          "paths": [
+            "README.md"
+          ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface, models. Verification is required."
+      "summary": "Detected impact areas: api-surface, models, documentation. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface, models, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-dart\\generated\\server-openapi",
           "command": "node",
           "args": [

@@ -107,8 +107,8 @@ pub use application_registry::{
     tenant_application_row_id, tenant_application_to_json, update_tenant_application,
     validate_enabled_tenant_runtime_app, EnsureTenantApplicationCommand, TenantApplication,
     TenantApplicationProvisionCommand, TenantApplicationUpdateCommand, DEPLOY_APPLICATION_ID_ENV,
-    IAM_TENANT_APPLICATIONS_DISABLE_PERMISSION, IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION,
-    IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION, IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION,
+    IAM_INSTALLATIONS_DISABLE_PERMISSION, IAM_INSTALLATIONS_ENABLE_PERMISSION,
+    IAM_INSTALLATIONS_PROVISION_PERMISSION, IAM_INSTALLATIONS_UPDATE_PERMISSION,
     PLATFORM_INSTALLATION_ANCHOR,
 };
 pub use application_scope::{
@@ -126,7 +126,7 @@ pub use embedded_bootstrap::{
     ensure_tenant_application_from_app_root, ensure_tenant_application_from_app_root_if_configured,
     ensure_tenant_application_from_app_root_with_env,
     ensure_tenant_application_from_app_root_with_env_and_fallback,
-    ensure_tenant_applications_from_app_root_on_pool, ensure_tenant_applications_on_pool,
+    ensure_installations_from_app_root_on_pool, ensure_installations_on_pool,
     postgres_iam_foundation_schema_ready, resolve_application_app_root,
     resolve_application_app_root_with_fallback, resolve_bootstrap_environment,
 };

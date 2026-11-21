@@ -79,8 +79,15 @@ println(result)
 ### oauth
 
 ```kotlin
-// Wechat Payment Oauth callback.
-val result = client.oauth.wechatPaymentOauthCallback()
+// Account Links list.
+val params = linkedMapOf<String, Any>(
+    "page" to 1,
+    "page_size" to 2,
+    "cursor" to "cursor",
+    "sort" to "sort",
+    "q" to "q"
+)
+val result = client.oauth.accountLinksList(params)
 println(result)
 ```
 

@@ -266,6 +266,12 @@ class IamOauthApi(private val client: HttpClient) {
         return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
     }
 
+    /** Iam oauth operator Platforms component Credentials create. */
+    suspend fun operatorPlatformsComponentCredentialsCreate(operatorPlatformId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
+        val raw = client.post(ApiPaths.backendPath("/iam/oauth/operator_platforms/${serializePathParameter(operatorPlatformId, PathParameterSpec("operatorPlatformId", "simple", false))}/component_credentials"), body, null, null, "application/json")
+        return client.convertValue(raw, object : TypeReference<SdkWorkResourceResponse>() {})
+    }
+
     /** Iam oauth operator Platforms pre Authorizations create. */
     suspend fun operatorPlatformsPreAuthorizationsCreate(operatorPlatformId: String, body: Map<String, Any>): SdkWorkResourceResponse? {
         val raw = client.post(ApiPaths.backendPath("/iam/oauth/operator_platforms/${serializePathParameter(operatorPlatformId, PathParameterSpec("operatorPlatformId", "simple", false))}/pre_authorizations"), body, null, null, "application/json")

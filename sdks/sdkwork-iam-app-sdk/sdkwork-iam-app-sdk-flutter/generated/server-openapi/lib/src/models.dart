@@ -480,6 +480,176 @@ class SdkWorkCommandResponse {
   }
 }
 
+class IamAppAccessTokenCreateCommand {
+  final String? appId;
+  final String? installationId;
+  final String? instanceKey;
+  final String? environment;
+  final String? ownershipScope;
+
+  IamAppAccessTokenCreateCommand({
+    this.appId,
+    this.installationId,
+    this.instanceKey,
+    this.environment,
+    this.ownershipScope
+  });
+
+  factory IamAppAccessTokenCreateCommand.fromJson(Map<String, dynamic> json) {
+    return IamAppAccessTokenCreateCommand(
+      appId: json['appId']?.toString(),
+      installationId: json['installationId']?.toString(),
+      instanceKey: json['instanceKey']?.toString(),
+      environment: json['environment']?.toString(),
+      ownershipScope: json['ownershipScope']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'appId': appId,
+      'installationId': installationId,
+      'instanceKey': instanceKey,
+      'environment': environment,
+      'ownershipScope': ownershipScope,
+    };
+  }
+}
+
+class IamAppAccessToken {
+  final String accessToken;
+  final String authToken;
+  final String expiresAt;
+  final String appId;
+  final String installationId;
+  final String? organizationId;
+  final String ownershipScope;
+  final String? sessionId;
+  final String? environment;
+
+  IamAppAccessToken({
+    required this.accessToken,
+    required this.authToken,
+    required this.expiresAt,
+    required this.appId,
+    required this.installationId,
+    this.organizationId,
+    required this.ownershipScope,
+    this.sessionId,
+    this.environment
+  });
+
+  factory IamAppAccessToken.fromJson(Map<String, dynamic> json) {
+    return IamAppAccessToken(
+      accessToken: (() {
+        final value = json['accessToken']?.toString();
+        if (value == null) {
+          throw FormatException('IamAppAccessToken.accessToken is required');
+        }
+        return value;
+      })(),
+      authToken: (() {
+        final value = json['authToken']?.toString();
+        if (value == null) {
+          throw FormatException('IamAppAccessToken.authToken is required');
+        }
+        return value;
+      })(),
+      expiresAt: (() {
+        final value = json['expiresAt']?.toString();
+        if (value == null) {
+          throw FormatException('IamAppAccessToken.expiresAt is required');
+        }
+        return value;
+      })(),
+      appId: (() {
+        final value = json['appId']?.toString();
+        if (value == null) {
+          throw FormatException('IamAppAccessToken.appId is required');
+        }
+        return value;
+      })(),
+      installationId: (() {
+        final value = json['installationId']?.toString();
+        if (value == null) {
+          throw FormatException('IamAppAccessToken.installationId is required');
+        }
+        return value;
+      })(),
+      organizationId: json['organizationId']?.toString(),
+      ownershipScope: (() {
+        final value = json['ownershipScope']?.toString();
+        if (value == null) {
+          throw FormatException('IamAppAccessToken.ownershipScope is required');
+        }
+        return value;
+      })(),
+      sessionId: json['sessionId']?.toString(),
+      environment: json['environment']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'accessToken': accessToken,
+      'authToken': authToken,
+      'expiresAt': expiresAt,
+      'appId': appId,
+      'installationId': installationId,
+      'organizationId': organizationId,
+      'ownershipScope': ownershipScope,
+      'sessionId': sessionId,
+      'environment': environment,
+    };
+  }
+}
+
+class IamAppAccessTokenResponse {
+  final int code;
+  final dynamic data;
+  final String traceId;
+
+  IamAppAccessTokenResponse({
+    required this.code,
+    required this.data,
+    required this.traceId
+  });
+
+  factory IamAppAccessTokenResponse.fromJson(Map<String, dynamic> json) {
+    return IamAppAccessTokenResponse(
+      code: (() {
+        final value = json['code'];
+        if (value is! int) {
+          throw FormatException('IamAppAccessTokenResponse.code is required');
+        }
+        return value;
+      })(),
+      data: (() {
+        final map = _sdkworkAsMap(json['data']);
+        if (map == null) {
+          throw FormatException('IamAppAccessTokenResponse.data is required');
+        }
+        return map;
+      })(),
+      traceId: (() {
+        final value = json['traceId']?.toString();
+        if (value == null) {
+          throw FormatException('IamAppAccessTokenResponse.traceId is required');
+        }
+        return value;
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'data': data,
+      'traceId': traceId,
+    };
+  }
+}
+
 class IamPersonaRole {
   final String code;
   final String? iamRoleCode;
@@ -1332,37 +1502,37 @@ class AuthorizationsCreateRequest {
   }
 }
 
-class AuthorizationsCreateResponse {
+class AuthorizationsCreateResponse201 {
   final int code;
   final String traceId;
   final Map<String, dynamic> data;
 
-  AuthorizationsCreateResponse({
+  AuthorizationsCreateResponse201({
     required this.code,
     required this.traceId,
     required this.data
   });
 
-  factory AuthorizationsCreateResponse.fromJson(Map<String, dynamic> json) {
-    return AuthorizationsCreateResponse(
+  factory AuthorizationsCreateResponse201.fromJson(Map<String, dynamic> json) {
+    return AuthorizationsCreateResponse201(
       code: (() {
         final value = json['code'];
         if (value is! int) {
-          throw FormatException('AuthorizationsCreateResponse.code is required');
+          throw FormatException('AuthorizationsCreateResponse201.code is required');
         }
         return value;
       })(),
       traceId: (() {
         final value = json['traceId']?.toString();
         if (value == null) {
-          throw FormatException('AuthorizationsCreateResponse.traceId is required');
+          throw FormatException('AuthorizationsCreateResponse201.traceId is required');
         }
         return value;
       })(),
       data: (() {
         final map = _sdkworkAsMap(json['data']);
         if (map == null) {
-          throw FormatException('AuthorizationsCreateResponse.data is required');
+          throw FormatException('AuthorizationsCreateResponse201.data is required');
         }
         return map;
       })()
@@ -1392,37 +1562,37 @@ class AuthorizationsCompletionsCreateRequest {
   }
 }
 
-class AuthorizationsCompletionsCreateResponse {
+class AuthorizationsCompletionsCreateResponse201 {
   final int code;
   final String traceId;
   final Map<String, dynamic> data;
 
-  AuthorizationsCompletionsCreateResponse({
+  AuthorizationsCompletionsCreateResponse201({
     required this.code,
     required this.traceId,
     required this.data
   });
 
-  factory AuthorizationsCompletionsCreateResponse.fromJson(Map<String, dynamic> json) {
-    return AuthorizationsCompletionsCreateResponse(
+  factory AuthorizationsCompletionsCreateResponse201.fromJson(Map<String, dynamic> json) {
+    return AuthorizationsCompletionsCreateResponse201(
       code: (() {
         final value = json['code'];
         if (value is! int) {
-          throw FormatException('AuthorizationsCompletionsCreateResponse.code is required');
+          throw FormatException('AuthorizationsCompletionsCreateResponse201.code is required');
         }
         return value;
       })(),
       traceId: (() {
         final value = json['traceId']?.toString();
         if (value == null) {
-          throw FormatException('AuthorizationsCompletionsCreateResponse.traceId is required');
+          throw FormatException('AuthorizationsCompletionsCreateResponse201.traceId is required');
         }
         return value;
       })(),
       data: (() {
         final map = _sdkworkAsMap(json['data']);
         if (map == null) {
-          throw FormatException('AuthorizationsCompletionsCreateResponse.data is required');
+          throw FormatException('AuthorizationsCompletionsCreateResponse201.data is required');
         }
         return map;
       })()
@@ -1502,37 +1672,37 @@ class DesktopSessionsCreateRequest {
   }
 }
 
-class DesktopSessionsCreateResponse {
+class DesktopSessionsCreateResponse201 {
   final int code;
   final String traceId;
   final Map<String, dynamic> data;
 
-  DesktopSessionsCreateResponse({
+  DesktopSessionsCreateResponse201({
     required this.code,
     required this.traceId,
     required this.data
   });
 
-  factory DesktopSessionsCreateResponse.fromJson(Map<String, dynamic> json) {
-    return DesktopSessionsCreateResponse(
+  factory DesktopSessionsCreateResponse201.fromJson(Map<String, dynamic> json) {
+    return DesktopSessionsCreateResponse201(
       code: (() {
         final value = json['code'];
         if (value is! int) {
-          throw FormatException('DesktopSessionsCreateResponse.code is required');
+          throw FormatException('DesktopSessionsCreateResponse201.code is required');
         }
         return value;
       })(),
       traceId: (() {
         final value = json['traceId']?.toString();
         if (value == null) {
-          throw FormatException('DesktopSessionsCreateResponse.traceId is required');
+          throw FormatException('DesktopSessionsCreateResponse201.traceId is required');
         }
         return value;
       })(),
       data: (() {
         final map = _sdkworkAsMap(json['data']);
         if (map == null) {
-          throw FormatException('DesktopSessionsCreateResponse.data is required');
+          throw FormatException('DesktopSessionsCreateResponse201.data is required');
         }
         return map;
       })()

@@ -17,7 +17,6 @@ Or add to your `.csproj`:
 ## Quick Start
 
 ```csharp
-using SDKWork.Iam.OpenSdk.Models;
 using SDKWork.Iam.OpenSdk;
 using SDKwork.Common.Core;
 
@@ -25,9 +24,7 @@ var config = new SdkConfig("http://localhost:8080");
 var client = new SdkworkCustomClient(config);
 client.SetApiKey("your-api-key");
 
-var callbackPublicId = "1";
-var result = await client.IamOauth.ProviderCallbacksHandleGetAsync(callbackPublicId);
-Console.WriteLine(result);
+await client.Example.ListAsync();
 ```
 
 ## Authentication Modes (Mutually Exclusive)
@@ -69,26 +66,18 @@ client.SetHeader("X-Custom-Header", "value");
 
 ## API Modules
 
-- `client.IamOauth` - iam_oauth API
+
 
 ## Usage Examples
 
-### iam_oauth
-
-```csharp
-// Iam oauth provider Callbacks handle Get.
-var callbackPublicId = "1";
-var result = await client.IamOauth.ProviderCallbacksHandleGetAsync(callbackPublicId);
-Console.WriteLine(result);
-```
+No examples available.
 
 ## Error Handling
 
 ```csharp
 try
 {
-    var callbackPublicId = "1";
-    await client.IamOauth.ProviderCallbacksHandleGetAsync(callbackPublicId);
+    await client.Example.ListAsync();
 }
 catch (HttpRequestException ex)
 {

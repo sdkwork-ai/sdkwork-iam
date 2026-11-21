@@ -12,7 +12,7 @@
   "generatedFiles": [
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -32,59 +32,27 @@
     },
     {
       "path": "lib/sdkwork/custom_sdk.rb",
-      "sha256": "707c1e650081e4ac599f3f6719e3f70d38439c6158e03963b72b2a75b58c0d77"
+      "sha256": "e318d3d4debb746676bb0e0f1ef9a1cb87955b79ef77c779e73070c33031eaa6"
     },
     {
       "path": "lib/sdkwork/custom_sdk/api/base_api.rb",
       "sha256": "7c8e8579e96489f66df5e961cbc4a2088b57e98e4046cbae2925bedd6bfa612d"
     },
     {
-      "path": "lib/sdkwork/custom_sdk/api/iam_oauth.rb",
-      "sha256": "c684d2665d0bc88cbf9cf16adf9fbdb32f8f98923612a68f4a47a1a9cc1521bf"
-    },
-    {
       "path": "lib/sdkwork/custom_sdk/client.rb",
-      "sha256": "99d0f2dbc41972ea8283b6e3e088e71c6b2739f58894923e352559f8fbde3cfe"
+      "sha256": "daad1a8e8b8328ddfb2b80cc97e646e85e44735f917e4aaff46fd3408450cd57"
     },
     {
       "path": "lib/sdkwork/custom_sdk/http/client.rb",
-      "sha256": "0fd8a737bad54e8039bd3f7608177c23abe7efce43e0025df9599cfba8c5a6b6"
-    },
-    {
-      "path": "lib/sdkwork/custom_sdk/models/appbase_access_credential_create_command.rb",
-      "sha256": "5c9653d5dc1c9051a7f0f983bb9ebb10db6d458c2b842b9814fbd4d54178323e"
-    },
-    {
-      "path": "lib/sdkwork/custom_sdk/models/appbase_api_result.rb",
-      "sha256": "c8b491633c13cd014abb70bd892309e548a2e09b30de5334aefcda59deedfb15"
-    },
-    {
-      "path": "lib/sdkwork/custom_sdk/models/appbase_application_register_command.rb",
-      "sha256": "606a3b944b92284472b99df6d47742939fff396d4efa13c3c5ba4cea88404e67"
-    },
-    {
-      "path": "lib/sdkwork/custom_sdk/models/appbase_session_create_command.rb",
-      "sha256": "465218f028ca34c1c83530090536d2b1f213c9619c7a70e7fc760a28c76da699"
-    },
-    {
-      "path": "lib/sdkwork/custom_sdk/models/appbase_tenant_application_enable_command.rb",
-      "sha256": "79ade31525e326d7cffa4eb5ea8837be6c62bf87cae4c0dd3d13e7e274711281"
-    },
-    {
-      "path": "lib/sdkwork/custom_sdk/models/appbase_tenant_application_provision_command.rb",
-      "sha256": "0233b16182fe1e59502152cfc650666bf94e440dcffa68f0d29968444023b927"
-    },
-    {
-      "path": "lib/sdkwork/custom_sdk/models/appbase_tenant_application_update_command.rb",
-      "sha256": "f0f4227218f962fce68e3b937dceff230a113bcd979e5db8129ff8bcf90ac19f"
+      "sha256": "2f4b3d35eb2bb459a2dd6be2f13ca445459b2ff0daa0b1c322d703db7f9e815a"
     },
     {
       "path": "lib/sdkwork/custom_sdk/models/field_error.rb",
-      "sha256": "588b78beb423e78696f54b88c5e1da6fab295f46c8f9a32d52eec21a9cbe9289"
+      "sha256": "6da4e1d3762596025a2239a8eb65b5d413df249bfa8c7d10b8edfc490e4c28f9"
     },
     {
       "path": "lib/sdkwork/custom_sdk/models/problem_detail.rb",
-      "sha256": "658fa43cef4e9a32fc834efdfc7bc7ad0ec3b867a63fbd69ffd8ea5bffeb9df6"
+      "sha256": "6f81d9b9ea42be584add51e999d498c78495cad8942e5929e0f9d588a4969ac0"
     },
     {
       "path": "lib/sdkwork/custom_sdk/sdk_config.rb",
@@ -100,7 +68,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "68f240f8e5653183a6135631d5d6a19424479e3304a01eec3f357ccd32b151f3"
+      "sha256": "862c436f293998ec7882674bb87cac2534686c034d844ef9e1bdafb2c8b0fde1"
     },
     {
       "path": "sdkwork-iam-open-sdk.gemspec",
@@ -108,7 +76,7 @@
     },
     {
       "path": "sdkwork-sdk.json",
-      "sha256": "51a1993a4692ed7b457f860019dcc3f1e34a2c5e29cff7987355c3e8cf5c361f"
+      "sha256": "d69d086b07e317de21e60697df26c10b0abf09bb83b568c8d9dba23fe2bae51c"
     }
   ],
   "scaffoldFiles": [

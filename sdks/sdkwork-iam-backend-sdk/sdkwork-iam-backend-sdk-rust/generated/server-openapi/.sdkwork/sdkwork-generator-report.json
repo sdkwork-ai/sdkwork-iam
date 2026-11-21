@@ -11,8 +11,8 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "cf97d91bde607be9f43911ae9c35d08aa2d5bf735b27c055b62deb51a7c080e6",
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "c2f24e7dfa436d52305278c8a51e46dedf48b234fb621b752b0e9427ce9dce87",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
@@ -23,6 +23,7 @@
       {
         "area": "api-surface",
         "paths": [
+          "src/api/iam_oauth.rs",
           "src/api/iam.rs"
         ]
       },
@@ -30,19 +31,20 @@
         "area": "models",
         "paths": [
           "src/models/appbase_access_credential_create_command.rs",
+          "src/models/appbase_installation_enable_command.rs",
+          "src/models/appbase_installation_provision_command.rs",
+          "src/models/appbase_installation_update_command.rs",
+          "src/models/appbase_tenant_application_enable_command.rs",
           "src/models/appbase_tenant_application_provision_command.rs",
-          "src/models/iam_installation_credential_create_command.rs",
-          "src/models/iam_installation_credential_list_response.rs",
-          "src/models/iam_installation_credential_response.rs",
-          "src/models/iam_installation_credential_rotate_command.rs",
-          "src/models/iam_installation_credential_with_secret.rs",
-          "src/models/iam_installation_credential.rs",
-          "src/models/iam_installation_environment_list_response.rs",
-          "src/models/iam_installation_environment_response.rs",
-          "src/models/iam_installation_environment_upsert_command.rs",
-          "src/models/iam_installation_environment.rs",
+          "src/models/appbase_tenant_application_update_command.rs",
+          "src/models/iam_installation_management_provision_command.rs",
+          "src/models/iam_installation_management_update_command.rs",
+          "src/models/iam_installation_status_command.rs",
           "src/models/iam_tenant_application_management_provision_command.rs",
-          "src/models/mod.rs"
+          "src/models/iam_tenant_application_management_update_command.rs",
+          "src/models/iam_tenant_application_status_command.rs",
+          "src/models/mod.rs",
+          "src/models/service_account_credential_create_command.rs"
         ]
       }
     ],
@@ -51,12 +53,14 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },
@@ -168,31 +172,27 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 15,
+    "writtenFiles": 11,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 35,
-    "deletedGeneratedFiles": 0,
+    "skippedUnchangedGeneratedFiles": 39,
+    "deletedGeneratedFiles": 6,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "cf97d91bde607be9f43911ae9c35d08aa2d5bf735b27c055b62deb51a7c080e6",
+    "changeFingerprint": "c2f24e7dfa436d52305278c8a51e46dedf48b234fb621b752b0e9427ce9dce87",
     "changes": {
       "createdGeneratedFiles": [
-        "src/models/iam_installation_credential_create_command.rs",
-        "src/models/iam_installation_credential_list_response.rs",
-        "src/models/iam_installation_credential_response.rs",
-        "src/models/iam_installation_credential_rotate_command.rs",
-        "src/models/iam_installation_credential_with_secret.rs",
-        "src/models/iam_installation_credential.rs",
-        "src/models/iam_installation_environment_list_response.rs",
-        "src/models/iam_installation_environment_response.rs",
-        "src/models/iam_installation_environment_upsert_command.rs",
-        "src/models/iam_installation_environment.rs"
+        "src/models/appbase_installation_enable_command.rs",
+        "src/models/appbase_installation_provision_command.rs",
+        "src/models/appbase_installation_update_command.rs",
+        "src/models/iam_installation_management_provision_command.rs",
+        "src/models/iam_installation_management_update_command.rs",
+        "src/models/iam_installation_status_command.rs"
       ],
       "updatedGeneratedFiles": [
+        "src/api/iam_oauth.rs",
         "src/api/iam.rs",
         "src/models/appbase_access_credential_create_command.rs",
-        "src/models/appbase_tenant_application_provision_command.rs",
-        "src/models/iam_tenant_application_management_provision_command.rs",
-        "src/models/mod.rs"
+        "src/models/mod.rs",
+        "src/models/service_account_credential_create_command.rs"
       ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
@@ -204,20 +204,25 @@
         "README.md",
         "sdkwork-sdk.json",
         "src/api/base.rs",
-        "src/api/iam_oauth.rs",
         "src/api/mod.rs",
         "src/api/paths.rs",
         "src/client.rs",
         "src/http/client.rs",
         "src/http/mod.rs",
         "src/lib.rs",
-        "src/models/appbase_tenant_application_enable_command.rs",
-        "src/models/appbase_tenant_application_update_command.rs",
         "src/models/common.rs",
         "src/models/field_error.rs",
+        "src/models/iam_installation_credential_create_command.rs",
+        "src/models/iam_installation_credential_list_response.rs",
+        "src/models/iam_installation_credential_response.rs",
+        "src/models/iam_installation_credential_rotate_command.rs",
+        "src/models/iam_installation_credential_with_secret.rs",
+        "src/models/iam_installation_credential.rs",
+        "src/models/iam_installation_environment_list_response.rs",
+        "src/models/iam_installation_environment_response.rs",
+        "src/models/iam_installation_environment_upsert_command.rs",
+        "src/models/iam_installation_environment.rs",
         "src/models/iam_oauth_client_create_command.rs",
-        "src/models/iam_tenant_application_management_update_command.rs",
-        "src/models/iam_tenant_application_status_command.rs",
         "src/models/page_info.rs",
         "src/models/problem_detail.rs",
         "src/models/sdk_work_api_response.rs",
@@ -227,11 +232,17 @@
         "src/models/sdk_work_page_data.rs",
         "src/models/sdk_work_resource_data.rs",
         "src/models/sdk_work_resource_response.rs",
-        "src/models/service_account_credential_create_command.rs",
         "src/models/service_account_credential_revoke_command.rs",
         "src/models/service_account_token_exchange_command.rs"
       ],
-      "deletedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "src/models/appbase_tenant_application_enable_command.rs",
+        "src/models/appbase_tenant_application_provision_command.rs",
+        "src/models/appbase_tenant_application_update_command.rs",
+        "src/models/iam_tenant_application_management_provision_command.rs",
+        "src/models/iam_tenant_application_management_update_command.rs",
+        "src/models/iam_tenant_application_status_command.rs"
+      ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/README.md"
@@ -248,6 +259,7 @@
         {
           "area": "api-surface",
           "paths": [
+            "src/api/iam_oauth.rs",
             "src/api/iam.rs"
           ]
         },
@@ -255,19 +267,20 @@
           "area": "models",
           "paths": [
             "src/models/appbase_access_credential_create_command.rs",
+            "src/models/appbase_installation_enable_command.rs",
+            "src/models/appbase_installation_provision_command.rs",
+            "src/models/appbase_installation_update_command.rs",
+            "src/models/appbase_tenant_application_enable_command.rs",
             "src/models/appbase_tenant_application_provision_command.rs",
-            "src/models/iam_installation_credential_create_command.rs",
-            "src/models/iam_installation_credential_list_response.rs",
-            "src/models/iam_installation_credential_response.rs",
-            "src/models/iam_installation_credential_rotate_command.rs",
-            "src/models/iam_installation_credential_with_secret.rs",
-            "src/models/iam_installation_credential.rs",
-            "src/models/iam_installation_environment_list_response.rs",
-            "src/models/iam_installation_environment_response.rs",
-            "src/models/iam_installation_environment_upsert_command.rs",
-            "src/models/iam_installation_environment.rs",
+            "src/models/appbase_tenant_application_update_command.rs",
+            "src/models/iam_installation_management_provision_command.rs",
+            "src/models/iam_installation_management_update_command.rs",
+            "src/models/iam_installation_status_command.rs",
             "src/models/iam_tenant_application_management_provision_command.rs",
-            "src/models/mod.rs"
+            "src/models/iam_tenant_application_management_update_command.rs",
+            "src/models/iam_tenant_application_status_command.rs",
+            "src/models/mod.rs",
+            "src/models/service_account_credential_create_command.rs"
           ]
         }
       ],
@@ -319,12 +332,14 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "medium",
+      "riskLevel": "high",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
+        "deleted-generated-files",
+        "manual-review-required",
         "verification-required"
       ]
     },

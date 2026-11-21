@@ -152,7 +152,7 @@ pub async fn resolve_relying_party_client(
     // accepting either spelling for one registration.
     let rows = if let Some(tenant_id) = tenant_hint.filter(|value| !value.is_empty()) {
         sqlx::query(
-            "SELECT tenant_id, app_id, runtime_config_json, deploy_application_id \
+            "SELECT id, tenant_id, app_id, runtime_config_json, deploy_application_id \
              FROM iam_application_installation \
              WHERE tenant_id = $2 AND status = 'enabled' \
                AND ( \
@@ -170,7 +170,7 @@ pub async fn resolve_relying_party_client(
         .await
     } else {
         sqlx::query(
-            "SELECT tenant_id, app_id, runtime_config_json, deploy_application_id \
+            "SELECT id, tenant_id, app_id, runtime_config_json, deploy_application_id \
              FROM iam_application_installation \
              WHERE status = 'enabled' \
                AND ( \
@@ -199,10 +199,11 @@ pub async fn resolve_relying_party_client(
     }
 
     let row = &rows[0];
-    let tenant_id: String = row.get(0);
-    let app_id: String = row.get(1);
-    let runtime_config = runtime_config_json_from_row(row, 2);
-    let deploy_application_id: Option<String> = row.get(3);
+    let installation_id: String = row.get(0);
+    let tenant_id: String = row.get(1);
+    let app_id: String = row.get(2);
+    let runtime_config = runtime_config_json_from_row(row, 3);
+    let deploy_application_id: Option<String> = row.get(4);
     let deploy_application_id = deploy_application_id
         .map(|value| value.trim().to_owned())
         .filter(|value| !value.is_empty());
@@ -210,6 +211,15 @@ pub async fn resolve_relying_party_client(
     if !config.enabled {
         return Err("OAuth relying party is disabled for this application".to_string());
     }
+    // A client on an unanchored installation cannot complete the session
+    // exchange: the exchange reads the anchor to mint the session, and the
+    // token would name no deployment. Refuse at resolution so the hosted
+    // authorization page never issues a code for a login that must fail.
+    ensure_relying_party_installation_anchored(
+        &installation_id,
+        client_id,
+        deploy_application_id.as_deref(),
+    )?;
 
     let resolved_client_id = resolve_relying_party_client_id(&config, &app_id);
 
@@ -220,6 +230,36 @@ pub async fn resolve_relying_party_client(
         client_id: resolved_client_id,
         config,
     })
+}
+
+/// Refuses to resolve a relying party whose installation has no deploy anchor.
+///
+/// The session exchange mints a credential whose `app_id` is the installation's
+/// deploy application (`APPLICATION_IDENTITY_SPEC.md` §4); a client on an
+/// unanchored row can only produce a login that fails after the user has
+/// approved it. Failing at resolution keeps the authorization page honest.
+/// @param installation_id - installation that owns the client
+/// @param client_id - OAuth client id the caller asked for
+/// @param deploy_application_id - the installation's deploy anchor, when linked
+/// @returns `Ok(())` when the installation is anchored
+/// @throws when the installation has no deploy application link
+fn ensure_relying_party_installation_anchored(
+    installation_id: &str,
+    client_id: &str,
+    deploy_application_id: Option<&str>,
+) -> Result<(), String> {
+    if deploy_application_id
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .is_some()
+    {
+        return Ok(());
+    }
+    Err(format!(
+        "OAuth client {client_id} is registered on installation {installation_id}, which is not \
+         bound to a deploy application (安装未绑定部署应用); provision the installation with \
+         deployApplicationId before starting the login"
+    ))
 }
 
 pub fn validate_authorize_request(
@@ -1931,5 +1971,33 @@ mod tests {
         let claims = rendered_oauth_token_claims(&resolved);
         assert_eq!(claims["azp"], "birdcoder");
         assert_ne!(claims["azp"], claims["app_id"]);
+    }
+}
+
+#[cfg(test)]
+mod anchoring_tests {
+    use super::ensure_relying_party_installation_anchored;
+
+    #[test]
+    fn anchored_installations_resolve() {
+        for anchor in ["381158401561858048", " 381158401561858048 "] {
+            assert!(ensure_relying_party_installation_anchored(
+                "tapp_1",
+                "birdcoder",
+                Some(anchor)
+            )
+            .is_ok());
+        }
+    }
+
+    #[test]
+    fn missing_or_blank_anchor_fails_closed() {
+        for anchor in [None, Some(""), Some("   ")] {
+            let error = ensure_relying_party_installation_anchored("tapp_1", "birdcoder", anchor)
+                .expect_err("an unanchored installation must not resolve a client");
+            assert!(error.contains("tapp_1"), "{error}");
+            assert!(error.contains("birdcoder"), "{error}");
+            assert!(error.contains("deployApplicationId"), "{error}");
+        }
     }
 }

@@ -391,6 +391,18 @@
       "owner": "sdkwork-iam",
       "compliance_level": "L2",
       "lifecycle_status": "active"
+    },
+    {
+      "table_name": "iam_oauth_channel_callback_event",
+      "owner": "sdkwork-iam",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "iam_oauth_authorizer_inbox",
+      "owner": "sdkwork-iam",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
     }
   ]
 }

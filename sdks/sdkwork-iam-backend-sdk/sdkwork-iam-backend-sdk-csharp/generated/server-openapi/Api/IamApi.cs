@@ -272,6 +272,46 @@ namespace SDKWork.Iam.BackendSdk.Api
         }
 
         /// <summary>
+        /// Installations create.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> InstallationsCreateAsync(SDKWork.Iam.BackendSdk.Models.AppbaseInstallationProvisionCommand body)
+        {
+            return await _client.RequestAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>("POST", ApiPaths.BackendPath("/iam/installations"), body, null, null, "application/json", true, false);
+        }
+
+        /// <summary>
+        /// Installations retrieve.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> InstallationsRetrieveAsync(string installationId)
+        {
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/installations/{SerializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false))}"));
+        }
+
+        /// <summary>
+        /// Installations update.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> InstallationsUpdateAsync(string installationId, SDKWork.Iam.BackendSdk.Models.AppbaseInstallationUpdateCommand? body = null)
+        {
+            return await _client.RequestAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>("PATCH", ApiPaths.BackendPath($"/iam/installations/{SerializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false))}"), body, null, null, "application/json", true, false);
+        }
+
+        /// <summary>
+        /// Installations enable.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse?> InstallationsEnableAsync(string installationId, SDKWork.Iam.BackendSdk.Models.AppbaseInstallationEnableCommand body)
+        {
+            return await _client.RequestAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse>("POST", ApiPaths.BackendPath($"/iam/installations/{SerializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false))}/enable"), body, null, null, "application/json", true, false);
+        }
+
+        /// <summary>
+        /// Installations management by Deploy Application disable.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse?> InstallationsManagementByDeployApplicationDisableAsync(string deployApplicationId, Dictionary<string, object> body)
+        {
+            return await _client.RequestAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse>("POST", ApiPaths.BackendPath($"/iam/installations/by_deploy_application/{SerializePathParameter(deployApplicationId, new PathParameterSpec("deployApplicationId", "simple", false))}/disable"), body, null, null, "application/json", true, false);
+        }
+
+        /// <summary>
         /// Organization Memberships list.
         /// </summary>
         public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> OrganizationMembershipsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
@@ -539,13 +579,13 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("cursor", cursor, "form", true, false, null),
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
-                new QueryParameterSpec("vendorCode", vendorCode, "form", true, false, null),
-                new QueryParameterSpec("scopeType", scopeType, "form", true, false, null),
-                new QueryParameterSpec("ownerUserId", ownerUserId, "form", true, false, null),
-                new QueryParameterSpec("organizationId", organizationId, "form", true, false, null),
+                new QueryParameterSpec("vendor_code", vendorCode, "form", true, false, null),
+                new QueryParameterSpec("scope_type", scopeType, "form", true, false, null),
+                new QueryParameterSpec("owner_user_id", ownerUserId, "form", true, false, null),
+                new QueryParameterSpec("organization_id", organizationId, "form", true, false, null),
                 new QueryParameterSpec("status", status, "form", true, false, null),
                 new QueryParameterSpec("mine", mine, "form", true, false, null),
-                new QueryParameterSpec("includePlatform", includePlatform, "form", true, false, null),
+                new QueryParameterSpec("include_platform", includePlatform, "form", true, false, null),
             });
             return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/provider_accounts"), queryString));
         }
@@ -607,35 +647,27 @@ namespace SDKWork.Iam.BackendSdk.Api
         }
 
         /// <summary>
-        /// Provider Accounts credentials reveal.
+        /// Provider Accounts credentials reveal retrieve.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ProviderAccountsCredentialsRevealAsync(string providerAccountId)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ProviderAccountsCredentialsRevealRetrieveAsync(string providerAccountId)
         {
             return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/provider_accounts/{SerializePathParameter(providerAccountId, new PathParameterSpec("providerAccountId", "simple", false))}/credentials/reveal"));
         }
 
         /// <summary>
-        /// Provider Accounts set Default.
+        /// Provider Accounts default.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ProviderAccountsSetDefaultAsync(string providerAccountId, Dictionary<string, object> body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ProviderAccountsDefaultAsync(string providerAccountId, Dictionary<string, object> body)
         {
             return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/provider_accounts/{SerializePathParameter(providerAccountId, new PathParameterSpec("providerAccountId", "simple", false))}/default"), body, null, null, "application/json");
         }
 
         /// <summary>
-        /// Provider Accounts resolve.
+        /// Provider Accounts resolve retrieve.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ProviderAccountsResolveAsync(string vendorCode, string? capabilityCode = null, string? environment = null, string? userId = null, string? organizationId = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> ProviderAccountsResolveRetrieveAsync()
         {
-            var queryString = BuildQueryString(new[]
-            {
-                new QueryParameterSpec("vendorCode", vendorCode, "form", true, false, null),
-                new QueryParameterSpec("capabilityCode", capabilityCode, "form", true, false, null),
-                new QueryParameterSpec("environment", environment, "form", true, false, null),
-                new QueryParameterSpec("userId", userId, "form", true, false, null),
-                new QueryParameterSpec("organizationId", organizationId, "form", true, false, null),
-            });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/provider_accounts/resolve"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath("/iam/provider_accounts/resolve"));
         }
 
         /// <summary>
@@ -658,11 +690,11 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("cursor", cursor, "form", true, false, null),
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
-                new QueryParameterSpec("roleId", roleId, "form", true, false, null),
-                new QueryParameterSpec("principalKind", principalKind, "form", true, false, null),
-                new QueryParameterSpec("principalId", principalId, "form", true, false, null),
-                new QueryParameterSpec("scopeKind", scopeKind, "form", true, false, null),
-                new QueryParameterSpec("scopeId", scopeId, "form", true, false, null),
+                new QueryParameterSpec("role_id", roleId, "form", true, false, null),
+                new QueryParameterSpec("principal_kind", principalKind, "form", true, false, null),
+                new QueryParameterSpec("principal_id", principalId, "form", true, false, null),
+                new QueryParameterSpec("scope_kind", scopeKind, "form", true, false, null),
+                new QueryParameterSpec("scope_id", scopeId, "form", true, false, null),
             });
             return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath("/iam/role_bindings"), queryString));
         }
@@ -860,38 +892,6 @@ namespace SDKWork.Iam.BackendSdk.Api
         }
 
         /// <summary>
-        /// Tenant Applications create.
-        /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> TenantApplicationsCreateAsync(SDKWork.Iam.BackendSdk.Models.AppbaseTenantApplicationProvisionCommand body)
-        {
-            return await _client.RequestAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>("POST", ApiPaths.BackendPath("/iam/tenant_applications"), body, null, null, "application/json", true, false);
-        }
-
-        /// <summary>
-        /// Tenant Applications retrieve.
-        /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> TenantApplicationsRetrieveAsync(string tenantApplicationId)
-        {
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/tenant_applications/{SerializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false))}"));
-        }
-
-        /// <summary>
-        /// Tenant Applications update.
-        /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> TenantApplicationsUpdateAsync(string tenantApplicationId, SDKWork.Iam.BackendSdk.Models.AppbaseTenantApplicationUpdateCommand? body = null)
-        {
-            return await _client.RequestAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>("PATCH", ApiPaths.BackendPath($"/iam/tenant_applications/{SerializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false))}"), body, null, null, "application/json", true, false);
-        }
-
-        /// <summary>
-        /// Tenant Applications enable.
-        /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse?> TenantApplicationsEnableAsync(string tenantApplicationId, SDKWork.Iam.BackendSdk.Models.AppbaseTenantApplicationEnableCommand body)
-        {
-            return await _client.RequestAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse>("POST", ApiPaths.BackendPath($"/iam/tenant_applications/{SerializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false))}/enable"), body, null, null, "application/json", true, false);
-        }
-
-        /// <summary>
         /// Tenants list.
         /// </summary>
         public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> TenantsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
@@ -940,9 +940,9 @@ namespace SDKWork.Iam.BackendSdk.Api
         }
 
         /// <summary>
-        /// Tenant Applications list.
+        /// Installations list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> TenantApplicationsListAsync(string tenantId, int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null, string? status = null, string? environment = null, string? applicationType = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse?> InstallationsListAsync(string tenantId, int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null, string? status = null, string? environment = null, string? applicationType = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -955,85 +955,29 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("environment", environment, "form", true, false, null),
                 new QueryParameterSpec("application_type", applicationType, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/applications"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/installations"), queryString));
         }
 
         /// <summary>
-        /// Tenant Applications management create.
+        /// Installations management create.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> TenantApplicationsManagementCreateAsync(string tenantId, SDKWork.Iam.BackendSdk.Models.IamTenantApplicationManagementProvisionCommand body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> InstallationsManagementCreateAsync(string tenantId, SDKWork.Iam.BackendSdk.Models.IamInstallationManagementProvisionCommand body)
         {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/applications"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/installations"), body, null, null, "application/json");
         }
 
         /// <summary>
-        /// Tenant Applications management update.
+        /// Installations management update.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> TenantApplicationsManagementUpdateAsync(string tenantId, string tenantApplicationId, SDKWork.Iam.BackendSdk.Models.IamTenantApplicationManagementUpdateCommand? body = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> InstallationsManagementUpdateAsync(string tenantId, string installationId, SDKWork.Iam.BackendSdk.Models.IamInstallationManagementUpdateCommand? body = null)
         {
-            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/applications/{SerializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PatchAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/installations/{SerializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false))}"), body, null, null, "application/json");
         }
 
         /// <summary>
-        /// Tenant Applications credentials list.
+        /// Installations credentials list.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialListResponse?> TenantApplicationsCredentialsListAsync(string tenantId, string tenantApplicationId, int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
-        {
-            var queryString = BuildQueryString(new[]
-            {
-                new QueryParameterSpec("page", page, "form", true, false, null),
-                new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
-                new QueryParameterSpec("cursor", cursor, "form", true, false, null),
-                new QueryParameterSpec("sort", sort, "form", true, false, null),
-                new QueryParameterSpec("q", q, "form", true, false, null),
-            });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/applications/{SerializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false))}/credentials"), queryString));
-        }
-
-        /// <summary>
-        /// Tenant Applications credentials create.
-        /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialResponse?> TenantApplicationsCredentialsCreateAsync(string tenantId, string tenantApplicationId, SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialCreateCommand body)
-        {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/applications/{SerializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false))}/credentials"), body, null, null, "application/json");
-        }
-
-        /// <summary>
-        /// Tenant Applications credentials revoke.
-        /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse?> TenantApplicationsCredentialsRevokeAsync(string tenantId, string tenantApplicationId, string credentialId, Dictionary<string, object> body)
-        {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/applications/{SerializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false))}/credentials/{SerializePathParameter(credentialId, new PathParameterSpec("credentialId", "simple", false))}/revoke"), body, null, null, "application/json");
-        }
-
-        /// <summary>
-        /// Tenant Applications credentials rotate.
-        /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialResponse?> TenantApplicationsCredentialsRotateAsync(string tenantId, string tenantApplicationId, string credentialId, SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialRotateCommand body)
-        {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/applications/{SerializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false))}/credentials/{SerializePathParameter(credentialId, new PathParameterSpec("credentialId", "simple", false))}/rotate"), body, null, null, "application/json");
-        }
-
-        /// <summary>
-        /// Tenant Applications management disable.
-        /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse?> TenantApplicationsManagementDisableAsync(string tenantId, string tenantApplicationId, SDKWork.Iam.BackendSdk.Models.IamTenantApplicationStatusCommand body)
-        {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/applications/{SerializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false))}/disable"), body, null, null, "application/json");
-        }
-
-        /// <summary>
-        /// Tenant Applications management enable.
-        /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse?> TenantApplicationsManagementEnableAsync(string tenantId, string tenantApplicationId, SDKWork.Iam.BackendSdk.Models.IamTenantApplicationStatusCommand body)
-        {
-            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/applications/{SerializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false))}/enable"), body, null, null, "application/json");
-        }
-
-        /// <summary>
-        /// Tenant Applications environments list.
-        /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.IamInstallationEnvironmentListResponse?> TenantApplicationsEnvironmentsListAsync(string tenantId, string tenantApplicationId, int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        public async Task<SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialListResponse?> InstallationsCredentialsListAsync(string tenantId, string installationId, int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
             var queryString = BuildQueryString(new[]
             {
@@ -1043,31 +987,87 @@ namespace SDKWork.Iam.BackendSdk.Api
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
             });
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.IamInstallationEnvironmentListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/applications/{SerializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false))}/environments"), queryString));
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/installations/{SerializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false))}/credentials"), queryString));
         }
 
         /// <summary>
-        /// Tenant Applications environments delete.
+        /// Installations credentials create.
         /// </summary>
-        public async Task TenantApplicationsEnvironmentsDeleteAsync(string tenantId, string tenantApplicationId, string environmentKey)
+        public async Task<SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialResponse?> InstallationsCredentialsCreateAsync(string tenantId, string installationId, SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialCreateCommand body)
         {
-            await _client.DeleteAsync<object>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/applications/{SerializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false))}/environments/{SerializePathParameter(environmentKey, new PathParameterSpec("environmentKey", "simple", false))}"));
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/installations/{SerializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false))}/credentials"), body, null, null, "application/json");
         }
 
         /// <summary>
-        /// Tenant Applications environments update.
+        /// Installations credentials revoke.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.IamInstallationEnvironmentResponse?> TenantApplicationsEnvironmentsUpdateAsync(string tenantId, string tenantApplicationId, string environmentKey, SDKWork.Iam.BackendSdk.Models.IamInstallationEnvironmentUpsertCommand body)
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse?> InstallationsCredentialsRevokeAsync(string tenantId, string installationId, string credentialId, Dictionary<string, object> body)
         {
-            return await _client.PutAsync<SDKWork.Iam.BackendSdk.Models.IamInstallationEnvironmentResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/applications/{SerializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false))}/environments/{SerializePathParameter(environmentKey, new PathParameterSpec("environmentKey", "simple", false))}"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/installations/{SerializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false))}/credentials/{SerializePathParameter(credentialId, new PathParameterSpec("credentialId", "simple", false))}/revoke"), body, null, null, "application/json");
         }
 
         /// <summary>
-        /// Tenant Applications summary retrieve.
+        /// Installations credentials rotate.
         /// </summary>
-        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> TenantApplicationsSummaryRetrieveAsync(string tenantId)
+        public async Task<SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialResponse?> InstallationsCredentialsRotateAsync(string tenantId, string installationId, string credentialId, SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialRotateCommand body)
         {
-            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/applications/summary"));
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.IamInstallationCredentialResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/installations/{SerializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false))}/credentials/{SerializePathParameter(credentialId, new PathParameterSpec("credentialId", "simple", false))}/rotate"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Installations management disable.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse?> InstallationsManagementDisableAsync(string tenantId, string installationId, SDKWork.Iam.BackendSdk.Models.IamInstallationStatusCommand body)
+        {
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/installations/{SerializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false))}/disable"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Installations management enable.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse?> InstallationsManagementEnableAsync(string tenantId, string installationId, SDKWork.Iam.BackendSdk.Models.IamInstallationStatusCommand body)
+        {
+            return await _client.PostAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkCommandResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/installations/{SerializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false))}/enable"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Installations environments list.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.IamInstallationEnvironmentListResponse?> InstallationsEnvironmentsListAsync(string tenantId, string installationId, int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
+        {
+            var queryString = BuildQueryString(new[]
+            {
+                new QueryParameterSpec("page", page, "form", true, false, null),
+                new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
+                new QueryParameterSpec("cursor", cursor, "form", true, false, null),
+                new QueryParameterSpec("sort", sort, "form", true, false, null),
+                new QueryParameterSpec("q", q, "form", true, false, null),
+            });
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.IamInstallationEnvironmentListResponse>(ApiPaths.AppendQueryString(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/installations/{SerializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false))}/environments"), queryString));
+        }
+
+        /// <summary>
+        /// Installations environments delete.
+        /// </summary>
+        public async Task InstallationsEnvironmentsDeleteAsync(string tenantId, string installationId, string environmentKey)
+        {
+            await _client.DeleteAsync<object>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/installations/{SerializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false))}/environments/{SerializePathParameter(environmentKey, new PathParameterSpec("environmentKey", "simple", false))}"));
+        }
+
+        /// <summary>
+        /// Installations environments update.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.IamInstallationEnvironmentResponse?> InstallationsEnvironmentsUpdateAsync(string tenantId, string installationId, string environmentKey, SDKWork.Iam.BackendSdk.Models.IamInstallationEnvironmentUpsertCommand body)
+        {
+            return await _client.PutAsync<SDKWork.Iam.BackendSdk.Models.IamInstallationEnvironmentResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/installations/{SerializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false))}/environments/{SerializePathParameter(environmentKey, new PathParameterSpec("environmentKey", "simple", false))}"), body, null, null, "application/json");
+        }
+
+        /// <summary>
+        /// Installations summary retrieve.
+        /// </summary>
+        public async Task<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse?> InstallationsSummaryRetrieveAsync(string tenantId)
+        {
+            return await _client.GetAsync<SDKWork.Iam.BackendSdk.Models.SdkWorkResourceResponse>(ApiPaths.BackendPath($"/iam/tenants/{SerializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false))}/installations/summary"));
         }
 
         /// <summary>

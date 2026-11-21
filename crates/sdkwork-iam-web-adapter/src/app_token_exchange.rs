@@ -169,12 +169,11 @@ impl UserApplicationTokenRequest {
     /// @throws String when no selector is supplied or a scope is unknown.
     pub fn parse(body: &serde_json::Value) -> Result<Self, String> {
         let app_id = read_optional(body, &["appId", "app_id"]);
-        let tenant_application_id =
-            read_optional(body, &["tenantApplicationId", "tenant_application_id"]);
+        let tenant_application_id = read_optional(body, &["installationId", "installation_id"]);
         let instance_key = read_optional(body, &["instanceKey", "instance_key"]);
         if app_id.is_none() && tenant_application_id.is_none() && instance_key.is_none() {
             return Err(
-                "appId, tenantApplicationId, or instanceKey is required to name the application"
+                "appId, installationId, or instanceKey is required to name the application"
                     .to_string(),
             );
         }
@@ -368,7 +367,7 @@ fn app_token_audit_detail(
 ) -> serde_json::Value {
     serde_json::json!({
         "appId": issued.app_id,
-        "tenantApplicationId": installation.id,
+        "installationId": installation.id,
         "ownershipScope": issued.ownership_scope.as_str(),
         "environment": environment_key,
         "sessionId": issued.session_id,
@@ -728,9 +727,8 @@ mod tests {
             .expect("camelCase appId");
         assert_eq!(camel.app_id.as_deref(), Some("381"));
 
-        let snake =
-            UserApplicationTokenRequest::parse(&json!({ "tenant_application_id": "tapp_1" }))
-                .expect("snake_case tenant_application_id");
+        let snake = UserApplicationTokenRequest::parse(&json!({ "installation_id": "tapp_1" }))
+            .expect("snake_case tenant_application_id");
         assert_eq!(snake.tenant_application_id.as_deref(), Some("tapp_1"));
 
         assert!(UserApplicationTokenRequest::parse(&json!({ "appId": "   " })).is_err());

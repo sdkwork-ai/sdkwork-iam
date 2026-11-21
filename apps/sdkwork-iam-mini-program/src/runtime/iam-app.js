@@ -3397,7 +3397,7 @@ var AuthSessionsCurrentApi = class {
   }
   /** Sessions current logout. */
   async logout(body, requestOptions) {
-    return this.client.request(appApiPath(`/auth/sessions/current/logout`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", skipAuth: true });
+    return this.client.request(appApiPath(`/auth/sessions/current/logout`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", skipAuth: true, sdkworkUnwrapKind: "command" });
   }
 };
 var AuthSessionsApi = class {
@@ -3566,11 +3566,11 @@ var IamRoleBindingsApi = class {
       { name: "cursor", value: params?.cursor, style: "form", explode: true, allowReserved: false },
       { name: "sort", value: params?.sort, style: "form", explode: true, allowReserved: false },
       { name: "q", value: params?.q, style: "form", explode: true, allowReserved: false },
-      { name: "roleId", value: params?.roleId, style: "form", explode: true, allowReserved: false },
-      { name: "principalKind", value: params?.principalKind, style: "form", explode: true, allowReserved: false },
-      { name: "principalId", value: params?.principalId, style: "form", explode: true, allowReserved: false },
-      { name: "scopeKind", value: params?.scopeKind, style: "form", explode: true, allowReserved: false },
-      { name: "scopeId", value: params?.scopeId, style: "form", explode: true, allowReserved: false }
+      { name: "role_id", value: params?.roleId, style: "form", explode: true, allowReserved: false },
+      { name: "principal_kind", value: params?.principalKind, style: "form", explode: true, allowReserved: false },
+      { name: "principal_id", value: params?.principalId, style: "form", explode: true, allowReserved: false },
+      { name: "scope_kind", value: params?.scopeKind, style: "form", explode: true, allowReserved: false },
+      { name: "scope_id", value: params?.scopeId, style: "form", explode: true, allowReserved: false }
     ]);
     return this.client.request(appendQueryString(appApiPath(`/iam/role_bindings`), query), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", sdkworkUnwrapKind: "page" });
   }
@@ -3690,15 +3690,15 @@ var IamOauthOfficialAccountsCustomMenusApi = class {
     __publicField(this, "client");
     this.client = client;
   }
-  /** Iam oauth official Accounts custom Menus publish. */
+  /** Oauth official Accounts custom Menus publish. */
   async publish(officialAccountId, body, requestOptions) {
     return this.client.request(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: "officialAccountId", style: "simple", explode: false })}/custom_menus/publish`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", sdkworkUnwrapKind: "item" });
   }
-  /** Iam oauth official Accounts custom Menus rollback. */
+  /** Oauth official Accounts custom Menus rollback. */
   async rollback(officialAccountId, body, requestOptions) {
     return this.client.request(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: "officialAccountId", style: "simple", explode: false })}/custom_menus/rollback`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", sdkworkUnwrapKind: "item" });
   }
-  /** Iam oauth official Accounts custom Menus sync. */
+  /** Oauth official Accounts custom Menus sync. */
   async sync(officialAccountId, body, requestOptions) {
     return this.client.request(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: "officialAccountId", style: "simple", explode: false })}/custom_menus/sync`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", sdkworkUnwrapKind: "item" });
   }
@@ -3710,7 +3710,7 @@ var IamOauthOfficialAccountsApi = class {
     this.client = client;
     this.customMenus = new IamOauthOfficialAccountsCustomMenusApi(client);
   }
-  /** Iam oauth official Accounts list. */
+  /** Oauth official Accounts list. */
   async list(params, requestOptions) {
     const query = buildQueryString([
       { name: "page", value: params?.page, style: "form", explode: true, allowReserved: false },
@@ -3721,19 +3721,19 @@ var IamOauthOfficialAccountsApi = class {
     ]);
     return this.client.request(appendQueryString(appApiPath(`/iam/oauth/official_accounts`), query), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", sdkworkUnwrapKind: "page" });
   }
-  /** Iam oauth official Accounts create. */
+  /** Oauth official Accounts create. */
   async create(body, requestOptions) {
     return this.client.request(appApiPath(`/iam/oauth/official_accounts`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", sdkworkUnwrapKind: "item" });
   }
-  /** Iam oauth official Accounts delete. */
+  /** Oauth official Accounts delete. */
   async delete(officialAccountId, requestOptions) {
     return this.client.request(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: "officialAccountId", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "DELETE" });
   }
-  /** Iam oauth official Accounts retrieve. */
+  /** Oauth official Accounts retrieve. */
   async retrieve(officialAccountId, requestOptions) {
     return this.client.request(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: "officialAccountId", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", sdkworkUnwrapKind: "item" });
   }
-  /** Iam oauth official Accounts update. */
+  /** Oauth official Accounts update. */
   async update(officialAccountId, body, requestOptions) {
     return this.client.request(appApiPath(`/iam/oauth/official_accounts/${serializePathParameter(officialAccountId, { name: "officialAccountId", style: "simple", explode: false })}`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "PATCH", ...body !== void 0 ? { body, contentType: "application/json" } : {}, sdkworkUnwrapKind: "item" });
   }
@@ -3743,7 +3743,7 @@ var IamOauthOfficialAccountSettingsApi = class {
     __publicField(this, "client");
     this.client = client;
   }
-  /** Iam oauth official Account Settings retrieve. */
+  /** Oauth official Account Settings retrieve. */
   async retrieve(requestOptions) {
     return this.client.request(appApiPath(`/iam/oauth/official_account_settings`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", sdkworkUnwrapKind: "item" });
   }
@@ -3802,8 +3802,19 @@ var IamDepartmentAssignmentsApi = class {
     return this.client.request(appendQueryString(appApiPath(`/iam/department_assignments`), query), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", sdkworkUnwrapKind: "page" });
   }
 };
+var IamAppAccessTokensApi = class {
+  constructor(client) {
+    __publicField(this, "client");
+    this.client = client;
+  }
+  /** App Access Tokens create. */
+  async create(body, requestOptions) {
+    return this.client.request(appApiPath(`/iam/app_access_tokens`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", sdkworkUnwrapKind: "item" });
+  }
+};
 var IamApi = class {
   constructor(client) {
+    __publicField(this, "appAccessTokens");
     __publicField(this, "departmentAssignments");
     __publicField(this, "departments");
     __publicField(this, "oauth");
@@ -3814,6 +3825,7 @@ var IamApi = class {
     __publicField(this, "positions");
     __publicField(this, "roleBindings");
     __publicField(this, "users");
+    this.appAccessTokens = new IamAppAccessTokensApi(client);
     this.departmentAssignments = new IamDepartmentAssignmentsApi(client);
     this.departments = new IamDepartmentsApi(client);
     this.oauth = new IamOauthApi(client);
@@ -3977,27 +3989,6 @@ function encodeQueryValue(value, allowReserved) {
 }
 
 // ../../sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript/generated/server-openapi/src/api/oauth.ts
-var OauthWechatPaymentOauthApi = class {
-  constructor(client) {
-    __publicField(this, "client");
-    this.client = client;
-  }
-  /** Wechat Payment Oauth callback. */
-  async callback(requestOptions) {
-    return this.client.request(appApiPath(`/oauth/wechat/payment/callback`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", skipAuth: true, sdkworkUnwrapKind: "item" });
-  }
-  /** Wechat Payment Oauth cashier Start. */
-  async cashierStart(requestOptions) {
-    return this.client.request(appApiPath(`/oauth/wechat/payment/cashier/start`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", skipAuth: true, sdkworkUnwrapKind: "item" });
-  }
-  /** Wechat Payment Oauth start. */
-  async start(params, requestOptions) {
-    const query = buildQueryString2([
-      { name: "redirect", value: params.redirect, style: "form", explode: true, allowReserved: false }
-    ]);
-    return this.client.request(appendQueryString2(appApiPath(`/oauth/wechat/payment/start`), query), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "GET", sdkworkUnwrapKind: "item" });
-  }
-};
 var OauthSessionsApi = class {
   constructor(client) {
     __publicField(this, "client");
@@ -4164,7 +4155,7 @@ var OauthDesktopSessionsApi = class {
   }
   /** Desktop Sessions create. */
   async create(body, requestOptions) {
-    return this.client.request(appApiPath(`/oauth/desktop_sessions`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", skipAuth: true, sdkworkUnwrapKind: "data" });
+    return this.client.request(appApiPath(`/oauth/desktop_sessions`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", skipAuth: true, sdkworkUnwrapKind: "item" });
   }
 };
 var OauthCallbacksApi = class {
@@ -4188,7 +4179,7 @@ var OauthAuthorizationsCompletionsApi = class {
   }
   /** Authorizations completions create. */
   async create(authorizationStateId, body, requestOptions) {
-    return this.client.request(appApiPath(`/oauth/authorizations/${serializePathParameter2(authorizationStateId, { name: "authorizationStateId", style: "simple", explode: false })}/completions`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", sdkworkUnwrapKind: "data" });
+    return this.client.request(appApiPath(`/oauth/authorizations/${serializePathParameter2(authorizationStateId, { name: "authorizationStateId", style: "simple", explode: false })}/completions`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", sdkworkUnwrapKind: "item" });
   }
 };
 var OauthAuthorizationsApi = class {
@@ -4200,7 +4191,7 @@ var OauthAuthorizationsApi = class {
   }
   /** Authorizations create. */
   async create(body, requestOptions) {
-    return this.client.request(appApiPath(`/oauth/authorizations`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", skipAuth: true, sdkworkUnwrapKind: "data" });
+    return this.client.request(appApiPath(`/oauth/authorizations`), { ...requestOptions?.signal !== void 0 ? { signal: requestOptions.signal } : {}, ...requestOptions?.timeout !== void 0 ? { timeout: requestOptions.timeout } : {}, method: "POST", body, contentType: "application/json", skipAuth: true, sdkworkUnwrapKind: "item" });
   }
 };
 var OauthAuthorizationUrlsApi = class {
@@ -4248,7 +4239,6 @@ var OauthApi = class {
     __publicField(this, "providers");
     __publicField(this, "scanLoginModes");
     __publicField(this, "sessions");
-    __publicField(this, "wechatPaymentOauth");
     this.accountLinks = new OauthAccountLinksApi(client);
     this.authorizationUrls = new OauthAuthorizationUrlsApi(client);
     this.authorizations = new OauthAuthorizationsApi(client);
@@ -4261,7 +4251,6 @@ var OauthApi = class {
     this.providers = new OauthProvidersApi(client);
     this.scanLoginModes = new OauthScanLoginModesApi(client);
     this.sessions = new OauthSessionsApi(client);
-    this.wechatPaymentOauth = new OauthWechatPaymentOauthApi(client);
   }
 };
 function createOauthApi(client) {
@@ -5141,7 +5130,6 @@ var SDKWORK_IAM_TABLES = {
   tenant: "iam_tenant",
   user: "iam_user",
   userIdentity: "iam_user_identity",
-  userOfficialAccount: "iam_user_official_account",
   userPersona: "iam_user_persona",
   personaRole: "iam_persona_role",
   personaInterest: "iam_persona_interest",
@@ -5627,20 +5615,20 @@ var SDKWORK_IAM_API_ROUTES = {
     accessCredentials: {
       create: operation("POST", `${backend}/iam/access_credentials`, "iam", "accessCredentials.create", "public")
     },
-    tenantApplications: {
-      list: operation("GET", `${backend}/iam/tenants/{tenantId}/applications`, "iam", "tenantApplications.list", "dualToken"),
-      create: operation("POST", `${backend}/iam/tenant_applications`, "iam", "tenantApplications.create", "public"),
-      retrieve: operation("GET", `${backend}/iam/tenant_applications/{tenantApplicationId}`, "iam", "tenantApplications.retrieve", "dualToken"),
-      enable: operation("POST", `${backend}/iam/tenant_applications/{tenantApplicationId}/enable`, "iam", "tenantApplications.enable", "public"),
-      update: operation("PATCH", `${backend}/iam/tenant_applications/{tenantApplicationId}`, "iam", "tenantApplications.update", "public"),
+    installations: {
+      list: operation("GET", `${backend}/iam/tenants/{tenantId}/installations`, "iam", "installations.list", "dualToken"),
+      create: operation("POST", `${backend}/iam/installations`, "iam", "installations.create", "public"),
+      retrieve: operation("GET", `${backend}/iam/installations/{installationId}`, "iam", "installations.retrieve", "dualToken"),
+      enable: operation("POST", `${backend}/iam/installations/{installationId}/enable`, "iam", "installations.enable", "public"),
+      update: operation("PATCH", `${backend}/iam/installations/{installationId}`, "iam", "installations.update", "public"),
       management: {
-        create: operation("POST", `${backend}/iam/tenants/{tenantId}/applications`, "iam", "tenantApplications.management.create", "dualToken"),
-        update: operation("PATCH", `${backend}/iam/tenants/{tenantId}/applications/{tenantApplicationId}`, "iam", "tenantApplications.management.update", "dualToken"),
-        enable: operation("POST", `${backend}/iam/tenants/{tenantId}/applications/{tenantApplicationId}/enable`, "iam", "tenantApplications.management.enable", "dualToken"),
-        disable: operation("POST", `${backend}/iam/tenants/{tenantId}/applications/{tenantApplicationId}/disable`, "iam", "tenantApplications.management.disable", "dualToken")
+        create: operation("POST", `${backend}/iam/tenants/{tenantId}/installations`, "iam", "installations.management.create", "dualToken"),
+        update: operation("PATCH", `${backend}/iam/tenants/{tenantId}/installations/{installationId}`, "iam", "installations.management.update", "dualToken"),
+        enable: operation("POST", `${backend}/iam/tenants/{tenantId}/installations/{installationId}/enable`, "iam", "installations.management.enable", "dualToken"),
+        disable: operation("POST", `${backend}/iam/tenants/{tenantId}/installations/{installationId}/disable`, "iam", "installations.management.disable", "dualToken")
       },
       summary: {
-        retrieve: operation("GET", `${backend}/iam/tenants/{tenantId}/applications/summary`, "iam", "tenantApplications.summary.retrieve", "dualToken")
+        retrieve: operation("GET", `${backend}/iam/tenants/{tenantId}/installations/summary`, "iam", "installations.summary.retrieve", "dualToken")
       }
     },
     auditEvents: {
@@ -5706,9 +5694,9 @@ var SDKWORK_IAM_API_ROUTES = {
       create: operation("POST", `${backend}/iam/provider_accounts`, "iam", "providerAccounts.create", "dualToken"),
       delete: operation("DELETE", `${backend}/iam/provider_accounts/{providerAccountId}`, "iam", "providerAccounts.delete", "dualToken"),
       list: operation("GET", `${backend}/iam/provider_accounts`, "iam", "providerAccounts.list", "dualToken"),
-      resolve: operation("GET", `${backend}/iam/provider_accounts/resolve`, "iam", "providerAccounts.resolve", "dualToken"),
+      resolve: operation("GET", `${backend}/iam/provider_accounts/resolve`, "iam", "providerAccounts.resolve.retrieve", "dualToken"),
       retrieve: operation("GET", `${backend}/iam/provider_accounts/{providerAccountId}`, "iam", "providerAccounts.retrieve", "dualToken"),
-      setDefault: operation("POST", `${backend}/iam/provider_accounts/{providerAccountId}/default`, "iam", "providerAccounts.setDefault", "dualToken"),
+      setDefault: operation("POST", `${backend}/iam/provider_accounts/{providerAccountId}/default`, "iam", "providerAccounts.default", "dualToken"),
       update: operation("PATCH", `${backend}/iam/provider_accounts/{providerAccountId}`, "iam", "providerAccounts.update", "dualToken"),
       credentials: {
         create: operation("POST", `${backend}/iam/provider_accounts/{providerAccountId}/credentials`, "iam", "providerAccounts.credentials.create", "dualToken"),
@@ -5833,7 +5821,12 @@ var SDKWORK_IAM_API_ROUTES = {
         customMenus: {
           retrieve: operation("GET", `${backend}/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus`, "iam", "iam.oauth.resourceAccounts.customMenus.retrieve", "dualToken"),
           update: operation("PATCH", `${backend}/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus`, "iam", "iam.oauth.resourceAccounts.customMenus.update", "dualToken"),
-          publish: operation("POST", `${backend}/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/publish`, "iam", "iam.oauth.resourceAccounts.customMenus.publish", "dualToken")
+          publish: operation("POST", `${backend}/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/publish`, "iam", "iam.oauth.resourceAccounts.customMenus.publish", "dualToken"),
+          // Rollback and sync exist in the backend OpenAPI authority (and the
+          // generated SDK exposes them); the catalog was missing both, which made
+          // the service-facade parity test disagree with the SDK it mirrors.
+          rollback: operation("POST", `${backend}/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/rollback`, "iam", "iam.oauth.resourceAccounts.customMenus.rollback", "dualToken"),
+          sync: operation("POST", `${backend}/iam/oauth/resource_accounts/{resourceAccountId}/custom_menus/sync`, "iam", "iam.oauth.resourceAccounts.customMenus.sync", "dualToken")
         },
         delete: operation("DELETE", `${backend}/iam/oauth/resource_accounts/{resourceAccountId}`, "iam", "iam.oauth.resourceAccounts.delete", "dualToken"),
         followQrCodes: {
@@ -6076,7 +6069,7 @@ var SDKWORK_IAM_CAPABILITIES = [
     "apiAccess",
     ["iam"],
     ["apiKey"],
-    ["apiKeys.list", "apiKeys.revoke", "accessCredentials.create", "tenantApplications.list", "tenantApplications.create", "tenantApplications.retrieve", "tenantApplications.update", "tenantApplications.enable", "tenantApplications.management.create", "tenantApplications.management.update", "tenantApplications.management.enable", "tenantApplications.management.disable", "tenantApplications.summary.retrieve"]
+    ["apiKeys.list", "apiKeys.revoke", "accessCredentials.create", "installations.list", "installations.create", "installations.retrieve", "installations.update", "installations.enable", "installations.management.create", "installations.management.update", "installations.management.enable", "installations.management.disable", "installations.summary.retrieve"]
   ),
   capability(
     "securityAudit",
@@ -6133,6 +6126,8 @@ var SDKWORK_IAM_CAPABILITIES = [
       "iam.oauth.resourceAccounts.create",
       "iam.oauth.resourceAccounts.customMenus.publish",
       "iam.oauth.resourceAccounts.customMenus.retrieve",
+      "iam.oauth.resourceAccounts.customMenus.rollback",
+      "iam.oauth.resourceAccounts.customMenus.sync",
       "iam.oauth.resourceAccounts.customMenus.update",
       "iam.oauth.resourceAccounts.delete",
       "iam.oauth.resourceAccounts.followQrCodes.create",
@@ -6169,9 +6164,9 @@ var SDKWORK_IAM_CAPABILITIES = [
       "providerAccounts.credentials.list",
       "providerAccounts.delete",
       "providerAccounts.list",
-      "providerAccounts.resolve",
+      "providerAccounts.resolve.retrieve",
       "providerAccounts.retrieve",
-      "providerAccounts.setDefault",
+      "providerAccounts.default",
       "providerAccounts.update",
       "providerCredentials.revoke"
     ]
@@ -6763,9 +6758,9 @@ function createSdkworkIamService(input) {
         create: (body) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "create", "iam.providerAccounts.create", body),
         delete: (providerAccountId) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "delete", "iam.providerAccounts.delete", providerAccountId),
         list: (params) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "list", "iam.providerAccounts.list", iamListQuery(params)),
-        resolve: (params) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "resolve", "iam.providerAccounts.resolve", params),
+        resolve: { retrieve: (params) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.resolve, "retrieve", "iam.providerAccounts.resolve.retrieve", params) },
         retrieve: (providerAccountId) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "retrieve", "iam.providerAccounts.retrieve", providerAccountId),
-        setDefault: (providerAccountId, body) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "setDefault", "iam.providerAccounts.setDefault", providerAccountId, body),
+        default: (providerAccountId, body) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "default", "iam.providerAccounts.default", providerAccountId, body),
         update: (providerAccountId, body) => callBackendIam(backendIam, (iam) => iam.providerAccounts, "update", "iam.providerAccounts.update", providerAccountId, body),
         credentials: {
           create: (providerAccountId, body) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.credentials, "create", "iam.providerAccounts.credentials.create", providerAccountId, body),
@@ -6773,8 +6768,8 @@ function createSdkworkIamService(input) {
           // `credentials.reveal` is optional in the SDK port contract: only surface
           // it when the generated backend client actually carries the method, so
           // the facade surface equals the canonical port surface.
-          ...typeof backendIam?.providerAccounts?.credentials?.reveal === "function" ? {
-            reveal: (providerAccountId) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.credentials, "reveal", "iam.providerAccounts.credentials.reveal", providerAccountId)
+          ...typeof backendIam?.providerAccounts?.credentials?.reveal?.retrieve === "function" ? {
+            reveal: (providerAccountId) => callBackendIam(backendIam, (iam) => iam.providerAccounts?.credentials?.reveal, "retrieve", "iam.providerAccounts.credentials.reveal.retrieve", providerAccountId)
           } : {}
         }
       },
@@ -6817,20 +6812,20 @@ function createSdkworkIamService(input) {
       accessCredentials: {
         create: (body) => callBackendIam(backendIam, (iam) => iam.accessCredentials, "create", "iam.accessCredentials.create", body)
       },
-      tenantApplications: {
-        create: (body) => callBackendIam(backendIam, (iam) => iam.tenantApplications, "create", "iam.tenantApplications.create", body),
-        list: (tenantId, params) => callBackendIam(backendIam, (iam) => iam.tenantApplications, "list", "iam.tenantApplications.list", tenantId, iamListQuery(params)),
-        retrieve: (tenantApplicationId) => callBackendIam(backendIam, (iam) => iam.tenantApplications, "retrieve", "iam.tenantApplications.retrieve", tenantApplicationId),
-        update: (tenantApplicationId, body) => callBackendIam(backendIam, (iam) => iam.tenantApplications, "update", "iam.tenantApplications.update", tenantApplicationId, body),
-        enable: (tenantApplicationId, body) => callBackendIam(backendIam, (iam) => iam.tenantApplications, "enable", "iam.tenantApplications.enable", tenantApplicationId, body),
+      installations: {
+        create: (body) => callBackendIam(backendIam, (iam) => iam.installations, "create", "iam.installations.create", body),
+        list: (tenantId, params) => callBackendIam(backendIam, (iam) => iam.installations, "list", "iam.installations.list", tenantId, iamListQuery(params)),
+        retrieve: (installationId) => callBackendIam(backendIam, (iam) => iam.installations, "retrieve", "iam.installations.retrieve", installationId),
+        update: (installationId, body) => callBackendIam(backendIam, (iam) => iam.installations, "update", "iam.installations.update", installationId, body),
+        enable: (installationId, body) => callBackendIam(backendIam, (iam) => iam.installations, "enable", "iam.installations.enable", installationId, body),
         management: {
-          disable: (tenantId, tenantApplicationId) => callBackendIam(backendIam, (iam) => iam.tenantApplications?.management, "disable", "iam.tenantApplications.management.disable", tenantId, tenantApplicationId, {}),
-          enable: (tenantId, tenantApplicationId) => callBackendIam(backendIam, (iam) => iam.tenantApplications?.management, "enable", "iam.tenantApplications.management.enable", tenantId, tenantApplicationId, {}),
-          create: (tenantId, body) => callBackendIam(backendIam, (iam) => iam.tenantApplications?.management, "create", "iam.tenantApplications.management.create", tenantId, body),
-          update: (tenantId, tenantApplicationId, body) => callBackendIam(backendIam, (iam) => iam.tenantApplications?.management, "update", "iam.tenantApplications.management.update", tenantId, tenantApplicationId, body)
+          disable: (tenantId, installationId) => callBackendIam(backendIam, (iam) => iam.installations?.management, "disable", "iam.installations.management.disable", tenantId, installationId, {}),
+          enable: (tenantId, installationId) => callBackendIam(backendIam, (iam) => iam.installations?.management, "enable", "iam.installations.management.enable", tenantId, installationId, {}),
+          create: (tenantId, body) => callBackendIam(backendIam, (iam) => iam.installations?.management, "create", "iam.installations.management.create", tenantId, body),
+          update: (tenantId, installationId, body) => callBackendIam(backendIam, (iam) => iam.installations?.management, "update", "iam.installations.management.update", tenantId, installationId, body)
         },
         summary: {
-          retrieve: (tenantId) => callBackendIam(backendIam, (iam) => iam.tenantApplications?.summary, "retrieve", "iam.tenantApplications.summary.retrieve", tenantId)
+          retrieve: (tenantId) => callBackendIam(backendIam, (iam) => iam.installations?.summary, "retrieve", "iam.installations.summary.retrieve", tenantId)
         }
       },
       tenants: {

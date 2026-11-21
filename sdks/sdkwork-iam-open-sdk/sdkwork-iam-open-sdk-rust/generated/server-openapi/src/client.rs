@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::api::{IamOauthApi};
+use crate::api::{};
 use crate::http::{SdkworkConfig, SdkworkError, SdkworkHttpClient};
 
 #[derive(Clone)]
@@ -34,6 +34,7 @@ impl SdkworkCustomClient {
         self
     }
 
+
     pub fn set_header(&self, key: impl Into<String>, value: impl Into<String>) -> &Self {
         self.http.set_header(key, value);
         self
@@ -43,7 +44,5 @@ impl SdkworkCustomClient {
         Arc::clone(&self.http)
     }
 
-    pub fn iam_oauth(&self) -> IamOauthApi {
-            IamOauthApi::new(Arc::clone(&self.http))
-        }
+
 }

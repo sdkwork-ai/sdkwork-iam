@@ -16,6 +16,14 @@ namespace SDKWork.Iam.AppSdk.Api
         }
 
         /// <summary>
+        /// App Access Tokens create.
+        /// </summary>
+        public async Task<SDKWork.Iam.AppSdk.Models.IamAppAccessTokenResponse?> AppAccessTokensCreateAsync(SDKWork.Iam.AppSdk.Models.IamAppAccessTokenCreateCommand body)
+        {
+            return await _client.PostAsync<SDKWork.Iam.AppSdk.Models.IamAppAccessTokenResponse>(ApiPaths.AppPath("/iam/app_access_tokens"), body, null, null, "application/json");
+        }
+
+        /// <summary>
         /// Department Assignments list.
         /// </summary>
         public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkListResponse?> DepartmentAssignmentsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
@@ -56,7 +64,7 @@ namespace SDKWork.Iam.AppSdk.Api
         }
 
         /// <summary>
-        /// Iam oauth official Account Settings retrieve.
+        /// Oauth official Account Settings retrieve.
         /// </summary>
         public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> OauthOfficialAccountSettingsRetrieveAsync()
         {
@@ -64,7 +72,7 @@ namespace SDKWork.Iam.AppSdk.Api
         }
 
         /// <summary>
-        /// Iam oauth official Accounts list.
+        /// Oauth official Accounts list.
         /// </summary>
         public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkListResponse?> OauthOfficialAccountsListAsync(int? page = null, int? pageSize = null, string? cursor = null, string? sort = null, string? q = null)
         {
@@ -80,7 +88,7 @@ namespace SDKWork.Iam.AppSdk.Api
         }
 
         /// <summary>
-        /// Iam oauth official Accounts create.
+        /// Oauth official Accounts create.
         /// </summary>
         public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> OauthOfficialAccountsCreateAsync(Dictionary<string, object> body)
         {
@@ -88,7 +96,7 @@ namespace SDKWork.Iam.AppSdk.Api
         }
 
         /// <summary>
-        /// Iam oauth official Accounts delete.
+        /// Oauth official Accounts delete.
         /// </summary>
         public async Task OauthOfficialAccountsDeleteAsync(string officialAccountId)
         {
@@ -96,7 +104,7 @@ namespace SDKWork.Iam.AppSdk.Api
         }
 
         /// <summary>
-        /// Iam oauth official Accounts retrieve.
+        /// Oauth official Accounts retrieve.
         /// </summary>
         public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> OauthOfficialAccountsRetrieveAsync(string officialAccountId)
         {
@@ -104,7 +112,7 @@ namespace SDKWork.Iam.AppSdk.Api
         }
 
         /// <summary>
-        /// Iam oauth official Accounts update.
+        /// Oauth official Accounts update.
         /// </summary>
         public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> OauthOfficialAccountsUpdateAsync(string officialAccountId, Dictionary<string, object>? body = null)
         {
@@ -112,7 +120,7 @@ namespace SDKWork.Iam.AppSdk.Api
         }
 
         /// <summary>
-        /// Iam oauth official Accounts custom Menus publish.
+        /// Oauth official Accounts custom Menus publish.
         /// </summary>
         public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> OauthOfficialAccountsCustomMenusPublishAsync(string officialAccountId, Dictionary<string, object> body)
         {
@@ -120,7 +128,7 @@ namespace SDKWork.Iam.AppSdk.Api
         }
 
         /// <summary>
-        /// Iam oauth official Accounts custom Menus rollback.
+        /// Oauth official Accounts custom Menus rollback.
         /// </summary>
         public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> OauthOfficialAccountsCustomMenusRollbackAsync(string officialAccountId, Dictionary<string, object> body)
         {
@@ -128,7 +136,7 @@ namespace SDKWork.Iam.AppSdk.Api
         }
 
         /// <summary>
-        /// Iam oauth official Accounts custom Menus sync.
+        /// Oauth official Accounts custom Menus sync.
         /// </summary>
         public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> OauthOfficialAccountsCustomMenusSyncAsync(string officialAccountId, Dictionary<string, object> body)
         {
@@ -244,11 +252,11 @@ namespace SDKWork.Iam.AppSdk.Api
                 new QueryParameterSpec("cursor", cursor, "form", true, false, null),
                 new QueryParameterSpec("sort", sort, "form", true, false, null),
                 new QueryParameterSpec("q", q, "form", true, false, null),
-                new QueryParameterSpec("roleId", roleId, "form", true, false, null),
-                new QueryParameterSpec("principalKind", principalKind, "form", true, false, null),
-                new QueryParameterSpec("principalId", principalId, "form", true, false, null),
-                new QueryParameterSpec("scopeKind", scopeKind, "form", true, false, null),
-                new QueryParameterSpec("scopeId", scopeId, "form", true, false, null),
+                new QueryParameterSpec("role_id", roleId, "form", true, false, null),
+                new QueryParameterSpec("principal_kind", principalKind, "form", true, false, null),
+                new QueryParameterSpec("principal_id", principalId, "form", true, false, null),
+                new QueryParameterSpec("scope_kind", scopeKind, "form", true, false, null),
+                new QueryParameterSpec("scope_id", scopeId, "form", true, false, null),
             });
             return await _client.GetAsync<SDKWork.Iam.AppSdk.Models.SdkWorkListResponse>(ApiPaths.AppendQueryString(ApiPaths.AppPath("/iam/role_bindings"), queryString));
         }

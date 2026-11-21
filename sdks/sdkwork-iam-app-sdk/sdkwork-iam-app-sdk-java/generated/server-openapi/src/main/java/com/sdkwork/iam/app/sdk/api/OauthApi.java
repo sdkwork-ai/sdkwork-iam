@@ -39,15 +39,15 @@ public class OauthApi {
     }
 
     /** Authorizations create. */
-    public AuthorizationsCreateResponse authorizationsCreate(AuthorizationsCreateRequest body) throws Exception {
+    public AuthorizationsCreateResponse201 authorizationsCreate(AuthorizationsCreateRequest body) throws Exception {
         Object raw = client.request("POST", ApiPaths.appPath("/oauth/authorizations"), body, null, null, "application/json", true, false);
-        return client.convertValue(raw, new TypeReference<AuthorizationsCreateResponse>() {});
+        return client.convertValue(raw, new TypeReference<AuthorizationsCreateResponse201>() {});
     }
 
     /** Authorizations completions create. */
-    public AuthorizationsCompletionsCreateResponse authorizationsCompletionsCreate(String authorizationStateId, AuthorizationsCompletionsCreateRequest body) throws Exception {
+    public AuthorizationsCompletionsCreateResponse201 authorizationsCompletionsCreate(String authorizationStateId, AuthorizationsCompletionsCreateRequest body) throws Exception {
         Object raw = client.post(ApiPaths.appPath("/oauth/authorizations/" + serializePathParameter(authorizationStateId, new PathParameterSpec("authorizationStateId", "simple", false)) + "/completions"), body, null, null, "application/json");
-        return client.convertValue(raw, new TypeReference<AuthorizationsCompletionsCreateResponse>() {});
+        return client.convertValue(raw, new TypeReference<AuthorizationsCompletionsCreateResponse201>() {});
     }
 
     /** Callbacks retrieve. */
@@ -63,9 +63,9 @@ public class OauthApi {
     }
 
     /** Desktop Sessions create. */
-    public DesktopSessionsCreateResponse desktopSessionsCreate(DesktopSessionsCreateRequest body) throws Exception {
+    public DesktopSessionsCreateResponse201 desktopSessionsCreate(DesktopSessionsCreateRequest body) throws Exception {
         Object raw = client.request("POST", ApiPaths.appPath("/oauth/desktop_sessions"), body, null, null, "application/json", true, false);
-        return client.convertValue(raw, new TypeReference<DesktopSessionsCreateResponse>() {});
+        return client.convertValue(raw, new TypeReference<DesktopSessionsCreateResponse201>() {});
     }
 
     /** Device Authorizations create. */
@@ -170,27 +170,6 @@ public class OauthApi {
     /** Sessions create. */
     public SdkWorkResourceResponse sessionsCreate(AppbaseSessionCreateCommand body) throws Exception {
         Object raw = client.request("POST", ApiPaths.appPath("/oauth/sessions"), body, null, null, "application/json", false, true);
-        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
-    }
-
-    /** Wechat Payment Oauth callback. */
-    public SdkWorkResourceResponse wechatPaymentOauthCallback() throws Exception {
-        Object raw = client.request("GET", ApiPaths.appPath("/oauth/wechat/payment/callback"), null, null, null, null, true, false);
-        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
-    }
-
-    /** Wechat Payment Oauth cashier Start. */
-    public SdkWorkResourceResponse wechatPaymentOauthCashierStart() throws Exception {
-        Object raw = client.request("GET", ApiPaths.appPath("/oauth/wechat/payment/cashier/start"), null, null, null, null, true, false);
-        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
-    }
-
-    /** Wechat Payment Oauth start. */
-    public SdkWorkResourceResponse wechatPaymentOauthStart(String redirect) throws Exception {
-        String query = buildQueryString(List.of(
-            new QueryParameterSpec("redirect", redirect, "form", true, false, null)
-        ));
-        Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.appPath("/oauth/wechat/payment/start"), query));
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 

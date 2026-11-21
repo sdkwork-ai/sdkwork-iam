@@ -111,11 +111,11 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
       enabled: false,
       hasExistingSecret: false,
       redirectUrisText: "https://forum.example.com/callback",
-      tenantApplicationId: "iamta-1",
+      installationId: "iamta-1",
       tenantId: "iamt-1",
     });
 
-    expect(service.iam.tenantApplications.management.update).toHaveBeenCalledWith("iamt-1", "iamta-1", {
+    expect(service.iam.installations.management.update).toHaveBeenCalledWith("iamt-1", "iamta-1", {
       runtimeConfig: {
         oauth: {
           relyingParty: {
@@ -197,10 +197,10 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
       enabled: true,
       hasExistingSecret: false,
       redirectUrisText: "https://forum.example.com/callback",
-      tenantApplicationId: "iamta-1",
+      installationId: "iamta-1",
       tenantId: "iamt-1",
     });
-    expect(service.iam.tenantApplications.management.update).toHaveBeenCalledWith("iamt-1", "iamta-1", {
+    expect(service.iam.installations.management.update).toHaveBeenCalledWith("iamt-1", "iamta-1", {
       runtimeConfig: {
         oauth: {
           relyingParty: {
@@ -313,9 +313,9 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
     const controller = createSdkworkIamOauthAdminController({ service: service as never });
 
     const draft = await controller.loadRelyingPartyConfig("iamt-1", "iamta-1");
-    expect(service.iam.tenantApplications.list).toHaveBeenCalledWith("iamt-1", { page: 1, page_size: 200 });
+    expect(service.iam.installations.list).toHaveBeenCalledWith("iamt-1", { page: 1, page_size: 200 });
     expect(draft.tenantId).toBe("iamt-1");
-    expect(draft.tenantApplicationId).toBe("iamta-1");
+    expect(draft.installationId).toBe("iamta-1");
     expect(draft.clientId).toBe("iam-app-1");
     expect(draft.clientIdHint).toBe("iam-app-1");
     expect(draft.hasExistingSecret).toBe(true);

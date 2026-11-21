@@ -12,7 +12,7 @@
   "mode": "apply",
   "hasChanges": true,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "982d09327c26a8fc636c9d13671abcfca371caaaa4a78ddf7c2a0a588d37c66f",
+  "changeFingerprint": "04d01d4e148ab87d6b607b5c5e15b55b667c100486f6b21c084dc3f08e68935b",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
@@ -23,6 +23,7 @@
       {
         "area": "api-surface",
         "paths": [
+          "lib/src/api/iam_oauth.dart",
           "lib/src/api/iam.dart"
         ]
       },
@@ -119,15 +120,16 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 2,
+    "writtenFiles": 3,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 17,
+    "skippedUnchangedGeneratedFiles": 16,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "982d09327c26a8fc636c9d13671abcfca371caaaa4a78ddf7c2a0a588d37c66f",
+    "changeFingerprint": "04d01d4e148ab87d6b607b5c5e15b55b667c100486f6b21c084dc3f08e68935b",
     "changes": {
       "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [
+        "lib/src/api/iam_oauth.dart",
         "lib/src/api/iam.dart",
         "lib/src/models.dart"
       ],
@@ -140,7 +142,6 @@
         "lib/backend_client.dart",
         "lib/sdkwork_iam_backend_sdk.dart",
         "lib/src/api/api.dart",
-        "lib/src/api/iam_oauth.dart",
         "lib/src/api/paths.dart",
         "lib/src/api/response_helpers.dart",
         "lib/src/http/client.dart",
@@ -167,6 +168,7 @@
         {
           "area": "api-surface",
           "paths": [
+            "lib/src/api/iam_oauth.dart",
             "lib/src/api/iam.dart"
           ]
         },

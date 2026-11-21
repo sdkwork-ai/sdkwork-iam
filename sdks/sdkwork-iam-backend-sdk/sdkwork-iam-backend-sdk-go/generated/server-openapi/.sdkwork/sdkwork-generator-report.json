@@ -11,8 +11,8 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "f724c08a5eac9c833043e45d2a6290decc1f5227edc1224531dffb7dfe743cf5",
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "6bd013af1390f555e6410ec114927f91c5242fb5f0cadc838a4e06c29c5ef803",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
@@ -23,6 +23,7 @@
       {
         "area": "api-surface",
         "paths": [
+          "api/iam_oauth.go",
           "api/iam.go"
         ]
       },
@@ -30,18 +31,19 @@
         "area": "models",
         "paths": [
           "types/appbase_access_credential_create_command.go",
+          "types/appbase_installation_enable_command.go",
+          "types/appbase_installation_provision_command.go",
+          "types/appbase_installation_update_command.go",
+          "types/appbase_tenant_application_enable_command.go",
           "types/appbase_tenant_application_provision_command.go",
-          "types/iam_installation_credential_create_command.go",
-          "types/iam_installation_credential_list_response.go",
-          "types/iam_installation_credential_response.go",
-          "types/iam_installation_credential_rotate_command.go",
-          "types/iam_installation_credential_with_secret.go",
-          "types/iam_installation_credential.go",
-          "types/iam_installation_environment_list_response.go",
-          "types/iam_installation_environment_response.go",
-          "types/iam_installation_environment_upsert_command.go",
-          "types/iam_installation_environment.go",
-          "types/iam_tenant_application_management_provision_command.go"
+          "types/appbase_tenant_application_update_command.go",
+          "types/iam_installation_management_provision_command.go",
+          "types/iam_installation_management_update_command.go",
+          "types/iam_installation_status_command.go",
+          "types/iam_tenant_application_management_provision_command.go",
+          "types/iam_tenant_application_management_update_command.go",
+          "types/iam_tenant_application_status_command.go",
+          "types/service_account_credential_create_command.go"
         ]
       }
     ],
@@ -50,12 +52,14 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },
@@ -131,35 +135,30 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 14,
+    "writtenFiles": 10,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 38,
-    "deletedGeneratedFiles": 0,
+    "skippedUnchangedGeneratedFiles": 42,
+    "deletedGeneratedFiles": 6,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "f724c08a5eac9c833043e45d2a6290decc1f5227edc1224531dffb7dfe743cf5",
+    "changeFingerprint": "6bd013af1390f555e6410ec114927f91c5242fb5f0cadc838a4e06c29c5ef803",
     "changes": {
       "createdGeneratedFiles": [
-        "types/iam_installation_credential_create_command.go",
-        "types/iam_installation_credential_list_response.go",
-        "types/iam_installation_credential_response.go",
-        "types/iam_installation_credential_rotate_command.go",
-        "types/iam_installation_credential_with_secret.go",
-        "types/iam_installation_credential.go",
-        "types/iam_installation_environment_list_response.go",
-        "types/iam_installation_environment_response.go",
-        "types/iam_installation_environment_upsert_command.go",
-        "types/iam_installation_environment.go"
+        "types/appbase_installation_enable_command.go",
+        "types/appbase_installation_provision_command.go",
+        "types/appbase_installation_update_command.go",
+        "types/iam_installation_management_provision_command.go",
+        "types/iam_installation_management_update_command.go",
+        "types/iam_installation_status_command.go"
       ],
       "updatedGeneratedFiles": [
+        "api/iam_oauth.go",
         "api/iam.go",
         "types/appbase_access_credential_create_command.go",
-        "types/appbase_tenant_application_provision_command.go",
-        "types/iam_tenant_application_management_provision_command.go"
+        "types/service_account_credential_create_command.go"
       ],
       "unchangedGeneratedFiles": [
         "api/base.go",
         "api/doc.go",
-        "api/iam_oauth.go",
         "api/paths.go",
         "bin/publish-core.mjs",
         "bin/publish.ps1",
@@ -174,14 +173,20 @@
         "sdk.go",
         "sdkwork-sdk.json",
         "types/appbase_operation_command.go",
-        "types/appbase_tenant_application_enable_command.go",
-        "types/appbase_tenant_application_update_command.go",
         "types/common.go",
         "types/doc.go",
         "types/field_error.go",
+        "types/iam_installation_credential_create_command.go",
+        "types/iam_installation_credential_list_response.go",
+        "types/iam_installation_credential_response.go",
+        "types/iam_installation_credential_rotate_command.go",
+        "types/iam_installation_credential_with_secret.go",
+        "types/iam_installation_credential.go",
+        "types/iam_installation_environment_list_response.go",
+        "types/iam_installation_environment_response.go",
+        "types/iam_installation_environment_upsert_command.go",
+        "types/iam_installation_environment.go",
         "types/iam_oauth_client_create_command.go",
-        "types/iam_tenant_application_management_update_command.go",
-        "types/iam_tenant_application_status_command.go",
         "types/page_info.go",
         "types/problem_detail.go",
         "types/sdk_work_api_response.go",
@@ -192,11 +197,17 @@
         "types/sdk_work_platform_error_code.go",
         "types/sdk_work_resource_data.go",
         "types/sdk_work_resource_response.go",
-        "types/service_account_credential_create_command.go",
         "types/service_account_credential_revoke_command.go",
         "types/service_account_token_exchange_command.go"
       ],
-      "deletedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "types/appbase_tenant_application_enable_command.go",
+        "types/appbase_tenant_application_provision_command.go",
+        "types/appbase_tenant_application_update_command.go",
+        "types/iam_tenant_application_management_provision_command.go",
+        "types/iam_tenant_application_management_update_command.go",
+        "types/iam_tenant_application_status_command.go"
+      ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/README.md"
@@ -213,6 +224,7 @@
         {
           "area": "api-surface",
           "paths": [
+            "api/iam_oauth.go",
             "api/iam.go"
           ]
         },
@@ -220,18 +232,19 @@
           "area": "models",
           "paths": [
             "types/appbase_access_credential_create_command.go",
+            "types/appbase_installation_enable_command.go",
+            "types/appbase_installation_provision_command.go",
+            "types/appbase_installation_update_command.go",
+            "types/appbase_tenant_application_enable_command.go",
             "types/appbase_tenant_application_provision_command.go",
-            "types/iam_installation_credential_create_command.go",
-            "types/iam_installation_credential_list_response.go",
-            "types/iam_installation_credential_response.go",
-            "types/iam_installation_credential_rotate_command.go",
-            "types/iam_installation_credential_with_secret.go",
-            "types/iam_installation_credential.go",
-            "types/iam_installation_environment_list_response.go",
-            "types/iam_installation_environment_response.go",
-            "types/iam_installation_environment_upsert_command.go",
-            "types/iam_installation_environment.go",
-            "types/iam_tenant_application_management_provision_command.go"
+            "types/appbase_tenant_application_update_command.go",
+            "types/iam_installation_management_provision_command.go",
+            "types/iam_installation_management_update_command.go",
+            "types/iam_installation_status_command.go",
+            "types/iam_tenant_application_management_provision_command.go",
+            "types/iam_tenant_application_management_update_command.go",
+            "types/iam_tenant_application_status_command.go",
+            "types/service_account_credential_create_command.go"
           ]
         }
       ],
@@ -265,12 +278,14 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "medium",
+      "riskLevel": "high",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
+        "deleted-generated-files",
+        "manual-review-required",
         "verification-required"
       ]
     },

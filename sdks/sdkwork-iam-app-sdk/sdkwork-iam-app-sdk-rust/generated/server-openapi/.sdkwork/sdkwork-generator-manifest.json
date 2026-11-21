@@ -36,7 +36,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "05ca5d0cb05bfd03b39ecb89534180068502c8fbe831eb22aa4b8b0158eddaa4"
+      "sha256": "356dc84d5a8cd1dc642685429d53945a0fc873eef5c41dd0995356be81bb28f9"
     },
     {
       "path": "sdkwork-sdk.json",
@@ -44,7 +44,7 @@
     },
     {
       "path": "src/api/auth.rs",
-      "sha256": "b41b543e181dde30587ea756d77c97bfddfa0fa5fb604a24ad237d5a55f85881"
+      "sha256": "53c68602bccb9633875a4d2fd7a8d26dd8261f93b13222e83511675a7e1bfa9e"
     },
     {
       "path": "src/api/base.rs",
@@ -52,7 +52,7 @@
     },
     {
       "path": "src/api/iam.rs",
-      "sha256": "62fcd0d6f29d1a8ac3440177889245fd77c24964d5d12e5321ed55f1f0e1fa2b"
+      "sha256": "991ef8bd2d7f2af00195df97e4c0be41a657101d84676fd373de2fe53d5b3ce3"
     },
     {
       "path": "src/api/mod.rs",
@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/oauth.rs",
-      "sha256": "8123a57c01118fcd14a3aaedb1b16aaed4714a47cdace61cf3be809158233a99"
+      "sha256": "a1c5a46a9b53beaec52f640b1f82444fbda17caa9ec74b190abd7f01d529ee8d"
     },
     {
       "path": "src/api/paths.rs",
@@ -95,16 +95,16 @@
       "sha256": "7e50fa6107f8a0bd2e4084de87f51f1c32658e509c0079c4e326aa7637994bed"
     },
     {
-      "path": "src/models/authorizations_completions_create_response.rs",
-      "sha256": "c8bc22336702fb8318ac80c70d506f979c435075b549d7f2f22e1674a4a8fa94"
+      "path": "src/models/authorizations_completions_create_response201.rs",
+      "sha256": "f797db969911595e524fea91c96756ba3b12c6f512349df5b18c58ba4ec63f39"
     },
     {
       "path": "src/models/authorizations_create_request.rs",
       "sha256": "a155a80b41babe13eff24c7cc34fcbd49e4c90e303055a772942979f32e02c20"
     },
     {
-      "path": "src/models/authorizations_create_response.rs",
-      "sha256": "eb34956fae9ddf228148ca4d32c0273c6bd05defdb6f26ef046e232bbafb09dc"
+      "path": "src/models/authorizations_create_response201.rs",
+      "sha256": "707e2669e0b9e3bc199b5aa17d39dc90e509e17adc8a248cf3c3e77906c417bc"
     },
     {
       "path": "src/models/common.rs",
@@ -115,12 +115,24 @@
       "sha256": "c1cc72e2d09a57f71f9c83ce6773201dd9a3416a3e2f06be79298790b6f528ac"
     },
     {
-      "path": "src/models/desktop_sessions_create_response.rs",
-      "sha256": "14937d2f3a00fc0638674585709d8d42d0806d2d49ded792811b88f63c42b822"
+      "path": "src/models/desktop_sessions_create_response201.rs",
+      "sha256": "f3309bad8c49edd6ec6d3be083cf48a69acb69177546a3c12ce79ac29569119a"
     },
     {
       "path": "src/models/field_error.rs",
       "sha256": "09c55595520768e5c816f456def08f58d4c6c445b825b0ca907eefe464ad57b9"
+    },
+    {
+      "path": "src/models/iam_app_access_token_create_command.rs",
+      "sha256": "eadc1f8cd2bdca86425b3ae1daa8597d1ed70e358fb866dba1a884c616a91c11"
+    },
+    {
+      "path": "src/models/iam_app_access_token_response.rs",
+      "sha256": "13407f991f94caa8546c3b066206bb2f72a579b7998a8c62581c3300dcc0b80c"
+    },
+    {
+      "path": "src/models/iam_app_access_token.rs",
+      "sha256": "258b2d0c805d04f538081609b4bc8544fc5a089ffca59e0e337ead215e340203"
     },
     {
       "path": "src/models/iam_organization_member_list_response.rs",
@@ -160,7 +172,7 @@
     },
     {
       "path": "src/models/mod.rs",
-      "sha256": "fb4f75c8025f3bc4b830e32d31f140ef23410baa538157ae7b72ab78ca311713"
+      "sha256": "0eac83114c9da4a3a5b02a4af9a248c2f7943accacce7562d7f57b3b1f10bf02"
     },
     {
       "path": "src/models/oauth_phone_binding_session_create_command.rs",

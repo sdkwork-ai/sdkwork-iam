@@ -9,15 +9,38 @@
     "protocol": "http",
     "packageName": "sdkwork/iam-app-sdk"
   },
-  "changeFingerprint": "6b19132b930ec18d090b8a5ad2ec0474901f914f2c5d7e7732de45ed15b94508",
+  "changeFingerprint": "a0a6bb19988a77cd0f8d4264e37a1fc8a9ba5320e8c1cd52c2f863e66f0fcaf6",
   "changes": {
     "createdGeneratedFiles": [
+      "src/Models/AuthorizationsCompletionsCreateResponse201.php",
+      "src/Models/AuthorizationsCreateResponse201.php",
+      "src/Models/DesktopSessionsCreateResponse201.php",
+      "src/Models/IamAppAccessToken.php",
+      "src/Models/IamAppAccessTokenCreateCommand.php",
+      "src/Models/IamAppAccessTokenResponse.php"
+    ],
+    "updatedGeneratedFiles": [
+      "README.md",
+      "src/Api/Auth.php",
+      "src/Api/Iam.php",
+      "src/Api/Oauth.php"
+    ],
+    "unchangedGeneratedFiles": [
+      "bin/publish-core.mjs",
+      "bin/publish.ps1",
+      "bin/publish.sh",
+      "CHANGELOG.md",
+      "composer.json",
+      "LICENSE",
+      "sdkwork-sdk.json",
+      "src/Api/BaseApi.php",
+      "src/Api/System.php",
+      "src/Http/HttpClient.php",
+      "src/Models/AppbaseSessionCreateCommand.php",
       "src/Models/AuthorizationsCompletionsCreateRequest.php",
-      "src/Models/AuthorizationsCompletionsCreateResponse.php",
       "src/Models/AuthorizationsCreateRequest.php",
-      "src/Models/AuthorizationsCreateResponse.php",
       "src/Models/DesktopSessionsCreateRequest.php",
-      "src/Models/DesktopSessionsCreateResponse.php",
+      "src/Models/FieldError.php",
       "src/Models/IamOrganizationMember.php",
       "src/Models/IamOrganizationMemberListResponse.php",
       "src/Models/IamPersonaCatalog.php",
@@ -29,25 +52,6 @@
       "src/Models/IamUserPersonaUpdateCommand.php",
       "src/Models/OauthPhoneBindingSessionCreateCommand.php",
       "src/Models/OauthPhoneBindingVerificationCodeRequestCommand.php",
-      "src/Models/SessionsCurrentLogoutRequest.php"
-    ],
-    "updatedGeneratedFiles": [
-      "bin/publish-core.mjs",
-      "bin/publish.ps1",
-      "bin/publish.sh",
-      "CHANGELOG.md",
-      "composer.json",
-      "LICENSE",
-      "README.md",
-      "sdkwork-sdk.json",
-      "src/Api/Auth.php",
-      "src/Api/BaseApi.php",
-      "src/Api/Iam.php",
-      "src/Api/Oauth.php",
-      "src/Api/System.php",
-      "src/Http/HttpClient.php",
-      "src/Models/AppbaseSessionCreateCommand.php",
-      "src/Models/FieldError.php",
       "src/Models/PageInfo.php",
       "src/Models/ProblemDetail.php",
       "src/Models/SdkWorkApiResponse.php",
@@ -57,154 +61,72 @@
       "src/Models/SdkWorkPageData.php",
       "src/Models/SdkWorkResourceData.php",
       "src/Models/SdkWorkResourceResponse.php",
+      "src/Models/SessionsCurrentLogoutRequest.php",
       "src/Models/WechatMiniProgramSessionCreateCommand.php",
       "src/SdkConfig.php",
       "src/SdkworkAppClient.php"
     ],
-    "unchangedGeneratedFiles": [],
-    "deletedGeneratedFiles": [],
+    "deletedGeneratedFiles": [
+      "src/Models/AuthorizationsCompletionsCreateResponse.php",
+      "src/Models/AuthorizationsCreateResponse.php",
+      "src/Models/DesktopSessionsCreateResponse.php"
+    ],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
     ],
-    "backedUpFiles": [
-      "bin/publish-core.mjs",
-      "bin/publish.ps1",
-      "bin/publish.sh",
-      "CHANGELOG.md",
-      "composer.json",
-      "LICENSE",
-      "README.md",
-      "sdkwork-sdk.json",
-      "src/Api/Auth.php",
-      "src/Api/BaseApi.php",
-      "src/Api/Iam.php",
-      "src/Api/Oauth.php",
-      "src/Api/System.php",
-      "src/Http/HttpClient.php",
-      "src/Models/AppbaseSessionCreateCommand.php",
-      "src/Models/FieldError.php",
-      "src/Models/PageInfo.php",
-      "src/Models/ProblemDetail.php",
-      "src/Models/SdkWorkApiResponse.php",
-      "src/Models/SdkWorkCommandData.php",
-      "src/Models/SdkWorkCommandResponse.php",
-      "src/Models/SdkWorkListResponse.php",
-      "src/Models/SdkWorkPageData.php",
-      "src/Models/SdkWorkResourceData.php",
-      "src/Models/SdkWorkResourceResponse.php",
-      "src/Models/WechatMiniProgramSessionCreateCommand.php",
-      "src/SdkConfig.php",
-      "src/SdkworkAppClient.php"
-    ]
+    "backedUpFiles": []
   },
   "impact": {
     "schemaVersion": 1,
     "areas": [
       "api-surface",
       "models",
-      "runtime",
-      "build-metadata",
-      "publish-workflow",
-      "documentation",
-      "unknown"
+      "documentation"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
           "src/Api/Auth.php",
-          "src/Api/BaseApi.php",
           "src/Api/Iam.php",
-          "src/Api/Oauth.php",
-          "src/Api/System.php",
-          "src/SdkworkAppClient.php"
+          "src/Api/Oauth.php"
         ]
       },
       {
         "area": "models",
         "paths": [
-          "src/Models/AppbaseSessionCreateCommand.php",
-          "src/Models/AuthorizationsCompletionsCreateRequest.php",
           "src/Models/AuthorizationsCompletionsCreateResponse.php",
-          "src/Models/AuthorizationsCreateRequest.php",
+          "src/Models/AuthorizationsCompletionsCreateResponse201.php",
           "src/Models/AuthorizationsCreateResponse.php",
-          "src/Models/DesktopSessionsCreateRequest.php",
+          "src/Models/AuthorizationsCreateResponse201.php",
           "src/Models/DesktopSessionsCreateResponse.php",
-          "src/Models/FieldError.php",
-          "src/Models/IamOrganizationMember.php",
-          "src/Models/IamOrganizationMemberListResponse.php",
-          "src/Models/IamPersonaCatalog.php",
-          "src/Models/IamPersonaCatalogResponse.php",
-          "src/Models/IamPersonaInterest.php",
-          "src/Models/IamPersonaRole.php",
-          "src/Models/IamUserPersona.php",
-          "src/Models/IamUserPersonaResponse.php",
-          "src/Models/IamUserPersonaUpdateCommand.php",
-          "src/Models/OauthPhoneBindingSessionCreateCommand.php",
-          "src/Models/OauthPhoneBindingVerificationCodeRequestCommand.php",
-          "src/Models/PageInfo.php",
-          "src/Models/ProblemDetail.php",
-          "src/Models/SdkWorkApiResponse.php",
-          "src/Models/SdkWorkCommandData.php",
-          "src/Models/SdkWorkCommandResponse.php",
-          "src/Models/SdkWorkListResponse.php",
-          "src/Models/SdkWorkPageData.php",
-          "src/Models/SdkWorkResourceData.php",
-          "src/Models/SdkWorkResourceResponse.php",
-          "src/Models/SessionsCurrentLogoutRequest.php",
-          "src/Models/WechatMiniProgramSessionCreateCommand.php"
-        ]
-      },
-      {
-        "area": "runtime",
-        "paths": [
-          "src/Http/HttpClient.php"
-        ]
-      },
-      {
-        "area": "build-metadata",
-        "paths": [
-          "composer.json",
-          "sdkwork-sdk.json"
-        ]
-      },
-      {
-        "area": "publish-workflow",
-        "paths": [
-          "bin/publish-core.mjs",
-          "bin/publish.ps1",
-          "bin/publish.sh"
+          "src/Models/DesktopSessionsCreateResponse201.php",
+          "src/Models/IamAppAccessToken.php",
+          "src/Models/IamAppAccessTokenCreateCommand.php",
+          "src/Models/IamAppAccessTokenResponse.php"
         ]
       },
       {
         "area": "documentation",
         "paths": [
-          "CHANGELOG.md",
           "README.md"
-        ]
-      },
-      {
-        "area": "unknown",
-        "paths": [
-          "LICENSE",
-          "src/SdkConfig.php"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required."
+    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-php\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -228,9 +150,8 @@
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "backed-up-generated-files",
+      "deleted-generated-files",
       "manual-review-required",
-      "unknown-impact",
       "verification-required"
     ]
   },

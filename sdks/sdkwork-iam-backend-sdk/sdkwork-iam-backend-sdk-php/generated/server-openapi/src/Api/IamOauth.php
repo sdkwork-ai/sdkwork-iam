@@ -391,6 +391,17 @@ final class IamOauthApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
+    /** Iam oauth operator Platforms component Credentials create. */
+    public function operatorPlatformsComponentCredentialsCreate(string $operatorPlatformId, array $body): ?SdkWorkResourceResponse
+    {
+        $path = $this->interpolatePath('/backend/v3/api/iam/oauth/operator_platforms/{operatorPlatformId}/component_credentials', ['operatorPlatformId' => $this->serializePathParameter($operatorPlatformId, new PathParameterSpec('operatorPlatformId', 'simple', false))]);
+        $payload = $body;
+        $result = $this->client->request('POST', $path, [
+            'json' => $payload,
+        ]);
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+    }
+
     /** Iam oauth operator Platforms pre Authorizations create. */
     public function operatorPlatformsPreAuthorizationsCreate(string $operatorPlatformId, array $body): ?SdkWorkResourceResponse
     {
