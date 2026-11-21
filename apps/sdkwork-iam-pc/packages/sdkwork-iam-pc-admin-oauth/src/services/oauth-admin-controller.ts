@@ -1077,6 +1077,42 @@ export function createSdkworkIamOauthAdminController(
         true,
       );
     },
+    saveOperatorPlatformComponentCredentials(operatorPlatformId, body) {
+      return wrapCreate(
+        () => service.iam.oauth.operatorPlatforms.componentCredentials.create(
+          operatorPlatformId.trim(),
+          {
+            authorizationCallbackUrl: body.authorizationCallbackUrl.trim(),
+            callbackToken: body.callbackToken.trim(),
+            componentAppId: body.componentAppId.trim(),
+            componentAppSecret: body.componentAppSecret.trim(),
+            encodingAesKey: body.encodingAesKey.trim(),
+          },
+        ),
+        "Failed to save OAuth operator platform component credentials",
+        true,
+      );
+    },
+    runOperatorPlatformConnectivityCheck(operatorPlatformId) {
+      return wrapCreate(
+        () => service.iam.oauth.operatorPlatforms.connectivityChecks.create(
+          operatorPlatformId.trim(),
+          {},
+        ),
+        "Failed to run OAuth operator platform connectivity check",
+        true,
+      );
+    },
+    invokeResourceAuthorizationCapability(authorizationId, capability, payload) {
+      return wrapCreate(
+        () => service.iam.oauth.resourceAuthorizations.capabilityInvocations.create(
+          authorizationId.trim(),
+          { capability, payload },
+        ),
+        "Failed to invoke OAuth authorizer capability",
+        true,
+      );
+    },
     publishOperationalResource(resourceId) {
       return wrapCreate(
         () => service.iam.oauth.operationalResources.publishes.create(resourceId.trim(), {}),

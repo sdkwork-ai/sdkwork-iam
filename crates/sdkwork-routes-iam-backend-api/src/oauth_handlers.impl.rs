@@ -1,8 +1,14 @@
 use sdkwork_iam_web_adapter::{
-    begin_authorization, now_epoch_seconds, AuthorizationEntryRequest,
-    PgComponentPlatformConfigReader, PgComponentTokenCache, ReqwestWechatComponentTransport,
+    begin_authorization, is_supported_capability, now_epoch_seconds, AuthorizationEntryRequest,
+    PgAuthorizerTokenService, PgComponentPlatformConfigReader, PgComponentTokenCache,
+    ReqwestWechatComponentTransport, WechatAuthorizerCapabilityService, WechatCapabilityError,
     WechatComponentApi, WechatComponentAuthorizationError, WechatComponentAuthorizationScope,
-    WechatComponentAuthorizationSurface, WechatComponentTokenService,
+    WechatComponentAuthorizationSurface, WechatComponentAuthorizerError,
+    WechatComponentTokenService, ComponentPlatformConfigReader, CAPABILITY_MP_AUDIT_STATUS,
+    CAPABILITY_MP_AUDIT_SUBMIT, CAPABILITY_MP_CODE_COMMIT, CAPABILITY_MP_DOMAINS_MODIFY,
+    CAPABILITY_MP_GRAY_RELEASE, CAPABILITY_MP_PRIVACY_SET, CAPABILITY_MP_RELEASE,
+    CAPABILITY_MP_ROLLBACK, CAPABILITY_OA_MENU_PUBLISH, CAPABILITY_OA_MENU_RETRIEVE,
+    record_audit_event,
 };
 
 const RESOURCE_ACCOUNT_CLIENT_BINDING_CONFLICT: &str =
@@ -2702,6 +2708,482 @@ async fn upsert_operator_platform_secret_tx(
         }
     }
     Ok(())
+}
+
+type BackendWechatCapabilityService = WechatAuthorizerCapabilityService<
+    PgAuthorizerTokenService<ReqwestWechatComponentTransport>,
+    ReqwestWechatComponentTransport,
+>;
+
+async fn create_resource_authorization_capability_invocation(
+    State(state): State<BackendIamState>,
+    ctx: WebRequestContext,
+    Path(authorization_id): Path<String>,
+    Json(body): Json<Value>,
+) -> Response {
+    let pg = match postgres_pool_or_error(&state) {
+        Ok(pg) => pg,
+        Err(response) => return response,
+    };
+    let tenant_id = match tenant_id_from_context(&ctx) {
+        Ok(tenant_id) => tenant_id,
+        Err(response) => return response,
+    };
+    let active: bool = match sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM iam_oauth_resource_authorization \
+         WHERE tenant_id = $1 AND id = $2 AND status = 'active')",
+    )
+    .bind(&tenant_id)
+    .bind(&authorization_id)
+    .fetch_one(pg)
+    .await
+    {
+        Ok(active) => active,
+        Err(error) => {
+            return internal_handler_error("iam_oauth_channel_capability_failed", error.to_string())
+        }
+    };
+    if !active {
+        return appbase_error(
+            StatusCode::NOT_FOUND,
+            "iam_oauth_resource_authorization_not_active",
+            "resource authorization is not active",
+        );
+    }
+    let Some(capability) = read_string_field(&body, &["capability"]) else {
+        return appbase_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "iam_oauth_channel_capability_invalid",
+            "capability is required",
+        );
+    };
+    if !is_supported_capability(&capability) {
+        return appbase_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "iam_oauth_channel_capability_invalid",
+            &format!("capability {capability} is not supported"),
+        );
+    }
+    let payload = body.get("payload").cloned().unwrap_or_else(|| json!({}));
+    let token_transport = match ReqwestWechatComponentTransport::new() {
+        Ok(transport) => transport,
+        Err(error) => {
+            return internal_handler_error("iam_oauth_channel_capability_failed", error.to_string())
+        }
+    };
+    let authorizer_transport = match ReqwestWechatComponentTransport::new() {
+        Ok(transport) => transport,
+        Err(error) => {
+            return internal_handler_error("iam_oauth_channel_capability_failed", error.to_string())
+        }
+    };
+    let capability_transport = match ReqwestWechatComponentTransport::new() {
+        Ok(transport) => transport,
+        Err(error) => {
+            return internal_handler_error("iam_oauth_channel_capability_failed", error.to_string())
+        }
+    };
+    let tokens = WechatComponentTokenService::new(
+        PgComponentTokenCache::new((*pg).clone()),
+        WechatComponentApi::new(token_transport),
+    );
+    let authorizer_tokens = PgAuthorizerTokenService::new(
+        (*pg).clone(),
+        tokens,
+        WechatComponentApi::new(authorizer_transport),
+    );
+    let service = WechatAuthorizerCapabilityService::new(
+        authorizer_tokens,
+        WechatComponentApi::new(capability_transport),
+    );
+    match invoke_authorizer_capability(
+        &service,
+        &authorization_id,
+        &capability,
+        &payload,
+        now_epoch_seconds(),
+    )
+    .await
+    {
+        Ok(result) => {
+            audit_capability_invocation(
+                pg,
+                &ctx,
+                &tenant_id,
+                &authorization_id,
+                &capability,
+                json!({ "status": "SUCCEEDED", "result": &result }),
+            )
+            .await;
+            appbase_ok(json!({
+                "item": {
+                    "capability": capability,
+                    "result": result,
+                }
+            }))
+        }
+        Err(error) => {
+            audit_capability_invocation(
+                pg,
+                &ctx,
+                &tenant_id,
+                &authorization_id,
+                &capability,
+                json!({ "status": "FAILED", "error": error.to_string() }),
+            )
+            .await;
+            capability_error_response(error)
+        }
+    }
+}
+
+/// Records one paid-channel capability invocation for operations and billing
+/// reconciliation. A failed audit write must not fail the provider call that
+/// already happened, so it is logged and swallowed.
+async fn audit_capability_invocation(
+    pg: &sqlx::PgPool,
+    ctx: &WebRequestContext,
+    tenant_id: &str,
+    authorization_id: &str,
+    capability: &str,
+    detail: Value,
+) {
+    if let Err(error) = record_audit_event(
+        pg,
+        tenant_id,
+        None,
+        None,
+        "wechat_channel_capability.invoke",
+        "iam_oauth_resource_authorization",
+        Some(authorization_id),
+        Some(ctx.request_id.0.as_str()),
+        "prod",
+        detail,
+    )
+    .await
+    {
+        tracing::warn!(error = %error, capability, "wechat capability audit failed");
+    }
+}
+
+async fn invoke_authorizer_capability(
+    service: &BackendWechatCapabilityService,
+    authorization_id: &str,
+    capability: &str,
+    payload: &Value,
+    now: i64,
+) -> Result<Value, WechatCapabilityError> {
+    match capability {
+        CAPABILITY_OA_MENU_PUBLISH => {
+            let menu = payload
+                .get("menu")
+                .cloned()
+                .ok_or_else(|| invalid_capability_payload("menu is required"))?;
+            service
+                .publish_official_account_menu(authorization_id, menu, now)
+                .await?;
+            Ok(json!({ "published": true }))
+        }
+        CAPABILITY_OA_MENU_RETRIEVE => service.official_account_menu(authorization_id, now).await,
+        CAPABILITY_MP_CODE_COMMIT => {
+            let template_id = capability_string(payload, &["templateId", "template_id"])
+                .ok_or_else(|| invalid_capability_payload("templateId is required"))?;
+            let user_version = capability_string(payload, &["userVersion", "providerVersion"])
+                .ok_or_else(|| invalid_capability_payload("userVersion is required"))?;
+            let user_desc = capability_string(payload, &["userDesc", "description"])
+                .unwrap_or_else(|| user_version.clone());
+            let ext_json = capability_string(payload, &["extJson"]);
+            service
+                .commit_mini_program_code(
+                    authorization_id,
+                    &template_id,
+                    ext_json.as_deref(),
+                    &user_version,
+                    &user_desc,
+                    now,
+                )
+                .await?;
+            Ok(json!({
+                "committed": true,
+                "commitId": format!("{template_id}:{user_version}"),
+            }))
+        }
+        CAPABILITY_MP_AUDIT_SUBMIT => {
+            let items: Vec<Value> = payload
+                .get("items")
+                .and_then(Value::as_array)
+                .cloned()
+                .unwrap_or_default();
+            let feedback = capability_string(payload, &["feedback"]);
+            let audit_id = service
+                .submit_mini_program_audit(authorization_id, items, feedback.as_deref(), now)
+                .await?;
+            Ok(json!({ "auditId": audit_id }))
+        }
+        CAPABILITY_MP_AUDIT_STATUS => {
+            let audit_id = capability_string(payload, &["auditId", "audit_id"])
+                .ok_or_else(|| invalid_capability_payload("auditId is required"))?;
+            let status = service
+                .mini_program_audit_status(authorization_id, &audit_id, now)
+                .await?;
+            Ok(json!({ "status": status }))
+        }
+        CAPABILITY_MP_RELEASE => {
+            service.release_mini_program_code(authorization_id, now).await?;
+            Ok(json!({ "released": true }))
+        }
+        CAPABILITY_MP_ROLLBACK => {
+            let app_version = capability_string(payload, &["appVersion", "app_version"]);
+            let result = service
+                .revert_mini_program_code(authorization_id, app_version.as_deref(), now)
+                .await?;
+            Ok(json!({ "result": result }))
+        }
+        CAPABILITY_MP_GRAY_RELEASE => {
+            let percentage = payload
+                .get("grayPercentage")
+                .and_then(Value::as_u64)
+                .unwrap_or(100);
+            let percentage = u16::try_from(percentage)
+                .map_err(|_| invalid_capability_payload("grayPercentage is out of range"))?;
+            let debuger_first = payload
+                .get("supportDebugerFirst")
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+            let experiencer_first = payload
+                .get("supportExperiencerFirst")
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+            service
+                .gray_release_mini_program_code(
+                    authorization_id,
+                    percentage,
+                    debuger_first,
+                    experiencer_first,
+                    now,
+                )
+                .await?;
+            Ok(json!({ "grayPercentage": percentage }))
+        }
+        CAPABILITY_MP_DOMAINS_MODIFY => {
+            let action = capability_string(payload, &["action"])
+                .ok_or_else(|| invalid_capability_payload("action is required"))?;
+            let domains: Vec<String> = payload
+                .get("requestDomains")
+                .and_then(Value::as_array)
+                .map(|values| {
+                    values
+                        .iter()
+                        .filter_map(Value::as_str)
+                        .map(str::to_string)
+                        .collect()
+                })
+                .unwrap_or_default();
+            service
+                .modify_request_domains(authorization_id, &action, &domains, now)
+                .await?;
+            Ok(json!({ "modified": domains.len() }))
+        }
+        CAPABILITY_MP_PRIVACY_SET => {
+            let privacy = payload
+                .get("privacy")
+                .cloned()
+                .ok_or_else(|| invalid_capability_payload("privacy is required"))?;
+            service
+                .set_mini_program_privacy(authorization_id, privacy, now)
+                .await?;
+            Ok(json!({ "updated": true }))
+        }
+        other => Err(invalid_capability_payload(&format!(
+            "capability {other} is not supported"
+        ))),
+    }
+}
+
+fn capability_string(payload: &Value, keys: &[&str]) -> Option<String> {
+    keys.iter().find_map(|key| {
+        payload
+            .get(*key)
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_string)
+    })
+}
+
+fn invalid_capability_payload(detail: &str) -> WechatCapabilityError {
+    WechatCapabilityError::InvalidRequest(detail.to_string())
+}
+
+fn capability_error_response(error: WechatCapabilityError) -> Response {
+    match error {
+        WechatCapabilityError::InvalidRequest(detail) => appbase_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "iam_oauth_channel_capability_invalid",
+            &detail,
+        ),
+        WechatCapabilityError::Token(WechatComponentAuthorizerError::NotFound(_)) => appbase_error(
+            StatusCode::NOT_FOUND,
+            "iam_oauth_resource_authorization_not_found",
+            "resource authorization not found",
+        ),
+        WechatCapabilityError::Token(WechatComponentAuthorizerError::NotActive { status, .. }) => {
+            appbase_error(
+                StatusCode::CONFLICT,
+                "iam_oauth_resource_authorization_inactive",
+                &format!("resource authorization is {status}"),
+            )
+        }
+        WechatCapabilityError::Token(error) => appbase_error(
+            StatusCode::BAD_GATEWAY,
+            "iam_oauth_provider_unavailable",
+            &error.to_string(),
+        ),
+        WechatCapabilityError::Api(error) => appbase_error(
+            StatusCode::BAD_GATEWAY,
+            "iam_oauth_provider_unavailable",
+            &error.to_string(),
+        ),
+    }
+}
+
+async fn create_operator_platform_connectivity_check(
+    State(state): State<BackendIamState>,
+    ctx: WebRequestContext,
+    Path(operator_platform_id): Path<String>,
+) -> Response {
+    let pg = match postgres_pool_or_error(&state) {
+        Ok(pg) => pg,
+        Err(response) => return response,
+    };
+    let tenant_id = match tenant_id_from_context(&ctx) {
+        Ok(tenant_id) => tenant_id,
+        Err(response) => return response,
+    };
+    let row = match sqlx::query(
+        "SELECT component_appid, platform_type, callback_public_id, ticket_status, \
+                ticket_expires_at, authorization_callback_url \
+         FROM iam_oauth_operator_platform WHERE tenant_id = $1 AND id = $2",
+    )
+    .bind(&tenant_id)
+    .bind(&operator_platform_id)
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(Some(row)) => row,
+        Ok(None) => {
+            return appbase_error(
+                StatusCode::NOT_FOUND,
+                "iam_oauth_operator_platform_not_found",
+                "operator platform not found",
+            )
+        }
+        Err(error) => {
+            return internal_handler_error("iam_oauth_connectivity_check_failed", error.to_string())
+        }
+    };
+    let component_app_id: Option<String> = row.try_get("component_appid").ok().flatten();
+    let platform_type: String = row.try_get("platform_type").unwrap_or_default();
+    let callback_public_id: Option<String> = row.try_get("callback_public_id").ok().flatten();
+    let ticket_status: String = row.try_get("ticket_status").unwrap_or_default();
+    let ticket_expires_at: Option<String> = row.try_get("ticket_expires_at").ok().flatten();
+    let authorization_callback_url: Option<String> =
+        row.try_get("authorization_callback_url").ok().flatten();
+    let Some(component_app_id) = component_app_id
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+    else {
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_oauth_operator_platform_component_missing",
+            "configure the component AppID before running a connectivity check",
+        );
+    };
+    if platform_type == "customized" {
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_oauth_operator_platform_not_authorizable",
+            "a customized-type operator platform cannot acquire a component token",
+        );
+    }
+    let secret_kinds: Vec<String> = match sqlx::query_scalar(
+        "SELECT secret_kind FROM iam_oauth_secret \
+         WHERE operator_platform_id = $1 AND status = 'active' AND secret_kind = ANY($2)",
+    )
+    .bind(&operator_platform_id)
+    .bind(
+        [
+            "component_app_secret",
+            "component_verify_ticket",
+            "encoding_aes_key",
+            "component_callback_token",
+        ]
+        .as_slice(),
+    )
+    .fetch_all(pg)
+    .await
+    {
+        Ok(kinds) => kinds,
+        Err(error) => {
+            return internal_handler_error("iam_oauth_connectivity_check_failed", error.to_string())
+        }
+    };
+    let reader = PgComponentPlatformConfigReader::new((*pg).clone());
+    let config = match reader.load(&operator_platform_id).await {
+        Ok(Some(config)) => config,
+        Ok(None) => {
+            return appbase_error(
+                StatusCode::NOT_FOUND,
+                "iam_oauth_operator_platform_not_found",
+                "operator platform not found",
+            )
+        }
+        Err(error) => {
+            return appbase_error(
+                StatusCode::CONFLICT,
+                "iam_oauth_operator_platform_secret_missing",
+                &error.to_string(),
+            )
+        }
+    };
+    let token_transport = match ReqwestWechatComponentTransport::new() {
+        Ok(transport) => transport,
+        Err(error) => {
+            return internal_handler_error("iam_oauth_connectivity_check_failed", error.to_string())
+        }
+    };
+    let tokens = WechatComponentTokenService::new(
+        PgComponentTokenCache::new((*pg).clone()),
+        WechatComponentApi::new(token_transport),
+    );
+    match tokens
+        .resolve_single_flight(
+            &config.component_app_id,
+            &config.component_app_secret,
+            &config.component_verify_ticket,
+            now_epoch_seconds(),
+        )
+        .await
+    {
+        Ok(token) => appbase_ok(json!({
+            "item": {
+                "operatorPlatformId": operator_platform_id,
+                "componentAppId": component_app_id,
+                "callbackPublicId": callback_public_id,
+                "authorizationCallbackUrl": authorization_callback_url,
+                "ticketStatus": ticket_status,
+                "ticketExpiresAt": ticket_expires_at,
+                "configuredSecretKinds": secret_kinds,
+                "componentTokenAcquired": true,
+                "componentTokenExpiresIn": token.expires_in,
+            }
+        })),
+        Err(error) => appbase_error(
+            StatusCode::CONFLICT,
+            "iam_oauth_operator_platform_token_unavailable",
+            &error.to_string(),
+        ),
+    }
 }
 
 fn pre_authorization_error(error: WechatComponentAuthorizationError) -> Response {

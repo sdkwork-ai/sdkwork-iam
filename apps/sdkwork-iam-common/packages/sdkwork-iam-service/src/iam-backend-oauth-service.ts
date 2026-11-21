@@ -56,6 +56,12 @@ export type IamBackendOauthService = {
       update(...args: unknown[]): Promise<unknown>;
     };
     operatorPlatforms: {
+      componentCredentials: {
+        create(...args: unknown[]): Promise<unknown>;
+      };
+      connectivityChecks: {
+        create(...args: unknown[]): Promise<unknown>;
+      };
       create(...args: unknown[]): Promise<unknown>;
       list(params?: Record<string, unknown>): Promise<unknown>;
       preAuthorizations: {
@@ -100,6 +106,9 @@ export type IamBackendOauthService = {
       };
     };
     resourceAuthorizations: {
+      capabilityInvocations: {
+        create(...args: unknown[]): Promise<unknown>;
+      };
       create(...args: unknown[]): Promise<unknown>;
       list(params?: Record<string, unknown>): Promise<unknown>;
       update(...args: unknown[]): Promise<unknown>;
@@ -197,6 +206,12 @@ export function createIamBackendOauthService(
         update: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.operationalResources, "update", "iam.oauth.operationalResources.update", ...args),
       },
       operatorPlatforms: {
+        componentCredentials: {
+          create: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.operatorPlatforms?.componentCredentials, "create", "iam.oauth.operatorPlatforms.componentCredentials.create", ...args),
+        },
+        connectivityChecks: {
+          create: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.operatorPlatforms?.connectivityChecks, "create", "iam.oauth.operatorPlatforms.connectivityChecks.create", ...args),
+        },
         create: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.operatorPlatforms, "create", "iam.oauth.operatorPlatforms.create", ...args),
         list: (params?: Record<string, unknown>) => callBackendOauth(backendOauth, (oauth) => oauth?.operatorPlatforms, "list", "iam.oauth.operatorPlatforms.list", iamOauthListQuery(params)),
         preAuthorizations: {
@@ -241,6 +256,9 @@ export function createIamBackendOauthService(
         },
       },
       resourceAuthorizations: {
+        capabilityInvocations: {
+          create: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.resourceAuthorizations?.capabilityInvocations, "create", "iam.oauth.resourceAuthorizations.capabilityInvocations.create", ...args),
+        },
         create: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.resourceAuthorizations, "create", "iam.oauth.resourceAuthorizations.create", ...args),
         list: (params?: Record<string, unknown>) => callBackendOauth(backendOauth, (oauth) => oauth?.resourceAuthorizations, "list", "iam.oauth.resourceAuthorizations.list", iamOauthListQuery(params)),
         update: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.resourceAuthorizations, "update", "iam.oauth.resourceAuthorizations.update", ...args),

@@ -869,6 +869,12 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         "iam.oauth.operatorPlatforms.componentCredentials.create",
     ),
     HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/oauth/operator_platforms/{operatorPlatformId}/connectivity_checks",
+        "iam.oauth",
+        "iam.oauth.operatorPlatforms.connectivityChecks.create",
+    ),
+    HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/iam/oauth/resource_accounts",
         "iam.oauth",
@@ -963,6 +969,12 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         "/backend/v3/api/iam/oauth/resource_authorizations/{authorizationId}",
         "iam.oauth",
         "iam.oauth.resourceAuthorizations.update",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/oauth/resource_authorizations/{authorizationId}/capability_invocations",
+        "iam.oauth",
+        "iam.oauth.resourceAuthorizations.capabilityInvocations.create",
     ),
     HttpRoute::dual_token(
         HttpMethod::Get,

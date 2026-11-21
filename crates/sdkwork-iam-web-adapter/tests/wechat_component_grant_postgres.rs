@@ -193,6 +193,10 @@ fn query_auth_response(access_token: &str, refresh_token: Option<&str>) -> Strin
     )
 }
 
+fn authorizer_info_response() -> String {
+    r#"{"authorizer_info":{"nick_name":"IT Account","user_name":"gh_original_it","principal_name":"IT Co","qrcode_url":"https://qr.example/it","func_info":[{"funcscope_category":{"id":18}},{"funcscope_category":{"id":30}}]}}"#.to_string()
+}
+
 #[tokio::test]
 #[ignore = "requires PostgreSQL with migration 0046 (SDKWORK_DATABASE_URL)"]
 async fn stores_one_active_grant_and_updates_it_on_reauthorization() {
@@ -204,11 +208,14 @@ async fn stores_one_active_grant_and_updates_it_on_reauthorization() {
         responses: Arc::new(Mutex::new(VecDeque::from([
             r#"{"component_access_token":"component-token","expires_in":7200}"#.to_string(),
             query_auth_response("access-token-1", Some("refresh-token-1")),
+            authorizer_info_response(),
             query_auth_response("access-token-2", Some("refresh-token-2")),
+            authorizer_info_response(),
         ]))),
     };
     // The second exchange reuses the cached component token, so only the
-    // query_auth response is consumed after the first token call.
+    // query_auth and authorizer_info responses are consumed after the first
+    // token call.
     let token_api = WechatComponentApi::with_base_url(transport.clone(), "http://127.0.0.1:9");
     let api = WechatComponentApi::with_base_url(transport, "http://127.0.0.1:9");
     let tokens =
@@ -260,6 +267,21 @@ async fn stores_one_active_grant_and_updates_it_on_reauthorization() {
             .await
             .expect("read access mode");
     assert_eq!(access_mode, "operator_authorized_account");
+    let identity: (Option<String>, Option<String>, Option<String>, String) = sqlx::query_as(
+        "SELECT provider_account_original_id, principal_name_snapshot, subject_name_snapshot, \
+                display_name \
+         FROM iam_oauth_resource_account WHERE id = $1",
+    )
+    .bind(&first.resource_account_id)
+    .fetch_one(&pool)
+    .await
+    .expect("read account snapshot");
+    assert_eq!(identity.0.as_deref(), Some("gh_original_it"));
+    assert_eq!(identity.1.as_deref(), Some("IT Co"));
+    assert_eq!(identity.2.as_deref(), Some("IT Account"));
+    // The operator-provided label from the first exchange is not overwritten by
+    // the re-authorization that supplies no label.
+    assert_eq!(identity.3, "Test Mini Program");
     let active_rows: i64 = sqlx::query_scalar(
         "SELECT COUNT(*)::BIGINT FROM iam_oauth_resource_authorization \
          WHERE operator_platform_id = $1 AND resource_account_id = $2 AND status = 'active'",

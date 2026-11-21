@@ -572,6 +572,19 @@ async fn update_tenant_application_handler(
             "iam_installation_not_found",
             &message,
         ),
+        // A bind that loses the one-to-one relation is the caller's conflict to
+        // resolve (the requested deploy application serves another installation,
+        // or this one was linked meanwhile), not an outage.
+        Err(message)
+            if message.contains("is already bound to deploy application")
+                || message.contains("was linked to another deploy application concurrently") =>
+        {
+            appbase_error(
+                StatusCode::CONFLICT,
+                "iam_installation_update_conflict",
+                &message,
+            )
+        }
         Err(message) => appbase_error(
             StatusCode::SERVICE_UNAVAILABLE,
             "iam_installation_update_failed",
@@ -813,6 +826,18 @@ async fn update_tenant_application_management_handler(
             "iam_installation_not_found",
             &message,
         ),
+        // Same conflict boundary as `installations.update`: the one-to-one deploy
+        // relation is the caller's to resolve.
+        Err(message)
+            if message.contains("is already bound to deploy application")
+                || message.contains("was linked to another deploy application concurrently") =>
+        {
+            appbase_error(
+                StatusCode::CONFLICT,
+                "iam_installation_management_update_conflict",
+                &message,
+            )
+        }
         Err(message) => appbase_error(
             StatusCode::SERVICE_UNAVAILABLE,
             "iam_installation_management_update_failed",

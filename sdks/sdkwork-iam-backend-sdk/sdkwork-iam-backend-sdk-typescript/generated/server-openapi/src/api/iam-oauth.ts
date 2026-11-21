@@ -258,6 +258,20 @@ export class IamOauthIamOauthScanLoginPreviewsApi {
   }
 }
 
+export class IamOauthIamOauthResourceAuthorizationsCapabilityInvocationsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Iam oauth resource Authorizations capability Invocations create. */
+  async create(authorizationId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/oauth/resource_authorizations/${serializePathParameter(authorizationId, { name: 'authorizationId', style: 'simple', explode: false })}/capability_invocations`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export interface IamOauthIamOauthResourceAuthorizationsListParams {
   page?: number;
   pageSize?: number;
@@ -268,9 +282,11 @@ export interface IamOauthIamOauthResourceAuthorizationsListParams {
 
 export class IamOauthIamOauthResourceAuthorizationsApi {
   private client: HttpClient;
+  public readonly capabilityInvocations: IamOauthIamOauthResourceAuthorizationsCapabilityInvocationsApi;
 
   constructor(client: HttpClient) {
     this.client = client;
+    this.capabilityInvocations = new IamOauthIamOauthResourceAuthorizationsCapabilityInvocationsApi(client);
   }
 
 
@@ -538,6 +554,20 @@ export class IamOauthIamOauthOperatorPlatformsPreAuthorizationsApi {
   }
 }
 
+export class IamOauthIamOauthOperatorPlatformsConnectivityChecksApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Iam oauth operator Platforms connectivity Checks create. */
+  async create(operatorPlatformId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/oauth/operator_platforms/${serializePathParameter(operatorPlatformId, { name: 'operatorPlatformId', style: 'simple', explode: false })}/connectivity_checks`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export class IamOauthIamOauthOperatorPlatformsComponentCredentialsApi {
   private client: HttpClient;
 
@@ -563,11 +593,13 @@ export interface IamOauthIamOauthOperatorPlatformsListParams {
 export class IamOauthIamOauthOperatorPlatformsApi {
   private client: HttpClient;
   public readonly componentCredentials: IamOauthIamOauthOperatorPlatformsComponentCredentialsApi;
+  public readonly connectivityChecks: IamOauthIamOauthOperatorPlatformsConnectivityChecksApi;
   public readonly preAuthorizations: IamOauthIamOauthOperatorPlatformsPreAuthorizationsApi;
 
   constructor(client: HttpClient) {
     this.client = client;
     this.componentCredentials = new IamOauthIamOauthOperatorPlatformsComponentCredentialsApi(client);
+    this.connectivityChecks = new IamOauthIamOauthOperatorPlatformsConnectivityChecksApi(client);
     this.preAuthorizations = new IamOauthIamOauthOperatorPlatformsPreAuthorizationsApi(client);
   }
 

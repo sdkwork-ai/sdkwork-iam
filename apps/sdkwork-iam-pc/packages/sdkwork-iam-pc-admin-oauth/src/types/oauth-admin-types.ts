@@ -102,6 +102,24 @@ export interface SdkworkIamOauthOperatorPlatformDraft {
   providerPlatformId: string;
 }
 
+export interface SdkworkIamOauthOperatorPlatformComponentDraft {
+  authorizationCallbackUrl: string;
+  callbackToken: string;
+  componentAppId: string;
+  componentAppSecret: string;
+  encodingAesKey: string;
+}
+
+export function EMPTY_OPERATOR_PLATFORM_COMPONENT_DRAFT(): SdkworkIamOauthOperatorPlatformComponentDraft {
+  return {
+    authorizationCallbackUrl: "",
+    callbackToken: "",
+    componentAppId: "",
+    componentAppSecret: "",
+    encodingAesKey: "",
+  };
+}
+
 export interface SdkworkIamOauthTenantBindingDraft {
   bindingKind: string;
   integrationId: string;
@@ -595,6 +613,16 @@ export interface SdkworkIamOauthAdminController {
   runResourceAccountAuthorizationRefresh(resourceAccountId: string): Promise<unknown>;
   runResourceAccountMiniProgramLoginCheck(resourceAccountId: string): Promise<unknown>;
   runOperatorPlatformPreAuthorization(operatorPlatformId: string): Promise<unknown>;
+  saveOperatorPlatformComponentCredentials(
+    operatorPlatformId: string,
+    body: SdkworkIamOauthOperatorPlatformComponentDraft,
+  ): Promise<unknown>;
+  runOperatorPlatformConnectivityCheck(operatorPlatformId: string): Promise<unknown>;
+  invokeResourceAuthorizationCapability(
+    authorizationId: string,
+    capability: string,
+    payload: Record<string, unknown>,
+  ): Promise<unknown>;
   publishOperationalResource(resourceId: string): Promise<unknown>;
   retrieveDiagnosticRun(diagnosticRunId: string): Promise<unknown>;
   retrieveIntegration(integrationId: string): Promise<unknown>;

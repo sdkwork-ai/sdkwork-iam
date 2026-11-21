@@ -5,6 +5,8 @@ export { SdkworkIamOauthAdminWorkspace } from "./pages/OauthAdminWorkspace";
 export { SdkworkIamOauthProviderConnectionsPage } from "./pages/OauthProviderConnectionsPage";
 export { SdkworkIamOauthRelyingPartyPage } from "./pages/OauthRelyingPartyPage";
 export { SdkworkIamOauthMiniProgramAccountsPage } from "./pages/OauthMiniProgramAccountsPage";
+export { OauthOperatorPlatformsPage as SdkworkIamOauthOperatorPlatformsPage } from "./pages/oauth-extended-pages";
+export { OauthAuthorizedAccountsPage as SdkworkIamOauthAuthorizedAccountsPage } from "./pages/oauth-extended-pages";
 export { SdkworkIamOauthOfficialAccountsPage } from "./pages/OauthOfficialAccountsPage";
 export { SdkworkIamOauthOfficialAccountCustomMenuPage } from "./pages/OauthOfficialAccountCustomMenuPage";
 export { SdkworkIamOauthScanLoginSettingsPage } from "./pages/OauthScanLoginSettingsPage";

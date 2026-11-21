@@ -37,6 +37,30 @@ pub const QUERY_AUTH_PATH: &str = "/cgi-bin/component/api_query_auth";
 pub const AUTHORIZER_TOKEN_PATH: &str = "/cgi-bin/component/api_authorizer_token";
 /// Customer-service text message path (authorizer token, not a component token).
 pub const CUSTOM_TEXT_MESSAGE_PATH: &str = "/cgi-bin/message/custom/send";
+/// Authorizer account information path (component token).
+pub const AUTHORIZER_INFO_PATH: &str = "/cgi-bin/component/api_get_authorizer_info";
+/// Official-account custom menu create path (authorizer token).
+pub const OFFICIAL_ACCOUNT_MENU_CREATE_PATH: &str = "/cgi-bin/menu/create";
+/// Official-account custom menu read path (authorizer token).
+pub const OFFICIAL_ACCOUNT_MENU_GET_PATH: &str = "/cgi-bin/menu/get";
+/// Official-account custom menu delete path (authorizer token).
+pub const OFFICIAL_ACCOUNT_MENU_DELETE_PATH: &str = "/cgi-bin/menu/delete";
+/// Mini-program code upload path (authorizer token).
+pub const MINI_PROGRAM_COMMIT_PATH: &str = "/wxa/commit";
+/// Mini-program review submission path (authorizer token).
+pub const MINI_PROGRAM_SUBMIT_AUDIT_PATH: &str = "/wxa/submit_audit";
+/// Mini-program review status path (authorizer token).
+pub const MINI_PROGRAM_AUDIT_STATUS_PATH: &str = "/wxa/get_auditstatus";
+/// Mini-program release path (authorizer token).
+pub const MINI_PROGRAM_RELEASE_PATH: &str = "/wxa/release";
+/// Mini-program version rollback path (authorizer token).
+pub const MINI_PROGRAM_REVERT_PATH: &str = "/wxa/revertcoderelease";
+/// Mini-program gray release path (authorizer token).
+pub const MINI_PROGRAM_GRAY_RELEASE_PATH: &str = "/wxa/grayrelease";
+/// Mini-program server-domain path (authorizer token).
+pub const MINI_PROGRAM_MODIFY_DOMAIN_PATH: &str = "/wxa/modify_domain";
+/// Mini-program privacy declaration path (authorizer token).
+pub const MINI_PROGRAM_PRIVACY_PATH: &str = "/cgi-bin/component/setprivacysetting";
 
 /// PC authorization entry page.
 pub const COMPONENT_PC_AUTHORIZATION_PAGE: &str =
@@ -115,6 +139,27 @@ pub struct AuthorizerAccessToken {
     pub authorizer_refresh_token: Option<String>,
 }
 
+/// Authorizer account information returned by `api_get_authorizer_info`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AuthorizerInfo {
+    /// Display name shown to users.
+    pub nick_name: Option<String>,
+    /// Avatar URL.
+    pub head_img: Option<String>,
+    /// Account service type.
+    pub service_type: Option<i64>,
+    /// Verification type.
+    pub verify_type: Option<i64>,
+    /// WeChat original id (`gh_` / `wx` base id).
+    pub original_id: Option<String>,
+    /// Principal (company or person) name.
+    pub principal_name: Option<String>,
+    /// QR code image URL.
+    pub qrcode_url: Option<String>,
+    /// Granted permission-set category ids.
+    pub func_category_ids: Vec<i64>,
+}
+
 /// A component API failure.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WechatComponentApiError {
@@ -186,6 +231,17 @@ pub trait WechatComponentTransport: Send + Sync {
     /// @param body - JSON request document.
     /// @returns the response body, even for provider-level failures.
     async fn post_json(&self, url: &str, body: &Value) -> Result<String, WechatComponentApiError>;
+
+    /// GETs a URL and returns the raw response text.
+    ///
+    /// The default refuses the call so an existing transport that only supports
+    /// POST keeps compiling and fails loudly rather than silently issuing a POST
+    /// against a GET-only endpoint.
+    async fn get_json(&self, _url: &str) -> Result<String, WechatComponentApiError> {
+        Err(WechatComponentApiError::Transport(
+            "transport does not support GET".to_string(),
+        ))
+    }
 }
 
 /// Production transport backed by `reqwest`.
@@ -214,6 +270,19 @@ impl WechatComponentTransport for ReqwestWechatComponentTransport {
             .client
             .post(url)
             .json(body)
+            .send()
+            .await
+            .map_err(|error| WechatComponentApiError::Transport(error.to_string()))?;
+        response
+            .text()
+            .await
+            .map_err(|error| WechatComponentApiError::Transport(error.to_string()))
+    }
+
+    async fn get_json(&self, url: &str) -> Result<String, WechatComponentApiError> {
+        let response = self
+            .client
+            .get(url)
             .send()
             .await
             .map_err(|error| WechatComponentApiError::Transport(error.to_string()))?;
@@ -399,6 +468,274 @@ impl<T: WechatComponentTransport> WechatComponentApi<T> {
         )
         .await?;
         Ok(())
+    }
+
+    /// Fetches provider-side account information for one authorizer.
+    pub async fn get_authorizer_info(
+        &self,
+        component_access_token: &str,
+        component_app_id: &str,
+        authorizer_app_id: &str,
+    ) -> Result<AuthorizerInfo, WechatComponentApiError> {
+        require_non_empty(authorizer_app_id, "authorizer_app_id")?;
+        let value = self
+            .post_with_token(
+                AUTHORIZER_INFO_PATH,
+                component_access_token,
+                json!({
+                    "component_appid": component_app_id,
+                    "authorizer_appid": authorizer_app_id,
+                }),
+            )
+            .await?;
+        let info = value.get("authorizer_info").ok_or_else(|| {
+            WechatComponentApiError::InvalidResponse("authorizer_info is missing".to_string())
+        })?;
+        Ok(AuthorizerInfo {
+            nick_name: optional_str(info, "nick_name"),
+            head_img: optional_str(info, "head_img"),
+            service_type: info
+                .get("service_type_info")
+                .and_then(|value| value.get("id"))
+                .and_then(Value::as_i64),
+            verify_type: info
+                .get("verify_type_info")
+                .and_then(|value| value.get("id"))
+                .and_then(Value::as_i64),
+            original_id: optional_str(info, "user_name"),
+            principal_name: optional_str(info, "principal_name"),
+            qrcode_url: optional_str(info, "qrcode_url"),
+            func_category_ids: parse_func_scopes(info)?
+                .into_iter()
+                .map(|scope| scope.category_id)
+                .collect(),
+        })
+    }
+
+    /// Creates the official account's default custom menu.
+    pub async fn create_official_account_menu(
+        &self,
+        authorizer_access_token: &str,
+        menu: Value,
+    ) -> Result<(), WechatComponentApiError> {
+        self.post_authorizer(
+            OFFICIAL_ACCOUNT_MENU_CREATE_PATH,
+            authorizer_access_token,
+            menu,
+        )
+        .await?;
+        Ok(())
+    }
+
+    /// Reads the official account's default custom menu.
+    pub async fn retrieve_official_account_menu(
+        &self,
+        authorizer_access_token: &str,
+    ) -> Result<Value, WechatComponentApiError> {
+        self.get_authorizer(OFFICIAL_ACCOUNT_MENU_GET_PATH, authorizer_access_token)
+            .await
+    }
+
+    /// Deletes the official account's default custom menu.
+    pub async fn delete_official_account_menu(
+        &self,
+        authorizer_access_token: &str,
+    ) -> Result<(), WechatComponentApiError> {
+        self.get_authorizer(OFFICIAL_ACCOUNT_MENU_DELETE_PATH, authorizer_access_token)
+            .await?;
+        Ok(())
+    }
+
+    /// Uploads mini-program code from a template and creates a development version.
+    pub async fn commit_mini_program_code(
+        &self,
+        authorizer_access_token: &str,
+        template_id: &str,
+        ext_json: Option<&str>,
+        user_version: &str,
+        user_desc: &str,
+    ) -> Result<(), WechatComponentApiError> {
+        require_non_empty(template_id, "template_id")?;
+        require_non_empty(user_version, "user_version")?;
+        let mut body = json!({
+            "template_id": template_id,
+            "user_version": user_version,
+            "user_desc": user_desc,
+        });
+        if let Some(ext_json) = ext_json {
+            body["ext_json"] = json!(ext_json);
+        }
+        self.post_authorizer(MINI_PROGRAM_COMMIT_PATH, authorizer_access_token, body)
+            .await?;
+        Ok(())
+    }
+
+    /// Submits a mini-program review package.
+    pub async fn submit_mini_program_audit(
+        &self,
+        authorizer_access_token: &str,
+        items: Vec<Value>,
+        feedback: Option<&str>,
+    ) -> Result<String, WechatComponentApiError> {
+        if items.is_empty() {
+            return Err(WechatComponentApiError::InvalidRequest(
+                "item_list is empty".to_string(),
+            ));
+        }
+        let mut body = json!({ "item_list": items });
+        if let Some(feedback) = feedback {
+            body["feedback_info"] = json!(feedback);
+        }
+        let value = self
+            .post_authorizer(
+                MINI_PROGRAM_SUBMIT_AUDIT_PATH,
+                authorizer_access_token,
+                body,
+            )
+            .await?;
+        required_str(&value, "auditid")
+    }
+
+    /// Returns the documented audit status code (`0..=4`).
+    pub async fn get_mini_program_audit_status(
+        &self,
+        authorizer_access_token: &str,
+        audit_id: &str,
+    ) -> Result<i64, WechatComponentApiError> {
+        require_non_empty(audit_id, "audit_id")?;
+        let value = self
+            .post_authorizer(
+                MINI_PROGRAM_AUDIT_STATUS_PATH,
+                authorizer_access_token,
+                json!({ "auditid": audit_id }),
+            )
+            .await?;
+        required_i64(&value, "status")
+    }
+
+    /// Releases the approved version.
+    pub async fn release_mini_program_code(
+        &self,
+        authorizer_access_token: &str,
+    ) -> Result<(), WechatComponentApiError> {
+        // WeChat rejects an empty request without a JSON body (`44002`), so the
+        // body is explicitly `{}` rather than omitted.
+        self.post_authorizer(
+            MINI_PROGRAM_RELEASE_PATH,
+            authorizer_access_token,
+            json!({}),
+        )
+        .await?;
+        Ok(())
+    }
+
+    /// Lists rollback candidates or rolls back to `app_version`.
+    pub async fn revert_mini_program_code(
+        &self,
+        authorizer_access_token: &str,
+        app_version: Option<&str>,
+    ) -> Result<Value, WechatComponentApiError> {
+        let path = match app_version {
+            Some(version) => format!(
+                "{MINI_PROGRAM_REVERT_PATH}?app_version={}",
+                urlencoding::encode(version)
+            ),
+            None => format!("{MINI_PROGRAM_REVERT_PATH}?action=get_history_version"),
+        };
+        self.get_authorizer(&path, authorizer_access_token).await
+    }
+
+    /// Starts or adjusts a gray release.
+    pub async fn gray_release_mini_program_code(
+        &self,
+        authorizer_access_token: &str,
+        gray_percentage: u16,
+        support_debuger_first: bool,
+        support_experiencer_first: bool,
+    ) -> Result<(), WechatComponentApiError> {
+        if gray_percentage > 100 {
+            return Err(WechatComponentApiError::InvalidRequest(
+                "gray_percentage must be between 0 and 100".to_string(),
+            ));
+        }
+        self.post_authorizer(
+            MINI_PROGRAM_GRAY_RELEASE_PATH,
+            authorizer_access_token,
+            json!({
+                "gray_percentage": gray_percentage,
+                "support_debuger_first": support_debuger_first,
+                "support_experiencer_first": support_experiencer_first,
+            }),
+        )
+        .await?;
+        Ok(())
+    }
+
+    /// Adds, sets, or deletes the mini-program request domains.
+    pub async fn modify_mini_program_request_domains(
+        &self,
+        authorizer_access_token: &str,
+        action: &str,
+        request_domains: &[String],
+    ) -> Result<(), WechatComponentApiError> {
+        require_non_empty(action, "action")?;
+        self.post_authorizer(
+            MINI_PROGRAM_MODIFY_DOMAIN_PATH,
+            authorizer_access_token,
+            json!({
+                "action": action,
+                "requestdomain": request_domains,
+                "wsrequestdomain": [],
+                "uploaddomain": [],
+                "downloaddomain": [],
+                "udpdomain": [],
+                "tcpdomain": [],
+            }),
+        )
+        .await?;
+        Ok(())
+    }
+
+    /// Sets the mini-program privacy declaration.
+    pub async fn set_mini_program_privacy(
+        &self,
+        authorizer_access_token: &str,
+        privacy: Value,
+    ) -> Result<(), WechatComponentApiError> {
+        self.post_authorizer(MINI_PROGRAM_PRIVACY_PATH, authorizer_access_token, privacy)
+            .await?;
+        Ok(())
+    }
+
+    async fn post_authorizer(
+        &self,
+        path: &str,
+        authorizer_access_token: &str,
+        body: Value,
+    ) -> Result<Value, WechatComponentApiError> {
+        require_non_empty(authorizer_access_token, "authorizer_access_token")?;
+        self.post(&with_access_token(path, authorizer_access_token), body)
+            .await
+    }
+
+    async fn get_authorizer(
+        &self,
+        path: &str,
+        authorizer_access_token: &str,
+    ) -> Result<Value, WechatComponentApiError> {
+        require_non_empty(authorizer_access_token, "authorizer_access_token")?;
+        self.get(&with_access_token(path, authorizer_access_token))
+            .await
+    }
+
+    async fn get(&self, path: &str) -> Result<Value, WechatComponentApiError> {
+        let url = format!("{}{}", self.base_url.trim_end_matches('/'), path);
+        let raw = self.transport.get_json(&url).await?;
+        let value: Value = serde_json::from_str(&raw).map_err(|_| {
+            WechatComponentApiError::InvalidResponse("body is not valid json".to_string())
+        })?;
+        reject_provider_error(&value)?;
+        Ok(value)
     }
 
     async fn post_with_token(
@@ -596,6 +933,14 @@ fn require_non_empty(value: &str, field: &str) -> Result<(), WechatComponentApiE
     Ok(())
 }
 
+fn with_access_token(path: &str, access_token: &str) -> String {
+    let separator = if path.contains('?') { '&' } else { '?' };
+    format!(
+        "{path}{separator}access_token={}",
+        urlencoding::encode(access_token)
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -639,6 +984,15 @@ mod tests {
                 .lock()
                 .expect("calls")
                 .push((url.to_string(), body.clone()));
+            let response = self.response.lock().expect("response");
+            response.as_ref().expect("configured response").clone()
+        }
+
+        async fn get_json(&self, url: &str) -> Result<String, WechatComponentApiError> {
+            self.calls
+                .lock()
+                .expect("calls")
+                .push((url.to_string(), Value::Null));
             let response = self.response.lock().expect("response");
             response.as_ref().expect("configured response").clone()
         }
@@ -795,6 +1149,157 @@ mod tests {
         assert_eq!(body["touser"], "openid-1");
         assert_eq!(body["msgtype"], "text");
         assert_eq!(body["text"]["content"], "hello");
+    }
+
+    #[tokio::test]
+    async fn fetches_authorizer_info() {
+        let transport = FakeTransport::replies(
+            r#"{"authorizer_info":{"nick_name":"Acct","head_img":"https://img","service_type_info":{"id":2},"verify_type_info":{"id":0},"user_name":"gh_1","principal_name":"Co","qrcode_url":"https://qr","func_info":[{"funcscope_category":{"id":18}}]}}"#,
+        );
+        let client = api(transport);
+        let info = client
+            .get_authorizer_info("component-token", "wxcomponent", "wxauthorizer")
+            .await
+            .expect("authorizer info");
+        assert_eq!(info.nick_name.as_deref(), Some("Acct"));
+        assert_eq!(info.original_id.as_deref(), Some("gh_1"));
+        assert_eq!(info.service_type, Some(2));
+        assert_eq!(info.func_category_ids, vec![18]);
+        let (url, body) = client.transport().last_call();
+        assert!(url.contains(AUTHORIZER_INFO_PATH));
+        assert_eq!(body["authorizer_appid"], "wxauthorizer");
+    }
+
+    #[tokio::test]
+    async fn creates_and_reads_the_official_account_menu() {
+        let transport = FakeTransport::replies(r#"{"errcode":0,"errmsg":"ok"}"#);
+        let client = api(transport);
+        client
+            .create_official_account_menu("authorizer-token", serde_json::json!({"button":[]}))
+            .await
+            .expect("create menu");
+        let (url, body) = client.transport().last_call();
+        assert!(url.contains(OFFICIAL_ACCOUNT_MENU_CREATE_PATH));
+        assert!(url.contains("access_token=authorizer-token"));
+        assert!(body["button"].is_array());
+
+        let transport = FakeTransport::replies(r#"{"menu":{"button":[]}}"#);
+        let client = api(transport);
+        let menu = client
+            .retrieve_official_account_menu("authorizer-token")
+            .await
+            .expect("read menu");
+        assert!(menu["menu"].is_object());
+        let (url, body) = client.transport().last_call();
+        assert!(url.contains(OFFICIAL_ACCOUNT_MENU_GET_PATH));
+        assert_eq!(body, Value::Null);
+    }
+
+    #[tokio::test]
+    async fn commits_mini_program_code_and_submits_audit() {
+        let transport = FakeTransport::replies(r#"{"errcode":0}"#);
+        let client = api(transport);
+        client
+            .commit_mini_program_code(
+                "authorizer-token",
+                "tpl-1",
+                Some(r#"{"extAppid":"wx1"}"#),
+                "1.0.0",
+                "build 1",
+            )
+            .await
+            .expect("commit");
+        let (url, body) = client.transport().last_call();
+        assert!(url.contains(MINI_PROGRAM_COMMIT_PATH));
+        assert_eq!(body["template_id"], "tpl-1");
+        assert_eq!(body["user_version"], "1.0.0");
+        assert_eq!(body["ext_json"], r#"{"extAppid":"wx1"}"#);
+
+        let transport = FakeTransport::replies(r#"{"auditid":"audit-1"}"#);
+        let client = api(transport);
+        let audit_id = client
+            .submit_mini_program_audit(
+                "authorizer-token",
+                vec![serde_json::json!({"address":"pages/index"})],
+                Some("first release"),
+            )
+            .await
+            .expect("submit audit");
+        assert_eq!(audit_id, "audit-1");
+        let (_, body) = client.transport().last_call();
+        assert_eq!(body["feedback_info"], "first release");
+        assert!(body["item_list"].is_array());
+    }
+
+    #[tokio::test]
+    async fn reads_audit_status_and_releases() {
+        let transport = FakeTransport::replies(r#"{"status":2}"#);
+        let client = api(transport);
+        assert_eq!(
+            client
+                .get_mini_program_audit_status("authorizer-token", "audit-1")
+                .await
+                .expect("status"),
+            2
+        );
+        let (url, body) = client.transport().last_call();
+        assert!(url.contains(MINI_PROGRAM_AUDIT_STATUS_PATH));
+        assert_eq!(body["auditid"], "audit-1");
+
+        let transport = FakeTransport::replies(r#"{"errcode":0}"#);
+        let client = api(transport);
+        client
+            .release_mini_program_code("authorizer-token")
+            .await
+            .expect("release");
+        let (url, body) = client.transport().last_call();
+        assert!(url.contains(MINI_PROGRAM_RELEASE_PATH));
+        assert_eq!(body, serde_json::json!({}));
+    }
+
+    #[tokio::test]
+    async fn rolls_back_and_adjusts_gray_release_and_domains_and_privacy() {
+        let transport = FakeTransport::replies(r#"{"version_list":[]}"#);
+        let client = api(transport);
+        client
+            .revert_mini_program_code("authorizer-token", Some("v1"))
+            .await
+            .expect("revert");
+        let (url, _) = client.transport().last_call();
+        assert!(url.contains(MINI_PROGRAM_REVERT_PATH));
+        assert!(url.contains("app_version=v1"));
+
+        let transport = FakeTransport::replies(r#"{"errcode":0}"#);
+        let client = api(transport);
+        client
+            .gray_release_mini_program_code("authorizer-token", 30, true, false)
+            .await
+            .expect("gray");
+        let (_, body) = client.transport().last_call();
+        assert_eq!(body["gray_percentage"], 30);
+        assert_eq!(body["support_debuger_first"], true);
+
+        let transport = FakeTransport::replies(r#"{"errcode":0}"#);
+        let client = api(transport);
+        client
+            .modify_mini_program_request_domains(
+                "authorizer-token",
+                "add",
+                &["https://api.example.com".to_string()],
+            )
+            .await
+            .expect("domains");
+        let (_, body) = client.transport().last_call();
+        assert_eq!(body["requestdomain"][0], "https://api.example.com");
+
+        let transport = FakeTransport::replies(r#"{"errcode":0}"#);
+        let client = api(transport);
+        client
+            .set_mini_program_privacy("authorizer-token", serde_json::json!({"privacy_ver":1}))
+            .await
+            .expect("privacy");
+        let (_, body) = client.transport().last_call();
+        assert_eq!(body["privacy_ver"], 1);
     }
 
     #[tokio::test]

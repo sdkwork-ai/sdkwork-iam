@@ -1,4 +1,4 @@
-/** Update tenant application access and runtime configuration. */
+/** Update tenant application access, runtime configuration, and deploy anchor. */
 export interface AppbaseInstallationUpdateCommand {
   /** Super-admin auth token used for bootstrap body authentication. */
   authToken?: string;
@@ -14,4 +14,6 @@ export interface AppbaseInstallationUpdateCommand {
   domainConfig?: Record<string, unknown>;
   accessPermissions?: string[];
   runtimeConfig?: Record<string, unknown>;
+  /** Deploy application the installation serves. An update may only fill a MISSING anchor; re-pointing a bound installation is a deploy identity migration and is refused. */
+  deployApplicationId?: string;
 }

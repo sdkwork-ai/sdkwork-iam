@@ -9511,6 +9511,154 @@
         }
       }
     },
+    "/backend/v3/api/iam/oauth/operator_platforms/{operatorPlatformId}/connectivity_checks": {
+      "post": {
+        "tags": [
+          "iamOauth"
+        ],
+        "summary": "Iam oauth operator Platforms connectivity Checks create.",
+        "operationId": "iam.oauth.operatorPlatforms.connectivityChecks.create",
+        "parameters": [
+          {
+            "name": "operatorPlatformId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkWorkResourceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-forbid-credential-headers": false,
+        "x-sdkwork-owner": "sdkwork-iam",
+        "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
+        "x-sdkwork-domain": "iam",
+        "x-sdkwork-resource": "iam.oauth.operatorPlatforms.connectivityChecks",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-api-surface": "backend-api",
+        "x-sdkwork-server-request-id": true,
+        "x-sdkwork-permission": "iam.oauth.manage",
+        "x-sdkwork-required-surface": "organizationMember",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppbaseOperationCommand"
+              }
+            }
+          }
+        }
+      }
+    },
     "/backend/v3/api/iam/oauth/operator_platforms/{operatorPlatformId}/pre_authorizations": {
       "post": {
         "tags": [
@@ -13061,6 +13209,154 @@
         "x-sdkwork-required-surface": "organizationMember",
         "requestBody": {
           "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppbaseOperationCommand"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backend/v3/api/iam/oauth/resource_authorizations/{authorizationId}/capability_invocations": {
+      "post": {
+        "tags": [
+          "iamOauth"
+        ],
+        "summary": "Iam oauth resource Authorizations capability Invocations create.",
+        "operationId": "iam.oauth.resourceAuthorizations.capabilityInvocations.create",
+        "parameters": [
+          {
+            "name": "authorizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkWorkResourceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-forbid-credential-headers": false,
+        "x-sdkwork-owner": "sdkwork-iam",
+        "x-sdkwork-api-authority": "sdkwork-iam-backend-api",
+        "x-sdkwork-domain": "iam",
+        "x-sdkwork-resource": "iam.oauth.resourceAuthorizations.capabilityInvocations",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-api-surface": "backend-api",
+        "x-sdkwork-server-request-id": true,
+        "x-sdkwork-permission": "iam.oauth.manage",
+        "x-sdkwork-required-surface": "organizationMember",
+        "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -30179,7 +30475,7 @@
       "IamInstallationManagementUpdateCommand": {
         "type": "object",
         "additionalProperties": false,
-        "description": "Update operator-managed tenant application domain and access permissions.",
+        "description": "Update operator-managed tenant application domain, access permissions, and deploy anchor.",
         "properties": {
           "primaryDomain": {
             "type": "string",
@@ -30193,6 +30489,12 @@
               "minLength": 1,
               "maxLength": 255
             }
+          },
+          "deployApplicationId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "Deploy application the installation serves. An update may only fill a MISSING anchor: this is the repair for an installation provisioned before the deployment link existed, and it makes the access-token subject and the relying party resolvable. Re-pointing an installation that already serves a deploy application is a deploy identity migration, not an update, and is answered with 409."
           }
         }
       },
@@ -30311,7 +30613,7 @@
       "AppbaseInstallationUpdateCommand": {
         "type": "object",
         "additionalProperties": true,
-        "description": "Update tenant application access and runtime configuration.",
+        "description": "Update tenant application access, runtime configuration, and deploy anchor.",
         "properties": {
           "authToken": {
             "type": "string",
@@ -30350,6 +30652,10 @@
           "runtimeConfig": {
             "type": "object",
             "additionalProperties": true
+          },
+          "deployApplicationId": {
+            "type": "string",
+            "description": "Deploy application the installation serves. An update may only fill a MISSING anchor; re-pointing a bound installation is a deploy identity migration and is refused."
           }
         }
       },

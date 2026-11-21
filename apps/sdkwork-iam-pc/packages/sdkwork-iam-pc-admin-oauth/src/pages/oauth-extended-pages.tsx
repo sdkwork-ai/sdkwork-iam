@@ -4,7 +4,9 @@ import type {
 } from "../types/oauth-admin-types";
 import { useOauthAdminPageState } from "../hooks/use-oauth-admin-page-state";
 import {
+  OauthAuthorizerCapabilitySection,
   OauthOperationalResourceSection,
+  OauthOperatorPlatformOnboardingSection,
   OauthOperatorPlatformSection,
   OauthPolicySection,
   OauthResourceAccountSection,
@@ -73,6 +75,62 @@ export function OauthExtendedAdminPage({ controller }: SdkworkIamOauthAdminPageP
         listPageInfo={listPageInfo}
         onChanged={sync}
         operationalResources={data.operationalResources}
+        status={status}
+      />
+    </div>
+  );
+}
+
+export function OauthOperatorPlatformsPage({ controller }: SdkworkIamOauthAdminPageProps) {
+  const { data, disabled, error, listPageInfo, resourceDetail, status, sync } =
+    useOauthAdminPageState(controller, ["operatorPlatforms"]);
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-6 overflow-y-auto">
+      <OauthPageStatus error={error} resourceDetail={resourceDetail} />
+      <OauthOperatorPlatformOnboardingSection
+        controller={controller}
+        disabled={disabled}
+        onChanged={sync}
+        status={status}
+      />
+      <OauthOperatorPlatformSection
+        controller={controller}
+        disabled={disabled}
+        listPageInfo={listPageInfo}
+        onChanged={sync}
+        operatorPlatforms={data.operatorPlatforms}
+        status={status}
+      />
+    </div>
+  );
+}
+
+export function OauthAuthorizedAccountsPage({ controller }: SdkworkIamOauthAdminPageProps) {
+  const { data, disabled, error, listPageInfo, resourceDetail, status, sync } =
+    useOauthAdminPageState(controller, ["resourceAccounts", "resourceAuthorizations"]);
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-6 overflow-y-auto">
+      <OauthPageStatus error={error} resourceDetail={resourceDetail} />
+      <OauthAuthorizerCapabilitySection
+        controller={controller}
+        disabled={disabled}
+        onChanged={sync}
+        status={status}
+      />
+      <OauthResourceAccountSection
+        controller={controller}
+        disabled={disabled}
+        listPageInfo={listPageInfo}
+        onChanged={sync}
+        resourceAccounts={data.resourceAccounts}
+        status={status}
+      />
+      <OauthResourceAuthorizationSection
+        controller={controller}
+        disabled={disabled}
+        listPageInfo={listPageInfo}
+        onChanged={sync}
+        resourceAuthorizations={data.resourceAuthorizations}
         status={status}
       />
     </div>

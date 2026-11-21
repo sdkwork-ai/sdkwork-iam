@@ -212,7 +212,48 @@ export interface SdkworkIamOauthAdminMessages {
       providerPlatformId: string;
     };
     listLabelTemplate: string;
+    onboarding: {
+      authorizationCallbackUrl: string;
+      callbackToken: string;
+      check: string;
+      checking: string;
+      componentAppId: string;
+      componentAppSecret: string;
+      description: string;
+      encodingAesKey: string;
+      generateAuthorization: string;
+      openAuthorization: string;
+      copyAuthorization: string;
+      copied: string;
+      platformId: string;
+      resultLabel: string;
+      save: string;
+      title: string;
+    };
     preAuthorize: string;
+    title: string;
+  };
+  authorizerCapabilities: {
+    authorizationId: string;
+    capability: string;
+    capabilities: {
+      mpAuditStatus: string;
+      mpAuditSubmit: string;
+      mpCodeCommit: string;
+      mpDomainsModify: string;
+      mpGrayRelease: string;
+      mpPrivacySet: string;
+      mpRelease: string;
+      mpRollback: string;
+      oaMenuPublish: string;
+      oaMenuRetrieve: string;
+    };
+    description: string;
+    invoke: string;
+    invoking: string;
+    payload: string;
+    payloadInvalid: string;
+    result: string;
     title: string;
   };
   operationalResources: {

@@ -296,8 +296,7 @@ async fn ensure_one_manifest_root_on_pool(
     additional_runtimes: &[EmbeddedApplicationRuntimeBinding],
 ) -> Result<(), String> {
     let manifest = load_manifest_from_app_root(app_root)?;
-    ensure_installations_on_pool(pg, &manifest, options, primary_runtime, additional_runtimes)
-        .await
+    ensure_installations_on_pool(pg, &manifest, options, primary_runtime, additional_runtimes).await
 }
 
 fn runtime_bindings_for_manifest_root<'a>(

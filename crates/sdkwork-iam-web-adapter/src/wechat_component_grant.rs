@@ -22,7 +22,8 @@ use sqlx::PgPool;
 use sdkwork_iam_bootstrap::encode_signing_secret_ref;
 
 use crate::wechat_component_api::{
-    AuthorizerAuthorization, WechatComponentApi, WechatComponentApiError, WechatComponentTransport,
+    AuthorizerAuthorization, AuthorizerInfo, WechatComponentApi, WechatComponentApiError,
+    WechatComponentTransport,
 };
 use crate::wechat_component_authorization::{
     validate_platform_for_authorization, ComponentPlatformConfig, ComponentPlatformConfigReader,
@@ -90,6 +91,14 @@ pub struct AuthorizerGrant {
     pub resource_account_kind: String,
     /// Display name snapshot.
     pub display_name: String,
+    /// WeChat original id snapshot (`gh_` / base id).
+    pub provider_account_original_id: Option<String>,
+    /// Principal (company or person) snapshot.
+    pub principal_name: Option<String>,
+    /// Subject name snapshot from `api_get_authorizer_info`.
+    pub subject_name: Option<String>,
+    /// QR code image URL snapshot.
+    pub qrcode_url: Option<String>,
     /// SHA-256 of the one-time authorization code.
     pub authorization_code_hash: String,
     /// SHA-256 of the short-lived authorizer access token.
@@ -252,12 +261,33 @@ where
             request.authorization_code,
         )
         .await?;
-    let grant = build_authorizer_grant(
+    // The account snapshot is enrichment, not authorization: a failed lookup
+    // must not turn a valid grant into an error. The account record then keeps
+    // the AppID as its display name until a later refresh fills it in.
+    let authorizer_info = match api
+        .get_authorizer_info(
+            &token.access_token,
+            &config.component_app_id,
+            &authorization.authorizer_app_id,
+        )
+        .await
+    {
+        Ok(info) => Some(info),
+        Err(error) => {
+            tracing::warn!(
+                error = %error,
+                "authorizer info lookup failed; storing the grant without an account snapshot"
+            );
+            None
+        }
+    };
+    let grant = build_authorizer_grant_with_info(
         &config,
         request.resource_account_kind,
         request.display_name,
         request.authorization_code,
         &authorization,
+        authorizer_info.as_ref(),
         request.now,
     )?;
     store.persist(&grant).await
@@ -273,6 +303,31 @@ pub fn build_authorizer_grant(
     authorization: &AuthorizerAuthorization,
     now: i64,
 ) -> Result<AuthorizerGrant, WechatComponentGrantError> {
+    build_authorizer_grant_with_info(
+        config,
+        resource_account_kind,
+        display_name,
+        authorization_code,
+        authorization,
+        None,
+        now,
+    )
+}
+
+/// Builds the grant with the provider account snapshot.
+///
+/// A supplied display name wins over the provider nickname; the nickname wins
+/// over the AppID fallback, so an operator-specified label is never overwritten
+/// by a later provider rename.
+pub fn build_authorizer_grant_with_info(
+    config: &ComponentPlatformConfig,
+    resource_account_kind: &str,
+    display_name: Option<&str>,
+    authorization_code: &str,
+    authorization: &AuthorizerAuthorization,
+    info: Option<&AuthorizerInfo>,
+    now: i64,
+) -> Result<AuthorizerGrant, WechatComponentGrantError> {
     validate_resource_account_kind(resource_account_kind)?;
     if authorization_code.trim().is_empty() {
         return Err(WechatComponentGrantError::InvalidAuthorizationCode);
@@ -282,9 +337,14 @@ pub fn build_authorizer_grant(
             "provider returned an empty authorizer appid".to_string(),
         ));
     }
+    let provider_nick_name = info
+        .and_then(|item| item.nick_name.as_deref())
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
     let display_name = display_name
         .map(str::trim)
         .filter(|value| !value.is_empty())
+        .or(provider_nick_name)
         .unwrap_or(&authorization.authorizer_app_id)
         .to_string();
     let expires_in = authorization.expires_in.max(0);
@@ -299,6 +359,10 @@ pub fn build_authorizer_grant(
         authorizer_app_id: authorization.authorizer_app_id.clone(),
         resource_account_kind: resource_account_kind.to_string(),
         display_name,
+        provider_account_original_id: info.and_then(|item| item.original_id.clone()),
+        principal_name: info.and_then(|item| item.principal_name.clone()),
+        subject_name: provider_nick_name.map(str::to_string),
+        qrcode_url: info.and_then(|item| item.qrcode_url.clone()),
         authorization_code_hash: sha256_hex(authorization_code),
         authorizer_access_token_hash: sha256_hex(&authorization.authorizer_access_token),
         authorizer_refresh_token: authorization.authorizer_refresh_token.clone(),
@@ -367,7 +431,6 @@ impl AuthorizerGrantStore for PgAuthorizerGrantStore {
              ON CONFLICT (tenant_id, organization_id, provider_code, resource_account_kind, \
                           provider_account_id) \
              DO UPDATE SET operator_platform_id = EXCLUDED.operator_platform_id, \
-                           display_name = EXCLUDED.display_name, \
                            authorization_status = 'authorized', \
                            operator_authorization_status = 'authorized', \
                            last_authorized_at = EXCLUDED.last_authorized_at, \
@@ -391,6 +454,33 @@ impl AuthorizerGrantStore for PgAuthorizerGrantStore {
         .fetch_one(&mut *transaction)
         .await
         .map_err(store_error)?;
+
+        if grant.provider_account_original_id.is_some()
+            || grant.principal_name.is_some()
+            || grant.subject_name.is_some()
+            || grant.qrcode_url.is_some()
+        {
+            sqlx::query(
+                "UPDATE iam_oauth_resource_account SET \
+                    provider_account_original_id = COALESCE($2, provider_account_original_id), \
+                    principal_name_snapshot = COALESCE($3, principal_name_snapshot), \
+                    subject_name_snapshot = COALESCE($4, subject_name_snapshot), \
+                    provider_config_json = CASE WHEN $5::text IS NULL THEN provider_config_json \
+                        ELSE jsonb_set(provider_config_json, '{qrcodeUrl}', to_jsonb($5::text), true) END, \
+                    updated_at = $6, \
+                    version = version + 1 \
+                 WHERE id = $1",
+            )
+            .bind(&resource_account_id)
+            .bind(&grant.provider_account_original_id)
+            .bind(&grant.principal_name)
+            .bind(&grant.subject_name)
+            .bind(&grant.qrcode_url)
+            .bind(&now)
+            .execute(&mut *transaction)
+            .await
+            .map_err(store_error)?;
+        }
 
         let refresh_secret_ref = grant
             .authorizer_refresh_token
@@ -617,5 +707,50 @@ mod tests {
         .expect("grant");
         assert_eq!(grant.expires_at, 1_120);
         assert_eq!(grant.next_refresh_at, 1_060);
+    }
+
+    #[test]
+    fn records_the_provider_account_snapshot() {
+        use crate::wechat_component_api::AuthorizerInfo;
+        let info = AuthorizerInfo {
+            nick_name: Some("Acme Official".to_string()),
+            head_img: None,
+            service_type: Some(2),
+            verify_type: Some(0),
+            original_id: Some("gh_original".to_string()),
+            principal_name: Some("Acme Co".to_string()),
+            qrcode_url: Some("https://qr".to_string()),
+            func_category_ids: vec![18],
+        };
+        let grant = build_authorizer_grant_with_info(
+            &config(),
+            RESOURCE_ACCOUNT_KIND_MINI_PROGRAM,
+            None,
+            "auth-code",
+            &authorization(None, 7_200),
+            Some(&info),
+            1_700_000_000,
+        )
+        .expect("grant");
+        assert_eq!(grant.display_name, "Acme Official");
+        assert_eq!(
+            grant.provider_account_original_id.as_deref(),
+            Some("gh_original")
+        );
+        assert_eq!(grant.principal_name.as_deref(), Some("Acme Co"));
+        assert_eq!(grant.subject_name.as_deref(), Some("Acme Official"));
+        assert_eq!(grant.qrcode_url.as_deref(), Some("https://qr"));
+
+        let labelled = build_authorizer_grant_with_info(
+            &config(),
+            RESOURCE_ACCOUNT_KIND_MINI_PROGRAM,
+            Some("Operator Label"),
+            "auth-code",
+            &authorization(None, 7_200),
+            Some(&info),
+            0,
+        )
+        .expect("grant");
+        assert_eq!(labelled.display_name, "Operator Label");
     }
 }

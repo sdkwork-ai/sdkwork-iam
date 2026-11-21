@@ -40,6 +40,7 @@ mod wechat_component_api;
 mod wechat_component_authorization;
 mod wechat_component_authorizer;
 mod wechat_component_callback;
+mod wechat_component_capability;
 mod wechat_component_grant;
 mod wechat_component_message;
 mod wechat_component_ticket;
@@ -94,11 +95,11 @@ pub use application_access_token::{
     PublicApplicationAccessTokenClaims, APPLICATION_ACCESS_TOKEN_NO_EXPIRY,
 };
 pub use application_registry::{
-    configured_deploy_application_id, derive_tenant_application_primary_domain_candidate,
-    disable_tenant_application, disable_tenant_application_by_deploy_application_id,
-    enable_tenant_application, ensure_platform_tenant_application,
-    ensure_platform_tenant_application_with_deploy_application, ensure_tenant_application_runtime,
-    intersect_permission_scopes, is_provision_attribute_error,
+    bind_tenant_application_deploy_application_id, configured_deploy_application_id,
+    derive_tenant_application_primary_domain_candidate, disable_tenant_application,
+    disable_tenant_application_by_deploy_application_id, enable_tenant_application,
+    ensure_platform_tenant_application, ensure_platform_tenant_application_with_deploy_application,
+    ensure_tenant_application_runtime, intersect_permission_scopes, is_provision_attribute_error,
     parse_tenant_application_provision_command, parse_tenant_application_update_command,
     platform_deploy_application_id_for_tenant, platform_runtime_app_id_for_tenant,
     provision_tenant_application, relink_tenant_application_deploy_application_id,
@@ -123,10 +124,10 @@ pub use authorization_scope::{
 pub use dev_runtime::allows_dev_authentication_fallback;
 pub use embedded_bootstrap::{
     connect_iam_postgres_bootstrap_pool, discover_application_manifest_roots,
+    ensure_installations_from_app_root_on_pool, ensure_installations_on_pool,
     ensure_tenant_application_from_app_root, ensure_tenant_application_from_app_root_if_configured,
     ensure_tenant_application_from_app_root_with_env,
     ensure_tenant_application_from_app_root_with_env_and_fallback,
-    ensure_installations_from_app_root_on_pool, ensure_installations_on_pool,
     postgres_iam_foundation_schema_ready, resolve_application_app_root,
     resolve_application_app_root_with_fallback, resolve_bootstrap_environment,
 };
@@ -242,13 +243,13 @@ pub use wechat_component::{
 };
 pub use wechat_component_api::{
     authorization_entry_url, component_token_is_usable, component_token_needs_refresh,
-    AuthorizationFuncScope, AuthorizerAccessToken, AuthorizerAuthorization, ComponentAccessToken,
-    PreAuthCode, ReqwestWechatComponentTransport, WechatComponentApi, WechatComponentApiError,
-    WechatComponentAuthorizationScope, WechatComponentAuthorizationSurface,
-    WechatComponentTransport, AUTHORIZER_TOKEN_PATH, COMPONENT_H5_AUTHORIZATION_PAGE,
-    COMPONENT_PC_AUTHORIZATION_PAGE, COMPONENT_TOKEN_PATH, COMPONENT_TOKEN_REFRESH_LEAD_SECONDS,
-    COMPONENT_TOKEN_SAFETY_MARGIN_SECONDS, CUSTOM_TEXT_MESSAGE_PATH, PRE_AUTH_CODE_PATH,
-    QUERY_AUTH_PATH, START_PUSH_TICKET_PATH,
+    AuthorizationFuncScope, AuthorizerAccessToken, AuthorizerAuthorization, AuthorizerInfo,
+    ComponentAccessToken, PreAuthCode, ReqwestWechatComponentTransport, WechatComponentApi,
+    WechatComponentApiError, WechatComponentAuthorizationScope,
+    WechatComponentAuthorizationSurface, WechatComponentTransport, AUTHORIZER_TOKEN_PATH,
+    COMPONENT_H5_AUTHORIZATION_PAGE, COMPONENT_PC_AUTHORIZATION_PAGE, COMPONENT_TOKEN_PATH,
+    COMPONENT_TOKEN_REFRESH_LEAD_SECONDS, COMPONENT_TOKEN_SAFETY_MARGIN_SECONDS,
+    CUSTOM_TEXT_MESSAGE_PATH, PRE_AUTH_CODE_PATH, QUERY_AUTH_PATH, START_PUSH_TICKET_PATH,
 };
 pub use wechat_component_authorization::{
     begin_authorization, validate_platform_for_authorization, AuthorizationEntryRequest,
@@ -267,11 +268,18 @@ pub use wechat_component_callback::{
     ComponentCallbackConfigReader, PgComponentCallbackConfigReader, SECRET_KIND_CALLBACK_TOKEN,
     SECRET_KIND_ENCODING_AES_KEY,
 };
+pub use wechat_component_capability::{
+    is_supported_capability, AuthorizerTokenProvider, WechatAuthorizerCapabilityService,
+    WechatCapabilityError, CAPABILITY_MP_AUDIT_STATUS, CAPABILITY_MP_AUDIT_SUBMIT,
+    CAPABILITY_MP_CODE_COMMIT, CAPABILITY_MP_DOMAINS_MODIFY, CAPABILITY_MP_GRAY_RELEASE,
+    CAPABILITY_MP_PRIVACY_SET, CAPABILITY_MP_RELEASE, CAPABILITY_MP_ROLLBACK,
+    CAPABILITY_OA_MENU_PUBLISH, CAPABILITY_OA_MENU_RETRIEVE,
+};
 pub use wechat_component_grant::{
-    build_authorizer_grant, complete_authorization, validate_resource_account_kind,
-    AuthorizationCompletionRequest, AuthorizerGrant, AuthorizerGrantStore, CompletedAuthorization,
-    PgAuthorizerGrantStore, ResourceAccountKind, WechatComponentGrantError,
-    ACCESS_MODE_OPERATOR_AUTHORIZED, AUTHORIZATION_MODE_OPERATOR_CODE,
+    build_authorizer_grant, build_authorizer_grant_with_info, complete_authorization,
+    validate_resource_account_kind, AuthorizationCompletionRequest, AuthorizerGrant,
+    AuthorizerGrantStore, CompletedAuthorization, PgAuthorizerGrantStore, ResourceAccountKind,
+    WechatComponentGrantError, ACCESS_MODE_OPERATOR_AUTHORIZED, AUTHORIZATION_MODE_OPERATOR_CODE,
     AUTHORIZER_TOKEN_REFRESH_LEAD_SECONDS, RESOURCE_ACCOUNT_KIND_MINI_PROGRAM,
     RESOURCE_ACCOUNT_KIND_OFFICIAL_ACCOUNT,
 };

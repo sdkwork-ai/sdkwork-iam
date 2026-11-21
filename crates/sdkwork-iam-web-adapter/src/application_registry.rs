@@ -94,6 +94,15 @@ pub struct TenantApplicationUpdateCommand {
     pub domain_config: Option<Value>,
     pub access_permissions: Option<Vec<String>>,
     pub runtime_config: Option<Value>,
+    /// Deploy application the installation serves, when the caller binds a row
+    /// that was provisioned without one.
+    ///
+    /// An update may fill a **missing** anchor; re-pointing an installation that
+    /// already serves a deploy application is a deploy identity migration, not an
+    /// update, and is refused here. [`relink_tenant_application_deploy_application_id`]
+    /// is the only path allowed to move a legacy anchor, because it proves the old
+    /// anchor belongs to the same deploy application.
+    pub deploy_application_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -580,6 +589,10 @@ pub fn parse_tenant_application_update_command(
             .or_else(|| body.get("runtime_config"))
             .or_else(|| body.get("config"))
             .cloned(),
+        deploy_application_id: read_optional_string(
+            body,
+            &["deployApplicationId", "deploy_application_id"],
+        ),
     })
 }
 
@@ -1018,6 +1031,22 @@ pub async fn update_tenant_application(
         resolve_tenant_application(pg, tenant_id, Some(tenant_application_id), None, None)
             .await?
             .ok_or_else(|| "tenant application was not found".to_string())?;
+
+    // Binding is the repair for a row provisioned without its deploy anchor, so
+    // it runs before the rest of the merge: the relying-party check below must
+    // see the anchor this same update supplies.
+    let existing = match command.deploy_application_id.as_deref() {
+        Some(deploy_application_id) => {
+            bind_tenant_application_deploy_application_id(
+                pg,
+                tenant_id,
+                tenant_application_id,
+                deploy_application_id,
+            )
+            .await?
+        }
+        None => existing,
+    };
 
     let primary_domain = command
         .primary_domain
@@ -1740,6 +1769,106 @@ pub async fn relink_tenant_application_deploy_application_id(
     invalidate_installation_scope(tenant_id, from);
     invalidate_installation_scope(tenant_id, to);
     resolve_tenant_application_by_deploy_application_id(pg, tenant_id, to).await
+}
+
+/// How an update's `deployApplicationId` relates to the stored anchor.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DeployLinkBindAction {
+    /// The row already serves the requested deploy application.
+    Unchanged,
+    /// The row has no anchor: fill it.
+    Bind,
+}
+
+/// Decides whether an update may apply the requested deploy anchor.
+///
+/// Filling a missing anchor is a repair; replacing an existing one is an
+/// identity migration that needs the ownership proof in
+/// [`relink_tenant_application_deploy_application_id`], so an ordinary update
+/// never silently re-points an installation.
+fn deploy_link_bind_action(
+    current: Option<&str>,
+    target: &str,
+) -> Result<DeployLinkBindAction, String> {
+    match current.map(str::trim).filter(|value| !value.is_empty()) {
+        None => Ok(DeployLinkBindAction::Bind),
+        Some(bound) if bound == target => Ok(DeployLinkBindAction::Unchanged),
+        Some(bound) => Err(format!(
+            "installation is already bound to deploy application {bound}; an update may only \
+             fill a missing anchor, and re-pointing a bound installation is a deploy identity \
+             migration rather than an update"
+        )),
+    }
+}
+
+/// Binds an unanchored installation to the deploy application it serves.
+///
+/// An installation created before the deploy anchor existed (or by a path that
+/// did not pass it) is a usable IAM application whose access tokens, and whose
+/// OAuth relying party, cannot resolve an application identity. This function is
+/// the supported repair: it fills the missing anchor and answers the installation
+/// as the deploy plane now sees it.
+///
+/// Re-pointing an already anchored row is refused — the one-to-one relation
+/// `uk_iam_application_installation_deploy` exists to keep an installation's
+/// identity stable, and the credential subject every access token carries must
+/// not change under an ordinary update.
+///
+/// @param pg - shared PostgreSQL pool.
+/// @param tenant_id - tenant that owns the installation.
+/// @param tenant_application_id - installation to bind.
+/// @param deploy_application_id - deploy application the installation serves.
+/// @returns the installation carrying the anchor.
+/// @throws when the installation is unknown, already serves a different deploy
+/// application, or the requested deploy application is bound elsewhere.
+pub async fn bind_tenant_application_deploy_application_id(
+    pg: &PgPool,
+    tenant_id: &str,
+    tenant_application_id: &str,
+    deploy_application_id: &str,
+) -> Result<TenantApplication, String> {
+    let anchor = deploy_application_id.trim();
+    if crate::is_blank(Some(anchor)) {
+        return Err(
+            "deployApplicationId must not be blank: an installation is one-to-one with a \
+             deploy application"
+                .to_string(),
+        );
+    }
+    let existing =
+        resolve_tenant_application(pg, tenant_id, Some(tenant_application_id), None, None)
+            .await?
+            .ok_or_else(|| "tenant application was not found".to_string())?;
+    match deploy_link_bind_action(existing.deploy_application_id.as_deref(), anchor)? {
+        DeployLinkBindAction::Unchanged => return Ok(existing),
+        DeployLinkBindAction::Bind => {}
+    }
+    ensure_deploy_application_unclaimed(pg, anchor, &existing.id).await?;
+
+    // `IS NULL` is the safety property: a concurrent bind that already landed
+    // wins, and this attempt reports the conflict instead of overwriting it.
+    let updated = sqlx::query(
+        "UPDATE iam_application_installation SET deploy_application_id = $3, updated_at = NOW() \
+         WHERE tenant_id = $1 AND id = $2 AND deploy_application_id IS NULL",
+    )
+    .bind(tenant_id)
+    .bind(&existing.id)
+    .bind(anchor)
+    .execute(pg)
+    .await
+    .map_err(|error| format!("bind installation deploy application failed: {error}"))?;
+    if updated.rows_affected() == 0 {
+        return Err(format!(
+            "installation {} was linked to another deploy application concurrently; reload and \
+             retry",
+            existing.id
+        ));
+    }
+    invalidate_installation_scope(tenant_id, anchor);
+
+    resolve_tenant_application(pg, tenant_id, Some(tenant_application_id), None, None)
+        .await?
+        .ok_or_else(|| "tenant application bind completed but lookup failed".to_string())
 }
 
 pub fn intersect_permission_scopes(
@@ -2994,5 +3123,75 @@ mod relying_party_anchor_tests {
                 "no client is registered by {runtime_config}"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod deploy_link_bind_tests {
+    use super::{
+        deploy_link_bind_action, parse_tenant_application_update_command, DeployLinkBindAction,
+    };
+    use serde_json::json;
+
+    /// An update is the repair path for a row provisioned without its anchor:
+    /// the requested deploy application is read from either wire spelling.
+    #[test]
+    fn an_update_carries_the_requested_deploy_application() {
+        let command = parse_tenant_application_update_command(&json!({
+            "deployApplicationId": "382418217538162688"
+        }))
+        .expect("parses a bind update");
+        assert_eq!(
+            command.deploy_application_id.as_deref(),
+            Some("382418217538162688")
+        );
+
+        let snake_case = parse_tenant_application_update_command(&json!({
+            "deploy_application_id": "382418217538162688"
+        }))
+        .expect("parses the snake_case spelling");
+        assert_eq!(
+            snake_case.deploy_application_id.as_deref(),
+            Some("382418217538162688")
+        );
+
+        let untouched =
+            parse_tenant_application_update_command(&json!({ "primaryDomain": "example.test" }))
+                .expect("parses an update without the anchor");
+        assert_eq!(untouched.deploy_application_id, None);
+    }
+
+    #[test]
+    fn a_missing_anchor_is_filled_and_the_same_anchor_is_idempotent() {
+        for current in [None, Some(""), Some("   ")] {
+            assert_eq!(
+                deploy_link_bind_action(current, "382418217538162688")
+                    .expect("a null anchor binds"),
+                DeployLinkBindAction::Bind
+            );
+        }
+        assert_eq!(
+            deploy_link_bind_action(Some("382418217538162688"), "382418217538162688")
+                .expect("the same anchor is a no-op"),
+            DeployLinkBindAction::Unchanged
+        );
+        assert_eq!(
+            deploy_link_bind_action(Some(" 382418217538162688 "), "382418217538162688")
+                .expect("surrounding whitespace does not make a different anchor"),
+            DeployLinkBindAction::Unchanged
+        );
+    }
+
+    /// An installation's deploy anchor is its token subject: an ordinary update
+    /// must not move it onto another deploy application.
+    #[test]
+    fn an_update_never_repoints_a_bound_installation() {
+        let error = deploy_link_bind_action(Some("381158401561858048"), "382418217538162688")
+            .expect_err("a bound installation cannot be re-pointed by an update");
+        assert!(
+            error.contains("already bound to deploy application 381158401561858048"),
+            "{error}"
+        );
+        assert!(error.contains("identity migration"), "{error}");
     }
 }

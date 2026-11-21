@@ -577,6 +577,10 @@ pub fn apply_oauth_routes(router: Router<BackendIamState>) -> Router<BackendIamS
             post(create_operator_platform_component_credentials),
         )
         .route(
+            "/backend/v3/api/iam/oauth/operator_platforms/{operatorPlatformId}/connectivity_checks",
+            post(create_operator_platform_connectivity_check),
+        )
+        .route(
             "/backend/v3/api/iam/oauth/resource_accounts",
             get(list_resource_accounts).post(create_resource_account),
         )
@@ -623,6 +627,10 @@ pub fn apply_oauth_routes(router: Router<BackendIamState>) -> Router<BackendIamS
         .route(
             "/backend/v3/api/iam/oauth/resource_authorizations/{authorizationId}",
             patch(update_resource_authorization),
+        )
+        .route(
+            "/backend/v3/api/iam/oauth/resource_authorizations/{authorizationId}/capability_invocations",
+            post(create_resource_authorization_capability_invocation),
         )
         .route(
             "/backend/v3/api/iam/oauth/webhook_configs",

@@ -1974,12 +1974,20 @@ function buildSchemas() {
     IamInstallationManagementUpdateCommand: {
       type: 'object',
       additionalProperties: false,
-      description: 'Update operator-managed tenant application domain and access permissions.',
+      description:
+        'Update operator-managed tenant application domain, access permissions, and deploy anchor.',
       properties: {
         primaryDomain: { type: 'string', minLength: 1, maxLength: 255 },
         accessPermissions: {
           type: 'array',
           items: { type: 'string', minLength: 1, maxLength: 255 },
+        },
+        deployApplicationId: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 255,
+          description:
+            'Deploy application the installation serves. An update may only fill a MISSING anchor: this is the repair for an installation provisioned before the deployment link existed, and it makes the access-token subject and the relying party resolvable. Re-pointing an installation that already serves a deploy application is a deploy identity migration, not an update, and is answered with 409.',
         },
       },
     },
@@ -2042,7 +2050,7 @@ function buildSchemas() {
     AppbaseInstallationUpdateCommand: {
       type: 'object',
       additionalProperties: true,
-      description: 'Update tenant application access and runtime configuration.',
+      description: 'Update tenant application access, runtime configuration, and deploy anchor.',
       properties: {
         ...bootstrapAuth,
         primaryDomain: { type: 'string' },
@@ -2052,6 +2060,11 @@ function buildSchemas() {
           items: { type: 'string' },
         },
         runtimeConfig: { type: 'object', additionalProperties: true },
+        deployApplicationId: {
+          type: 'string',
+          description:
+            'Deploy application the installation serves. An update may only fill a MISSING anchor; re-pointing a bound installation is a deploy identity migration and is refused.',
+        },
       },
     },
     AppbaseInstallationEnableCommand: {

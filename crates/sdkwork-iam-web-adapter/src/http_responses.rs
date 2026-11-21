@@ -8,7 +8,14 @@ use sdkwork_web_core::new_request_id;
 use serde_json::Value;
 
 fn next_trace_id() -> String {
+    // The web framework normalizes response trace ids to the 32-hex W3C form
+    // (`x-sdkwork-trace-id`). Building the body id in the same form keeps
+    // `ProblemDetail.traceId` equal to the header for every response the
+    // framework touches.
     new_request_id()
+        .chars()
+        .filter(|character| character.is_ascii_hexdigit())
+        .collect()
 }
 
 fn attach_trace_header(response: &mut Response, trace_id: &str) {

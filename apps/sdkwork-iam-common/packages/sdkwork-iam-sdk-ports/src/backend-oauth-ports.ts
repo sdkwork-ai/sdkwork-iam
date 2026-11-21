@@ -51,6 +51,12 @@ export interface IamBackendOAuthResourceClient {
     update?: IamSdkMethod;
   };
   operatorPlatforms?: {
+    componentCredentials?: {
+      create?: IamSdkMethod;
+    };
+    connectivityChecks?: {
+      create?: IamSdkMethod;
+    };
     create?: IamSdkMethod;
     list?: IamSdkMethod;
     preAuthorizations?: {
@@ -92,6 +98,9 @@ export interface IamBackendOAuthResourceClient {
     };
   };
   resourceAuthorizations?: {
+    capabilityInvocations?: {
+      create?: IamSdkMethod;
+    };
     create?: IamSdkMethod;
     list?: IamSdkMethod;
     update?: IamSdkMethod;
