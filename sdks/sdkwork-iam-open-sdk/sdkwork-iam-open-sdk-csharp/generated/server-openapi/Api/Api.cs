@@ -5,6 +5,6 @@ namespace SDKWork.Iam.OpenSdk.Api
     /// </summary>
     public static class Api
     {
-        public static IamOauthApi? IamOauth { get; set; }
+
     }
 }

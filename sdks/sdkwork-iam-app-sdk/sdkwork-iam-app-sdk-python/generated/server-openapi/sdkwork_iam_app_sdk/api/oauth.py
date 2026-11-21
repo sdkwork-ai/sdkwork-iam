@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 from ..http_client import HttpClient
-from ..models import AppbaseSessionCreateCommand, AuthorizationsCompletionsCreateRequest, AuthorizationsCompletionsCreateResponse, AuthorizationsCreateRequest, AuthorizationsCreateResponse, DesktopSessionsCreateRequest, DesktopSessionsCreateResponse, OauthPhoneBindingSessionCreateCommand, OauthPhoneBindingVerificationCodeRequestCommand, SdkWorkListResponse, SdkWorkResourceResponse, WechatMiniProgramSessionCreateCommand
+from ..models import AppbaseSessionCreateCommand, AuthorizationsCompletionsCreateRequest, AuthorizationsCompletionsCreateResponse201, AuthorizationsCreateRequest, AuthorizationsCreateResponse201, DesktopSessionsCreateRequest, DesktopSessionsCreateResponse201, OauthPhoneBindingSessionCreateCommand, OauthPhoneBindingVerificationCodeRequestCommand, SdkWorkListResponse, SdkWorkResourceResponse, WechatMiniProgramSessionCreateCommand
 
 def _append_query_string(path: str, raw_query_string: str) -> str:
     query = raw_query_string.lstrip('?')
@@ -201,7 +201,6 @@ class OauthApi:
         self.providers = OauthProvidersApi(client)
         self.scan_login_modes = OauthScanLoginModesApi(client)
         self.sessions = OauthSessionsApi(client)
-        self.wechat_payment_oauth = OauthWechatPaymentOauthApi(client)
 
 
 class OauthAccountLinksApi:
@@ -245,7 +244,7 @@ class OauthAuthorizationsApi:
         self.completions = OauthAuthorizationsCompletionsApi(client)
 
 
-    def create(self, body: AuthorizationsCreateRequest) -> AuthorizationsCreateResponse:
+    def create(self, body: AuthorizationsCreateRequest) -> AuthorizationsCreateResponse201:
         """Authorizations create."""
         return self._client.post(f"/app/v3/api/oauth/authorizations", json=body, skip_auth=True)
 
@@ -256,7 +255,7 @@ class OauthAuthorizationsCompletionsApi:
         self._client = client
 
 
-    def create(self, authorization_state_id: str, body: AuthorizationsCompletionsCreateRequest) -> AuthorizationsCompletionsCreateResponse:
+    def create(self, authorization_state_id: str, body: AuthorizationsCompletionsCreateRequest) -> AuthorizationsCompletionsCreateResponse201:
         """Authorizations completions create."""
         return self._client.post(f"/app/v3/api/oauth/authorizations/{serialize_path_parameter(authorization_state_id, {'name': 'authorizationStateId', 'style': 'simple', 'explode': False})}/completions", json=body)
 
@@ -282,7 +281,7 @@ class OauthDesktopSessionsApi:
         self._client = client
 
 
-    def create(self, body: DesktopSessionsCreateRequest) -> DesktopSessionsCreateResponse:
+    def create(self, body: DesktopSessionsCreateRequest) -> DesktopSessionsCreateResponse201:
         """Desktop Sessions create."""
         return self._client.post(f"/app/v3/api/oauth/desktop_sessions", json=body, skip_auth=True)
 
@@ -451,25 +450,3 @@ class OauthSessionsApi:
     def create(self, body: AppbaseSessionCreateCommand) -> SdkWorkResourceResponse:
         """Sessions create."""
         return self._client.post(f"/app/v3/api/oauth/sessions", json=body, access_token_only=True)
-
-class OauthWechatPaymentOauthApi:
-    """oauth oauth.wechat_payment_oauth API client."""
-
-    def __init__(self, client: HttpClient):
-        self._client = client
-
-
-    def callback(self) -> SdkWorkResourceResponse:
-        """Wechat Payment Oauth callback."""
-        return self._client.get(f"/app/v3/api/oauth/wechat/payment/callback", skip_auth=True)
-
-    def cashier_start(self) -> SdkWorkResourceResponse:
-        """Wechat Payment Oauth cashier Start."""
-        return self._client.get(f"/app/v3/api/oauth/wechat/payment/cashier/start", skip_auth=True)
-
-    def start(self, redirect: str) -> SdkWorkResourceResponse:
-        """Wechat Payment Oauth start."""
-        query = build_query_string([
-            {'name': 'redirect', 'value': redirect, 'style': 'form', 'explode': True, 'allow_reserved': False},
-        ])
-        return self._client.get(_append_query_string(f"/app/v3/api/oauth/wechat/payment/start", query))

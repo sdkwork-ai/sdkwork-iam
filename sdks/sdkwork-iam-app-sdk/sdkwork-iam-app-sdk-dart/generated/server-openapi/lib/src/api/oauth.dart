@@ -43,22 +43,22 @@ class OauthApi {
   }
 
   /// Authorizations create.
-  Future<AuthorizationsCreateResponse?> authorizationsCreate(AuthorizationsCreateRequest body) async {
+  Future<AuthorizationsCreateResponse201?> authorizationsCreate(AuthorizationsCreateRequest body) async {
     final payload = body.toJson();
     final response = await _client.request('POST', ApiPaths.appPath('/oauth/authorizations'), body: payload, contentType: 'application/json', skipAuth: true);
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AuthorizationsCreateResponse.fromJson(map);
+      return map == null ? null : AuthorizationsCreateResponse201.fromJson(map);
     })();
   }
 
   /// Authorizations completions create.
-  Future<AuthorizationsCompletionsCreateResponse?> authorizationsCompletionsCreate(String authorizationStateId, AuthorizationsCompletionsCreateRequest body) async {
+  Future<AuthorizationsCompletionsCreateResponse201?> authorizationsCompletionsCreate(String authorizationStateId, AuthorizationsCompletionsCreateRequest body) async {
     final payload = body.toJson();
     final response = await _client.post(ApiPaths.appPath('/oauth/authorizations/${serializePathParameter(authorizationStateId, const PathParameterSpec('authorizationStateId', 'simple', false))}/completions'), body: payload, contentType: 'application/json');
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : AuthorizationsCompletionsCreateResponse.fromJson(map);
+      return map == null ? null : AuthorizationsCompletionsCreateResponse201.fromJson(map);
     })();
   }
 
@@ -82,12 +82,12 @@ class OauthApi {
   }
 
   /// Desktop Sessions create.
-  Future<DesktopSessionsCreateResponse?> desktopSessionsCreate(DesktopSessionsCreateRequest body) async {
+  Future<DesktopSessionsCreateResponse201?> desktopSessionsCreate(DesktopSessionsCreateRequest body) async {
     final payload = body.toJson();
     final response = await _client.request('POST', ApiPaths.appPath('/oauth/desktop_sessions'), body: payload, contentType: 'application/json', skipAuth: true);
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : DesktopSessionsCreateResponse.fromJson(map);
+      return map == null ? null : DesktopSessionsCreateResponse201.fromJson(map);
     })();
   }
 
@@ -237,36 +237,6 @@ class OauthApi {
   Future<SdkWorkResourceResponse?> sessionsCreate(AppbaseSessionCreateCommand body) async {
     final payload = body.toJson();
     final response = await _client.request('POST', ApiPaths.appPath('/oauth/sessions'), body: payload, contentType: 'application/json', accessTokenOnly: true);
-    return (() {
-      final map = sdkworkResponseAsMap(response);
-      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
-    })();
-  }
-
-  /// Wechat Payment Oauth callback.
-  Future<SdkWorkResourceResponse?> wechatPaymentOauthCallback() async {
-    final response = await _client.request('GET', ApiPaths.appPath('/oauth/wechat/payment/callback'), skipAuth: true);
-    return (() {
-      final map = sdkworkResponseAsMap(response);
-      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
-    })();
-  }
-
-  /// Wechat Payment Oauth cashier Start.
-  Future<SdkWorkResourceResponse?> wechatPaymentOauthCashierStart() async {
-    final response = await _client.request('GET', ApiPaths.appPath('/oauth/wechat/payment/cashier/start'), skipAuth: true);
-    return (() {
-      final map = sdkworkResponseAsMap(response);
-      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
-    })();
-  }
-
-  /// Wechat Payment Oauth start.
-  Future<SdkWorkResourceResponse?> wechatPaymentOauthStart(String redirect) async {
-    final query = buildQueryString([
-      QueryParameterSpec('redirect', redirect, 'form', true, false, null)
-    ]);
-    final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.appPath('/oauth/wechat/payment/start'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkResourceResponse.fromJson(map);

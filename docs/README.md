@@ -47,9 +47,9 @@ OAuth and SSO are IAM session extensions owned by this repository. Canonical con
 
 Per `IAM_OAUTH_SPEC.md` section 4.2:
 
-1. Enable the tenant application and set `runtimeConfig.oauth.relyingParty` (`enabled`, `clientId`, `redirectUris`, `allowedScopes`, `confidential`, `clientSecretHash`).
-2. Use `@sdkwork/iam-pc-admin-oauth` for load/save relying-party config, or call `service.iam.tenantApplications.management.update` directly.
-3. `client_id` is the registration's `clientId`, defaulting to the tenant application runtime `app_id`; a declared `clientId` must be unique across tenant applications.
+1. Enable the installation and set `runtimeConfig.oauth.relyingParty` (`enabled`, `clientId`, `redirectUris`, `allowedScopes`, `confidential`, `clientSecretHash`).
+2. Use `@sdkwork/iam-pc-admin-oauth` for load/save relying-party config, or call `service.iam.installations.management.update` directly.
+3. `client_id` is the registration's `clientId`, defaulting to the installation runtime `app_id`; a declared `clientId` must be unique across installations.
 4. Third-party apps integrate via `@sdkwork/iam-open-sdk` with a separate OAuth bearer credential — not app login TokenManager state.
 5. Register custom inbound providers in the provider catalog before tenant integrations when built-in codes are insufficient.
 6. Inbound IdP login uses `@sdkwork/iam-app-sdk` OAuth sessions.

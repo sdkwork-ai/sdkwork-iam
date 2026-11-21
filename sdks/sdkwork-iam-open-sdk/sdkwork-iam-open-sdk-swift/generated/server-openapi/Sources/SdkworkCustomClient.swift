@@ -3,16 +3,16 @@ import SDKworkCommon
 
 public class SdkworkCustomClient {
     private let httpClient: HttpClient
-    public let iamOauth: IamOauthApi
+
 
     public init(baseURL: String) {
         self.httpClient = HttpClient(baseURL: baseURL)
-        self.iamOauth = IamOauthApi(client: httpClient)
+
     }
 
     public init(config: SdkConfig) {
         self.httpClient = HttpClient(config: config)
-        self.iamOauth = IamOauthApi(client: httpClient)
+
     }
 
     public func setApiKey(_ apiKey: String) -> SdkworkCustomClient {

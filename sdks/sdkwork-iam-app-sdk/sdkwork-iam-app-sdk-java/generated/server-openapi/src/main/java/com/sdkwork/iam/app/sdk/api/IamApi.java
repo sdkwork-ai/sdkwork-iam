@@ -13,6 +13,12 @@ public class IamApi {
         this.client = client;
     }
 
+    /** App Access Tokens create. */
+    public IamAppAccessTokenResponse appAccessTokensCreate(IamAppAccessTokenCreateCommand body) throws Exception {
+        Object raw = client.post(ApiPaths.appPath("/iam/app_access_tokens"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<IamAppAccessTokenResponse>() {});
+    }
+
     /** Department Assignments list. */
     public SdkWorkListResponse departmentAssignmentsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
@@ -45,13 +51,13 @@ public class IamApi {
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Iam oauth official Account Settings retrieve. */
+    /** Oauth official Account Settings retrieve. */
     public SdkWorkResourceResponse oauthOfficialAccountSettingsRetrieve() throws Exception {
         Object raw = client.get(ApiPaths.appPath("/iam/oauth/official_account_settings"));
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Iam oauth official Accounts list. */
+    /** Oauth official Accounts list. */
     public SdkWorkListResponse oauthOfficialAccountsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
@@ -64,43 +70,43 @@ public class IamApi {
         return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
-    /** Iam oauth official Accounts create. */
+    /** Oauth official Accounts create. */
     public SdkWorkResourceResponse oauthOfficialAccountsCreate(Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.appPath("/iam/oauth/official_accounts"), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Iam oauth official Accounts delete. */
+    /** Oauth official Accounts delete. */
     public Void oauthOfficialAccountsDelete(String officialAccountId) throws Exception {
         client.delete(ApiPaths.appPath("/iam/oauth/official_accounts/" + serializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false)) + ""));
         return null;
     }
 
-    /** Iam oauth official Accounts retrieve. */
+    /** Oauth official Accounts retrieve. */
     public SdkWorkResourceResponse oauthOfficialAccountsRetrieve(String officialAccountId) throws Exception {
         Object raw = client.get(ApiPaths.appPath("/iam/oauth/official_accounts/" + serializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false)) + ""));
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Iam oauth official Accounts update. */
+    /** Oauth official Accounts update. */
     public SdkWorkResourceResponse oauthOfficialAccountsUpdate(String officialAccountId, Map<String, Object> body) throws Exception {
         Object raw = client.patch(ApiPaths.appPath("/iam/oauth/official_accounts/" + serializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false)) + ""), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Iam oauth official Accounts custom Menus publish. */
+    /** Oauth official Accounts custom Menus publish. */
     public SdkWorkResourceResponse oauthOfficialAccountsCustomMenusPublish(String officialAccountId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.appPath("/iam/oauth/official_accounts/" + serializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false)) + "/custom_menus/publish"), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Iam oauth official Accounts custom Menus rollback. */
+    /** Oauth official Accounts custom Menus rollback. */
     public SdkWorkResourceResponse oauthOfficialAccountsCustomMenusRollback(String officialAccountId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.appPath("/iam/oauth/official_accounts/" + serializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false)) + "/custom_menus/rollback"), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Iam oauth official Accounts custom Menus sync. */
+    /** Oauth official Accounts custom Menus sync. */
     public SdkWorkResourceResponse oauthOfficialAccountsCustomMenusSync(String officialAccountId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.appPath("/iam/oauth/official_accounts/" + serializePathParameter(officialAccountId, new PathParameterSpec("officialAccountId", "simple", false)) + "/custom_menus/sync"), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
@@ -192,11 +198,11 @@ public class IamApi {
             new QueryParameterSpec("cursor", cursor, "form", true, false, null),
             new QueryParameterSpec("sort", sort, "form", true, false, null),
             new QueryParameterSpec("q", q, "form", true, false, null),
-            new QueryParameterSpec("roleId", roleId, "form", true, false, null),
-            new QueryParameterSpec("principalKind", principalKind, "form", true, false, null),
-            new QueryParameterSpec("principalId", principalId, "form", true, false, null),
-            new QueryParameterSpec("scopeKind", scopeKind, "form", true, false, null),
-            new QueryParameterSpec("scopeId", scopeId, "form", true, false, null)
+            new QueryParameterSpec("role_id", roleId, "form", true, false, null),
+            new QueryParameterSpec("principal_kind", principalKind, "form", true, false, null),
+            new QueryParameterSpec("principal_id", principalId, "form", true, false, null),
+            new QueryParameterSpec("scope_kind", scopeKind, "form", true, false, null),
+            new QueryParameterSpec("scope_id", scopeId, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.appPath("/iam/role_bindings"), query));
         return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});

@@ -43,8 +43,8 @@ public class AuthApi {
     }
 
     /// Sessions current logout.
-    public func sessionsCurrentLogout(body: SessionsCurrentLogoutRequest) async throws -> Void {
-        _ = try await client.request("POST", ApiPaths.appPath("/auth/sessions/current/logout"), body: body, params: nil, headers: nil, contentType: "application/json", skipAuth: true)
+    public func sessionsCurrentLogout(body: SessionsCurrentLogoutRequest) async throws -> SdkWorkCommandResponse? {
+        return try await client.request("POST", ApiPaths.appPath("/auth/sessions/current/logout"), body: body, params: nil, headers: nil, contentType: "application/json", skipAuth: true, responseType: SdkWorkCommandResponse.self)
     }
 
     /// Sessions login Context Selection create.

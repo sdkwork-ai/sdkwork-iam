@@ -369,6 +369,122 @@ class SdkWorkCommandResponse {
   }
 }
 
+class IamAppAccessTokenCreateCommand {
+  final String? appId;
+  final String? installationId;
+  final String? instanceKey;
+  final String? environment;
+  final String? ownershipScope;
+
+  IamAppAccessTokenCreateCommand({
+    this.appId,
+    this.installationId,
+    this.instanceKey,
+    this.environment,
+    this.ownershipScope
+  });
+
+  factory IamAppAccessTokenCreateCommand.fromJson(Map<String, dynamic> json) {
+    return IamAppAccessTokenCreateCommand(
+      appId: json['appId']?.toString(),
+      installationId: json['installationId']?.toString(),
+      instanceKey: json['instanceKey']?.toString(),
+      environment: json['environment']?.toString(),
+      ownershipScope: json['ownershipScope']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'appId': appId,
+      'installationId': installationId,
+      'instanceKey': instanceKey,
+      'environment': environment,
+      'ownershipScope': ownershipScope,
+    };
+  }
+}
+
+class IamAppAccessToken {
+  final String? accessToken;
+  final String? authToken;
+  final String? expiresAt;
+  final String? appId;
+  final String? installationId;
+  final String? organizationId;
+  final String? ownershipScope;
+  final String? sessionId;
+  final String? environment;
+
+  IamAppAccessToken({
+    this.accessToken,
+    this.authToken,
+    this.expiresAt,
+    this.appId,
+    this.installationId,
+    this.organizationId,
+    this.ownershipScope,
+    this.sessionId,
+    this.environment
+  });
+
+  factory IamAppAccessToken.fromJson(Map<String, dynamic> json) {
+    return IamAppAccessToken(
+      accessToken: json['accessToken']?.toString(),
+      authToken: json['authToken']?.toString(),
+      expiresAt: json['expiresAt']?.toString(),
+      appId: json['appId']?.toString(),
+      installationId: json['installationId']?.toString(),
+      organizationId: json['organizationId']?.toString(),
+      ownershipScope: json['ownershipScope']?.toString(),
+      sessionId: json['sessionId']?.toString(),
+      environment: json['environment']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'accessToken': accessToken,
+      'authToken': authToken,
+      'expiresAt': expiresAt,
+      'appId': appId,
+      'installationId': installationId,
+      'organizationId': organizationId,
+      'ownershipScope': ownershipScope,
+      'sessionId': sessionId,
+      'environment': environment,
+    };
+  }
+}
+
+class IamAppAccessTokenResponse {
+  final int? code;
+  final dynamic data;
+  final String? traceId;
+
+  IamAppAccessTokenResponse({
+    this.code,
+    this.data,
+    this.traceId
+  });
+
+  factory IamAppAccessTokenResponse.fromJson(Map<String, dynamic> json) {
+    return IamAppAccessTokenResponse(
+      code: json['code'] is int ? json['code'] : null,
+      data: _sdkworkAsMap(json['data']),
+      traceId: json['traceId']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'data': data,
+      'traceId': traceId,
+    };
+  }
+}
+
 class IamPersonaRole {
   final String? code;
   final String? iamRoleCode;
@@ -966,19 +1082,19 @@ class AuthorizationsCreateRequest {
   }
 }
 
-class AuthorizationsCreateResponse {
+class AuthorizationsCreateResponse201 {
   final int? code;
   final String? traceId;
   final Map<String, dynamic>? data;
 
-  AuthorizationsCreateResponse({
+  AuthorizationsCreateResponse201({
     this.code,
     this.traceId,
     this.data
   });
 
-  factory AuthorizationsCreateResponse.fromJson(Map<String, dynamic> json) {
-    return AuthorizationsCreateResponse(
+  factory AuthorizationsCreateResponse201.fromJson(Map<String, dynamic> json) {
+    return AuthorizationsCreateResponse201(
       code: json['code'] is int ? json['code'] : null,
       traceId: json['traceId']?.toString(),
       data: _sdkworkAsMap(json['data'])
@@ -1008,19 +1124,19 @@ class AuthorizationsCompletionsCreateRequest {
   }
 }
 
-class AuthorizationsCompletionsCreateResponse {
+class AuthorizationsCompletionsCreateResponse201 {
   final int? code;
   final String? traceId;
   final Map<String, dynamic>? data;
 
-  AuthorizationsCompletionsCreateResponse({
+  AuthorizationsCompletionsCreateResponse201({
     this.code,
     this.traceId,
     this.data
   });
 
-  factory AuthorizationsCompletionsCreateResponse.fromJson(Map<String, dynamic> json) {
-    return AuthorizationsCompletionsCreateResponse(
+  factory AuthorizationsCompletionsCreateResponse201.fromJson(Map<String, dynamic> json) {
+    return AuthorizationsCompletionsCreateResponse201(
       code: json['code'] is int ? json['code'] : null,
       traceId: json['traceId']?.toString(),
       data: _sdkworkAsMap(json['data'])
@@ -1076,19 +1192,19 @@ class DesktopSessionsCreateRequest {
   }
 }
 
-class DesktopSessionsCreateResponse {
+class DesktopSessionsCreateResponse201 {
   final int? code;
   final String? traceId;
   final Map<String, dynamic>? data;
 
-  DesktopSessionsCreateResponse({
+  DesktopSessionsCreateResponse201({
     this.code,
     this.traceId,
     this.data
   });
 
-  factory DesktopSessionsCreateResponse.fromJson(Map<String, dynamic> json) {
-    return DesktopSessionsCreateResponse(
+  factory DesktopSessionsCreateResponse201.fromJson(Map<String, dynamic> json) {
+    return DesktopSessionsCreateResponse201(
       code: json['code'] is int ? json['code'] : null,
       traceId: json['traceId']?.toString(),
       data: _sdkworkAsMap(json['data'])

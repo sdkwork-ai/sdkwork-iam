@@ -803,7 +803,7 @@ function createBackendIamManagementResources(options?: { usersRoles?: boolean })
         list: vi.fn(),
         retrieve: vi.fn(),
       },
-      tenantApplications: {
+      installations: {
         create: vi.fn(),
         enable: vi.fn(),
         list: vi.fn(),

@@ -322,17 +322,17 @@ export interface SdkworkIamService {
     accessCredentials: {
       create(body: Record<string, unknown>): Promise<unknown>;
     };
-    tenantApplications: {
-      enable(tenantApplicationId: string, body?: Record<string, unknown>): Promise<unknown>;
+    installations: {
+      enable(installationId: string, body?: Record<string, unknown>): Promise<unknown>;
       list(tenantId: string, params?: Record<string, unknown>): Promise<unknown>;
       create(body: Record<string, unknown>): Promise<unknown>;
-      retrieve(tenantApplicationId: string): Promise<unknown>;
-      update(tenantApplicationId: string, body?: Record<string, unknown>): Promise<unknown>;
+      retrieve(installationId: string): Promise<unknown>;
+      update(installationId: string, body?: Record<string, unknown>): Promise<unknown>;
       management: {
-        disable(tenantId: string, tenantApplicationId: string): Promise<unknown>;
-        enable(tenantId: string, tenantApplicationId: string): Promise<unknown>;
+        disable(tenantId: string, installationId: string): Promise<unknown>;
+        enable(tenantId: string, installationId: string): Promise<unknown>;
         create(tenantId: string, body: Record<string, unknown>): Promise<unknown>;
-        update(tenantId: string, tenantApplicationId: string, body?: Record<string, unknown>): Promise<unknown>;
+        update(tenantId: string, installationId: string, body?: Record<string, unknown>): Promise<unknown>;
       };
       summary: {
         retrieve(tenantId: string): Promise<unknown>;
@@ -778,20 +778,20 @@ export function createSdkworkIamService(input: CreateSdkworkIamServiceInput): Sd
       accessCredentials: {
         create: (body) => callBackendIam(backendIam, (iam) => iam.accessCredentials, "create", "iam.accessCredentials.create", body),
       },
-      tenantApplications: {
-        create: (body) => callBackendIam(backendIam, (iam) => iam.tenantApplications, "create", "iam.tenantApplications.create", body),
-        list: (tenantId, params) => callBackendIam(backendIam, (iam) => iam.tenantApplications, "list", "iam.tenantApplications.list", tenantId, iamListQuery(params)),
-        retrieve: (tenantApplicationId) => callBackendIam(backendIam, (iam) => iam.tenantApplications, "retrieve", "iam.tenantApplications.retrieve", tenantApplicationId),
-        update: (tenantApplicationId, body) => callBackendIam(backendIam, (iam) => iam.tenantApplications, "update", "iam.tenantApplications.update", tenantApplicationId, body),
-        enable: (tenantApplicationId, body) => callBackendIam(backendIam, (iam) => iam.tenantApplications, "enable", "iam.tenantApplications.enable", tenantApplicationId, body),
+      installations: {
+        create: (body) => callBackendIam(backendIam, (iam) => iam.installations, "create", "iam.installations.create", body),
+        list: (tenantId, params) => callBackendIam(backendIam, (iam) => iam.installations, "list", "iam.installations.list", tenantId, iamListQuery(params)),
+        retrieve: (installationId) => callBackendIam(backendIam, (iam) => iam.installations, "retrieve", "iam.installations.retrieve", installationId),
+        update: (installationId, body) => callBackendIam(backendIam, (iam) => iam.installations, "update", "iam.installations.update", installationId, body),
+        enable: (installationId, body) => callBackendIam(backendIam, (iam) => iam.installations, "enable", "iam.installations.enable", installationId, body),
         management: {
-          disable: (tenantId, tenantApplicationId) => callBackendIam(backendIam, (iam) => iam.tenantApplications?.management, "disable", "iam.tenantApplications.management.disable", tenantId, tenantApplicationId, {}),
-          enable: (tenantId, tenantApplicationId) => callBackendIam(backendIam, (iam) => iam.tenantApplications?.management, "enable", "iam.tenantApplications.management.enable", tenantId, tenantApplicationId, {}),
-          create: (tenantId, body) => callBackendIam(backendIam, (iam) => iam.tenantApplications?.management, "create", "iam.tenantApplications.management.create", tenantId, body),
-          update: (tenantId, tenantApplicationId, body) => callBackendIam(backendIam, (iam) => iam.tenantApplications?.management, "update", "iam.tenantApplications.management.update", tenantId, tenantApplicationId, body),
+          disable: (tenantId, installationId) => callBackendIam(backendIam, (iam) => iam.installations?.management, "disable", "iam.installations.management.disable", tenantId, installationId, {}),
+          enable: (tenantId, installationId) => callBackendIam(backendIam, (iam) => iam.installations?.management, "enable", "iam.installations.management.enable", tenantId, installationId, {}),
+          create: (tenantId, body) => callBackendIam(backendIam, (iam) => iam.installations?.management, "create", "iam.installations.management.create", tenantId, body),
+          update: (tenantId, installationId, body) => callBackendIam(backendIam, (iam) => iam.installations?.management, "update", "iam.installations.management.update", tenantId, installationId, body),
         },
         summary: {
-          retrieve: (tenantId) => callBackendIam(backendIam, (iam) => iam.tenantApplications?.summary, "retrieve", "iam.tenantApplications.summary.retrieve", tenantId),
+          retrieve: (tenantId) => callBackendIam(backendIam, (iam) => iam.installations?.summary, "retrieve", "iam.installations.summary.retrieve", tenantId),
         },
       },
       tenants: {

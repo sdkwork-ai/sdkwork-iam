@@ -56,9 +56,9 @@ public class AuthApi {
     }
 
     /** Sessions current logout. */
-    public Void sessionsCurrentLogout(SessionsCurrentLogoutRequest body) throws Exception {
-        client.request("POST", ApiPaths.appPath("/auth/sessions/current/logout"), body, null, null, "application/json", true, false);
-        return null;
+    public SdkWorkCommandResponse sessionsCurrentLogout(SessionsCurrentLogoutRequest body) throws Exception {
+        Object raw = client.request("POST", ApiPaths.appPath("/auth/sessions/current/logout"), body, null, null, "application/json", true, false);
+        return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
     }
 
     /** Sessions login Context Selection create. */

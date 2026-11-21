@@ -9,7 +9,7 @@ export interface IamAppAccessToken {
   /** Deploy application anchor carried as the token app_id/aud. */
   appId: string;
   /** Installation the credential was issued for. */
-  tenantApplicationId: string;
+  installationId: string;
   /** Organization claim of the installation; 0 for tenant- and user-released installations. */
   organizationId?: string;
   /** Release scope of the installation. */

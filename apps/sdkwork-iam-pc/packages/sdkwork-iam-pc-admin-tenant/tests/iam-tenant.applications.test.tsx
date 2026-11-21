@@ -18,7 +18,7 @@ const storedApplication = {
   organizationId: "0",
   primaryDomain: "crm.example.com",
   status: "enabled",
-  tenantApplicationId: "tapp_crm",
+  installationId: "tapp_crm",
   tenantId: "tenant-1",
 };
 
@@ -26,7 +26,7 @@ function createApplicationsService() {
   const provision = vi.fn().mockResolvedValue({
     ...storedApplication,
     status: "pending_config",
-    tenantApplicationId: "tapp_new",
+    installationId: "tapp_new",
   });
   const service = {
     iam: {
@@ -36,7 +36,7 @@ function createApplicationsService() {
         }),
         members: { list: vi.fn().mockResolvedValue({ items: [] }) },
       },
-      tenantApplications: {
+      installations: {
         list: vi.fn().mockResolvedValue({ items: [storedApplication] }),
         management: {
           create: provision,
@@ -55,7 +55,7 @@ function createApplicationsService() {
 
 function renderApplicationsWorkspace(service: ReturnType<typeof createApplicationsService>["service"]) {
   const controller = createSdkworkIamTenantController({
-    permissionScope: ["iam.tenant_applications.*"],
+    permissionScope: ["iam.installations.*"],
     service: service as never,
   });
 
@@ -80,7 +80,7 @@ describe("tenant application workspace", () => {
     expect(screen.getAllByRole("search").length).toBeGreaterThan(0);
     expect(screen.getByText("crm.example.com")).toBeTruthy();
     expect(screen.getByText("应用总数")).toBeTruthy();
-    expect(service.iam.tenantApplications.list).toHaveBeenCalledWith("tenant-1", { page: 1, page_size: 20 });
+    expect(service.iam.installations.list).toHaveBeenCalledWith("tenant-1", { page: 1, page_size: 20 });
 
     fireEvent.click(screen.getByRole("button", { name: "开通应用" }));
     expect(screen.getByText("开通租户应用")).toBeTruthy();
@@ -90,7 +90,7 @@ describe("tenant application workspace", () => {
     expect(screen.getByPlaceholderText("例如 deploy-cloudrouter")).toBeTruthy();
     expect(screen.queryByText("已注册应用标识")).toBeNull();
 
-    await waitFor(() => expect(service.iam.tenantApplications.summary.retrieve).toHaveBeenCalledWith("tenant-1"));
+    await waitFor(() => expect(service.iam.installations.summary.retrieve).toHaveBeenCalledWith("tenant-1"));
   });
 
   it("names the missing deploy application and provisions with the new command shape", async () => {

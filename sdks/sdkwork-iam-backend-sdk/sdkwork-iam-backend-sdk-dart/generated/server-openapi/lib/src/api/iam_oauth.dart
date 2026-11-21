@@ -368,6 +368,16 @@ class IamOauthApi {
     })();
   }
 
+  /// Iam oauth operator Platforms component Credentials create.
+  Future<SdkWorkResourceResponse?> operatorPlatformsComponentCredentialsCreate(String operatorPlatformId, Map<String, dynamic> body) async {
+    final payload = body;
+    final response = await _client.post(ApiPaths.backendPath('/iam/oauth/operator_platforms/${serializePathParameter(operatorPlatformId, const PathParameterSpec('operatorPlatformId', 'simple', false))}/component_credentials'), body: payload, contentType: 'application/json');
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
   /// Iam oauth operator Platforms pre Authorizations create.
   Future<SdkWorkResourceResponse?> operatorPlatformsPreAuthorizationsCreate(String operatorPlatformId, Map<String, dynamic> body) async {
     final payload = body;

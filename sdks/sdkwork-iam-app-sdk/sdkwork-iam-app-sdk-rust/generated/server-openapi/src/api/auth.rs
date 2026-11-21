@@ -59,7 +59,7 @@ impl AuthApi {
     }
 
     /// Sessions current logout.
-    pub async fn sessions_current_logout(&self, body: &SessionsCurrentLogoutRequest) -> Result<(), SdkworkError> {
+    pub async fn sessions_current_logout(&self, body: &SessionsCurrentLogoutRequest) -> Result<SdkWorkCommandData, SdkworkError> {
         let path = app_path(&"/auth/sessions/current/logout".to_string());
         self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), true, false).await
     }

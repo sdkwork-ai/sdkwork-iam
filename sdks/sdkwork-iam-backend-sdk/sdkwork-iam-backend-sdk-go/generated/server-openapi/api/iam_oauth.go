@@ -407,6 +407,16 @@ func (a *IamOauthApi) OperatorPlatformsUpdate(operatorPlatformId string, body *s
     return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
+// Iam oauth operator Platforms component Credentials create.
+func (a *IamOauthApi) OperatorPlatformsComponentCredentialsCreate(operatorPlatformId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
+    raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/oauth/operator_platforms/%s/component_credentials", SerializePathParameter(operatorPlatformId, PathParameterSpec{Name: "operatorPlatformId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
+    if err != nil {
+        var zero sdktypes.SdkWorkResourceResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
+}
+
 // Iam oauth operator Platforms pre Authorizations create.
 func (a *IamOauthApi) OperatorPlatformsPreAuthorizationsCreate(operatorPlatformId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(BackendApiPath(fmt.Sprintf("/iam/oauth/operator_platforms/%s/pre_authorizations", SerializePathParameter(operatorPlatformId, PathParameterSpec{Name: "operatorPlatformId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")

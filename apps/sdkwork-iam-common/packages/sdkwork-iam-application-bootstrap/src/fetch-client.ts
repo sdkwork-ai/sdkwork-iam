@@ -2,18 +2,26 @@ import { trim } from "@sdkwork/utils";
 import { unwrapIamSdkResponse } from "@sdkwork/iam-sdk-adapter";
 
 import type {
-  EnabledTenantApplicationResult,
+  EnabledInstallationResult,
   IamApplicationBootstrapClient,
-  IamTenantApplicationProvisionCommand,
+  IamInstallationProvisionCommand,
   IssuedAccessCredentialResult,
-  ProvisionedTenantApplicationResult,
+  ProvisionedInstallationResult,
 } from "./types.ts";
+import { normalizeInstallationResult } from "./results.ts";
 
 /** Backend API prefix for IAM application-bootstrap operations. */
 export const IAM_APPLICATION_BOOTSTRAP_API_PREFIX = "/backend/v3/api";
 
 /** Provision or reconcile one tenant installation from its deploy application. */
-export const IAM_TENANT_APPLICATIONS_PATH = "/iam/tenant_applications";
+/**
+ * Backend path of the installation surface (canonical).
+ *
+ * The legacy `tenant_applications` route stays bound to the same handlers for
+ * the transport migration window; first-party bootstrap traffic already uses
+ * the canonical path.
+ */
+export const IAM_INSTALLATIONS_PATH = "/iam/installations";
 
 /** Issue access credential. */
 export const IAM_ACCESS_CREDENTIALS_PATH = "/iam/access_credentials";
@@ -47,8 +55,8 @@ function bootstrapUrl(origin: string, pathname: string): string {
   return `${origin}${IAM_APPLICATION_BOOTSTRAP_API_PREFIX}${pathname}`;
 }
 
-function tenantApplicationPath(tenantApplicationId: string): string {
-  return `${IAM_TENANT_APPLICATIONS_PATH}/${encodeURIComponent(tenantApplicationId)}`;
+function installationPath(installationId: string): string {
+  return `${IAM_INSTALLATIONS_PATH}/${encodeURIComponent(installationId)}`;
 }
 
 function unwrapBootstrapResult<T extends Record<string, unknown>>(value: unknown): T {
@@ -56,10 +64,10 @@ function unwrapBootstrapResult<T extends Record<string, unknown>>(value: unknown
   if (data && typeof data === "object" && !Array.isArray(data) && "item" in data) {
     const item = (data as { item: unknown }).item;
     if (item && typeof item === "object") {
-      return item as T;
+      return normalizeInstallationResult(item as T);
     }
   }
-  return data as T;
+  return normalizeInstallationResult(data as T);
 }
 
 function problemMessage(payload: unknown, fallback: string): string {
@@ -125,20 +133,20 @@ export function createFetchIamApplicationBootstrapClient(
   }
 
   return {
-    provisionTenantApplication(body: IamTenantApplicationProvisionCommand) {
-      return requestJson<ProvisionedTenantApplicationResult>(
+    provisionInstallation(body: IamInstallationProvisionCommand) {
+      return requestJson<ProvisionedInstallationResult>(
         "POST",
-        IAM_TENANT_APPLICATIONS_PATH,
+        IAM_INSTALLATIONS_PATH,
         body,
-        "iam.tenantApplications.create failed",
+        "iam.installations.create failed",
       );
     },
-    enableTenantApplication(tenantApplicationId, body) {
-      return requestJson<EnabledTenantApplicationResult>(
+    enableInstallation(installationId, body) {
+      return requestJson<EnabledInstallationResult>(
         "POST",
-        `${tenantApplicationPath(tenantApplicationId)}/enable`,
+        `${installationPath(installationId)}/enable`,
         body,
-        "iam.tenantApplications.enable failed",
+        "iam.installations.enable failed",
       );
     },
     createAccessCredential(body) {
@@ -149,12 +157,12 @@ export function createFetchIamApplicationBootstrapClient(
         "iam.accessCredentials.create failed",
       );
     },
-    updateTenantApplication(tenantApplicationId, body) {
-      return requestJson<ProvisionedTenantApplicationResult>(
+    updateInstallation(installationId, body) {
+      return requestJson<ProvisionedInstallationResult>(
         "PATCH",
-        tenantApplicationPath(tenantApplicationId),
+        installationPath(installationId),
         body,
-        "iam.tenantApplications.update failed",
+        "iam.installations.update failed",
       );
     },
   };

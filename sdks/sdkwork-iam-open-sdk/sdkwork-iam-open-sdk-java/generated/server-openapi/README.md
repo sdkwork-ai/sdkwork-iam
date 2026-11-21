@@ -25,7 +25,6 @@ implementation 'com.sdkwork:sdkwork-iam-open-sdk:1.0.0'
 ```java
 import com.sdkwork.iam.open.sdk.SdkworkCustomClient;
 import com.sdkwork.common.core.Types;
-import com.sdkwork.iam.open.sdk.model.*;
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -34,9 +33,8 @@ public class Main {
         client.setApiKey("your-api-key");
 
         // Use the SDK
-        String callbackPublicId = "1";
-        AppbaseApiResult result = client.getIamOauth().providerCallbacksHandleGet(callbackPublicId);
-        System.out.println(result);
+        client.getExample().list();
+        System.out.println("Request completed");
     }
 }
 ```
@@ -80,26 +78,18 @@ client.getHttpClient().setHeader("X-Custom-Header", "value");
 
 ## API Modules
 
-- `client.getIamOauth()` - iam_oauth API
+
 
 ## Usage Examples
 
-### iam_oauth
-
-```java
-// Iam oauth provider Callbacks handle Get.
-String callbackPublicId = "1";
-AppbaseApiResult result = client.getIamOauth().providerCallbacksHandleGet(callbackPublicId);
-System.out.println(result);
-```
+No examples available.
 
 ## Error Handling
 
 ```java
 try {
-    String callbackPublicId = "1";
-    AppbaseApiResult result = client.getIamOauth().providerCallbacksHandleGet(callbackPublicId);
-    System.out.println(result);
+    client.getExample().list();
+    System.out.println("Request completed");
 } catch (Exception e) {
     System.err.println("Error: " + e.getMessage());
 }

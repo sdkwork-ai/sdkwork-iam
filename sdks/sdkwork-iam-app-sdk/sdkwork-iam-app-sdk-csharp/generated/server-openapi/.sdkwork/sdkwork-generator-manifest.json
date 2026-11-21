@@ -20,15 +20,15 @@
     },
     {
       "path": "Api/AuthApi.cs",
-      "sha256": "5edce6767e8b5733a6865fec1cd95570e32621bc13ee256b33971af8b1f73682"
+      "sha256": "b55a428af658348353fd5318d2c68b287600997bf598a25aeaab011a3c6b7e52"
     },
     {
       "path": "Api/IamApi.cs",
-      "sha256": "e02080c98fdcf09cf3c228e858c9947453e63d3c693524ac6c6ce981cba20882"
+      "sha256": "0c6b95c8ccf3d170cff988595744a37024f7a6293b26750dee96512a0832870f"
     },
     {
       "path": "Api/OauthApi.cs",
-      "sha256": "30f5191dc5edbf5ede0c3222b47a219f738ed52338b93262f04ebc7c6d3b93bf"
+      "sha256": "ebf30cefadea9ecb3eec9ee71f74a49f1dea127ec8d7904c67b1233c52f93a9f"
     },
     {
       "path": "Api/SystemApi.cs",
@@ -67,28 +67,40 @@
       "sha256": "3645c6e1072a52f50af22112c2f87d962315968684d39318ce1e0c027d8fdf34"
     },
     {
-      "path": "Models/AuthorizationsCompletionsCreateResponse.cs",
-      "sha256": "43f3305107ee02d541dac11f9dcbdc46317debf9d56f7d278c3a3887c2d487e7"
+      "path": "Models/AuthorizationsCompletionsCreateResponse201.cs",
+      "sha256": "7fcec77cff6a2b40ffa8f33d9e46e88a07dd251b16571f3223619d205e873a76"
     },
     {
       "path": "Models/AuthorizationsCreateRequest.cs",
       "sha256": "d419d55cfb264886be3dccc651f02c5f8ab2deddcdfa765de3294fa61e25f80b"
     },
     {
-      "path": "Models/AuthorizationsCreateResponse.cs",
-      "sha256": "05be139d8117ab3e649cb0a0d9edebb0c2f23c04879324d1c4215208fde27d3d"
+      "path": "Models/AuthorizationsCreateResponse201.cs",
+      "sha256": "e276686826f0ddcbf5957a51d8acc1ebce21d6326b0e20fda5bb1a2b8535e0ca"
     },
     {
       "path": "Models/DesktopSessionsCreateRequest.cs",
       "sha256": "9708c5cdb4fff6d84892a210dfe9ebde6b899e26497d79d117f83b41fcb9f995"
     },
     {
-      "path": "Models/DesktopSessionsCreateResponse.cs",
-      "sha256": "106b8fc0ae9d6cb65a778e30a38f4087f3a3d7e16a25e2c2de228e2f0d821ec4"
+      "path": "Models/DesktopSessionsCreateResponse201.cs",
+      "sha256": "1f66e8aa5b532245bc63837c6154993d334d4ce8bbee77471936561bc1b699c0"
     },
     {
       "path": "Models/FieldError.cs",
       "sha256": "3cee6396d6463fb2af19288468976d19b048c9661d31587027c968a2c6619250"
+    },
+    {
+      "path": "Models/IamAppAccessToken.cs",
+      "sha256": "b57bc2cf07e79b274550df04c521796f5a64a236e74af06d603516319de834b0"
+    },
+    {
+      "path": "Models/IamAppAccessTokenCreateCommand.cs",
+      "sha256": "2b96fc5bdceab8f915eaf07abc4b92d87ae1387c906d230d1a4fe00ad2549c8c"
+    },
+    {
+      "path": "Models/IamAppAccessTokenResponse.cs",
+      "sha256": "e96ff55f468a5e04fbdec0fa02c94beb5731e63521f96519fb2bafc0d6f11826"
     },
     {
       "path": "Models/IamOrganizationMember.cs",
@@ -180,7 +192,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "077fd50082c33d88f3490329627c3a12a250a12a0f73f3842a54ee44e990220f"
+      "sha256": "682e89ef5439fc6c4ed4a0e1d8ceb234f9b8f9c72e8d08195d5dd7fdb4dd8034"
     },
     {
       "path": "sdkwork-sdk.json",

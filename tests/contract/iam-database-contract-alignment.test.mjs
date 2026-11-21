@@ -24,7 +24,7 @@ const NON_CATALOG_TABLES = [];
 
 function readRustCatalogTableNames() {
   const source = fs.readFileSync(rustLibPath, 'utf8');
-  return [...source.matchAll(/pub const [A-Z0-9_]+: &'static str = "(iam_[a-z0-9_]+)";/g)]
+  return [...source.matchAll(/pub const [A-Z0-9_]+: &'static str =\s*"(iam_[a-z0-9_]+)";/g)]
     .map((match) => match[1])
     .sort();
 }
@@ -92,7 +92,10 @@ function collectDdlTableNames() {
 
   ingestDirectory('ddl/baseline/postgres', '.sql');
   ingestDirectory('migrations/postgres', '.up.sql');
-  return tableNames.sort();
+  // A migration folded into the baseline is replayed by both scans. Ordered
+  // replay can therefore observe the same rename twice; the table set is what
+  // the contract compares, so duplicate names collapse here.
+  return [...new Set(tableNames)].sort();
 }
 
 const schemaYaml = fs.readFileSync(path.join(databaseRoot, 'contract/schema.yaml'), 'utf8');
@@ -143,7 +146,7 @@ assert.deepEqual(
   registryTables,
   'baseline + postgres migrations must materialize the same IAM tables as contract registries',
 );
-assert.equal(registryTables.length, 65, 'IAM database contract must currently own 65 tables');
+assert.equal(registryTables.length, 67, 'IAM database contract must currently own 67 tables');
 
 for (const tableName of foundationTables.filter((name) => !DROPPED_LEGACY_TABLES.includes(name))) {
   assert.ok(

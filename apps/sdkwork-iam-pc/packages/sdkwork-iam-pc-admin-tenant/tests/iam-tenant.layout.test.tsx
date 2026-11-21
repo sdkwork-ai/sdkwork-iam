@@ -27,9 +27,9 @@ function createController() {
     getApplicationCapabilities: () => ({ canEnable: false, canProvision: false, canUpdate: false }),
     listTenants: vi.fn().mockResolvedValue([{ id: "tenant-1", name: "Acme", tenantId: "tenant-1" }]),
     listTenantMembers: vi.fn().mockResolvedValue([]),
-    listTenantApplications: vi.fn().mockResolvedValue([]),
+    listInstallations: vi.fn().mockResolvedValue([]),
     loadMoreTenants: vi.fn().mockResolvedValue([]),
-    retrieveTenantApplicationSummary: vi.fn().mockResolvedValue({ disabled: 0, enabled: 0, pending: 0, total: 0 }),
+    retrieveInstallationSummary: vi.fn().mockResolvedValue({ disabled: 0, enabled: 0, pending: 0, total: 0 }),
     selectTenant: vi.fn().mockResolvedValue({ id: "tenant-1", name: "Acme", tenantId: "tenant-1" }),
   };
 }

@@ -204,3 +204,9 @@ tables:
   - name: iam_user_persona
     lifecycle_status: active
     owner: sdkwork-iam
+  - name: iam_oauth_channel_callback_event
+    lifecycle_status: active
+    owner: sdkwork-iam
+  - name: iam_oauth_authorizer_inbox
+    lifecycle_status: active
+    owner: sdkwork-iam

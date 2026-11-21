@@ -76,8 +76,16 @@ Console.WriteLine(result);
 ### oauth
 
 ```csharp
-// Wechat Payment Oauth callback.
-var result = await client.Oauth.WechatPaymentOauthCallbackAsync();
+// Account Links list.
+var query = new Dictionary<string, object>
+{
+    ["page"] = 1,
+    ["page_size"] = 2,
+    ["cursor"] = "cursor",
+    ["sort"] = "sort",
+    ["q"] = "q",
+};
+var result = await client.Oauth.AccountLinksListAsync(query);
 Console.WriteLine(result);
 ```
 

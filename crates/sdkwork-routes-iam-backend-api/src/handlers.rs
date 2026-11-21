@@ -23,8 +23,8 @@ use sdkwork_iam_web_adapter::{
     provision_tenant_application, resolve_bootstrap_actor, resolve_tenant_application,
     save_account_binding_policy, tenant_application_to_json, update_tenant_application,
     AccountBindingPolicyDocument, IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
-    IAM_TENANT_APPLICATIONS_DISABLE_PERMISSION, IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION,
-    IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION, IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION,
+    IAM_INSTALLATIONS_DISABLE_PERMISSION, IAM_INSTALLATIONS_ENABLE_PERMISSION,
+    IAM_INSTALLATIONS_PROVISION_PERMISSION, IAM_INSTALLATIONS_UPDATE_PERMISSION,
 };
 use sdkwork_utils_rust::sdkwork_resource_json;
 use sdkwork_web_core::WebRequestContext;
@@ -175,41 +175,41 @@ fn build_sdkwork_iam_backend_api_business_router_with_state(state: BackendIamSta
             "/backend/v3/api/iam/access_credentials",
             post(create_access_credential),
         )
+        // Canonical installation surface. The legacy `installations` routes
+        // above stay bound to the same handlers for the transport migration
+        // window; remove them when the window closes
+        // (`IAM_APPLICATION_BOOTSTRAP_SPEC.md` §2).
         .route(
-            "/backend/v3/api/iam/tenant_applications",
+            "/backend/v3/api/iam/installations",
             post(provision_tenant_application_handler),
         )
         .route(
-            "/backend/v3/api/iam/tenant_applications/{tenantApplicationId}",
+            "/backend/v3/api/iam/installations/{installationId}",
             get(retrieve_tenant_application_handler).patch(update_tenant_application_handler),
         )
         .route(
-            "/backend/v3/api/iam/tenant_applications/{tenantApplicationId}/enable",
+            "/backend/v3/api/iam/installations/{installationId}/enable",
             post(enable_tenant_application_handler),
         )
         .route(
-            "/backend/v3/api/iam/tenants/{tenantId}/applications",
-            get(list_tenant_applications_handler).post(provision_tenant_application_management_handler),
+            "/backend/v3/api/iam/installations/by_deploy_application/{deployApplicationId}/disable",
+            post(disable_tenant_application_by_deploy_application_handler),
         )
         .route(
-            "/backend/v3/api/iam/tenants/{tenantId}/applications/summary",
+            "/backend/v3/api/iam/tenants/{tenantId}/installations/summary",
             get(retrieve_tenant_application_summary_handler),
         )
         .route(
-            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}",
+            "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}",
             axum::routing::patch(update_tenant_application_management_handler),
         )
         .route(
-            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/enable",
+            "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/enable",
             post(enable_tenant_application_management_handler),
         )
         .route(
-            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/disable",
+            "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/disable",
             post(disable_tenant_application_management_handler),
-        )
-        .route(
-            "/backend/v3/api/iam/tenant_applications/by_deploy_application/{deployApplicationId}/disable",
-            post(disable_tenant_application_by_deploy_application_handler),
         );
 
     crate::installation_lifecycle::apply_installation_lifecycle_routes(
@@ -404,8 +404,7 @@ async fn provision_tenant_application_handler(
             .err()
             .expect("error response");
     };
-    if let Some(response) =
-        enforce_backend_rate_limit(pg, "backend:tenant_applications:provision").await
+    if let Some(response) = enforce_backend_rate_limit(pg, "backend:installations:provision").await
     {
         return response;
     }
@@ -415,7 +414,7 @@ async fn provision_tenant_application_handler(
         Err(message) => {
             return appbase_error(
                 StatusCode::BAD_REQUEST,
-                "iam_tenant_application_provision_invalid",
+                "iam_installation_provision_invalid",
                 &message,
             );
         }
@@ -436,7 +435,7 @@ async fn provision_tenant_application_handler(
         {
             return appbase_error(
                 StatusCode::FORBIDDEN,
-                "iam_tenant_application_provision_forbidden",
+                "iam_installation_provision_forbidden",
                 &message,
             );
         }
@@ -450,18 +449,18 @@ async fn provision_tenant_application_handler(
     };
 
     if let Err(message) =
-        ensure_bootstrap_permission(pg, &actor, IAM_TENANT_APPLICATIONS_PROVISION_PERMISSION).await
+        ensure_bootstrap_permission(pg, &actor, IAM_INSTALLATIONS_PROVISION_PERMISSION).await
     {
         return appbase_error(
             StatusCode::FORBIDDEN,
-            "iam_tenant_application_provision_forbidden",
+            "iam_installation_provision_forbidden",
             &message,
         );
     }
     if let Err(message) = ensure_actor_tenant_scope(&actor, &command.tenant_id) {
         return appbase_error(
             StatusCode::FORBIDDEN,
-            "iam_tenant_application_provision_forbidden",
+            "iam_installation_provision_forbidden",
             &message,
         );
     }
@@ -472,12 +471,12 @@ async fn provision_tenant_application_handler(
         ))),
         Err(message) if is_provision_attribute_error(&message) => appbase_error(
             StatusCode::BAD_REQUEST,
-            "iam_tenant_application_provision_invalid",
+            "iam_installation_provision_invalid",
             &message,
         ),
         Err(message) => appbase_error(
             StatusCode::SERVICE_UNAVAILABLE,
-            "iam_tenant_application_provision_failed",
+            "iam_installation_provision_failed",
             &message,
         ),
     }
@@ -493,9 +492,7 @@ async fn update_tenant_application_handler(
             .err()
             .expect("error response");
     };
-    if let Some(response) =
-        enforce_backend_rate_limit(pg, "backend:tenant_applications:update").await
-    {
+    if let Some(response) = enforce_backend_rate_limit(pg, "backend:installations:update").await {
         return response;
     }
 
@@ -504,7 +501,7 @@ async fn update_tenant_application_handler(
         Err(message) => {
             return appbase_error(
                 StatusCode::BAD_REQUEST,
-                "iam_tenant_application_update_invalid",
+                "iam_installation_update_invalid",
                 &message,
             );
         }
@@ -515,7 +512,7 @@ async fn update_tenant_application_handler(
         Err(message) => {
             return appbase_error(
                 StatusCode::BAD_REQUEST,
-                "iam_tenant_application_update_invalid",
+                "iam_installation_update_invalid",
                 &message,
             );
         }
@@ -536,7 +533,7 @@ async fn update_tenant_application_handler(
         {
             return appbase_error(
                 StatusCode::FORBIDDEN,
-                "iam_tenant_application_update_forbidden",
+                "iam_installation_update_forbidden",
                 &message,
             );
         }
@@ -550,18 +547,18 @@ async fn update_tenant_application_handler(
     };
 
     if let Err(message) =
-        ensure_bootstrap_permission(pg, &actor, IAM_TENANT_APPLICATIONS_UPDATE_PERMISSION).await
+        ensure_bootstrap_permission(pg, &actor, IAM_INSTALLATIONS_UPDATE_PERMISSION).await
     {
         return appbase_error(
             StatusCode::FORBIDDEN,
-            "iam_tenant_application_update_forbidden",
+            "iam_installation_update_forbidden",
             &message,
         );
     }
     if let Err(message) = ensure_actor_tenant_scope(&actor, &tenant_id) {
         return appbase_error(
             StatusCode::FORBIDDEN,
-            "iam_tenant_application_update_forbidden",
+            "iam_installation_update_forbidden",
             &message,
         );
     }
@@ -572,12 +569,12 @@ async fn update_tenant_application_handler(
         ))),
         Err(message) if message.contains("not found") => appbase_error(
             StatusCode::NOT_FOUND,
-            "iam_tenant_application_not_found",
+            "iam_installation_not_found",
             &message,
         ),
         Err(message) => appbase_error(
             StatusCode::SERVICE_UNAVAILABLE,
-            "iam_tenant_application_update_failed",
+            "iam_installation_update_failed",
             &message,
         ),
     }
@@ -594,9 +591,7 @@ async fn retrieve_tenant_application_handler(
             .err()
             .expect("error response");
     };
-    if let Some(response) =
-        enforce_backend_rate_limit(pg, "backend:tenant_applications:retrieve").await
-    {
+    if let Some(response) = enforce_backend_rate_limit(pg, "backend:installations:retrieve").await {
         return response;
     }
 
@@ -612,7 +607,7 @@ async fn retrieve_tenant_application_handler(
     if tenant_id != context_tenant_id {
         return appbase_error(
             StatusCode::FORBIDDEN,
-            "iam_tenant_application_retrieve_forbidden",
+            "iam_installation_retrieve_forbidden",
             "tenant application retrieve is limited to the authenticated tenant scope",
         );
     }
@@ -624,18 +619,18 @@ async fn retrieve_tenant_application_handler(
         ))),
         Ok(None) => appbase_error(
             StatusCode::NOT_FOUND,
-            "iam_tenant_application_not_found",
+            "iam_installation_not_found",
             "tenant application was not found",
         ),
         Err(message) => appbase_error(
             StatusCode::SERVICE_UNAVAILABLE,
-            "iam_tenant_application_retrieve_failed",
+            "iam_installation_retrieve_failed",
             &message,
         ),
     }
 }
 
-async fn list_tenant_applications_handler(
+async fn list_installations_handler(
     State(state): State<BackendIamState>,
     ctx: WebRequestContext,
     Path(tenant_id): Path<String>,
@@ -689,7 +684,7 @@ async fn list_tenant_applications_handler(
             &params,
             tenant_application_list_row_to_json,
         )),
-        Err(error) => internal_handler_error("iam_tenant_applications_list_failed", error),
+        Err(error) => internal_handler_error("iam_installations_list_failed", error),
     }
 }
 
@@ -726,7 +721,7 @@ async fn retrieve_tenant_application_summary_handler(
             "tenantId": tenant_id,
             "total": row.get::<i64, _>(0),
         }))),
-        Err(error) => internal_handler_error("iam_tenant_applications_summary_failed", error),
+        Err(error) => internal_handler_error("iam_installations_summary_failed", error),
     }
 }
 
@@ -747,7 +742,7 @@ async fn provision_tenant_application_management_handler(
     let Some(object) = body.as_object_mut() else {
         return appbase_error(
             StatusCode::BAD_REQUEST,
-            "iam_tenant_application_management_provision_invalid",
+            "iam_installation_management_provision_invalid",
             "request body must be an object",
         );
     };
@@ -758,7 +753,7 @@ async fn provision_tenant_application_management_handler(
         Err(message) => {
             return appbase_error(
                 StatusCode::BAD_REQUEST,
-                "iam_tenant_application_management_provision_invalid",
+                "iam_installation_management_provision_invalid",
                 &message,
             );
         }
@@ -770,19 +765,15 @@ async fn provision_tenant_application_management_handler(
         ))),
         Err(message) if is_provision_attribute_error(&message) => appbase_error(
             StatusCode::BAD_REQUEST,
-            "iam_tenant_application_management_provision_invalid",
+            "iam_installation_management_provision_invalid",
             &message,
         ),
         Err(message) if message.contains("duplicate") || message.contains("unique") => {
-            appbase_error(
-                StatusCode::CONFLICT,
-                "iam_tenant_application_conflict",
-                &message,
-            )
+            appbase_error(StatusCode::CONFLICT, "iam_installation_conflict", &message)
         }
         Err(message) => appbase_error(
             StatusCode::SERVICE_UNAVAILABLE,
-            "iam_tenant_application_management_provision_failed",
+            "iam_installation_management_provision_failed",
             &message,
         ),
     }
@@ -807,7 +798,7 @@ async fn update_tenant_application_management_handler(
         Err(message) => {
             return appbase_error(
                 StatusCode::BAD_REQUEST,
-                "iam_tenant_application_management_update_invalid",
+                "iam_installation_management_update_invalid",
                 &message,
             );
         }
@@ -819,12 +810,12 @@ async fn update_tenant_application_management_handler(
         ))),
         Err(message) if message.contains("not found") => appbase_error(
             StatusCode::NOT_FOUND,
-            "iam_tenant_application_not_found",
+            "iam_installation_not_found",
             &message,
         ),
         Err(message) => appbase_error(
             StatusCode::SERVICE_UNAVAILABLE,
-            "iam_tenant_application_management_update_failed",
+            "iam_installation_management_update_failed",
             &message,
         ),
     }
@@ -869,7 +860,7 @@ async fn disable_tenant_application_by_deploy_application_handler(
             .expect("error response");
     };
     if let Some(response) =
-        enforce_backend_rate_limit(pg, "backend:tenant_applications:disable_by_deploy").await
+        enforce_backend_rate_limit(pg, "backend:installations:disable_by_deploy").await
     {
         return response;
     }
@@ -884,7 +875,7 @@ async fn disable_tenant_application_by_deploy_application_handler(
         None => {
             return appbase_error(
                 StatusCode::BAD_REQUEST,
-                "iam_tenant_application_disable_invalid",
+                "iam_installation_disable_invalid",
                 "tenantId is required",
             )
         }
@@ -904,7 +895,7 @@ async fn disable_tenant_application_by_deploy_application_handler(
         {
             return appbase_error(
                 StatusCode::FORBIDDEN,
-                "iam_tenant_application_disable_forbidden",
+                "iam_installation_disable_forbidden",
                 &message,
             );
         }
@@ -917,11 +908,11 @@ async fn disable_tenant_application_by_deploy_application_handler(
         }
     };
     if let Err(message) =
-        ensure_bootstrap_permission(pg, &actor, IAM_TENANT_APPLICATIONS_DISABLE_PERMISSION).await
+        ensure_bootstrap_permission(pg, &actor, IAM_INSTALLATIONS_DISABLE_PERMISSION).await
     {
         return appbase_error(
             StatusCode::FORBIDDEN,
-            "iam_tenant_application_disable_forbidden",
+            "iam_installation_disable_forbidden",
             &message,
         );
     }
@@ -956,7 +947,7 @@ async fn disable_tenant_application_by_deploy_application_handler(
                 serde_json::json!({
                     "deployApplicationId": deploy_application_id,
                     "installationId": application.id,
-                    "permission": IAM_TENANT_APPLICATIONS_DISABLE_PERMISSION,
+                    "permission": IAM_INSTALLATIONS_DISABLE_PERMISSION,
                 }),
             )
             .await
@@ -975,12 +966,12 @@ async fn disable_tenant_application_by_deploy_application_handler(
         }
         Err(message) if message.contains("not found") => appbase_error(
             StatusCode::NOT_FOUND,
-            "iam_tenant_application_not_found",
+            "iam_installation_not_found",
             &message,
         ),
         Err(message) => appbase_error(
             StatusCode::SERVICE_UNAVAILABLE,
-            "iam_tenant_application_disable_failed",
+            "iam_installation_disable_failed",
             &message,
         ),
     }
@@ -1009,20 +1000,20 @@ async fn transition_tenant_application_status(
         Ok(application) => appbase_ok(tenant_application_to_json(&application)),
         Err(message) if message.contains("not found") => appbase_error(
             StatusCode::NOT_FOUND,
-            "iam_tenant_application_not_found",
+            "iam_installation_not_found",
             &message,
         ),
         Err(message) if message.contains("must be configured") => appbase_error(
             StatusCode::CONFLICT,
-            "iam_tenant_application_not_configured",
+            "iam_installation_not_configured",
             &message,
         ),
         Err(message) => appbase_error(
             StatusCode::SERVICE_UNAVAILABLE,
             if enabled {
-                "iam_tenant_application_management_enable_failed"
+                "iam_installation_management_enable_failed"
             } else {
-                "iam_tenant_application_management_disable_failed"
+                "iam_installation_management_disable_failed"
             },
             &message,
         ),
@@ -1057,7 +1048,7 @@ fn tenant_application_list_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
         "organizationId": row.get::<String, _>(3),
         "primaryDomain": row.get::<Option<String>, _>(8),
         "status": row.get::<String, _>(7),
-        "tenantApplicationId": row.get::<String, _>(0),
+        "installationId": row.get::<String, _>(0),
         "tenantId": row.get::<String, _>(2),
         "updatedAt": row.get::<String, _>(11),
     })
@@ -1073,9 +1064,7 @@ async fn enable_tenant_application_handler(
             .err()
             .expect("error response");
     };
-    if let Some(response) =
-        enforce_backend_rate_limit(pg, "backend:tenant_applications:enable").await
-    {
+    if let Some(response) = enforce_backend_rate_limit(pg, "backend:installations:enable").await {
         return response;
     }
 
@@ -1084,7 +1073,7 @@ async fn enable_tenant_application_handler(
         Err(message) => {
             return appbase_error(
                 StatusCode::BAD_REQUEST,
-                "iam_tenant_application_enable_invalid",
+                "iam_installation_enable_invalid",
                 &message,
             );
         }
@@ -1105,7 +1094,7 @@ async fn enable_tenant_application_handler(
         {
             return appbase_error(
                 StatusCode::FORBIDDEN,
-                "iam_tenant_application_enable_forbidden",
+                "iam_installation_enable_forbidden",
                 &message,
             );
         }
@@ -1119,18 +1108,18 @@ async fn enable_tenant_application_handler(
     };
 
     if let Err(message) =
-        ensure_bootstrap_permission(pg, &actor, IAM_TENANT_APPLICATIONS_ENABLE_PERMISSION).await
+        ensure_bootstrap_permission(pg, &actor, IAM_INSTALLATIONS_ENABLE_PERMISSION).await
     {
         return appbase_error(
             StatusCode::FORBIDDEN,
-            "iam_tenant_application_enable_forbidden",
+            "iam_installation_enable_forbidden",
             &message,
         );
     }
     if let Err(message) = ensure_actor_tenant_scope(&actor, &tenant_id) {
         return appbase_error(
             StatusCode::FORBIDDEN,
-            "iam_tenant_application_enable_forbidden",
+            "iam_installation_enable_forbidden",
             &message,
         );
     }
@@ -1139,17 +1128,17 @@ async fn enable_tenant_application_handler(
         Ok(application) => appbase_ok(tenant_application_to_json(&application)),
         Err(message) if message.contains("not found") => appbase_error(
             StatusCode::NOT_FOUND,
-            "iam_tenant_application_not_found",
+            "iam_installation_not_found",
             &message,
         ),
         Err(message) if message.contains("must be configured") => appbase_error(
             StatusCode::CONFLICT,
-            "iam_tenant_application_enable_incomplete",
+            "iam_installation_enable_incomplete",
             &message,
         ),
         Err(message) => appbase_error(
             StatusCode::SERVICE_UNAVAILABLE,
-            "iam_tenant_application_enable_failed",
+            "iam_installation_enable_failed",
             &message,
         ),
     }

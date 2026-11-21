@@ -9,7 +9,7 @@ public class AppbaseAccessCredentialCreateCommand {
     private String password;
     private String tenantId;
     private String organizationId;
-    private String tenantApplicationId;
+    private String installationId;
     private String appId;
     private String instanceKey;
     private String ownershipScope;
@@ -70,12 +70,12 @@ public class AppbaseAccessCredentialCreateCommand {
         this.organizationId = organizationId;
     }
 
-    public String getTenantApplicationId() {
-        return this.tenantApplicationId;
+    public String getInstallationId() {
+        return this.installationId;
     }
 
-    public void setTenantApplicationId(String tenantApplicationId) {
-        this.tenantApplicationId = tenantApplicationId;
+    public void setInstallationId(String installationId) {
+        this.installationId = installationId;
     }
 
     public String getAppId() {

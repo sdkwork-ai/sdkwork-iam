@@ -19,9 +19,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = SdkworkCustomClient::new(SdkworkConfig::new("http://localhost:8080"))?;
     client.set_api_key("your-api-key");
 
-    let callback_public_id = "1";
-    let result = client.iam_oauth().provider_callbacks_handle_get(callback_public_id).await?;
-    println!("{result:?}");
+    let result = client.example().list().await?;
+    println!("Request completed");
     Ok(())
 }
 ```
@@ -60,18 +59,11 @@ client.set_header("X-Custom-Header", "value");
 
 ## API Modules
 
-- `client.iam_oauth()` - iam_oauth API
+
 
 ## Usage Examples
 
-### iam_oauth
-
-```rust
-// Iam oauth provider Callbacks handle Get.
-let callback_public_id = "1";
-let result = client.iam_oauth().provider_callbacks_handle_get(callback_public_id).await?;
-println!("{result:?}");
-```
+No examples available.
 
 ## Error Handling
 
@@ -82,8 +74,7 @@ use sdkwork_iam_open_sdk::{SdkworkCustomClient, SdkworkConfig};
 let client = SdkworkCustomClient::new(SdkworkConfig::new("http://localhost:8080"))?;
 
 let outcome: Result<(), _> = async {
-    let callback_public_id = "1";
-    client.iam_oauth().provider_callbacks_handle_get(callback_public_id).await?;
+    client.example().list().await?;
     Ok(())
 }.await;
 

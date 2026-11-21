@@ -84,13 +84,13 @@ func (a *AuthApi) SessionsCurrentUpdate(body *sdktypes.AppbaseOperationCommand) 
 }
 
 // Sessions current logout.
-func (a *AuthApi) SessionsCurrentLogout(body sdktypes.SessionsCurrentLogoutRequest) (struct{}, error) {
+func (a *AuthApi) SessionsCurrentLogout(body sdktypes.SessionsCurrentLogoutRequest) (sdktypes.SdkWorkCommandResponse, error) {
     raw, err := a.client.Request("POST", AppApiPath("/auth/sessions/current/logout"), body, nil, nil, "application/json", true, false)
     if err != nil {
-        var zero struct{}
+        var zero sdktypes.SdkWorkCommandResponse
         return zero, err
     }
-    return decodeResult[struct{}](raw)
+    return decodeResult[sdktypes.SdkWorkCommandResponse](raw)
 }
 
 // Sessions login Context Selection create.

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::api::paths::app_path;
 use crate::api::paths::append_query_string;
 use crate::http::{SdkworkError, SdkworkHttpClient};
-use crate::models::{IamPersonaCatalog, IamUserPersona, IamUserPersonaUpdateCommand, SdkWorkPageData};
+use crate::models::{IamAppAccessToken, IamAppAccessTokenCreateCommand, IamPersonaCatalog, IamUserPersona, IamUserPersonaUpdateCommand, SdkWorkPageData};
 
 #[derive(Clone)]
 pub struct IamApi {
@@ -13,6 +13,12 @@ pub struct IamApi {
 impl IamApi {
     pub fn new(client: Arc<SdkworkHttpClient>) -> Self {
         Self { client }
+    }
+
+    /// App Access Tokens create.
+    pub async fn app_access_tokens_create(&self, body: &IamAppAccessTokenCreateCommand) -> Result<IamAppAccessToken, SdkworkError> {
+        let path = app_path(&"/iam/app_access_tokens".to_string());
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
 
     /// Department Assignments list.
@@ -47,13 +53,13 @@ impl IamApi {
         self.client.get(&path, None, None).await
     }
 
-    /// Iam oauth official Account Settings retrieve.
+    /// Oauth official Account Settings retrieve.
     pub async fn oauth_official_account_settings_retrieve(&self) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = app_path(&"/iam/oauth/official_account_settings".to_string());
         self.client.get(&path, None, None).await
     }
 
-    /// Iam oauth official Accounts list.
+    /// Oauth official Accounts list.
     pub async fn oauth_official_accounts_list(&self, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>) -> Result<SdkWorkPageData, SdkworkError> {
         let query = build_query_string(&[
             QueryParameterSpec::new("page", page, "form", true, false, None),
@@ -66,43 +72,43 @@ impl IamApi {
         self.client.get(&path, None, None).await
     }
 
-    /// Iam oauth official Accounts create.
+    /// Oauth official Accounts create.
     pub async fn oauth_official_accounts_create(&self, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = app_path(&"/iam/oauth/official_accounts".to_string());
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
 
-    /// Iam oauth official Accounts delete.
+    /// Oauth official Accounts delete.
     pub async fn oauth_official_accounts_delete(&self, official_account_id: &str) -> Result<(), SdkworkError> {
         let path = app_path(&format!("/iam/oauth/official_accounts/{}", serialize_path_parameter(official_account_id, PathParameterSpec::new("officialAccountId", "simple", false))));
         self.client.delete(&path, None, None).await
     }
 
-    /// Iam oauth official Accounts retrieve.
+    /// Oauth official Accounts retrieve.
     pub async fn oauth_official_accounts_retrieve(&self, official_account_id: &str) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = app_path(&format!("/iam/oauth/official_accounts/{}", serialize_path_parameter(official_account_id, PathParameterSpec::new("officialAccountId", "simple", false))));
         self.client.get(&path, None, None).await
     }
 
-    /// Iam oauth official Accounts update.
+    /// Oauth official Accounts update.
     pub async fn oauth_official_accounts_update(&self, official_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = app_path(&format!("/iam/oauth/official_accounts/{}", serialize_path_parameter(official_account_id, PathParameterSpec::new("officialAccountId", "simple", false))));
         self.client.patch(&path, Some(body), None, None, Some("application/json")).await
     }
 
-    /// Iam oauth official Accounts custom Menus publish.
+    /// Oauth official Accounts custom Menus publish.
     pub async fn oauth_official_accounts_custom_menus_publish(&self, official_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = app_path(&format!("/iam/oauth/official_accounts/{}/custom_menus/publish", serialize_path_parameter(official_account_id, PathParameterSpec::new("officialAccountId", "simple", false))));
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
 
-    /// Iam oauth official Accounts custom Menus rollback.
+    /// Oauth official Accounts custom Menus rollback.
     pub async fn oauth_official_accounts_custom_menus_rollback(&self, official_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = app_path(&format!("/iam/oauth/official_accounts/{}/custom_menus/rollback", serialize_path_parameter(official_account_id, PathParameterSpec::new("officialAccountId", "simple", false))));
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
 
-    /// Iam oauth official Accounts custom Menus sync.
+    /// Oauth official Accounts custom Menus sync.
     pub async fn oauth_official_accounts_custom_menus_sync(&self, official_account_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = app_path(&format!("/iam/oauth/official_accounts/{}/custom_menus/sync", serialize_path_parameter(official_account_id, PathParameterSpec::new("officialAccountId", "simple", false))));
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
@@ -194,11 +200,11 @@ impl IamApi {
             QueryParameterSpec::new("cursor", cursor, "form", true, false, None),
             QueryParameterSpec::new("sort", sort, "form", true, false, None),
             QueryParameterSpec::new("q", q, "form", true, false, None),
-            QueryParameterSpec::new("roleId", role_id, "form", true, false, None),
-            QueryParameterSpec::new("principalKind", principal_kind, "form", true, false, None),
-            QueryParameterSpec::new("principalId", principal_id, "form", true, false, None),
-            QueryParameterSpec::new("scopeKind", scope_kind, "form", true, false, None),
-            QueryParameterSpec::new("scopeId", scope_id, "form", true, false, None),
+            QueryParameterSpec::new("role_id", role_id, "form", true, false, None),
+            QueryParameterSpec::new("principal_kind", principal_kind, "form", true, false, None),
+            QueryParameterSpec::new("principal_id", principal_id, "form", true, false, None),
+            QueryParameterSpec::new("scope_kind", scope_kind, "form", true, false, None),
+            QueryParameterSpec::new("scope_id", scope_id, "form", true, false, None),
         ]);
         let path = append_query_string(app_path(&"/iam/role_bindings".to_string()), &query);
         self.client.get(&path, None, None).await

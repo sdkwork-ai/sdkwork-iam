@@ -26,8 +26,7 @@ func main() {
     client.SetApiKey("your-api-key")
     
     // Use the SDK
-    callbackPublicId := "1"
-    result, err := client.IamOauth.ProviderCallbacksHandleGet(callbackPublicId)
+    result, err := client.Example.List()
     if err != nil {
         panic(err)
     }
@@ -74,27 +73,16 @@ client.SetHeader("X-Custom-Header", "value")
 
 ## API Modules
 
-- `client.IamOauth` - iam_oauth API
+
 
 ## Usage Examples
 
-### iam_oauth
-
-```go
-// Iam oauth provider Callbacks handle Get.
-callbackPublicId := "1"
-result, err := client.IamOauth.ProviderCallbacksHandleGet(callbackPublicId)
-if err != nil {
-    panic(err)
-}
-fmt.Println(result)
-```
+No examples available.
 
 ## Error Handling
 
 ```go
-callbackPublicId := "1"
-_, err := client.IamOauth.ProviderCallbacksHandleGet(callbackPublicId)
+_, err := client.Example.List()
 if err != nil {
     // Handle error
     fmt.Println("Error:", err)

@@ -7,12 +7,12 @@ import type {
   SdkworkIamTenant,
   SdkworkIamTenantController,
   SdkworkIamTenantDraft,
-  SdkworkIamTenantApplication,
-  SdkworkIamTenantApplicationAccessToken,
-  SdkworkIamTenantApplicationDraft,
-  SdkworkIamTenantApplicationSummary,
-  SdkworkIamTenantApplicationType,
-  SdkworkIamTenantApplicationUpdateDraft,
+  SdkworkIamInstallation,
+  SdkworkIamInstallationAccessToken,
+  SdkworkIamInstallationDraft,
+  SdkworkIamInstallationSummary,
+  SdkworkIamInstallationType,
+  SdkworkIamInstallationUpdateDraft,
   SdkworkIamTenantLogoMediaResource,
   SdkworkIamTenantMember,
   SdkworkIamTenantMemberDraft,
@@ -52,8 +52,8 @@ export function createSdkworkIamTenantController(
 
   function createApplicationsSession(tenantId: string) {
     return createSdkWorkPagedListSession({
-      fetchPage: (query) => resolved.service.iam.tenantApplications.list(tenantId, query),
-      mapItem: toTenantApplication,
+      fetchPage: (query) => resolved.service.iam.installations.list(tenantId, query),
+      mapItem: toInstallation,
     });
   }
 
@@ -95,15 +95,15 @@ export function createSdkworkIamTenantController(
         throw error;
       }
     },
-    createTenantApplicationAccessToken: async (tenantId, tenantApplicationId) => {
+    createInstallationAccessToken: async (tenantId, installationId) => {
       const normalizedTenantId = requireId(tenantId, "tenantId");
-      const normalizedApplicationId = requireId(tenantApplicationId, "tenantApplicationId");
+      const normalizedApplicationId = requireId(installationId, "installationId");
       const application = state.applications.find(
-        (item) => item.tenantApplicationId === normalizedApplicationId,
+        (item) => item.installationId === normalizedApplicationId,
       );
       const payload = await resolved.service.iam.accessCredentials.create({
         organizationId: application?.organizationId || "0",
-        tenantApplicationId: normalizedApplicationId,
+        installationId: normalizedApplicationId,
         tenantId: normalizedTenantId,
       });
       const record = toRecord(payload);
@@ -119,7 +119,7 @@ export function createSdkworkIamTenantController(
         expiresAt: optionalString(item.expiresAt),
         organizationId: optionalString(item.organizationId),
         sessionId: optionalString(item.sessionId),
-        tenantApplicationId: optionalString(item.tenantApplicationId) || normalizedApplicationId,
+        installationId: optionalString(item.installationId) || normalizedApplicationId,
         tenantId: optionalString(item.tenantId) || normalizedTenantId,
       };
     },
@@ -169,9 +169,9 @@ export function createSdkworkIamTenantController(
       const hasPermission = (permission: string) =>
         permissionScope === undefined || hasPermissionInScope(permissionScope, permission);
       return {
-        canEnable: hasPermission("iam.tenant_applications.enable"),
-        canProvision: hasPermission("iam.tenant_applications.provision"),
-        canUpdate: hasPermission("iam.tenant_applications.update"),
+        canEnable: hasPermission("iam.installations.enable"),
+        canProvision: hasPermission("iam.installations.provision"),
+        canUpdate: hasPermission("iam.installations.update"),
       };
     },
     getSelectedTenant: () => state.selectedTenant,
@@ -193,7 +193,7 @@ export function createSdkworkIamTenantController(
       selectedTenant: state.selectedTenant ? { ...state.selectedTenant } : undefined,
       tenants: [...state.tenants],
     }),
-    listTenantApplications: async (tenantId, params) => {
+    listInstallations: async (tenantId, params) => {
       const normalizedTenantId = requireId(tenantId, "tenantId");
       if (applicationsSessionTenantId !== normalizedTenantId) {
         applicationsSessionTenantId = normalizedTenantId;
@@ -201,7 +201,7 @@ export function createSdkworkIamTenantController(
       }
       setState({ status: "loading" });
       try {
-        const applications = await applicationsSession.list(params) as SdkworkIamTenantApplication[];
+        const applications = await applicationsSession.list(params) as SdkworkIamInstallation[];
         setState({
           applications,
           listPageInfo: { ...state.listPageInfo, ...syncApplicationsListPageInfo() },
@@ -252,14 +252,14 @@ export function createSdkworkIamTenantController(
         throw error;
       }
     },
-    loadMoreTenantApplications: async (tenantId) => {
+    loadMoreInstallations: async (tenantId) => {
       const normalizedTenantId = requireId(tenantId, "tenantId");
       if (applicationsSessionTenantId !== normalizedTenantId) {
-        return controller.listTenantApplications(normalizedTenantId);
+        return controller.listInstallations(normalizedTenantId);
       }
       setState({ status: "loading" });
       try {
-        const applications = await applicationsSession.loadMore() as SdkworkIamTenantApplication[];
+        const applications = await applicationsSession.loadMore() as SdkworkIamInstallation[];
         setState({
           applications,
           listPageInfo: { ...state.listPageInfo, ...syncApplicationsListPageInfo() },
@@ -326,23 +326,23 @@ export function createSdkworkIamTenantController(
         throw error;
       }
     },
-    provisionTenantApplication: async (tenantId, body) => {
+    provisionInstallation: async (tenantId, body) => {
       const normalizedTenantId = requireId(tenantId, "tenantId");
       validateApplicationDraft(body);
       setState({ status: "loading" });
       try {
-        const application = toTenantApplication(
-          await resolved.service.iam.tenantApplications.management.create(
+        const application = toInstallation(
+          await resolved.service.iam.installations.management.create(
             normalizedTenantId,
             applicationDraftToRecord(body),
           ),
         );
         if (!application) {
-          throw new Error("SDKWork IAM tenant application provision response is missing tenantApplicationId");
+          throw new Error("SDKWork IAM tenant application provision response is missing installationId");
         }
         const applications = [
           application,
-          ...state.applications.filter((item) => item.tenantApplicationId !== application.tenantApplicationId),
+          ...state.applications.filter((item) => item.installationId !== application.installationId),
         ];
         applicationsSession.setItems(applications);
         setState({ applications, status: "ready" });
@@ -352,12 +352,12 @@ export function createSdkworkIamTenantController(
         throw error;
       }
     },
-    retrieveTenantApplicationSummary: async (tenantId) => {
+    retrieveInstallationSummary: async (tenantId) => {
       const normalizedTenantId = requireId(tenantId, "tenantId");
       setState({ status: "loading" });
       try {
-        const summary = toTenantApplicationSummary(
-          await resolved.service.iam.tenantApplications.summary.retrieve(normalizedTenantId),
+        const summary = toInstallationSummary(
+          await resolved.service.iam.installations.summary.retrieve(normalizedTenantId),
         );
         setState({ applicationSummary: summary, status: "ready" });
         return summary;
@@ -366,19 +366,19 @@ export function createSdkworkIamTenantController(
         throw error;
       }
     },
-    setTenantApplicationEnabled: async (tenantId, tenantApplicationId, enabled) => {
+    setInstallationEnabled: async (tenantId, installationId, enabled) => {
       const normalizedTenantId = requireId(tenantId, "tenantId");
-      const normalizedApplicationId = requireId(tenantApplicationId, "tenantApplicationId");
+      const normalizedApplicationId = requireId(installationId, "installationId");
       setState({ status: "loading" });
       try {
-        const resource = resolved.service.iam.tenantApplications.management;
-        const application = toTenantApplication(
+        const resource = resolved.service.iam.installations.management;
+        const application = toInstallation(
           enabled
             ? await resource.enable(normalizedTenantId, normalizedApplicationId)
             : await resource.disable(normalizedTenantId, normalizedApplicationId),
         );
         if (!application) {
-          throw new Error("SDKWork IAM tenant application status response is missing tenantApplicationId");
+          throw new Error("SDKWork IAM tenant application status response is missing installationId");
         }
         replaceApplicationInState(application);
         return application;
@@ -413,20 +413,20 @@ export function createSdkworkIamTenantController(
         throw error;
       }
     },
-    updateTenantApplication: async (tenantId, tenantApplicationId, body) => {
+    updateInstallation: async (tenantId, installationId, body) => {
       const normalizedTenantId = requireId(tenantId, "tenantId");
-      const normalizedApplicationId = requireId(tenantApplicationId, "tenantApplicationId");
+      const normalizedApplicationId = requireId(installationId, "installationId");
       setState({ status: "loading" });
       try {
-        const application = toTenantApplication(
-          await resolved.service.iam.tenantApplications.management.update(
+        const application = toInstallation(
+          await resolved.service.iam.installations.management.update(
             normalizedTenantId,
             normalizedApplicationId,
             applicationUpdateDraftToRecord(body),
           ),
         );
         if (!application) {
-          throw new Error("SDKWork IAM tenant application update response is missing tenantApplicationId");
+          throw new Error("SDKWork IAM tenant application update response is missing installationId");
         }
         replaceApplicationInState(application);
         return application;
@@ -457,9 +457,9 @@ export function createSdkworkIamTenantController(
     },
   };
 
-  function replaceApplicationInState(application: SdkworkIamTenantApplication) {
+  function replaceApplicationInState(application: SdkworkIamInstallation) {
     const applications = state.applications.map((item) =>
-      item.tenantApplicationId === application.tenantApplicationId ? application : item,
+      item.installationId === application.installationId ? application : item,
     );
     applicationsSession.setItems(applications);
     setState({ applications, status: "ready" });
@@ -468,12 +468,12 @@ export function createSdkworkIamTenantController(
   return controller;
 }
 
-function emptyApplicationSummary(): SdkworkIamTenantApplicationSummary {
+function emptyApplicationSummary(): SdkworkIamInstallationSummary {
   return { disabled: 0, enabled: 0, pending: 0, total: 0 };
 }
 
 /**
- * The `tenantApplications.management.create` wire payload.
+ * The `installations.management.create` wire payload.
  *
  * `IAM_SPEC` v3 retires application templates: an installation is opened from
  * the deploy application it serves plus explicit attributes, so the record
@@ -482,7 +482,7 @@ function emptyApplicationSummary(): SdkworkIamTenantApplicationSummary {
  * value is omitted instead of travelling as `""`; `accessPermissions` always
  * travels because an empty array is an explicit "no API scope" choice.
  */
-function applicationDraftToRecord(body: SdkworkIamTenantApplicationDraft): Record<string, unknown> {
+function applicationDraftToRecord(body: SdkworkIamInstallationDraft): Record<string, unknown> {
   const record: Record<string, unknown> = {
     accessPermissions: [...body.accessPermissions],
     applicationType: requireApplicationType(body.applicationType),
@@ -506,7 +506,7 @@ function applicationDraftToRecord(body: SdkworkIamTenantApplicationDraft): Recor
   return record;
 }
 
-function applicationUpdateDraftToRecord(body: SdkworkIamTenantApplicationUpdateDraft): Record<string, unknown> {
+function applicationUpdateDraftToRecord(body: SdkworkIamInstallationUpdateDraft): Record<string, unknown> {
   return {
     accessPermissions: body.accessPermissions,
     primaryDomain: body.primaryDomain.trim(),
@@ -518,7 +518,7 @@ function applicationUpdateDraftToRecord(body: SdkworkIamTenantApplicationUpdateD
  * two fields the retired template used to supply, so each failure names its
  * own field instead of degrading into a generic provisioning error.
  */
-function validateApplicationDraft(body: SdkworkIamTenantApplicationDraft) {
+function validateApplicationDraft(body: SdkworkIamInstallationDraft) {
   requireId(body.deployApplicationId, "deployApplicationId");
   requireApplicationType(body.applicationType);
   requireId(body.displayName, "displayName");
@@ -527,7 +527,7 @@ function validateApplicationDraft(body: SdkworkIamTenantApplicationDraft) {
   requireId(body.organizationId, "organizationId");
 }
 
-function requireApplicationType(value: string): SdkworkIamTenantApplicationType {
+function requireApplicationType(value: string): SdkworkIamInstallationType {
   const normalized = value.trim().toLowerCase();
   const applicationType = SDKWORK_IAM_TENANT_APPLICATION_TYPES.find((candidate) => candidate === normalized);
   if (!applicationType) {
@@ -678,14 +678,14 @@ function toTenantMember(value: unknown): SdkworkIamTenantMember | undefined {
   };
 }
 
-function toTenantApplication(value: unknown): SdkworkIamTenantApplication | undefined {
+function toInstallation(value: unknown): SdkworkIamInstallation | undefined {
   const record = toRecord(value);
-  const tenantApplicationId = optionalString(record.tenantApplicationId)
+  const installationId = optionalString(record.installationId)
     || optionalString(record.tenant_application_id)
     || optionalString(record.id);
   const appId = optionalString(record.appId) || optionalString(record.app_id);
   const tenantId = optionalString(record.tenantId) || optionalString(record.tenant_id);
-  if (!tenantApplicationId || !appId || !tenantId) {
+  if (!installationId || !appId || !tenantId) {
     return undefined;
   }
 
@@ -701,13 +701,13 @@ function toTenantApplication(value: unknown): SdkworkIamTenantApplication | unde
     organizationId: optionalString(record.organizationId) || optionalString(record.organization_id) || "0",
     primaryDomain: optionalString(record.primaryDomain) || optionalString(record.primary_domain),
     status: optionalString(record.status) || "pending_config",
-    tenantApplicationId,
+    installationId,
     tenantId,
     updatedAt: optionalString(record.updatedAt) || optionalString(record.updated_at),
   };
 }
 
-function toTenantApplicationSummary(value: unknown): SdkworkIamTenantApplicationSummary {
+function toInstallationSummary(value: unknown): SdkworkIamInstallationSummary {
   const record = toRecord(value);
   return {
     disabled: toNonNegativeNumber(record.disabled),

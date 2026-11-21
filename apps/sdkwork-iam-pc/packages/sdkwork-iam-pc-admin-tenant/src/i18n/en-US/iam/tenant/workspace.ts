@@ -17,7 +17,7 @@ export const sdkworkIamTenantAdminMessages: SdkworkIamTenantAdminMessages = {
       reveal: "Reveal token",
       securityNote: "The access token is the application's calling credential. Never expose it in a client or a public channel; issue a new one after it expires.",
       sessionId: "Session ID",
-      tenantApplicationId: "IAM tenant application ID",
+      installationId: "IAM tenant application ID",
       title: "Application access token",
       tokenLabel: "Access token",
       unavailable: "The application is not enabled, so no access token can be issued. Enable it and retry.",

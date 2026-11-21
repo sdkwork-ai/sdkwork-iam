@@ -1,11 +1,11 @@
 require_relative 'base_api'
 require_relative '../models/appbase_session_create_command'
 require_relative '../models/authorizations_completions_create_request'
-require_relative '../models/authorizations_completions_create_response'
+require_relative '../models/authorizations_completions_create_response201'
 require_relative '../models/authorizations_create_request'
-require_relative '../models/authorizations_create_response'
+require_relative '../models/authorizations_create_response201'
 require_relative '../models/desktop_sessions_create_request'
-require_relative '../models/desktop_sessions_create_response'
+require_relative '../models/desktop_sessions_create_response201'
 require_relative '../models/oauth_phone_binding_session_create_command'
 require_relative '../models/oauth_phone_binding_verification_code_request_command'
 require_relative '../models/sdk_work_list_response'
@@ -61,7 +61,7 @@ module Sdkwork
             options[:skip_auth] = true
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AuthorizationsCreateResponse.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::AuthorizationsCreateResponse201.from_hash(result) : nil
           end
 
           # Authorizations completions create.
@@ -71,7 +71,7 @@ module Sdkwork
             options = {}
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::AuthorizationsCompletionsCreateResponse.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::AuthorizationsCompletionsCreateResponse201.from_hash(result) : nil
           end
 
           # Callbacks retrieve.
@@ -102,7 +102,7 @@ module Sdkwork
             options[:skip_auth] = true
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::DesktopSessionsCreateResponse.from_hash(result) : nil
+            result.is_a?(Hash) ? Models::DesktopSessionsCreateResponse201.from_hash(result) : nil
           end
 
           # Device Authorizations create.
@@ -270,37 +270,6 @@ module Sdkwork
             options[:access_token_only] = true
             options[:json] = payload unless payload.nil?
             result = @client.request('POST', path, **options)
-            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
-          end
-
-          # Wechat Payment Oauth callback.
-          def wechat_payment_oauth_callback()
-            path = '/app/v3/api/oauth/wechat/payment/callback'
-            options = {}
-            options[:skip_auth] = true
-            result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
-          end
-
-          # Wechat Payment Oauth cashier Start.
-          def wechat_payment_oauth_cashier_start()
-            path = '/app/v3/api/oauth/wechat/payment/cashier/start'
-            options = {}
-            options[:skip_auth] = true
-            result = @client.request('GET', path, **options)
-            result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
-          end
-
-          # Wechat Payment Oauth start.
-          def wechat_payment_oauth_start(redirect)
-            path = '/app/v3/api/oauth/wechat/payment/start'
-            query = build_query_string([
-              QueryParameterSpec.new('redirect', redirect, 'form', true, false, nil),
-            ])
-            path = append_query_string(path, query)
-            options = {}
-
-            result = @client.request('GET', path, **options)
             result.is_a?(Hash) ? Models::SdkWorkResourceResponse.from_hash(result) : nil
           end
 

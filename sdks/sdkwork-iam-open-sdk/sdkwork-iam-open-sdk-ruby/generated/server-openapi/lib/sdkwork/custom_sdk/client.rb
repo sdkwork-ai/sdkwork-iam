@@ -1,10 +1,10 @@
 module Sdkwork
   module CustomSdk
     class SdkworkCustomClient
-      attr_reader :http, :iam_oauth
+      attr_reader :http
       def initialize(config)
         @http = Http::Client.new(config)
-        @iam_oauth = Api::IamOauthApi.new(@http)
+
       end
 
       def set_api_key(api_key)

@@ -23,7 +23,7 @@ Directory override: `SDKWORK_IAM_BOOTSTRAP_PROFILE_DIR` (default `~/.sdkwork/iam
 
 ## Deploy-application onboarding
 
-Application templates are retired. Bootstrap provisions a tenant installation from the deploy application it serves through `POST /backend/v3/api/iam/tenant_applications` (`tenantApplications.create`), then enables it and issues an access credential. No call registers a template, and no body carries `templateId` or `appKey`.
+Application templates are retired. Bootstrap provisions one installation from the deploy application it serves through `POST /backend/v3/api/iam/installations` (operation `installations.create`; the framework call is `provisionInstallation`), then enables it and issues an access credential. No call registers a template, and no body carries `templateId` or `appKey`. The legacy `tenant_applications` operations remain served only for the migration window, and the adapters still map a legacy `installationId` response onto `installationId` in one place.
 
 Provisioning input (from the caller, with manifest fallbacks):
 
@@ -36,9 +36,16 @@ Provisioning input (from the caller, with manifest fallbacks):
 | `environment` | caller → resolved bootstrap environment |
 | `accessPermissions` | caller → `backend.accessTokenPermissionScope`; `[]` is a valid explicit choice |
 | `runtimeConfig` | caller → `oauth.relyingParty` from the manifest |
+| `ownershipScope` / `ownerUserId` | caller → `TENANT` default; `ORGANIZATION` needs a non-zero organization, `USER` needs its owner (`APPLICATION_IDENTITY_SPEC.md` §4.1) |
 | `provisioningIdempotencyKey` | caller → derived deterministically from the installation identity |
 
-The flow fails closed naming `deployApplicationId` or `applicationType` when neither the caller nor the manifest supplies it. A repeated call with the same provisioning idempotency key replays the first outcome through the module's replay cache instead of provisioning a second installation, and the API reconciles one row per deploy application.
+The flow fails closed naming `deployApplicationId` or `applicationType` when neither the caller nor the manifest supplies it. A release scope that contradicts the organization is refused before the request, and a stored scope that contradicts the command is a conflict, never an in-place change.
+
+The anchor is repaired at generation time. An access token can only name the deploy application its installation serves, so when the provisioning answer carries no anchor — a legacy unlinked row, or a receiver that ignored the field — the pipeline replays the same idempotent command once; the provisioning surface reconciles by anchor first and instance key second, so the retry binds the existing row instead of creating a second installation. A still-unbound answer or an installation bound to another deployment fails before any credential is issued.
+
+Every returned installation row is then checked against the command before issuance: tenant and organization (tenant isolation), deploy anchor, release scope, application type, instance key, lifecycle environment, primary domain, display name, access permissions, and the relying-party client id when the installation registers one. Disagreements are reported together as one incomplete-installation error, so a bootstrap run names the complete repair list instead of stopping on the first field. Fields the receiver owns or derives (a domain candidate chosen to avoid a collision, an absent relying party that a lifecycle gate did not register) are only compared when both sides declare a value.
+
+It also verifies the issued credential before returning it: the signed `app_id` claim — or the response's `appId` when the credential carries no readable claim — must equal the provisioned deploy application, the credential's tenant claim must be the same tenant, and a signed `ownership_scope` must agree with the installation. A credential minted for another installation, tenant, or release scope never leaves this process. The env handoff includes `SDKWORK_DEPLOY_APPLICATION_ID` beside the token, so a consumer never has to guess the application identity. A repeated call with the same provisioning idempotency key replays the first outcome through the module's replay cache instead of provisioning a second installation, and the API reconciles one row per deploy application.
 
 CLI: `pnpm admin:bootstrap:app -- --config agent.app.config.json --deploy-application-id <id> --application-type <type>`.
 

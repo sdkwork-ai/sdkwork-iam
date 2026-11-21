@@ -50,17 +50,17 @@ namespace SDKWork.Iam.AppSdk.Api
         /// <summary>
         /// Authorizations create.
         /// </summary>
-        public async Task<SDKWork.Iam.AppSdk.Models.AuthorizationsCreateResponse?> AuthorizationsCreateAsync(SDKWork.Iam.AppSdk.Models.AuthorizationsCreateRequest body)
+        public async Task<SDKWork.Iam.AppSdk.Models.AuthorizationsCreateResponse201?> AuthorizationsCreateAsync(SDKWork.Iam.AppSdk.Models.AuthorizationsCreateRequest body)
         {
-            return await _client.RequestAsync<SDKWork.Iam.AppSdk.Models.AuthorizationsCreateResponse>("POST", ApiPaths.AppPath("/oauth/authorizations"), body, null, null, "application/json", true, false);
+            return await _client.RequestAsync<SDKWork.Iam.AppSdk.Models.AuthorizationsCreateResponse201>("POST", ApiPaths.AppPath("/oauth/authorizations"), body, null, null, "application/json", true, false);
         }
 
         /// <summary>
         /// Authorizations completions create.
         /// </summary>
-        public async Task<SDKWork.Iam.AppSdk.Models.AuthorizationsCompletionsCreateResponse?> AuthorizationsCompletionsCreateAsync(string authorizationStateId, SDKWork.Iam.AppSdk.Models.AuthorizationsCompletionsCreateRequest body)
+        public async Task<SDKWork.Iam.AppSdk.Models.AuthorizationsCompletionsCreateResponse201?> AuthorizationsCompletionsCreateAsync(string authorizationStateId, SDKWork.Iam.AppSdk.Models.AuthorizationsCompletionsCreateRequest body)
         {
-            return await _client.PostAsync<SDKWork.Iam.AppSdk.Models.AuthorizationsCompletionsCreateResponse>(ApiPaths.AppPath($"/oauth/authorizations/{SerializePathParameter(authorizationStateId, new PathParameterSpec("authorizationStateId", "simple", false))}/completions"), body, null, null, "application/json");
+            return await _client.PostAsync<SDKWork.Iam.AppSdk.Models.AuthorizationsCompletionsCreateResponse201>(ApiPaths.AppPath($"/oauth/authorizations/{SerializePathParameter(authorizationStateId, new PathParameterSpec("authorizationStateId", "simple", false))}/completions"), body, null, null, "application/json");
         }
 
         /// <summary>
@@ -82,9 +82,9 @@ namespace SDKWork.Iam.AppSdk.Api
         /// <summary>
         /// Desktop Sessions create.
         /// </summary>
-        public async Task<SDKWork.Iam.AppSdk.Models.DesktopSessionsCreateResponse?> DesktopSessionsCreateAsync(SDKWork.Iam.AppSdk.Models.DesktopSessionsCreateRequest body)
+        public async Task<SDKWork.Iam.AppSdk.Models.DesktopSessionsCreateResponse201?> DesktopSessionsCreateAsync(SDKWork.Iam.AppSdk.Models.DesktopSessionsCreateRequest body)
         {
-            return await _client.RequestAsync<SDKWork.Iam.AppSdk.Models.DesktopSessionsCreateResponse>("POST", ApiPaths.AppPath("/oauth/desktop_sessions"), body, null, null, "application/json", true, false);
+            return await _client.RequestAsync<SDKWork.Iam.AppSdk.Models.DesktopSessionsCreateResponse201>("POST", ApiPaths.AppPath("/oauth/desktop_sessions"), body, null, null, "application/json", true, false);
         }
 
         /// <summary>
@@ -221,34 +221,6 @@ namespace SDKWork.Iam.AppSdk.Api
         public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> SessionsCreateAsync(SDKWork.Iam.AppSdk.Models.AppbaseSessionCreateCommand body)
         {
             return await _client.RequestAsync<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse>("POST", ApiPaths.AppPath("/oauth/sessions"), body, null, null, "application/json", false, true);
-        }
-
-        /// <summary>
-        /// Wechat Payment Oauth callback.
-        /// </summary>
-        public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> WechatPaymentOauthCallbackAsync()
-        {
-            return await _client.RequestAsync<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse>("GET", ApiPaths.AppPath("/oauth/wechat/payment/callback"), null, null, null, null, true, false);
-        }
-
-        /// <summary>
-        /// Wechat Payment Oauth cashier Start.
-        /// </summary>
-        public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> WechatPaymentOauthCashierStartAsync()
-        {
-            return await _client.RequestAsync<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse>("GET", ApiPaths.AppPath("/oauth/wechat/payment/cashier/start"), null, null, null, null, true, false);
-        }
-
-        /// <summary>
-        /// Wechat Payment Oauth start.
-        /// </summary>
-        public async Task<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse?> WechatPaymentOauthStartAsync(string redirect)
-        {
-            var queryString = BuildQueryString(new[]
-            {
-                new QueryParameterSpec("redirect", redirect, "form", true, false, null),
-            });
-            return await _client.GetAsync<SDKWork.Iam.AppSdk.Models.SdkWorkResourceResponse>(ApiPaths.AppendQueryString(ApiPaths.AppPath("/oauth/wechat/payment/start"), queryString));
         }
 
         private sealed record PathParameterSpec(string Name, string Style, bool Explode);

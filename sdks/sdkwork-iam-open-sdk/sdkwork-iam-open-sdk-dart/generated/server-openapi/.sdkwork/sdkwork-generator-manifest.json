@@ -16,7 +16,7 @@
     },
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -32,7 +32,7 @@
     },
     {
       "path": "lib/custom_client.dart",
-      "sha256": "8e0cf88aa6837a5a160fc1c87f6b2a053573879554278a1c1edb9c6ffedededb"
+      "sha256": "2b77c3169d77368b6ce0dc2b5662c3a73c0bcab09a6d1bdd96c31a6ad5a0c2e3"
     },
     {
       "path": "lib/sdkwork_iam_open_sdk.dart",
@@ -40,11 +40,7 @@
     },
     {
       "path": "lib/src/api/api.dart",
-      "sha256": "3f6053d21614e0e51d81cd6d0b8dfc6e8890e26860d6390a2c2b5e2cfc5e0add"
-    },
-    {
-      "path": "lib/src/api/iam_oauth.dart",
-      "sha256": "3c15f591bac9b768737b62b7d0fa178eebb1d7242da6a7559be0e4e7f1a7ec61"
+      "sha256": "a2e0e7067793a72c2a6dbb4f8dfde65d1d770e7208e7480b312c4bfc8d156fd0"
     },
     {
       "path": "lib/src/api/paths.dart",
@@ -56,7 +52,7 @@
     },
     {
       "path": "lib/src/http/client.dart",
-      "sha256": "91406e54f17eb98de2f20a546ffa3d3ede2ad4a839600ad8cecee667770af0be"
+      "sha256": "5763cff23d27da74c0633d75a3fb7f6d75839549c89ccb6dd09bd5bea5c08cab"
     },
     {
       "path": "lib/src/http/sdk_config.dart",
@@ -64,7 +60,7 @@
     },
     {
       "path": "lib/src/models.dart",
-      "sha256": "3998792350b2ad62004d698b8acf33403270454f333328660c1d31a841c9da28"
+      "sha256": "7bab6975d6899ae6ba08fb603d3fa908f25f47ebb5f2ef8ae304b2351daa38ec"
     },
     {
       "path": "LICENSE",
@@ -72,15 +68,15 @@
     },
     {
       "path": "pubspec.yaml",
-      "sha256": "3099f63ca1dfb1e547b9bb626e5d736a3a28a78046304ea5c86469a226c1c15d"
+      "sha256": "3258787a8b96d6a980177506ca9813cb297cbb0f5171a494e1c643221a6fd7b8"
     },
     {
       "path": "README.md",
-      "sha256": "d1cfe6fc023e1fb09d0ce4d7ba5f243d8962aabbcb1a57ae074b78583613dddf"
+      "sha256": "2dfbc31618a3cd4091e626386e7cf8c0e1df5c42fde6a33150970b984e7a814d"
     },
     {
       "path": "sdkwork-sdk.json",
-      "sha256": "2da9a93c3e5a29866039cf433359cd39ba326666175078073ef3b7f4af15025b"
+      "sha256": "e9fef856064d429299ef6639eecd10f11a902509e4832a259a5b066d10547c95"
     }
   ],
   "scaffoldFiles": [

@@ -5,6 +5,8 @@
   "language": "kotlin",
   "sdkType": "custom",
   "packageName": "com.sdkwork:sdkwork-iam-open-sdk",
+  "transportPackageName": "com.sdkwork:sdkwork-iam-open-sdk",
+  "consumerPackageName": "com.sdkwork:sdkwork-iam-open-sdk",
   "generator": "@sdkwork/sdk-generator",
   "capabilities": {
     "supportsGeneratedTests": true,

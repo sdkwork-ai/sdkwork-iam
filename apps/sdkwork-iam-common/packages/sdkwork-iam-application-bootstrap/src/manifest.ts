@@ -3,11 +3,12 @@ import { createHash } from "node:crypto";
 import type {
   IamApplicationBootstrapEnvironment,
   IamApplicationBootstrapProvisionInput,
-  IamTenantApplicationProvisionCommand,
-  IamTenantApplicationType,
+  IamInstallationOwnershipScope,
+  IamInstallationProvisionCommand,
+  IamApplicationType,
   SdkworkAppManifest,
 } from "./types.ts";
-import { IAM_TENANT_APPLICATION_TYPES } from "./types.ts";
+import { IAM_INSTALLATION_OWNERSHIP_SCOPES, IAM_APPLICATION_TYPES } from "./types.ts";
 import {
   DEFAULT_IAM_ORGANIZATION_ID,
   DEFAULT_IAM_TENANT_ID,
@@ -27,6 +28,65 @@ function commandText(value: unknown): string {
 }
 
 /**
+ * Normalize one release-scope declaration onto the installation vocabulary.
+ *
+ * The installation is the authority (`APPLICATION_IDENTITY_SPEC.md` §4.1): an
+ * absent value is the `TENANT` default, and anything outside the three accepted
+ * levels fails closed instead of being guessed.
+ * @param value - declared scope, as the caller or a command body carries it
+ * @returns the normalized level, `TENANT` when absent
+ * @throws when the value is outside `TENANT | ORGANIZATION | USER`
+ */
+export function normalizeOwnershipScope(
+  value: string | undefined | null,
+): IamInstallationOwnershipScope {
+  const normalized = trimToUndefined(value)?.toUpperCase();
+  if (normalized === undefined) {
+    return "TENANT";
+  }
+  const matched = IAM_INSTALLATION_OWNERSHIP_SCOPES.find((scope) => scope === normalized);
+  if (matched === undefined) {
+    throw new Error(
+      `ownershipScope must be one of ${IAM_INSTALLATION_OWNERSHIP_SCOPES.join("|")} `
+        + `(got ${JSON.stringify(value)})`,
+    );
+  }
+  return matched;
+}
+
+/**
+ * Refuse a release scope whose organization/owner pair contradicts the level.
+ *
+ * `TENANT` and `USER` releases live at organization `0`; `ORGANIZATION` needs a
+ * real organization. `USER` also needs its owner, and the other levels must not
+ * name one. The rule mirrors the IAM provisioning command's own validation, so
+ * an incomplete pair never reaches the server.
+ * @param scope - normalized release scope
+ * @param organizationId - organization the installation is created under
+ * @param ownerUserId - declared owner, when the caller supplied one
+ * @throws when the pair cannot describe the declared level
+ */
+export function assertOwnershipScopePair(
+  scope: IamInstallationOwnershipScope,
+  organizationId: string,
+  ownerUserId: string | undefined,
+): void {
+  const organization = organizationId.trim();
+  if (scope === "ORGANIZATION" && organization === "0") {
+    throw new Error("ownershipScope ORGANIZATION requires a non-zero organizationId");
+  }
+  if (scope !== "ORGANIZATION" && organization !== "0") {
+    throw new Error(`ownershipScope ${scope} requires organizationId "0" (got ${JSON.stringify(organizationId)})`);
+  }
+  if (scope === "USER" && trimToUndefined(ownerUserId) === undefined) {
+    throw new Error("ownershipScope USER requires ownerUserId");
+  }
+  if (scope !== "USER" && trimToUndefined(ownerUserId) !== undefined) {
+    throw new Error(`ownershipScope ${scope} must not declare ownerUserId`);
+  }
+}
+
+/**
  * Maps a manifest `app.appType` (PlusProjectType) onto the product-semantic
  * application type the provisioning API accepts.
  *
@@ -38,7 +98,7 @@ function commandText(value: unknown): string {
  */
 export function mapManifestAppTypeToApplicationType(
   appType: string | undefined | null,
-): IamTenantApplicationType | undefined {
+): IamApplicationType | undefined {
   const normalized = trimToUndefined(appType)?.toUpperCase();
   if (!normalized) {
     return undefined;
@@ -104,7 +164,7 @@ export function mapManifestAppTypeToApplicationType(
  */
 export function resolveManifestApplicationType(
   manifest: SdkworkAppManifest,
-): IamTenantApplicationType | undefined {
+): IamApplicationType | undefined {
   const appType = trimToUndefined(manifest.app?.appType)?.toUpperCase();
   if (appType === "APP_FLUTTER" || appType === "FLUTTER") {
     // Flutter is one codebase delivered to several stores; the kind is the
@@ -188,19 +248,19 @@ export function resolveManifestApplicationType(
  * @returns the normalized application type
  * @throws when the value is blank or outside the accepted enum
  */
-export function assertIamTenantApplicationType(value: string | undefined | null): IamTenantApplicationType {
+export function assertIamApplicationType(value: string | undefined | null): IamApplicationType {
   const normalized = trimToUndefined(value)?.toLowerCase();
   if (!normalized) {
     throw new Error(
       "applicationType is required to provision a tenant application "
-        + `(expected one of ${IAM_TENANT_APPLICATION_TYPES.join("|")})`,
+        + `(expected one of ${IAM_APPLICATION_TYPES.join("|")})`,
     );
   }
-  const matched = IAM_TENANT_APPLICATION_TYPES.find((candidate) => candidate === normalized);
+  const matched = IAM_APPLICATION_TYPES.find((candidate) => candidate === normalized);
   if (!matched) {
     throw new Error(
       `applicationType "${normalized}" is not a valid tenant application type `
-        + `(expected one of ${IAM_TENANT_APPLICATION_TYPES.join("|")})`,
+        + `(expected one of ${IAM_APPLICATION_TYPES.join("|")})`,
     );
   }
   return matched;
@@ -215,7 +275,7 @@ export function assertIamTenantApplicationType(value: string | undefined | null)
  * @param environment - selected lifecycle
  * @returns the derived instance key
  */
-export function tenantApplicationInstanceKey(runtimeAppId: string, environment: string): string {
+export function installationInstanceKey(runtimeAppId: string, environment: string): string {
   const normalized = `${runtimeAppId ?? ""}`.trim().replace(/-/gu, "_");
   const lifecycle = `${environment ?? ""}`.trim();
   if (lifecycle.toLowerCase() === "development" || lifecycle.toLowerCase() === "dev") {
@@ -238,7 +298,7 @@ export function tenantApplicationInstanceKey(runtimeAppId: string, environment: 
  */
 export function deriveProvisioningIdempotencyKey(
   command: Pick<
-    IamTenantApplicationProvisionCommand,
+    IamInstallationProvisionCommand,
     "applicationType" | "deployApplicationId" | "environment" | "instanceKey" | "organizationId" | "tenantId"
   >,
 ): string {
@@ -331,7 +391,7 @@ export function manifestToProvisionCommand(
   manifest: SdkworkAppManifest,
   environment: IamApplicationBootstrapEnvironment,
   provision?: Partial<IamApplicationBootstrapProvisionInput>,
-): IamTenantApplicationProvisionCommand {
+): IamInstallationProvisionCommand {
   const app = manifest.app ?? {};
   const backend = manifest.backend ?? {};
 
@@ -345,13 +405,13 @@ export function manifestToProvisionCommand(
   }
 
   const applicationType = trimToUndefined(provision?.applicationType)
-    ? assertIamTenantApplicationType(provision?.applicationType)
+    ? assertIamApplicationType(provision?.applicationType)
     : resolveManifestApplicationType(manifest);
   if (!applicationType) {
     throw new Error(
       "applicationType is required to provision a tenant application; set app.appType "
         + "in agent.app.config.json or pass provision.applicationType "
-        + `(one of ${IAM_TENANT_APPLICATION_TYPES.join("|")})`,
+        + `(one of ${IAM_APPLICATION_TYPES.join("|")})`,
     );
   }
 
@@ -366,9 +426,12 @@ export function manifestToProvisionCommand(
     ?? trimToUndefined(environment.organizationId)
     ?? trimToUndefined(backend.organizationId)
     ?? DEFAULT_IAM_ORGANIZATION_ID;
+  const ownershipScope = normalizeOwnershipScope(provision?.ownershipScope);
+  const ownerUserId = trimToUndefined(provision?.ownerUserId);
+  assertOwnershipScopePair(ownershipScope, organizationId, ownerUserId);
   const instanceKey = trimToUndefined(provision?.instanceKey)
     ?? trimToUndefined(environment.instanceKey)
-    ?? tenantApplicationInstanceKey(deployApplicationId, lifecycle);
+    ?? installationInstanceKey(deployApplicationId, lifecycle);
   const displayName = trimToUndefined(provision?.displayName)
     ?? trimToUndefined(app.displayName)
     ?? trimToUndefined(app.name)
@@ -382,11 +445,13 @@ export function manifestToProvisionCommand(
     ?? trimToUndefined(backend.primaryDomain)
     ?? trimToUndefined(backend.domain);
 
-  const command: IamTenantApplicationProvisionCommand = {
+  const command: IamInstallationProvisionCommand = {
     applicationType,
     deployApplicationId,
     tenantId,
     organizationId,
+    ownershipScope,
+    ...(ownerUserId !== undefined ? { ownerUserId } : {}),
     instanceKey,
     displayName,
     environment: lifecycle,
@@ -408,7 +473,7 @@ export function manifestToProvisionCommand(
  * @param command - provisioning command (or raw command body) to validate
  * @throws when a required field is missing or malformed
  */
-export function validateTenantApplicationProvisionCommand(
+export function validateInstallationProvisionCommand(
   command: Record<string, unknown>,
 ): void {
   if (!commandText(command.deployApplicationId)) {
@@ -419,7 +484,7 @@ export function validateTenantApplicationProvisionCommand(
   if (!commandText(command.applicationType)) {
     throw new Error("applicationType is required to provision a tenant application");
   }
-  assertIamTenantApplicationType(commandText(command.applicationType));
+  assertIamApplicationType(commandText(command.applicationType));
   if (!commandText(command.tenantId)) {
     throw new Error("tenantId is required to provision a tenant application");
   }
@@ -438,6 +503,11 @@ export function validateTenantApplicationProvisionCommand(
   if (!commandText(command.provisioningIdempotencyKey)) {
     throw new Error("provisioningIdempotencyKey is required to provision a tenant application");
   }
+  assertOwnershipScopePair(
+    normalizeOwnershipScope(commandText(command.ownershipScope) || undefined),
+    commandText(command.organizationId),
+    commandText(command.ownerUserId) || undefined,
+  );
 }
 
 /**

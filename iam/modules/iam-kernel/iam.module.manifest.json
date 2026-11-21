@@ -783,27 +783,27 @@
         "replacementCode": null
       },
       {
-        "code": "iam.tenant_applications.enable",
-        "name": "Enable tenant applications",
-        "resource": "iam.tenant_applications",
+        "code": "iam.installations.enable",
+        "name": "Enable installations",
+        "resource": "iam.installations",
         "action": "enable",
         "status": "active",
         "since": "1.0.0",
         "replacementCode": null
       },
       {
-        "code": "iam.tenant_applications.provision",
-        "name": "Provision tenant applications",
-        "resource": "iam.tenant_applications",
+        "code": "iam.installations.provision",
+        "name": "Provision installations",
+        "resource": "iam.installations",
         "action": "provision",
         "status": "active",
         "since": "1.0.0",
         "replacementCode": null
       },
       {
-        "code": "iam.tenant_applications.update",
-        "name": "Update tenant applications",
-        "resource": "iam.tenant_applications",
+        "code": "iam.installations.update",
+        "name": "Update installations",
+        "resource": "iam.installations",
         "action": "update",
         "status": "active",
         "since": "1.0.0",
@@ -1047,9 +1047,9 @@
           "iam.*",
           "ops.*",
           "system.*",
-          "iam.tenant_applications.provision",
-          "iam.tenant_applications.update",
-          "iam.tenant_applications.enable",
+          "iam.installations.provision",
+          "iam.installations.update",
+          "iam.installations.enable",
           "iam.access_credentials.create"
         ]
       },

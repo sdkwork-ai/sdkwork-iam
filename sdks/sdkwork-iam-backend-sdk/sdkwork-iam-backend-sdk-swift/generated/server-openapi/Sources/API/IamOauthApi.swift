@@ -237,6 +237,11 @@ public class IamOauthApi {
         return try await client.patch(ApiPaths.backendPath("/iam/oauth/operator_platforms/\(serializePathParameter(operatorPlatformId, PathParameterSpec(name: "operatorPlatformId", style: "simple", explode: false)))"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
     }
 
+    /// Iam oauth operator Platforms component Credentials create.
+    public func operatorPlatformsComponentCredentialsCreate(operatorPlatformId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
+        return try await client.post(ApiPaths.backendPath("/iam/oauth/operator_platforms/\(serializePathParameter(operatorPlatformId, PathParameterSpec(name: "operatorPlatformId", style: "simple", explode: false)))/component_credentials"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)
+    }
+
     /// Iam oauth operator Platforms pre Authorizations create.
     public func operatorPlatformsPreAuthorizationsCreate(operatorPlatformId: String, body: [String: Any]) async throws -> SdkWorkResourceResponse? {
         return try await client.post(ApiPaths.backendPath("/iam/oauth/operator_platforms/\(serializePathParameter(operatorPlatformId, PathParameterSpec(name: "operatorPlatformId", style: "simple", explode: false)))/pre_authorizations"), body: body, params: nil, headers: nil, contentType: "application/json", responseType: SdkWorkResourceResponse.self)

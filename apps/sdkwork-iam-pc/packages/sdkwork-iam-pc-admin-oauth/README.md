@@ -94,9 +94,9 @@ longer mounted in the admin menu.
 | Account links | list, update status (activate / suspend / revoke inline) |
 | OAuth grants | list, revoke (`iam.oauth.grants.delete`) |
 | Callback events | list (read-only) |
-| SDKWork relying party (§4.2) | retrieve + update via `iam.tenantApplications.*` (redacted `clientSecretHash` on read) |
+| SDKWork relying party (§4.2) | retrieve + update via `iam.installations.*` (redacted `clientSecretHash` on read) |
 
-Consumes `@sdkwork/iam-service` (`service.iam.oauth.*`, `service.iam.tenantApplications.retrieve`, `service.iam.tenantApplications.update`) only.
+Consumes `@sdkwork/iam-service` (`service.iam.oauth.*`, `service.iam.installations.retrieve`, `service.iam.installations.update`) only.
 
 ## Module layout
 

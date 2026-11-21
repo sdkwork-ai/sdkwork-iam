@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace SDKWork\\Iam\\BackendSdk\Api;
 
 use SDKWork\\Iam\\BackendSdk\Models\AppbaseAccessCredentialCreateCommand;
-use SDKWork\\Iam\\BackendSdk\Models\AppbaseTenantApplicationEnableCommand;
-use SDKWork\\Iam\\BackendSdk\Models\AppbaseTenantApplicationProvisionCommand;
-use SDKWork\\Iam\\BackendSdk\Models\AppbaseTenantApplicationUpdateCommand;
+use SDKWork\\Iam\\BackendSdk\Models\AppbaseInstallationEnableCommand;
+use SDKWork\\Iam\\BackendSdk\Models\AppbaseInstallationProvisionCommand;
+use SDKWork\\Iam\\BackendSdk\Models\AppbaseInstallationUpdateCommand;
 use SDKWork\\Iam\\BackendSdk\Models\IamInstallationCredentialCreateCommand;
 use SDKWork\\Iam\\BackendSdk\Models\IamInstallationCredentialListResponse;
 use SDKWork\\Iam\\BackendSdk\Models\IamInstallationCredentialResponse;
@@ -15,9 +15,9 @@ use SDKWork\\Iam\\BackendSdk\Models\IamInstallationCredentialRotateCommand;
 use SDKWork\\Iam\\BackendSdk\Models\IamInstallationEnvironmentListResponse;
 use SDKWork\\Iam\\BackendSdk\Models\IamInstallationEnvironmentResponse;
 use SDKWork\\Iam\\BackendSdk\Models\IamInstallationEnvironmentUpsertCommand;
-use SDKWork\\Iam\\BackendSdk\Models\IamTenantApplicationManagementProvisionCommand;
-use SDKWork\\Iam\\BackendSdk\Models\IamTenantApplicationManagementUpdateCommand;
-use SDKWork\\Iam\\BackendSdk\Models\IamTenantApplicationStatusCommand;
+use SDKWork\\Iam\\BackendSdk\Models\IamInstallationManagementProvisionCommand;
+use SDKWork\\Iam\\BackendSdk\Models\IamInstallationManagementUpdateCommand;
+use SDKWork\\Iam\\BackendSdk\Models\IamInstallationStatusCommand;
 use SDKWork\\Iam\\BackendSdk\Models\SdkWorkCommandResponse;
 use SDKWork\\Iam\\BackendSdk\Models\SdkWorkListResponse;
 use SDKWork\\Iam\\BackendSdk\Models\SdkWorkResourceResponse;
@@ -318,6 +318,62 @@ final class IamApi extends BaseApi
         $path = $this->interpolatePath('/backend/v3/api/iam/groups/{groupId}/members/{memberId}', ['groupId' => $this->serializePathParameter($groupId, new PathParameterSpec('groupId', 'simple', false)), 'memberId' => $this->serializePathParameter($memberId, new PathParameterSpec('memberId', 'simple', false))]);
         $result = $this->client->request('DELETE', $path, []);
         return $result;
+    }
+
+    /** Installations create. */
+    public function installationsCreate(array|AppbaseInstallationProvisionCommand $body): ?SdkWorkResourceResponse
+    {
+        $path = '/backend/v3/api/iam/installations';
+        $payload = $body instanceof AppbaseInstallationProvisionCommand ? $body->toArray() : $body;
+        $result = $this->client->request('POST', $path, [
+            'skipAuth' => true,
+            'json' => $payload,
+        ]);
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+    }
+
+    /** Installations retrieve. */
+    public function installationsRetrieve(string $installationId): ?SdkWorkResourceResponse
+    {
+        $path = $this->interpolatePath('/backend/v3/api/iam/installations/{installationId}', ['installationId' => $this->serializePathParameter($installationId, new PathParameterSpec('installationId', 'simple', false))]);
+        $result = $this->client->request('GET', $path, []);
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+    }
+
+    /** Installations update. */
+    public function installationsUpdate(string $installationId, array|AppbaseInstallationUpdateCommand|null $body = null): ?SdkWorkResourceResponse
+    {
+        $path = $this->interpolatePath('/backend/v3/api/iam/installations/{installationId}', ['installationId' => $this->serializePathParameter($installationId, new PathParameterSpec('installationId', 'simple', false))]);
+        $payload = $body instanceof AppbaseInstallationUpdateCommand ? $body->toArray() : $body;
+        $result = $this->client->request('PATCH', $path, [
+            'skipAuth' => true,
+            'json' => $payload,
+        ]);
+        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
+    }
+
+    /** Installations enable. */
+    public function installationsEnable(string $installationId, array|AppbaseInstallationEnableCommand $body): ?SdkWorkCommandResponse
+    {
+        $path = $this->interpolatePath('/backend/v3/api/iam/installations/{installationId}/enable', ['installationId' => $this->serializePathParameter($installationId, new PathParameterSpec('installationId', 'simple', false))]);
+        $payload = $body instanceof AppbaseInstallationEnableCommand ? $body->toArray() : $body;
+        $result = $this->client->request('POST', $path, [
+            'skipAuth' => true,
+            'json' => $payload,
+        ]);
+        return is_array($result) ? SdkWorkCommandResponse::fromArray($result) : null;
+    }
+
+    /** Installations management by Deploy Application disable. */
+    public function installationsManagementByDeployApplicationDisable(string $deployApplicationId, array $body): ?SdkWorkCommandResponse
+    {
+        $path = $this->interpolatePath('/backend/v3/api/iam/installations/by_deploy_application/{deployApplicationId}/disable', ['deployApplicationId' => $this->serializePathParameter($deployApplicationId, new PathParameterSpec('deployApplicationId', 'simple', false))]);
+        $payload = $body;
+        $result = $this->client->request('POST', $path, [
+            'skipAuth' => true,
+            'json' => $payload,
+        ]);
+        return is_array($result) ? SdkWorkCommandResponse::fromArray($result) : null;
     }
 
     /** Organization Memberships list. */
@@ -622,13 +678,13 @@ final class IamApi extends BaseApi
             new QueryParameterSpec('cursor', $cursor, 'form', true, false, null),
             new QueryParameterSpec('sort', $sort, 'form', true, false, null),
             new QueryParameterSpec('q', $q, 'form', true, false, null),
-            new QueryParameterSpec('vendorCode', $vendorCode, 'form', true, false, null),
-            new QueryParameterSpec('scopeType', $scopeType, 'form', true, false, null),
-            new QueryParameterSpec('ownerUserId', $ownerUserId, 'form', true, false, null),
-            new QueryParameterSpec('organizationId', $organizationId, 'form', true, false, null),
+            new QueryParameterSpec('vendor_code', $vendorCode, 'form', true, false, null),
+            new QueryParameterSpec('scope_type', $scopeType, 'form', true, false, null),
+            new QueryParameterSpec('owner_user_id', $ownerUserId, 'form', true, false, null),
+            new QueryParameterSpec('organization_id', $organizationId, 'form', true, false, null),
             new QueryParameterSpec('status', $status, 'form', true, false, null),
             new QueryParameterSpec('mine', $mine, 'form', true, false, null),
-            new QueryParameterSpec('includePlatform', $includePlatform, 'form', true, false, null),
+            new QueryParameterSpec('include_platform', $includePlatform, 'form', true, false, null),
         ]);
         $path = $this->appendQueryString($path, $query);
         $result = $this->client->request('GET', $path, []);
@@ -700,16 +756,16 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
-    /** Provider Accounts credentials reveal. */
-    public function providerAccountsCredentialsReveal(string $providerAccountId): ?SdkWorkResourceResponse
+    /** Provider Accounts credentials reveal retrieve. */
+    public function providerAccountsCredentialsRevealRetrieve(string $providerAccountId): ?SdkWorkResourceResponse
     {
         $path = $this->interpolatePath('/backend/v3/api/iam/provider_accounts/{providerAccountId}/credentials/reveal', ['providerAccountId' => $this->serializePathParameter($providerAccountId, new PathParameterSpec('providerAccountId', 'simple', false))]);
         $result = $this->client->request('GET', $path, []);
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
-    /** Provider Accounts set Default. */
-    public function providerAccountsSetDefault(string $providerAccountId, array $body): ?SdkWorkResourceResponse
+    /** Provider Accounts default. */
+    public function providerAccountsDefault(string $providerAccountId, array $body): ?SdkWorkResourceResponse
     {
         $path = $this->interpolatePath('/backend/v3/api/iam/provider_accounts/{providerAccountId}/default', ['providerAccountId' => $this->serializePathParameter($providerAccountId, new PathParameterSpec('providerAccountId', 'simple', false))]);
         $payload = $body;
@@ -719,18 +775,10 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
-    /** Provider Accounts resolve. */
-    public function providerAccountsResolve(string $vendorCode, ?string $capabilityCode = null, ?string $environment = null, ?string $userId = null, ?string $organizationId = null): ?SdkWorkResourceResponse
+    /** Provider Accounts resolve retrieve. */
+    public function providerAccountsResolveRetrieve(): ?SdkWorkResourceResponse
     {
         $path = '/backend/v3/api/iam/provider_accounts/resolve';
-        $query = $this->buildQueryString([
-            new QueryParameterSpec('vendorCode', $vendorCode, 'form', true, false, null),
-            new QueryParameterSpec('capabilityCode', $capabilityCode, 'form', true, false, null),
-            new QueryParameterSpec('environment', $environment, 'form', true, false, null),
-            new QueryParameterSpec('userId', $userId, 'form', true, false, null),
-            new QueryParameterSpec('organizationId', $organizationId, 'form', true, false, null),
-        ]);
-        $path = $this->appendQueryString($path, $query);
         $result = $this->client->request('GET', $path, []);
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
@@ -756,11 +804,11 @@ final class IamApi extends BaseApi
             new QueryParameterSpec('cursor', $cursor, 'form', true, false, null),
             new QueryParameterSpec('sort', $sort, 'form', true, false, null),
             new QueryParameterSpec('q', $q, 'form', true, false, null),
-            new QueryParameterSpec('roleId', $roleId, 'form', true, false, null),
-            new QueryParameterSpec('principalKind', $principalKind, 'form', true, false, null),
-            new QueryParameterSpec('principalId', $principalId, 'form', true, false, null),
-            new QueryParameterSpec('scopeKind', $scopeKind, 'form', true, false, null),
-            new QueryParameterSpec('scopeId', $scopeId, 'form', true, false, null),
+            new QueryParameterSpec('role_id', $roleId, 'form', true, false, null),
+            new QueryParameterSpec('principal_kind', $principalKind, 'form', true, false, null),
+            new QueryParameterSpec('principal_id', $principalId, 'form', true, false, null),
+            new QueryParameterSpec('scope_kind', $scopeKind, 'form', true, false, null),
+            new QueryParameterSpec('scope_id', $scopeId, 'form', true, false, null),
         ]);
         $path = $this->appendQueryString($path, $query);
         $result = $this->client->request('GET', $path, []);
@@ -987,50 +1035,6 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
-    /** Tenant Applications create. */
-    public function tenantApplicationsCreate(array|AppbaseTenantApplicationProvisionCommand $body): ?SdkWorkResourceResponse
-    {
-        $path = '/backend/v3/api/iam/tenant_applications';
-        $payload = $body instanceof AppbaseTenantApplicationProvisionCommand ? $body->toArray() : $body;
-        $result = $this->client->request('POST', $path, [
-            'skipAuth' => true,
-            'json' => $payload,
-        ]);
-        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
-    }
-
-    /** Tenant Applications retrieve. */
-    public function tenantApplicationsRetrieve(string $tenantApplicationId): ?SdkWorkResourceResponse
-    {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenant_applications/{tenantApplicationId}', ['tenantApplicationId' => $this->serializePathParameter($tenantApplicationId, new PathParameterSpec('tenantApplicationId', 'simple', false))]);
-        $result = $this->client->request('GET', $path, []);
-        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
-    }
-
-    /** Tenant Applications update. */
-    public function tenantApplicationsUpdate(string $tenantApplicationId, array|AppbaseTenantApplicationUpdateCommand|null $body = null): ?SdkWorkResourceResponse
-    {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenant_applications/{tenantApplicationId}', ['tenantApplicationId' => $this->serializePathParameter($tenantApplicationId, new PathParameterSpec('tenantApplicationId', 'simple', false))]);
-        $payload = $body instanceof AppbaseTenantApplicationUpdateCommand ? $body->toArray() : $body;
-        $result = $this->client->request('PATCH', $path, [
-            'skipAuth' => true,
-            'json' => $payload,
-        ]);
-        return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
-    }
-
-    /** Tenant Applications enable. */
-    public function tenantApplicationsEnable(string $tenantApplicationId, array|AppbaseTenantApplicationEnableCommand $body): ?SdkWorkCommandResponse
-    {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenant_applications/{tenantApplicationId}/enable', ['tenantApplicationId' => $this->serializePathParameter($tenantApplicationId, new PathParameterSpec('tenantApplicationId', 'simple', false))]);
-        $payload = $body instanceof AppbaseTenantApplicationEnableCommand ? $body->toArray() : $body;
-        $result = $this->client->request('POST', $path, [
-            'skipAuth' => true,
-            'json' => $payload,
-        ]);
-        return is_array($result) ? SdkWorkCommandResponse::fromArray($result) : null;
-    }
-
     /** Tenants list. */
     public function tenantsList(?int $page = null, ?int $pageSize = null, ?string $cursor = null, ?string $sort = null, ?string $q = null): ?SdkWorkListResponse
     {
@@ -1085,10 +1089,10 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
-    /** Tenant Applications list. */
-    public function tenantApplicationsList(string $tenantId, ?int $page = null, ?int $pageSize = null, ?string $cursor = null, ?string $sort = null, ?string $q = null, ?string $status = null, ?string $environment = null, ?string $applicationType = null): ?SdkWorkListResponse
+    /** Installations list. */
+    public function installationsList(string $tenantId, ?int $page = null, ?int $pageSize = null, ?string $cursor = null, ?string $sort = null, ?string $q = null, ?string $status = null, ?string $environment = null, ?string $applicationType = null): ?SdkWorkListResponse
     {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/applications', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false))]);
+        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/installations', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false))]);
         $query = $this->buildQueryString([
             new QueryParameterSpec('page', $page, 'form', true, false, null),
             new QueryParameterSpec('page_size', $pageSize, 'form', true, false, null),
@@ -1104,32 +1108,32 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkListResponse::fromArray($result) : null;
     }
 
-    /** Tenant Applications management create. */
-    public function tenantApplicationsManagementCreate(string $tenantId, array|IamTenantApplicationManagementProvisionCommand $body): ?SdkWorkResourceResponse
+    /** Installations management create. */
+    public function installationsManagementCreate(string $tenantId, array|IamInstallationManagementProvisionCommand $body): ?SdkWorkResourceResponse
     {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/applications', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false))]);
-        $payload = $body instanceof IamTenantApplicationManagementProvisionCommand ? $body->toArray() : $body;
+        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/installations', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false))]);
+        $payload = $body instanceof IamInstallationManagementProvisionCommand ? $body->toArray() : $body;
         $result = $this->client->request('POST', $path, [
             'json' => $payload,
         ]);
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
-    /** Tenant Applications management update. */
-    public function tenantApplicationsManagementUpdate(string $tenantId, string $tenantApplicationId, array|IamTenantApplicationManagementUpdateCommand|null $body = null): ?SdkWorkResourceResponse
+    /** Installations management update. */
+    public function installationsManagementUpdate(string $tenantId, string $installationId, array|IamInstallationManagementUpdateCommand|null $body = null): ?SdkWorkResourceResponse
     {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'tenantApplicationId' => $this->serializePathParameter($tenantApplicationId, new PathParameterSpec('tenantApplicationId', 'simple', false))]);
-        $payload = $body instanceof IamTenantApplicationManagementUpdateCommand ? $body->toArray() : $body;
+        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'installationId' => $this->serializePathParameter($installationId, new PathParameterSpec('installationId', 'simple', false))]);
+        $payload = $body instanceof IamInstallationManagementUpdateCommand ? $body->toArray() : $body;
         $result = $this->client->request('PATCH', $path, [
             'json' => $payload,
         ]);
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }
 
-    /** Tenant Applications credentials list. */
-    public function tenantApplicationsCredentialsList(string $tenantId, string $tenantApplicationId, ?int $page = null, ?int $pageSize = null, ?string $cursor = null, ?string $sort = null, ?string $q = null): ?IamInstallationCredentialListResponse
+    /** Installations credentials list. */
+    public function installationsCredentialsList(string $tenantId, string $installationId, ?int $page = null, ?int $pageSize = null, ?string $cursor = null, ?string $sort = null, ?string $q = null): ?IamInstallationCredentialListResponse
     {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'tenantApplicationId' => $this->serializePathParameter($tenantApplicationId, new PathParameterSpec('tenantApplicationId', 'simple', false))]);
+        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'installationId' => $this->serializePathParameter($installationId, new PathParameterSpec('installationId', 'simple', false))]);
         $query = $this->buildQueryString([
             new QueryParameterSpec('page', $page, 'form', true, false, null),
             new QueryParameterSpec('page_size', $pageSize, 'form', true, false, null),
@@ -1142,10 +1146,10 @@ final class IamApi extends BaseApi
         return is_array($result) ? IamInstallationCredentialListResponse::fromArray($result) : null;
     }
 
-    /** Tenant Applications credentials create. */
-    public function tenantApplicationsCredentialsCreate(string $tenantId, string $tenantApplicationId, array|IamInstallationCredentialCreateCommand $body): ?IamInstallationCredentialResponse
+    /** Installations credentials create. */
+    public function installationsCredentialsCreate(string $tenantId, string $installationId, array|IamInstallationCredentialCreateCommand $body): ?IamInstallationCredentialResponse
     {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'tenantApplicationId' => $this->serializePathParameter($tenantApplicationId, new PathParameterSpec('tenantApplicationId', 'simple', false))]);
+        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'installationId' => $this->serializePathParameter($installationId, new PathParameterSpec('installationId', 'simple', false))]);
         $payload = $body instanceof IamInstallationCredentialCreateCommand ? $body->toArray() : $body;
         $result = $this->client->request('POST', $path, [
             'json' => $payload,
@@ -1153,10 +1157,10 @@ final class IamApi extends BaseApi
         return is_array($result) ? IamInstallationCredentialResponse::fromArray($result) : null;
     }
 
-    /** Tenant Applications credentials revoke. */
-    public function tenantApplicationsCredentialsRevoke(string $tenantId, string $tenantApplicationId, string $credentialId, array $body): ?SdkWorkCommandResponse
+    /** Installations credentials revoke. */
+    public function installationsCredentialsRevoke(string $tenantId, string $installationId, string $credentialId, array $body): ?SdkWorkCommandResponse
     {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials/{credentialId}/revoke', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'tenantApplicationId' => $this->serializePathParameter($tenantApplicationId, new PathParameterSpec('tenantApplicationId', 'simple', false)), 'credentialId' => $this->serializePathParameter($credentialId, new PathParameterSpec('credentialId', 'simple', false))]);
+        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials/{credentialId}/revoke', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'installationId' => $this->serializePathParameter($installationId, new PathParameterSpec('installationId', 'simple', false)), 'credentialId' => $this->serializePathParameter($credentialId, new PathParameterSpec('credentialId', 'simple', false))]);
         $payload = $body;
         $result = $this->client->request('POST', $path, [
             'json' => $payload,
@@ -1164,10 +1168,10 @@ final class IamApi extends BaseApi
         return is_array($result) ? SdkWorkCommandResponse::fromArray($result) : null;
     }
 
-    /** Tenant Applications credentials rotate. */
-    public function tenantApplicationsCredentialsRotate(string $tenantId, string $tenantApplicationId, string $credentialId, array|IamInstallationCredentialRotateCommand $body): ?IamInstallationCredentialResponse
+    /** Installations credentials rotate. */
+    public function installationsCredentialsRotate(string $tenantId, string $installationId, string $credentialId, array|IamInstallationCredentialRotateCommand $body): ?IamInstallationCredentialResponse
     {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials/{credentialId}/rotate', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'tenantApplicationId' => $this->serializePathParameter($tenantApplicationId, new PathParameterSpec('tenantApplicationId', 'simple', false)), 'credentialId' => $this->serializePathParameter($credentialId, new PathParameterSpec('credentialId', 'simple', false))]);
+        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials/{credentialId}/rotate', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'installationId' => $this->serializePathParameter($installationId, new PathParameterSpec('installationId', 'simple', false)), 'credentialId' => $this->serializePathParameter($credentialId, new PathParameterSpec('credentialId', 'simple', false))]);
         $payload = $body instanceof IamInstallationCredentialRotateCommand ? $body->toArray() : $body;
         $result = $this->client->request('POST', $path, [
             'json' => $payload,
@@ -1175,32 +1179,32 @@ final class IamApi extends BaseApi
         return is_array($result) ? IamInstallationCredentialResponse::fromArray($result) : null;
     }
 
-    /** Tenant Applications management disable. */
-    public function tenantApplicationsManagementDisable(string $tenantId, string $tenantApplicationId, array|IamTenantApplicationStatusCommand $body): ?SdkWorkCommandResponse
+    /** Installations management disable. */
+    public function installationsManagementDisable(string $tenantId, string $installationId, array|IamInstallationStatusCommand $body): ?SdkWorkCommandResponse
     {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/disable', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'tenantApplicationId' => $this->serializePathParameter($tenantApplicationId, new PathParameterSpec('tenantApplicationId', 'simple', false))]);
-        $payload = $body instanceof IamTenantApplicationStatusCommand ? $body->toArray() : $body;
+        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/disable', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'installationId' => $this->serializePathParameter($installationId, new PathParameterSpec('installationId', 'simple', false))]);
+        $payload = $body instanceof IamInstallationStatusCommand ? $body->toArray() : $body;
         $result = $this->client->request('POST', $path, [
             'json' => $payload,
         ]);
         return is_array($result) ? SdkWorkCommandResponse::fromArray($result) : null;
     }
 
-    /** Tenant Applications management enable. */
-    public function tenantApplicationsManagementEnable(string $tenantId, string $tenantApplicationId, array|IamTenantApplicationStatusCommand $body): ?SdkWorkCommandResponse
+    /** Installations management enable. */
+    public function installationsManagementEnable(string $tenantId, string $installationId, array|IamInstallationStatusCommand $body): ?SdkWorkCommandResponse
     {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/enable', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'tenantApplicationId' => $this->serializePathParameter($tenantApplicationId, new PathParameterSpec('tenantApplicationId', 'simple', false))]);
-        $payload = $body instanceof IamTenantApplicationStatusCommand ? $body->toArray() : $body;
+        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/enable', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'installationId' => $this->serializePathParameter($installationId, new PathParameterSpec('installationId', 'simple', false))]);
+        $payload = $body instanceof IamInstallationStatusCommand ? $body->toArray() : $body;
         $result = $this->client->request('POST', $path, [
             'json' => $payload,
         ]);
         return is_array($result) ? SdkWorkCommandResponse::fromArray($result) : null;
     }
 
-    /** Tenant Applications environments list. */
-    public function tenantApplicationsEnvironmentsList(string $tenantId, string $tenantApplicationId, ?int $page = null, ?int $pageSize = null, ?string $cursor = null, ?string $sort = null, ?string $q = null): ?IamInstallationEnvironmentListResponse
+    /** Installations environments list. */
+    public function installationsEnvironmentsList(string $tenantId, string $installationId, ?int $page = null, ?int $pageSize = null, ?string $cursor = null, ?string $sort = null, ?string $q = null): ?IamInstallationEnvironmentListResponse
     {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'tenantApplicationId' => $this->serializePathParameter($tenantApplicationId, new PathParameterSpec('tenantApplicationId', 'simple', false))]);
+        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/environments', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'installationId' => $this->serializePathParameter($installationId, new PathParameterSpec('installationId', 'simple', false))]);
         $query = $this->buildQueryString([
             new QueryParameterSpec('page', $page, 'form', true, false, null),
             new QueryParameterSpec('page_size', $pageSize, 'form', true, false, null),
@@ -1213,18 +1217,18 @@ final class IamApi extends BaseApi
         return is_array($result) ? IamInstallationEnvironmentListResponse::fromArray($result) : null;
     }
 
-    /** Tenant Applications environments delete. */
-    public function tenantApplicationsEnvironmentsDelete(string $tenantId, string $tenantApplicationId, string $environmentKey): mixed
+    /** Installations environments delete. */
+    public function installationsEnvironmentsDelete(string $tenantId, string $installationId, string $environmentKey): mixed
     {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments/{environmentKey}', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'tenantApplicationId' => $this->serializePathParameter($tenantApplicationId, new PathParameterSpec('tenantApplicationId', 'simple', false)), 'environmentKey' => $this->serializePathParameter($environmentKey, new PathParameterSpec('environmentKey', 'simple', false))]);
+        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/environments/{environmentKey}', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'installationId' => $this->serializePathParameter($installationId, new PathParameterSpec('installationId', 'simple', false)), 'environmentKey' => $this->serializePathParameter($environmentKey, new PathParameterSpec('environmentKey', 'simple', false))]);
         $result = $this->client->request('DELETE', $path, []);
         return $result;
     }
 
-    /** Tenant Applications environments update. */
-    public function tenantApplicationsEnvironmentsUpdate(string $tenantId, string $tenantApplicationId, string $environmentKey, array|IamInstallationEnvironmentUpsertCommand $body): ?IamInstallationEnvironmentResponse
+    /** Installations environments update. */
+    public function installationsEnvironmentsUpdate(string $tenantId, string $installationId, string $environmentKey, array|IamInstallationEnvironmentUpsertCommand $body): ?IamInstallationEnvironmentResponse
     {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments/{environmentKey}', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'tenantApplicationId' => $this->serializePathParameter($tenantApplicationId, new PathParameterSpec('tenantApplicationId', 'simple', false)), 'environmentKey' => $this->serializePathParameter($environmentKey, new PathParameterSpec('environmentKey', 'simple', false))]);
+        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/environments/{environmentKey}', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false)), 'installationId' => $this->serializePathParameter($installationId, new PathParameterSpec('installationId', 'simple', false)), 'environmentKey' => $this->serializePathParameter($environmentKey, new PathParameterSpec('environmentKey', 'simple', false))]);
         $payload = $body instanceof IamInstallationEnvironmentUpsertCommand ? $body->toArray() : $body;
         $result = $this->client->request('PUT', $path, [
             'json' => $payload,
@@ -1232,10 +1236,10 @@ final class IamApi extends BaseApi
         return is_array($result) ? IamInstallationEnvironmentResponse::fromArray($result) : null;
     }
 
-    /** Tenant Applications summary retrieve. */
-    public function tenantApplicationsSummaryRetrieve(string $tenantId): ?SdkWorkResourceResponse
+    /** Installations summary retrieve. */
+    public function installationsSummaryRetrieve(string $tenantId): ?SdkWorkResourceResponse
     {
-        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/applications/summary', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false))]);
+        $path = $this->interpolatePath('/backend/v3/api/iam/tenants/{tenantId}/installations/summary', ['tenantId' => $this->serializePathParameter($tenantId, new PathParameterSpec('tenantId', 'simple', false))]);
         $result = $this->client->request('GET', $path, []);
         return is_array($result) ? SdkWorkResourceResponse::fromArray($result) : null;
     }

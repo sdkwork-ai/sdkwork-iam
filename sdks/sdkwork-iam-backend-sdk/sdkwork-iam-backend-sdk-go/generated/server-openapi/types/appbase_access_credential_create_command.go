@@ -9,7 +9,7 @@ type AppbaseAccessCredentialCreateCommand struct {
 	Password string `json:"password"`
 	TenantId string `json:"tenantId"`
 	OrganizationId string `json:"organizationId"`
-	TenantApplicationId string `json:"tenantApplicationId"`
+	InstallationId string `json:"installationId"`
 	AppId string `json:"appId"`
 	InstanceKey string `json:"instanceKey"`
 	OwnershipScope string `json:"ownershipScope"`

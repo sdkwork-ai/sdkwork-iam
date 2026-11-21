@@ -28,7 +28,7 @@ final class AppbaseAccessCredentialCreateCommand
 
     public ?string $organizationId = null;
 
-    public ?string $tenantApplicationId = null;
+    public ?string $installationId = null;
 
     public ?string $appId = null;
 
@@ -60,8 +60,8 @@ final class AppbaseAccessCredentialCreateCommand
         $this->organizationId = array_key_exists('organizationId', $data)
             ? $data['organizationId']
             : null;
-        $this->tenantApplicationId = array_key_exists('tenantApplicationId', $data)
-            ? $data['tenantApplicationId']
+        $this->installationId = array_key_exists('installationId', $data)
+            ? $data['installationId']
             : null;
         $this->appId = array_key_exists('appId', $data)
             ? $data['appId']
@@ -89,7 +89,7 @@ final class AppbaseAccessCredentialCreateCommand
             'password' => $this->password,
             'tenantId' => $this->tenantId,
             'organizationId' => $this->organizationId,
-            'tenantApplicationId' => $this->tenantApplicationId,
+            'installationId' => $this->installationId,
             'appId' => $this->appId,
             'instanceKey' => $this->instanceKey,
             'ownershipScope' => $this->ownershipScope,

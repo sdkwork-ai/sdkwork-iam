@@ -54,12 +54,12 @@ Legacy `{ records, total }` envelopes and in-memory slicing are forbidden. Autho
 `iam_application_installation_environment` and
 `iam_application_installation_credential`:
 
-- `GET|PUT|DELETE .../applications/{tenantApplicationId}/environments[/{environmentKey}]`
+- `GET|PUT|DELETE .../applications/{installationId}/environments[/{environmentKey}]`
   (list / idempotent upsert / soft delete)
-- `GET|POST .../applications/{tenantApplicationId}/credentials` and
+- `GET|POST .../applications/{installationId}/credentials` and
   `POST .../credentials/{credentialId}/rotate|revoke`
 
-All seven operations map to `iam.tenant_applications.update`; credential create
+All seven operations map to `iam.installations.update`; credential create
 and rotate return the plaintext `clientSecret` exactly once, and no read path
 selects `secret_hash`. Duplicate env key, tenant-wide primary domain, or client id
 return `409 iam_installation_lifecycle_conflict`. Cross-tenant access is refused at

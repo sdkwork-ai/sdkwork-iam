@@ -118,10 +118,10 @@ describe("SDKWork IAM standard contracts", () => {
     expect(operationIds).toContain("apiKeys.list");
     // Application templates are retired; provisioning replaces registration.
     expect(operationIds).not.toContain("applications.register");
-    expect(operationIds).toContain("tenantApplications.create");
-    expect(operationIds).toContain("tenantApplications.management.create");
-    expect(operationIds).toContain("tenantApplications.retrieve");
-    expect(operationIds).toContain("tenantApplications.update");
+    expect(operationIds).toContain("installations.create");
+    expect(operationIds).toContain("installations.management.create");
+    expect(operationIds).toContain("installations.retrieve");
+    expect(operationIds).toContain("installations.update");
     expect(operationIds).toContain("accessCredentials.create");
     expect(operationIds).toContain("securityEvents.list");
     expect(operationIds).toContain("auditEvents.list");

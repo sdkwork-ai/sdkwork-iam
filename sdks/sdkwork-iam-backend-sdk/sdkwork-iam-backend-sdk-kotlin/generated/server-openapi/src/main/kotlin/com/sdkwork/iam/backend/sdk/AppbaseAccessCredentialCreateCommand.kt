@@ -8,7 +8,7 @@ data class AppbaseAccessCredentialCreateCommand(
     val password: String? = null,
     val tenantId: String? = null,
     val organizationId: String? = null,
-    val tenantApplicationId: String? = null,
+    val installationId: String? = null,
     val appId: String? = null,
     val instanceKey: String? = null,
     val ownershipScope: String? = null

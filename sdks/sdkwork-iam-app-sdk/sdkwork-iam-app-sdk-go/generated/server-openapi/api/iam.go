@@ -17,6 +17,16 @@ func NewIamApi(client *sdkhttp.Client) *IamApi {
     return &IamApi{client: client}
 }
 
+// App Access Tokens create.
+func (a *IamApi) AppAccessTokensCreate(body sdktypes.IamAppAccessTokenCreateCommand) (sdktypes.IamAppAccessTokenResponse, error) {
+    raw, err := a.client.Post(AppApiPath("/iam/app_access_tokens"), body, nil, nil, "application/json")
+    if err != nil {
+        var zero sdktypes.IamAppAccessTokenResponse
+        return zero, err
+    }
+    return decodeResult[sdktypes.IamAppAccessTokenResponse](raw)
+}
+
 // Department Assignments list.
 func (a *IamApi) DepartmentAssignmentsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
@@ -61,7 +71,7 @@ func (a *IamApi) DepartmentsTreeRetrieve() (sdktypes.SdkWorkResourceResponse, er
     return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
-// Iam oauth official Account Settings retrieve.
+// Oauth official Account Settings retrieve.
 func (a *IamApi) OauthOfficialAccountSettingsRetrieve() (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Get(AppApiPath("/iam/oauth/official_account_settings"), nil, nil)
     if err != nil {
@@ -71,7 +81,7 @@ func (a *IamApi) OauthOfficialAccountSettingsRetrieve() (sdktypes.SdkWorkResourc
     return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
-// Iam oauth official Accounts list.
+// Oauth official Accounts list.
 func (a *IamApi) OauthOfficialAccountsList(page *int, pageSize *int, cursor *string, sort *string, q *string) (sdktypes.SdkWorkListResponse, error) {
     query := BuildQueryString([]QueryParameterSpec{
         {Name: "page", Value: func() interface{} { if page == nil { return nil }; return *page }(), Style: "form", Explode: true, AllowReserved: false},
@@ -88,7 +98,7 @@ func (a *IamApi) OauthOfficialAccountsList(page *int, pageSize *int, cursor *str
     return decodeResult[sdktypes.SdkWorkListResponse](raw)
 }
 
-// Iam oauth official Accounts create.
+// Oauth official Accounts create.
 func (a *IamApi) OauthOfficialAccountsCreate(body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(AppApiPath("/iam/oauth/official_accounts"), body, nil, nil, "application/json")
     if err != nil {
@@ -98,7 +108,7 @@ func (a *IamApi) OauthOfficialAccountsCreate(body sdktypes.AppbaseOperationComma
     return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
-// Iam oauth official Accounts delete.
+// Oauth official Accounts delete.
 func (a *IamApi) OauthOfficialAccountsDelete(officialAccountId string) (struct{}, error) {
     raw, err := a.client.Delete(AppApiPath(fmt.Sprintf("/iam/oauth/official_accounts/%s", SerializePathParameter(officialAccountId, PathParameterSpec{Name: "officialAccountId", Style: "simple", Explode: false}))), nil, nil)
     if err != nil {
@@ -108,7 +118,7 @@ func (a *IamApi) OauthOfficialAccountsDelete(officialAccountId string) (struct{}
     return decodeResult[struct{}](raw)
 }
 
-// Iam oauth official Accounts retrieve.
+// Oauth official Accounts retrieve.
 func (a *IamApi) OauthOfficialAccountsRetrieve(officialAccountId string) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Get(AppApiPath(fmt.Sprintf("/iam/oauth/official_accounts/%s", SerializePathParameter(officialAccountId, PathParameterSpec{Name: "officialAccountId", Style: "simple", Explode: false}))), nil, nil)
     if err != nil {
@@ -118,7 +128,7 @@ func (a *IamApi) OauthOfficialAccountsRetrieve(officialAccountId string) (sdktyp
     return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
-// Iam oauth official Accounts update.
+// Oauth official Accounts update.
 func (a *IamApi) OauthOfficialAccountsUpdate(officialAccountId string, body *sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Patch(AppApiPath(fmt.Sprintf("/iam/oauth/official_accounts/%s", SerializePathParameter(officialAccountId, PathParameterSpec{Name: "officialAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
@@ -128,7 +138,7 @@ func (a *IamApi) OauthOfficialAccountsUpdate(officialAccountId string, body *sdk
     return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
-// Iam oauth official Accounts custom Menus publish.
+// Oauth official Accounts custom Menus publish.
 func (a *IamApi) OauthOfficialAccountsCustomMenusPublish(officialAccountId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(AppApiPath(fmt.Sprintf("/iam/oauth/official_accounts/%s/custom_menus/publish", SerializePathParameter(officialAccountId, PathParameterSpec{Name: "officialAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
@@ -138,7 +148,7 @@ func (a *IamApi) OauthOfficialAccountsCustomMenusPublish(officialAccountId strin
     return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
-// Iam oauth official Accounts custom Menus rollback.
+// Oauth official Accounts custom Menus rollback.
 func (a *IamApi) OauthOfficialAccountsCustomMenusRollback(officialAccountId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(AppApiPath(fmt.Sprintf("/iam/oauth/official_accounts/%s/custom_menus/rollback", SerializePathParameter(officialAccountId, PathParameterSpec{Name: "officialAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
@@ -148,7 +158,7 @@ func (a *IamApi) OauthOfficialAccountsCustomMenusRollback(officialAccountId stri
     return decodeResult[sdktypes.SdkWorkResourceResponse](raw)
 }
 
-// Iam oauth official Accounts custom Menus sync.
+// Oauth official Accounts custom Menus sync.
 func (a *IamApi) OauthOfficialAccountsCustomMenusSync(officialAccountId string, body sdktypes.AppbaseOperationCommand) (sdktypes.SdkWorkResourceResponse, error) {
     raw, err := a.client.Post(AppApiPath(fmt.Sprintf("/iam/oauth/official_accounts/%s/custom_menus/sync", SerializePathParameter(officialAccountId, PathParameterSpec{Name: "officialAccountId", Style: "simple", Explode: false}))), body, nil, nil, "application/json")
     if err != nil {
@@ -272,11 +282,11 @@ func (a *IamApi) RoleBindingsList(page *int, pageSize *int, cursor *string, sort
         {Name: "cursor", Value: func() interface{} { if cursor == nil { return nil }; return *cursor }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "sort", Value: func() interface{} { if sort == nil { return nil }; return *sort }(), Style: "form", Explode: true, AllowReserved: false},
         {Name: "q", Value: func() interface{} { if q == nil { return nil }; return *q }(), Style: "form", Explode: true, AllowReserved: false},
-        {Name: "roleId", Value: func() interface{} { if roleId == nil { return nil }; return *roleId }(), Style: "form", Explode: true, AllowReserved: false},
-        {Name: "principalKind", Value: func() interface{} { if principalKind == nil { return nil }; return *principalKind }(), Style: "form", Explode: true, AllowReserved: false},
-        {Name: "principalId", Value: func() interface{} { if principalId == nil { return nil }; return *principalId }(), Style: "form", Explode: true, AllowReserved: false},
-        {Name: "scopeKind", Value: func() interface{} { if scopeKind == nil { return nil }; return *scopeKind }(), Style: "form", Explode: true, AllowReserved: false},
-        {Name: "scopeId", Value: func() interface{} { if scopeId == nil { return nil }; return *scopeId }(), Style: "form", Explode: true, AllowReserved: false},
+        {Name: "role_id", Value: func() interface{} { if roleId == nil { return nil }; return *roleId }(), Style: "form", Explode: true, AllowReserved: false},
+        {Name: "principal_kind", Value: func() interface{} { if principalKind == nil { return nil }; return *principalKind }(), Style: "form", Explode: true, AllowReserved: false},
+        {Name: "principal_id", Value: func() interface{} { if principalId == nil { return nil }; return *principalId }(), Style: "form", Explode: true, AllowReserved: false},
+        {Name: "scope_kind", Value: func() interface{} { if scopeKind == nil { return nil }; return *scopeKind }(), Style: "form", Explode: true, AllowReserved: false},
+        {Name: "scope_id", Value: func() interface{} { if scopeId == nil { return nil }; return *scopeId }(), Style: "form", Explode: true, AllowReserved: false},
     })
     raw, err := a.client.Get(AppendQueryString(AppApiPath("/iam/role_bindings"), query), nil, nil)
     if err != nil {

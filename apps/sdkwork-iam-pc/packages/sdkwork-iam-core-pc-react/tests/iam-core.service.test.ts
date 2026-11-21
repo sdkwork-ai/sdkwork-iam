@@ -379,7 +379,7 @@ describe("sdkwork-iam-core-pc-react", () => {
           delete: vi.fn(),
         },
         securityEvents: { list: vi.fn(), retrieve: vi.fn() },
-        tenantApplications: {
+        installations: {
           enable: vi.fn(),
           provision: vi.fn(),
           update: vi.fn(),

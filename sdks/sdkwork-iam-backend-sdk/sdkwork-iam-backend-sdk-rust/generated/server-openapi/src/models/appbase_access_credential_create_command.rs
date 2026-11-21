@@ -30,9 +30,9 @@ pub struct AppbaseAccessCredentialCreateCommand {
     #[serde(rename = "organizationId")]
     pub organization_id: String,
 
-    #[serde(rename = "tenantApplicationId")]
+    #[serde(rename = "installationId")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub tenant_application_id: Option<String>,
+    pub installation_id: Option<String>,
 
     #[serde(rename = "appId")]
     #[serde(default, skip_serializing_if = "Option::is_none")]

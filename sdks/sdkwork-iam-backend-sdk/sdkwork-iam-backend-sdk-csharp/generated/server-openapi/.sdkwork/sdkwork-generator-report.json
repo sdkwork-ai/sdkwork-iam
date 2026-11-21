@@ -11,8 +11,8 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "06a623637af45eaed9c2bcc4db2859537225999489b00241e109de5e09d4937a",
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "e85ac8e27f2de532efc131ab70e993b21366b7a6cc6bfc392eb4e71aa5057065",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
@@ -23,25 +23,27 @@
       {
         "area": "api-surface",
         "paths": [
-          "Api/IamApi.cs"
+          "Api/IamApi.cs",
+          "Api/IamOauthApi.cs"
         ]
       },
       {
         "area": "models",
         "paths": [
           "Models/AppbaseAccessCredentialCreateCommand.cs",
+          "Models/AppbaseInstallationEnableCommand.cs",
+          "Models/AppbaseInstallationProvisionCommand.cs",
+          "Models/AppbaseInstallationUpdateCommand.cs",
+          "Models/AppbaseTenantApplicationEnableCommand.cs",
           "Models/AppbaseTenantApplicationProvisionCommand.cs",
-          "Models/IamInstallationCredential.cs",
-          "Models/IamInstallationCredentialCreateCommand.cs",
-          "Models/IamInstallationCredentialListResponse.cs",
-          "Models/IamInstallationCredentialResponse.cs",
-          "Models/IamInstallationCredentialRotateCommand.cs",
-          "Models/IamInstallationCredentialWithSecret.cs",
-          "Models/IamInstallationEnvironment.cs",
-          "Models/IamInstallationEnvironmentListResponse.cs",
-          "Models/IamInstallationEnvironmentResponse.cs",
-          "Models/IamInstallationEnvironmentUpsertCommand.cs",
-          "Models/IamTenantApplicationManagementProvisionCommand.cs"
+          "Models/AppbaseTenantApplicationUpdateCommand.cs",
+          "Models/IamInstallationManagementProvisionCommand.cs",
+          "Models/IamInstallationManagementUpdateCommand.cs",
+          "Models/IamInstallationStatusCommand.cs",
+          "Models/IamTenantApplicationManagementProvisionCommand.cs",
+          "Models/IamTenantApplicationManagementUpdateCommand.cs",
+          "Models/IamTenantApplicationStatusCommand.cs",
+          "Models/ServiceAccountCredentialCreateCommand.cs"
         ]
       }
     ],
@@ -50,12 +52,14 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },
@@ -131,14 +135,37 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 14,
+    "writtenFiles": 10,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 31,
-    "deletedGeneratedFiles": 0,
+    "skippedUnchangedGeneratedFiles": 35,
+    "deletedGeneratedFiles": 6,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "06a623637af45eaed9c2bcc4db2859537225999489b00241e109de5e09d4937a",
+    "changeFingerprint": "e85ac8e27f2de532efc131ab70e993b21366b7a6cc6bfc392eb4e71aa5057065",
     "changes": {
       "createdGeneratedFiles": [
+        "Models/AppbaseInstallationEnableCommand.cs",
+        "Models/AppbaseInstallationProvisionCommand.cs",
+        "Models/AppbaseInstallationUpdateCommand.cs",
+        "Models/IamInstallationManagementProvisionCommand.cs",
+        "Models/IamInstallationManagementUpdateCommand.cs",
+        "Models/IamInstallationStatusCommand.cs"
+      ],
+      "updatedGeneratedFiles": [
+        "Api/IamApi.cs",
+        "Api/IamOauthApi.cs",
+        "Models/AppbaseAccessCredentialCreateCommand.cs",
+        "Models/ServiceAccountCredentialCreateCommand.cs"
+      ],
+      "unchangedGeneratedFiles": [
+        "Api/Api.cs",
+        "Api/ApiPaths.cs",
+        "bin/publish-core.mjs",
+        "bin/publish.ps1",
+        "bin/publish.sh",
+        "CHANGELOG.md",
+        "Http/HttpClient.cs",
+        "LICENSE",
+        "Models/FieldError.cs",
         "Models/IamInstallationCredential.cs",
         "Models/IamInstallationCredentialCreateCommand.cs",
         "Models/IamInstallationCredentialListResponse.cs",
@@ -148,30 +175,8 @@
         "Models/IamInstallationEnvironment.cs",
         "Models/IamInstallationEnvironmentListResponse.cs",
         "Models/IamInstallationEnvironmentResponse.cs",
-        "Models/IamInstallationEnvironmentUpsertCommand.cs"
-      ],
-      "updatedGeneratedFiles": [
-        "Api/IamApi.cs",
-        "Models/AppbaseAccessCredentialCreateCommand.cs",
-        "Models/AppbaseTenantApplicationProvisionCommand.cs",
-        "Models/IamTenantApplicationManagementProvisionCommand.cs"
-      ],
-      "unchangedGeneratedFiles": [
-        "Api/Api.cs",
-        "Api/ApiPaths.cs",
-        "Api/IamOauthApi.cs",
-        "bin/publish-core.mjs",
-        "bin/publish.ps1",
-        "bin/publish.sh",
-        "CHANGELOG.md",
-        "Http/HttpClient.cs",
-        "LICENSE",
-        "Models/AppbaseTenantApplicationEnableCommand.cs",
-        "Models/AppbaseTenantApplicationUpdateCommand.cs",
-        "Models/FieldError.cs",
+        "Models/IamInstallationEnvironmentUpsertCommand.cs",
         "Models/IamOauthClientCreateCommand.cs",
-        "Models/IamTenantApplicationManagementUpdateCommand.cs",
-        "Models/IamTenantApplicationStatusCommand.cs",
         "Models/PageInfo.cs",
         "Models/ProblemDetail.cs",
         "Models/SdkWorkApiResponse.cs",
@@ -181,7 +186,6 @@
         "Models/SdkWorkPageData.cs",
         "Models/SdkWorkResourceData.cs",
         "Models/SdkWorkResourceResponse.cs",
-        "Models/ServiceAccountCredentialCreateCommand.cs",
         "Models/ServiceAccountCredentialRevokeCommand.cs",
         "Models/ServiceAccountTokenExchangeCommand.cs",
         "README.md",
@@ -189,7 +193,14 @@
         "SDKWork.Iam.BackendSdk.csproj",
         "SdkworkBackendClient.cs"
       ],
-      "deletedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "Models/AppbaseTenantApplicationEnableCommand.cs",
+        "Models/AppbaseTenantApplicationProvisionCommand.cs",
+        "Models/AppbaseTenantApplicationUpdateCommand.cs",
+        "Models/IamTenantApplicationManagementProvisionCommand.cs",
+        "Models/IamTenantApplicationManagementUpdateCommand.cs",
+        "Models/IamTenantApplicationStatusCommand.cs"
+      ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/README.md"
@@ -206,25 +217,27 @@
         {
           "area": "api-surface",
           "paths": [
-            "Api/IamApi.cs"
+            "Api/IamApi.cs",
+            "Api/IamOauthApi.cs"
           ]
         },
         {
           "area": "models",
           "paths": [
             "Models/AppbaseAccessCredentialCreateCommand.cs",
+            "Models/AppbaseInstallationEnableCommand.cs",
+            "Models/AppbaseInstallationProvisionCommand.cs",
+            "Models/AppbaseInstallationUpdateCommand.cs",
+            "Models/AppbaseTenantApplicationEnableCommand.cs",
             "Models/AppbaseTenantApplicationProvisionCommand.cs",
-            "Models/IamInstallationCredential.cs",
-            "Models/IamInstallationCredentialCreateCommand.cs",
-            "Models/IamInstallationCredentialListResponse.cs",
-            "Models/IamInstallationCredentialResponse.cs",
-            "Models/IamInstallationCredentialRotateCommand.cs",
-            "Models/IamInstallationCredentialWithSecret.cs",
-            "Models/IamInstallationEnvironment.cs",
-            "Models/IamInstallationEnvironmentListResponse.cs",
-            "Models/IamInstallationEnvironmentResponse.cs",
-            "Models/IamInstallationEnvironmentUpsertCommand.cs",
-            "Models/IamTenantApplicationManagementProvisionCommand.cs"
+            "Models/AppbaseTenantApplicationUpdateCommand.cs",
+            "Models/IamInstallationManagementProvisionCommand.cs",
+            "Models/IamInstallationManagementUpdateCommand.cs",
+            "Models/IamInstallationStatusCommand.cs",
+            "Models/IamTenantApplicationManagementProvisionCommand.cs",
+            "Models/IamTenantApplicationManagementUpdateCommand.cs",
+            "Models/IamTenantApplicationStatusCommand.cs",
+            "Models/ServiceAccountCredentialCreateCommand.cs"
           ]
         }
       ],
@@ -258,12 +271,14 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "medium",
+      "riskLevel": "high",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
+        "deleted-generated-files",
+        "manual-review-required",
         "verification-required"
       ]
     },

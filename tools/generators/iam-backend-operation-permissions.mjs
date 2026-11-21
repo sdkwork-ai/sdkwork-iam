@@ -56,33 +56,30 @@ function explicitBootstrapPermission(operationId) {
     // the organization-scoped active-membership check on top.
     case 'organizations.members.list':
       return 'iam.memberships.read';
-    case 'tenantApplications.create':
-      return 'iam.tenant_applications.provision';
-    case 'tenantApplications.list':
-    case 'tenantApplications.summary.retrieve':
-      return 'iam.tenant_applications.update';
-    case 'tenantApplications.management.create':
-      return 'iam.tenant_applications.provision';
-    case 'tenantApplications.management.update':
-    case 'tenantApplications.management.disable':
-      return 'iam.tenant_applications.update';
-    case 'tenantApplications.management.enable':
-      return 'iam.tenant_applications.enable';
-    case 'tenantApplications.update':
-      return 'iam.tenant_applications.update';
-    case 'tenantApplications.enable':
-      return 'iam.tenant_applications.enable';
+    case 'installations.create':
+    case 'installations.management.create':
+      return 'iam.installations.provision';
+    case 'installations.list':
+    case 'installations.summary.retrieve':
+    case 'installations.retrieve':
+    case 'installations.update':
+    case 'installations.management.update':
+    case 'installations.management.disable':
+      return 'iam.installations.update';
+    case 'installations.management.enable':
+    case 'installations.enable':
+      return 'iam.installations.enable';
     // Environments and their OAuth credentials are installation attributes; they
     // keep the existing installation-update boundary instead of seeding a new
     // permission code (and therefore never widen who can reach them).
-    case 'tenantApplications.environments.list':
-    case 'tenantApplications.environments.update':
-    case 'tenantApplications.environments.delete':
-    case 'tenantApplications.credentials.list':
-    case 'tenantApplications.credentials.create':
-    case 'tenantApplications.credentials.rotate':
-    case 'tenantApplications.credentials.revoke':
-      return 'iam.tenant_applications.update';
+    case 'installations.environments.list':
+    case 'installations.environments.update':
+    case 'installations.environments.delete':
+    case 'installations.credentials.list':
+    case 'installations.credentials.create':
+    case 'installations.credentials.rotate':
+    case 'installations.credentials.revoke':
+      return 'iam.installations.update';
     case 'accessCredentials.create':
       return 'iam.access_credentials.create';
     case 'serviceAccounts.credentials.create':

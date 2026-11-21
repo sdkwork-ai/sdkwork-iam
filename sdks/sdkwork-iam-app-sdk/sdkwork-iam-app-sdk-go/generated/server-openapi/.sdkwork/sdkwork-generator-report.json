@@ -11,113 +11,47 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "7b76d941bfe05865374a66a69b8a3e7cbc6865a3c755ab83050808db6b3b7ea6",
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "699a62dce45af641c8491087344fa54ea1ac25a7c1176edcc77878be0d1ac9b0",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
       "api-surface",
       "models",
-      "runtime",
-      "build-metadata",
-      "publish-workflow",
-      "documentation",
-      "unknown"
+      "documentation"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
           "api/auth.go",
-          "api/base.go",
-          "api/doc.go",
           "api/iam.go",
-          "api/oauth.go",
-          "api/paths.go",
-          "api/system.go",
-          "http/client.go"
+          "api/oauth.go"
         ]
       },
       {
         "area": "models",
         "paths": [
-          "types/appbase_operation_command.go",
-          "types/appbase_session_create_command.go",
-          "types/authorizations_completions_create_request.go",
           "types/authorizations_completions_create_response.go",
-          "types/authorizations_create_request.go",
+          "types/authorizations_completions_create_response201.go",
           "types/authorizations_create_response.go",
-          "types/common.go",
-          "types/desktop_sessions_create_request.go",
+          "types/authorizations_create_response201.go",
           "types/desktop_sessions_create_response.go",
-          "types/doc.go",
-          "types/field_error.go",
-          "types/iam_organization_member_list_response.go",
-          "types/iam_organization_member.go",
-          "types/iam_persona_catalog_response.go",
-          "types/iam_persona_catalog.go",
-          "types/iam_persona_interest.go",
-          "types/iam_persona_labels.go",
-          "types/iam_persona_role.go",
-          "types/iam_user_persona_response.go",
-          "types/iam_user_persona_update_command.go",
-          "types/iam_user_persona.go",
-          "types/oauth_phone_binding_session_create_command.go",
-          "types/oauth_phone_binding_verification_code_request_command.go",
-          "types/page_info.go",
-          "types/problem_detail.go",
-          "types/sdk_work_api_response.go",
-          "types/sdk_work_command_data.go",
-          "types/sdk_work_command_response.go",
-          "types/sdk_work_list_response.go",
-          "types/sdk_work_page_data.go",
-          "types/sdk_work_platform_error_code.go",
-          "types/sdk_work_resource_data.go",
-          "types/sdk_work_resource_response.go",
-          "types/sessions_current_logout_request.go",
-          "types/wechat_mini_program_session_create_command.go"
-        ]
-      },
-      {
-        "area": "runtime",
-        "paths": [
-          "http/client.go",
-          "http/doc.go"
-        ]
-      },
-      {
-        "area": "build-metadata",
-        "paths": [
-          "go.mod",
-          "sdkwork-sdk.json"
-        ]
-      },
-      {
-        "area": "publish-workflow",
-        "paths": [
-          "bin/publish-core.mjs",
-          "bin/publish.ps1",
-          "bin/publish.sh"
+          "types/desktop_sessions_create_response201.go",
+          "types/iam_app_access_token_create_command.go",
+          "types/iam_app_access_token_response.go",
+          "types/iam_app_access_token.go"
         ]
       },
       {
         "area": "documentation",
         "paths": [
-          "CHANGELOG.md",
           "README.md"
-        ]
-      },
-      {
-        "area": "unknown",
-        "paths": [
-          "doc.go",
-          "LICENSE",
-          "sdk.go"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required."
+    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
@@ -127,9 +61,8 @@
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "backed-up-generated-files",
+      "deleted-generated-files",
       "manual-review-required",
-      "unknown-impact",
       "verification-required"
     ]
   },
@@ -141,7 +74,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-go\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -160,13 +93,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-go\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -196,8 +129,8 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 55,
-    "models": 33,
+    "totalFiles": 58,
+    "models": 36,
     "apis": 4,
     "types": 0
   },
@@ -205,20 +138,51 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 54,
+    "writtenFiles": 10,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 0,
-    "deletedGeneratedFiles": 0,
+    "skippedUnchangedGeneratedFiles": 47,
+    "deletedGeneratedFiles": 3,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "7b76d941bfe05865374a66a69b8a3e7cbc6865a3c755ab83050808db6b3b7ea6",
+    "changeFingerprint": "699a62dce45af641c8491087344fa54ea1ac25a7c1176edcc77878be0d1ac9b0",
     "changes": {
       "createdGeneratedFiles": [
+        "types/authorizations_completions_create_response201.go",
+        "types/authorizations_create_response201.go",
+        "types/desktop_sessions_create_response201.go",
+        "types/iam_app_access_token_create_command.go",
+        "types/iam_app_access_token_response.go",
+        "types/iam_app_access_token.go"
+      ],
+      "updatedGeneratedFiles": [
+        "api/auth.go",
+        "api/iam.go",
+        "api/oauth.go",
+        "README.md"
+      ],
+      "unchangedGeneratedFiles": [
+        "api/base.go",
+        "api/doc.go",
+        "api/paths.go",
+        "api/system.go",
+        "bin/publish-core.mjs",
+        "bin/publish.ps1",
+        "bin/publish.sh",
+        "CHANGELOG.md",
+        "doc.go",
+        "go.mod",
+        "http/client.go",
+        "http/doc.go",
+        "LICENSE",
+        "sdk.go",
+        "sdkwork-sdk.json",
+        "types/appbase_operation_command.go",
+        "types/appbase_session_create_command.go",
         "types/authorizations_completions_create_request.go",
-        "types/authorizations_completions_create_response.go",
         "types/authorizations_create_request.go",
-        "types/authorizations_create_response.go",
+        "types/common.go",
         "types/desktop_sessions_create_request.go",
-        "types/desktop_sessions_create_response.go",
+        "types/doc.go",
+        "types/field_error.go",
         "types/iam_organization_member_list_response.go",
         "types/iam_organization_member.go",
         "types/iam_persona_catalog_response.go",
@@ -231,33 +195,6 @@
         "types/iam_user_persona.go",
         "types/oauth_phone_binding_session_create_command.go",
         "types/oauth_phone_binding_verification_code_request_command.go",
-        "types/sessions_current_logout_request.go"
-      ],
-      "updatedGeneratedFiles": [
-        "api/auth.go",
-        "api/base.go",
-        "api/doc.go",
-        "api/iam.go",
-        "api/oauth.go",
-        "api/paths.go",
-        "api/system.go",
-        "bin/publish-core.mjs",
-        "bin/publish.ps1",
-        "bin/publish.sh",
-        "CHANGELOG.md",
-        "doc.go",
-        "go.mod",
-        "http/client.go",
-        "http/doc.go",
-        "LICENSE",
-        "README.md",
-        "sdk.go",
-        "sdkwork-sdk.json",
-        "types/appbase_operation_command.go",
-        "types/appbase_session_create_command.go",
-        "types/common.go",
-        "types/doc.go",
-        "types/field_error.go",
         "types/page_info.go",
         "types/problem_detail.go",
         "types/sdk_work_api_response.go",
@@ -268,168 +205,70 @@
         "types/sdk_work_platform_error_code.go",
         "types/sdk_work_resource_data.go",
         "types/sdk_work_resource_response.go",
+        "types/sessions_current_logout_request.go",
         "types/wechat_mini_program_session_create_command.go"
       ],
-      "unchangedGeneratedFiles": [],
-      "deletedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "types/authorizations_completions_create_response.go",
+        "types/authorizations_create_response.go",
+        "types/desktop_sessions_create_response.go"
+      ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/README.md"
       ],
-      "backedUpFiles": [
-        "api/auth.go",
-        "api/base.go",
-        "api/doc.go",
-        "api/iam.go",
-        "api/oauth.go",
-        "api/paths.go",
-        "api/system.go",
-        "bin/publish-core.mjs",
-        "bin/publish.ps1",
-        "bin/publish.sh",
-        "CHANGELOG.md",
-        "doc.go",
-        "go.mod",
-        "http/client.go",
-        "http/doc.go",
-        "LICENSE",
-        "README.md",
-        "sdk.go",
-        "sdkwork-sdk.json",
-        "types/appbase_operation_command.go",
-        "types/appbase_session_create_command.go",
-        "types/common.go",
-        "types/doc.go",
-        "types/field_error.go",
-        "types/page_info.go",
-        "types/problem_detail.go",
-        "types/sdk_work_api_response.go",
-        "types/sdk_work_command_data.go",
-        "types/sdk_work_command_response.go",
-        "types/sdk_work_list_response.go",
-        "types/sdk_work_page_data.go",
-        "types/sdk_work_platform_error_code.go",
-        "types/sdk_work_resource_data.go",
-        "types/sdk_work_resource_response.go",
-        "types/wechat_mini_program_session_create_command.go"
-      ]
+      "backedUpFiles": []
     },
     "impact": {
       "schemaVersion": 1,
       "areas": [
         "api-surface",
         "models",
-        "runtime",
-        "build-metadata",
-        "publish-workflow",
-        "documentation",
-        "unknown"
+        "documentation"
       ],
       "details": [
         {
           "area": "api-surface",
           "paths": [
             "api/auth.go",
-            "api/base.go",
-            "api/doc.go",
             "api/iam.go",
-            "api/oauth.go",
-            "api/paths.go",
-            "api/system.go",
-            "http/client.go"
+            "api/oauth.go"
           ]
         },
         {
           "area": "models",
           "paths": [
-            "types/appbase_operation_command.go",
-            "types/appbase_session_create_command.go",
-            "types/authorizations_completions_create_request.go",
             "types/authorizations_completions_create_response.go",
-            "types/authorizations_create_request.go",
+            "types/authorizations_completions_create_response201.go",
             "types/authorizations_create_response.go",
-            "types/common.go",
-            "types/desktop_sessions_create_request.go",
+            "types/authorizations_create_response201.go",
             "types/desktop_sessions_create_response.go",
-            "types/doc.go",
-            "types/field_error.go",
-            "types/iam_organization_member_list_response.go",
-            "types/iam_organization_member.go",
-            "types/iam_persona_catalog_response.go",
-            "types/iam_persona_catalog.go",
-            "types/iam_persona_interest.go",
-            "types/iam_persona_labels.go",
-            "types/iam_persona_role.go",
-            "types/iam_user_persona_response.go",
-            "types/iam_user_persona_update_command.go",
-            "types/iam_user_persona.go",
-            "types/oauth_phone_binding_session_create_command.go",
-            "types/oauth_phone_binding_verification_code_request_command.go",
-            "types/page_info.go",
-            "types/problem_detail.go",
-            "types/sdk_work_api_response.go",
-            "types/sdk_work_command_data.go",
-            "types/sdk_work_command_response.go",
-            "types/sdk_work_list_response.go",
-            "types/sdk_work_page_data.go",
-            "types/sdk_work_platform_error_code.go",
-            "types/sdk_work_resource_data.go",
-            "types/sdk_work_resource_response.go",
-            "types/sessions_current_logout_request.go",
-            "types/wechat_mini_program_session_create_command.go"
-          ]
-        },
-        {
-          "area": "runtime",
-          "paths": [
-            "http/client.go",
-            "http/doc.go"
-          ]
-        },
-        {
-          "area": "build-metadata",
-          "paths": [
-            "go.mod",
-            "sdkwork-sdk.json"
-          ]
-        },
-        {
-          "area": "publish-workflow",
-          "paths": [
-            "bin/publish-core.mjs",
-            "bin/publish.ps1",
-            "bin/publish.sh"
+            "types/desktop_sessions_create_response201.go",
+            "types/iam_app_access_token_create_command.go",
+            "types/iam_app_access_token_response.go",
+            "types/iam_app_access_token.go"
           ]
         },
         {
           "area": "documentation",
           "paths": [
-            "CHANGELOG.md",
             "README.md"
-          ]
-        },
-        {
-          "area": "unknown",
-          "paths": [
-            "doc.go",
-            "LICENSE",
-            "sdk.go"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required."
+      "summary": "Detected impact areas: api-surface, models, documentation. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface, models, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, unknown.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-go\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -453,49 +292,12 @@
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
-        "backed-up-generated-files",
+        "deleted-generated-files",
         "manual-review-required",
-        "unknown-impact",
         "verification-required"
       ]
     },
-    "backedUpFiles": [
-      "api/auth.go",
-      "api/base.go",
-      "api/doc.go",
-      "api/iam.go",
-      "api/oauth.go",
-      "api/paths.go",
-      "api/system.go",
-      "bin/publish-core.mjs",
-      "bin/publish.ps1",
-      "bin/publish.sh",
-      "CHANGELOG.md",
-      "doc.go",
-      "go.mod",
-      "http/client.go",
-      "http/doc.go",
-      "LICENSE",
-      "README.md",
-      "sdk.go",
-      "sdkwork-sdk.json",
-      "types/appbase_operation_command.go",
-      "types/appbase_session_create_command.go",
-      "types/common.go",
-      "types/doc.go",
-      "types/field_error.go",
-      "types/page_info.go",
-      "types/problem_detail.go",
-      "types/sdk_work_api_response.go",
-      "types/sdk_work_command_data.go",
-      "types/sdk_work_command_response.go",
-      "types/sdk_work_list_response.go",
-      "types/sdk_work_page_data.go",
-      "types/sdk_work_platform_error_code.go",
-      "types/sdk_work_resource_data.go",
-      "types/sdk_work_resource_response.go",
-      "types/wechat_mini_program_session_create_command.go"
-    ],
+    "backedUpFiles": [],
     "preservedLegacyFiles": false
   }
 }

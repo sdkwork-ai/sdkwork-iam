@@ -3019,3 +3019,467 @@ BEGIN
     rewritten, remaining;
 END
 $$;
+
+-- folded migration: migrations/postgres/0039_application_installation_environment_and_credential.up.sql
+CREATE TABLE IF NOT EXISTS iam_application_installation_environment (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    organization_id TEXT NOT NULL DEFAULT '0',
+    installation_id TEXT NOT NULL REFERENCES iam_tenant_application(id) ON DELETE CASCADE,
+    env_key TEXT NOT NULL,
+    primary_domain TEXT,
+    domain_config_json JSONB NOT NULL DEFAULT '{}',
+    env_status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    deleted_at TIMESTAMPTZ,
+    version BIGINT NOT NULL DEFAULT 0,
+    CONSTRAINT chk_iam_application_installation_environment_status
+        CHECK (env_status IN ('pending', 'active', 'disabled'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_iam_application_installation_environment_key
+    ON iam_application_installation_environment (installation_id, env_key)
+    WHERE deleted_at IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_iam_application_installation_environment_domain
+    ON iam_application_installation_environment (tenant_id, primary_domain)
+    WHERE primary_domain IS NOT NULL AND deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_iam_application_installation_environment_tenant
+    ON iam_application_installation_environment (tenant_id, installation_id, env_status, updated_at, id);
+
+CREATE TABLE IF NOT EXISTS iam_application_installation_credential (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    installation_environment_id TEXT NOT NULL
+        REFERENCES iam_application_installation_environment(id) ON DELETE CASCADE,
+    client_id TEXT NOT NULL,
+    secret_hash TEXT NOT NULL,
+    redirect_uris_json JSONB NOT NULL DEFAULT '[]',
+    granted_scopes_json JSONB NOT NULL DEFAULT '[]',
+    credential_status TEXT NOT NULL DEFAULT 'active',
+    rotated_at TIMESTAMPTZ,
+    retired_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    version BIGINT NOT NULL DEFAULT 0,
+    CONSTRAINT chk_iam_application_installation_credential_status
+        CHECK (credential_status IN ('active', 'rotated', 'retired'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_iam_application_installation_credential_client
+    ON iam_application_installation_credential (client_id);
+
+CREATE INDEX IF NOT EXISTS idx_iam_application_installation_credential_env
+    ON iam_application_installation_credential (tenant_id, installation_environment_id, credential_status, updated_at, id);
+
+-- folded migration: migrations/postgres/0040_installation_deploy_link_and_provisioning_state.up.sql
+ALTER TABLE iam_tenant_application
+    ADD COLUMN IF NOT EXISTS deploy_application_id TEXT,
+    ADD COLUMN IF NOT EXISTS provisioning_status TEXT NOT NULL DEFAULT 'active',
+    ADD COLUMN IF NOT EXISTS provisioning_idempotency_key TEXT;
+
+ALTER TABLE iam_tenant_application
+    ADD CONSTRAINT chk_iam_tenant_application_provisioning_status
+    CHECK (provisioning_status IN ('pending', 'active', 'failed'));
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_iam_tenant_application_deploy
+    ON iam_tenant_application (deploy_application_id)
+    WHERE deploy_application_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_iam_tenant_application_provisioning_key
+    ON iam_tenant_application (provisioning_idempotency_key)
+    WHERE provisioning_idempotency_key IS NOT NULL;
+
+-- folded migration: migrations/postgres/0041_retire_tenant_application_template_columns.up.sql
+DROP INDEX IF EXISTS uk_iam_tenant_application_org_template;
+DROP INDEX IF EXISTS idx_iam_tenant_application_template;
+
+ALTER TABLE iam_tenant_application
+    DROP COLUMN IF EXISTS template_id,
+    DROP COLUMN IF EXISTS template_version;
+
+-- folded migration: migrations/postgres/0042_drop_application_template_tables.up.sql
+DROP TABLE IF EXISTS iam_application_template_package;
+DROP TABLE IF EXISTS iam_application_template;
+
+-- folded migration: migrations/postgres/0043_rename_tenant_application_to_application_installation.up.sql
+ALTER TABLE iam_tenant_application RENAME TO iam_application_installation;
+
+ALTER INDEX iam_tenant_application_pkey
+    RENAME TO iam_application_installation_pkey;
+ALTER INDEX uk_iam_tenant_application_primary_domain
+    RENAME TO uk_iam_application_installation_primary_domain;
+ALTER INDEX idx_iam_tenant_application_tenant_status
+    RENAME TO idx_iam_application_installation_tenant_status;
+ALTER INDEX uk_iam_tenant_application_oauth_client_id
+    RENAME TO uk_iam_application_installation_oauth_client_id;
+ALTER INDEX uk_iam_tenant_application_deploy
+    RENAME TO uk_iam_application_installation_deploy;
+ALTER INDEX uk_iam_tenant_application_provisioning_key
+    RENAME TO uk_iam_application_installation_provisioning_key;
+
+ALTER TABLE iam_application_installation
+    RENAME CONSTRAINT iam_tenant_application_app_id_key
+    TO iam_application_installation_app_id_key;
+ALTER TABLE iam_application_installation
+    RENAME CONSTRAINT iam_tenant_application_tenant_id_instance_key_key
+    TO iam_application_installation_tenant_id_instance_key_key;
+ALTER TABLE iam_application_installation
+    RENAME CONSTRAINT chk_iam_tenant_application_provisioning_status
+    TO chk_iam_application_installation_provisioning_status;
+
+-- folded migration: migrations/postgres/0044_application_installation_ownership_scope.up.sql
+-- 1. Release scope and owner pointer.
+ALTER TABLE iam_application_installation
+    ADD COLUMN IF NOT EXISTS ownership_scope TEXT NOT NULL DEFAULT 'TENANT',
+    ADD COLUMN IF NOT EXISTS owner_user_id TEXT;
+
+-- 2. Refuse to guess: an organization id that is not a positive decimal cannot
+--    be classified, so every such row is reported in one failure message.
+DO $$
+DECLARE
+    undecidable TEXT;
+BEGIN
+    SELECT STRING_AGG(
+               FORMAT('id=%s tenant_id=%s organization_id=%L', id, tenant_id, organization_id),
+               '; ' ORDER BY id)
+      INTO undecidable
+      FROM iam_application_installation
+     WHERE ownership_scope = 'TENANT'
+       AND owner_user_id IS NULL
+       AND organization_id IS NOT NULL
+       AND TRIM(organization_id) <> ''
+       AND TRIM(organization_id) <> '0'
+       AND TRIM(organization_id) !~ '^[0-9]+$';
+
+    IF undecidable IS NOT NULL THEN
+        RAISE EXCEPTION
+            '0044 cannot derive ownership_scope: % installation row(s) carry a non-numeric organization_id; '
+            'resolve them explicitly before applying this migration', undecidable
+            USING ERRCODE = 'check_violation';
+    END IF;
+END $$;
+
+-- 3. Derive the stored level from the existing scope. Rows that already carry an
+--    owner pointer are left alone, so re-running the migration in a development
+--    database never rewrites a USER release to TENANT.
+UPDATE iam_application_installation
+   SET ownership_scope = CASE
+           WHEN TRIM(organization_id) = '0' THEN 'TENANT'
+           ELSE 'ORGANIZATION'
+       END
+ WHERE owner_user_id IS NULL
+   AND ownership_scope <> CASE
+           WHEN TRIM(organization_id) = '0' THEN 'TENANT'
+           ELSE 'ORGANIZATION'
+       END;
+
+-- 4. Domain of the vocabulary, then the pointer agreement, in that order so a
+--    typo reports "not a scope" rather than an alignment mismatch.
+ALTER TABLE iam_application_installation
+    DROP CONSTRAINT IF EXISTS chk_iam_application_installation_ownership_scope;
+ALTER TABLE iam_application_installation
+    ADD CONSTRAINT chk_iam_application_installation_ownership_scope
+    CHECK (ownership_scope IN ('TENANT', 'ORGANIZATION', 'USER'));
+
+ALTER TABLE iam_application_installation
+    DROP CONSTRAINT IF EXISTS chk_iam_application_installation_ownership_alignment;
+ALTER TABLE iam_application_installation
+    ADD CONSTRAINT chk_iam_application_installation_ownership_alignment
+    CHECK (
+        (ownership_scope = 'TENANT'
+            AND organization_id = '0'
+            AND owner_user_id IS NULL)
+        OR (ownership_scope = 'ORGANIZATION'
+            AND organization_id <> '0'
+            AND TRIM(organization_id) ~ '^[0-9]+$'
+            AND owner_user_id IS NULL)
+        OR (ownership_scope = 'USER'
+            AND organization_id = '0'
+            AND owner_user_id IS NOT NULL
+            AND TRIM(owner_user_id) <> '')
+    );
+
+-- Personal reach is resolved per owner inside one tenant; the tenant release does
+-- not need this index and partial keeps it small.
+CREATE INDEX IF NOT EXISTS idx_iam_application_installation_owner
+    ON iam_application_installation (tenant_id, owner_user_id)
+    WHERE owner_user_id IS NOT NULL;
+
+-- The scope itself is a filter on the tenant's ledger.
+CREATE INDEX IF NOT EXISTS idx_iam_application_installation_ownership
+    ON iam_application_installation (tenant_id, ownership_scope, organization_id, status, updated_at, id);
+
+-- 5. Session snapshot of the installation scope it was issued for.
+ALTER TABLE iam_session
+    ADD COLUMN IF NOT EXISTS scope_kind TEXT NOT NULL DEFAULT 'TENANT';
+
+-- Report a session whose login context already contradicts its organization
+-- scope, instead of silently reclassifying it below: `login_scope = TENANT`
+-- requires the sentinel and `ORGANIZATION` requires a non-zero organization id.
+DO $$
+DECLARE
+    contradictory TEXT;
+BEGIN
+    SELECT STRING_AGG(
+               FORMAT('id=%s tenant_id=%s organization_id=%L login_scope=%s',
+                      id, tenant_id, organization_id, login_scope),
+               '; ' ORDER BY id)
+      INTO contradictory
+      FROM iam_session
+     WHERE (login_scope = 'ORGANIZATION' AND organization_id = '0')
+        OR (login_scope <> 'ORGANIZATION' AND organization_id <> '0');
+
+    IF contradictory IS NOT NULL THEN
+        RAISE EXCEPTION
+            '0044 cannot classify % iam_session row(s): login_scope and organization_id contradict each other',
+            contradictory
+            USING ERRCODE = 'check_violation';
+    END IF;
+END $$;
+
+UPDATE iam_session
+   SET scope_kind = 'ORGANIZATION'
+ WHERE scope_kind = 'TENANT'
+   AND organization_id <> '0';
+
+-- A session row that pairs an organization release with the tenant sentinel (or a
+-- personal release with an organization id) is contradictory: report it rather
+-- than letting the constraint fail with a bare violation later.
+DO $$
+DECLARE
+    contradictory TEXT;
+BEGIN
+    SELECT STRING_AGG(
+               FORMAT('id=%s tenant_id=%s organization_id=%L scope_kind=%s',
+                      id, tenant_id, organization_id, scope_kind),
+               '; ' ORDER BY id)
+      INTO contradictory
+      FROM iam_session
+     WHERE (scope_kind = 'ORGANIZATION' AND organization_id = '0')
+        OR (scope_kind = 'USER' AND organization_id <> '0');
+
+    IF contradictory IS NOT NULL THEN
+        RAISE EXCEPTION
+            '0044 cannot classify % iam_session row(s): scope_kind and organization_id contradict each other',
+            contradictory
+            USING ERRCODE = 'check_violation';
+    END IF;
+END $$;
+
+ALTER TABLE iam_session
+    DROP CONSTRAINT IF EXISTS chk_iam_session_scope_kind;
+ALTER TABLE iam_session
+    ADD CONSTRAINT chk_iam_session_scope_kind
+    CHECK (scope_kind IN ('TENANT', 'ORGANIZATION', 'USER'));
+
+-- The release level and the session's organization are orthogonal for a
+-- tenant-released application (an organization login keeps its organization) but
+-- not for the other two: an organization release must carry a non-zero
+-- organization, and a personal release is tenant-level by definition.
+ALTER TABLE iam_session
+    DROP CONSTRAINT IF EXISTS chk_iam_session_scope_kind_alignment;
+ALTER TABLE iam_session
+    ADD CONSTRAINT chk_iam_session_scope_kind_alignment
+    CHECK (
+        scope_kind = 'TENANT'
+        OR (scope_kind = 'ORGANIZATION' AND organization_id <> '0')
+        OR (scope_kind = 'USER' AND organization_id = '0')
+    );
+
+-- folded migration: migrations/postgres/0045_application_factory_safety_guards.up.sql
+-- 1. Turn both cascading deletes into RESTRICT.
+--
+--    A DO block because the constraint names are generated (and truncated) by
+--    PostgreSQL, and because a drop/recreate must be a no-op once the delete
+--    rule is already restrictive. Column lists and DDL targets come from the
+--    catalog, so this is correct for a composite key and for a module schema
+--    that is not on the default search path.
+DO $$
+DECLARE
+    pair RECORD;
+    foreign_key pg_constraint%ROWTYPE;
+    child_relation REGCLASS;
+    parent_relation REGCLASS;
+    child_qualified TEXT;
+    parent_qualified TEXT;
+    child_columns TEXT;
+    parent_columns TEXT;
+    cascade_left BIGINT;
+    foreign_keys BIGINT;
+BEGIN
+    FOR pair IN
+        SELECT child_table, parent_table
+          FROM (VALUES
+                    ('iam_application_installation_environment',
+                     'iam_application_installation'),
+                    ('iam_application_installation_credential',
+                     'iam_application_installation_environment')
+               ) AS pairs (child_table, parent_table)
+    LOOP
+        child_relation := pair.child_table::regclass;
+        parent_relation := pair.parent_table::regclass;
+
+        SELECT FORMAT('%I.%I', namespace.nspname, relation.relname)
+          INTO child_qualified
+          FROM pg_class relation
+          JOIN pg_namespace namespace ON namespace.oid = relation.relnamespace
+         WHERE relation.oid = child_relation;
+        SELECT FORMAT('%I.%I', namespace.nspname, relation.relname)
+          INTO parent_qualified
+          FROM pg_class relation
+          JOIN pg_namespace namespace ON namespace.oid = relation.relnamespace
+         WHERE relation.oid = parent_relation;
+
+        FOR foreign_key IN
+            SELECT *
+              FROM pg_constraint constraint_row
+             WHERE constraint_row.contype = 'f'
+               AND constraint_row.conrelid = child_relation
+               AND constraint_row.confrelid = parent_relation
+               AND constraint_row.confdeltype = 'c'
+        LOOP
+            -- `ON UPDATE` is not the hazard here; refuse to silently change it
+            -- if a lineage ever carried something other than the PostgreSQL
+            -- default.
+            IF foreign_key.confupdtype <> 'a' THEN
+                RAISE EXCEPTION
+                    '0045 expected ON UPDATE NO ACTION on foreign key % of % -> %, found update rule ''%''',
+                    foreign_key.conname, pair.child_table, pair.parent_table,
+                    foreign_key.confupdtype
+                    USING ERRCODE = 'check_violation';
+            END IF;
+
+            SELECT STRING_AGG(QUOTE_IDENT(attribute.attname), ', ' ORDER BY key.ord)
+              INTO child_columns
+              FROM UNNEST(foreign_key.conkey) WITH ORDINALITY AS key(attnum, ord)
+              JOIN pg_attribute attribute
+                ON attribute.attrelid = foreign_key.conrelid
+               AND attribute.attnum = key.attnum;
+
+            SELECT STRING_AGG(QUOTE_IDENT(attribute.attname), ', ' ORDER BY key.ord)
+              INTO parent_columns
+              FROM UNNEST(foreign_key.confkey) WITH ORDINALITY AS key(attnum, ord)
+              JOIN pg_attribute attribute
+                ON attribute.attrelid = foreign_key.confrelid
+               AND attribute.attnum = key.attnum;
+
+            EXECUTE FORMAT('ALTER TABLE %s DROP CONSTRAINT %I',
+                           child_qualified, foreign_key.conname);
+            EXECUTE FORMAT(
+                'ALTER TABLE %s ADD CONSTRAINT %I FOREIGN KEY (%s) REFERENCES %s (%s) '
+                'ON DELETE RESTRICT ON UPDATE NO ACTION',
+                child_qualified, foreign_key.conname, child_columns,
+                parent_qualified, parent_columns);
+        END LOOP;
+
+        SELECT COUNT(*)
+          INTO cascade_left
+          FROM pg_constraint constraint_row
+         WHERE constraint_row.contype = 'f'
+           AND constraint_row.conrelid = child_relation
+           AND constraint_row.confrelid = parent_relation
+           AND constraint_row.confdeltype = 'c';
+        IF cascade_left > 0 THEN
+            RAISE EXCEPTION
+                '0045 could not replace the cascading delete on % -> %: % constraint(s) still cascade',
+                pair.child_table, pair.parent_table, cascade_left
+                USING ERRCODE = 'check_violation';
+        END IF;
+
+        -- The guard must exist, not merely be absent as a cascade: a lineage
+        -- without this foreign key would let an orphan environment row outlive
+        -- its installation.
+        SELECT COUNT(*)
+          INTO foreign_keys
+          FROM pg_constraint constraint_row
+         WHERE constraint_row.contype = 'f'
+           AND constraint_row.conrelid = child_relation
+           AND constraint_row.confrelid = parent_relation;
+        IF foreign_keys = 0 THEN
+            RAISE EXCEPTION
+                '0045 expected a foreign key from % to %; the installation child guard cannot be installed on a lineage that lacks it',
+                pair.child_table, pair.parent_table
+                USING ERRCODE = 'check_violation';
+        END IF;
+    END LOOP;
+END $$;
+
+-- 2. Close the environment vocabulary.
+--
+--    Report first: a failed ADD CONSTRAINT would abort with a bare violation
+--    that names no row. `check_violation` matches the pre-flight style of 0044.
+DO $$
+DECLARE
+    offending TEXT;
+BEGIN
+    SELECT STRING_AGG(
+               FORMAT('id=%s tenant_id=%s installation_id=%s env_key=%L row=%s',
+                      id, tenant_id, installation_id, env_key,
+                      CASE
+                          WHEN deleted_at IS NULL THEN 'live'
+                          ELSE FORMAT('deleted_at=%s', deleted_at)
+                      END),
+               '; ' ORDER BY id)
+      INTO offending
+      FROM iam_application_installation_environment
+     WHERE env_key NOT IN ('development', 'test', 'staging', 'demo', 'production');
+
+    IF offending IS NOT NULL THEN
+        RAISE EXCEPTION
+            '0045 cannot close the env_key vocabulary (development, test, staging, demo, production); offending environment row(s): %',
+            offending
+            USING ERRCODE = 'check_violation',
+                  HINT = 're-register the live row under one of the five keys and re-key or remove the deleted history before applying this migration';
+    END IF;
+END $$;
+
+ALTER TABLE iam_application_installation_environment
+    DROP CONSTRAINT IF EXISTS chk_iam_application_installation_environment_env_key;
+ALTER TABLE iam_application_installation_environment
+    ADD CONSTRAINT chk_iam_application_installation_environment_env_key
+    CHECK (env_key IN ('development', 'test', 'staging', 'demo', 'production'));
+
+-- 3. Freeze the release scope, and allow the owner pointer to be filled once.
+--
+--    The setting is read with `missing_ok = true`: an ordinary workload never
+--    sets it, and that must mean "refuse", not "error on current_setting".
+CREATE OR REPLACE FUNCTION iam_application_installation_guard_release_scope()
+RETURNS trigger AS $$
+DECLARE
+    scope_change_allowed BOOLEAN;
+BEGIN
+    scope_change_allowed := LOWER(BTRIM(
+        COALESCE(CURRENT_SETTING('sdkwork.allow_ownership_scope_change', true), '')))
+        IN ('on', 'true', '1', 'yes');
+
+    IF NEW.ownership_scope IS DISTINCT FROM OLD.ownership_scope
+       AND NOT scope_change_allowed THEN
+        RAISE EXCEPTION
+            'installation %: ownership_scope is immutable (% -> %); a release level change is a new application and a new installation, not an update (set sdkwork.allow_ownership_scope_change = on only for a supervised repair)',
+            OLD.id, OLD.ownership_scope, NEW.ownership_scope
+            USING ERRCODE = 'check_violation';
+    END IF;
+
+    IF OLD.owner_user_id IS NOT NULL
+       AND NEW.owner_user_id IS DISTINCT FROM OLD.owner_user_id
+       AND NOT scope_change_allowed THEN
+        RAISE EXCEPTION
+            'installation %: owner_user_id is write-once (already %, refusing %); a personal installation belongs to the owner it was provisioned for',
+            OLD.id, OLD.owner_user_id, NEW.owner_user_id
+            USING ERRCODE = 'check_violation';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_iam_application_installation_guard_release_scope
+    ON iam_application_installation;
+CREATE TRIGGER trg_iam_application_installation_guard_release_scope
+    BEFORE UPDATE OF ownership_scope, owner_user_id
+    ON iam_application_installation
+    FOR EACH ROW
+    EXECUTE FUNCTION iam_application_installation_guard_release_scope();

@@ -13,7 +13,7 @@ class AppbaseAccessCredentialCreateCommand:
     email: Optional[str] = None
     phone: Optional[str] = None
     password: Optional[str] = None
-    tenant_application_id: Optional[str] = None
+    installation_id: Optional[str] = None
     app_id: Optional[str] = None
     instance_key: Optional[str] = None
     ownership_scope: Optional[str] = None

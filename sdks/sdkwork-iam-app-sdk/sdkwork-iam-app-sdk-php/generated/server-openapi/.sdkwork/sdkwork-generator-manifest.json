@@ -36,7 +36,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "97b32d4f9f8547a4273415e799fc29d8e9ede81ee6b25613ef925c21b7782dd7"
+      "sha256": "a228b5c21fa5c3c1c5ba9ec4bc2085b33c604d052edcd54feccb89d8523e90e4"
     },
     {
       "path": "sdkwork-sdk.json",
@@ -44,7 +44,7 @@
     },
     {
       "path": "src/Api/Auth.php",
-      "sha256": "423557128a51cf4dd5f087a5bf6dc1c8806cbc8deb86e95e17a39f5075774fa1"
+      "sha256": "7488b48318595246555e67ad04fa7c61d1256011cbc2b0e6f78eedcd1e702372"
     },
     {
       "path": "src/Api/BaseApi.php",
@@ -52,11 +52,11 @@
     },
     {
       "path": "src/Api/Iam.php",
-      "sha256": "f25ebf5ec91e97dbd351a503c9ca08f58662aadfc68119077db671746253af01"
+      "sha256": "c20080928a86bb619dd9cbee489e795c8f644582f3b41bc99433d0d690eda6c7"
     },
     {
       "path": "src/Api/Oauth.php",
-      "sha256": "ecc92939971168fd97c307a3b60f103a1242bc2742b3960d1e81d5ffe4c1cc8f"
+      "sha256": "d217bedd929f2d3076b09ae1806f4b920fa8933adf647d4279746d641663a48a"
     },
     {
       "path": "src/Api/System.php",
@@ -75,28 +75,40 @@
       "sha256": "19bfd124b55026e5d8b789be46d3c40a682fe9384833793e82cf9387bd8aa897"
     },
     {
-      "path": "src/Models/AuthorizationsCompletionsCreateResponse.php",
-      "sha256": "6db4f3505d18bd07938498b490766f1ee981f3522814ffb66511ba3d48d532b9"
+      "path": "src/Models/AuthorizationsCompletionsCreateResponse201.php",
+      "sha256": "c16820f1296739e6754201b9e797641fd8956972bed714b2f1b5199d5bc0518f"
     },
     {
       "path": "src/Models/AuthorizationsCreateRequest.php",
       "sha256": "cd4857f09c1d43082bd09b78af4087b43b4c06bfb2a3d2ae8ab02808ca135ad7"
     },
     {
-      "path": "src/Models/AuthorizationsCreateResponse.php",
-      "sha256": "c18d3de468ed48207c0aac64f35e109d76003a4823a242bee3bc31a208b825a2"
+      "path": "src/Models/AuthorizationsCreateResponse201.php",
+      "sha256": "6a1b265195e33acf9c1982380424a536b173e6e7c2d9ea10eae7616389d554f5"
     },
     {
       "path": "src/Models/DesktopSessionsCreateRequest.php",
       "sha256": "a364f3507ebf285405cf40eb491a60ed46da088bdb4541bfb5f5b12d3a4d09c1"
     },
     {
-      "path": "src/Models/DesktopSessionsCreateResponse.php",
-      "sha256": "7519521ffb54a3afbf9750453cf75f9196f6bfb30bc4521c5e4684fe7b02436f"
+      "path": "src/Models/DesktopSessionsCreateResponse201.php",
+      "sha256": "48fa49ac870647401bf56ec87b8c2352a2c6cbaabf2b37583938e86ec592e008"
     },
     {
       "path": "src/Models/FieldError.php",
       "sha256": "4004e2d0ea8f46fca9e38cd8171d1ecd9535241e644f272ca7520ac29dc48721"
+    },
+    {
+      "path": "src/Models/IamAppAccessToken.php",
+      "sha256": "c5ae93ab4528c2d4eba803e9f03b4eb47ec3dd2008526c4b6ebca5593a96e225"
+    },
+    {
+      "path": "src/Models/IamAppAccessTokenCreateCommand.php",
+      "sha256": "6946a21911cbbd0b82fc777063b8d69f3bcd137021cf388e8293cac28cb8c0aa"
+    },
+    {
+      "path": "src/Models/IamAppAccessTokenResponse.php",
+      "sha256": "82db90a03bc664575e940e54ff5260604bc9f8b59fe6dbea01c1ed3484f87b15"
     },
     {
       "path": "src/Models/IamOrganizationMember.php",

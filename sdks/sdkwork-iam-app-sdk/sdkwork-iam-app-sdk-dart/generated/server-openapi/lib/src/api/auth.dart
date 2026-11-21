@@ -75,9 +75,13 @@ class AuthApi {
   }
 
   /// Sessions current logout.
-  Future<void> sessionsCurrentLogout(SessionsCurrentLogoutRequest body) async {
+  Future<SdkWorkCommandResponse?> sessionsCurrentLogout(SessionsCurrentLogoutRequest body) async {
     final payload = body.toJson();
-    await _client.request('POST', ApiPaths.appPath('/auth/sessions/current/logout'), body: payload, contentType: 'application/json', skipAuth: true);
+    final response = await _client.request('POST', ApiPaths.appPath('/auth/sessions/current/logout'), body: payload, contentType: 'application/json', skipAuth: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkCommandResponse.fromJson(map);
+    })();
   }
 
   /// Sessions login Context Selection create.

@@ -2,15 +2,15 @@ package com.sdkwork.iam.backend.sdk.model;
 
 
 public class ServiceAccountCredentialCreateCommand {
-    private String tenantApplicationId;
+    private String installationId;
     private String expiresAt;
 
-    public String getTenantApplicationId() {
-        return this.tenantApplicationId;
+    public String getInstallationId() {
+        return this.installationId;
     }
 
-    public void setTenantApplicationId(String tenantApplicationId) {
-        this.tenantApplicationId = tenantApplicationId;
+    public void setInstallationId(String installationId) {
+        this.installationId = installationId;
     }
 
     public String getExpiresAt() {

@@ -30,9 +30,8 @@ fun main() = runBlocking {
     client.setApiKey("your-api-key")
 
     // Use the SDK
-    val callbackPublicId = "1"
-    val result = client.iamOauth.providerCallbacksHandleGet(callbackPublicId)
-    println(result)
+    val result = client.example.list()
+    println("Request completed")
 }
 ```
 
@@ -72,18 +71,11 @@ val client = SdkworkCustomClient(config)
 
 ## API Modules
 
-- `client.iamOauth` - iam_oauth API
+
 
 ## Usage Examples
 
-### iam_oauth
-
-```kotlin
-// Iam oauth provider Callbacks handle Get.
-val callbackPublicId = "1"
-val result = client.iamOauth.providerCallbacksHandleGet(callbackPublicId)
-println(result)
-```
+No examples available.
 
 ## Error Handling
 
@@ -92,9 +84,8 @@ import kotlinx.coroutines.runBlocking
 
 fun main() = runBlocking {
     try {
-        val callbackPublicId = "1"
-        val result = client.iamOauth.providerCallbacksHandleGet(callbackPublicId)
-        println(result)
+        client.example.list()
+        println("Request completed")
     } catch (e: Exception) {
         println("Error: ${e.message}")
     }

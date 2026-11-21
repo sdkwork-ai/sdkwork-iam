@@ -12,8 +12,8 @@ This package is intentionally transport-free. It consumes `SdkworkIamService` fr
 - `listTenantApplications(tenantId, params)`
 - `retrieveTenantApplicationSummary(tenantId)`
 - `provisionTenantApplication(tenantId, draft)`
-- `updateTenantApplication(tenantId, tenantApplicationId, draft)`
-- `setTenantApplicationEnabled(tenantId, tenantApplicationId, enabled)`
+- `updateTenantApplication(tenantId, installationId, draft)`
+- `setTenantApplicationEnabled(tenantId, installationId, enabled)`
 - `selectTenant(tenantId)`
 - `getSelectedTenant()`
 - `getState()`
@@ -46,8 +46,8 @@ The create/edit tenant drawer renders the shared `DriveUploadImage` field from `
 
 ## Tenant Application Provisioning Contract
 
-Tenant application administration uses the authenticated operator methods under
-`service.iam.tenantApplications.management`. Application templates are retired, so an installation
+Installation administration uses the authenticated operator methods under
+`service.iam.installations.management`. Application templates are retired, so an installation
 is opened from the deploy application it serves plus explicit attributes; deploy-application
 registration and bootstrap credential issuance remain server/CLI bootstrap responsibilities and are
 never exposed through this browser package.

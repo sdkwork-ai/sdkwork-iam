@@ -12,7 +12,7 @@
   "generatedFiles": [
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -28,7 +28,7 @@
     },
     {
       "path": "lib/custom_client.dart",
-      "sha256": "f251c7633dbfe4c35c4d78aedbacdfb091f04720d9310299dc8952dae033693e"
+      "sha256": "6a83c221d7a314afb8a9454f9270de98835cb25a4e5e7a79ed60a80d5662dabe"
     },
     {
       "path": "lib/sdkwork_iam_open_sdk.dart",
@@ -36,11 +36,7 @@
     },
     {
       "path": "lib/src/api/api.dart",
-      "sha256": "3f6053d21614e0e51d81cd6d0b8dfc6e8890e26860d6390a2c2b5e2cfc5e0add"
-    },
-    {
-      "path": "lib/src/api/iam_oauth.dart",
-      "sha256": "3c15f591bac9b768737b62b7d0fa178eebb1d7242da6a7559be0e4e7f1a7ec61"
+      "sha256": "a2e0e7067793a72c2a6dbb4f8dfde65d1d770e7208e7480b312c4bfc8d156fd0"
     },
     {
       "path": "lib/src/api/paths.dart",
@@ -52,11 +48,11 @@
     },
     {
       "path": "lib/src/http/client.dart",
-      "sha256": "c28278decf2c7456a2332dd12d708c8fc4f2bcf2b5843631d983d0dca581fcf9"
+      "sha256": "ea2b776af28f97c0efbdac5f943217b7fb3884c595f805a91e1629a6784ee721"
     },
     {
       "path": "lib/src/models.dart",
-      "sha256": "4e5ff95162a32d26ab701c631218ac8d4f505069de01df19ff246c4c0fd8104c"
+      "sha256": "b821b64ba29eb3e978b490c642ec5bf2176118b4b20dba320f0667bf512914b0"
     },
     {
       "path": "LICENSE",
@@ -68,15 +64,15 @@
     },
     {
       "path": "pubspec.yaml",
-      "sha256": "c361870d0149bffd43d30fc445c7c8c5fedfe745beacc7a9bb994417aec315ec"
+      "sha256": "1415a94239b07b2e109326d018612360552f934a7b346b193613f1fdf60ff075"
     },
     {
       "path": "README.md",
-      "sha256": "bee6b7c74f65e3ea7f66e7ccae4580433d8b45f0ff91da69a87e3af63e3dd3e4"
+      "sha256": "6b51dceb27dcd48a00c2361b10a1f595889e275cf0c38945c427c319ad8c4710"
     },
     {
       "path": "sdkwork-sdk.json",
-      "sha256": "800f29aa5ba9c500ca0e728a813464308cdadec61ca05e0fd43223998be280b4"
+      "sha256": "100b8e4cb1c37916412e18c1356edfa0abd3764c0fb908107ea106a691a77ca9"
     }
   ],
   "scaffoldFiles": [

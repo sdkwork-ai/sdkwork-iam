@@ -31,7 +31,7 @@ const EMPTY_RELYING_PARTY_DRAFT = (): SdkworkIamOauthRelyingPartyDraft => ({
   enabled: true,
   hasExistingSecret: false,
   redirectUrisText: "",
-  tenantApplicationId: "",
+  installationId: "",
   tenantId: "",
 });
 
@@ -55,10 +55,10 @@ export function OauthRelyingPartySection({
           value={draft.tenantId}
         />
         <OauthAdminField
-          label={messages.relyingParty.fields.tenantApplicationId}
-          onChange={(tenantApplicationId) => setDraft((current) => ({ ...current, tenantApplicationId }))}
-          placeholder={messages.relyingParty.fields.tenantApplicationIdPlaceholder}
-          value={draft.tenantApplicationId}
+          label={messages.relyingParty.fields.installationId}
+          onChange={(installationId) => setDraft((current) => ({ ...current, installationId }))}
+          placeholder={messages.relyingParty.fields.installationIdPlaceholder}
+          value={draft.installationId}
         />
         {draft.clientIdHint ? (
           <StatusNotice tone="default">
@@ -67,10 +67,10 @@ export function OauthRelyingPartySection({
         ) : null}
         <div className="flex flex-wrap gap-2">
           <Button
-            disabled={disabled || !draft.tenantId.trim() || !draft.tenantApplicationId.trim()}
+            disabled={disabled || !draft.tenantId.trim() || !draft.installationId.trim()}
             loading={status === "saving"}
             onClick={() => {
-              void controller.loadRelyingPartyConfig(draft.tenantId, draft.tenantApplicationId)
+              void controller.loadRelyingPartyConfig(draft.tenantId, draft.installationId)
                 .then(setDraft)
                 .catch(() => undefined);
             }}

@@ -15,7 +15,9 @@ describe("SDKWork IAM service", () => {
       appbaseBackendClient: {},
     });
 
-    expect(getIamSdkSurface(service)).toEqual(
+    const surface = getIamSdkSurface(service);
+
+    expect(surface).toEqual(
       [
         ...SDKWORK_IAM_APP_SDK_REQUIRED_METHODS,
         ...SDKWORK_IAM_BACKEND_SDK_REQUIRED_METHODS,

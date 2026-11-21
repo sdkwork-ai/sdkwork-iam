@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createSdkworkIamTenantController } from "../src/index";
-import type { SdkworkIamTenantApplicationDraft } from "../src/index";
+import type { SdkworkIamInstallationDraft } from "../src/index";
 
 /**
  * Tenant controller wire contract (`DRIVE_SPEC.md` §18, IAM_SPEC tenant
@@ -143,11 +143,11 @@ const provisionedApplicationRecord = {
   organizationId: "0",
   primaryDomain: "crm.example.com",
   status: "pending_config",
-  tenantApplicationId: "tapp_crm",
+  installationId: "tapp_crm",
   tenantId: "tenant-1",
 };
 
-const provisionDraft: SdkworkIamTenantApplicationDraft = {
+const provisionDraft: SdkworkIamInstallationDraft = {
   accessPermissions: ["iam.users.read"],
   applicationType: "pc",
   deployApplicationId: "deploy-crm",
@@ -162,7 +162,7 @@ function createProvisionService() {
   const create = vi.fn().mockResolvedValue(provisionedApplicationRecord);
   const service = {
     iam: {
-      tenantApplications: {
+      installations: {
         management: { create },
       },
     },
@@ -175,7 +175,7 @@ describe("tenant application provisioning contract", () => {
     const { create, service } = createProvisionService();
     const controller = createSdkworkIamTenantController({ service: service as never });
 
-    const application = await controller.provisionTenantApplication("tenant-1", provisionDraft);
+    const application = await controller.provisionInstallation("tenant-1", provisionDraft);
 
     expect(create).toHaveBeenCalledWith("tenant-1", {
       accessPermissions: ["iam.users.read"],
@@ -192,7 +192,7 @@ describe("tenant application provisioning contract", () => {
     expect(payload).not.toHaveProperty("appKey");
     expect(application).toMatchObject({
       deployApplicationId: "deploy-crm",
-      tenantApplicationId: "tapp_crm",
+      installationId: "tapp_crm",
     });
   });
 
@@ -200,7 +200,7 @@ describe("tenant application provisioning contract", () => {
     const { create, service } = createProvisionService();
     const controller = createSdkworkIamTenantController({ service: service as never });
 
-    await controller.provisionTenantApplication("tenant-1", {
+    await controller.provisionInstallation("tenant-1", {
       ...provisionDraft,
       primaryDomain: "   ",
       provisioningIdempotencyKey: " idem-1 ",
@@ -224,7 +224,7 @@ describe("tenant application provisioning contract", () => {
     const { create, service } = createProvisionService();
     const controller = createSdkworkIamTenantController({ service: service as never });
 
-    await expect(controller.provisionTenantApplication("tenant-1", {
+    await expect(controller.provisionInstallation("tenant-1", {
       ...provisionDraft,
       deployApplicationId: "   ",
     })).rejects.toThrow(/requires deployApplicationId/u);
@@ -235,7 +235,7 @@ describe("tenant application provisioning contract", () => {
     const { create, service } = createProvisionService();
     const controller = createSdkworkIamTenantController({ service: service as never });
 
-    await expect(controller.provisionTenantApplication("tenant-1", {
+    await expect(controller.provisionInstallation("tenant-1", {
       ...provisionDraft,
       applicationType: "",
     })).rejects.toThrow(/requires applicationType/u);
@@ -246,9 +246,9 @@ describe("tenant application provisioning contract", () => {
     const { create, service } = createProvisionService();
     const controller = createSdkworkIamTenantController({ service: service as never });
 
-    await expect(controller.provisionTenantApplication("tenant-1", {
+    await expect(controller.provisionInstallation("tenant-1", {
       ...provisionDraft,
-      applicationType: "desktop" as SdkworkIamTenantApplicationDraft["applicationType"],
+      applicationType: "desktop" as SdkworkIamInstallationDraft["applicationType"],
     })).rejects.toThrow(/requires applicationType to be one of/u);
     expect(create).not.toHaveBeenCalled();
   });

@@ -1,7 +1,7 @@
 //! Backend management of installation environments and their OAuth credentials.
 //!
 //! Every operation is tenant-scoped: the handler first refuses a path tenant the
-//! caller may not reach (the existing `iam.tenant_applications.update` boundary),
+//! caller may not reach (the existing `iam.installations.update` boundary),
 //! then the adapter queries filter by that tenant, so a row of another tenant is
 //! indistinguishable from a missing row.
 //!
@@ -39,24 +39,25 @@ pub(crate) fn apply_installation_lifecycle_routes(
     router: Router<BackendIamState>,
 ) -> Router<BackendIamState> {
     router
+        // Canonical installation subresource surface (transport migration window).
         .route(
-            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments",
+            "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/environments",
             get(list_environments_handler),
         )
         .route(
-            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/environments/{environmentKey}",
+            "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/environments/{environmentKey}",
             put(upsert_environment_handler).delete(delete_environment_handler),
         )
         .route(
-            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials",
+            "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials",
             get(list_credentials_handler).post(create_credential_handler),
         )
         .route(
-            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials/{credentialId}/rotate",
+            "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials/{credentialId}/rotate",
             post(rotate_credential_handler),
         )
         .route(
-            "/backend/v3/api/iam/tenants/{tenantId}/applications/{tenantApplicationId}/credentials/{credentialId}/revoke",
+            "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials/{credentialId}/revoke",
             post(revoke_credential_handler),
         )
 }

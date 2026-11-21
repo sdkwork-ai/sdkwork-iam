@@ -92,30 +92,30 @@ fn oauth_account_maintenance_operation(operation_id: &str) -> bool {
 
 fn explicit_bootstrap_permission(operation_id: &str) -> Option<&'static str> {
     match operation_id {
-        "tenantApplications.create" => Some("iam.tenant_applications.provision"),
-        "tenantApplications.list" | "tenantApplications.summary.retrieve" => {
-            Some("iam.tenant_applications.update")
+        "installations.create" | "installations.management.create" => {
+            Some("iam.installations.provision")
         }
-        "tenantApplications.management.create" => Some("iam.tenant_applications.provision"),
-        "tenantApplications.management.update" | "tenantApplications.management.disable" => {
-            Some("iam.tenant_applications.update")
+        "installations.list"
+        | "installations.retrieve"
+        | "installations.summary.retrieve"
+        | "installations.update"
+        | "installations.management.update"
+        | "installations.management.disable" => Some("iam.installations.update"),
+        "installations.enable" | "installations.management.enable" => {
+            Some("iam.installations.enable")
         }
-        "tenantApplications.management.enable" => Some("iam.tenant_applications.enable"),
-        "tenantApplications.retrieve" => Some("iam.tenant_applications.update"),
-        "tenantApplications.update" => Some("iam.tenant_applications.update"),
-        "tenantApplications.enable" => Some("iam.tenant_applications.enable"),
         // Environments and their OAuth credentials are attributes of the
         // installation itself, so they ride on the permission that already owns
         // installation mutation. No new code is seeded and no existing boundary is
         // widened: an actor that may update an installation may manage the
         // environment domain and credential lifecycle of that installation.
-        "tenantApplications.environments.list"
-        | "tenantApplications.environments.update"
-        | "tenantApplications.environments.delete"
-        | "tenantApplications.credentials.list"
-        | "tenantApplications.credentials.create"
-        | "tenantApplications.credentials.rotate"
-        | "tenantApplications.credentials.revoke" => Some("iam.tenant_applications.update"),
+        "installations.environments.list"
+        | "installations.environments.update"
+        | "installations.environments.delete"
+        | "installations.credentials.list"
+        | "installations.credentials.create"
+        | "installations.credentials.rotate"
+        | "installations.credentials.revoke" => Some("iam.installations.update"),
         "accessCredentials.create" => Some("iam.access_credentials.create"),
         "serviceAccounts.credentials.create" => Some("iam.service_account_credentials.create"),
         "serviceAccountCredentials.revoke" => Some("iam.service_account_credentials.revoke"),
@@ -371,17 +371,17 @@ mod tests {
     #[test]
     fn maps_installation_environment_and_credential_operations_to_the_update_boundary() {
         for operation_id in [
-            "tenantApplications.environments.list",
-            "tenantApplications.environments.update",
-            "tenantApplications.environments.delete",
-            "tenantApplications.credentials.list",
-            "tenantApplications.credentials.create",
-            "tenantApplications.credentials.rotate",
-            "tenantApplications.credentials.revoke",
+            "installations.environments.list",
+            "installations.environments.update",
+            "installations.environments.delete",
+            "installations.credentials.list",
+            "installations.credentials.create",
+            "installations.credentials.rotate",
+            "installations.credentials.revoke",
         ] {
             assert_eq!(
                 iam_backend_permission_for_operation(operation_id),
-                Some("iam.tenant_applications.update"),
+                Some("iam.installations.update"),
                 "{operation_id} must reuse the installation update boundary"
             );
         }

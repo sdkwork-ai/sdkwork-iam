@@ -979,7 +979,7 @@ fn application_standard_baseline_declares_tenant_application_tables_without_stud
     for table in [
         "iam_application_template",
         "iam_application_template_package",
-        "iam_tenant_application",
+        "iam_installation",
     ] {
         assert!(
             sql.contains(&format!("CREATE TABLE IF NOT EXISTS {table}")),

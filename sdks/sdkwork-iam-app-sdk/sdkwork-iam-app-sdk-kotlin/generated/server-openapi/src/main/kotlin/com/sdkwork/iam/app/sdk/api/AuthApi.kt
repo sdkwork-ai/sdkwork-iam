@@ -50,8 +50,9 @@ class AuthApi(private val client: HttpClient) {
     }
 
     /** Sessions current logout. */
-    suspend fun sessionsCurrentLogout(body: SessionsCurrentLogoutRequest): Unit {
-        client.request("POST", ApiPaths.appPath("/auth/sessions/current/logout"), body, null, null, "application/json", true, false)
+    suspend fun sessionsCurrentLogout(body: SessionsCurrentLogoutRequest): SdkWorkCommandResponse? {
+        val raw = client.request("POST", ApiPaths.appPath("/auth/sessions/current/logout"), body, null, null, "application/json", true, false)
+        return client.convertValue(raw, object : TypeReference<SdkWorkCommandResponse>() {})
     }
 
     /** Sessions login Context Selection create. */

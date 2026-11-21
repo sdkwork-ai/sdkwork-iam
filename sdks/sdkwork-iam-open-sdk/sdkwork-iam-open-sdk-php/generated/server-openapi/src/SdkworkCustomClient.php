@@ -5,17 +5,15 @@ declare(strict_types=1);
 namespace SDKWork\\Iam\\OpenSdk;
 
 use SDKWork\\Iam\\OpenSdk\Http\HttpClient;
-use SDKWork\\Iam\\OpenSdk\Api\IamOauthApi;
 
 final class SdkworkCustomClient
 {
     public HttpClient $http;
-    public IamOauthApi $iamOauth;
 
     public function __construct(SdkConfig $config)
     {
         $this->http = new HttpClient($config);
-        $this->iamOauth = new IamOauthApi($this->http);
+
     }
 
     public function setApiKey(string $apiKey): self

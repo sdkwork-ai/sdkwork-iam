@@ -3,7 +3,7 @@ module Sdkwork
     module Models
       class AppbaseAccessCredentialCreateCommand
               # Issue a delegated access credential for an enabled tenant application.
-              attr_accessor :auth_token, :username, :email, :phone, :password, :tenant_id, :organization_id, :tenant_application_id, :app_id, :instance_key, :ownership_scope
+              attr_accessor :auth_token, :username, :email, :phone, :password, :tenant_id, :organization_id, :installation_id, :app_id, :instance_key, :ownership_scope
 
               def initialize(attributes = {})
                 attributes = (attributes || {}).transform_keys(&:to_s)
@@ -14,7 +14,7 @@ module Sdkwork
                 @password = attributes['password']
                 @tenant_id = attributes['tenantId']
                 @organization_id = attributes['organizationId']
-                @tenant_application_id = attributes['tenantApplicationId']
+                @installation_id = attributes['installationId']
                 @app_id = attributes['appId']
                 @instance_key = attributes['instanceKey']
                 @ownership_scope = attributes['ownershipScope']
@@ -35,7 +35,7 @@ module Sdkwork
                   'password' => @password,
                   'tenantId' => @tenant_id,
                   'organizationId' => @organization_id,
-                  'tenantApplicationId' => @tenant_application_id,
+                  'installationId' => @installation_id,
                   'appId' => @app_id,
                   'instanceKey' => @instance_key,
                   'ownershipScope' => @ownership_scope,

@@ -40,15 +40,15 @@
     },
     {
       "path": "lib/src/api/auth.dart",
-      "sha256": "af9c691bf1f5345ccfc47740e9268f520e90b322704816660aecb15548065ca7"
+      "sha256": "43b3f5b0846b40b341a66bf4f25915251fc5b7d40e05e2b4f49f4100d135d91d"
     },
     {
       "path": "lib/src/api/iam.dart",
-      "sha256": "e1a9c23e5dd118f63284751f4b353533a71575a92ced8d1030ce9d0708e10a6a"
+      "sha256": "24df5ec46f4176d736d76d0f20401435b63e2508d230d195b48254096d4e4e83"
     },
     {
       "path": "lib/src/api/oauth.dart",
-      "sha256": "1010d1d535804d26f4aa9f15b5bb008236015c9fe605a0b24aca8b01c8ee137c"
+      "sha256": "24f41a20d8ddf8ceb87495504127982e5fc946743b901e4d936915dae9c38adf"
     },
     {
       "path": "lib/src/api/paths.dart",
@@ -68,7 +68,7 @@
     },
     {
       "path": "lib/src/models.dart",
-      "sha256": "447e902e8992045afe156a12ea83c11d1839b5e85c3fe36ca79bf432566db663"
+      "sha256": "ea4951fb16e83a57d11fead491520aeba36a9843e904201e8f5c77cca7150f89"
     },
     {
       "path": "LICENSE",
@@ -84,7 +84,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "eb857d3af559fa056cb58eb6d7d9e4db06001cb5cb6fa227f55c516813edd890"
+      "sha256": "96a1c715307c02739ffe4f6b18b72f70b357d123518edfb6f0916632b49fd2fd"
     },
     {
       "path": "sdkwork-sdk.json",

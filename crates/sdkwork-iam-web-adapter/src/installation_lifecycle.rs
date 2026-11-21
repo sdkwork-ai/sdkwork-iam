@@ -544,10 +544,12 @@ pub async fn upsert_installation_environment(
 
     let existing_id: Option<String> = sqlx::query_scalar(
         "SELECT id FROM iam_application_installation_environment \
-         WHERE installation_id = $1 AND env_key = $2 AND deleted_at IS NULL LIMIT 1",
+         WHERE installation_id = $1 AND env_key = $2 AND tenant_id = $3 \
+           AND deleted_at IS NULL LIMIT 1",
     )
     .bind(installation_id)
     .bind(&env_key)
+    .bind(tenant_id)
     .fetch_optional(&mut *transaction)
     .await
     .map_err(|error| format!("load installation environment failed: {error}"))?;
@@ -557,13 +559,14 @@ pub async fn upsert_installation_environment(
             "UPDATE iam_application_installation_environment \
              SET primary_domain = $2, domain_config_json = $3, env_status = COALESCE($4, env_status), \
                  updated_at = $5, version = version + 1 \
-             WHERE id = $1",
+             WHERE id = $1 AND tenant_id = $6",
         )
         .bind(&environment_id)
         .bind(primary_domain.as_deref())
         .bind(SqlJson(&command.domain_config))
         .bind(requested_status.as_deref())
         .bind(now)
+        .bind(tenant_id)
         .execute(&mut *transaction)
         .await
         .map_err(map_environment_write_error)?;
@@ -597,9 +600,10 @@ pub async fn upsert_installation_environment(
 
     let row = sqlx::query(sqlx::AssertSqlSafe(format!(
         "SELECT {ENVIRONMENT_COLUMNS} FROM iam_application_installation_environment \
-         WHERE id = $1"
+         WHERE id = $1 AND tenant_id = $2"
     )))
     .bind(&environment_id)
+    .bind(tenant_id)
     .fetch_one(&mut *transaction)
     .await
     .map_err(|error| format!("reload installation environment failed: {error}"))?;
@@ -1578,9 +1582,11 @@ mod postgres_tests {
         assert!(!secret.is_empty());
 
         let stored: String = sqlx::query_scalar(
-            "SELECT secret_hash FROM iam_application_installation_credential WHERE id = $1",
+            "SELECT secret_hash FROM iam_application_installation_credential \
+             WHERE id = $1 AND tenant_id = $2",
         )
         .bind(&created.id)
+        .bind(&tenant_id)
         .fetch_one(&pg)
         .await
         .expect("read the stored secret hash");
@@ -1613,9 +1619,11 @@ mod postgres_tests {
         assert_ne!(new_secret, secret);
 
         let old_status: String = sqlx::query_scalar(
-            "SELECT credential_status FROM iam_application_installation_credential WHERE id = $1",
+            "SELECT credential_status FROM iam_application_installation_credential \
+             WHERE id = $1 AND tenant_id = $2",
         )
         .bind(&created.id)
+        .bind(&tenant_id)
         .fetch_one(&pg)
         .await
         .expect("read the rotated predecessor");

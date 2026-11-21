@@ -15,7 +15,7 @@ export interface SdkworkIamTenantAdminMessages {
       reveal: string;
       securityNote: string;
       sessionId: string;
-      tenantApplicationId: string;
+      installationId: string;
       title: string;
       tokenLabel: string;
       unavailable: string;

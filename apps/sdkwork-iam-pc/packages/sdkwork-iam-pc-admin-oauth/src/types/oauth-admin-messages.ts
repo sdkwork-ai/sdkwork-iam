@@ -696,8 +696,8 @@ export interface SdkworkIamOauthAdminMessages {
       clientSecretHash: string;
       redirectUris: string;
       redirectUrisPlaceholder: string;
-      tenantApplicationId: string;
-      tenantApplicationIdPlaceholder: string;
+      installationId: string;
+      installationIdPlaceholder: string;
       tenantId: string;
       tenantIdPlaceholder: string;
     };

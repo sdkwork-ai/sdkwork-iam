@@ -480,6 +480,666 @@ class SdkWorkCommandResponse {
   }
 }
 
+class IamInstallationEnvironment {
+  final String environmentId;
+  final String tenantId;
+  final String? organizationId;
+  final String installationId;
+  final String environmentKey;
+  final String? primaryDomain;
+  final Map<String, dynamic>? domainConfig;
+  final String status;
+  final String createdAt;
+  final String updatedAt;
+
+  IamInstallationEnvironment({
+    required this.environmentId,
+    required this.tenantId,
+    this.organizationId,
+    required this.installationId,
+    required this.environmentKey,
+    this.primaryDomain,
+    this.domainConfig,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt
+  });
+
+  factory IamInstallationEnvironment.fromJson(Map<String, dynamic> json) {
+    return IamInstallationEnvironment(
+      environmentId: (() {
+        final value = json['environmentId']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationEnvironment.environmentId is required');
+        }
+        return value;
+      })(),
+      tenantId: (() {
+        final value = json['tenantId']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationEnvironment.tenantId is required');
+        }
+        return value;
+      })(),
+      organizationId: json['organizationId']?.toString(),
+      installationId: (() {
+        final value = json['installationId']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationEnvironment.installationId is required');
+        }
+        return value;
+      })(),
+      environmentKey: (() {
+        final value = json['environmentKey']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationEnvironment.environmentKey is required');
+        }
+        return value;
+      })(),
+      primaryDomain: json['primaryDomain']?.toString(),
+      domainConfig: _sdkworkAsMap(json['domainConfig']),
+      status: (() {
+        final value = json['status']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationEnvironment.status is required');
+        }
+        return value;
+      })(),
+      createdAt: (() {
+        final value = json['createdAt']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationEnvironment.createdAt is required');
+        }
+        return value;
+      })(),
+      updatedAt: (() {
+        final value = json['updatedAt']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationEnvironment.updatedAt is required');
+        }
+        return value;
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'environmentId': environmentId,
+      'tenantId': tenantId,
+      'organizationId': organizationId,
+      'installationId': installationId,
+      'environmentKey': environmentKey,
+      'primaryDomain': primaryDomain,
+      'domainConfig': domainConfig,
+      'status': status,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
+  }
+}
+
+class IamInstallationEnvironmentUpsertCommand {
+  final String? environmentKey;
+  final String? primaryDomain;
+  final Map<String, dynamic>? domainConfig;
+  final String? status;
+
+  IamInstallationEnvironmentUpsertCommand({
+    this.environmentKey,
+    this.primaryDomain,
+    this.domainConfig,
+    this.status
+  });
+
+  factory IamInstallationEnvironmentUpsertCommand.fromJson(Map<String, dynamic> json) {
+    return IamInstallationEnvironmentUpsertCommand(
+      environmentKey: json['environmentKey']?.toString(),
+      primaryDomain: json['primaryDomain']?.toString(),
+      domainConfig: _sdkworkAsMap(json['domainConfig']),
+      status: json['status']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'environmentKey': environmentKey,
+      'primaryDomain': primaryDomain,
+      'domainConfig': domainConfig,
+      'status': status,
+    };
+  }
+}
+
+class IamInstallationCredential {
+  final String credentialId;
+  final String tenantId;
+  final String installationEnvironmentId;
+  final String environmentKey;
+  final String clientId;
+  final List<String> redirectUris;
+  final List<String> grantedScopes;
+  final String status;
+  final String? rotatedAt;
+  final String? retiredAt;
+  final String createdAt;
+  final String updatedAt;
+
+  IamInstallationCredential({
+    required this.credentialId,
+    required this.tenantId,
+    required this.installationEnvironmentId,
+    required this.environmentKey,
+    required this.clientId,
+    required this.redirectUris,
+    required this.grantedScopes,
+    required this.status,
+    this.rotatedAt,
+    this.retiredAt,
+    required this.createdAt,
+    required this.updatedAt
+  });
+
+  factory IamInstallationCredential.fromJson(Map<String, dynamic> json) {
+    return IamInstallationCredential(
+      credentialId: (() {
+        final value = json['credentialId']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredential.credentialId is required');
+        }
+        return value;
+      })(),
+      tenantId: (() {
+        final value = json['tenantId']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredential.tenantId is required');
+        }
+        return value;
+      })(),
+      installationEnvironmentId: (() {
+        final value = json['installationEnvironmentId']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredential.installationEnvironmentId is required');
+        }
+        return value;
+      })(),
+      environmentKey: (() {
+        final value = json['environmentKey']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredential.environmentKey is required');
+        }
+        return value;
+      })(),
+      clientId: (() {
+        final value = json['clientId']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredential.clientId is required');
+        }
+        return value;
+      })(),
+      redirectUris: (() {
+        final list = _sdkworkAsList(json['redirectUris']);
+        if (list == null) {
+          throw FormatException('IamInstallationCredential.redirectUris is required');
+        }
+        return list
+            .map((item) => item?.toString())
+            .whereType<String>()
+            .toList();
+      })(),
+      grantedScopes: (() {
+        final list = _sdkworkAsList(json['grantedScopes']);
+        if (list == null) {
+          throw FormatException('IamInstallationCredential.grantedScopes is required');
+        }
+        return list
+            .map((item) => item?.toString())
+            .whereType<String>()
+            .toList();
+      })(),
+      status: (() {
+        final value = json['status']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredential.status is required');
+        }
+        return value;
+      })(),
+      rotatedAt: json['rotatedAt']?.toString(),
+      retiredAt: json['retiredAt']?.toString(),
+      createdAt: (() {
+        final value = json['createdAt']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredential.createdAt is required');
+        }
+        return value;
+      })(),
+      updatedAt: (() {
+        final value = json['updatedAt']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredential.updatedAt is required');
+        }
+        return value;
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'credentialId': credentialId,
+      'tenantId': tenantId,
+      'installationEnvironmentId': installationEnvironmentId,
+      'environmentKey': environmentKey,
+      'clientId': clientId,
+      'redirectUris': redirectUris.map((item) => item).toList(),
+      'grantedScopes': grantedScopes.map((item) => item).toList(),
+      'status': status,
+      'rotatedAt': rotatedAt,
+      'retiredAt': retiredAt,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
+  }
+}
+
+class IamInstallationCredentialWithSecret {
+  final String credentialId;
+  final String tenantId;
+  final String installationEnvironmentId;
+  final String environmentKey;
+  final String clientId;
+  final String clientSecret;
+  final List<String> redirectUris;
+  final List<String> grantedScopes;
+  final String status;
+  final String? rotatedAt;
+  final String? retiredAt;
+  final String createdAt;
+  final String updatedAt;
+
+  IamInstallationCredentialWithSecret({
+    required this.credentialId,
+    required this.tenantId,
+    required this.installationEnvironmentId,
+    required this.environmentKey,
+    required this.clientId,
+    required this.clientSecret,
+    required this.redirectUris,
+    required this.grantedScopes,
+    required this.status,
+    this.rotatedAt,
+    this.retiredAt,
+    required this.createdAt,
+    required this.updatedAt
+  });
+
+  factory IamInstallationCredentialWithSecret.fromJson(Map<String, dynamic> json) {
+    return IamInstallationCredentialWithSecret(
+      credentialId: (() {
+        final value = json['credentialId']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredentialWithSecret.credentialId is required');
+        }
+        return value;
+      })(),
+      tenantId: (() {
+        final value = json['tenantId']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredentialWithSecret.tenantId is required');
+        }
+        return value;
+      })(),
+      installationEnvironmentId: (() {
+        final value = json['installationEnvironmentId']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredentialWithSecret.installationEnvironmentId is required');
+        }
+        return value;
+      })(),
+      environmentKey: (() {
+        final value = json['environmentKey']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredentialWithSecret.environmentKey is required');
+        }
+        return value;
+      })(),
+      clientId: (() {
+        final value = json['clientId']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredentialWithSecret.clientId is required');
+        }
+        return value;
+      })(),
+      clientSecret: (() {
+        final value = json['clientSecret']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredentialWithSecret.clientSecret is required');
+        }
+        return value;
+      })(),
+      redirectUris: (() {
+        final list = _sdkworkAsList(json['redirectUris']);
+        if (list == null) {
+          throw FormatException('IamInstallationCredentialWithSecret.redirectUris is required');
+        }
+        return list
+            .map((item) => item?.toString())
+            .whereType<String>()
+            .toList();
+      })(),
+      grantedScopes: (() {
+        final list = _sdkworkAsList(json['grantedScopes']);
+        if (list == null) {
+          throw FormatException('IamInstallationCredentialWithSecret.grantedScopes is required');
+        }
+        return list
+            .map((item) => item?.toString())
+            .whereType<String>()
+            .toList();
+      })(),
+      status: (() {
+        final value = json['status']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredentialWithSecret.status is required');
+        }
+        return value;
+      })(),
+      rotatedAt: json['rotatedAt']?.toString(),
+      retiredAt: json['retiredAt']?.toString(),
+      createdAt: (() {
+        final value = json['createdAt']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredentialWithSecret.createdAt is required');
+        }
+        return value;
+      })(),
+      updatedAt: (() {
+        final value = json['updatedAt']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredentialWithSecret.updatedAt is required');
+        }
+        return value;
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'credentialId': credentialId,
+      'tenantId': tenantId,
+      'installationEnvironmentId': installationEnvironmentId,
+      'environmentKey': environmentKey,
+      'clientId': clientId,
+      'clientSecret': clientSecret,
+      'redirectUris': redirectUris.map((item) => item).toList(),
+      'grantedScopes': grantedScopes.map((item) => item).toList(),
+      'status': status,
+      'rotatedAt': rotatedAt,
+      'retiredAt': retiredAt,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
+  }
+}
+
+class IamInstallationCredentialCreateCommand {
+  final String environmentKey;
+  final String? clientId;
+  final List<String>? redirectUris;
+  final List<String>? grantedScopes;
+
+  IamInstallationCredentialCreateCommand({
+    required this.environmentKey,
+    this.clientId,
+    this.redirectUris,
+    this.grantedScopes
+  });
+
+  factory IamInstallationCredentialCreateCommand.fromJson(Map<String, dynamic> json) {
+    return IamInstallationCredentialCreateCommand(
+      environmentKey: (() {
+        final value = json['environmentKey']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredentialCreateCommand.environmentKey is required');
+        }
+        return value;
+      })(),
+      clientId: json['clientId']?.toString(),
+      redirectUris: (() {
+        final list = _sdkworkAsList(json['redirectUris']);
+        if (list == null) {
+          return null;
+        }
+        return list
+            .map((item) => item?.toString())
+            .whereType<String>()
+            .toList();
+      })(),
+      grantedScopes: (() {
+        final list = _sdkworkAsList(json['grantedScopes']);
+        if (list == null) {
+          return null;
+        }
+        return list
+            .map((item) => item?.toString())
+            .whereType<String>()
+            .toList();
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'environmentKey': environmentKey,
+      'clientId': clientId,
+      'redirectUris': redirectUris?.map((item) => item).toList(),
+      'grantedScopes': grantedScopes?.map((item) => item).toList(),
+    };
+  }
+}
+
+class IamInstallationCredentialRotateCommand {
+  final String? clientId;
+
+  IamInstallationCredentialRotateCommand({
+    this.clientId
+  });
+
+  factory IamInstallationCredentialRotateCommand.fromJson(Map<String, dynamic> json) {
+    return IamInstallationCredentialRotateCommand(
+      clientId: json['clientId']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'clientId': clientId,
+    };
+  }
+}
+
+class IamInstallationEnvironmentListResponse {
+  final int code;
+  final dynamic data;
+  final String traceId;
+
+  IamInstallationEnvironmentListResponse({
+    required this.code,
+    required this.data,
+    required this.traceId
+  });
+
+  factory IamInstallationEnvironmentListResponse.fromJson(Map<String, dynamic> json) {
+    return IamInstallationEnvironmentListResponse(
+      code: (() {
+        final value = json['code'];
+        if (value is! int) {
+          throw FormatException('IamInstallationEnvironmentListResponse.code is required');
+        }
+        return value;
+      })(),
+      data: (() {
+        final map = _sdkworkAsMap(json['data']);
+        if (map == null) {
+          throw FormatException('IamInstallationEnvironmentListResponse.data is required');
+        }
+        return map;
+      })(),
+      traceId: (() {
+        final value = json['traceId']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationEnvironmentListResponse.traceId is required');
+        }
+        return value;
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'data': data,
+      'traceId': traceId,
+    };
+  }
+}
+
+class IamInstallationEnvironmentResponse {
+  final int code;
+  final dynamic data;
+  final String traceId;
+
+  IamInstallationEnvironmentResponse({
+    required this.code,
+    required this.data,
+    required this.traceId
+  });
+
+  factory IamInstallationEnvironmentResponse.fromJson(Map<String, dynamic> json) {
+    return IamInstallationEnvironmentResponse(
+      code: (() {
+        final value = json['code'];
+        if (value is! int) {
+          throw FormatException('IamInstallationEnvironmentResponse.code is required');
+        }
+        return value;
+      })(),
+      data: (() {
+        final map = _sdkworkAsMap(json['data']);
+        if (map == null) {
+          throw FormatException('IamInstallationEnvironmentResponse.data is required');
+        }
+        return map;
+      })(),
+      traceId: (() {
+        final value = json['traceId']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationEnvironmentResponse.traceId is required');
+        }
+        return value;
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'data': data,
+      'traceId': traceId,
+    };
+  }
+}
+
+class IamInstallationCredentialResponse {
+  final int code;
+  final dynamic data;
+  final String traceId;
+
+  IamInstallationCredentialResponse({
+    required this.code,
+    required this.data,
+    required this.traceId
+  });
+
+  factory IamInstallationCredentialResponse.fromJson(Map<String, dynamic> json) {
+    return IamInstallationCredentialResponse(
+      code: (() {
+        final value = json['code'];
+        if (value is! int) {
+          throw FormatException('IamInstallationCredentialResponse.code is required');
+        }
+        return value;
+      })(),
+      data: (() {
+        final map = _sdkworkAsMap(json['data']);
+        if (map == null) {
+          throw FormatException('IamInstallationCredentialResponse.data is required');
+        }
+        return map;
+      })(),
+      traceId: (() {
+        final value = json['traceId']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredentialResponse.traceId is required');
+        }
+        return value;
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'data': data,
+      'traceId': traceId,
+    };
+  }
+}
+
+class IamInstallationCredentialListResponse {
+  final int code;
+  final dynamic data;
+  final String traceId;
+
+  IamInstallationCredentialListResponse({
+    required this.code,
+    required this.data,
+    required this.traceId
+  });
+
+  factory IamInstallationCredentialListResponse.fromJson(Map<String, dynamic> json) {
+    return IamInstallationCredentialListResponse(
+      code: (() {
+        final value = json['code'];
+        if (value is! int) {
+          throw FormatException('IamInstallationCredentialListResponse.code is required');
+        }
+        return value;
+      })(),
+      data: (() {
+        final map = _sdkworkAsMap(json['data']);
+        if (map == null) {
+          throw FormatException('IamInstallationCredentialListResponse.data is required');
+        }
+        return map;
+      })(),
+      traceId: (() {
+        final value = json['traceId']?.toString();
+        if (value == null) {
+          throw FormatException('IamInstallationCredentialListResponse.traceId is required');
+        }
+        return value;
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'data': data,
+      'traceId': traceId,
+    };
+  }
+}
+
 class IamOauthClientCreateCommand {
   final String integrationId;
   final String providerCode;
@@ -550,7 +1210,7 @@ class IamOauthClientCreateCommand {
   }
 }
 
-class IamTenantApplicationManagementProvisionCommand {
+class IamInstallationManagementProvisionCommand {
   final String organizationId;
   final String instanceKey;
   final String displayName;
@@ -560,9 +1220,11 @@ class IamTenantApplicationManagementProvisionCommand {
   final List<String>? accessPermissions;
   final Map<String, dynamic>? runtimeConfig;
   final String? deployApplicationId;
+  final String? ownershipScope;
+  final String? ownerUserId;
   final String? provisioningIdempotencyKey;
 
-  IamTenantApplicationManagementProvisionCommand({
+  IamInstallationManagementProvisionCommand({
     required this.organizationId,
     required this.instanceKey,
     required this.displayName,
@@ -572,43 +1234,45 @@ class IamTenantApplicationManagementProvisionCommand {
     this.accessPermissions,
     this.runtimeConfig,
     this.deployApplicationId,
+    this.ownershipScope,
+    this.ownerUserId,
     this.provisioningIdempotencyKey
   });
 
-  factory IamTenantApplicationManagementProvisionCommand.fromJson(Map<String, dynamic> json) {
-    return IamTenantApplicationManagementProvisionCommand(
+  factory IamInstallationManagementProvisionCommand.fromJson(Map<String, dynamic> json) {
+    return IamInstallationManagementProvisionCommand(
       organizationId: (() {
         final value = json['organizationId']?.toString();
         if (value == null) {
-          throw FormatException('IamTenantApplicationManagementProvisionCommand.organizationId is required');
+          throw FormatException('IamInstallationManagementProvisionCommand.organizationId is required');
         }
         return value;
       })(),
       instanceKey: (() {
         final value = json['instanceKey']?.toString();
         if (value == null) {
-          throw FormatException('IamTenantApplicationManagementProvisionCommand.instanceKey is required');
+          throw FormatException('IamInstallationManagementProvisionCommand.instanceKey is required');
         }
         return value;
       })(),
       displayName: (() {
         final value = json['displayName']?.toString();
         if (value == null) {
-          throw FormatException('IamTenantApplicationManagementProvisionCommand.displayName is required');
+          throw FormatException('IamInstallationManagementProvisionCommand.displayName is required');
         }
         return value;
       })(),
       environment: (() {
         final value = json['environment']?.toString();
         if (value == null) {
-          throw FormatException('IamTenantApplicationManagementProvisionCommand.environment is required');
+          throw FormatException('IamInstallationManagementProvisionCommand.environment is required');
         }
         return value;
       })(),
       applicationType: (() {
         final value = json['applicationType']?.toString();
         if (value == null) {
-          throw FormatException('IamTenantApplicationManagementProvisionCommand.applicationType is required');
+          throw FormatException('IamInstallationManagementProvisionCommand.applicationType is required');
         }
         return value;
       })(),
@@ -625,6 +1289,8 @@ class IamTenantApplicationManagementProvisionCommand {
       })(),
       runtimeConfig: _sdkworkAsMap(json['runtimeConfig']),
       deployApplicationId: json['deployApplicationId']?.toString(),
+      ownershipScope: json['ownershipScope']?.toString(),
+      ownerUserId: json['ownerUserId']?.toString(),
       provisioningIdempotencyKey: json['provisioningIdempotencyKey']?.toString()
     );
   }
@@ -640,22 +1306,24 @@ class IamTenantApplicationManagementProvisionCommand {
       'accessPermissions': accessPermissions?.map((item) => item).toList(),
       'runtimeConfig': runtimeConfig,
       'deployApplicationId': deployApplicationId,
+      'ownershipScope': ownershipScope,
+      'ownerUserId': ownerUserId,
       'provisioningIdempotencyKey': provisioningIdempotencyKey,
     };
   }
 }
 
-class IamTenantApplicationManagementUpdateCommand {
+class IamInstallationManagementUpdateCommand {
   final String? primaryDomain;
   final List<String>? accessPermissions;
 
-  IamTenantApplicationManagementUpdateCommand({
+  IamInstallationManagementUpdateCommand({
     this.primaryDomain,
     this.accessPermissions
   });
 
-  factory IamTenantApplicationManagementUpdateCommand.fromJson(Map<String, dynamic> json) {
-    return IamTenantApplicationManagementUpdateCommand(
+  factory IamInstallationManagementUpdateCommand.fromJson(Map<String, dynamic> json) {
+    return IamInstallationManagementUpdateCommand(
       primaryDomain: json['primaryDomain']?.toString(),
       accessPermissions: (() {
         final list = _sdkworkAsList(json['accessPermissions']);
@@ -678,13 +1346,13 @@ class IamTenantApplicationManagementUpdateCommand {
   }
 }
 
-class IamTenantApplicationStatusCommand {
+class IamInstallationStatusCommand {
 
 
-  IamTenantApplicationStatusCommand();
+  IamInstallationStatusCommand();
 
-  factory IamTenantApplicationStatusCommand.fromJson(Map<String, dynamic> json) {
-    return IamTenantApplicationStatusCommand();
+  factory IamInstallationStatusCommand.fromJson(Map<String, dynamic> json) {
+    return IamInstallationStatusCommand();
   }
 
   Map<String, dynamic> toJson() {
@@ -692,7 +1360,7 @@ class IamTenantApplicationStatusCommand {
   }
 }
 
-class AppbaseTenantApplicationProvisionCommand {
+class AppbaseInstallationProvisionCommand {
   final String? authToken;
   final String? username;
   final String? email;
@@ -708,9 +1376,11 @@ class AppbaseTenantApplicationProvisionCommand {
   final List<String>? accessPermissions;
   final Map<String, dynamic>? runtimeConfig;
   final String? deployApplicationId;
+  final String? ownershipScope;
+  final String? ownerUserId;
   final String? provisioningIdempotencyKey;
 
-  AppbaseTenantApplicationProvisionCommand({
+  AppbaseInstallationProvisionCommand({
     this.authToken,
     this.username,
     this.email,
@@ -726,11 +1396,13 @@ class AppbaseTenantApplicationProvisionCommand {
     this.accessPermissions,
     this.runtimeConfig,
     this.deployApplicationId,
+    this.ownershipScope,
+    this.ownerUserId,
     this.provisioningIdempotencyKey
   });
 
-  factory AppbaseTenantApplicationProvisionCommand.fromJson(Map<String, dynamic> json) {
-    return AppbaseTenantApplicationProvisionCommand(
+  factory AppbaseInstallationProvisionCommand.fromJson(Map<String, dynamic> json) {
+    return AppbaseInstallationProvisionCommand(
       authToken: json['authToken']?.toString(),
       username: json['username']?.toString(),
       email: json['email']?.toString(),
@@ -739,42 +1411,42 @@ class AppbaseTenantApplicationProvisionCommand {
       tenantId: (() {
         final value = json['tenantId']?.toString();
         if (value == null) {
-          throw FormatException('AppbaseTenantApplicationProvisionCommand.tenantId is required');
+          throw FormatException('AppbaseInstallationProvisionCommand.tenantId is required');
         }
         return value;
       })(),
       organizationId: (() {
         final value = json['organizationId']?.toString();
         if (value == null) {
-          throw FormatException('AppbaseTenantApplicationProvisionCommand.organizationId is required');
+          throw FormatException('AppbaseInstallationProvisionCommand.organizationId is required');
         }
         return value;
       })(),
       instanceKey: (() {
         final value = json['instanceKey']?.toString();
         if (value == null) {
-          throw FormatException('AppbaseTenantApplicationProvisionCommand.instanceKey is required');
+          throw FormatException('AppbaseInstallationProvisionCommand.instanceKey is required');
         }
         return value;
       })(),
       displayName: (() {
         final value = json['displayName']?.toString();
         if (value == null) {
-          throw FormatException('AppbaseTenantApplicationProvisionCommand.displayName is required');
+          throw FormatException('AppbaseInstallationProvisionCommand.displayName is required');
         }
         return value;
       })(),
       environment: (() {
         final value = json['environment']?.toString();
         if (value == null) {
-          throw FormatException('AppbaseTenantApplicationProvisionCommand.environment is required');
+          throw FormatException('AppbaseInstallationProvisionCommand.environment is required');
         }
         return value;
       })(),
       applicationType: (() {
         final value = json['applicationType']?.toString();
         if (value == null) {
-          throw FormatException('AppbaseTenantApplicationProvisionCommand.applicationType is required');
+          throw FormatException('AppbaseInstallationProvisionCommand.applicationType is required');
         }
         return value;
       })(),
@@ -791,6 +1463,8 @@ class AppbaseTenantApplicationProvisionCommand {
       })(),
       runtimeConfig: _sdkworkAsMap(json['runtimeConfig']),
       deployApplicationId: json['deployApplicationId']?.toString(),
+      ownershipScope: json['ownershipScope']?.toString(),
+      ownerUserId: json['ownerUserId']?.toString(),
       provisioningIdempotencyKey: json['provisioningIdempotencyKey']?.toString()
     );
   }
@@ -812,12 +1486,14 @@ class AppbaseTenantApplicationProvisionCommand {
       'accessPermissions': accessPermissions?.map((item) => item).toList(),
       'runtimeConfig': runtimeConfig,
       'deployApplicationId': deployApplicationId,
+      'ownershipScope': ownershipScope,
+      'ownerUserId': ownerUserId,
       'provisioningIdempotencyKey': provisioningIdempotencyKey,
     };
   }
 }
 
-class AppbaseTenantApplicationUpdateCommand {
+class AppbaseInstallationUpdateCommand {
   final String? authToken;
   final String? username;
   final String? email;
@@ -828,7 +1504,7 @@ class AppbaseTenantApplicationUpdateCommand {
   final List<String>? accessPermissions;
   final Map<String, dynamic>? runtimeConfig;
 
-  AppbaseTenantApplicationUpdateCommand({
+  AppbaseInstallationUpdateCommand({
     this.authToken,
     this.username,
     this.email,
@@ -840,8 +1516,8 @@ class AppbaseTenantApplicationUpdateCommand {
     this.runtimeConfig
   });
 
-  factory AppbaseTenantApplicationUpdateCommand.fromJson(Map<String, dynamic> json) {
-    return AppbaseTenantApplicationUpdateCommand(
+  factory AppbaseInstallationUpdateCommand.fromJson(Map<String, dynamic> json) {
+    return AppbaseInstallationUpdateCommand(
       authToken: json['authToken']?.toString(),
       username: json['username']?.toString(),
       email: json['email']?.toString(),
@@ -878,14 +1554,14 @@ class AppbaseTenantApplicationUpdateCommand {
   }
 }
 
-class AppbaseTenantApplicationEnableCommand {
+class AppbaseInstallationEnableCommand {
   final String? authToken;
   final String? username;
   final String? email;
   final String? phone;
   final String? password;
 
-  AppbaseTenantApplicationEnableCommand({
+  AppbaseInstallationEnableCommand({
     this.authToken,
     this.username,
     this.email,
@@ -893,8 +1569,8 @@ class AppbaseTenantApplicationEnableCommand {
     this.password
   });
 
-  factory AppbaseTenantApplicationEnableCommand.fromJson(Map<String, dynamic> json) {
-    return AppbaseTenantApplicationEnableCommand(
+  factory AppbaseInstallationEnableCommand.fromJson(Map<String, dynamic> json) {
+    return AppbaseInstallationEnableCommand(
       authToken: json['authToken']?.toString(),
       username: json['username']?.toString(),
       email: json['email']?.toString(),
@@ -922,9 +1598,10 @@ class AppbaseAccessCredentialCreateCommand {
   final String? password;
   final String tenantId;
   final String organizationId;
-  final String? tenantApplicationId;
+  final String? installationId;
   final String? appId;
   final String? instanceKey;
+  final String? ownershipScope;
 
   AppbaseAccessCredentialCreateCommand({
     this.authToken,
@@ -934,9 +1611,10 @@ class AppbaseAccessCredentialCreateCommand {
     this.password,
     required this.tenantId,
     required this.organizationId,
-    this.tenantApplicationId,
+    this.installationId,
     this.appId,
-    this.instanceKey
+    this.instanceKey,
+    this.ownershipScope
   });
 
   factory AppbaseAccessCredentialCreateCommand.fromJson(Map<String, dynamic> json) {
@@ -960,9 +1638,10 @@ class AppbaseAccessCredentialCreateCommand {
         }
         return value;
       })(),
-      tenantApplicationId: json['tenantApplicationId']?.toString(),
+      installationId: json['installationId']?.toString(),
       appId: json['appId']?.toString(),
-      instanceKey: json['instanceKey']?.toString()
+      instanceKey: json['instanceKey']?.toString(),
+      ownershipScope: json['ownershipScope']?.toString()
     );
   }
 
@@ -975,28 +1654,29 @@ class AppbaseAccessCredentialCreateCommand {
       'password': password,
       'tenantId': tenantId,
       'organizationId': organizationId,
-      'tenantApplicationId': tenantApplicationId,
+      'installationId': installationId,
       'appId': appId,
       'instanceKey': instanceKey,
+      'ownershipScope': ownershipScope,
     };
   }
 }
 
 class ServiceAccountCredentialCreateCommand {
-  final String tenantApplicationId;
+  final String installationId;
   final String? expiresAt;
 
   ServiceAccountCredentialCreateCommand({
-    required this.tenantApplicationId,
+    required this.installationId,
     this.expiresAt
   });
 
   factory ServiceAccountCredentialCreateCommand.fromJson(Map<String, dynamic> json) {
     return ServiceAccountCredentialCreateCommand(
-      tenantApplicationId: (() {
-        final value = json['tenantApplicationId']?.toString();
+      installationId: (() {
+        final value = json['installationId']?.toString();
         if (value == null) {
-          throw FormatException('ServiceAccountCredentialCreateCommand.tenantApplicationId is required');
+          throw FormatException('ServiceAccountCredentialCreateCommand.installationId is required');
         }
         return value;
       })(),
@@ -1006,7 +1686,7 @@ class ServiceAccountCredentialCreateCommand {
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
-      'tenantApplicationId': tenantApplicationId,
+      'installationId': installationId,
       'expiresAt': expiresAt,
     };
   }

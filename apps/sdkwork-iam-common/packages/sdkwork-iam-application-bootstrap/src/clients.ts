@@ -8,28 +8,29 @@ import {
   type CreateFetchIamApplicationBootstrapClientOptions,
 } from "./fetch-client.ts";
 import type {
-  EnabledTenantApplicationResult,
+  EnabledInstallationResult,
   IamApplicationBootstrapClient,
-  IamTenantApplicationProvisionCommand,
+  IamInstallationProvisionCommand,
   IssuedAccessCredentialResult,
-  ProvisionedTenantApplicationResult,
+  ProvisionedInstallationResult,
 } from "./types.ts";
+import { normalizeInstallationResult } from "./results.ts";
 
 export function createIamApplicationBootstrapClientFromBackend(
   backend: IamBackendSdkClient,
 ): IamApplicationBootstrapClient {
   return {
-    async provisionTenantApplication(body) {
-      return unwrapIamSdkResponse<ProvisionedTenantApplicationResult>(
-        await backend.iam?.tenantApplications?.create?.(body),
-        "iam.tenantApplications.create failed",
-      );
+    async provisionInstallation(body) {
+      return normalizeInstallationResult(unwrapIamSdkResponse<ProvisionedInstallationResult>(
+        await backend.iam?.installations?.create?.(body),
+        "iam.installations.create failed",
+      ));
     },
-    async enableTenantApplication(tenantApplicationId, body) {
-      return unwrapIamSdkResponse<EnabledTenantApplicationResult>(
-        await backend.iam?.tenantApplications?.enable?.(tenantApplicationId, body),
-        "iam.tenantApplications.enable failed",
-      );
+    async enableInstallation(installationId, body) {
+      return normalizeInstallationResult(unwrapIamSdkResponse<EnabledInstallationResult>(
+        await backend.iam?.installations?.enable?.(installationId, body),
+        "iam.installations.enable failed",
+      ));
     },
     async createAccessCredential(body) {
       return unwrapIamSdkResponse<IssuedAccessCredentialResult>(
@@ -37,11 +38,11 @@ export function createIamApplicationBootstrapClientFromBackend(
         "iam.accessCredentials.create failed",
       );
     },
-    async updateTenantApplication(tenantApplicationId, body) {
-      return unwrapIamSdkResponse<ProvisionedTenantApplicationResult>(
-        await backend.iam?.tenantApplications?.update?.(tenantApplicationId, body),
-        "iam.tenantApplications.update failed",
-      );
+    async updateInstallation(installationId, body) {
+      return normalizeInstallationResult(unwrapIamSdkResponse<ProvisionedInstallationResult>(
+        await backend.iam?.installations?.update?.(installationId, body),
+        "iam.installations.update failed",
+      ));
     },
   };
 }
@@ -59,17 +60,17 @@ export function createIamApplicationBootstrapClientFromAppbaseBackendSdk(
 }
 
 /**
- * Bootstrap-only backend SDK binding. Uses the three IAM bootstrap operations
- * directly so application bootstrap does not depend on the full generated SDK
- * surface matching {@link createIamBackendSdkAdapter}.
+ * Bootstrap-only backend SDK binding. Uses the canonical installation
+ * operations directly so application bootstrap does not depend on the full
+ * generated SDK surface matching {@link createIamBackendSdkAdapter}.
  */
 export function createIamApplicationBootstrapClientFromGeneratedBackendSdk(
   client: {
     iam?: {
-      tenantApplications?: {
-        create?: (body: IamTenantApplicationProvisionCommand) => Promise<unknown>;
-        enable?: (tenantApplicationId: string, body?: Record<string, unknown>) => Promise<unknown>;
-        update?: (tenantApplicationId: string, body?: Record<string, unknown>) => Promise<unknown>;
+      installations?: {
+        create?: (body: IamInstallationProvisionCommand) => Promise<unknown>;
+        enable?: (installationId: string, body?: Record<string, unknown>) => Promise<unknown>;
+        update?: (installationId: string, body?: Record<string, unknown>) => Promise<unknown>;
       };
       accessCredentials?: { create?: (body: Record<string, unknown>) => Promise<unknown> };
     };
@@ -77,17 +78,17 @@ export function createIamApplicationBootstrapClientFromGeneratedBackendSdk(
 ): IamApplicationBootstrapClient {
   const iam = client.iam;
   return {
-    async provisionTenantApplication(body) {
-      return unwrapIamSdkResponse<ProvisionedTenantApplicationResult>(
-        await iam?.tenantApplications?.create?.(body),
-        "iam.tenantApplications.create failed",
-      );
+    async provisionInstallation(body) {
+      return normalizeInstallationResult(unwrapIamSdkResponse<ProvisionedInstallationResult>(
+        await iam?.installations?.create?.(body),
+        "iam.installations.create failed",
+      ));
     },
-    async enableTenantApplication(tenantApplicationId, body) {
-      return unwrapIamSdkResponse<EnabledTenantApplicationResult>(
-        await iam?.tenantApplications?.enable?.(tenantApplicationId, body),
-        "iam.tenantApplications.enable failed",
-      );
+    async enableInstallation(installationId, body) {
+      return normalizeInstallationResult(unwrapIamSdkResponse<EnabledInstallationResult>(
+        await iam?.installations?.enable?.(installationId, body),
+        "iam.installations.enable failed",
+      ));
     },
     async createAccessCredential(body) {
       return unwrapIamSdkResponse<IssuedAccessCredentialResult>(
@@ -95,11 +96,11 @@ export function createIamApplicationBootstrapClientFromGeneratedBackendSdk(
         "iam.accessCredentials.create failed",
       );
     },
-    async updateTenantApplication(tenantApplicationId, body) {
-      return unwrapIamSdkResponse<ProvisionedTenantApplicationResult>(
-        await iam?.tenantApplications?.update?.(tenantApplicationId, body),
-        "iam.tenantApplications.update failed",
-      );
+    async updateInstallation(installationId, body) {
+      return normalizeInstallationResult(unwrapIamSdkResponse<ProvisionedInstallationResult>(
+        await iam?.installations?.update?.(installationId, body),
+        "iam.installations.update failed",
+      ));
     },
   };
 }
@@ -108,14 +109,20 @@ export function createIamApplicationBootstrapClientFromIamService(
   service: SdkworkIamService,
 ): IamApplicationBootstrapClient {
   return {
-    provisionTenantApplication: (body) =>
-      service.iam.tenantApplications.create(body) as Promise<ProvisionedTenantApplicationResult>,
-    enableTenantApplication: (tenantApplicationId, body) =>
-      service.iam.tenantApplications.enable(tenantApplicationId, body) as Promise<EnabledTenantApplicationResult>,
+    provisionInstallation: async (body) =>
+      normalizeInstallationResult(
+        (await service.iam.installations.create(body)) as Record<string, unknown>,
+      ) as ProvisionedInstallationResult,
+    enableInstallation: async (installationId, body) =>
+      normalizeInstallationResult(
+        (await service.iam.installations.enable(installationId, body)) as Record<string, unknown>,
+      ) as EnabledInstallationResult,
     createAccessCredential: (body) =>
       service.iam.accessCredentials.create(body) as Promise<IssuedAccessCredentialResult>,
-    updateTenantApplication: (tenantApplicationId, body) =>
-      service.iam.tenantApplications.update(tenantApplicationId, body) as Promise<ProvisionedTenantApplicationResult>,
+    updateInstallation: async (installationId, body) =>
+      normalizeInstallationResult(
+        (await service.iam.installations.update(installationId, body)) as Record<string, unknown>,
+      ) as ProvisionedInstallationResult,
   };
 }
 

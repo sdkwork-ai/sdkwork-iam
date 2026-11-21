@@ -25,8 +25,7 @@ const client = new SdkworkCustomClient({
 client.setApiKey('your-api-key');
 
 // Use the SDK
-const body = {};
-const result = await client.iamOauth.iam.oauth.introspect.create(body);
+const result = await client.example.list();
 ```
 
 ## Authentication
@@ -58,17 +57,11 @@ const client = new SdkworkCustomClient({
 
 ## API Modules
 
-- `client.iamOauth` - iam_oauth API
+
 
 ## Usage Examples
 
-### iam_oauth
-
-```typescript
-// Iam oauth introspect create.
-const body = {};
-const result = await client.iamOauth.iam.oauth.introspect.create(body);
-```
+No examples available.
 
 ## Error Handling
 
@@ -76,8 +69,7 @@ const result = await client.iamOauth.iam.oauth.introspect.create(body);
 import { SdkworkCustomClient, NetworkError, TimeoutError, AuthenticationError } from '@sdkwork/iam-open-sdk';
 
 try {
-  const body = {};
-  const result = await client.iamOauth.iam.oauth.introspect.create(body);
+  const result = await client.example.list();
 } catch (error) {
   if (error instanceof AuthenticationError) {
     console.error('Authentication failed:', error.message);
@@ -98,7 +90,7 @@ This SDK includes cross-platform publish scripts in `bin/`:
 - `bin/publish.sh`
 - `bin/publish.ps1`
 
-TypeScript check and publish commands use pnpm to materialize workspace dependency versions in a temporary tarball. They reject local-only dependency protocols before npm publication and do not rewrite the source `package.json`.
+TypeScript check and publish commands materialize workspace dependency versions in a temporary tarball with pnpm. They reject local-only dependency protocols before npm publication and do not rewrite the source `package.json`.
 
 ### Check
 

@@ -21,8 +21,7 @@ client = SdkworkCustomClient(config)
 client.set_api_key("your-api-key")
 
 # Use the SDK
-callback_public_id = '1'
-result = client.iam_oauth.iam.oauth.provider_callbacks.handle_get(callback_public_id)
+result = client.example.list()
 ```
 
 ## Authentication Modes (Mutually Exclusive)
@@ -67,25 +66,17 @@ client.set_header('X-Custom-Header', 'value')
 
 ## API Modules
 
-- `client.iam_oauth` - iam_oauth API
+
 
 ## Usage Examples
 
-### iam_oauth
-
-```python
-# Iam oauth provider Callbacks handle Get.
-callback_public_id = '1'
-result = client.iam_oauth.iam.oauth.provider_callbacks.handle_get(callback_public_id)
-print(result)
-```
+No examples available.
 
 ## Error Handling
 
 ```python
 try:
-    callback_public_id = '1'
-    client.iam_oauth.iam.oauth.provider_callbacks.handle_get(callback_public_id)
+    client.example.list()
 except Exception as error:
     print(f"Error: {error}")
 ```

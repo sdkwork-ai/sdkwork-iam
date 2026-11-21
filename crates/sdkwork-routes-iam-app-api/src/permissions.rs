@@ -278,21 +278,21 @@ const OWNER_ROLE_PERMISSION_SEEDS: &[LocalIamPermissionSeed] = &[
         action: "create",
     },
     LocalIamPermissionSeed {
-        code: "iam.tenant_applications.provision",
+        code: "iam.installations.provision",
         name: "Provision tenant applications",
-        resource: "iam.tenant_applications",
+        resource: "iam.installations",
         action: "provision",
     },
     LocalIamPermissionSeed {
-        code: "iam.tenant_applications.update",
+        code: "iam.installations.update",
         name: "Update tenant applications",
-        resource: "iam.tenant_applications",
+        resource: "iam.installations",
         action: "update",
     },
     LocalIamPermissionSeed {
-        code: "iam.tenant_applications.enable",
+        code: "iam.installations.enable",
         name: "Enable tenant applications",
-        resource: "iam.tenant_applications",
+        resource: "iam.installations",
         action: "enable",
     },
 ];

@@ -251,7 +251,7 @@ function createStatefulOauthBackend() {
           surfaces: { list: async () => ({ items: [] }), create: async () => ({}), update: async () => ({}), delete: async () => ({}) },
           tenantBindings: { list: async () => ({ items: [] }), create: async () => ({}), update: async () => ({}) },
         },
-        tenantApplications: {
+        installations: {
           list: async () => ({ items: [] }),
           management: {
             update: async () => ({}),

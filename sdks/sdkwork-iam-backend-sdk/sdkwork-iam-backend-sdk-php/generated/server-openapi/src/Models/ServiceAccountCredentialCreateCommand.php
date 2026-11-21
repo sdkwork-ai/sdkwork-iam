@@ -9,14 +9,14 @@ namespace SDKWork\\Iam\\BackendSdk\Models;
  */
 final class ServiceAccountCredentialCreateCommand
 {
-    public ?string $tenantApplicationId = null;
+    public ?string $installationId = null;
 
     public ?string $expiresAt = null;
 
     public function __construct(array $data = [])
     {
-        $this->tenantApplicationId = array_key_exists('tenantApplicationId', $data)
-            ? $data['tenantApplicationId']
+        $this->installationId = array_key_exists('installationId', $data)
+            ? $data['installationId']
             : null;
         $this->expiresAt = array_key_exists('expiresAt', $data)
             ? $data['expiresAt']
@@ -31,7 +31,7 @@ final class ServiceAccountCredentialCreateCommand
     public function toArray(): array
     {
         return [
-            'tenantApplicationId' => $this->tenantApplicationId,
+            'installationId' => $this->installationId,
             'expiresAt' => $this->expiresAt,
         ];
     }

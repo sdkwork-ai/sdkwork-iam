@@ -258,7 +258,7 @@ function createStandardBackendIamClient() {
     securityEvents: {
       list: vi.fn(),
     },
-    tenantApplications: {
+    installations: {
       enable: vi.fn(),
       provision: vi.fn(),
       update: vi.fn(),

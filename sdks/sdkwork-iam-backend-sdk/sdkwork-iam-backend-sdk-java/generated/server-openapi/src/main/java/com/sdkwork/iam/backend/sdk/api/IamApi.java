@@ -211,6 +211,36 @@ public class IamApi {
         return null;
     }
 
+    /** Installations create. */
+    public SdkWorkResourceResponse installationsCreate(AppbaseInstallationProvisionCommand body) throws Exception {
+        Object raw = client.request("POST", ApiPaths.backendPath("/iam/installations"), body, null, null, "application/json", true, false);
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Installations retrieve. */
+    public SdkWorkResourceResponse installationsRetrieve(String installationId) throws Exception {
+        Object raw = client.get(ApiPaths.backendPath("/iam/installations/" + serializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false)) + ""));
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Installations update. */
+    public SdkWorkResourceResponse installationsUpdate(String installationId, AppbaseInstallationUpdateCommand body) throws Exception {
+        Object raw = client.request("PATCH", ApiPaths.backendPath("/iam/installations/" + serializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false)) + ""), body, null, null, "application/json", true, false);
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
+    /** Installations enable. */
+    public SdkWorkCommandResponse installationsEnable(String installationId, AppbaseInstallationEnableCommand body) throws Exception {
+        Object raw = client.request("POST", ApiPaths.backendPath("/iam/installations/" + serializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false)) + "/enable"), body, null, null, "application/json", true, false);
+        return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
+    }
+
+    /** Installations management by Deploy Application disable. */
+    public SdkWorkCommandResponse installationsManagementByDeployApplicationDisable(String deployApplicationId, Map<String, Object> body) throws Exception {
+        Object raw = client.request("POST", ApiPaths.backendPath("/iam/installations/by_deploy_application/" + serializePathParameter(deployApplicationId, new PathParameterSpec("deployApplicationId", "simple", false)) + "/disable"), body, null, null, "application/json", true, false);
+        return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
+    }
+
     /** Organization Memberships list. */
     public SdkWorkListResponse organizationMembershipsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
@@ -417,13 +447,13 @@ public class IamApi {
             new QueryParameterSpec("cursor", cursor, "form", true, false, null),
             new QueryParameterSpec("sort", sort, "form", true, false, null),
             new QueryParameterSpec("q", q, "form", true, false, null),
-            new QueryParameterSpec("vendorCode", vendorCode, "form", true, false, null),
-            new QueryParameterSpec("scopeType", scopeType, "form", true, false, null),
-            new QueryParameterSpec("ownerUserId", ownerUserId, "form", true, false, null),
-            new QueryParameterSpec("organizationId", organizationId, "form", true, false, null),
+            new QueryParameterSpec("vendor_code", vendorCode, "form", true, false, null),
+            new QueryParameterSpec("scope_type", scopeType, "form", true, false, null),
+            new QueryParameterSpec("owner_user_id", ownerUserId, "form", true, false, null),
+            new QueryParameterSpec("organization_id", organizationId, "form", true, false, null),
             new QueryParameterSpec("status", status, "form", true, false, null),
             new QueryParameterSpec("mine", mine, "form", true, false, null),
-            new QueryParameterSpec("includePlatform", includePlatform, "form", true, false, null)
+            new QueryParameterSpec("include_platform", includePlatform, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/provider_accounts"), query));
         return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
@@ -472,28 +502,21 @@ public class IamApi {
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Provider Accounts credentials reveal. */
-    public SdkWorkResourceResponse providerAccountsCredentialsReveal(String providerAccountId) throws Exception {
+    /** Provider Accounts credentials reveal retrieve. */
+    public SdkWorkResourceResponse providerAccountsCredentialsRevealRetrieve(String providerAccountId) throws Exception {
         Object raw = client.get(ApiPaths.backendPath("/iam/provider_accounts/" + serializePathParameter(providerAccountId, new PathParameterSpec("providerAccountId", "simple", false)) + "/credentials/reveal"));
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Provider Accounts set Default. */
-    public SdkWorkResourceResponse providerAccountsSetDefault(String providerAccountId, Map<String, Object> body) throws Exception {
+    /** Provider Accounts default. */
+    public SdkWorkResourceResponse providerAccountsDefault(String providerAccountId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/provider_accounts/" + serializePathParameter(providerAccountId, new PathParameterSpec("providerAccountId", "simple", false)) + "/default"), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Provider Accounts resolve. */
-    public SdkWorkResourceResponse providerAccountsResolve(String vendorCode, String capabilityCode, String environment, String userId, String organizationId) throws Exception {
-        String query = buildQueryString(List.of(
-            new QueryParameterSpec("vendorCode", vendorCode, "form", true, false, null),
-            new QueryParameterSpec("capabilityCode", capabilityCode, "form", true, false, null),
-            new QueryParameterSpec("environment", environment, "form", true, false, null),
-            new QueryParameterSpec("userId", userId, "form", true, false, null),
-            new QueryParameterSpec("organizationId", organizationId, "form", true, false, null)
-        ));
-        Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/provider_accounts/resolve"), query));
+    /** Provider Accounts resolve retrieve. */
+    public SdkWorkResourceResponse providerAccountsResolveRetrieve() throws Exception {
+        Object raw = client.get(ApiPaths.backendPath("/iam/provider_accounts/resolve"));
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
@@ -511,11 +534,11 @@ public class IamApi {
             new QueryParameterSpec("cursor", cursor, "form", true, false, null),
             new QueryParameterSpec("sort", sort, "form", true, false, null),
             new QueryParameterSpec("q", q, "form", true, false, null),
-            new QueryParameterSpec("roleId", roleId, "form", true, false, null),
-            new QueryParameterSpec("principalKind", principalKind, "form", true, false, null),
-            new QueryParameterSpec("principalId", principalId, "form", true, false, null),
-            new QueryParameterSpec("scopeKind", scopeKind, "form", true, false, null),
-            new QueryParameterSpec("scopeId", scopeId, "form", true, false, null)
+            new QueryParameterSpec("role_id", roleId, "form", true, false, null),
+            new QueryParameterSpec("principal_kind", principalKind, "form", true, false, null),
+            new QueryParameterSpec("principal_id", principalId, "form", true, false, null),
+            new QueryParameterSpec("scope_kind", scopeKind, "form", true, false, null),
+            new QueryParameterSpec("scope_id", scopeId, "form", true, false, null)
         ));
         Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/role_bindings"), query));
         return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
@@ -669,30 +692,6 @@ public class IamApi {
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Tenant Applications create. */
-    public SdkWorkResourceResponse tenantApplicationsCreate(AppbaseTenantApplicationProvisionCommand body) throws Exception {
-        Object raw = client.request("POST", ApiPaths.backendPath("/iam/tenant_applications"), body, null, null, "application/json", true, false);
-        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
-    }
-
-    /** Tenant Applications retrieve. */
-    public SdkWorkResourceResponse tenantApplicationsRetrieve(String tenantApplicationId) throws Exception {
-        Object raw = client.get(ApiPaths.backendPath("/iam/tenant_applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + ""));
-        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
-    }
-
-    /** Tenant Applications update. */
-    public SdkWorkResourceResponse tenantApplicationsUpdate(String tenantApplicationId, AppbaseTenantApplicationUpdateCommand body) throws Exception {
-        Object raw = client.request("PATCH", ApiPaths.backendPath("/iam/tenant_applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + ""), body, null, null, "application/json", true, false);
-        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
-    }
-
-    /** Tenant Applications enable. */
-    public SdkWorkCommandResponse tenantApplicationsEnable(String tenantApplicationId, AppbaseTenantApplicationEnableCommand body) throws Exception {
-        Object raw = client.request("POST", ApiPaths.backendPath("/iam/tenant_applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + "/enable"), body, null, null, "application/json", true, false);
-        return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
-    }
-
     /** Tenants list. */
     public SdkWorkListResponse tenantsList(Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
@@ -730,8 +729,8 @@ public class IamApi {
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Tenant Applications list. */
-    public SdkWorkListResponse tenantApplicationsList(String tenantId, Integer page, Integer pageSize, String cursor, String sort, String q, String status, String environment, String applicationType) throws Exception {
+    /** Installations list. */
+    public SdkWorkListResponse installationsList(String tenantId, Integer page, Integer pageSize, String cursor, String sort, String q, String status, String environment, String applicationType) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -742,24 +741,24 @@ public class IamApi {
             new QueryParameterSpec("environment", environment, "form", true, false, null),
             new QueryParameterSpec("application_type", applicationType, "form", true, false, null)
         ));
-        Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications"), query));
+        Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/installations"), query));
         return client.convertValue(raw, new TypeReference<SdkWorkListResponse>() {});
     }
 
-    /** Tenant Applications management create. */
-    public SdkWorkResourceResponse tenantApplicationsManagementCreate(String tenantId, IamTenantApplicationManagementProvisionCommand body) throws Exception {
-        Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications"), body, null, null, "application/json");
+    /** Installations management create. */
+    public SdkWorkResourceResponse installationsManagementCreate(String tenantId, IamInstallationManagementProvisionCommand body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/installations"), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Tenant Applications management update. */
-    public SdkWorkResourceResponse tenantApplicationsManagementUpdate(String tenantId, String tenantApplicationId, IamTenantApplicationManagementUpdateCommand body) throws Exception {
-        Object raw = client.patch(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + ""), body, null, null, "application/json");
+    /** Installations management update. */
+    public SdkWorkResourceResponse installationsManagementUpdate(String tenantId, String installationId, IamInstallationManagementUpdateCommand body) throws Exception {
+        Object raw = client.patch(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/installations/" + serializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false)) + ""), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
-    /** Tenant Applications credentials list. */
-    public IamInstallationCredentialListResponse tenantApplicationsCredentialsList(String tenantId, String tenantApplicationId, Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    /** Installations credentials list. */
+    public IamInstallationCredentialListResponse installationsCredentialsList(String tenantId, String installationId, Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -767,42 +766,42 @@ public class IamApi {
             new QueryParameterSpec("sort", sort, "form", true, false, null),
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
-        Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + "/credentials"), query));
+        Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/installations/" + serializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false)) + "/credentials"), query));
         return client.convertValue(raw, new TypeReference<IamInstallationCredentialListResponse>() {});
     }
 
-    /** Tenant Applications credentials create. */
-    public IamInstallationCredentialResponse tenantApplicationsCredentialsCreate(String tenantId, String tenantApplicationId, IamInstallationCredentialCreateCommand body) throws Exception {
-        Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + "/credentials"), body, null, null, "application/json");
+    /** Installations credentials create. */
+    public IamInstallationCredentialResponse installationsCredentialsCreate(String tenantId, String installationId, IamInstallationCredentialCreateCommand body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/installations/" + serializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false)) + "/credentials"), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<IamInstallationCredentialResponse>() {});
     }
 
-    /** Tenant Applications credentials revoke. */
-    public SdkWorkCommandResponse tenantApplicationsCredentialsRevoke(String tenantId, String tenantApplicationId, String credentialId, Map<String, Object> body) throws Exception {
-        Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + "/credentials/" + serializePathParameter(credentialId, new PathParameterSpec("credentialId", "simple", false)) + "/revoke"), body, null, null, "application/json");
+    /** Installations credentials revoke. */
+    public SdkWorkCommandResponse installationsCredentialsRevoke(String tenantId, String installationId, String credentialId, Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/installations/" + serializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false)) + "/credentials/" + serializePathParameter(credentialId, new PathParameterSpec("credentialId", "simple", false)) + "/revoke"), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
     }
 
-    /** Tenant Applications credentials rotate. */
-    public IamInstallationCredentialResponse tenantApplicationsCredentialsRotate(String tenantId, String tenantApplicationId, String credentialId, IamInstallationCredentialRotateCommand body) throws Exception {
-        Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + "/credentials/" + serializePathParameter(credentialId, new PathParameterSpec("credentialId", "simple", false)) + "/rotate"), body, null, null, "application/json");
+    /** Installations credentials rotate. */
+    public IamInstallationCredentialResponse installationsCredentialsRotate(String tenantId, String installationId, String credentialId, IamInstallationCredentialRotateCommand body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/installations/" + serializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false)) + "/credentials/" + serializePathParameter(credentialId, new PathParameterSpec("credentialId", "simple", false)) + "/rotate"), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<IamInstallationCredentialResponse>() {});
     }
 
-    /** Tenant Applications management disable. */
-    public SdkWorkCommandResponse tenantApplicationsManagementDisable(String tenantId, String tenantApplicationId, IamTenantApplicationStatusCommand body) throws Exception {
-        Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + "/disable"), body, null, null, "application/json");
+    /** Installations management disable. */
+    public SdkWorkCommandResponse installationsManagementDisable(String tenantId, String installationId, IamInstallationStatusCommand body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/installations/" + serializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false)) + "/disable"), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
     }
 
-    /** Tenant Applications management enable. */
-    public SdkWorkCommandResponse tenantApplicationsManagementEnable(String tenantId, String tenantApplicationId, IamTenantApplicationStatusCommand body) throws Exception {
-        Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + "/enable"), body, null, null, "application/json");
+    /** Installations management enable. */
+    public SdkWorkCommandResponse installationsManagementEnable(String tenantId, String installationId, IamInstallationStatusCommand body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/installations/" + serializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false)) + "/enable"), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<SdkWorkCommandResponse>() {});
     }
 
-    /** Tenant Applications environments list. */
-    public IamInstallationEnvironmentListResponse tenantApplicationsEnvironmentsList(String tenantId, String tenantApplicationId, Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
+    /** Installations environments list. */
+    public IamInstallationEnvironmentListResponse installationsEnvironmentsList(String tenantId, String installationId, Integer page, Integer pageSize, String cursor, String sort, String q) throws Exception {
         String query = buildQueryString(List.of(
             new QueryParameterSpec("page", page, "form", true, false, null),
             new QueryParameterSpec("page_size", pageSize, "form", true, false, null),
@@ -810,25 +809,25 @@ public class IamApi {
             new QueryParameterSpec("sort", sort, "form", true, false, null),
             new QueryParameterSpec("q", q, "form", true, false, null)
         ));
-        Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + "/environments"), query));
+        Object raw = client.get(ApiPaths.appendQueryString(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/installations/" + serializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false)) + "/environments"), query));
         return client.convertValue(raw, new TypeReference<IamInstallationEnvironmentListResponse>() {});
     }
 
-    /** Tenant Applications environments delete. */
-    public Void tenantApplicationsEnvironmentsDelete(String tenantId, String tenantApplicationId, String environmentKey) throws Exception {
-        client.delete(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + "/environments/" + serializePathParameter(environmentKey, new PathParameterSpec("environmentKey", "simple", false)) + ""));
+    /** Installations environments delete. */
+    public Void installationsEnvironmentsDelete(String tenantId, String installationId, String environmentKey) throws Exception {
+        client.delete(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/installations/" + serializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false)) + "/environments/" + serializePathParameter(environmentKey, new PathParameterSpec("environmentKey", "simple", false)) + ""));
         return null;
     }
 
-    /** Tenant Applications environments update. */
-    public IamInstallationEnvironmentResponse tenantApplicationsEnvironmentsUpdate(String tenantId, String tenantApplicationId, String environmentKey, IamInstallationEnvironmentUpsertCommand body) throws Exception {
-        Object raw = client.put(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications/" + serializePathParameter(tenantApplicationId, new PathParameterSpec("tenantApplicationId", "simple", false)) + "/environments/" + serializePathParameter(environmentKey, new PathParameterSpec("environmentKey", "simple", false)) + ""), body, null, null, "application/json");
+    /** Installations environments update. */
+    public IamInstallationEnvironmentResponse installationsEnvironmentsUpdate(String tenantId, String installationId, String environmentKey, IamInstallationEnvironmentUpsertCommand body) throws Exception {
+        Object raw = client.put(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/installations/" + serializePathParameter(installationId, new PathParameterSpec("installationId", "simple", false)) + "/environments/" + serializePathParameter(environmentKey, new PathParameterSpec("environmentKey", "simple", false)) + ""), body, null, null, "application/json");
         return client.convertValue(raw, new TypeReference<IamInstallationEnvironmentResponse>() {});
     }
 
-    /** Tenant Applications summary retrieve. */
-    public SdkWorkResourceResponse tenantApplicationsSummaryRetrieve(String tenantId) throws Exception {
-        Object raw = client.get(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/applications/summary"));
+    /** Installations summary retrieve. */
+    public SdkWorkResourceResponse installationsSummaryRetrieve(String tenantId) throws Exception {
+        Object raw = client.get(ApiPaths.backendPath("/iam/tenants/" + serializePathParameter(tenantId, new PathParameterSpec("tenantId", "simple", false)) + "/installations/summary"));
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 

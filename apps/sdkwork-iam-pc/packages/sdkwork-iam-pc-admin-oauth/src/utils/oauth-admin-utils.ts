@@ -290,7 +290,7 @@ export function canSubmitRelyingParty(draft: SdkworkIamOauthRelyingPartyDraft): 
   const clientIdOk = !draft.clientId.trim()
     || /^[a-z0-9][a-z0-9._-]{0,63}$/.test(draft.clientId.trim());
   return Boolean(
-    draft.tenantApplicationId.trim()
+    draft.installationId.trim()
     && draft.tenantId.trim()
     && clientIdOk
     && hasRedirectUris
@@ -299,10 +299,10 @@ export function canSubmitRelyingParty(draft: SdkworkIamOauthRelyingPartyDraft): 
   );
 }
 
-export function parseRelyingPartyDraftFromTenantApplication(
+export function parseRelyingPartyDraftFromInstallation(
   detail: unknown,
   tenantId: string,
-  tenantApplicationId: string,
+  installationId: string,
 ): SdkworkIamOauthRelyingPartyDraft {
   const record = toRecord(unwrapApiData(detail));
   const runtimeConfig = toRecord(record.runtimeConfig ?? record.runtime_config);
@@ -327,7 +327,7 @@ export function parseRelyingPartyDraftFromTenantApplication(
       || storedSecret === "[redacted]"
       || Boolean(storedSecret),
     redirectUrisText: redirectUris.join("\n"),
-    tenantApplicationId: readString(record.tenantApplicationId ?? record.tenant_application_id) || tenantApplicationId.trim(),
+    installationId: readString(record.installationId ?? record.tenant_application_id) || installationId.trim(),
     tenantId: readString(record.tenantId ?? record.tenant_id) || tenantId.trim(),
   };
 }

@@ -275,6 +275,12 @@ public class IamOauthApi {
         return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
     }
 
+    /** Iam oauth operator Platforms component Credentials create. */
+    public SdkWorkResourceResponse operatorPlatformsComponentCredentialsCreate(String operatorPlatformId, Map<String, Object> body) throws Exception {
+        Object raw = client.post(ApiPaths.backendPath("/iam/oauth/operator_platforms/" + serializePathParameter(operatorPlatformId, new PathParameterSpec("operatorPlatformId", "simple", false)) + "/component_credentials"), body, null, null, "application/json");
+        return client.convertValue(raw, new TypeReference<SdkWorkResourceResponse>() {});
+    }
+
     /** Iam oauth operator Platforms pre Authorizations create. */
     public SdkWorkResourceResponse operatorPlatformsPreAuthorizationsCreate(String operatorPlatformId, Map<String, Object> body) throws Exception {
         Object raw = client.post(ApiPaths.backendPath("/iam/oauth/operator_platforms/" + serializePathParameter(operatorPlatformId, new PathParameterSpec("operatorPlatformId", "simple", false)) + "/pre_authorizations"), body, null, null, "application/json");

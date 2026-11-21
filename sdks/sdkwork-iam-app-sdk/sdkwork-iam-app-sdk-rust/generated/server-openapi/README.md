@@ -69,8 +69,15 @@ println!("{result:?}");
 ### oauth
 
 ```rust
-// Wechat Payment Oauth callback.
-let result = client.oauth().wechat_payment_oauth_callback().await?;
+use std::collections::HashMap;
+// Account Links list.
+let mut query = HashMap::new();
+query.insert("page".to_string(), serde_json::json!(1));
+query.insert("page_size".to_string(), serde_json::json!(2));
+query.insert("cursor".to_string(), serde_json::json!("cursor"));
+query.insert("sort".to_string(), serde_json::json!("sort"));
+query.insert("q".to_string(), serde_json::json!("q"));
+let result = client.oauth().account_links_list(Some(&query)).await?;
 println!("{result:?}");
 ```
 
