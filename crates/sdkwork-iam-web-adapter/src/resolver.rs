@@ -1,10 +1,11 @@
 use async_trait::async_trait;
 use sdkwork_database_sqlx::DatabasePool;
 use sdkwork_web_core::{
-    DefaultAccessTokenParser, DefaultApiKeyParser, DefaultAuthTokenParser,
-    DefaultOAuthBearerParser, DefaultOpenApiWebRequestContextResolver,
-    DefaultWebRequestContextResolver, JwtProductionClaimPolicy, OpenApiWebRequestParserResolver,
-    ResolverProductionProfile, WebFrameworkError, WebRequestContextResolver, WebRequestPrincipal,
+    default_open_api_bearer_classifier, DefaultAccessTokenParser, DefaultApiKeyParser,
+    DefaultAuthTokenParser, DefaultOAuthBearerParser, DefaultOpenApiWebRequestContextResolver,
+    DefaultWebRequestContextResolver, JwtProductionClaimPolicy, OpenApiCredentialKind,
+    OpenApiWebRequestParserResolver, ResolverProductionProfile, WebFrameworkError,
+    WebRequestContextResolver, WebRequestPrincipal,
 };
 use sqlx::PgPool;
 use std::sync::Arc;
@@ -207,6 +208,39 @@ impl IamDatabaseWebRequestContextResolver {
             .await
     }
 
+    /// Resolves a login `authToken` presented on the API-key channel.
+    ///
+    /// Only a credential that carries no API-key prefix enters this channel: a
+    /// prefixed value is an API key by convention and is never looked up as a
+    /// session. `Ok(None)` means "not a session credential", so the caller falls
+    /// through to the API-key store rather than failing a request that an
+    /// unprefixed key record could still serve.
+    async fn resolve_login_token_credential(
+        &self,
+        raw_credential: &str,
+    ) -> Result<Option<WebRequestPrincipal>, WebFrameworkError> {
+        if is_api_key_credential(raw_credential) {
+            return Ok(None);
+        }
+        let Some(pg) = self.iam_session_pool() else {
+            return Ok(None);
+        };
+        let Some(context) = resolve_iam_app_context_from_auth_token(pg, raw_credential).await
+        else {
+            return Ok(None);
+        };
+        self.project_context(context).await.map(Some)
+    }
+
+    /// The PostgreSQL pool that owns the `iam_session` rows, when this
+    /// composition has one.
+    fn iam_session_pool(&self) -> Option<&PgPool> {
+        self.iam_database_pool
+            .as_ref()
+            .and_then(DatabasePool::as_postgres)
+            .or_else(|| self.iam_pool.as_deref())
+    }
+
     /// Resolves a public application access token on the Access-Token channel.
     ///
     /// `APP_ACCESS_TOKEN_SPEC.md` §5: the credential is isolation-only input and
@@ -262,10 +296,22 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
         self.production_claim_policy.clone()
     }
 
+    /// Resolves the API-key channel of an open-api request.
+    ///
+    /// The open-api surfaces publish ONE credential header and accept either
+    /// credential kind on it: a platform API key (`sk-`/`sp-` prefixed) or a
+    /// signed-in user's login `authToken`. The login-token alternative is
+    /// resolved here rather than in each host's resolver wrapper, so every
+    /// composition that mounts this resolver (the platform cloud gateway, a
+    /// standalone application gateway, a single crate's served router) answers
+    /// the same request the same way.
     async fn resolve_api_key(
         &self,
         raw_api_key: &str,
     ) -> Result<WebRequestPrincipal, WebFrameworkError> {
+        if let Some(principal) = self.resolve_login_token_credential(raw_api_key).await? {
+            return Ok(principal);
+        }
         if let Some(resolver) = &self.open_api_database {
             return self
                 .authorize_principal(resolver.resolve_api_key(raw_api_key).await?)
@@ -337,12 +383,7 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
         &self,
         raw_bearer_token: &str,
     ) -> Result<WebRequestPrincipal, WebFrameworkError> {
-        let pg = self
-            .iam_database_pool
-            .as_ref()
-            .and_then(DatabasePool::as_postgres)
-            .or_else(|| self.iam_pool.as_deref());
-        if let Some(pg) = pg {
+        if let Some(pg) = self.iam_session_pool() {
             if let Some(context) =
                 resolve_iam_app_context_from_auth_token(pg, raw_bearer_token).await
             {
@@ -453,6 +494,19 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
         }
         Err(iam_database_unavailable_error())
     }
+}
+
+/// Whether one credential presented on the API-key channel is an API key
+/// (conventionally `sk-`/`sp-` prefixed) rather than a login `authToken`.
+///
+/// The classify rule is the framework's own, not a copy: the platform gateway
+/// and Cloud Router segment the same credential value with the same classifier,
+/// so a credential can never be an API key on one hop and a session on the next.
+fn is_api_key_credential(raw_credential: &str) -> bool {
+    matches!(
+        default_open_api_bearer_classifier().classify(raw_credential),
+        OpenApiCredentialKind::ApiKey
+    )
 }
 
 pub fn web_request_principal_from_iam(
@@ -575,5 +629,38 @@ mod tests {
             .is_some_and(|policy| policy.has_saas_issuer_audience_allowlist()));
         assert!(!resolver.uses_default_api_key_lookup());
         assert!(!resolver.uses_default_oauth_token_lookup());
+    }
+
+    #[test]
+    fn only_unprefixed_credentials_enter_the_login_token_channel() {
+        // The API-key channel publishes one header for both credential kinds. The
+        // separator is the framework's own classifier, so a credential can never
+        // be an API key on one hop and a session on the next.
+        assert!(is_api_key_credential("sk-live-123"));
+        assert!(is_api_key_credential("sp-tenant-123"));
+        assert!(!is_api_key_credential(
+            "eyJhbGciOiJIUzI1NiJ9.payload.signature"
+        ));
+        // The development claim-string form is not a session credential either;
+        // the API-key channel keeps resolving it after this channel declines it.
+        assert!(!is_api_key_credential("api_key_id=key-1;tenant_id=100001"));
+    }
+
+    #[tokio::test]
+    async fn api_key_channel_declines_a_login_token_when_no_session_store_is_wired() {
+        // A composition with no PostgreSQL pool cannot look a session up. The
+        // credential must fall through to the API-key channel instead of failing
+        // on the absent store, so a keyless/dev composition keeps working.
+        let resolver = IamDatabaseWebRequestContextResolver::new(None);
+        assert!(resolver
+            .resolve_login_token_credential("login-token-without-a-prefix")
+            .await
+            .expect("no store is not an error")
+            .is_none());
+        assert!(resolver
+            .resolve_login_token_credential("sk-live-123")
+            .await
+            .expect("prefixed credentials never enter the channel")
+            .is_none());
     }
 }

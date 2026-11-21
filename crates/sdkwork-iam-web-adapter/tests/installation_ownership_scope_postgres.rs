@@ -862,3 +862,69 @@ async fn a_public_token_binds_a_personal_installation_to_its_owner() {
 
     cleanup(&pg, &tenant_id).await;
 }
+
+/// The API-key channel accepts a login `authToken` on the same header as an API
+/// key, and resolves it to the signed-in user's session principal.
+///
+/// Open-api surfaces publish one credential header; a signed-in client may put
+/// its session's login token there instead of a gateway API key. That split is
+/// owned by `IamDatabaseWebRequestContextResolver::resolve_api_key`, so every
+/// host composition that mounts the resolver answers the same request the same
+/// way. Only a database can prove the session lookup, which is why this test
+/// lives in the PostgreSQL suite.
+#[tokio::test]
+#[ignore = "requires a migrated PostgreSQL (SDKWORK_DATABASE_URL)"]
+async fn the_api_key_channel_resolves_a_login_auth_token_to_a_session_principal() {
+    use sdkwork_iam_web_adapter::IamWebRequestContextResolver;
+    use sdkwork_web_core::{WebFrameworkErrorKind, WebRequestContextResolver as _};
+
+    let Some(pg) = connect().await else {
+        return;
+    };
+    let (tenant_id, user_id, organization_id, _) = seed_tenant(&pg).await;
+    let application =
+        provision_tenant_application(&pg, &command(&tenant_id, &organization_id, None, None))
+            .await
+            .expect("provision installation");
+    enable_tenant_application(&pg, &tenant_id, &application.id)
+        .await
+        .expect("enable installation");
+    let deploy_application_id = application
+        .deploy_application_id
+        .as_deref()
+        .expect("deploy anchor");
+    let issued = issue_standalone_bootstrap_access_credential(
+        &pg,
+        &tenant_id,
+        deploy_application_id,
+        Some(600),
+    )
+    .await
+    .expect("bootstrap issuance");
+
+    let resolver = IamWebRequestContextResolver::new(Some(std::sync::Arc::new(pg.clone())));
+
+    // The login auth token arrives in the API key's header and resolves to the
+    // same tenant/user/app the session was issued for.
+    let principal = resolver
+        .resolve_api_key(&issued.auth_token)
+        .await
+        .expect("the login auth token authenticates on the api-key channel");
+    assert_eq!(issued.tenant_id, principal.tenant_id());
+    assert_eq!(Some(issued.app_id.as_str()), Some(principal.app_id()));
+    assert_eq!(Some(user_id.as_str()), Some(principal.user_id()));
+    assert!(
+        principal.api_key_id().is_none(),
+        "a session principal is not an API key record"
+    );
+
+    // A prefixed credential belongs to the API key store and must never be
+    // looked up as a session, even when no such key exists.
+    let error = resolver
+        .resolve_api_key("sk-definitely-not-an-iam-api-key")
+        .await
+        .expect_err("a prefixed credential stays on the api key channel");
+    assert_eq!(WebFrameworkErrorKind::InvalidCredentials, error.kind);
+
+    cleanup(&pg, &tenant_id).await;
+}
