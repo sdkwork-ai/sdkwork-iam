@@ -166,77 +166,163 @@ export function resolveManifestApplicationType(
   manifest: SdkworkAppManifest,
 ): IamApplicationType | undefined {
   const appType = trimToUndefined(manifest.app?.appType)?.toUpperCase();
-  if (appType === "APP_FLUTTER" || appType === "FLUTTER") {
+  const runtime = manifest.runtime ?? {};
+  const publish = manifest.publish ?? {};
+  const family = trimToUndefined(runtime.family)?.toLowerCase() ?? "";
+  const framework = trimToUndefined(runtime.framework)?.toLowerCase() ?? "";
+  const architectures = [
+    ...(runtime.clientArchitectures ?? []),
+    runtime.defaultArchitecture,
+  ]
+    .map((value) => trimToUndefined(value)?.toLowerCase() ?? "")
+    .filter((value) => value.length > 0);
+  const platforms = [...(publish.platforms ?? []), ...(publish.installPlatforms ?? [])]
+    .map((value) => trimToUndefined(value)?.toUpperCase() ?? "")
+    .filter((value) => value.length > 0);
+  const runtimeTargets = (manifest.artifacts?.installConfig?.packages ?? [])
+    .map((entry) => (typeof entry.runtimeTarget === "string" ? entry.runtimeTarget.trim().toLowerCase() : ""))
+    .filter((value) => value.length > 0);
+  const hasArchitecture = (...names: string[]): boolean =>
+    names.some((name) => architectures.includes(name));
+  const hasPlatform = (...names: string[]): boolean =>
+    names.some((name) => platforms.includes(name));
+  const hasRuntimeTarget = (...names: string[]): boolean =>
+    names.some((name) => runtimeTargets.includes(name));
+  // `runtime.framework` is decisive; the architecture list only corroborates it
+  // for a manifest that declares no framework. A multi-surface repository lists
+  // every architecture it ships, so matching that list first classified web roots
+  // as desktop/mini-program.
+  const frameworkDecides = framework !== "";
+  const byFrameworkOrArchitecture = (name: string): boolean =>
+    framework === name || (!frameworkDecides && hasArchitecture(name));
+
+  // `app.appType` is the fallback only: a manifest that declares a decisive
+  // framework must be classified by it even when the framework family in
+  // `app.appType` is stale (an `APP_HTML` root built with Flutter is Flutter, and
+  // an `APP_FLUTTER` root that actually ships an H5 shell is H5).
+  const flutter = byFrameworkOrArchitecture("flutter")
+    || (!frameworkDecides && (appType === "APP_FLUTTER" || appType === "FLUTTER"));
+  if (flutter) {
     // Flutter is one codebase delivered to several stores; the kind is the
     // multi-target build, not one of its platform targets.
     return "flutter";
   }
-  const runtime = manifest.runtime ?? {};
-  const publish = manifest.publish ?? {};
-  const signals = [
-    runtime.family,
-    runtime.framework,
-    runtime.defaultPlatform,
-    runtime.defaultArchitecture,
-    ...(runtime.runtimes ?? []),
-    ...(runtime.targetPlatforms ?? []),
-    ...(runtime.clientArchitectures ?? []),
-    ...(publish.platforms ?? []),
-    ...(publish.installPlatforms ?? []),
-  ]
-    .map((value) => `${value ?? ""}`.trim().toLowerCase())
-    .filter((value) => value.length > 0);
-  const has = (needle: string): boolean => signals.some((signal) => signal === needle || signal.includes(needle));
-
-  // A desktop shell is a desktop app even though its renderer is web.
-  if (has("tauri") || has("electron") || has("desktop")) {
-    return "desktop";
+  if (
+    framework === "harmony-native"
+    || framework === "arkts"
+    || (!frameworkDecides && hasArchitecture("harmony-native"))
+  ) {
+    return "harmonyos";
   }
-  if (has("mini-program") || has("miniprogram") || has("mp-weixin") || has("mp_weixin")) {
+  if (byFrameworkOrArchitecture("android-native")) {
+    return "android";
+  }
+  if (byFrameworkOrArchitecture("ios-native")) {
+    return "ios";
+  }
+  const miniProgramFramework = framework === "mp-weixin"
+    || framework.startsWith("mp-")
+    || /(^|-)mini-program$/u.test(framework);
+  if (family === "mini-program" || miniProgramFramework) {
     return "miniprogram";
   }
-  const platform = `${runtime.defaultPlatform ?? ""}`.trim().toLowerCase();
-  switch (platform) {
-    case "app_ios":
-    case "ios":
-    case "iphone":
-    case "ipad":
-      return "ios";
-    case "app_android":
-    case "android":
-      return "android";
-    case "app_harmony":
-    case "harmony":
-    case "harmonyos":
-    case "openharmony":
-      return "harmonyos";
-    default:
-      break;
-  }
-  // A manifest that only advertises native publish platforms (no runtime
-  // defaultPlatform) is still a native app, not the ambiguous `APP_UNIAPP`
-  // framework family.
-  const hasWebSurface = has("h5") || has("web") || has("pc") || has("browser") || has("universal");
-  if (!hasWebSurface) {
-    if (has("android")) {
-      return "android";
+  if (framework === "uni-app" || framework === "uni-app-x"
+    || (!frameworkDecides && hasArchitecture("uniapp", "uniappx"))) {
+    const platform = trimToUndefined(runtime.defaultPlatform)?.toUpperCase() ?? "";
+    for (const candidate of [platform, ...platforms]) {
+      switch (candidate) {
+        case "APP_ANDROID":
+        case "ANDROID":
+          return "android";
+        case "APP_IOS":
+        case "IOS":
+          return "ios";
+        case "APP_HARMONY":
+        case "HARMONYOS":
+          return "harmonyos";
+        case "MP_WEIXIN":
+        case "MP_DOUYIN":
+        case "MP":
+          return "miniprogram";
+        default:
+          break;
+      }
     }
-    if (has("ios") || has("iphone") || has("ipad")) {
-      return "ios";
+    if (hasPlatform("H5", "H5_WEIXIN")) {
+      return "h5";
     }
-    if (has("harmony") || has("harmonyos") || has("openharmony")) {
-      return "harmonyos";
+    if (hasPlatform("WEB")) {
+      return "pc";
     }
   }
-  // A server/runtime service is an API application even when its manifest also
-  // advertises a web install platform (the IAM root manifest does).
-  if (has("api") || has("server") || has("rust-axum") || has("rust-service")) {
-    return "api";
+  if (framework === "static-html" || (!frameworkDecides && hasArchitecture("static-web"))) {
+    return "pc";
   }
-  if (has("h5")) {
+  const desktopHost = ["electron", "tauri", "react-tauri", "react-electron", "vue-tauri", "vue-electron"]
+    .includes(framework)
+    || (!frameworkDecides && hasArchitecture("tauri", "electron"));
+  if (desktopHost) {
+    // A desktop shell is a desktop app even though its renderer is web.
+    return "desktop";
+  }
+  const h5OnlyDelivery = hasPlatform("H5", "H5_WEIXIN") && !hasPlatform("WEB");
+  const h5Framework = framework === "react-h5"
+    || framework === "react-capacitor"
+    || framework === "vue-h5"
+    || framework === "vue-capacitor";
+  const h5Evidence = h5Framework
+    || hasArchitecture("h5", "capacitor")
+    || hasPlatform("H5", "H5_WEIXIN")
+    || hasRuntimeTarget("h5", "capacitor-ios", "capacitor-android");
+  if (
+    h5Evidence
+    && (family === "mobile" || family === "" || h5Framework || h5OnlyDelivery)
+  ) {
     return "h5";
   }
-  if (has("pc") || has("web") || has("browser") || has("universal")) {
+  const browserTargeted = hasRuntimeTarget("browser", "web", "h5");
+  const serverTargetedOnly = runtimeTargets.length > 0
+    && runtimeTargets.every((target) => target === "server" || target === "container");
+  if (family === "web") {
+    // A server root that also advertises a web install platform is still the API
+    // deployment (the IAM root manifest is the canonical example).
+    if (serverTargetedOnly && !browserTargeted && framework.endsWith("-service")) {
+      return "api";
+    }
+    return "pc";
+  }
+  if (family === "desktop") {
+    return hasPlatform("WEB") || browserTargeted ? "pc" : "desktop";
+  }
+  if (family === "server" || family === "cli" || family === "library" || family === "plugin") {
+    return "api";
+  }
+  if (family === "mobile") {
+    return "h5";
+  }
+  // No family: the declared delivery platform is the only surface left.
+  if (hasPlatform("MP_WEIXIN", "MP_DOUYIN", "MP")) {
+    return "miniprogram";
+  }
+  if (hasPlatform("APP_ANDROID", "ANDROID")) {
+    return "android";
+  }
+  if (hasPlatform("APP_IOS", "IOS")) {
+    return "ios";
+  }
+  if (hasPlatform("APP_HARMONY", "HARMONYOS")) {
+    return "harmonyos";
+  }
+  if (hasPlatform("DESKTOP", "DESKTOP_WINDOWS", "DESKTOP_MACOS", "DESKTOP_LINUX")) {
+    return "desktop";
+  }
+  if (hasPlatform("API")) {
+    return "api";
+  }
+  if (hasPlatform("H5", "H5_WEIXIN")) {
+    return "h5";
+  }
+  if (hasPlatform("WEB")) {
     return "pc";
   }
   return mapManifestAppTypeToApplicationType(appType);

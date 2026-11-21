@@ -687,6 +687,65 @@ describe("@sdkwork/iam-application-bootstrap", () => {
       app: { ...manifest.app, appType: "APP_UNIAPP" },
       publish: { installPlatforms: ["APP_ANDROID", "APP_IOS"], platforms: ["APP_ANDROID", "APP_IOS"] },
     })).toBe("android");
+
+    // The declared framework decides, even when the framework family in
+    // `app.appType` is stale: an `APP_HTML` root built with Flutter is Flutter.
+    expect(resolveManifestApplicationType({
+      ...manifest,
+      app: { ...manifest.app, appType: "APP_HTML" },
+      runtime: { family: "mobile", framework: "flutter" },
+      publish: { platforms: ["APP_ANDROID", "APP_IOS"] },
+    })).toBe("flutter");
+
+    // A web root that also lists other delivery surfaces stays the browser
+    // surface; the extra platforms are not a new endpoint by themselves.
+    expect(resolveManifestApplicationType({
+      ...manifest,
+      app: { ...manifest.app, appType: "APP_REACT" },
+      runtime: { family: "web", framework: "react" },
+      publish: { platforms: ["WEB", "H5", "MP_WEIXIN", "DESKTOP_WINDOWS"] },
+    })).toBe("pc");
+    expect(resolveManifestApplicationType({
+      ...manifest,
+      runtime: {
+        family: "web",
+        framework: "web",
+        clientArchitectures: ["pc-web", "h5", "tauri", "mini-program"],
+      },
+      publish: { platforms: ["WEB", "H5", "DESKTOP"] },
+    })).toBe("pc");
+
+    // A server root that also advertises a web install platform is the API
+    // deployment, and a desktop-family root with only a web artifact is the PC
+    // web endpoint; only a desktop host framework is `desktop`.
+    expect(resolveManifestApplicationType({
+      ...manifest,
+      runtime: { family: "server", framework: "rust-axum" },
+      publish: { platforms: ["API", "WEB", "H5", "DESKTOP"] },
+    })).toBe("api");
+    expect(resolveManifestApplicationType({
+      ...manifest,
+      runtime: { family: "desktop", framework: "react" },
+      publish: { platforms: ["WEB", "DESKTOP"] },
+    })).toBe("pc");
+    expect(resolveManifestApplicationType({
+      ...manifest,
+      runtime: { family: "desktop", framework: "react-tauri" },
+      publish: { platforms: ["WEB", "DESKTOP_WINDOWS"] },
+    })).toBe("desktop");
+
+    // An H5-only delivery is the H5 endpoint even when the manifest kept the
+    // coarse `web` family; `WEB` plus `H5` stays the browser surface.
+    expect(resolveManifestApplicationType({
+      ...manifest,
+      runtime: { family: "web", framework: "react" },
+      publish: { platforms: ["H5"] },
+    })).toBe("h5");
+    expect(resolveManifestApplicationType({
+      ...manifest,
+      runtime: { family: "web", framework: "react" },
+      publish: { platforms: ["WEB", "H5"] },
+    })).toBe("pc");
   });
 
   it("formats bootstrap env output for local runtime handoff", () => {

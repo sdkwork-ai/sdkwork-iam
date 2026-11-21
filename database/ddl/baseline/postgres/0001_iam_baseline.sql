@@ -2265,6 +2265,12 @@ CREATE TRIGGER trg_iam_catalog_materialization_authz_epoch
   AFTER INSERT OR UPDATE OR DELETE ON iam_catalog_materialization
   FOR EACH STATEMENT EXECUTE FUNCTION iam_bump_authz_epoch();
 
+-- folded migration: migrations/postgres/0026_iam_tenant_application_oauth_client_id_unique.up.sql
+CREATE UNIQUE INDEX IF NOT EXISTS uk_iam_tenant_application_oauth_client_id
+  ON iam_tenant_application (
+    (COALESCE(runtime_config_json #>> '{oauth,relyingParty,clientId}', app_id))
+  );
+
 -- folded migration: migrations/postgres/0031_iam_user_official_account_domains.up.sql
 ALTER TABLE iam_user_official_account
   ADD COLUMN IF NOT EXISTS js_secure_domains TEXT NOT NULL DEFAULT '[]';
