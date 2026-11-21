@@ -15,8 +15,9 @@ use crate::application_scope::ApplicationOwnershipScope;
 use crate::dev_runtime::allows_dev_authentication_fallback;
 use crate::iam_session::{
     resolve_iam_app_context_from_access_token, resolve_iam_app_context_from_access_token_pool,
-    resolve_iam_app_context_from_dual_tokens, resolve_iam_app_context_from_dual_tokens_pool,
-    resolve_iam_app_context_from_oauth_bearer, resolve_iam_app_context_from_oauth_bearer_pool,
+    resolve_iam_app_context_from_auth_token, resolve_iam_app_context_from_dual_tokens,
+    resolve_iam_app_context_from_dual_tokens_pool, resolve_iam_app_context_from_oauth_bearer,
+    resolve_iam_app_context_from_oauth_bearer_pool,
 };
 use crate::oauth_token_lookup::IamOAuthTokenLookupService;
 
@@ -325,11 +326,29 @@ impl WebRequestContextResolver for IamDatabaseWebRequestContextResolver {
 
     /// Auth-token channel for [`RouteAuth::OpenApiBearerFlexible`]: a single
     /// bearer credential that is not an API key is resolved to the IAM user
-    /// identity through the same IAM bearer lookup used for OAuth tokens.
+    /// identity through the login session that issued it.
+    ///
+    /// The login `authToken` and an OAuth access token are distinct secrets of
+    /// the same `iam_session` row (`auth_token_hash` versus
+    /// `access_token_hash`), so the login token is looked up first. A credential
+    /// that names no login session keeps resolving on the OAuth channel, which
+    /// is where a public OAuth access token belongs.
     async fn resolve_bearer_auth_token(
         &self,
         raw_bearer_token: &str,
     ) -> Result<WebRequestPrincipal, WebFrameworkError> {
+        let pg = self
+            .iam_database_pool
+            .as_ref()
+            .and_then(DatabasePool::as_postgres)
+            .or_else(|| self.iam_pool.as_deref());
+        if let Some(pg) = pg {
+            if let Some(context) =
+                resolve_iam_app_context_from_auth_token(pg, raw_bearer_token).await
+            {
+                return self.project_context(context).await;
+            }
+        }
         self.resolve_oauth_bearer(raw_bearer_token).await
     }
 
