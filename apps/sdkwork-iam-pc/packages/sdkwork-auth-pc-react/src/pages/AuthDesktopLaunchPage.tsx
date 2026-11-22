@@ -18,7 +18,7 @@ import {
 } from "../auth-controller.ts";
 import type { SdkworkAuthLoginFollowQr } from "../auth-service.ts";
 import { formatSdkworkAuthTemplate } from "../auth-copy.ts";
-import { SdkworkAuthSurfaceHeader } from "../components/auth-surface-header.tsx";
+import { SdkworkAuthSurfaceHeader, SdkworkAuthSurfaceHeaderHost } from "../components/auth-surface-header.tsx";
 import {
   createSdkworkAuthLightShellStyle,
   SDKWORK_AUTH_SURFACE_THEME_STYLE,
@@ -234,7 +234,7 @@ function SdkworkAuthDesktopLaunchPageContent({
       style={resolvedAppearance?.pageStyle}
     >
       <style>{SDKWORK_AUTH_SURFACE_THEME_STYLE}</style>
-      <div className="relative z-20 mx-auto w-full max-w-lg shrink-0">
+      <SdkworkAuthSurfaceHeaderHost pinned={false}>
         <SdkworkAuthSurfaceHeader
           account={authState.isAuthenticated && authState.user
             ? {
@@ -251,7 +251,7 @@ function SdkworkAuthDesktopLaunchPageContent({
           brand={brand}
           brandNode={brandHeader}
         />
-      </div>
+      </SdkworkAuthSurfaceHeaderHost>
       <div
         className={mergeSdkworkAuthClassNames(
           "sdkwork-auth-desktop-launch-shell relative z-10 mx-auto my-auto w-full max-w-lg overflow-hidden rounded-3xl bg-white/92 shadow-2xl dark:bg-zinc-900/92",

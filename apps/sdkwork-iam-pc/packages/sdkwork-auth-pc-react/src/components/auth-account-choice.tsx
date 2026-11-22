@@ -10,6 +10,7 @@ import {
   type SdkworkAuthAppearanceConfig,
   type SdkworkAuthPresentation,
 } from "../auth-appearance.ts";
+import { SdkworkAuthSurfaceHeaderHost } from "./auth-surface-header.tsx";
 
 /** The account choice copy block (page title, fallback label, the two actions). */
 export type SdkworkAuthAccountChoiceCopy = SdkworkAuthMessages["accountChoice"];
@@ -105,9 +106,7 @@ export function SdkworkAuthAccountChoice({
     >
       <style>{SDKWORK_AUTH_SURFACE_THEME_STYLE}</style>
       {header !== undefined && presentation === "page" ? (
-        <div className="absolute inset-x-0 top-4 z-20 mx-auto w-full max-w-[560px] px-6 sm:top-6">
-          {header}
-        </div>
+        <SdkworkAuthSurfaceHeaderHost>{header}</SdkworkAuthSurfaceHeaderHost>
       ) : null}
       <div
         className={mergeSdkworkAuthClassNames(
@@ -218,9 +217,7 @@ export function SdkworkAuthSessionCheck({
     >
       <style>{SDKWORK_AUTH_SURFACE_THEME_STYLE}</style>
       {header !== undefined && presentation === "page" ? (
-        <div className="absolute inset-x-0 top-4 z-20 mx-auto w-full max-w-[560px] px-6 sm:top-6">
-          {header}
-        </div>
+        <SdkworkAuthSurfaceHeaderHost>{header}</SdkworkAuthSurfaceHeaderHost>
       ) : null}
       <div
         className={mergeSdkworkAuthClassNames(

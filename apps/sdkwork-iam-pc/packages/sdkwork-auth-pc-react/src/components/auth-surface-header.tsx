@@ -37,6 +37,38 @@ export interface SdkworkAuthSurfaceHeaderProps {
 }
 
 /**
+ * Page-level host that places the product header at the page's top corners.
+ *
+ * The header row itself already splits brand (left) from account (right); this
+ * host spans the whole page instead of the centered card column, so the brand
+ * sits at the top-left and the sign-out control at the top-right on every
+ * hosted auth surface.
+ * @param props - the header row and whether it is pinned to the page top.
+ * @returns the positioned header host.
+ */
+export function SdkworkAuthSurfaceHeaderHost({
+  children,
+  pinned = true,
+}: {
+  children: ReactNode;
+  /**
+   * `true` pins the header over the page's top edge; `false` lays it out in the
+   * page's own flex column (the desktop hand-off page).
+   */
+  pinned?: boolean;
+}) {
+  return (
+    <div
+      className={pinned
+        ? "absolute inset-x-0 top-4 z-20 w-full px-4 sm:top-6 sm:px-8"
+        : "relative z-20 w-full shrink-0"}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
  * The single product header every hosted auth surface renders.
  *
  * The brand identifies the deployment, and a signed-in browser gets the

@@ -290,7 +290,15 @@ export function createSdkworkPublicApplicationAccessTokenVitePlugin({
   }
   const token = assertPublicApplicationAccessToken(
     normalizeToken(accessToken) ?? normalizeToken(process.env.SDKWORK_ACCESS_TOKEN),
-    { applicationId, environment: lifecycle, profileId },
+    // Spread the optional fields rather than declaring them as
+    // `string | undefined`: strict consumers of this source compile it with
+    // `exactOptionalPropertyTypes`, where a present-but-undefined optional field
+    // is not assignable to `applicationId?: string`.
+    {
+      ...(applicationId === undefined ? {} : { applicationId }),
+      environment: lifecycle,
+      ...(profileId === undefined ? {} : { profileId }),
+    },
   );
 
   const script =

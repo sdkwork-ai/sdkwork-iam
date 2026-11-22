@@ -15,6 +15,7 @@ import {
   type SdkworkAuthPresentation,
   type SdkworkAuthSlotContainerProps,
 } from "../auth-appearance.ts";
+import { SdkworkAuthSurfaceHeaderHost } from "./auth-surface-header.tsx";
 
 export interface SdkworkAuthPageShellProps {
   appearance?: SdkworkAuthAppearanceConfig;
@@ -147,9 +148,7 @@ export function SdkworkAuthPageShell({
     <>
       <style>{SDKWORK_AUTH_SURFACE_THEME_STYLE}</style>
       {header !== undefined && !isModalPresentation ? (
-        <div className="absolute inset-x-0 top-4 z-20 mx-auto w-full max-w-[920px] px-4 sm:top-6 sm:px-8">
-          {header}
-        </div>
+        <SdkworkAuthSurfaceHeaderHost>{header}</SdkworkAuthSurfaceHeaderHost>
       ) : null}
       {createElement(
         BackgroundSlot,
