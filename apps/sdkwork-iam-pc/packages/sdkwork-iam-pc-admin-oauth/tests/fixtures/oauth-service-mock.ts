@@ -84,6 +84,12 @@ export function createOauthServiceMock() {
           retrieve: vi.fn().mockResolvedValue({ mode: "url", urlLogin: { enabled: false } }),
           update: vi.fn().mockResolvedValue({}),
         },
+        // Login-success (follow QR) settings: the hosted hand-off page renders
+        // this policy, so the port must be present for the controller mock.
+        loginFollowQr: {
+          retrieve: vi.fn().mockResolvedValue({}),
+          update: vi.fn().mockResolvedValue({}),
+        },
         operationalResources: {
           list: vi.fn().mockResolvedValue({ items: [] }),
           create: vi.fn(),

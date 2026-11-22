@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import {
   Navigate,
+  useLocation,
   useNavigate,
   useParams,
   useSearchParams,
@@ -40,6 +41,7 @@ import {
   resolveAuthRedirectTarget,
 } from "../auth.ts";
 import { storeSdkworkDesktopLaunchRedirect } from "../desktop-launch-handoff.ts";
+import { isSdkworkOAuthHostedPath } from "../oauth-app-paths.ts";
 import { buildSdkworkLoginRedirectPath } from "../../../sdkwork-auth-runtime-pc-react/src/sessionAuthRedirect.ts";
 import {
   buildSdkworkAuthOAuthCallbackUri,
@@ -109,6 +111,7 @@ function SdkworkAuthOAuthCallbackPageContent({
   const controller = useSdkworkAuthController(providedController, controllerOptions);
   const authState = useSdkworkAuthControllerState(controller);
   const navigate = useNavigate();
+  const location = useLocation();
   const { provider } = useParams<{ provider: string }>();
   const [searchParams] = useSearchParams();
   const redirectTarget = resolveAuthRedirectTarget(searchParams.get("redirect"), homePath, basePath);
@@ -124,7 +127,9 @@ function SdkworkAuthOAuthCallbackPageContent({
   // round-trip (see buildSdkworkAuthOAuthCallbackUri): the component must
   // stay mounted after the provider session commits until this
   // authorization is completed and the deep-link hand-off (if any) runs.
-  const pendingDesktopAuthorizationStateId = searchParams.get("oauthAuthorizationStateId")?.trim() || "";
+  const pendingDesktopAuthorizationStateId = isSdkworkOAuthHostedPath(location.pathname)
+    ? searchParams.get("oauthAuthorizationStateId")?.trim() || ""
+    : "";
   const runtimeOAuthProvidersKey = (runtimeConfig?.oauthProviders ?? []).join("|");
   const configuredProviders = useMemo(
     () => isSdkworkAuthOAuthLoginEnabled(runtimeConfig?.oauthLoginEnabled)

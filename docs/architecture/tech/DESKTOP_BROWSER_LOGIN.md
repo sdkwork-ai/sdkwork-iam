@@ -375,11 +375,17 @@ Browser hosts import the protocol paths from one canonical module:
 `SDKWORK_OAUTH_APP_AUTHORIZE_PATHS`,
 `SDKWORK_OAUTH_APP_AUTHORIZE_ENDPOINT_PATH`,
 `SDKWORK_OAUTH_APP_ALIAS_PATH`, `SDKWORK_OAUTH_APP_LOGIN_PATH`,
-`SDKWORK_OAUTH_APP_LAUNCH_PATH`, and
-`SDKWORK_OAUTH_AUTHORIZATION_STATE_PARAM`. The route catalog test keeps those
-constants equal to the pages the hosted login actually renders, so a platform
-entry (the CloudRouter PC entry is the reference) validates and forwards to the
-same paths without local literals.
+`SDKWORK_OAUTH_APP_LAUNCH_PATH`, `SDKWORK_OAUTH_PROVIDER_CALLBACK_PATH`,
+`SDKWORK_OAUTH_PROVIDER_CALLBACK_ROUTE_PATTERN`, the aggregate
+`SDKWORK_OAUTH_ROUTES`, and `SDKWORK_OAUTH_AUTHORIZATION_STATE_PARAM`.
+
+The account surface has its own model: `createAuthRouteCatalog` returns only the
+`/auth/*` pages and `SdkworkAuthRouteId` names only account routes, so iterating
+the auth catalog never yields an OAuth path. The OAuth surfaces come from
+`SDKWORK_OAUTH_ROUTES`, and `isSdkworkOAuthHostedPath` is the predicate that
+decides whether a hosted path may read a pending authorization. A platform entry
+(the CloudRouter PC entry is the reference) validates and forwards to the same
+paths without local literals.
 
 Every route that exists only to serve an OAuth flow lives in the `/oauth`
 namespace: the `/oauth/app` alias entry, the `/oauth/login` step, the
