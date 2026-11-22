@@ -219,6 +219,7 @@ function SdkworkIamAuthRoutesPage({
     <SdkworkAuthPage
       {...commonProps}
       brand={brand}
+      brandHeader={brandHeader}
       desktopBrowserLogin={desktopBrowserLogin}
       events={events}
       slots={slots}

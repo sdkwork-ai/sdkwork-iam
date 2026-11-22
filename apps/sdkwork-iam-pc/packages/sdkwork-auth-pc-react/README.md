@@ -34,6 +34,10 @@ This package is the standard auth UI layer for appbase-based desktop apps. Host 
   it above the session-check and account-choice cards, so a signed-in browser
   can end the session (or switch to another account) from the hosted
   authorization page itself; signing in again completes the app authorization.
+  A host whose navigation already renders its own brand lockup (the
+  backend-configured logo plus wordmark) passes it as `brandHeader`, so the
+  header is byte-for-byte the same lockup as the product's homepage instead of
+  a second IAM-branded render.
 - The login form never paints before the stored session is revalidated: the
   first paint is `SdkworkAuthSessionCheck` (the `accountChoice.checking` line)
   until `bootstrap()` answers, and only that holding card has a budget

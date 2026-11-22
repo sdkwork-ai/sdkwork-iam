@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { SdkworkI18nProvider } from "@sdkwork/i18n-pc-react";
@@ -53,6 +54,7 @@ function renderAuthPage(
   controller: SdkworkAuthController,
   options: {
     brand?: SdkworkAuthBrand;
+    brandHeader?: ReactNode;
     entry?: string;
   } = {},
 ) {
@@ -71,6 +73,7 @@ function renderAuthPage(
                 <SdkworkAuthPage
                   basePath="/auth"
                   brand={options.brand}
+                  brandHeader={options.brandHeader}
                   controller={controller}
                 />
               }
@@ -287,6 +290,38 @@ describe("app authorization rendered before its state exists", () => {
       },
     });
   }
+
+  it("renders the host brand lockup instead of the generic IAM mark", async () => {
+    const controller = createSdkworkAuthController({
+      service: {
+        completeOAuthAuthorization: vi.fn(),
+        getCurrentSession: vi.fn().mockResolvedValue(sessionFor("Current Operator")),
+        getCurrentUser: vi.fn().mockResolvedValue(null),
+        signOut: vi.fn(),
+      },
+    });
+
+    renderAuthPage(controller, {
+      brandHeader: (
+        <span data-testid="host-brand-lockup">
+          <img alt="" data-testid="host-brand-logo" src="/site-logo.png" />
+          <span>SDKWork</span>
+        </span>
+      ),
+      entry: `/auth/login?oauthAuthorizationStateId=${PENDING_AUTHORIZATION}`,
+    });
+
+    // Wait for the settled choice card: the header remounts between the
+    // session-check card and the choice card.
+    expect(await screen.findByTestId("sdkwork-auth-account-choice")).toBeInTheDocument();
+    expect(screen.getByTestId("host-brand-lockup")).toBeInTheDocument();
+    expect(screen.getByTestId("host-brand-logo")).toHaveAttribute("src", "/site-logo.png");
+    // The header keeps the sign-out affordance next to the host lockup.
+    expect(screen.getByTestId("sdkwork-auth-account-menu-trigger")).toBeInTheDocument();
+    // The generic shipped mark is not rendered when the host supplies one.
+    expect(screen.queryByTestId("sdkwork-auth-brand-mark")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sdkwork-auth-brand-name")).not.toBeInTheDocument();
+  });
 
   it("shows the login form and creates the state only when the visitor signs in", async () => {
     const createOAuthAuthorizationState = vi.fn(async () => "created-state-1");
