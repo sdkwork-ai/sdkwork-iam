@@ -48,6 +48,8 @@ export function createOauthServiceMock() {
           list: vi.fn().mockResolvedValue({ items: [] }),
           create: vi.fn(),
           update: vi.fn(),
+          componentCredentials: { create: vi.fn() },
+          connectivityChecks: { create: vi.fn() },
           preAuthorizations: { create: vi.fn() },
         },
         diagnosticRuns: {
@@ -78,7 +80,12 @@ export function createOauthServiceMock() {
             rollback: vi.fn().mockResolvedValue({}),
           },
         },
-        resourceAuthorizations: { list: vi.fn().mockResolvedValue({ items: [] }), create: vi.fn(), update: vi.fn() },
+        resourceAuthorizations: {
+          list: vi.fn().mockResolvedValue({ items: [] }),
+          create: vi.fn(),
+          update: vi.fn(),
+          capabilityInvocations: { create: vi.fn() },
+        },
         scanLoginPreviews: { create: vi.fn() },
         scanLoginSettings: {
           retrieve: vi.fn().mockResolvedValue({ mode: "url", urlLogin: { enabled: false } }),

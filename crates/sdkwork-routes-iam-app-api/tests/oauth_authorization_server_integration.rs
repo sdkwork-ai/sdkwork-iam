@@ -10,9 +10,9 @@ use sdkwork_iam_context_service::{AuthLevel, DeploymentMode, Environment, IamApp
 use sdkwork_iam_web_adapter::{
     build_userinfo_claims, complete_authorization_state, create_pending_authorization_state,
     ensure_platform_tenant_application_with_deploy_application, exchange_authorization_code,
-    load_oauth_bearer_scopes, parse_relying_party_config, resolve_relying_party_client,
-    revoke_oauth_token, seed_builtin_oauth_provider_catalog, validate_authorize_request,
-    AuthorizeRequest,
+    load_oauth_bearer_scopes, oauth_login_base_url, parse_relying_party_config,
+    resolve_relying_party_client, revoke_oauth_token, seed_builtin_oauth_provider_catalog,
+    validate_authorize_request, AuthorizeRequest,
 };
 use sdkwork_web_core::bootstrap_access_token_jwt;
 use serde_json::{json, Value};
@@ -725,4 +725,36 @@ async fn oauth_authorize_redirects_into_the_configured_hosted_login() {
     .await
     .expect("count pending authorization state");
     assert_eq!(pending, 1, "the hosted login needs a pending state row");
+}
+
+/// The OAuth login step never lands on the account surface.
+///
+/// A deployment that still points `SDKWORK_IAM_LOGIN_BASE_URL` at `/auth` (the
+/// pre-split shape) is migrated to its `/oauth` sibling: `/auth/login` no longer
+/// completes an OAuth authorization, so the browser would otherwise land on a
+/// page that cannot hand the code back.
+#[test]
+fn legacy_account_surface_login_base_migrates_to_the_oauth_namespace() {
+    let _env_guard = lock_local_iam_env();
+
+    std::env::set_var(
+        "SDKWORK_IAM_LOGIN_BASE_URL",
+        "https://platform.birdcoder.com/auth/",
+    );
+    assert_eq!(
+        oauth_login_base_url(),
+        "https://platform.birdcoder.com/oauth",
+    );
+
+    std::env::set_var(
+        "SDKWORK_IAM_LOGIN_BASE_URL",
+        "https://platform.birdcoder.com/oauth",
+    );
+    assert_eq!(
+        oauth_login_base_url(),
+        "https://platform.birdcoder.com/oauth",
+    );
+
+    std::env::remove_var("SDKWORK_IAM_LOGIN_BASE_URL");
+    assert_eq!(oauth_login_base_url(), "/oauth");
 }

@@ -87,12 +87,30 @@ pub fn oauth_issuer_base_url() -> String {
 /// pending state, so the default keeps the OAuth flow under `/oauth` instead of
 /// the website's `/auth` account surface. A deployment that overrides the base
 /// owns the corresponding route on its web host.
+///
+/// A base that still ends in `/auth` (the pre-split deployment shape) is
+/// migrated to its `/oauth` sibling with a warning: the account surface no
+/// longer completes an OAuth authorization, so sending the browser there would
+/// leave the desktop application waiting for a code that never arrives.
 pub fn oauth_login_base_url() -> String {
-    std::env::var("SDKWORK_IAM_LOGIN_BASE_URL")
+    let configured = std::env::var("SDKWORK_IAM_LOGIN_BASE_URL")
         .ok()
         .map(|value| value.trim().trim_end_matches('/').to_string())
-        .filter(|value| !value.is_empty())
-        .unwrap_or_else(|| "/oauth".to_string())
+        .filter(|value| !value.is_empty());
+
+    match configured {
+        Some(base) if base.ends_with("/auth") => {
+            let migrated = format!("{}/oauth", &base[..base.len() - "/auth".len()]);
+            tracing::warn!(
+                base = %base,
+                migrated = %migrated,
+                "SDKWORK_IAM_LOGIN_BASE_URL points at the account surface; the OAuth login step is served from the /oauth namespace instead"
+            );
+            migrated
+        }
+        Some(base) => base,
+        None => "/oauth".to_string(),
+    }
 }
 
 pub fn build_openid_configuration_document() -> Value {
