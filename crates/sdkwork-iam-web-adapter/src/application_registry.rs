@@ -18,6 +18,14 @@ pub const IAM_INSTALLATIONS_ENABLE_PERMISSION: &str = "iam.installations.enable"
 /// calls. Separate from `enable` because the two directions have different blast
 /// radius: disabling stops issuance, enabling resumes it.
 pub const IAM_INSTALLATIONS_DISABLE_PERMISSION: &str = "iam.installations.disable";
+/// Permission for the readiness-driven repair of one installation.
+///
+/// Reconcile only writes what an installation *update* may write (a missing
+/// deploy anchor, an explicitly supplied runtime config, the enabled lifecycle),
+/// but it is granted separately so a deploy pipeline or a deployment bootstrap
+/// can repair its own installation without holding the general installation
+/// mutation boundary.
+pub const IAM_INSTALLATIONS_RECONCILE_PERMISSION: &str = "iam.installations.reconcile";
 
 /// Deterministic anchor of a tenant's platform installation.
 ///
@@ -286,8 +294,10 @@ pub fn resolve_access_token_app_id(
                 "installation is not bound to a deploy application (安装未绑定部署应用): \
                  tenant application {} (appId {}) has no deployApplicationId in \
                  iam_application_installation; provision the installation with deployApplicationId \
-                 before issuing an access token",
-                tenant_application.id, tenant_application.app_id
+                 before issuing an access token, or bind the existing row with \
+                 POST /backend/v3/api/iam/installations/{}/reconcile (dryRun supported; \
+                 GET .../readiness lists every defect)",
+                tenant_application.id, tenant_application.app_id, tenant_application.id
             )
         })
 }
@@ -830,6 +840,20 @@ pub async fn provision_tenant_application(
         instance_key_match,
         requested_deploy_application_id,
     )?;
+    // A NEW installation is provisioned together with the deploy application it
+    // serves: an anchorless row can never issue a credential or redeem a login, so
+    // the omission is refused at the creation instead of surfacing as
+    // `installation is not bound to a deploy application` after the first sign-in.
+    // An EXISTING row keeps its repair path — an update or
+    // `installations.reconcile` may still fill a missing anchor.
+    if existing.is_none() && requested_deploy_application_id.is_none() {
+        return Err(
+            "deployApplicationId is required to provision a tenant application: an installation is \
+             one-to-one with the deploy application it serves, and a row without the anchor can \
+             never issue a credential"
+                .to_string(),
+        );
+    }
     let tenant_application_id = match existing.as_ref() {
         Some(app) => app.id.clone(),
         None => tenant_application_row_id(

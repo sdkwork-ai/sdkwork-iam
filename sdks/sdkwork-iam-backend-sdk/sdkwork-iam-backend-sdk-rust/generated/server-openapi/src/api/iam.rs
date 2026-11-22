@@ -239,6 +239,18 @@ impl IamApi {
         self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), true, false).await
     }
 
+    /// Installations readiness retrieve.
+    pub async fn installations_readiness_retrieve(&self, installation_id: &str) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/installations/{}/readiness", serialize_path_parameter(installation_id, PathParameterSpec::new("installationId", "simple", false))));
+        self.client.get(&path, None, None).await
+    }
+
+    /// Installations reconcile.
+    pub async fn installations_reconcile(&self, installation_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/installations/{}/reconcile", serialize_path_parameter(installation_id, PathParameterSpec::new("installationId", "simple", false))));
+        self.client.request_method(Method::POST, &path, Some(body), None, None, Some("application/json"), true, false).await
+    }
+
     /// Installations management by Deploy Application disable.
     pub async fn installations_management_by_deploy_application_disable(&self, deploy_application_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<SdkWorkCommandData, SdkworkError> {
         let path = backend_path(&format!("/iam/installations/by_deploy_application/{}/disable", serialize_path_parameter(deploy_application_id, PathParameterSpec::new("deployApplicationId", "simple", false))));

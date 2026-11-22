@@ -5,6 +5,8 @@ import type {
   EnabledInstallationResult,
   IamApplicationBootstrapClient,
   IamInstallationProvisionCommand,
+  IamInstallationReadiness,
+  IamInstallationReconcileResult,
   IssuedAccessCredentialResult,
   ProvisionedInstallationResult,
 } from "./types.ts";
@@ -120,9 +122,9 @@ export function createFetchIamApplicationBootstrapClient(
       method,
       headers: {
         Accept: "application/json",
-        "Content-Type": "application/json",
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
       },
-      body: JSON.stringify(body ?? {}),
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       ...(signal !== undefined ? { signal } : {}),
     });
     const payload = await parseJson(response);
@@ -165,5 +167,37 @@ export function createFetchIamApplicationBootstrapClient(
         "iam.installations.update failed",
       );
     },
+    // The reconcile route is a `bootstrap_body` operation, so the credential this
+    // transport already receives in `body` authenticates it; the response carries
+    // both readiness documents, which is why a CLI needs no separate readiness
+    // read (that one is dual-token and would need session headers).
+    async reconcileInstallation(installationId, body) {
+      try {
+        return await requestJson<IamInstallationReconcileResult>(
+          "POST",
+          `${installationPath(installationId)}/reconcile`,
+          body,
+          "iam.installations.reconcile failed",
+        );
+      } catch (error) {
+        throw new InstallationReconcileFailure(
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    },
   };
+}
+
+/**
+ * A failed reconcile call.
+ *
+ * The route answers with a problem document whose `detail` names the conflict or
+ * the invalid field; keeping it in a named error lets a caller print the repair
+ * instruction instead of a transport message.
+ */
+export class InstallationReconcileFailure extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InstallationReconcileFailure";
+  }
 }

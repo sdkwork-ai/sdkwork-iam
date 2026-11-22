@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use crate::access_token_issue::IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION;
 use crate::application_registry::{
     IAM_INSTALLATIONS_ENABLE_PERMISSION, IAM_INSTALLATIONS_PROVISION_PERMISSION,
-    IAM_INSTALLATIONS_UPDATE_PERMISSION,
+    IAM_INSTALLATIONS_RECONCILE_PERMISSION, IAM_INSTALLATIONS_UPDATE_PERMISSION,
 };
 use crate::iam_session::resolve_iam_app_context_from_auth_token;
 
@@ -18,6 +18,11 @@ const BOOTSTRAP_PERMISSIONS: &[&str] = &[
     IAM_INSTALLATIONS_PROVISION_PERMISSION,
     IAM_INSTALLATIONS_UPDATE_PERMISSION,
     IAM_INSTALLATIONS_ENABLE_PERMISSION,
+    // Reconcile is the repair boundary a deploy pipeline holds instead of the
+    // general update boundary, so it must admit the caller to the bootstrap
+    // operator gate as well; otherwise `ensure_bootstrap_permission` would never
+    // be reached and the pipeline would be refused as "not a bootstrap operator".
+    IAM_INSTALLATIONS_RECONCILE_PERMISSION,
 ];
 
 pub const SDKWORK_USERS_DIR_ENV: &str = "SDKWORK_USERS_DIR";

@@ -9,22 +9,15 @@
     "protocol": "http",
     "packageName": "sdkwork-iam-backend-sdk"
   },
-  "changeFingerprint": "c2f24e7dfa436d52305278c8a51e46dedf48b234fb621b752b0e9427ce9dce87",
+  "changeFingerprint": "43291a1620a8a6505827ae9c3e9c91fb0113bf36e99a758fc4d445f61f3fb815",
   "changes": {
-    "createdGeneratedFiles": [
-      "src/models/appbase_installation_enable_command.rs",
-      "src/models/appbase_installation_provision_command.rs",
-      "src/models/appbase_installation_update_command.rs",
-      "src/models/iam_installation_management_provision_command.rs",
-      "src/models/iam_installation_management_update_command.rs",
-      "src/models/iam_installation_status_command.rs"
-    ],
+    "createdGeneratedFiles": [],
     "updatedGeneratedFiles": [
+      "README.md",
       "src/api/iam_oauth.rs",
       "src/api/iam.rs",
-      "src/models/appbase_access_credential_create_command.rs",
-      "src/models/mod.rs",
-      "src/models/service_account_credential_create_command.rs"
+      "src/models/appbase_installation_update_command.rs",
+      "src/models/iam_installation_management_update_command.rs"
     ],
     "unchangedGeneratedFiles": [
       "bin/publish-core.mjs",
@@ -33,7 +26,6 @@
       "Cargo.toml",
       "CHANGELOG.md",
       "LICENSE",
-      "README.md",
       "sdkwork-sdk.json",
       "src/api/base.rs",
       "src/api/mod.rs",
@@ -42,6 +34,9 @@
       "src/http/client.rs",
       "src/http/mod.rs",
       "src/lib.rs",
+      "src/models/appbase_access_credential_create_command.rs",
+      "src/models/appbase_installation_enable_command.rs",
+      "src/models/appbase_installation_provision_command.rs",
       "src/models/common.rs",
       "src/models/field_error.rs",
       "src/models/iam_installation_credential_create_command.rs",
@@ -54,7 +49,10 @@
       "src/models/iam_installation_environment_response.rs",
       "src/models/iam_installation_environment_upsert_command.rs",
       "src/models/iam_installation_environment.rs",
+      "src/models/iam_installation_management_provision_command.rs",
+      "src/models/iam_installation_status_command.rs",
       "src/models/iam_oauth_client_create_command.rs",
+      "src/models/mod.rs",
       "src/models/page_info.rs",
       "src/models/problem_detail.rs",
       "src/models/sdk_work_api_response.rs",
@@ -64,17 +62,11 @@
       "src/models/sdk_work_page_data.rs",
       "src/models/sdk_work_resource_data.rs",
       "src/models/sdk_work_resource_response.rs",
+      "src/models/service_account_credential_create_command.rs",
       "src/models/service_account_credential_revoke_command.rs",
       "src/models/service_account_token_exchange_command.rs"
     ],
-    "deletedGeneratedFiles": [
-      "src/models/appbase_tenant_application_enable_command.rs",
-      "src/models/appbase_tenant_application_provision_command.rs",
-      "src/models/appbase_tenant_application_update_command.rs",
-      "src/models/iam_tenant_application_management_provision_command.rs",
-      "src/models/iam_tenant_application_management_update_command.rs",
-      "src/models/iam_tenant_application_status_command.rs"
-    ],
+    "deletedGeneratedFiles": [],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
@@ -85,7 +77,8 @@
     "schemaVersion": 1,
     "areas": [
       "api-surface",
-      "models"
+      "models",
+      "documentation"
     ],
     "details": [
       {
@@ -98,37 +91,30 @@
       {
         "area": "models",
         "paths": [
-          "src/models/appbase_access_credential_create_command.rs",
-          "src/models/appbase_installation_enable_command.rs",
-          "src/models/appbase_installation_provision_command.rs",
           "src/models/appbase_installation_update_command.rs",
-          "src/models/appbase_tenant_application_enable_command.rs",
-          "src/models/appbase_tenant_application_provision_command.rs",
-          "src/models/appbase_tenant_application_update_command.rs",
-          "src/models/iam_installation_management_provision_command.rs",
-          "src/models/iam_installation_management_update_command.rs",
-          "src/models/iam_installation_status_command.rs",
-          "src/models/iam_tenant_application_management_provision_command.rs",
-          "src/models/iam_tenant_application_management_update_command.rs",
-          "src/models/iam_tenant_application_status_command.rs",
-          "src/models/mod.rs",
-          "src/models/service_account_credential_create_command.rs"
+          "src/models/iam_installation_management_update_command.rs"
+        ]
+      },
+      {
+        "area": "documentation",
+        "paths": [
+          "README.md"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models. Verification is required."
+    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -146,7 +132,7 @@
         "id": "build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, documentation.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-backend-sdk\\sdkwork-iam-backend-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -164,14 +150,12 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "deleted-generated-files",
-      "manual-review-required",
       "verification-required"
     ]
   },

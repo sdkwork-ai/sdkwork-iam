@@ -1141,6 +1141,24 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         "iam",
         "installations.enable",
     ),
+    // Readiness answers "what does this installation still need before it can
+    // serve a login"; reconcile repairs the subset an installation update may
+    // write (a missing deploy anchor, an explicit runtime config, the enabled
+    // lifecycle) behind a dry-run plan and a compare-and-set bind. The anchor is
+    // never re-pointed: that stays a deploy identity migration.
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/iam/installations/{installationId}/readiness",
+        "iam",
+        "installations.readiness.retrieve",
+    ),
+    HttpRoute::bootstrap_body(
+        HttpMethod::Post,
+        "/backend/v3/api/iam/installations/{installationId}/reconcile",
+        "iam",
+        "installations.reconcile",
+    )
+    .with_required_permission("iam.installations.reconcile"),
     HttpRoute::bootstrap_body(
         HttpMethod::Post,
         "/backend/v3/api/iam/installations/by_deploy_application/{deployApplicationId}/disable",

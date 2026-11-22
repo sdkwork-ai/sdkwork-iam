@@ -27,6 +27,14 @@ not through SQL. The update command carries `deployApplicationId` and fills a
 **missing** anchor; it answers `409` when the request would break the one-to-one
 relation instead of overwriting it.
 
+The same repair is also available as the readiness-driven pair, which is what a
+deploy pipeline should call when it must not hold the general update boundary:
+`GET /backend/v3/api/iam/installations/{installationId}/readiness` lists the
+defect codes (an unbound anchor, a missing relying party, a disabled lifecycle,
+an empty environment) and `POST .../reconcile` repairs the additive subset with
+`iam.installations.reconcile`, accepts `dryRun`, and returns the readiness
+document before and after the write.
+
 ```http
 PATCH /backend/v3/api/iam/installations/{installationId}
 {

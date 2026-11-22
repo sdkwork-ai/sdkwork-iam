@@ -16,15 +16,19 @@ use sdkwork_iam_web_adapter::{
     account_binding_policy_to_json, disable_tenant_application,
     disable_tenant_application_by_deploy_application_id, enable_tenant_application,
     ensure_actor_tenant_scope, ensure_bootstrap_permission, iam_api_error, iam_api_success,
+    installation_readiness_to_json, installation_reconcile_outcome_to_json,
     is_provision_attribute_error, issue_delegated_access_credential,
-    issued_access_credential_to_json, load_account_binding_policy, oauth_relying_party_summary,
-    parse_access_credential_create_request, parse_account_binding_policy,
+    issued_access_credential_to_json, load_account_binding_policy, load_installation_readiness,
+    oauth_relying_party_summary, parse_access_credential_create_request,
+    parse_account_binding_policy, parse_installation_reconcile_command,
     parse_tenant_application_provision_command, parse_tenant_application_update_command,
-    provision_tenant_application, resolve_bootstrap_actor, resolve_tenant_application,
-    save_account_binding_policy, tenant_application_to_json, update_tenant_application,
-    AccountBindingPolicyDocument, IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
+    provision_tenant_application, reconcile_installation, resolve_bootstrap_actor,
+    resolve_tenant_application, save_account_binding_policy, tenant_application_to_json,
+    update_tenant_application, AccountBindingPolicyDocument, InstallationReadinessError,
+    InstallationReconcileError, IAM_ACCESS_CREDENTIALS_CREATE_PERMISSION,
     IAM_INSTALLATIONS_DISABLE_PERMISSION, IAM_INSTALLATIONS_ENABLE_PERMISSION,
-    IAM_INSTALLATIONS_PROVISION_PERMISSION, IAM_INSTALLATIONS_UPDATE_PERMISSION,
+    IAM_INSTALLATIONS_PROVISION_PERMISSION, IAM_INSTALLATIONS_RECONCILE_PERMISSION,
+    IAM_INSTALLATIONS_UPDATE_PERMISSION,
 };
 use sdkwork_utils_rust::sdkwork_resource_json;
 use sdkwork_web_core::WebRequestContext;
@@ -190,6 +194,14 @@ fn build_sdkwork_iam_backend_api_business_router_with_state(state: BackendIamSta
         .route(
             "/backend/v3/api/iam/installations/{installationId}/enable",
             post(enable_tenant_application_handler),
+        )
+        .route(
+            "/backend/v3/api/iam/installations/{installationId}/readiness",
+            get(retrieve_installation_readiness_handler),
+        )
+        .route(
+            "/backend/v3/api/iam/installations/{installationId}/reconcile",
+            post(reconcile_installation_handler),
         )
         .route(
             "/backend/v3/api/iam/installations/by_deploy_application/{deployApplicationId}/disable",
@@ -588,6 +600,228 @@ async fn update_tenant_application_handler(
         Err(message) => appbase_error(
             StatusCode::SERVICE_UNAVAILABLE,
             "iam_installation_update_failed",
+            &message,
+        ),
+    }
+}
+
+/// Reads one installation's readiness document.
+///
+/// This is the "check every detail" entry point: a caller reads it before a
+/// login or a credential issue and learns which defect — an unbound deploy
+/// anchor, a disabled lifecycle, a missing relying party, an empty access scope
+/// — makes the flow fail, together with the operation that repairs it.
+async fn retrieve_installation_readiness_handler(
+    State(state): State<BackendIamState>,
+    ctx: WebRequestContext,
+    Path(installation_id): Path<String>,
+    Query(query): Query<HashMap<String, String>>,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+    if let Some(response) =
+        enforce_backend_rate_limit(pg, "backend:installations:readiness").await
+    {
+        return response;
+    }
+
+    let Ok(context_tenant_id) = tenant_id_from_context(&ctx) else {
+        return tenant_id_from_context(&ctx).err().expect("error response");
+    };
+    let tenant_id = query
+        .get("tenantId")
+        .or_else(|| query.get("tenant_id"))
+        .cloned()
+        .filter(|value| !is_blank(Some(value.as_str())))
+        .unwrap_or(context_tenant_id);
+    if let Err(response) = ensure_target_tenant_access(&ctx, &tenant_id) {
+        return response;
+    }
+
+    match load_installation_readiness(pg, &tenant_id, &installation_id).await {
+        Ok(readiness) => appbase_ok(sdkwork_resource_json(installation_readiness_to_json(
+            &readiness,
+        ))),
+        Err(InstallationReadinessError::NotFound(message)) => appbase_error(
+            StatusCode::NOT_FOUND,
+            "iam_installation_not_found",
+            &message,
+        ),
+        Err(InstallationReadinessError::Internal(message)) => appbase_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "iam_installation_readiness_failed",
+            &message,
+        ),
+    }
+}
+
+/// Repairs one installation in place: binds a missing deploy anchor, applies an
+/// explicit runtime config, and re-enables the lifecycle.
+///
+/// The whitelist is the point of this route: it never re-points an existing
+/// anchor, never deletes a field, and never touches release scope, ownership, or
+/// tenant. `dryRun` reports the same plan without writing, so a caller can show
+/// the intended repair before a human approves it.
+async fn reconcile_installation_handler(
+    State(state): State<BackendIamState>,
+    Path(installation_id): Path<String>,
+    Json(body): Json<Value>,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+    if let Some(response) =
+        enforce_backend_rate_limit(pg, "backend:installations:reconcile").await
+    {
+        return response;
+    }
+
+    let tenant_id = match read_required_string(&body, &["tenantId", "tenant_id"]) {
+        Ok(tenant_id) => tenant_id,
+        Err(message) => {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_installation_reconcile_invalid",
+                &message,
+            )
+        }
+    };
+    let command = match parse_installation_reconcile_command(&body) {
+        Ok(command) => command,
+        Err(message) => {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_installation_reconcile_invalid",
+                &message,
+            )
+        }
+    };
+    if command.is_empty() {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_installation_reconcile_invalid",
+            "no repair requested: supply deployApplicationId, runtimeConfig, and/or enable",
+        );
+    }
+
+    let actor = match resolve_bootstrap_actor(pg, &body).await {
+        Ok(actor) => actor,
+        Err(message) if message.contains("invalid") || message.contains("required") => {
+            return appbase_error(
+                StatusCode::UNAUTHORIZED,
+                "iam_super_admin_auth_failed",
+                &message,
+            );
+        }
+        Err(message)
+            if message.contains("not a bootstrap operator")
+                || message.contains("not a super admin") =>
+        {
+            return appbase_error(
+                StatusCode::FORBIDDEN,
+                "iam_installation_reconcile_forbidden",
+                &message,
+            );
+        }
+        Err(message) => {
+            return appbase_error(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "iam_super_admin_auth_unavailable",
+                &message,
+            );
+        }
+    };
+
+    if let Err(message) =
+        ensure_bootstrap_permission(pg, &actor, IAM_INSTALLATIONS_RECONCILE_PERMISSION).await
+    {
+        return appbase_error(
+            StatusCode::FORBIDDEN,
+            "iam_installation_reconcile_forbidden",
+            &message,
+        );
+    }
+    if let Err(message) = ensure_actor_tenant_scope(&actor, &tenant_id) {
+        return appbase_error(
+            StatusCode::FORBIDDEN,
+            "iam_installation_reconcile_forbidden",
+            &message,
+        );
+    }
+
+    match reconcile_installation(pg, &tenant_id, &installation_id, &command).await {
+        Ok(outcome) => {
+            // A dry run reads; only a write leaves a trail. The audit names the
+            // anchor transition so an identity change is auditable even when the
+            // caller only reports the outcome to a user.
+            if !outcome.dry_run && outcome.changed {
+                let environment = format!("{:?}", actor.environment).to_ascii_lowercase();
+                if let Err(error) = sdkwork_iam_web_adapter::record_audit_event_tx(
+                    pg,
+                    &tenant_id,
+                    None,
+                    Some(actor.user_id.as_str()),
+                    "iam.installation.reconciled",
+                    "installations",
+                    Some(outcome.installation_id.as_str()),
+                    None,
+                    environment.as_str(),
+                    json!({
+                        "permission": IAM_INSTALLATIONS_RECONCILE_PERMISSION,
+                        "idempotencyKey": outcome.idempotency_key,
+                        "deployApplicationIdBefore": outcome.readiness_before.deploy_application_id,
+                        "deployApplicationIdAfter": outcome.readiness_after.deploy_application_id,
+                        "readyAfter": outcome.readiness_after.ready,
+                        "steps": outcome
+                            .steps
+                            .iter()
+                            .map(|step| json!({
+                                "field": step.field,
+                                "status": step.status.as_str(),
+                            }))
+                            .collect::<Vec<_>>(),
+                    }),
+                )
+                .await
+                {
+                    // The repair already committed; a failed audit write must be
+                    // visible but must not turn a completed repair into an error
+                    // the caller retries against an already-repaired installation.
+                    tracing::error!(
+                        tenant_id = %tenant_id,
+                        installation_id = %outcome.installation_id,
+                        %error,
+                        "IAM installation reconcile audit write failed"
+                    );
+                }
+            }
+            appbase_ok(sdkwork_resource_json(
+                installation_reconcile_outcome_to_json(&outcome),
+            ))
+        }
+        Err(InstallationReconcileError::NotFound(message)) => appbase_error(
+            StatusCode::NOT_FOUND,
+            "iam_installation_not_found",
+            &message,
+        ),
+        Err(InstallationReconcileError::Conflict(message)) => appbase_error(
+            StatusCode::CONFLICT,
+            "iam_installation_reconcile_conflict",
+            &message,
+        ),
+        Err(InstallationReconcileError::Invalid(message)) => appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_installation_reconcile_invalid",
+            &message,
+        ),
+        Err(InstallationReconcileError::Internal(message)) => appbase_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "iam_installation_reconcile_failed",
             &message,
         ),
     }

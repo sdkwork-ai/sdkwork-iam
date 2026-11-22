@@ -284,6 +284,12 @@ const OWNER_ROLE_PERMISSION_SEEDS: &[LocalIamPermissionSeed] = &[
         action: "provision",
     },
     LocalIamPermissionSeed {
+        code: "iam.installations.reconcile",
+        name: "Reconcile tenant applications",
+        resource: "iam.installations",
+        action: "reconcile",
+    },
+    LocalIamPermissionSeed {
         code: "iam.installations.update",
         name: "Update tenant applications",
         resource: "iam.installations",

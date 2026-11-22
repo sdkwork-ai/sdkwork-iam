@@ -801,6 +801,15 @@
         "replacementCode": null
       },
       {
+        "code": "iam.installations.reconcile",
+        "name": "Reconcile installations",
+        "resource": "iam.installations",
+        "action": "reconcile",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
         "code": "iam.installations.update",
         "name": "Update installations",
         "resource": "iam.installations",

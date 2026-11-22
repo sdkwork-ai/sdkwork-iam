@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// Update tenant application access and runtime configuration.
+/// Update tenant application access, runtime configuration, and deploy anchor.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct AppbaseInstallationUpdateCommand {
     /// Super-admin auth token used for bootstrap body authentication.
@@ -39,4 +39,9 @@ pub struct AppbaseInstallationUpdateCommand {
     #[serde(rename = "runtimeConfig")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub runtime_config: Option<std::collections::HashMap<String, serde_json::Value>>,
+
+    /// Deploy application the installation serves. An update may only fill a MISSING anchor; re-pointing a bound installation is a deploy identity migration and is refused.
+    #[serde(rename = "deployApplicationId")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub deploy_application_id: Option<String>,
 }

@@ -267,6 +267,32 @@ fn backend_routes_expose_admin_organization_directory_reads() {
 }
 
 #[test]
+fn backend_routes_expose_installation_readiness_and_reconcile() {
+    let routes = backend_routes();
+
+    for route in [
+        HttpRoute::dual_token(
+            HttpMethod::Get,
+            "/backend/v3/api/iam/installations/{installationId}/readiness",
+            "iam",
+            "installations.readiness.retrieve",
+        ),
+        HttpRoute::bootstrap_body(
+            HttpMethod::Post,
+            "/backend/v3/api/iam/installations/{installationId}/reconcile",
+            "iam",
+            "installations.reconcile",
+        )
+        .with_required_permission("iam.installations.reconcile"),
+    ] {
+        assert!(
+            routes.contains(&route),
+            "missing installation readiness/reconcile route: {route:?}"
+        );
+    }
+}
+
+#[test]
 fn backend_routes_expose_installation_environment_and_credential_management() {
     let routes = backend_routes();
 
@@ -374,6 +400,8 @@ fn backend_route_manifest_matches_the_standard_management_operation_surface() {
             "installations.management.disable",
             "installations.management.enable",
             "installations.management.update",
+            "installations.readiness.retrieve",
+            "installations.reconcile",
             "installations.retrieve",
             "installations.summary.retrieve",
             "installations.update",

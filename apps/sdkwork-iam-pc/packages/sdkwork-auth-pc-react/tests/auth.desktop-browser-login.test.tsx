@@ -182,7 +182,11 @@ describe("sdkwork desktop launch page", () => {
     expect(screen.getByTestId("sdkwork-desktop-launch-description")).toBeInTheDocument();
     expect(screen.getByText("Login successful")).toBeInTheDocument();
 
-    vi.advanceTimersByTime(500);
+    // The success page stays on screen first: the deep link must not replace
+    // the confirmation step the visitor is meant to see.
+    vi.advanceTimersByTime(1000);
+    expect(onLaunch).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1500);
     expect(onLaunch).toHaveBeenCalledTimes(1);
     expect(onLaunch).toHaveBeenCalledWith("sdkwork-iam://auth/callback?code=abc&state=xyz");
 
@@ -260,7 +264,7 @@ describe("sdkwork desktop launch page", () => {
       renderLaunchPage("/auth/desktop/launch", { onLaunch });
 
       expect(screen.getByTestId("sdkwork-desktop-launch-description")).toBeInTheDocument();
-      vi.advanceTimersByTime(500);
+      vi.advanceTimersByTime(2500);
       expect(onLaunch).toHaveBeenCalledWith(redirect);
       // The launch page consumes the transfer immediately.
       expect(readSdkworkDesktopLaunchRedirect()).toBeUndefined();

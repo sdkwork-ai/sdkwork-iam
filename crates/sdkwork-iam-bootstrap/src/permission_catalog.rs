@@ -521,6 +521,12 @@ pub const IAM_STANDARD_PERMISSION_SEEDS: &[PermissionSeed] = &[
         action: "provision",
     },
     PermissionSeed {
+        code: "iam.installations.reconcile",
+        name: "Reconcile installations",
+        resource: "iam.installations",
+        action: "reconcile",
+    },
+    PermissionSeed {
         code: "iam.installations.update",
         name: "Update installations",
         resource: "iam.installations",

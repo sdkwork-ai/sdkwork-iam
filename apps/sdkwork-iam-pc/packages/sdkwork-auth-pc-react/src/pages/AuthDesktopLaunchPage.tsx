@@ -58,7 +58,16 @@ export interface SdkworkAuthDesktopLaunchPageProps {
 
 type SdkworkDesktopLaunchPhase = "launching" | "launched" | "failed";
 
-const AUTO_LAUNCH_DELAY_MS = 400;
+/**
+ * How long the login-success page stays on screen before the deep link fires.
+ *
+ * The page exists so the visitor sees that the sign-in worked, and it carries
+ * the follow QR and the manual hand-off. A near-instant hand-off (the previous
+ * 400 ms) replaced that page before it could be read, which looked like the app
+ * opening the moment the sign-in button was pressed; two seconds keep the
+ * success step visible while the deep link still opens by itself.
+ */
+const AUTO_LAUNCH_DELAY_MS = 2000;
 
 function defaultLaunchSdkworkDesktopRedirect(redirectUrl: string): void {
   window.location.assign(redirectUrl);

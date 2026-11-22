@@ -65,6 +65,15 @@ selects `secret_hash`. Duplicate env key, tenant-wide primary domain, or client 
 return `409 iam_installation_lifecycle_conflict`. Cross-tenant access is refused at
 the handler and again by the tenant filter in every query.
 
+The canonical installation surface also exposes the readiness pair:
+`GET /backend/v3/api/iam/installations/{installationId}/readiness` (dual token,
+`iam.installations.update`) reports the defect list that explains a refused login
+or credential, and `POST .../reconcile` (bootstrap body,
+`iam.installations.reconcile`) repairs the additive subset — a missing deploy
+anchor via compare-and-set, an explicit runtime config, the enabled lifecycle —
+behind `dryRun`, with the before/after readiness in the response and one audit
+event per written repair.
+
 ## Tree Resources
 
 Tree endpoints (`organizations/tree`, `departments/tree`) return `SdkWorkResourceResponse` inside `SdkWorkApiResponse.data`:

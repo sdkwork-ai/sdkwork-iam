@@ -1003,6 +1003,20 @@ export class IamInstallationsManagementApi {
   }
 }
 
+export class IamInstallationsReadinessApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Installations readiness retrieve. */
+  async retrieve(installationId: string, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/installations/${serializePathParameter(installationId, { name: 'installationId', style: 'simple', explode: false })}/readiness`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export interface IamInstallationsListParams {
   page?: number;
   pageSize?: number;
@@ -1016,6 +1030,7 @@ export interface IamInstallationsListParams {
 
 export class IamInstallationsApi {
   private client: HttpClient;
+  public readonly readiness: IamInstallationsReadinessApi;
   public readonly management: IamInstallationsManagementApi;
   public readonly credentials: IamInstallationsCredentialsApi;
   public readonly environments: IamInstallationsEnvironmentsApi;
@@ -1023,6 +1038,7 @@ export class IamInstallationsApi {
 
   constructor(client: HttpClient) {
     this.client = client;
+    this.readiness = new IamInstallationsReadinessApi(client);
     this.management = new IamInstallationsManagementApi(client);
     this.credentials = new IamInstallationsCredentialsApi(client);
     this.environments = new IamInstallationsEnvironmentsApi(client);
@@ -1048,6 +1064,11 @@ export class IamInstallationsApi {
 /** Installations enable. */
   async enable(installationId: string, body: AppbaseInstallationEnableCommand, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
     return this.client.request<SdkWorkCommandData>(backendApiPath(`/iam/installations/${serializePathParameter(installationId, { name: 'installationId', style: 'simple', explode: false })}/enable`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true, sdkworkUnwrapKind: 'command' });
+  }
+
+/** Installations reconcile. */
+  async reconcile(installationId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/installations/${serializePathParameter(installationId, { name: 'installationId', style: 'simple', explode: false })}/reconcile`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', skipAuth: true, sdkworkUnwrapKind: 'item' });
   }
 
 /** Installations list. */

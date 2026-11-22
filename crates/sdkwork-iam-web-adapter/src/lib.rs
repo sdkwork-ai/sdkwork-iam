@@ -17,6 +17,7 @@ mod iam_audit;
 mod iam_database_env;
 mod iam_session;
 mod installation_lifecycle;
+mod installation_readiness;
 mod installation_scope_cache;
 mod messaging_verification;
 mod oauth_authorization_server;
@@ -109,7 +110,8 @@ pub use application_registry::{
     validate_enabled_tenant_runtime_app, EnsureTenantApplicationCommand, TenantApplication,
     TenantApplicationProvisionCommand, TenantApplicationUpdateCommand, DEPLOY_APPLICATION_ID_ENV,
     IAM_INSTALLATIONS_DISABLE_PERMISSION, IAM_INSTALLATIONS_ENABLE_PERMISSION,
-    IAM_INSTALLATIONS_PROVISION_PERMISSION, IAM_INSTALLATIONS_UPDATE_PERMISSION,
+    IAM_INSTALLATIONS_PROVISION_PERMISSION, IAM_INSTALLATIONS_RECONCILE_PERMISSION,
+    IAM_INSTALLATIONS_UPDATE_PERMISSION,
     PLATFORM_INSTALLATION_ANCHOR,
 };
 pub use application_scope::{
@@ -167,6 +169,15 @@ pub use installation_lifecycle::{
     INSTALLATION_CREDENTIAL_STATUS_ACTIVE, INSTALLATION_CREDENTIAL_STATUS_RETIRED,
     INSTALLATION_CREDENTIAL_STATUS_ROTATED, INSTALLATION_ENVIRONMENT_STATUS_ACTIVE,
     INSTALLATION_ENVIRONMENT_STATUS_DISABLED, INSTALLATION_ENVIRONMENT_STATUS_PENDING,
+};
+pub use installation_readiness::{
+    assess_installation, installation_readiness_to_json, installation_reconcile_outcome_to_json,
+    load_installation_readiness, parse_installation_reconcile_command, reconcile_installation,
+    InstallationDefect, InstallationDefectCode, InstallationEnvironmentState,
+    InstallationReadiness, InstallationReadinessError, InstallationReconcileCommand,
+    InstallationReconcileError, InstallationReconcileOutcome, InstallationReconcileStep,
+    InstallationReconcileStepStatus, INSTALLATION_ENVIRONMENT_REPAIR_OPERATION,
+    INSTALLATION_RECONCILE_REPAIR_OPERATION, INSTALLATION_UPDATE_REPAIR_OPERATION,
 };
 pub use installation_scope_cache::invalidate_installation_scope;
 pub use messaging_verification::{

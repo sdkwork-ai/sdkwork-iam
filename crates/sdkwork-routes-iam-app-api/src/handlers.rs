@@ -1346,9 +1346,17 @@ async fn create_app_access_token(
                 AppTokenExchangeError::Denied(_) => StatusCode::FORBIDDEN,
                 AppTokenExchangeError::NotFound(_) => StatusCode::NOT_FOUND,
                 AppTokenExchangeError::Conflict(_) => StatusCode::CONFLICT,
+                // A repairable state, not a transient conflict: the detail names
+                // the defect codes and `installations.reconcile`, and the
+                // dedicated wire code tells a client it may repair and retry.
+                AppTokenExchangeError::NotReady(_) => StatusCode::CONFLICT,
                 AppTokenExchangeError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
             };
-            appbase_error(status, "iam_app_access_token_denied", error.message())
+            let wire_code = match &error {
+                AppTokenExchangeError::NotReady(_) => "iam_app_access_token_not_ready",
+                _ => "iam_app_access_token_denied",
+            };
+            appbase_error(status, wire_code, error.message())
         }
     }
 }

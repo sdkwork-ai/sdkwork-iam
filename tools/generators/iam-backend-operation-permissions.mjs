@@ -62,10 +62,16 @@ function explicitBootstrapPermission(operationId) {
     case 'installations.list':
     case 'installations.summary.retrieve':
     case 'installations.retrieve':
+    // Readiness is an installation read: same boundary, no new code.
+    case 'installations.readiness.retrieve':
     case 'installations.update':
     case 'installations.management.update':
     case 'installations.management.disable':
       return 'iam.installations.update';
+    // Reconcile writes, so it gets its own code: a deploy pipeline may repair its
+    // installation without holding the general update boundary.
+    case 'installations.reconcile':
+      return 'iam.installations.reconcile';
     case 'installations.management.enable':
     case 'installations.enable':
       return 'iam.installations.enable';

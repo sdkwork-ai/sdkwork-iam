@@ -58,6 +58,14 @@ pub enum AppTokenExchangeError {
     /// The installation exists but cannot issue right now (disabled,
     /// environment not registered, personal installation without its owner).
     Conflict(String),
+    /// The installation's stored state is incomplete, and the message names the
+    /// stable defect codes plus the repair operation.
+    ///
+    /// Separate from [`Self::Conflict`] so the route can answer with a specific
+    /// wire code: a client reads the defects, calls `installations.reconcile`
+    /// (optionally with `dryRun`), and retries instead of treating it as a
+    /// transient conflict.
+    NotReady(String),
     /// Anything else, including storage failures.
     Internal(String),
 }
@@ -71,6 +79,7 @@ impl AppTokenExchangeError {
             | Self::Denied(message)
             | Self::NotFound(message)
             | Self::Conflict(message)
+            | Self::NotReady(message)
             | Self::Internal(message) => message,
         }
     }
@@ -286,6 +295,24 @@ pub async fn issue_application_access_credential(
     .map_err(AppTokenExchangeError::classify_issuance_error)?;
 
     ensure_actor_may_issue(pg, actor, &installation).await?;
+
+    // Completeness gate: every defect that blocks issuance (an unbound deploy
+    // anchor, a disabled lifecycle, an empty access scope, no active environment)
+    // is reported together with the operation that repairs it, instead of
+    // surfacing one at a time from deep inside the signing path.
+    let environments = crate::installation_lifecycle::load_installation_environments(
+        pg,
+        &actor.tenant_id,
+        &installation.id,
+    )
+    .await
+    .map_err(AppTokenExchangeError::Internal)?;
+    let readiness = crate::installation_readiness::assess_installation(&installation, &environments);
+    if !readiness.issuance_ready() {
+        return Err(AppTokenExchangeError::NotReady(
+            readiness.repair_detail("issuance"),
+        ));
+    }
 
     let declared_scope =
         resolve_scope_declaration(request.ownership_scope.as_deref(), &installation)?;

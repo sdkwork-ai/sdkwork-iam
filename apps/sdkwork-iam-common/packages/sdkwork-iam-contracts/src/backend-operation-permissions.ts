@@ -85,6 +85,14 @@ function explicitBootstrapPermission(operationId: string): string | undefined {
       return "iam.installations.update";
     case "installations.retrieve":
       return "iam.installations.update";
+    // Readiness is an installation read, so it rides the same boundary as
+    // `installations.retrieve` and seeds no new code.
+    case "installations.readiness.retrieve":
+      return "iam.installations.update";
+    // Reconcile writes, so it gets its own code: a deploy pipeline may repair its
+    // installation without holding the general update boundary.
+    case "installations.reconcile":
+      return "iam.installations.reconcile";
     case "installations.enable":
       return "iam.installations.enable";
     case "accessCredentials.create":

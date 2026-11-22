@@ -136,6 +136,44 @@ The credential lifecycle never widens the existing installation-update boundary:
 no new permission code is seeded, and every path is scoped to the path tenant, so
 a row of another tenant is indistinguishable from a missing row.
 
+### Installation readiness and repair
+
+Every login and credential flow fails closed until the installation serves a
+deploy application, and the failure otherwise surfaces only at the last step
+(the hosted authorization page, or the access-token issue). The canonical
+installation surface therefore also answers *what is still missing* and repairs
+the additive subset:
+
+| Operation | Method and path | Permission |
+| --- | --- | --- |
+| `installations.readiness.retrieve` | `GET /backend/v3/api/iam/installations/{installationId}/readiness` | `iam.installations.update` |
+| `installations.reconcile` | `POST /backend/v3/api/iam/installations/{installationId}/reconcile` | `iam.installations.reconcile` |
+
+Readiness returns one document with a stable defect code list
+(`deploy_application_unbound`, `relying_party_missing`, `installation_disabled`,
+`primary_domain_missing`, `access_permissions_empty`,
+`environment_not_registered`, `environment_not_active`, `owner_missing`), the
+planes each defect blocks (`issuance`, `login`, `enable`), whether it is
+auto-repairable, and the operation that repairs it.
+
+Reconcile is the repair: it binds a **missing** deploy anchor with the same
+compare-and-set the update path uses (a bound installation is never re-pointed),
+applies only an explicitly supplied `runtimeConfig`, and enables the lifecycle
+only when asked. `dryRun` returns the same plan without writing, a repeated call
+reports `skipped`, and the response carries the readiness document before and
+after the repair. Idempotency is identity/state based (as the provisioning
+command is): an optional `idempotencyKey` is a correlation key recorded on the
+audit event, not a replay cache. It is seeded as its own code
+(`iam.installations.reconcile`) so a deploy pipeline can repair one installation
+without holding the general installation-update boundary; every write is audited
+as `iam.installation.reconciled` with the anchor transition.
+
+The repair lane stays operator-facing. Reconcile is a bootstrap-body operation
+that requires an IAM operator credential, so a public client can never bind its
+own installation; an application-side self-repair is deliberately not exposed and
+would need its own app-plane operation plus a deployment flag before any client
+could call it.
+
 **Constraints and conflicts.** `(installation_id, env_key)` is unique among live
 environments; `(tenant_id, primary_domain)` is unique among live rows that carry a
 domain (a null/blank domain may repeat); `client_id` is globally unique including

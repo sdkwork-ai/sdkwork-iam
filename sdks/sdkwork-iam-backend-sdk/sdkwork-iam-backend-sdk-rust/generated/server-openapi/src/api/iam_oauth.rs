@@ -215,6 +215,18 @@ impl IamOauthApi {
         self.client.patch(&path, Some(body), None, None, Some("application/json")).await
     }
 
+    /// Iam oauth login Follow Qr retrieve.
+    pub async fn login_follow_qr_retrieve(&self) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&"/iam/oauth/login_follow_qr".to_string());
+        self.client.get(&path, None, None).await
+    }
+
+    /// Iam oauth login Follow Qr update.
+    pub async fn login_follow_qr_update(&self, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&"/iam/oauth/login_follow_qr".to_string());
+        self.client.patch(&path, Some(body), None, None, Some("application/json")).await
+    }
+
     /// Iam oauth operational Resources list.
     pub async fn operational_resources_list(&self, page: Option<i64>, page_size: Option<i64>, cursor: Option<&str>, sort: Option<&str>, q: Option<&str>) -> Result<SdkWorkPageData, SdkworkError> {
         let query = build_query_string(&[
@@ -280,6 +292,12 @@ impl IamOauthApi {
     /// Iam oauth operator Platforms component Credentials create.
     pub async fn operator_platforms_component_credentials_create(&self, operator_platform_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = backend_path(&format!("/iam/oauth/operator_platforms/{}/component_credentials", serialize_path_parameter(operator_platform_id, PathParameterSpec::new("operatorPlatformId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Iam oauth operator Platforms connectivity Checks create.
+    pub async fn operator_platforms_connectivity_checks_create(&self, operator_platform_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/oauth/operator_platforms/{}/connectivity_checks", serialize_path_parameter(operator_platform_id, PathParameterSpec::new("operatorPlatformId", "simple", false))));
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
 
@@ -453,6 +471,12 @@ impl IamOauthApi {
     pub async fn resource_authorizations_update(&self, authorization_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
         let path = backend_path(&format!("/iam/oauth/resource_authorizations/{}", serialize_path_parameter(authorization_id, PathParameterSpec::new("authorizationId", "simple", false))));
         self.client.patch(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Iam oauth resource Authorizations capability Invocations create.
+    pub async fn resource_authorizations_capability_invocations_create(&self, authorization_id: &str, body: &std::collections::HashMap<String, serde_json::Value>) -> Result<std::collections::HashMap<String, serde_json::Value>, SdkworkError> {
+        let path = backend_path(&format!("/iam/oauth/resource_authorizations/{}/capability_invocations", serialize_path_parameter(authorization_id, PathParameterSpec::new("authorizationId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
 
     /// Iam oauth scan Login Previews create.

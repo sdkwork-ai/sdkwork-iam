@@ -98,12 +98,18 @@ fn explicit_bootstrap_permission(operation_id: &str) -> Option<&'static str> {
         "installations.list"
         | "installations.retrieve"
         | "installations.summary.retrieve"
+        | "installations.readiness.retrieve"
         | "installations.update"
         | "installations.management.update"
         | "installations.management.disable" => Some("iam.installations.update"),
         "installations.enable" | "installations.management.enable" => {
             Some("iam.installations.enable")
         }
+        // Reconciliation writes exactly what an installation update may write
+        // (a missing deploy anchor, an explicit runtime config, the enabled
+        // lifecycle), but it is seeded as its own code so a deploy pipeline can
+        // repair one installation without holding the general update boundary.
+        "installations.reconcile" => Some("iam.installations.reconcile"),
         // Environments and their OAuth credentials are attributes of the
         // installation itself, so they ride on the permission that already owns
         // installation mutation. No new code is seeded and no existing boundary is
@@ -385,6 +391,22 @@ mod tests {
                 "{operation_id} must reuse the installation update boundary"
             );
         }
+    }
+
+    #[test]
+    fn maps_readiness_to_the_update_boundary_and_reconcile_to_its_own_code() {
+        // Readiness is an installation read, so it rides the same boundary as
+        // `installations.retrieve`: no new code is seeded for it.
+        assert_eq!(
+            iam_backend_permission_for_operation("installations.readiness.retrieve"),
+            Some("iam.installations.update"),
+        );
+        // Reconcile writes, so it gets its own code: a deploy pipeline may repair
+        // its installation without receiving the general update boundary.
+        assert_eq!(
+            iam_backend_permission_for_operation("installations.reconcile"),
+            Some("iam.installations.reconcile"),
+        );
     }
 
     #[test]

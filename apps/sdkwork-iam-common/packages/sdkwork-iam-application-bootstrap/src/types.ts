@@ -173,6 +173,87 @@ export interface IamApplicationBootstrapClient {
     installationId: string,
     body?: Record<string, unknown>,
   ): Promise<ProvisionedInstallationResult>;
+  /**
+   * Repairs one installation through the readiness-driven reconcile operation.
+   *
+   * The request is a `bootstrap_body` route: the credential travels in the body
+   * (`authToken`, or `username`/`password`), never in a header. `dryRun: true`
+   * returns the same plan without writing, and the response carries the
+   * readiness document before and after the repair.
+   */
+  reconcileInstallation?(
+    installationId: string,
+    body: Record<string, unknown>,
+  ): Promise<IamInstallationReconcileResult>;
+  /**
+   * Reads one installation's readiness document.
+   *
+   * Optional because it is a dual-token read (`Authorization` +
+   * `Access-Token`), which only an adapter carrying a session can call; the
+   * bootstrap CLI reads the same document from a reconcile response instead.
+   */
+  retrieveInstallationReadiness?(installationId: string): Promise<IamInstallationReadiness>;
+}
+
+/** One defect the installation readiness assessment reports. */
+export interface IamInstallationDefect {
+  /** Stable machine-readable code, e.g. `deploy_application_unbound`. */
+  code: string;
+  /** Installation field (or runtime-config pointer) the defect sits on. */
+  field: string;
+  /** Human sentence explaining the defect. */
+  message: string;
+  /** Planes the defect blocks (`issuance`, `login`, `enable`). */
+  blocks: string[];
+  /** Whether `iam.installations.reconcile` writes this defect. */
+  autoRepairable: boolean;
+  /** Whether the repair request must carry the field's value. */
+  requiresInput: boolean;
+  /** Operation that repairs the defect. */
+  operation: string;
+}
+
+/** Readiness document for one installation. */
+export interface IamInstallationReadiness {
+  installationId: string;
+  tenantId: string;
+  organizationId: string;
+  applicationType: string;
+  status: string;
+  /** Deploy application the installation serves; `null` when unbound. */
+  deployApplicationId: string | null;
+  ownershipScope: string;
+  /** No defect blocks credential issuance or login. */
+  ready: boolean;
+  /** No defect blocks credential issuance (a missing relying party does not). */
+  issuanceReady: boolean;
+  /** No defect blocks the hosted browser login. */
+  loginReady: boolean;
+  repairOperation: string;
+  environments: Array<{ environmentKey: string; status: string }>;
+  defects: IamInstallationDefect[];
+  [key: string]: unknown;
+}
+
+/** One repair step of a reconcile call. */
+export interface IamInstallationReconcileStep {
+  field: string;
+  /** `applied` for a write, `planned` for a dry run, `skipped` when satisfied. */
+  status: "applied" | "planned" | "skipped";
+  detail: string;
+}
+
+/** Outcome of one reconcile call. */
+export interface IamInstallationReconcileResult {
+  installationId: string;
+  dryRun: boolean;
+  /** At least one step was written; always false for a dry run. */
+  changed: boolean;
+  steps: IamInstallationReconcileStep[];
+  readinessBefore: IamInstallationReadiness;
+  /** Equal to `readinessBefore` for a dry run. */
+  readinessAfter: IamInstallationReadiness;
+  [key: string]: unknown;
 }
 
 export interface SdkworkAppManifest {

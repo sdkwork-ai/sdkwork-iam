@@ -59,8 +59,8 @@ println!("{result:?}");
 ### iam_oauth
 
 ```rust
-// Iam oauth scan Login Settings retrieve.
-let result = client.iam_oauth().scan_login_settings_retrieve().await?;
+// Iam oauth login Follow Qr retrieve.
+let result = client.iam_oauth().login_follow_qr_retrieve().await?;
 println!("{result:?}");
 ```
 

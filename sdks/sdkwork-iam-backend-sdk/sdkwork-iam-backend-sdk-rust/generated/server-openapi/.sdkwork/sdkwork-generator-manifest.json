@@ -36,7 +36,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "4e1a9486997d2c187ea79082894f332fcdf9932e6358769f582493711793f562"
+      "sha256": "9913ca43fe7109ba3a8f4398010031f144cec7c38606ecfb2e1be906043c64bc"
     },
     {
       "path": "sdkwork-sdk.json",
@@ -48,11 +48,11 @@
     },
     {
       "path": "src/api/iam_oauth.rs",
-      "sha256": "e1a1d2802754d079bf2abed562d34738ae374e440e578c33916f545b0b8ff1f4"
+      "sha256": "0c6d21eaeded43c586215ecb1a941568825a022a70c1b06a0c779d521ccb0a77"
     },
     {
       "path": "src/api/iam.rs",
-      "sha256": "3f49d5bdd6f20203253af8a2e7bf5fd4f64a2d458220db02c5b8664d03d8fddd"
+      "sha256": "0d4f727baac0696f90042a0b7cfb6b4a50da2e93176a4cd336c0ecd8a009f20f"
     },
     {
       "path": "src/api/mod.rs",
@@ -92,7 +92,7 @@
     },
     {
       "path": "src/models/appbase_installation_update_command.rs",
-      "sha256": "bcf5044f1cee1abc512e5ff1137b0f4fbe0430ff0fb937cb36f9d02cf5521a0a"
+      "sha256": "64570c358fef6b34656abfda7e78b5b048d8118dd2675d201b0fb16ca40291dc"
     },
     {
       "path": "src/models/common.rs",
@@ -148,7 +148,7 @@
     },
     {
       "path": "src/models/iam_installation_management_update_command.rs",
-      "sha256": "a29aa8c2ac5b58b6f1d39a4f71bf7e0a47bdad0d45f55169f23acf4afdbd9795"
+      "sha256": "84f401b898487013c66a334ab58b0667c7039335f0a511bb3b388cee8d147aef"
     },
     {
       "path": "src/models/iam_installation_status_command.rs",
