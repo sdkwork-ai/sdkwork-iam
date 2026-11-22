@@ -21,7 +21,7 @@ void main() {
       'app.iam.auth.login': '/auth/login',
       'app.iam.auth.register': '/auth/register',
       'app.iam.auth.forgot-password': '/auth/forgot-password',
-      'app.iam.auth.oauth-callback': '/auth/oauth/callback',
+      'app.iam.auth.oauth-callback': '/oauth/callback',
       'app.iam.auth.context-selection': '/auth/login/context',
     });
   });

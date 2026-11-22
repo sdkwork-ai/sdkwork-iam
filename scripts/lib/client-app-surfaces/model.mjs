@@ -536,7 +536,7 @@ export const ROUTES = [
     surface: 'app',
     capability: 'auth',
     screen: 'oauth-callback',
-    path: '/auth/oauth/callback',
+    path: '/oauth/callback',
     titleKey: 'iam.auth.oauthCallback.title',
     auth: 'public',
     permissionHint: null,

@@ -49,8 +49,10 @@ export function SdkworkIamH5AuthLoginScreen({
   onScanLoginCompleted,
   onThirdPartyLogin,
   onBack,
+  oauthCallbackPath,
 }: SdkworkIamH5AuthLoginScreenProps) {
   const messages = useSdkworkIamH5AuthMessages();
+  const resolvedOAuthCallbackPath = oauthCallbackPath?.trim() || IAM_H5_AUTH_ROUTES.callbackPath;
   // A mode is both a UI state and a route: `/auth/register` and
   // `/auth/forgot-password` mount this screen with the matching `initialMode`, so
   // the three flows stay one implementation while each stays addressable and
@@ -98,7 +100,7 @@ export function SdkworkIamH5AuthLoginScreen({
     }
     setWechatRedirecting(true);
     setError(undefined);
-    const redirectUri = `${window.location.origin}${IAM_H5_AUTH_ROUTES.callbackPath}`;
+    const redirectUri = `${window.location.origin}${resolvedOAuthCallbackPath}`;
     const state = scanContext ? buildScanLoginOAuthState(scanContext.sessionKey) : undefined;
     try {
       await controller.beginOAuthAuthorization({
@@ -115,7 +117,7 @@ export function SdkworkIamH5AuthLoginScreen({
           : "WeChat authorization is unavailable",
       );
     }
-  }, [controller, scanContext, showError]);
+  }, [controller, resolvedOAuthCallbackPath, scanContext, showError]);
 
   // Auto-redirect when the page is opened inside the WeChat in-app browser
   // and the WeChat provider is enabled for this tenant. The attempt is
@@ -484,6 +486,15 @@ export interface SdkworkIamH5AuthLoginScreenProps {
    * the provider flow (the IM product currently fails closed).
    */
   onThirdPartyLogin?: (platform: string) => void;
+  /**
+   * Provider callback path the third-party round trip returns to.
+   *
+   * The path belongs to the site's OAuth client registration, not to the
+   * account surface, so a host that keeps OAuth under its own namespace passes
+   * it here (the SDKWork website uses `/oauth/callback`). Defaults to
+   * `IAM_H5_AUTH_ROUTES.callbackPath` for hosts that have not moved yet.
+   */
+  oauthCallbackPath?: string;
   /**
    * Back affordance for a host that navigated here from another page.
    *

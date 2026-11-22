@@ -52,7 +52,7 @@ describe("sdkwork-auth-pc-react oauth callback page", () => {
       <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
           <Route
-            path="/auth/oauth/callback/:provider"
+            path="/oauth/callback/:provider"
             element={
               <>
                 <SdkworkAuthOAuthCallbackPage
@@ -93,7 +93,7 @@ describe("sdkwork-auth-pc-react oauth callback page", () => {
   }
 
   it("uses the solid auth callback shell without viewport-height gradients", () => {
-    const { container } = renderCallbackPage("/auth/oauth/callback/github?error=access_denied");
+    const { container } = renderCallbackPage("/oauth/callback/github?error=access_denied");
 
     const shell = container.firstElementChild?.firstElementChild;
     expect(shell?.className).toContain("h-[100dvh]");
@@ -105,7 +105,7 @@ describe("sdkwork-auth-pc-react oauth callback page", () => {
   });
 
   it("returns to login with redirect preserved after oauth callback failure", async () => {
-    renderCallbackPage("/auth/oauth/callback/github?error=access_denied&redirect=%2Fworkspace");
+    renderCallbackPage("/oauth/callback/github?error=access_denied&redirect=%2Fworkspace");
 
     fireEvent.click(
       await screen.findByRole("button", {
@@ -119,7 +119,7 @@ describe("sdkwork-auth-pc-react oauth callback page", () => {
   });
 
   it("shows a product-facing error when the callback provider is unsupported", async () => {
-    const { container } = renderCallbackPage("/auth/oauth/callback/google?redirect=%2Fworkspace");
+    const { container } = renderCallbackPage("/oauth/callback/google?redirect=%2Fworkspace");
 
     expect(
       await screen.findByText(/third-party login method is not available/i),
@@ -132,7 +132,7 @@ describe("sdkwork-auth-pc-react oauth callback page", () => {
 
   it("does not expose provider configuration errors from oauth callback query params", async () => {
     const { container } = renderCallbackPage(
-      "/auth/oauth/callback/github?error_description=OAuth%20provider%20is%20not%20configured&redirect=%2Fworkspace",
+      "/oauth/callback/github?error_description=OAuth%20provider%20is%20not%20configured&redirect=%2Fworkspace",
     );
 
     expect(
@@ -143,7 +143,7 @@ describe("sdkwork-auth-pc-react oauth callback page", () => {
   });
 
   it("accepts provider aliases on oauth callbacks when the configured provider is canonical", async () => {
-    renderCallbackPage("/auth/oauth/callback/ali-pay?error=access_denied&redirect=%2Fworkspace", {
+    renderCallbackPage("/oauth/callback/ali-pay?error=access_denied&redirect=%2Fworkspace", {
       runtimeConfig: {
         oauthProviders: ["alipay"],
       },
@@ -155,7 +155,7 @@ describe("sdkwork-auth-pc-react oauth callback page", () => {
   });
 
   it("submits a successful oauth callback once with the canonical provider", async () => {
-    const { controller } = renderCallbackPage("/auth/oauth/callback/ali-pay?code=oauth-code&redirect=%2Fworkspace", {
+    const { controller } = renderCallbackPage("/oauth/callback/ali-pay?code=oauth-code&redirect=%2Fworkspace", {
       runtimeConfig: {
         oauthProviders: ["alipay"],
       },
@@ -168,7 +168,7 @@ describe("sdkwork-auth-pc-react oauth callback page", () => {
       code: "oauth-code",
       deviceType: "desktop",
       provider: "alipay",
-      redirectUri: "http://localhost:3000/auth/oauth/callback/alipay?redirect=%2Fworkspace",
+      redirectUri: "http://localhost:3000/oauth/callback/alipay?redirect=%2Fworkspace",
       state: undefined,
     });
     expect(screen.queryByText(/provider is not configured/i)).not.toBeInTheDocument();
@@ -215,9 +215,9 @@ describe("sdkwork-auth-pc-react oauth callback page", () => {
 
     render(
       <SdkworkThemeProvider defaultTheme="light">
-        <MemoryRouter initialEntries={["/auth/oauth/callback/ali-pay?code=oauth-code&redirect=%2Fworkspace"]}>
+        <MemoryRouter initialEntries={["/oauth/callback/ali-pay?code=oauth-code&redirect=%2Fworkspace"]}>
           <Routes>
-            <Route path="/auth/oauth/callback/:provider" element={<CallbackHarness />} />
+            <Route path="/oauth/callback/:provider" element={<CallbackHarness />} />
             <Route path="/workspace" element={<LocationProbe />} />
           </Routes>
         </MemoryRouter>
@@ -242,7 +242,7 @@ describe("sdkwork-auth-pc-react oauth callback page", () => {
   });
 
   it("renders localized callback copy from the global i18n provider", async () => {
-    renderCallbackPage("/auth/oauth/callback/google?redirect=%2Fworkspace", {
+    renderCallbackPage("/oauth/callback/google?redirect=%2Fworkspace", {
       locale: "zh-CN",
     });
 
@@ -261,7 +261,7 @@ describe("sdkwork-auth-pc-react oauth callback page", () => {
     ).toBeInTheDocument();
   });
 
-  it("supports custom auth base paths when returning from oauth callback errors", async () => {
+  it("keeps the account base path for the back-to-login target of an oauth callback error", async () => {
     const controller = createSdkworkAuthController({
       service: {
         signInWithOAuth: vi.fn(),
@@ -274,12 +274,12 @@ describe("sdkwork-auth-pc-react oauth callback page", () => {
       <SdkworkThemeProvider defaultTheme="light">
         <MemoryRouter
           initialEntries={[
-            "/workspace/auth/oauth/callback/github?error=access_denied&redirect=%2Fprojects",
+            "/oauth/callback/github?error=access_denied&redirect=%2Fprojects",
           ]}
         >
           <Routes>
             <Route
-              path="/workspace/auth/oauth/callback/:provider"
+              path="/oauth/callback/:provider"
               element={
                 <>
                   <SdkworkAuthOAuthCallbackPage

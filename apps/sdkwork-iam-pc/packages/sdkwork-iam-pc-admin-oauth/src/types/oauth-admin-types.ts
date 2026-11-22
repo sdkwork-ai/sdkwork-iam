@@ -265,7 +265,7 @@ export interface SdkworkIamOauthAccountConfig {
  * account is usable immediately. `redirectUri` is optional: when `config`
  * carries a `webAuthDomains` entry (or the legacy `webDomain`), the
  * standardized callback URL is derived as
- * `https://{webAuthDomain}/auth/oauth/callback`.
+ * `https://{webAuthDomain}/oauth/callback`.
  */
 export interface SdkworkIamOauthAccountSetupDraft {
   accountType?: string;

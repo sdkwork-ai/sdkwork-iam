@@ -285,7 +285,7 @@ export function createSdkworkIamOauthAdminController(
           ? { ...body.config }
           : undefined;
         // The callback URL follows the SDKWork IAM standard
-        // `https://{webAuthDomain}/auth/oauth/callback` shape: WeChat requires
+        // `https://{webAuthDomain}/oauth/callback` shape: WeChat requires
         // the callback page to live on a 网页授权域名, so the first configured
         // web-authorization domain owns it and the legacy primary domain stays
         // the fallback. A manually provided redirect URI wins. The resolved URL

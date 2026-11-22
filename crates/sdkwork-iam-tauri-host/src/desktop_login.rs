@@ -16,8 +16,10 @@ use sdkwork_web_contract::RouteAuth;
 /// Default callback path appended to the app deep-link scheme.
 pub const DESKTOP_AUTH_CALLBACK_PATH: &str = "/auth/callback";
 
-/// Path of the hosted login surface the authorize endpoint redirects to.
-pub const HOSTED_LOGIN_PATH: &str = "/auth/login";
+/// Path of the OAuth browser-login step the authorize endpoint redirects to.
+/// The OAuth flow keeps its own namespace, so the page is not the website's
+/// `/auth/login` account page.
+pub const HOSTED_LOGIN_PATH: &str = "/oauth/login";
 
 /// Path of the hosted login-success surface the browser lands on before the
 /// deeplink hand-off. The page serves the native-application flow only, so it
@@ -203,7 +205,7 @@ mod tests {
         );
         assert_eq!(
             contract.hosted_login_url("https://web.example.com"),
-            "https://web.example.com/auth/login",
+            "https://web.example.com/oauth/login",
         );
         assert_eq!(
             contract.hosted_desktop_launch_url("https://web.example.com"),

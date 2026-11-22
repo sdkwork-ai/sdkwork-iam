@@ -42,7 +42,10 @@ import {
   mergeSdkworkAuthClassNames,
   mergeSdkworkAuthStyles,
 } from "../auth-appearance.ts";
-import { SDKWORK_OAUTH_APP_LAUNCH_PATH } from "../oauth-app-paths.ts";
+import {
+  SDKWORK_OAUTH_APP_LAUNCH_PATH,
+  SDKWORK_OAUTH_PROVIDER_CALLBACK_PATH,
+} from "../oauth-app-paths.ts";
 
 export interface SdkworkIamAuthRoutesProps {
   appearance?: SdkworkAuthAppearanceConfig;
@@ -78,15 +81,11 @@ export interface SdkworkIamAuthRoutesProps {
   viewportMode?: "fixed" | "flow";
 }
 
-function normalizeBasePath(basePath: string): string {
-  const normalized = basePath.trim().replace(/\/+$/u, "");
-  return normalized || "/auth";
-}
-
-function isOAuthCallbackRoute(pathname: string, basePath: string): boolean {
-  const normalizedBasePath = normalizeBasePath(basePath);
-  return pathname === `${normalizedBasePath}/oauth/callback`
-    || pathname.startsWith(`${normalizedBasePath}/oauth/callback/`);
+function isOAuthCallbackRoute(pathname: string): boolean {
+  // The provider callback is a fixed OAuth route, not a page of the host's
+  // account base path: a third-party round trip never enters `/auth/*`.
+  return pathname === SDKWORK_OAUTH_PROVIDER_CALLBACK_PATH
+    || pathname.startsWith(`${SDKWORK_OAUTH_PROVIDER_CALLBACK_PATH}/`);
 }
 
 function isDesktopLaunchRoute(pathname: string): boolean {
@@ -202,9 +201,9 @@ function SdkworkIamAuthRoutesPage({
     | "runtimeConfig"
   >;
 
-  // Sign-out runs before the desktop launch and OAuth branches: it is the one
-  // auth-area route an authenticated visitor must keep, and the desktop shell
-  // opens it in the system browser to end the shared account session.
+  // Sign-out runs before the OAuth branches: it is the one account-area route
+  // an authenticated visitor must keep, and the desktop shell opens it in the
+  // system browser to end the shared account session.
   if (isSdkworkAuthSignOutPath(location.pathname, basePath)) {
     return <SdkworkAuthSignOutPage {...commonProps} brand={brand} />;
   }
@@ -213,10 +212,14 @@ function SdkworkIamAuthRoutesPage({
     return <SdkworkAuthDesktopLaunchPage {...commonProps} brand={brand} brandHeader={brandHeader} />;
   }
 
-  if (isOAuthCallbackRoute(location.pathname, basePath)) {
+  if (isOAuthCallbackRoute(location.pathname)) {
     return <SdkworkAuthOAuthCallbackPage {...commonProps} />;
   }
 
+  // Everything else is the account surface, including the OAuth login step at
+  // `/oauth/login`: it renders the same login page, and that page detects the
+  // `oauthAuthorizationStateId` it carries and completes the pending
+  // authorization itself.
   return (
     <SdkworkAuthPage
       {...commonProps}

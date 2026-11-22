@@ -4391,7 +4391,7 @@ async fn create_provider_scan_login(
     }
 
     let h5_origin = resolve_scan_login_h5_origin(state, body, headers).await;
-    let redirect_uri = format!("{h5_origin}/auth/oauth/callback");
+    let redirect_uri = format!("{h5_origin}/oauth/callback");
     // The state carries the QR session key AND the poll secret so the H5
     // callback screen — which in provider mode never visits the H5 login URL
     // — can complete the QR session after exchanging the authorization code.

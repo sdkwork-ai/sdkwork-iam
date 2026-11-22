@@ -536,10 +536,14 @@ export function readResourceAccountId(item: unknown): string {
 /**
  * Standardized OAuth callback path of the SDKWork IAM auth surface. The
  * callback URL for an account is derived as
- * `https://{webDomain}/auth/oauth/callback` whenever the operator configures
+ * `https://{webDomain}/oauth/callback` whenever the operator configures
  * the primary domain.
+ *
+ * The path is the OAuth namespace counterpart of the account surface, so it is
+ * what the H5 login surface registers with the provider and what the platform
+ * serves the callback on.
  */
-export const STANDARD_OAUTH_CALLBACK_PATH = "/auth/oauth/callback";
+export const STANDARD_OAUTH_CALLBACK_PATH = "/oauth/callback";
 
 export function buildStandardCallbackUri(webDomain: string): string {
   const domain = webDomain.trim().replace(/^https?:\/\//u, "").replace(/\/+$/u, "");

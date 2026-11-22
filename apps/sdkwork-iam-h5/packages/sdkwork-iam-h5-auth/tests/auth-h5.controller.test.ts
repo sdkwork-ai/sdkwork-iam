@@ -337,14 +337,14 @@ describe("@sdkwork/iam-h5-auth", () => {
 
     await expect(controller.createOAuthAuthorizationUrl({
       provider: "wechat",
-      redirectUri: "https://example.com/auth/oauth/callback",
+      redirectUri: "https://example.com/oauth/callback",
       scope: "snsapi_base",
       state: "scan:qr-1",
     })).resolves.toBe("https://open.weixin.qq.com/auth");
 
     expect(service.oauth.authorizationUrls.create).toHaveBeenCalledWith({
       provider: "wechat",
-      redirectUri: "https://example.com/auth/oauth/callback",
+      redirectUri: "https://example.com/oauth/callback",
       scope: "snsapi_base",
       state: "scan:qr-1",
     });
@@ -363,12 +363,12 @@ describe("@sdkwork/iam-h5-auth", () => {
     await expect(controller.beginOAuthAuthorization({
       mode: "silent",
       provider: "wechat",
-      redirectUri: "https://example.com/auth/oauth/callback",
+      redirectUri: "https://example.com/oauth/callback",
     })).resolves.toBeUndefined();
 
     expect(service.oauth.authorizationUrls.create).toHaveBeenCalledWith({
       provider: "wechat",
-      redirectUri: "https://example.com/auth/oauth/callback",
+      redirectUri: "https://example.com/oauth/callback",
       scope: "snsapi_base",
     });
     // Navigation to the provider page never completes inside jsdom, so the
@@ -377,7 +377,7 @@ describe("@sdkwork/iam-h5-auth", () => {
     expect(readOAuthFlowContext()).toEqual({
       mode: "silent",
       provider: "wechat",
-      redirectUri: "https://example.com/auth/oauth/callback",
+      redirectUri: "https://example.com/oauth/callback",
     });
     clearOAuthFlowContext();
   });
@@ -395,13 +395,13 @@ describe("@sdkwork/iam-h5-auth", () => {
     await expect(controller.beginOAuthAuthorization({
       mode: "explicit",
       provider: "wechat",
-      redirectUri: "https://example.com/auth/oauth/callback",
+      redirectUri: "https://example.com/oauth/callback",
       state: "scan:qr-1",
     })).resolves.toBeUndefined();
 
     expect(service.oauth.authorizationUrls.create).toHaveBeenCalledWith({
       provider: "wechat",
-      redirectUri: "https://example.com/auth/oauth/callback",
+      redirectUri: "https://example.com/oauth/callback",
       scope: "snsapi_userinfo",
       state: "scan:qr-1",
     });
@@ -413,7 +413,7 @@ describe("@sdkwork/iam-h5-auth", () => {
     storeOAuthFlowContext({
       mode: "explicit",
       provider: "wechat",
-      redirectUri: "https://example.com/auth/oauth/callback",
+      redirectUri: "https://example.com/oauth/callback",
     });
     const service = {
       oauth: {
@@ -427,7 +427,7 @@ describe("@sdkwork/iam-h5-auth", () => {
     await expect(controller.beginOAuthAuthorization({
       mode: "silent",
       provider: "wechat",
-      redirectUri: "https://example.com/auth/oauth/callback",
+      redirectUri: "https://example.com/oauth/callback",
     })).rejects.toThrow("provider is not configured");
 
     expect(controller.getState().status).toBe("error");
@@ -439,12 +439,12 @@ describe("@sdkwork/iam-h5-auth", () => {
     storeOAuthFlowContext({
       mode: "silent",
       provider: "wechat",
-      redirectUri: "https://example.com/auth/oauth/callback",
+      redirectUri: "https://example.com/oauth/callback",
     });
     expect(readOAuthFlowContext()).toEqual({
       mode: "silent",
       provider: "wechat",
-      redirectUri: "https://example.com/auth/oauth/callback",
+      redirectUri: "https://example.com/oauth/callback",
     });
     clearOAuthFlowContext();
     expect(readOAuthFlowContext()).toBeUndefined();
@@ -453,7 +453,7 @@ describe("@sdkwork/iam-h5-auth", () => {
     storeOAuthFlowContext({
       mode: "silent",
       provider: "wechat",
-      redirectUri: "https://example.com/auth/oauth/callback",
+      redirectUri: "https://example.com/oauth/callback",
     });
     window.sessionStorage.setItem(
       "sdkwork.iam.h5.oauthFlow",
@@ -485,7 +485,7 @@ describe("@sdkwork/iam-h5-auth", () => {
     await controller.beginOAuthAuthorization({
       mode: "explicit",
       provider: "wechat",
-      redirectUri: "https://example.com/auth/oauth/callback",
+      redirectUri: "https://example.com/oauth/callback",
     });
 
     // Beginning an authorization is explicit user intent; the deny-loop

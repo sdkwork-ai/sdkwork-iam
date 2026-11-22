@@ -264,7 +264,7 @@ export function resolveCallbackDomain(
  * domain.
  *
  * @param config - the account configuration.
- * @returns `https://{webAuthDomain}/auth/oauth/callback`, or an empty string
+ * @returns `https://{webAuthDomain}/oauth/callback`, or an empty string
  *   when no usable domain is configured.
  */
 export function buildAccountCallbackUri(

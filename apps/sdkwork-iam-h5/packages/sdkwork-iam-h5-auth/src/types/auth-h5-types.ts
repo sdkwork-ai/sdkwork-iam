@@ -199,13 +199,27 @@ export interface SdkworkIamH5AuthOAuthCallbackScreenProps {
   onAuthenticated?: (session: SdkworkIamH5AuthSession) => void;
   /** Invoked when a scan-login QR session was completed after OAuth login. */
   onScanLoginCompleted?: () => void;
+  /**
+   * Provider callback path the authorization code is redeemed against.
+   *
+   * Must be the same path the login screen registered as the provider redirect
+   * URI. Defaults to `IAM_H5_AUTH_ROUTES.callbackPath`; the SDKWork website
+   * passes `/oauth/callback` so the OAuth hop stays out of `/auth/*`.
+   */
+  oauthCallbackPath?: string;
   title?: string;
 }
 
 export const IAM_H5_AUTH_ROUTES = {
   /** Mobile H5 login screen; also the URL scan-login QR target. */
   loginPath: "/auth/login",
-  /** WeChat web-authorization callback screen (`code`/`state` exchange). */
-  callbackPath: "/auth/oauth/callback",
+  /**
+   * WeChat web-authorization callback screen (`code`/`state` exchange).
+   *
+   * The provider round trip is an OAuth hop, so it lives in the `/oauth`
+   * namespace rather than under the account base path. A host that registered
+   * a different path with the provider passes `oauthCallbackPath`.
+   */
+  callbackPath: "/oauth/callback",
   moduleId: "iam-h5-auth",
 } as const;

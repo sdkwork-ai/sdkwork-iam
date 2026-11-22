@@ -23,6 +23,11 @@ export interface SdkworkIamH5AuthCallbackSurfaceProps {
   controller: SdkworkIamH5AuthController;
   /** BCP-47 locale; the catalog default applies when omitted. */
   locale?: string | null;
+  /**
+   * Provider callback path this surface is mounted at; the code is redeemed
+   * against it. Defaults to `IAM_H5_AUTH_ROUTES.callbackPath`.
+   */
+  oauthCallbackPath?: string;
   onAuthenticated?: (session: SdkworkIamH5AuthSession) => void;
   onScanLoginCompleted?: () => void;
   title?: string;

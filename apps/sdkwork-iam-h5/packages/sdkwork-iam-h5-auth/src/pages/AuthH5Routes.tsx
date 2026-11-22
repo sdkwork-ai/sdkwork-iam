@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 
 import { SdkworkI18nProvider } from "@sdkwork/i18n-pc-react";
@@ -19,7 +18,12 @@ export interface SdkworkIamH5AuthRoutesProps {
    * the host session-changed event and unlocks the app's auth gate.
    */
   controller: SdkworkIamH5AuthController;
-  /** Base path of the auth surface; defaults to `/auth`. */
+  /**
+   * Base path of the account surface; defaults to `/auth`.
+   *
+   * The login screen owns its own addressable modes, so this no longer decides
+   * where the OAuth callback renders — `oauthCallbackPath` does.
+   */
   basePath?: string;
   /** BCP-47 locale hint; defaults to the catalog default when omitted. */
   locale?: string | null;
@@ -33,43 +37,51 @@ export interface SdkworkIamH5AuthRoutesProps {
   onThirdPartyLogin?: (platform: string) => void;
   /** Back affordance when the auth route was reached from another host page. */
   onBack?: () => void;
+  /**
+   * Provider callback path the third-party round trip returns to.
+   *
+   * Defaults to `IAM_H5_AUTH_ROUTES.callbackPath`; the SDKWork website passes
+   * `/oauth/callback` so the OAuth hop stays out of `/auth/*`.
+   */
+  oauthCallbackPath?: string;
 }
 
-function isOAuthCallbackRoute(pathname: string, basePath: string): boolean {
-  return pathname === `${basePath}/oauth/callback`;
+function isOAuthCallbackRoute(pathname: string, oauthCallbackPath: string): boolean {
+  return pathname === oauthCallbackPath;
 }
 
 /**
  * Reusable mobile auth route host (zip-design login/register system).
  *
  * Mounts the login screen (password/code login, register, recovery, terms,
- * third-party, login-context selection and scan-login completion) and the
- * OAuth callback screen under `basePath`, wrapped in the IAM H5 auth i18n
- * provider. Hosts render it at their auth route — no per-host wiring beyond
- * building the controller from the host IAM service.
+ * third-party, login-context selection and scan-login completion) and the OAuth
+ * callback screen at `oauthCallbackPath` — the second path is a provider
+ * callback, so it does not follow the account base path. Hosts render it at
+ * their auth route; no per-host wiring beyond building the controller from the
+ * host IAM service.
  */
 export function SdkworkIamH5AuthRoutes({
   controller,
-  basePath = IAM_H5_AUTH_ROUTES.loginPath.replace(/\/login$/, ""),
   locale,
   onAuthenticated,
   onScanLoginCompleted,
   onThirdPartyLogin,
   onBack,
+  oauthCallbackPath = IAM_H5_AUTH_ROUTES.callbackPath,
 }: SdkworkIamH5AuthRoutesProps) {
   const location = useLocation();
-  const resolvedBasePath = useMemo(() => normalizeBasePath(basePath), [basePath]);
 
   return (
     <SdkworkI18nProvider
       catalogs={[SDKWORK_IAM_H5_AUTH_I18N_CATALOG]}
       locale={locale}
     >
-      {isOAuthCallbackRoute(location.pathname, resolvedBasePath) ? (
+      {isOAuthCallbackRoute(location.pathname, oauthCallbackPath) ? (
         <SdkworkIamH5AuthOAuthCallbackScreen
           controller={controller}
           onAuthenticated={onAuthenticated}
           onScanLoginCompleted={onScanLoginCompleted}
+          oauthCallbackPath={oauthCallbackPath}
         />
       ) : (
         <SdkworkIamH5AuthLoginScreen
@@ -77,14 +89,10 @@ export function SdkworkIamH5AuthRoutes({
           onAuthenticated={onAuthenticated}
           onScanLoginCompleted={onScanLoginCompleted}
           onThirdPartyLogin={onThirdPartyLogin}
+          oauthCallbackPath={oauthCallbackPath}
           {...(onBack ? { onBack } : {})}
         />
       )}
     </SdkworkI18nProvider>
   );
-}
-
-function normalizeBasePath(basePath: string): string {
-  const trimmed = basePath.trim().replace(/\/+$/, "");
-  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }

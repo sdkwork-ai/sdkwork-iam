@@ -145,7 +145,7 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
       providerClientSecret: "write-only-secret",
       providerCode: "google",
       providerTenantId: "",
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
       surfaceKind: "web",
     });
 
@@ -158,7 +158,7 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
       providerClientId: "google-client-id",
       providerClientSecret: "write-only-secret",
       providerCode: "google",
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
       surfaceKind: "web",
     });
   });
@@ -341,13 +341,13 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
     });
 
     const createCall = (service.iam.oauth.integrations.create as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    expect(createCall.redirectUri).toBe("https://app.example.com/auth/oauth/callback");
+    expect(createCall.redirectUri).toBe("https://app.example.com/oauth/callback");
 
     const accountCall = (service.iam.oauth.resourceAccounts.create as ReturnType<typeof vi.fn>).mock.calls[0][0];
     expect(accountCall.config).toEqual({
       webDomain: "app.example.com",
       domains: { request: ["https://api.example.com"] },
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
     });
   });
 
@@ -357,7 +357,7 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
 
     const config = {
       webDomain: "app.example.com",
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
       domains: {
         business: ["https://open.example.com"],
         downloadFile: ["https://dl.example.com"],
@@ -401,7 +401,7 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
     await syncingController.updateAccountConfig("iamora-1", config);
     expect(serviceWithAccount.iam.oauth.resourceAccounts.update).toHaveBeenCalledWith("iamora-1", { config });
     expect(serviceWithAccount.iam.oauth.integrations.update).toHaveBeenCalledWith("iamoi-1", {
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
     });
 
     await syncingController.runResourceAccountVerification("iamora-1");
@@ -447,7 +447,7 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
       displayName: "My subscription account",
       enabled: true,
       originalId: "gh_abc123",
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
     });
 
     expect(service.iam.oauth.resourceAccounts.create).toHaveBeenCalledWith(expect.objectContaining({
@@ -660,7 +660,7 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
       appSecret: "secret-001",
       displayName: "Duplicate",
       enabled: true,
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
     })).rejects.toThrow("An official account with AppID wx-oa-001 already exists");
     expect(service.iam.oauth.resourceAccounts.create).not.toHaveBeenCalled();
   });
@@ -694,12 +694,12 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
       providerClientId: "wx-oa-001",
       providerClientSecret: "",
       providerCode: "wechat",
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
     });
     expect(service.iam.oauth.integrations.update).toHaveBeenLastCalledWith("iamoi-1", {
       displayName: "WeChat login",
       enabled: true,
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
       providerClientId: "wx-oa-001",
     });
 
@@ -711,12 +711,12 @@ describe("SDKWork IAM OAuth PC admin controller", () => {
       providerClientId: "wx-oa-001",
       providerClientSecret: "rotated-secret",
       providerCode: "wechat",
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
     });
     expect(service.iam.oauth.integrations.update).toHaveBeenLastCalledWith("iamoi-1", {
       displayName: "WeChat login",
       enabled: true,
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
       providerClientId: "wx-oa-001",
       providerClientSecret: "rotated-secret",
     });

@@ -54,7 +54,7 @@ The shared panel's 开发配置 tab mirrors 公众平台 → 设置与开发 →
   trailing slash) and rejected when they are an IP address, a port, a query
   string, a wildcard, or a short link.
 - The account's OAuth callback URL is derived from the **first 网页授权域名**
-  (`https://{domain}/auth/oauth/callback`); the legacy `webDomain` remains only
+  (`https://{domain}/oauth/callback`); the legacy `webDomain` remains only
   as the fallback for accounts saved before the set existed. A manually edited
   callback URL wins, but a save is refused when it points outside every
   configured web-authorization domain.

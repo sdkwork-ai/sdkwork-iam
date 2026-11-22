@@ -42,7 +42,7 @@ describe("SDKWork IAM OAuth quick setup controller", () => {
       appSecret: "secret-001",
       displayName: "My mini program",
       enabled: true,
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
     });
 
     expect(service.iam.oauth.integrations.list).toHaveBeenCalledWith({ page_size: 200, q: "wechat_mini_program" });
@@ -52,7 +52,7 @@ describe("SDKWork IAM OAuth quick setup controller", () => {
       providerCode: "wechat_mini_program",
       providerClientId: "wx-test-mini-001",
       providerClientSecret: "secret-001",
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
       surfaceKind: "mini_program",
       enabled: true,
     });
@@ -85,13 +85,13 @@ describe("SDKWork IAM OAuth quick setup controller", () => {
       appSecret: "secret-002",
       displayName: "My official account",
       enabled: false,
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
     });
 
     expect(service.iam.oauth.integrations.create).not.toHaveBeenCalled();
     expect(service.iam.oauth.integrations.update).toHaveBeenCalledWith("iamoi-existing", {
       enabled: false,
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
     });
     expect(service.iam.oauth.resourceAccounts.create).toHaveBeenCalledWith(expect.objectContaining({
       integrationId: "iamoi-existing",

@@ -228,10 +228,10 @@ describe("SDKWork IAM OAuth admin utils", () => {
 
     it("derives the callback URL from the first web-authorization domain", () => {
       expect(buildAccountCallbackUri({ webAuthDomains: ["auth.example.com"], webDomain: "app.example.com" }))
-        .toBe("https://auth.example.com/auth/oauth/callback");
+        .toBe("https://auth.example.com/oauth/callback");
       // Legacy accounts without the dedicated set keep their primary domain.
       expect(buildAccountCallbackUri({ webDomain: "app.example.com" }))
-        .toBe("https://app.example.com/auth/oauth/callback");
+        .toBe("https://app.example.com/oauth/callback");
       expect(buildAccountCallbackUri({})).toBe("");
     });
 
@@ -250,7 +250,7 @@ describe("SDKWork IAM OAuth admin utils", () => {
     });
 
     it("reads the callback host for the console's callback-domain rule", () => {
-      expect(readCallbackHost("https://App.Example.com/auth/oauth/callback")).toBe("app.example.com");
+      expect(readCallbackHost("https://App.Example.com/oauth/callback")).toBe("app.example.com");
       expect(readCallbackHost("not a url")).toBe("");
       expect(readCallbackHost("")).toBe("");
     });

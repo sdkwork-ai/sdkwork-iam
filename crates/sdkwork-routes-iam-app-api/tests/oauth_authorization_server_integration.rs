@@ -673,7 +673,7 @@ async fn oauth_authorize_redirects_into_the_configured_hosted_login() {
     configure_integration_signing_env();
     std::env::set_var(
         "SDKWORK_IAM_LOGIN_BASE_URL",
-        "https://platform.birdcoder.com/auth",
+        "https://platform.birdcoder.com/oauth",
     );
     seed_oauth_e2e_fixtures().await;
     let router = sdkwork_routes_iam_open_api::build_sdkwork_iam_open_api_router_from_env().await;
@@ -706,8 +706,8 @@ async fn oauth_authorize_redirects_into_the_configured_hosted_login() {
     assert_eq!(status, StatusCode::TEMPORARY_REDIRECT);
     assert!(
         location
-            .starts_with("https://platform.birdcoder.com/auth/login?oauthAuthorizationStateId="),
-        "authorize must enter the configured hosted login: {location}"
+            .starts_with("https://platform.birdcoder.com/oauth/login?oauthAuthorizationStateId="),
+        "authorize must enter the configured OAuth login step: {location}"
     );
 
     // The state id in that URL owns a real pending row for the login to finish.

@@ -505,7 +505,7 @@ describe("provider login completes a pending desktop authorization", () => {
       <SdkworkI18nProvider catalogs={[SDKWORK_AUTH_I18N_CATALOG]} locale="en-US">
         <MemoryRouter
           initialEntries={[
-            "/auth/oauth/callback/github?code=provider-code&state=st&oauthAuthorizationStateId=pending-state-1",
+            "/oauth/callback/github?code=provider-code&state=st&oauthAuthorizationStateId=pending-state-1",
           ]}
         >
           <Routes>
@@ -519,7 +519,7 @@ describe("provider login completes a pending desktop authorization", () => {
                   }}
                 />
               }
-              path="/auth/oauth/callback/:provider"
+              path="/oauth/callback/:provider"
             />
             <Route element={<LocationProbe />} path="*" />
           </Routes>

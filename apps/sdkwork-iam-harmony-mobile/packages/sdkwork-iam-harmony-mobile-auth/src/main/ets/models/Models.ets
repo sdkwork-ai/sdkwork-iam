@@ -27,7 +27,7 @@ export class AuthRoutes {
   /** Route id of `/auth/forgot-password`. */
   static readonly forgot-password: string = 'app.iam.auth.forgot-password';
 
-  /** Route id of `/auth/oauth/callback`. */
+  /** Route id of `/oauth/callback`. */
   static readonly oauth-callback: string = 'app.iam.auth.oauth-callback';
 
   /** Route id of `/auth/login/context`. */

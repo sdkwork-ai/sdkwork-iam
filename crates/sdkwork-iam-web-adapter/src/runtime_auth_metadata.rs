@@ -231,7 +231,7 @@ mod tests {
             "oauth": {
                 "relyingParty": {
                     "enabled": false,
-                    "redirectUris": ["https://forum.example.com/auth/oauth/callback"]
+                    "redirectUris": ["https://forum.example.com/oauth/callback"]
                 }
             }
         });
@@ -249,7 +249,7 @@ mod tests {
             "oauth": {
                 "relyingParty": {
                     "enabled": true,
-                    "redirectUris": ["https://forum.example.com/auth/oauth/callback"]
+                    "redirectUris": ["https://forum.example.com/oauth/callback"]
                 }
             }
         });

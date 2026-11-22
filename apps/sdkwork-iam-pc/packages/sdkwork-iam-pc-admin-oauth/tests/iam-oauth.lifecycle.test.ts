@@ -275,7 +275,7 @@ describe("SDKWork IAM OAuth account lifecycle (create -> list -> edit -> save)",
       displayName: "My subscription account",
       enabled: true,
       originalId: "gh_abc123",
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
       config: {
         webDomain: "app.example.com",
         logoUrl: "data:image/png;base64,AAAA",
@@ -299,7 +299,7 @@ describe("SDKWork IAM OAuth account lifecycle (create -> list -> edit -> save)",
     expect(JSON.parse(String(row.providerConfigJson))).toMatchObject({
       logoUrl: "data:image/png;base64,AAAA",
       notify: { url: "https://app.example.com/wechat/notify" },
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
       webDomain: "app.example.com",
     });
 
@@ -307,7 +307,7 @@ describe("SDKWork IAM OAuth account lifecycle (create -> list -> edit -> save)",
     //    rotates it, and the webhook row binds to the account.
     await controller.updateAccountConfig("iamora-1", {
       webDomain: "app.example.com",
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
       logoUrl: "data:image/png;base64,AAAA",
       notify: { url: "https://app.example.com/wechat/notify" },
     });
@@ -406,7 +406,7 @@ describe("SDKWork IAM OAuth account lifecycle (create -> list -> edit -> save)",
       providerClientSecret: "github-secret-1",
       providerCode: "github",
       providerTenantId: "",
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
       surfaceKind: "web",
     });
 
@@ -419,7 +419,7 @@ describe("SDKWork IAM OAuth account lifecycle (create -> list -> edit -> save)",
       enabled: true,
       providerClientId: "github-client-1",
       providerClientSecret: "github-secret-1",
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
     });
 
     // 3. Saving the profile without touching the secret never re-rotates it.
@@ -430,7 +430,7 @@ describe("SDKWork IAM OAuth account lifecycle (create -> list -> edit -> save)",
       providerClientId: "github-client-1",
       providerClientSecret: "",
       providerCode: "github",
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
     });
     expect(backend.secretsByIntegration.get("iamoi-1")).toBe("github-secret-1");
 
@@ -443,7 +443,7 @@ describe("SDKWork IAM OAuth account lifecycle (create -> list -> edit -> save)",
       providerClientId: "github-client-2",
       providerClientSecret: "github-secret-2",
       providerCode: "github",
-      redirectUri: "https://app.example.com/auth/oauth/callback",
+      redirectUri: "https://app.example.com/oauth/callback",
     });
     expect(backend.clientIdByIntegration.get("iamoi-1")).toBe("github-client-2");
     expect(backend.secretsByIntegration.get("iamoi-1")).toBe("github-secret-2");

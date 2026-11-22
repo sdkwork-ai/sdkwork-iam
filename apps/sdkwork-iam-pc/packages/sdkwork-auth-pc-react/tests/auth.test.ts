@@ -50,12 +50,12 @@ describe("sdkwork-auth-pc-react", () => {
       "/auth/login",
       "/auth/register",
       "/auth/forgot-password",
-      "/auth/oauth/callback/:provider",
+      "/oauth/callback/:provider",
       "/auth/qr-login",
       "/auth/qr/:sessionKey",
       "/oauth/desktop/launch",
     ]);
-    expect(isAuthRoute(routes, "/auth/oauth/callback/github")).toBe(true);
+    expect(isAuthRoute(routes, "/oauth/callback/github")).toBe(true);
     expect(isAuthRoute(routes, "/auth/qr/qr_abc123")).toBe(true);
     expect(isAuthRoute(routes, "/dashboard")).toBe(false);
   });
@@ -89,7 +89,7 @@ describe("sdkwork-auth-pc-react", () => {
       "/auth/login",
       "/auth/register",
       "/auth/forgot-password",
-      "/auth/oauth/callback/:provider",
+      "/oauth/callback/:provider",
       "/auth/qr-login",
       "/auth/qr/:sessionKey",
       "/oauth/desktop/launch",
@@ -695,6 +695,11 @@ describe("sdkwork-auth-pc-react", () => {
         "/workspace/auth",
       ),
     ).toBe("/dashboard");
+    // The OAuth namespace is rejected for the same reason: a redirect target
+    // must never aim at a provider callback or the desktop hand-off page.
+    expect(resolveAuthRedirectTarget("/oauth/callback/github")).toBe("/dashboard");
+    expect(resolveAuthRedirectTarget("/oauth/desktop/launch")).toBe("/dashboard");
+    expect(resolveAuthRedirectTarget("/oauth/login?oauthAuthorizationStateId=state-1")).toBe("/dashboard");
     expect(
       resolveAuthRedirectTarget(
         "/workspace/auth/qr/qr_abc123",
@@ -727,7 +732,7 @@ describe("sdkwork-auth-pc-react", () => {
       capability: "auth",
       forgotPasswordRoutePath: "/auth/forgot-password",
       loginRoutePath: "/auth/login",
-      oauthCallbackRoutePattern: "/auth/oauth/callback/:provider",
+      oauthCallbackRoutePattern: "/oauth/callback/:provider",
       qrRoutePath: "/auth/qr-login",
       registerRoutePath: "/auth/register",
       title: "Auth",
@@ -761,7 +766,7 @@ describe("sdkwork-auth-pc-react", () => {
       focusWindow: true,
       provider: "github",
       redirectTo: "/settings/profile",
-      route: "/auth/oauth/callback/github?redirect=%2Fsettings%2Fprofile",
+      route: "/oauth/callback/github?redirect=%2Fsettings%2Fprofile",
       routeId: "oauth-callback",
       source: "auth-workspace",
       type: "auth-route-intent",

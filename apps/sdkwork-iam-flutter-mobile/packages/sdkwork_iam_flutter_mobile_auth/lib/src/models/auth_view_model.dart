@@ -24,7 +24,7 @@ class IamFlutterMobileAuthRoutes {
   /// root from compiling.
   static const String forgotPasswordRouteId = 'app.iam.auth.forgot-password';
 
-  /// Route id of `/auth/oauth/callback`.
+  /// Route id of `/oauth/callback`.
   static const String oauthCallbackRouteId = 'app.iam.auth.oauth-callback';
 
   /// Route id of `/auth/login/context`.

@@ -100,7 +100,7 @@ const List<RouteContribution> iamFlutterMobileCoreRouteContributions = <RouteCon
     surface: 'app',
     capability: 'auth',
     screen: 'oauth-callback',
-    path: '/auth/oauth/callback',
+    path: '/oauth/callback',
     titleKey: 'iam.auth.oauthCallback.title',
     auth: RouteAuth.public,
     presentation: 'route',

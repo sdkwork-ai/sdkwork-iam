@@ -71,7 +71,7 @@ export const IAMH5_ROUTE_CONTRIBUTIONS: readonly IamH5RouteContribution[] = [
     domain: 'iam',
     capability: 'auth',
     screen: 'oauth-callback',
-    path: '/auth/oauth/callback',
+    path: '/oauth/callback',
     titleKey: 'iam.auth.oauthCallback.title',
     auth: 'public',
     presentation: { h5Mobile: 'stack' },

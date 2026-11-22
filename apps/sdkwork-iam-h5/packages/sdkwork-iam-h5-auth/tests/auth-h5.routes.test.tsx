@@ -41,9 +41,37 @@ describe("@sdkwork/iam-h5-auth route host", () => {
     expect(screen.getByText(/我已阅读并同意/)).toBeTruthy();
   });
 
-  it("renders the OAuth callback screen at the callback path", () => {
-    renderRoutes("/auth/oauth/callback");
+  it("renders the OAuth callback screen at the OAuth callback path", () => {
+    renderRoutes("/oauth/callback");
     // The callback screen shows its processing state before the exchange.
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Signing in");
+  });
+
+  it("renders the callback screen at a host-registered callback path", () => {
+    render(
+      <MemoryRouter initialEntries={["/site/oauth/done"]}>
+        <SdkworkIamH5AuthRoutes
+          controller={createFakeController()}
+          locale="zh-CN"
+          oauthCallbackPath="/site/oauth/done"
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Signing in");
+  });
+
+  it("keeps the account base path independent of the OAuth callback path", () => {
+    // A custom account base path must not move the provider callback: the two
+    // namespaces are separate.
+    render(
+      <MemoryRouter initialEntries={["/oauth/callback"]}>
+        <SdkworkIamH5AuthRoutes
+          controller={createFakeController()}
+          basePath="/login/mobile"
+          locale="zh-CN"
+        />
+      </MemoryRouter>,
+    );
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Signing in");
   });
 

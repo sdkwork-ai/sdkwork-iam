@@ -81,12 +81,18 @@ pub fn oauth_issuer_base_url() -> String {
         .unwrap_or_else(|| "https://iam.sdkwork.local".to_string())
 }
 
+/// Web base URL that hosts the OAuth browser-login step.
+///
+/// The authorization server sends the browser to `<base>/login` with the
+/// pending state, so the default keeps the OAuth flow under `/oauth` instead of
+/// the website's `/auth` account surface. A deployment that overrides the base
+/// owns the corresponding route on its web host.
 pub fn oauth_login_base_url() -> String {
     std::env::var("SDKWORK_IAM_LOGIN_BASE_URL")
         .ok()
         .map(|value| value.trim().trim_end_matches('/').to_string())
         .filter(|value| !value.is_empty())
-        .unwrap_or_else(|| "/auth".to_string())
+        .unwrap_or_else(|| "/oauth".to_string())
 }
 
 pub fn build_openid_configuration_document() -> Value {

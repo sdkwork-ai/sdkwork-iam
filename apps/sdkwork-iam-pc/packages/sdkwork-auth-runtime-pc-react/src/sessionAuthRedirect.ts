@@ -119,7 +119,11 @@ export function sanitizeSdkworkAuthRedirectTarget(
     || decodedRedirectPath.startsWith(`${normalizedAuthBasePath}/`)
     || redirectPath.startsWith(`${normalizedAuthBasePath}/oauth/callback`)
     || redirectPath.startsWith(`${normalizedAuthBasePath}/qr/`)
-    || redirectPath.startsWith("/auth/oauth/callback")
+    // The OAuth namespace is a protocol surface: a redirect target must never
+    // aim at a provider callback, the OAuth login step, or the desktop hand-off
+    // page.
+    || redirectPath === "/oauth"
+    || redirectPath.startsWith("/oauth/")
     || redirectPath.startsWith("/auth/qr/")
     || redirectPath.startsWith("/login/oauth/callback")
     || redirectPath.startsWith("/login/qr/")

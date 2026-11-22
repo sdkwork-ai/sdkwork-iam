@@ -5,7 +5,11 @@ import {
 } from "@sdkwork/appbase-pc-react";
 import { isBlank, trim } from "@sdkwork/utils";
 import { isSafeSdkworkDesktopLaunchUrl } from "./auth-redirect.ts";
-import { SDKWORK_OAUTH_APP_LAUNCH_PATH } from "./oauth-app-paths.ts";
+import {
+  isSdkworkOAuthSurfacePath,
+  SDKWORK_OAUTH_APP_LAUNCH_PATH,
+  SDKWORK_OAUTH_PROVIDER_CALLBACK_ROUTE_PATTERN,
+} from "./oauth-app-paths.ts";
 import {
   isSdkworkAuthRoutePath,
   normalizeSdkworkAuthBasePath,
@@ -38,6 +42,16 @@ export interface SdkworkAuthRouteDefinition {
   id: SdkworkAuthRouteId;
   path: string;
 }
+
+/**
+ * Route ids whose path belongs to the OAuth namespace rather than the account
+ * surface. A host must render them for a signed-in visitor too: they carry a
+ * pending provider authorization or a one-time desktop authorization code.
+ */
+const OAUTH_SURFACE_ROUTE_IDS: readonly SdkworkAuthRouteId[] = [
+  "desktop-launch",
+  "oauth-callback",
+];
 
 export interface BuildSdkworkAuthQrEntryPathOptions {
   basePath?: string;
@@ -445,9 +459,12 @@ export function createAuthRouteCatalog(basePath = "/auth"): SdkworkAuthRouteDefi
       path: `${resolvedBasePath}/forgot-password`,
     },
     {
+      // Provider callback of the website's OAuth client. A provider round trip
+      // is an OAuth hop, so the route keeps the protocol path under `/oauth`
+      // instead of following the account base path above.
       access: "anonymous-only",
       id: "oauth-callback",
-      path: `${resolvedBasePath}/oauth/callback/:provider`,
+      path: SDKWORK_OAUTH_PROVIDER_CALLBACK_ROUTE_PATTERN,
     },
     {
       access: "anonymous-only",
@@ -571,19 +588,22 @@ export function resolveAuthAccess({
     isAuthenticating,
   });
 
-  const desktopLaunchRoute = routes.find((route) => route.id === "desktop-launch");
-  if (
-    desktopLaunchRoute
-    && pathMatchesRoutePattern(desktopLaunchRoute.path, currentPath)
-  ) {
-    // Hand-off surface, not a login surface: the user is (or just became)
-    // authenticated in the browser when they land here after completing a
-    // desktop-originated authorization. It must never bounce back to the
-    // app, and it carries only the deep-link redirect — no protected data.
-    return {
-      allowed: true,
-      status,
-    };
+  // OAuth protocol surfaces are never login surfaces. A browser lands on the
+  // provider callback after a third-party round trip and on the hand-off page
+  // after completing a desktop authorization, in both cases already
+  // authenticated; bouncing either to the app home would drop the one-time
+  // code or the provider authorization the flow is carrying.
+  for (const routeId of OAUTH_SURFACE_ROUTE_IDS) {
+    const oauthSurfaceRoute = routes.find((route) => route.id === routeId);
+    if (
+      oauthSurfaceRoute
+      && pathMatchesRoutePattern(oauthSurfaceRoute.path, currentPath)
+    ) {
+      return {
+        allowed: true,
+        status,
+      };
+    }
   }
 
   if (status === "authenticating") {
@@ -802,7 +822,13 @@ export function resolveAuthRedirectTarget(
   fallbackRoute = "/dashboard",
   authBasePath = "/auth",
 ): string {
-  return sanitizeSdkworkAuthRedirectTarget(rawTarget, fallbackRoute, authBasePath);
+  const target = sanitizeSdkworkAuthRedirectTarget(rawTarget, fallbackRoute, authBasePath);
+  // The OAuth namespace is a protocol surface: a `redirect=` target must never
+  // aim at the provider callback or the desktop hand-off page, the same way it
+  // may not aim at an account page.
+  return isSdkworkOAuthSurfacePath(normalizeSdkworkRedirectPath(target))
+    ? normalizeSdkworkRedirectPath(fallbackRoute)
+    : target;
 }
 
 /**
@@ -907,7 +933,7 @@ export function createAuthWorkspaceManifest({
   host,
   id = "sdkwork-auth",
   loginRoutePath = "/auth/login",
-  oauthCallbackRoutePattern = "/auth/oauth/callback/:provider",
+  oauthCallbackRoutePattern = SDKWORK_OAUTH_PROVIDER_CALLBACK_ROUTE_PATTERN,
   packageNames = [
     "@sdkwork/auth-pc-react",
     "@sdkwork/user-pc-react",

@@ -36,9 +36,11 @@ export function SdkworkIamH5AuthOAuthCallbackScreen({
   controller,
   onAuthenticated,
   onScanLoginCompleted,
+  oauthCallbackPath,
   title = "Signing in",
 }: SdkworkIamH5AuthOAuthCallbackScreenProps) {
   const messages = useSdkworkIamH5AuthMessages();
+  const resolvedOAuthCallbackPath = oauthCallbackPath?.trim() || IAM_H5_AUTH_ROUTES.callbackPath;
   const [error, setError] = useState<string | undefined>();
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [completedScan, setCompletedScan] = useState(false);
@@ -94,7 +96,7 @@ export function SdkworkIamH5AuthOAuthCallbackScreen({
       failExchange("WeChat authorization did not return a code");
       return;
     }
-    const redirectUri = `${window.location.origin}${IAM_H5_AUTH_ROUTES.callbackPath}`;
+    const redirectUri = `${window.location.origin}${resolvedOAuthCallbackPath}`;
     try {
       const provider = readScanLoginProviderFromOAuthState(oauthParams.state) || "wechat";
       const session = await controller.loginWithOAuth({
@@ -138,7 +140,7 @@ export function SdkworkIamH5AuthOAuthCallbackScreen({
     } catch (loginError) {
       failExchange(loginError instanceof Error ? loginError.message : "OAuth login failed");
     }
-  }, [controller, failExchange, oauthParams, onAuthenticated, onScanLoginCompleted]);
+  }, [controller, failExchange, oauthParams, onAuthenticated, onScanLoginCompleted, resolvedOAuthCallbackPath]);
 
   useEffect(() => {
     void exchangeAndFinish();

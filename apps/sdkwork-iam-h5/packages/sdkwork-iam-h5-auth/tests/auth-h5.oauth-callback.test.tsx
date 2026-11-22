@@ -55,11 +55,11 @@ function createFakeController(overrides: Partial<SdkworkIamH5AuthController> = {
 
 function visitCallbackUrl(code: string | null, state = "state-1") {
   const query = code === null ? "" : `?code=${code}&state=${state}`;
-  window.history.replaceState(null, "", `/auth/oauth/callback${query}`);
+  window.history.replaceState(null, "", `/oauth/callback${query}`);
 }
 
 /** The callback screen derives its exchange redirect URI from the page origin. */
-const CALLBACK_REDIRECT_URI = `${window.location.origin}/auth/oauth/callback`;
+const CALLBACK_REDIRECT_URI = `${window.location.origin}/oauth/callback`;
 
 function renderCallback(controller: SdkworkIamH5AuthController, onAuthenticated?: () => void) {
   return render(

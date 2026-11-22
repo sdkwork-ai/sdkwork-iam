@@ -607,7 +607,7 @@ mod tests {
     fn client_id_defaults_to_the_tenant_application_app_id() {
         let value = json!({
             "enabled": true,
-            "redirectUris": ["https://forum.example.com/auth/oauth/callback"],
+            "redirectUris": ["https://forum.example.com/oauth/callback"],
             "allowedScopes": ["openid", "profile"],
             "confidential": false
         });
@@ -660,7 +660,7 @@ mod tests {
     #[test]
     fn redirect_uri_validation_accepts_web_loopback_and_native_surfaces() {
         for uri in [
-            "https://forum.example.com/auth/oauth/callback",
+            "https://forum.example.com/oauth/callback",
             "http://127.0.0.1/oauth/callback",
             "http://localhost:5173/oauth/callback",
             "http://[::1]:41017/oauth/callback",

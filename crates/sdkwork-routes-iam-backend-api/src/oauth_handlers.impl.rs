@@ -6901,7 +6901,7 @@ async fn create_scan_login_preview(
             Err(error) => return error,
         };
         let scene = sdkwork_iam_web_adapter::generate_wechat_mp_scene("qrpreview");
-        let redirect_uri = format!("{h5_login_origin}/auth/oauth/callback");
+        let redirect_uri = format!("{h5_login_origin}/oauth/callback");
         let oauth_state = format!("p:{normalized}:{scene}");
         let client_id_parameter = match normalized.as_str() {
             "wechat" | "wechat_open" => "appid",

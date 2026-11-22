@@ -74,7 +74,7 @@ export const IAMMP_ROUTE_CONTRIBUTIONS: readonly IamMpRouteContribution[] = [
     domain: 'iam',
     capability: 'auth',
     screen: 'oauth-callback',
-    path: '/auth/oauth/callback',
+    path: '/oauth/callback',
     titleKey: 'iam.auth.oauthCallback.title',
     auth: 'public',
     presentation: { miniProgram: 'page' },
