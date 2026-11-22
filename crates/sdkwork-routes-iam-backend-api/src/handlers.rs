@@ -819,11 +819,21 @@ async fn reconcile_installation_handler(
             "iam_installation_reconcile_invalid",
             &message,
         ),
-        Err(InstallationReconcileError::Internal(message)) => appbase_error(
-            StatusCode::SERVICE_UNAVAILABLE,
-            "iam_installation_reconcile_failed",
-            &message,
-        ),
+        Err(InstallationReconcileError::Internal(message)) => {
+            // The problem document masks 5xx detail for the client, so the cause
+            // must be logged here or it is lost.
+            tracing::error!(
+                tenant_id = %tenant_id,
+                installation_id = %installation_id,
+                error = %message,
+                "IAM installation reconcile failed"
+            );
+            appbase_error(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "iam_installation_reconcile_failed",
+                &message,
+            )
+        }
     }
 }
 

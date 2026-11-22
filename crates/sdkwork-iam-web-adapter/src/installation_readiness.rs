@@ -508,15 +508,20 @@ pub fn assess_installation(
         });
     }
     if environments.is_empty() {
+        // Advisory, not blocking: `decide_installation_environment_access` treats an
+        // installation with no environment rows as the pre-environment-scope shape
+        // and lets it through. Reporting a hard blocker here would contradict the
+        // gate the token exchange actually applies.
         defects.push(InstallationDefect {
             code: InstallationDefectCode::EnvironmentNotRegistered,
             message: format!(
-                "installation {} registers no lifecycle environment, so every token exchange \
-                 fails the environment gate",
+                "installation {} registers no lifecycle environment; token exchanges still pass \
+                 (the gate tolerates the pre-scope shape), but an environment-scoped release \
+                 cannot address it",
                 installation.id
             ),
             blocks: planes(&[
-                ("issuance", true),
+                ("issuance", false),
                 ("login", false),
                 ("enable", false),
             ]),
@@ -859,6 +864,10 @@ fn classify_repair_error(message: String) -> InstallationReconcileError {
     if message.contains("not found") {
         InstallationReconcileError::NotFound(message)
     } else if message.contains("is already bound to deploy application")
+        // `ensure_deploy_application_unclaimed`: the requested deploy application
+        // already serves another installation. It is the caller's conflict, not an
+        // outage, and the message names the conflicting installation.
+        || message.contains("is already bound to installation")
         || message.contains("was linked to another deploy application concurrently")
         || message.contains("already registered")
     {
@@ -1075,6 +1084,54 @@ mod tests {
         .expect("command");
         assert!(command.is_empty());
         assert_eq!(command.idempotency_key.as_deref(), Some("pipeline-run-42"));
+    }
+
+    #[test]
+    fn a_claimed_deploy_application_is_a_conflict_not_an_outage() {
+        // `ensure_deploy_application_unclaimed` answers with the installation that
+        // already owns the anchor; the operator must see a 409 naming it, not a 503.
+        let error = classify_repair_error(
+            "deploy application 382429273660592128 is already bound to installation \
+             tapp_100001_0_382429273660592128 of tenant 100001; an installation is one-to-one \
+             with a deploy application"
+                .to_string(),
+        );
+        assert!(matches!(error, InstallationReconcileError::Conflict(_)));
+        let error = classify_repair_error(
+            "installation is already bound to deploy application 382429273660592128; an update \
+             may only fill a missing anchor"
+                .to_string(),
+        );
+        assert!(matches!(error, InstallationReconcileError::Conflict(_)));
+        let error = classify_repair_error("connect postgres failed".to_string());
+        assert!(matches!(error, InstallationReconcileError::Internal(_)));
+    }
+
+    #[test]
+    fn a_missing_environment_row_is_advisory_but_a_non_active_one_is_not() {
+        let mut installation = installation();
+        installation.status = "enabled".to_string();
+        installation.deploy_application_id = Some("382429273660592128".to_string());
+        installation.runtime_config = json!({
+            "oauth": { "relyingParty": { "clientId": "birdcoder", "enabled": true } }
+        });
+        // No environment rows: the runtime gate tolerates the pre-scope shape.
+        let none = assess_installation(&installation, &[]);
+        assert!(none
+            .defects
+            .iter()
+            .any(|defect| defect.code == InstallationDefectCode::EnvironmentNotRegistered));
+        assert!(none.issuance_ready());
+        // Registered but inactive: the gate refuses.
+        let pending = assess_installation(
+            &installation,
+            &[("production".to_string(), "pending".to_string())],
+        );
+        assert!(pending
+            .defects
+            .iter()
+            .any(|defect| defect.code == InstallationDefectCode::EnvironmentNotActive));
+        assert!(!pending.issuance_ready());
     }
 
     #[test]

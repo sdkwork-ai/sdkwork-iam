@@ -2305,6 +2305,14 @@ fn merge_oauth_runtime_config(existing_oauth: &Value, patch_oauth: &Value) -> Va
 
     for (key, patch_value) in patch_obj {
         if key == "relyingParty" {
+            // An explicit null deregisters the client. Removing a registration is
+            // always safe — it names no deployment, so it must stay possible on an
+            // installation whose anchor is missing (registering is what needs the
+            // anchor).
+            if patch_value.is_null() {
+                merged_obj.remove("relyingParty");
+                continue;
+            }
             let existing_rp = merged_obj
                 .get("relyingParty")
                 .cloned()
@@ -2955,6 +2963,23 @@ mod tests {
             merged["oauth"]["relyingParty"]["redirectUris"],
             json!(["https://new.example/callback"])
         );
+    }
+
+    #[test]
+    fn merge_runtime_config_patch_deregisters_a_relying_party_on_explicit_null() {
+        let existing = json!({
+            "oauth": {
+                "relyingParty": { "clientId": "birdcoder", "enabled": true },
+                "legacyFlag": true
+            }
+        });
+        let merged = merge_runtime_config_patch(&existing, &json!({ "oauth": { "relyingParty": null } }));
+        assert!(merged["oauth"].get("relyingParty").is_none(), "{merged}");
+        assert_eq!(merged["oauth"]["legacyFlag"], json!(true));
+        // Deregistering is idempotent, and an unbound installation may still do it:
+        // the anchor guard only constrains registering a client.
+        let merged_again = merge_runtime_config_patch(&merged, &json!({ "oauth": { "relyingParty": null } }));
+        assert!(merged_again["oauth"].get("relyingParty").is_none(), "{merged_again}");
     }
 
     #[test]

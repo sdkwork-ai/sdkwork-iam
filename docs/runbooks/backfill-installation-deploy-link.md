@@ -20,7 +20,106 @@ This runbook backfills that link. It never guesses. The tool generates SQL; a
 human reviews it and runs it with `psql`. The tool itself does not connect to a
 database, does not execute a write, and does not change the schema.
 
-## Preferred repair: the installation update API
+## Consistency audit
+
+Run these read-only checks against the IAM database before and after a repair.
+They cover the cross-service facts IAM cannot enforce itself:
+
+```sql
+-- 1) The anchor names no deploy application in the inventory (IAM cannot see
+--    deploy_app; the join is by id value, not a foreign key).
+SELECT i.id, i.deploy_application_id
+FROM iam_application_installation i
+LEFT JOIN deploy_app d
+  ON d.id::text = trim(i.deploy_application_id)
+ AND d.tenant_id::text = i.tenant_id
+ AND d.deleted_at IS NULL
+WHERE coalesce(trim(i.deploy_application_id), '') <> '' AND d.id IS NULL;
+
+-- 2) A relying party lives on an unbound installation: its login can never name
+--    a deployment.
+SELECT id, runtime_config_json #>> '{oauth,relyingParty,clientId}'
+FROM iam_application_installation
+WHERE coalesce(trim(deploy_application_id), '') = ''
+  AND jsonb_typeof(runtime_config_json #> '{oauth,relyingParty}') = 'object';
+
+-- 3) Enabled without a primary domain: enable_tenant_application refuses this
+--    shape, so the row predates the guard.
+SELECT id FROM iam_application_installation
+WHERE status = 'enabled' AND coalesce(trim(primary_domain), '') = '';
+
+-- 4) An empty access scope cannot be intersected into a credential.
+SELECT id FROM iam_application_installation
+WHERE coalesce(jsonb_array_length(access_permissions_json), 0) = 0;
+
+-- 5) Child rows of another tenant or of a deleted installation.
+SELECT count(*) FROM iam_application_installation_environment e
+WHERE NOT EXISTS (
+  SELECT 1 FROM iam_application_installation i
+  WHERE i.id = e.installation_id AND i.tenant_id = e.tenant_id);
+SELECT count(*) FROM iam_application_installation_credential c
+WHERE NOT EXISTS (
+  SELECT 1 FROM iam_application_installation_environment e
+  WHERE e.id = c.installation_environment_id AND e.tenant_id = c.tenant_id);
+```
+
+A row failing (1) cannot be repaired by binding: the deploy inventory has no such
+application, so either the deployment must register one (then reconcile), or the
+row is a legacy duplicate to retire. A row failing (2) needs the same decision as
+the client move: the client belongs on the installation that serves the
+deployment, never on an unbound row.
+
+Do not retire an unbound row before checking the sessions it already issued:
+
+```sql
+-- 6) Live sessions carry the runtime app id, so an "unused" legacy row may still
+--    own thousands of sessions. Deleting it drops their identity.
+SELECT i.id, i.app_id, count(s.*) AS sessions
+FROM iam_application_installation i
+LEFT JOIN iam_session s ON s.app_id = i.app_id
+WHERE coalesce(trim(i.deploy_application_id), '') = ''
+GROUP BY i.id, i.app_id
+ORDER BY sessions DESC;
+```
+
+`iam_application_installation` has no `deleted_at`: the only retirement paths are
+`status = 'disabled'` (stops issuance, keeps the row) and the platform
+bootstrap's delete-and-reinsert. An unbound row that already owns sessions is
+therefore not a duplicate to archive — it needs its own deploy application
+registered, and then `installations.reconcile` binds it.
+
+The tenant platform row (`tapp_<tenant>_0_sdkwork_platform`, runtime app id
+`app_<tenant>`) takes its anchor from `SDKWORK_DEPLOY_APPLICATION_ID`; a
+deployment that never sets that variable leaves the platform installation unbound
+and no data repair can supply the value.
+
+### When no application exists (decision required)
+
+The deploy inventory is the only authority for an anchor. Check it before
+repairing anything:
+
+```sql
+-- 7) Applications that no installation serves yet (candidate targets).
+SELECT d.id, d.slug, d.app_kind, d.created_at
+FROM deploy_app d
+WHERE d.tenant_id = <tenant> AND d.deleted_at IS NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM iam_application_installation i
+    WHERE trim(i.deploy_application_id) = d.id::text);
+```
+
+If the row has no matching application, there are exactly two answers, and
+neither is a data repair:
+
+- **Register one** in the deployments service (its kind must match the
+  installation's `application_type`), then `installations.reconcile` binds it.
+- **Retire the row** — allowed only when check (6) reports zero live sessions, and
+  recorded as a deliberate deletion with an audit row and a pre-image backup.
+
+Never bind a row to an application whose kind contradicts its
+`application_type`, and never delete a row that still owns sessions: the runtime
+app id on those sessions is the identity they authenticate with.
+
 
 A single unanchored installation is repaired through IAM's own update surface,
 not through SQL. The update command carries `deployApplicationId` and fills a
