@@ -1,6 +1,7 @@
 import {
   useMemo,
   type CSSProperties,
+  type ReactNode,
 } from "react";
 import {
   useLocation,
@@ -50,6 +51,11 @@ export interface SdkworkIamAuthRoutesProps {
    * a product header show it instead of the shared IAM identity.
    */
   brand?: SdkworkAuthBrand;
+  /**
+   * Host-rendered brand lockup (logo plus wordmark) for the surface header, so
+   * the hosted auth page matches the product's own navigation exactly.
+   */
+  brandHeader?: ReactNode;
   className?: string;
   controllerOptions?: Omit<
     CreateSdkworkIamRuntimeAuthControllerOptions,
@@ -138,6 +144,7 @@ function SdkworkIamAuthRoutesPage({
   appearance,
   basePath = "/auth",
   brand,
+  brandHeader,
   controllerOptions,
   desktopBrowserLogin,
   events,
@@ -201,7 +208,7 @@ function SdkworkIamAuthRoutesPage({
   }
 
   if (isDesktopLaunchRoute(location.pathname, basePath)) {
-    return <SdkworkAuthDesktopLaunchPage {...commonProps} brand={brand} />;
+    return <SdkworkAuthDesktopLaunchPage {...commonProps} brand={brand} brandHeader={brandHeader} />;
   }
 
   if (isOAuthCallbackRoute(location.pathname, basePath)) {

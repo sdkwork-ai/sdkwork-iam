@@ -40,6 +40,7 @@ import {
 import type {
   SdkworkAuthResolvedVerificationPolicy,
 } from "./auth-runtime-config.ts";
+import type { SdkworkAuthAppAuthorizeRequest } from "./auth-app-authorize.ts";
 
 export interface SdkworkAuthControllerState {
   isAuthenticated: boolean;
@@ -63,6 +64,8 @@ export interface SdkworkAuthController {
   completeOAuthAuthorization(authorizationStateId: string): Promise<SdkworkAuthOAuthAuthorizationCompletion>;
   generateLoginQrCode(input?: SdkworkAuthLoginQrCodeCreateInput): Promise<SdkworkAuthLoginQrCode>;
   getLoginFollowQr(): Promise<SdkworkAuthLoginFollowQr | null>;
+  /** Create the pending state for an app authorization rendered without one. */
+  createOAuthAuthorizationState(input: SdkworkAuthAppAuthorizeRequest): Promise<string>;
   getOAuthAuthorizationUrl(input: SdkworkAuthOAuthAuthorizationInput): Promise<string>;
   getVerificationPolicy(): Promise<SdkworkAuthResolvedVerificationPolicy>;
   listOAuthProviders(): Promise<string[]>;
@@ -253,6 +256,12 @@ export function createSdkworkAuthController(
       // A success-page decoration, not an auth action: it must not flip the
       // controller's busy state or surface an error the page cannot act on.
       return service.getLoginFollowQr ? service.getLoginFollowQr() : null;
+    },
+    async createOAuthAuthorizationState(input) {
+      if (!service.createOAuthAuthorizationState) {
+        throw new Error("OAuth authorization state creation is not available in this runtime.");
+      }
+      return service.createOAuthAuthorizationState(input);
     },
     async listScanLoginModes() {
       return runAction(() => service.listScanLoginModes());

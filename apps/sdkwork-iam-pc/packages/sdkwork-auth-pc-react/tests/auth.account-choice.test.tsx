@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { SdkworkI18nProvider } from "@sdkwork/i18n-pc-react";
@@ -9,11 +9,31 @@ import {
   createSdkworkAuthController,
   type SdkworkAuthController,
 } from "../src/auth-controller.ts";
-import type { SdkworkAuthSession } from "../src/auth-service.ts";
+import type { SdkworkAuthSession, SdkworkAuthOAuthAuthorizationCompletion } from "../src/auth-service.ts";
+import type { SdkworkAuthAppAuthorizeRequest } from "../src/auth-app-authorize.ts";
 import { SdkworkAuthPage } from "../src/pages/AuthPage.tsx";
 import { mockAccessToken, mockAuthToken } from "./authJwtFixtures.ts";
 
 const PENDING_AUTHORIZATION = "pending-state-7";
+
+/** A desktop app authorization exactly as the authorize entry renders it. */
+const APP_AUTHORIZE_SEARCH = [
+  "response_type=code",
+  "client_id=birdcoder",
+  "redirect_uri=birdcoder%3A%2F%2Fauth%2Fcallback",
+  "scope=openid+profile+offline_access",
+  "state=app-state-1",
+  `code_challenge=${"z".repeat(43)}`,
+  "code_challenge_method=S256",
+].join("&");
+
+const APP_AUTHORIZE_REQUEST = {
+  clientId: "birdcoder",
+  codeChallenge: "z".repeat(43),
+  redirectUri: "birdcoder://auth/callback",
+  scope: "openid profile offline_access",
+  state: "app-state-1",
+};
 
 function sessionFor(displayName: string): SdkworkAuthSession {
   return {
@@ -82,16 +102,17 @@ describe("auth page account choice for an already signed-in browser", () => {
     renderAuthPage(controller);
 
     // The stored session is being revalidated: no login form is painted and
-    // torn away in the meantime.
+    // torn away in the meantime, and the product header is already present.
     expect(screen.getByTestId("sdkwork-auth-session-check")).toBeInTheDocument();
-    expect(screen.queryByLabelText(/account/iu)).not.toBeInTheDocument();
+    expect(screen.getByTestId("sdkwork-auth-brand-name")).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^account$/iu)).not.toBeInTheDocument();
 
     resolveSession(sessionFor("Current Operator"));
 
     expect(
       await screen.findByTestId("sdkwork-auth-account-choice"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Current Operator")).toBeInTheDocument();
+    expect(screen.getAllByText("Current Operator").length).toBeGreaterThan(0);
     expect(
       screen.getByRole("button", { name: /sign in with another account/iu }),
     ).toBeInTheDocument();
@@ -173,11 +194,47 @@ describe("auth page account choice for an already signed-in browser", () => {
 
     fireEvent.click(await screen.findByTestId("sdkwork-auth-account-switch"));
 
-    expect(await screen.findByLabelText(/account/iu)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/^account$/iu)).toBeInTheDocument();
     expect(
       screen.queryByTestId("sdkwork-auth-account-choice"),
     ).not.toBeInTheDocument();
     expect(completeOAuthAuthorization).not.toHaveBeenCalled();
+  });
+
+  it("shows the product header on the account choice and signs out from it", async () => {
+    const signOut = vi.fn(async () => undefined);
+    const controller = createSdkworkAuthController({
+      service: {
+        getCurrentSession: vi.fn().mockResolvedValue(sessionFor("Current Operator")),
+        getCurrentUser: vi.fn().mockResolvedValue(null),
+        signOut,
+      },
+    });
+
+    renderAuthPage(controller, { brand: { name: "BirdCoder" } });
+
+    expect(
+      await screen.findByTestId("sdkwork-auth-account-choice"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("sdkwork-auth-brand-name")).toHaveTextContent("BirdCoder");
+    expect(
+      screen.getByTestId("sdkwork-auth-account-menu-trigger"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("sdkwork-auth-account-menu-trigger"));
+    fireEvent.click(
+      await screen.findByTestId("sdkwork-auth-account-menu-sign-out"),
+    );
+
+    await waitFor(() => {
+      expect(signOut).toHaveBeenCalledTimes(1);
+    });
+    // Signing out from the header drops back to the account method form, where
+    // another account can sign in and still complete the pending authorization.
+    expect(await screen.findByLabelText(/^account$/iu)).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("sdkwork-auth-account-choice"),
+    ).not.toBeInTheDocument();
   });
 
   it("names the product the session is being signed in to", async () => {
@@ -207,8 +264,102 @@ describe("auth page account choice for an already signed-in browser", () => {
   });
 });
 
-describe("auth page session check gating", () => {
-  it("renders the login form for a browser with no stored session", async () => {
+describe("app authorization rendered before its state exists", () => {
+  function lazyController(options: {
+    authenticated: boolean;
+    completeOAuthAuthorization: (
+      authorizationStateId: string,
+    ) => Promise<SdkworkAuthOAuthAuthorizationCompletion>;
+    createOAuthAuthorizationState: (
+      input: SdkworkAuthAppAuthorizeRequest,
+    ) => Promise<string>;
+  }) {
+    return createSdkworkAuthController({
+      service: {
+        completeOAuthAuthorization: options.completeOAuthAuthorization,
+        createOAuthAuthorizationState: options.createOAuthAuthorizationState,
+        getCurrentSession: vi.fn().mockResolvedValue(
+          options.authenticated ? sessionFor("Current Operator") : null,
+        ),
+        getCurrentUser: vi.fn().mockResolvedValue(null),
+        signIn: vi.fn().mockResolvedValue(sessionFor("Current Operator")),
+        signOut: vi.fn(),
+      },
+    });
+  }
+
+  it("shows the login form and creates the state only when the visitor signs in", async () => {
+    const createOAuthAuthorizationState = vi.fn(async () => "created-state-1");
+    const completeOAuthAuthorization = vi.fn(async () => ({
+      authorizationCode: "code-1",
+      redirectUrl: "birdcoder://auth/callback?code=code-1&state=app-state-1",
+    }));
+    const controller = lazyController({
+      authenticated: false,
+      completeOAuthAuthorization,
+      createOAuthAuthorizationState,
+    });
+
+    renderAuthPage(controller, { entry: `/auth/login?${APP_AUTHORIZE_SEARCH}` });
+
+    // The anonymous visitor reaches the login form immediately: no waiting
+    // page, no bounce to the product home page.
+    expect(await screen.findByLabelText(/^account$/iu)).toBeInTheDocument();
+    expect(createOAuthAuthorizationState).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText(/^account$/iu), {
+      target: { value: "operator@example.test" },
+    });
+    fireEvent.change(screen.getByLabelText(/^password$/iu), {
+      target: { value: "secret" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^sign in$/iu }));
+
+    await waitFor(() => {
+      expect(createOAuthAuthorizationState).toHaveBeenCalledWith(APP_AUTHORIZE_REQUEST);
+    });
+    await waitFor(() => {
+      expect(completeOAuthAuthorization).toHaveBeenCalledWith("created-state-1");
+    });
+    expect(await screen.findByText("desktop-launch")).toBeInTheDocument();
+  });
+
+  it("shows the account choice for a signed-in browser and creates the state on continue", async () => {
+    const createOAuthAuthorizationState = vi.fn(async () => "created-state-2");
+    const completeOAuthAuthorization = vi.fn(async () => ({
+      authorizationCode: "code-2",
+      redirectUrl: "birdcoder://auth/callback?code=code-2&state=app-state-1",
+    }));
+    const controller = lazyController({
+      authenticated: true,
+      completeOAuthAuthorization,
+      createOAuthAuthorizationState,
+    });
+
+    renderAuthPage(controller, {
+      brand: { name: "BirdCoder" },
+      entry: `/auth/login?${APP_AUTHORIZE_SEARCH}`,
+    });
+
+    expect(
+      await screen.findByTestId("sdkwork-auth-account-choice"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("sdkwork-auth-brand-name")).toHaveTextContent("BirdCoder");
+    expect(createOAuthAuthorizationState).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId("sdkwork-auth-account-continue"));
+
+    await waitFor(() => {
+      expect(createOAuthAuthorizationState).toHaveBeenCalledWith(APP_AUTHORIZE_REQUEST);
+    });
+    await waitFor(() => {
+      expect(completeOAuthAuthorization).toHaveBeenCalledWith("created-state-2");
+    });
+    expect(await screen.findByText("desktop-launch")).toBeInTheDocument();
+  });
+});
+
+describe("auth page session check gating", () => {  it("renders the login form for a browser with no stored session", async () => {
     const getCurrentSession = vi.fn().mockResolvedValue(null);
     const controller = createSdkworkAuthController({
       service: {
@@ -219,7 +370,7 @@ describe("auth page session check gating", () => {
 
     renderAuthPage(controller, { entry: "/auth/login" });
 
-    expect(await screen.findByLabelText(/account/iu)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/^account$/iu)).toBeInTheDocument();
     expect(
       screen.queryByTestId("sdkwork-auth-session-check"),
     ).not.toBeInTheDocument();
@@ -244,7 +395,7 @@ describe("auth page session check gating", () => {
 
     resolveSession(null);
 
-    expect(await screen.findByLabelText(/account/iu)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/^account$/iu)).toBeInTheDocument();
     expect(
       screen.queryByTestId("sdkwork-auth-session-check"),
     ).not.toBeInTheDocument();

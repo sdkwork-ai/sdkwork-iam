@@ -268,6 +268,25 @@ bridge) and pass it to the runtime. Bridge method names follow
 - `SdkworkAuthDesktopLaunchPage` fetches the follow QR through the controller's
   `getLoginFollowQr()` once on mount; the read is best-effort, so a missing or
   failed QR never delays or fails the hand-off.
+- The hosted auth surfaces render one shared product header
+  (`SdkworkAuthSurfaceHeader`): the host brand, and the signed-in account menu
+  with sign-out whenever the browser has a session. The account-choice and
+  session-check cards render it, so an already signed-in browser can add the
+  app to a different account (sign out, sign in again, and the pending
+  authorization still completes) without leaving the authorization page.
+- The platform's OAuth entry page (`CloudRouterAppAuthorizeEntry`) never renders
+  a login form of its own: a valid authorization request renders the hosted IAM
+  auth surface in place on the entry route, and only an invalid or incomplete
+  link renders the entry's branded failure card. The hosted page creates the
+  pending authorization state lazily — at the moment the browser signs in (or
+  confirms the account) — because the platform's standalone gateway composes
+  the IAM app-api (`/app/v3/api`), not the open-api authorize endpoint
+  (`/iam/v3/api`). An anonymous visitor therefore reaches the login form
+  immediately, and a signed-in browser reaches the account choice. A
+  third-provider sign-in creates the state before the provider round-trip, so
+  the callback still carries `oauthAuthorizationStateId`. A state created by
+  the IAM authorization server (the `<loginBase>/login?oauthAuthorizationStateId=…`
+  redirect, or an already-issued link) keeps the original behaviour.
 - `AuthOAuthCallbackPage` keeps the component mounted when a threaded
   `oauthAuthorizationStateId` is present (the authenticated Navigate is
   suppressed until the pending authorization completes and the hand-off

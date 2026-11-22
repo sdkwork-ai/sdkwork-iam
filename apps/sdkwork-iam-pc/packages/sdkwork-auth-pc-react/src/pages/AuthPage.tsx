@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type ReactElement,
+  type ReactNode,
 } from "react";
 import * as QRCode from "qrcode";
 import {
@@ -51,6 +52,7 @@ import {
   type SdkworkAuthBrand,
 } from "../auth-brand.ts";
 import { useSdkworkAuthIntl } from "../auth-intl.tsx";
+import { readSdkworkAuthAppAuthorizeRequest } from "../auth-app-authorize.ts";
 import {
   buildSdkworkAuthOAuthCallbackUri,
   getSdkworkAuthRuntimeConfig,
@@ -110,6 +112,7 @@ import {
   SdkworkAuthAccountChoice,
   SdkworkAuthSessionCheck,
 } from "../components/auth-account-choice.tsx";
+import { SdkworkAuthSurfaceHeader } from "../components/auth-surface-header.tsx";
 import { SdkworkAuthPageShell } from "../components/auth-page-shell.tsx";
 import { SdkworkOAuthProviderGrid } from "../components/oauth-provider-grid.tsx";
 import { SdkworkOrganizationSelectionDialog } from "../components/organization-selection-dialog.tsx";
@@ -574,6 +577,12 @@ export interface SdkworkAuthPageProps {
    * surfaces shows its own name here instead of the shared IAM identity.
    */
   brand?: SdkworkAuthBrand;
+  /**
+   * Host-rendered brand lockup for the surface header, so the hosted auth page
+   * shows exactly the same logo and wordmark as the product's own navigation.
+   * When absent the header renders `brand` with the shared IAM fallback.
+   */
+  brandHeader?: ReactNode;
   controller?: SdkworkAuthController;
   /**
    * Desktop (Electron/Tauri) browser-login entry. Provided by product
@@ -618,6 +627,7 @@ function SdkworkAuthPageContent({
   appearance,
   basePath = "/auth",
   brand,
+  brandHeader,
   controller: providedController,
   desktopBrowserLogin,
   events,
@@ -650,6 +660,15 @@ function SdkworkAuthPageContent({
     basePath,
   );
   const oauthAuthorizationStateId = searchParams.get("oauthAuthorizationStateId")?.trim() || "";
+  // The platform's authorize entry renders this page in place for a desktop
+  // request that has no IAM state yet: the state is created when the browser
+  // actually signs in, so an anonymous visitor sees the login form and a
+  // signed-in browser sees the account choice right away.
+  const appAuthorizeRequest = useMemo(
+    () => (oauthAuthorizationStateId ? undefined : readSdkworkAuthAppAuthorizeRequest(searchParams)),
+    [oauthAuthorizationStateId, searchParams],
+  );
+  const pendingAppAuthorization = Boolean(oauthAuthorizationStateId) || appAuthorizeRequest !== undefined;
   const qrPurpose = qrEntryKey ? resolveQrEntryPurpose(searchParams) : undefined;
   const mode = qrPurpose === "register"
     ? "register"
@@ -863,16 +882,35 @@ function SdkworkAuthPageContent({
     })();
   }, [controller, qrEntryKey, sendQrEntryCallback]);
 
+  /**
+   * The pending state the completion call posts to.
+   *
+   * The platform's authorize entry shows this page before any state exists, so
+   * the state is created here at the moment the browser actually authorizes:
+   * right before completion, and before a third-provider round-trip (the
+   * callback needs the id on its URL).
+   */
+  const ensureOAuthAuthorizationState = async (): Promise<string> => {
+    if (oauthAuthorizationStateId) {
+      return oauthAuthorizationStateId;
+    }
+    if (!appAuthorizeRequest) {
+      throw new Error("No pending app authorization on this page.");
+    }
+    return controller.createOAuthAuthorizationState(appAuthorizeRequest);
+  };
+
   const completeAuthFlow = async () => {
     if (controller.getState().session?.mustChangePassword) {
       finalizeAuthenticatedRedirect();
       return;
     }
 
-    if (oauthAuthorizationStateId) {
+    if (pendingAppAuthorization) {
       let completion: Awaited<ReturnType<typeof controller.completeOAuthAuthorization>>;
       try {
-        completion = await controller.completeOAuthAuthorization(oauthAuthorizationStateId);
+        const authorizationStateId = await ensureOAuthAuthorizationState();
+        completion = await controller.completeOAuthAuthorization(authorizationStateId);
       } catch (error) {
         // The desktop app is waiting on its deep link. Report a failed
         // completion through that same callback instead of leaving the app
@@ -1025,6 +1063,24 @@ function SdkworkAuthPageContent({
   const [bootstrapSettled, setBootstrapSettled] = useState(false);
   const [accountChoiceBusy, setAccountChoiceBusy] = useState(false);
   const [accountSwitchRequested, setAccountSwitchRequested] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const signOutFromHeader = () => {
+    if (signingOut) {
+      return;
+    }
+    setSigningOut(true);
+    // The page owns the sign-out gesture here because the hosted auth surface
+    // is the only thing on screen: ending the session drops the account choice
+    // back to the login form, where a different account can sign in and still
+    // complete the pending authorization.
+    void controller.signOut()
+      .catch(() => undefined)
+      .finally(() => {
+        setSigningOut(false);
+        setAccountSwitchRequested(false);
+      });
+  };
 
   const continueWithSignedInAccount = () => {
     if (accountChoiceBusy) {
@@ -1480,7 +1536,7 @@ function SdkworkAuthPageContent({
     });
   }, [activeLoginMethodsKey, appearance, basePath, events, homePath, mode, qrState, redirectTarget, shouldRenderQrRail]);
 
-  if (authState.isAuthenticated && !qrEntryKey && !oauthAuthorizationStateId) {
+  if (authState.isAuthenticated && !qrEntryKey && !pendingAppAuthorization) {
     const authenticatedTarget = authState.session?.mustChangePassword
       ? SDKWORK_AUTH_CHANGE_PASSWORD_PATH
       : redirectTarget;
@@ -1493,7 +1549,7 @@ function SdkworkAuthPageContent({
   // as somebody else, and choosing it keeps the page on the form (the
   // authorization then completes through the form's own flow).
   const showAccountChoice =
-    Boolean(oauthAuthorizationStateId)
+    pendingAppAuthorization
     && mode === "login"
     && !qrEntryKey
     && authState.isAuthenticated
@@ -1519,6 +1575,22 @@ function SdkworkAuthPageContent({
           brandName={resolveSdkworkAuthBrandName(brand)}
           busy={accountChoiceBusy}
           copy={copy.accountChoice}
+          header={(
+            <SdkworkAuthSurfaceHeader
+              account={{
+                displayName: accountName,
+                email: user?.email ?? "",
+                initials: resolveSdkworkAccountInitials(user?.initials || accountName),
+                menuLabel: copy.account.menuLabel,
+                onSignOut: signOutFromHeader,
+                signedInLabel: copy.account.signedInAs,
+                signOutLabel: signingOut ? copy.account.signingOut : copy.account.signOut,
+                signingOut,
+              }}
+              brand={brand}
+              brandNode={brandHeader}
+            />
+          )}
           initials={resolveSdkworkAccountInitials(user?.initials || accountName)}
           onContinue={continueWithSignedInAccount}
           onSwitchAccount={() => { setAccountSwitchRequested(true) }}
@@ -1544,6 +1616,7 @@ function SdkworkAuthPageContent({
         <SdkworkAuthSessionCheck
           appearance={appearance}
           copy={copy.accountChoice}
+          header={<SdkworkAuthSurfaceHeader brand={brand} brandNode={brandHeader} />}
           presentation={presentation}
         />
       </>
@@ -1560,6 +1633,19 @@ function SdkworkAuthPageContent({
   }, {
     ...qrEntryRouteMetadata,
     ...(oauthAuthorizationStateId ? { oauthAuthorizationStateId } : {}),
+    // A state-less app authorization survives the page's own register/forgot
+    // navigation: the request has to be on the URL when the new page completes.
+    ...(appAuthorizeRequest
+      ? {
+        client_id: appAuthorizeRequest.clientId,
+        code_challenge: appAuthorizeRequest.codeChallenge,
+        code_challenge_method: "S256",
+        redirect_uri: appAuthorizeRequest.redirectUri,
+        response_type: "code",
+        scope: appAuthorizeRequest.scope,
+        state: appAuthorizeRequest.state,
+      }
+      : {}),
     ...extraQuery,
   });
 
@@ -1713,6 +1799,24 @@ function SdkworkAuthPageContent({
       <SdkworkToaster />
       <SdkworkAuthPageShell
         appearance={resolvedAppearance}
+        header={pendingAppAuthorization ? (
+          <SdkworkAuthSurfaceHeader
+            account={authState.isAuthenticated && authState.user ? {
+              displayName: authState.user.displayName,
+              email: authState.user.email,
+              initials: resolveSdkworkAccountInitials(
+                authState.user.initials || authState.user.displayName,
+              ),
+              menuLabel: copy.account.menuLabel,
+              onSignOut: signOutFromHeader,
+              signedInLabel: copy.account.signedInAs,
+              signOutLabel: signingOut ? copy.account.signingOut : copy.account.signOut,
+              signingOut,
+            } : undefined}
+            brand={brand}
+            brandNode={brandHeader}
+          />
+        ) : undefined}
         aside={shouldRenderQrRail ? (
           <div className="flex flex-col gap-3">
             <SdkworkQrLoginPanel
@@ -1945,6 +2049,12 @@ function SdkworkAuthPageContent({
                       }
 
                       setActiveOAuthProvider(provider);
+                      // A desktop authorization shown before its state exists
+                      // must create it first: the provider callback carries
+                      // the state id so the round-trip can still complete it.
+                      const providerAuthorizationStateId = pendingAppAuthorization
+                        ? await ensureOAuthAuthorizationState()
+                        : "";
                       const authUrl = await controller.getOAuthAuthorizationUrl({
                         provider,
                         redirectUri: buildSdkworkAuthOAuthCallbackUri(provider, redirectTarget, {
@@ -1953,7 +2063,7 @@ function SdkworkAuthPageContent({
                           // A third-provider login during a desktop/first-party
                           // authorization must still complete the pending
                           // authorization and hand the code back to the app.
-                          oauthAuthorizationStateId: oauthAuthorizationStateId || undefined,
+                          oauthAuthorizationStateId: providerAuthorizationStateId || undefined,
                         }),
                         state: redirectTarget !== homePath ? redirectTarget : undefined,
                       });

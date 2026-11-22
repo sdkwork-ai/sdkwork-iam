@@ -257,7 +257,7 @@ describe("sdkwork-auth-pc-react page", () => {
     };
   }
 
-  it("renders the sdkwork-style login workspace with tabs and oauth providers", () => {
+  it("renders the sdkwork-style login workspace with tabs and oauth providers", async () => {
     renderAuthPage("/auth/login", {
       runtimeConfig: {
         oauthLoginEnabled: true,
@@ -265,7 +265,7 @@ describe("sdkwork-auth-pc-react page", () => {
     });
 
     expect(
-      screen.getByRole("heading", {
+      await screen.findByRole("heading", {
         level: 1,
         name: /welcome back/i,
       }),
@@ -332,6 +332,7 @@ describe("sdkwork-auth-pc-react page", () => {
       },
     });
 
+    await screen.findByLabelText(/account/i);
     fireEvent.change(screen.getByLabelText(/account/i), {
       target: { value: "selected@sdkwork.ai" },
     });
@@ -407,6 +408,7 @@ describe("sdkwork-auth-pc-react page", () => {
       },
     });
 
+    await screen.findByLabelText(/account/i);
     fireEvent.change(screen.getByLabelText(/account/i), {
       target: { value: "personal@sdkwork.ai" },
     });
@@ -489,6 +491,7 @@ describe("sdkwork-auth-pc-react page", () => {
       </SdkworkThemeProvider>,
     );
 
+    await screen.findByLabelText(/account/i);
     fireEvent.change(screen.getByLabelText(/account/i), {
       target: { value: "scan@sdkwork.ai" },
     });
@@ -585,6 +588,7 @@ describe("sdkwork-auth-pc-react page", () => {
       </SdkworkThemeProvider>,
     );
 
+    await screen.findByLabelText(/account/i);
     fireEvent.change(screen.getByLabelText(/account/i), {
       target: { value: "scan@sdkwork.ai" },
     });
@@ -1525,9 +1529,10 @@ describe("sdkwork-auth-pc-react page", () => {
     expect(controller.service.signInWithSessionBridge).not.toHaveBeenCalled();
   });
 
-  it("uses the SDKWork aligned auth shell with soft glow background", () => {
+  it("uses the SDKWork aligned auth shell with soft glow background", async () => {
     const { container } = renderAuthPage("/auth/login");
 
+    await screen.findByRole("heading", { level: 1, name: /welcome back/i });
     expect(container.innerHTML).toContain("bg-[var(--sdkwork-auth-page-background-color,#fafafa)]");
     expect(container.innerHTML).toContain("dark:bg-zinc-950");
     expect(container.innerHTML).toContain("sdkwork-auth-surface");
@@ -2773,7 +2778,7 @@ describe("sdkwork-auth-pc-react page", () => {
     renderAuthPage("/auth/register?redirect=%2Fworkspace");
 
     fireEvent.click(
-      screen.getByRole("button", {
+      await screen.findByRole("button", {
         name: "Sign in",
       }),
     );
@@ -2793,7 +2798,7 @@ describe("sdkwork-auth-pc-react page", () => {
     renderAuthPage("/auth/forgot-password?redirect=%2Fworkspace");
 
     fireEvent.click(
-      screen.getByRole("button", {
+      await screen.findByRole("button", {
         name: /back to login/i,
       }),
     );
@@ -3619,7 +3624,7 @@ describe("sdkwork-auth-pc-react page", () => {
     expect(controller.service.generateLoginQrCode).not.toHaveBeenCalled();
   });
 
-  it("lets host apps override auth theme tokens without replacing the shared UI", () => {
+  it("lets host apps override auth theme tokens without replacing the shared UI", async () => {
     const controller = createSdkworkAuthController({
       service: {
         generateLoginQrCode: vi.fn(),
@@ -3659,6 +3664,7 @@ describe("sdkwork-auth-pc-react page", () => {
       </SdkworkThemeProvider>,
     );
 
+    await screen.findByRole("heading", { level: 1, name: /welcome back/i });
     expect(container.innerHTML).toContain("--sdkwork-auth-content-text-color: #123456");
     expect(container.innerHTML).toContain("--sdkwork-auth-field-text-color: #abcdef");
     expect(container.innerHTML).toContain("rgb(1, 2, 3)");

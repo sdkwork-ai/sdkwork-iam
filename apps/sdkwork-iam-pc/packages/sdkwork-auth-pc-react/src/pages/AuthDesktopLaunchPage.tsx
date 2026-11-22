@@ -2,6 +2,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import { ArrowRight, Check, ExternalLink } from "lucide-react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
@@ -17,7 +18,7 @@ import {
 } from "../auth-controller.ts";
 import type { SdkworkAuthLoginFollowQr } from "../auth-service.ts";
 import { formatSdkworkAuthTemplate } from "../auth-copy.ts";
-import { SdkworkAuthAccountMenu } from "../components/auth-account-menu.tsx";
+import { SdkworkAuthSurfaceHeader } from "../components/auth-surface-header.tsx";
 import {
   createSdkworkAuthLightShellStyle,
   SDKWORK_AUTH_SURFACE_THEME_STYLE,
@@ -28,8 +29,6 @@ import {
 } from "../auth-appearance.ts";
 import { useSdkworkAuthIntl } from "../auth-intl.tsx";
 import {
-  resolveSdkworkAuthBrandLogoUrl,
-  resolveSdkworkAuthBrandMark,
   resolveSdkworkAuthBrandName,
   type SdkworkAuthBrand,
 } from "../auth-brand.ts";
@@ -45,6 +44,8 @@ export interface SdkworkAuthDesktopLaunchPageProps {
    * shared page renders the IAM identity when the host supplies none.
    */
   brand?: SdkworkAuthBrand;
+  /** Host-rendered brand lockup; matches the product's own navigation. */
+  brandHeader?: ReactNode;
   controller?: SdkworkAuthController;
   /**
    * Hands the deep-link redirect URL to the operating system. Defaults to a
@@ -82,12 +83,12 @@ function SdkworkAuthDesktopLaunchPageContent({
   appearance,
   basePath = "/auth",
   brand,
+  brandHeader,
   controller: providedController,
   onLaunch = defaultLaunchSdkworkDesktopRedirect,
 }: SdkworkAuthDesktopLaunchPageProps) {
   const { copy } = useSdkworkAuthIntl();
   const brandName = resolveSdkworkAuthBrandName(brand);
-  const brandLogoUrl = resolveSdkworkAuthBrandLogoUrl(brand);
   const controller = useSdkworkAuthController(providedController);
   const authState = useSdkworkAuthControllerState(controller);
   const resolvedAppearance = resolveSdkworkAuthAppearance(appearance);
@@ -224,49 +225,24 @@ function SdkworkAuthDesktopLaunchPageContent({
       style={resolvedAppearance?.pageStyle}
     >
       <style>{SDKWORK_AUTH_SURFACE_THEME_STYLE}</style>
-      <header className="relative z-20 mx-auto flex w-full max-w-lg shrink-0 items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2 text-sm font-bold tracking-tight text-zinc-600 dark:text-zinc-300">
-          {brandLogoUrl ? (
-            <img
-              alt=""
-              className="h-7 w-auto max-w-[6rem] shrink-0 rounded-lg object-contain"
-              data-testid="sdkwork-auth-brand-logo"
-              src={brandLogoUrl}
-            />
-          ) : (
-            <span
-              aria-hidden="true"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-950 text-[10px] font-black tracking-wide text-white dark:bg-white dark:text-zinc-950"
-              data-testid="sdkwork-auth-brand-mark"
-            >
-              {resolveSdkworkAuthBrandMark(brandName)}
-            </span>
-          )}
-          <span className="truncate" data-testid="sdkwork-auth-brand-name">
-            {brandName}
-          </span>
-        </div>
-        {authState.isAuthenticated && authState.user ? (
-          <div
-            aria-label={copy.account.menuLabel}
-            className="relative z-20 shrink-0"
-            role="group"
-          >
-            <SdkworkAuthAccountMenu
-              displayName={authState.user.displayName}
-              email={authState.user.email}
-              initials={authState.user.initials}
-              menuLabel={copy.account.menuLabel}
-              onSignOut={() => {
-                void handleSignOut();
-              }}
-              signedInLabel={copy.account.signedInAs}
-              signOutLabel={signingOut ? copy.account.signingOut : copy.account.signOut}
-              signingOut={signingOut}
-            />
-          </div>
-        ) : null}
-      </header>
+      <div className="relative z-20 mx-auto w-full max-w-lg shrink-0">
+        <SdkworkAuthSurfaceHeader
+          account={authState.isAuthenticated && authState.user
+            ? {
+              displayName: authState.user.displayName,
+              email: authState.user.email,
+              initials: authState.user.initials,
+              menuLabel: copy.account.menuLabel,
+              onSignOut: () => { void handleSignOut() },
+              signedInLabel: copy.account.signedInAs,
+              signOutLabel: signingOut ? copy.account.signingOut : copy.account.signOut,
+              signingOut,
+            }
+            : undefined}
+          brand={brand}
+          brandNode={brandHeader}
+        />
+      </div>
       <div
         className={mergeSdkworkAuthClassNames(
           "sdkwork-auth-desktop-launch-shell relative z-10 mx-auto my-auto w-full max-w-lg overflow-hidden rounded-3xl bg-white/92 shadow-2xl dark:bg-zinc-900/92",

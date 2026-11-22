@@ -23,6 +23,8 @@ export interface SdkworkAuthPageShellProps {
   badge?: ReactNode;
   children: ReactNode;
   description: ReactNode;
+  /** Product header rendered above the card (the hosted app authorization page). */
+  header?: ReactNode;
   presentation?: SdkworkAuthPresentation;
   showAside?: boolean;
   title: ReactNode;
@@ -75,6 +77,7 @@ export function SdkworkAuthPageShell({
   badge,
   children,
   description,
+  header,
   presentation = "page",
   showAside = true,
   title,
@@ -143,6 +146,11 @@ export function SdkworkAuthPageShell({
     },
     <>
       <style>{SDKWORK_AUTH_SURFACE_THEME_STYLE}</style>
+      {header !== undefined && !isModalPresentation ? (
+        <div className="absolute inset-x-0 top-4 z-20 mx-auto w-full max-w-[920px] px-4 sm:top-6 sm:px-8">
+          {header}
+        </div>
+      ) : null}
       {createElement(
         BackgroundSlot,
         {

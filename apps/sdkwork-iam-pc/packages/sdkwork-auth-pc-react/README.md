@@ -21,6 +21,19 @@ This package is the standard auth UI layer for appbase-based desktop apps. Host 
   optional `desktopBrowserLogin` binding (built by product composition from
   `@sdkwork/iam-desktop-auth` + a host adapter) that renders the
   system-browser login entry for Electron/Tauri shells; absent on pure web.
+- A desktop app authorization may arrive on the hosted page without a pending
+  IAM state (the platform's authorize entry renders this page in place). `readSdkworkAuthAppAuthorizeRequest`
+  recognises that request from its own URL, the page renders the login form or
+  the account choice immediately, and `controller.createOAuthAuthorizationState`
+  creates the state only when the visitor actually signs in or confirms the
+  account (a third-provider sign-in creates it before the round-trip). A page
+  that already carries `oauthAuthorizationStateId` keeps the original flow.
+- `SdkworkAuthSurfaceHeader` is the single product header every hosted auth
+  surface renders: the host brand on the left, and — when the browser is
+  signed in — the account menu with sign-out on the right. `AuthPage` renders
+  it above the session-check and account-choice cards, so a signed-in browser
+  can end the session (or switch to another account) from the hosted
+  authorization page itself; signing in again completes the app authorization.
 - The login form never paints before the stored session is revalidated: the
   first paint is `SdkworkAuthSessionCheck` (the `accountChoice.checking` line)
   until `bootstrap()` answers, and only that holding card has a budget

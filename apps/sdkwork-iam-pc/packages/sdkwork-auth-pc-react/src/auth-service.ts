@@ -11,6 +11,7 @@ import {
 } from "@sdkwork/runtime-bootstrap";
 import { isBlank } from "@sdkwork/utils";
 import { unwrapIamSdkResponse } from "@sdkwork/iam-sdk-adapter";
+import type { SdkworkAuthAppAuthorizeRequest } from "./auth-app-authorize.ts";
 import {
   buildOrganizationLoginContextSelectionBody,
   buildPersonalLoginContextSelectionBody,
@@ -513,6 +514,12 @@ export interface SdkworkAuthService {
    * this runtime has no such resource or the operator has not configured one.
    */
   getLoginFollowQr?(): Promise<SdkworkAuthLoginFollowQr | null>;
+  /**
+   * Create the pending IAM authorization state for an app authorization that
+   * arrived on the hosted page without one (see `auth-app-authorize.ts`).
+   * Returns the state id the completion call needs.
+   */
+  createOAuthAuthorizationState?(input: SdkworkAuthAppAuthorizeRequest): Promise<string>;
   getVerificationPolicy(): Promise<SdkworkAuthResolvedVerificationPolicy>;
   listOAuthProviders(): Promise<string[]>;
   listScanLoginModes(): Promise<SdkworkAuthScanLoginMode[]>;

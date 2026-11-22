@@ -1,4 +1,5 @@
 import { Check, LoaderCircle } from "lucide-react";
+import type { ReactNode } from "react";
 import type { SdkworkAuthMessages } from "../auth-copy.ts";
 import {
   SDKWORK_AUTH_SURFACE_THEME_STYLE,
@@ -25,6 +26,8 @@ export interface SdkworkAuthAccountChoiceProps {
   /** Whether a completion is already running, so the card cannot start a second one. */
   busy?: boolean;
   copy: SdkworkAuthAccountChoiceCopy;
+  /** Product header rendered above the card (brand plus the account menu). */
+  header?: ReactNode;
   /** Short fallback mark rendered when the account has no avatar. */
   initials: string;
   /** Continue the pending sign-in with the account that is already signed in. */
@@ -79,6 +82,7 @@ export function SdkworkAuthAccountChoice({
   brandName,
   busy = false,
   copy,
+  header,
   initials,
   onContinue,
   onSwitchAccount,
@@ -100,6 +104,11 @@ export function SdkworkAuthAccountChoice({
       style={resolvedAppearance?.pageStyle}
     >
       <style>{SDKWORK_AUTH_SURFACE_THEME_STYLE}</style>
+      {header !== undefined && presentation === "page" ? (
+        <div className="absolute inset-x-0 top-4 z-20 mx-auto w-full max-w-[560px] px-6 sm:top-6">
+          {header}
+        </div>
+      ) : null}
       <div
         className={mergeSdkworkAuthClassNames(
           "relative z-10 flex w-full max-w-[560px] flex-col rounded-3xl bg-white p-10 shadow-2xl ring-1 ring-zinc-200/70 dark:bg-zinc-950 dark:ring-zinc-800",
@@ -172,6 +181,8 @@ export function SdkworkAuthAccountChoice({
 export interface SdkworkAuthSessionCheckProps {
   appearance?: SdkworkAuthAppearanceConfig;
   copy: Pick<SdkworkAuthAccountChoiceCopy, "checking">;
+  /** Product header rendered above the card. */
+  header?: ReactNode;
   presentation?: SdkworkAuthPresentation;
 }
 
@@ -187,6 +198,7 @@ export interface SdkworkAuthSessionCheckProps {
 export function SdkworkAuthSessionCheck({
   appearance,
   copy,
+  header,
   presentation = "page",
 }: SdkworkAuthSessionCheckProps) {
   const resolvedAppearance = resolveSdkworkAuthAppearance(appearance);
@@ -205,6 +217,11 @@ export function SdkworkAuthSessionCheck({
       style={resolvedAppearance?.pageStyle}
     >
       <style>{SDKWORK_AUTH_SURFACE_THEME_STYLE}</style>
+      {header !== undefined && presentation === "page" ? (
+        <div className="absolute inset-x-0 top-4 z-20 mx-auto w-full max-w-[560px] px-6 sm:top-6">
+          {header}
+        </div>
+      ) : null}
       <div
         className={mergeSdkworkAuthClassNames(
           "relative z-10 flex w-full max-w-[560px] flex-col items-center gap-4 rounded-3xl bg-white p-10 shadow-2xl ring-1 ring-zinc-200/70 dark:bg-zinc-950 dark:ring-zinc-800",

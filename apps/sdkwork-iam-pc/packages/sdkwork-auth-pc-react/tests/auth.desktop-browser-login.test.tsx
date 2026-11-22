@@ -569,6 +569,6 @@ describe("auth page account choice for an already-authenticated browser user", (
       await screen.findByTestId("sdkwork-auth-account-choice"),
     ).toBeInTheDocument();
     expect(completeOAuthAuthorization).not.toHaveBeenCalled();
-    expect(screen.getByText("Session User")).toBeInTheDocument();
+    expect(screen.getAllByText("Session User").length).toBeGreaterThan(0);
   });
 });

@@ -186,6 +186,7 @@ export interface SdkworkIamService {
       };
     };
     authorizations: {
+      create(body: Record<string, unknown>): Promise<unknown>;
       completions: {
         create(authorizationStateId: string, body?: Record<string, unknown>): Promise<unknown>;
       };
@@ -613,6 +614,12 @@ export function createSdkworkIamService(input: CreateSdkworkIamServiceInput): Sd
         },
       },
       authorizations: {
+        create: (body) => callRaw(
+          appOauth?.authorizations,
+          "create",
+          "appbaseAppClient.oauth.authorizations.create",
+          body,
+        ),
         completions: {
           create: (authorizationStateId, body) => callRaw(
             appOauth?.authorizations?.completions,

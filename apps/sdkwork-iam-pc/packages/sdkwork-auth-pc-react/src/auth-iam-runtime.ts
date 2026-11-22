@@ -51,6 +51,7 @@ import {
   normalizeSdkworkAuthOAuthProvider,
   type SdkworkAuthResolvedVerificationPolicy,
 } from "./auth-runtime-config.ts";
+import type { SdkworkAuthAppAuthorizeRequest } from "./auth-app-authorize.ts";
 import {
   readSdkworkMediaResource,
   type SdkworkMediaResource,
@@ -173,6 +174,7 @@ export interface SdkworkIamRuntimeAuthRuntimeLike {
         };
       };
       authorizations?: {
+        create?(payload: Record<string, unknown>): Promise<unknown>;
         completions?: {
           create?(
             authorizationStateId: string,
@@ -1074,6 +1076,30 @@ export function createSdkworkIamRuntimeAuthService(
     return result;
   }
 
+  async function createOAuthAuthorizationState(
+    input: SdkworkAuthAppAuthorizeRequest,
+  ): Promise<string> {
+    const runtime = await readRuntime();
+    const createAuthorization = runtime.service.oauth?.authorizations?.create;
+    if (!createAuthorization) {
+      throw new Error(methodUnavailableMessage);
+    }
+    const created = toRecord(unwrapRuntimeResponse(await createAuthorization({
+      clientId: input.clientId,
+      codeChallenge: input.codeChallenge,
+      codeChallengeMethod: "S256",
+      redirectUri: input.redirectUri,
+      responseType: "code",
+      scope: input.scope,
+      state: input.state,
+    })));
+    const authorizationStateId = normalizeOptionalScalar(created.authorizationStateId);
+    if (!authorizationStateId) {
+      throw new Error(methodUnavailableMessage);
+    }
+    return authorizationStateId;
+  }
+
   async function completeOAuthAuthorization(
     authorizationStateId: string,
   ): Promise<SdkworkAuthOAuthAuthorizationCompletion> {
@@ -1105,6 +1131,7 @@ export function createSdkworkIamRuntimeAuthService(
     checkLoginQrCodeStatus,
     confirmLoginQrCode,
     completeOAuthAuthorization,
+    createOAuthAuthorizationState,
     generateLoginQrCode,
     getCurrentSession,
     getCurrentUser,

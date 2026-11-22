@@ -118,6 +118,7 @@ export interface IamAppOAuthResourceClient {
     create?: IamSdkMethod;
   };
   authorizations?: {
+    create?: IamSdkMethod;
     completions?: {
       create?: IamSdkMethod;
     };
