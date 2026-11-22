@@ -188,7 +188,7 @@ describe("sdkwork-auth-pc-react", () => {
       ),
       createAuthEntryDigest(
         {
-          callbackRoute: "/auth/oauth/callback/github",
+          callbackRoute: "/oauth/callback/github",
           enabled: true,
           flow: "login",
           id: "github-oauth",
@@ -257,7 +257,7 @@ describe("sdkwork-auth-pc-react", () => {
     });
 
     expect(digests[1]).toEqual({
-      callbackRoute: "/auth/oauth/callback/github",
+      callbackRoute: "/oauth/callback/github",
       digestStatus: "external",
       entryId: "github-oauth",
       entryKind: "oauth-provider",
@@ -306,7 +306,7 @@ describe("sdkwork-auth-pc-react", () => {
     );
     const githubDigest = createAuthEntryDigest(
       {
-        callbackRoute: "/auth/oauth/callback/github",
+        callbackRoute: "/oauth/callback/github",
         enabled: true,
         flow: "login",
         id: "github-oauth",
@@ -690,13 +690,16 @@ describe("sdkwork-auth-pc-react", () => {
     ).toBe("/dashboard");
     expect(
       resolveAuthRedirectTarget(
+        // A host may still mount the provider callback under its account base
+        // path during the migration; that path stays a rejected target too.
         "/workspace/auth/oauth/callback/github",
         "/dashboard",
         "/workspace/auth",
       ),
     ).toBe("/dashboard");
     // The OAuth namespace is rejected for the same reason: a redirect target
-    // must never aim at a provider callback or the desktop hand-off page.
+    // must never aim at a provider callback, the OAuth login step, or the
+    // desktop hand-off page.
     expect(resolveAuthRedirectTarget("/oauth/callback/github")).toBe("/dashboard");
     expect(resolveAuthRedirectTarget("/oauth/desktop/launch")).toBe("/dashboard");
     expect(resolveAuthRedirectTarget("/oauth/login?oauthAuthorizationStateId=state-1")).toBe("/dashboard");

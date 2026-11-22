@@ -11,7 +11,7 @@ A desktop application (Electron or Tauri shell) must never render its own login 
 ```text
 ┌────────────┐ 1. open system browser                        ┌──────────────────────┐
 │ Desktop app │ ───────────────────────────────────────────▶ │ IAM hosted login page │
-│ (login UI)  │  GET /iam/oauth/authorize                 │ /auth/login           │
+│ (login UI)  │  GET /iam/oauth/authorize                 │ /oauth/login          │
 └─────┬──────┘    response_type=code                         │ login / register /    │
       │                                 client_id=<app_id>   │ forgot password       │
       │                                 redirect_uri=        └──────────┬───────────┘
@@ -176,7 +176,7 @@ bridge) and pass it to the runtime. Bridge method names follow
 
 1. **Fresh login (the normal path).** User clicks "Sign in with browser" in
    the desktop login page → PKCE pair + state stored → system browser opens
-   the IAM authorize endpoint → hosted login page (`/auth/login?oauthAuthorizationStateId=…`)
+   the IAM authorize endpoint → OAuth login step (`/oauth/login?oauthAuthorizationStateId=…`)
    → the user signs in, registers, or resets a password — the full web
    experience, login-context selection included → completion triggers the
    hosted login-success page (`/oauth/desktop/launch`) → the page shows the
@@ -374,12 +374,17 @@ constants equal to the pages the hosted login actually renders, so a platform
 entry (the CloudRouter PC entry is the reference) validates and forwards to the
 same paths without local literals.
 
-Every route that exists only to serve a native application's browser login lives
-in the `/oauth` namespace: the `/oauth/app` alias entry and the
-`/oauth/desktop/launch` hand-off page. The portal's own account surface keeps the
-`/auth` namespace (`/auth/login`, `/auth/register`, `/auth/sign-out`), and the
-launch page is a protocol-level route, so it does not follow the auth base path a
-host mounts.
+Every route that exists only to serve an OAuth flow lives in the `/oauth`
+namespace: the `/oauth/app` alias entry, the `/oauth/login` step, the
+`/oauth/desktop/launch` hand-off page, and the `/oauth/callback` provider
+callback of the website's own OAuth client. The website's account surface keeps
+the `/auth` namespace (`/auth/login`, `/auth/register`, `/auth/sign-out`), and
+the OAuth routes are protocol-level paths, so they do not follow the auth base
+path a host mounts.
+
+A deployment that overrides `SDKWORK_IAM_LOGIN_BASE_URL` must point it at the
+web base that serves `/oauth/login` (the default is `/oauth`, producing
+`/oauth/login?oauthAuthorizationStateId=…`).
 
 ## Reusing the flow in another application
 
