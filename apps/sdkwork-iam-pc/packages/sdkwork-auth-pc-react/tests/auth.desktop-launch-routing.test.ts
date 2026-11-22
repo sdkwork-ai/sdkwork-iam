@@ -9,9 +9,12 @@ import { describe, expect, it } from "vitest";
 import {
   buildSdkworkAuthDesktopLaunchLocation,
   buildSdkworkAuthDesktopLaunchPath,
-  createAuthRouteCatalog,
   isSdkworkDesktopDeepLinkRedirect,
 } from "../src/auth.ts";
+import {
+  SDKWORK_OAUTH_APP_LAUNCH_PATH,
+  SDKWORK_OAUTH_ROUTES,
+} from "../src/oauth-app-paths.ts";
 
 describe("desktop deep-link classification", () => {
   it("hands custom-scheme completions to the desktop launch page", () => {
@@ -41,14 +44,12 @@ describe("desktop launch location", () => {
   it("stays on the protocol route whatever auth base path a host mounts", () => {
     expect(buildSdkworkAuthDesktopLaunchLocation("birdcoder://auth/callback"))
       .toBe(`/oauth/desktop/launch?redirectUrl=${encodeURIComponent("birdcoder://auth/callback")}`);
-    const customBaseRoutes = createAuthRouteCatalog("/iam-auth");
-    expect(customBaseRoutes.find(route => route.id === "desktop-launch")?.path)
-      .toBe("/oauth/desktop/launch");
   });
 
-  it("keeps the launch route in the auth route catalog", () => {
-    const routes = createAuthRouteCatalog("/auth");
-    const launch = routes.find(route => route.id === "desktop-launch");
-    expect(launch?.path).toBe("/oauth/desktop/launch");
+  it("exposes the launch route through the OAuth route model", () => {
+    // The hand-off page is an OAuth surface, so it comes from the OAuth route
+    // model rather than the account route catalog.
+    expect(SDKWORK_OAUTH_APP_LAUNCH_PATH).toBe("/oauth/desktop/launch");
+    expect(SDKWORK_OAUTH_ROUTES.desktopLaunch).toBe("/oauth/desktop/launch");
   });
 });

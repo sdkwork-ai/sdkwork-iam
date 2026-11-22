@@ -75,7 +75,11 @@ export function createUserCenterPluginDefinition(
       capability: "auth",
       forgotPasswordRoutePath: `${bridgeConfig.routes.authBasePath}/forgot-password`,
       loginRoutePath: `${bridgeConfig.routes.authBasePath}/login`,
-      oauthCallbackRoutePattern: `${bridgeConfig.routes.authBasePath}/oauth/callback/:provider`,
+      // The provider callback is an OAuth hop with a fixed protocol path, not a
+      // page under the account base path. Keep in sync with
+      // `SDKWORK_OAUTH_PROVIDER_CALLBACK_ROUTE_PATTERN` in
+      // `@sdkwork/auth-pc-react/oauth-app-paths`.
+      oauthCallbackRoutePattern: "/oauth/callback/:provider",
       qrRoutePath: `${bridgeConfig.routes.authBasePath}/qr-login`,
       registerRoutePath: `${bridgeConfig.routes.authBasePath}/register`,
     };

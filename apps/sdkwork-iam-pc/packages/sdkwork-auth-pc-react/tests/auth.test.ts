@@ -36,6 +36,7 @@ import {
   resolveSdkworkAuthVerificationPolicy,
   setSdkworkAuthRuntimeConfig,
 } from "../src";
+import { SDKWORK_OAUTH_ROUTES } from "../src/oauth-app-paths.ts";
 
 describe("sdkwork-auth-pc-react", () => {
   afterEach(() => {
@@ -43,20 +44,21 @@ describe("sdkwork-auth-pc-react", () => {
     vi.unstubAllEnvs();
   });
 
-  it("creates a predictable auth route catalog", () => {
+  it("creates a predictable account-surface route catalog", () => {
     const routes = createAuthRouteCatalog("/auth");
 
     expect(routes.map((route) => route.path)).toEqual([
       "/auth/login",
       "/auth/register",
       "/auth/forgot-password",
-      "/oauth/callback/:provider",
       "/auth/qr-login",
       "/auth/qr/:sessionKey",
-      "/oauth/desktop/launch",
     ]);
-    expect(isAuthRoute(routes, "/oauth/callback/github")).toBe(true);
     expect(isAuthRoute(routes, "/auth/qr/qr_abc123")).toBe(true);
+    // OAuth paths are not account routes: the catalog is the other system's
+    // model entry point.
+    expect(isAuthRoute(routes, "/oauth/callback/github")).toBe(false);
+    expect(isAuthRoute(routes, "/oauth/login")).toBe(false);
     expect(isAuthRoute(routes, "/dashboard")).toBe(false);
   });
 
@@ -89,10 +91,8 @@ describe("sdkwork-auth-pc-react", () => {
       "/auth/login",
       "/auth/register",
       "/auth/forgot-password",
-      "/oauth/callback/:provider",
       "/auth/qr-login",
       "/auth/qr/:sessionKey",
-      "/oauth/desktop/launch",
     ]);
     expect(integration.manifest).toMatchObject({
       architecture: "pc-react",
@@ -758,21 +758,9 @@ describe("sdkwork-auth-pc-react", () => {
       source: "auth-workspace",
       type: "auth-route-intent",
     });
-
-    expect(
-      createAuthRouteIntent("oauth-callback", {
-        provider: "github",
-        redirectTo: "/settings/profile",
-        routes,
-      }),
-    ).toEqual({
-      focusWindow: true,
-      provider: "github",
-      redirectTo: "/settings/profile",
-      route: "/oauth/callback/github?redirect=%2Fsettings%2Fprofile",
-      routeId: "oauth-callback",
-      source: "auth-workspace",
-      type: "auth-route-intent",
-    });
+    // The account intent model has no provider/OAuth branch: the OAuth routes
+    // are built from `SDKWORK_OAUTH_ROUTES`.
+    expect(SDKWORK_OAUTH_ROUTES.providerCallbackPattern).toBe("/oauth/callback/:provider");
+    expect(SDKWORK_OAUTH_ROUTES.desktopLaunch).toBe("/oauth/desktop/launch");
   });
 });

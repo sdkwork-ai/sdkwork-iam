@@ -13,6 +13,7 @@
 import { describe, expect, it } from "vitest";
 import { createAuthRouteCatalog } from "../src/auth.ts";
 import {
+  isSdkworkOAuthHostedPath,
   isSdkworkOAuthSurfacePath,
   SDKWORK_OAUTH_APP_ALIAS_PATH,
   SDKWORK_OAUTH_APP_AUTHORIZE_ENDPOINT_PATH,
@@ -27,13 +28,20 @@ import {
 } from "../src/oauth-app-paths.ts";
 
 describe("hosted OAuth path contract", () => {
-  it("agrees with the auth route catalog", () => {
+  it("keeps the account route catalog free of OAuth routes", () => {
     const routes = createAuthRouteCatalog("/auth");
-    const pathFor = (id: string) => routes.find((route) => route.id === id)?.path;
-    // The hand-off page and the provider callback are OAuth protocol routes,
-    // so the catalog carries their fixed paths rather than base-path ones.
-    expect(SDKWORK_OAUTH_APP_LAUNCH_PATH).toBe(pathFor("desktop-launch"));
-    expect(SDKWORK_OAUTH_PROVIDER_CALLBACK_ROUTE_PATTERN).toBe(pathFor("oauth-callback"));
+    // The two systems have separate models: the account catalog is the website
+    // surface and never yields an OAuth path.
+    for (const route of routes) {
+      expect(route.path.startsWith("/oauth"), route.path).toBe(false);
+    }
+    expect(routes.map((route) => route.path)).toEqual([
+      "/auth/login",
+      "/auth/register",
+      "/auth/forgot-password",
+      "/auth/qr-login",
+      "/auth/qr/:sessionKey",
+    ]);
   });
 
   it("keeps every OAuth path in the /oauth namespace", () => {
@@ -78,5 +86,33 @@ describe("hosted OAuth path contract", () => {
 
   it("names the state parameter the OAuth login step reads", () => {
     expect(SDKWORK_OAUTH_AUTHORIZATION_STATE_PARAM).toBe("oauthAuthorizationStateId");
+  });
+
+  it("reads a pending OAuth authorization only on OAuth hosted paths", () => {
+    // The `/oauth` namespace and the platform's authorize entry are the only
+    // surfaces allowed to carry a pending authorization.
+    for (const path of [
+      "/oauth",
+      "/oauth/login",
+      "/oauth/app",
+      "/oauth/callback",
+      "/oauth/callback/github",
+      "/oauth/desktop/launch",
+      "/iam/oauth/authorize",
+      "/iam/v3/oauth/authorize",
+    ]) {
+      expect(isSdkworkOAuthHostedPath(path), path).toBe(true);
+    }
+    for (const path of [
+      "/auth",
+      "/auth/login",
+      "/auth/register",
+      "/auth/forgot-password",
+      "/auth/sign-out",
+      "/console",
+      "/",
+    ]) {
+      expect(isSdkworkOAuthHostedPath(path), path).toBe(false);
+    }
   });
 });

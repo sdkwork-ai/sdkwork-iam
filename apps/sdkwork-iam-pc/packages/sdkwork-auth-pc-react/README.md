@@ -17,6 +17,19 @@ This package is the standard auth UI layer for appbase-based desktop apps. Host 
 
 ## Standard surface model
 
+The package serves two disjoint systems, each with its own route model:
+
+- **Account surface** (`/auth/*`): the website's own login, registration,
+  password recovery, QR login entry, and sign-out. `createAuthRouteCatalog`
+  returns exactly these routes — it never yields an OAuth path — and
+  `SdkworkAuthRouteId` names only account routes.
+- **OAuth system** (`/oauth/*` plus `/iam/oauth/authorize`): the desktop
+  browser-login step, its deep-link hand-off, the provider callback of the
+  website's OAuth client, and the hosted authorize alias. They are described by
+  `SDKWORK_OAUTH_ROUTES` in `@sdkwork/auth-pc-react/oauth-app-paths`, and
+  `isSdkworkOAuthHostedPath` is the single predicate that decides whether a
+  hosted path may read `oauthAuthorizationStateId` or an authorization request.
+
 - `SdkworkAuthPage` is the default page-level auth entry. It accepts an
   optional `desktopBrowserLogin` binding (built by product composition from
   `@sdkwork/iam-desktop-auth` + a host adapter) that renders the
@@ -28,6 +41,9 @@ This package is the standard auth UI layer for appbase-based desktop apps. Host 
   creates the state only when the visitor actually signs in or confirms the
   account (a third-provider sign-in creates it before the round-trip). A page
   that already carries `oauthAuthorizationStateId` keeps the original flow.
+  Both the state and the authorization request are read only on an OAuth hosted
+  path: on the account surface they are inert, so `/auth/login` can never become
+  an OAuth step.
 - `SdkworkAuthSurfaceHeader` is the single product header every hosted auth
   surface renders: the host brand on the left, and — when the browser is
   signed in — the account menu with sign-out on the right. `AuthPage` renders

@@ -86,5 +86,52 @@ export function isSdkworkOAuthSurfacePath(pathname: string): boolean {
     || normalized.startsWith(`${SDKWORK_OAUTH_SURFACE_PATH_PREFIX}/`);
 }
 
+/**
+ * Whether a hosted path is where the OAuth authorization state may be read.
+ *
+ * The hosted surfaces split in two: the `/oauth` namespace and the platform's
+ * authorize entry (`/iam/oauth/authorize` and its versioned spelling). A page
+ * rendered anywhere else — the account surface in particular — must ignore
+ * `oauthAuthorizationStateId` and an authorization request, so an OAuth
+ * parameter never turns an account page into an OAuth step.
+ * @param pathname - browser pathname to classify.
+ * @returns true for the paths that may carry a pending OAuth authorization.
+ */
+export function isSdkworkOAuthHostedPath(pathname: string): boolean {
+  const normalized = pathname.trim();
+  if (isSdkworkOAuthSurfacePath(normalized)) {
+    return true;
+  }
+  return SDKWORK_OAUTH_APP_AUTHORIZE_PATHS.some(
+    (path) => normalized === path || normalized.startsWith(`${path}/`),
+  );
+}
+
 /** Query parameter the IAM authorization server hands to the hosted login. */
 export const SDKWORK_OAUTH_AUTHORIZATION_STATE_PARAM = "oauthAuthorizationStateId";
+
+/**
+ * The complete OAuth route model a browser host serves.
+ *
+ * The auth route catalog describes the account surface only; this object is the
+ * other half. Anything that needs an OAuth path — a router, a manifest, a
+ * redirect-URI builder — reads it here instead of borrowing an auth route.
+ */
+export const SDKWORK_OAUTH_ROUTES = Object.freeze({
+  /** Every authorize entry (versioned first, then versionless). */
+  authorizePaths: SDKWORK_OAUTH_APP_AUTHORIZE_PATHS,
+  /** IAM open-api authorize endpoint the hosted entry forwards to. */
+  authorizeEndpoint: SDKWORK_OAUTH_APP_AUTHORIZE_ENDPOINT_PATH,
+  /** Short alias entry that also renders the hosted authorize page. */
+  appAlias: SDKWORK_OAUTH_APP_ALIAS_PATH,
+  /** OAuth login step the authorize endpoint redirects the browser to. */
+  login: SDKWORK_OAUTH_APP_LOGIN_PATH,
+  /** Provider callback of the website's OAuth client. */
+  providerCallback: SDKWORK_OAUTH_PROVIDER_CALLBACK_PATH,
+  /** Provider callback route pattern a router mounts. */
+  providerCallbackPattern: SDKWORK_OAUTH_PROVIDER_CALLBACK_ROUTE_PATTERN,
+  /** Deep-link hand-off page that ends the desktop flow. */
+  desktopLaunch: SDKWORK_OAUTH_APP_LAUNCH_PATH,
+  /** State parameter the OAuth login step completes. */
+  authorizationStateParam: SDKWORK_OAUTH_AUTHORIZATION_STATE_PARAM,
+});

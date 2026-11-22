@@ -6,6 +6,7 @@ import {
 import { isBlank, trim } from "@sdkwork/utils";
 import { isSafeSdkworkDesktopLaunchUrl } from "./auth-redirect.ts";
 import {
+  isSdkworkOAuthHostedPath,
   isSdkworkOAuthSurfacePath,
   SDKWORK_OAUTH_APP_LAUNCH_PATH,
   SDKWORK_OAUTH_PROVIDER_CALLBACK_ROUTE_PATTERN,
@@ -19,11 +20,16 @@ import {
 } from "../../sdkwork-auth-runtime-pc-react/src/sessionAuthRedirect.ts";
 
 export type SdkworkAuthStatus = "anonymous" | "authenticated" | "authenticating" | "expired";
+/**
+ * Route ids of the account surface.
+ *
+ * The OAuth surfaces are a separate model (`SDKWORK_OAUTH_ROUTES` and
+ * `isSdkworkOAuthHostedPath` in `oauth-app-paths.ts`), so iterating the auth
+ * route catalog never yields an OAuth path.
+ */
 export type SdkworkAuthRouteId =
-  | "desktop-launch"
   | "forgot-password"
   | "login"
-  | "oauth-callback"
   | "qr-entry"
   | "qr-login"
   | "register";
@@ -42,16 +48,6 @@ export interface SdkworkAuthRouteDefinition {
   id: SdkworkAuthRouteId;
   path: string;
 }
-
-/**
- * Route ids whose path belongs to the OAuth namespace rather than the account
- * surface. A host must render them for a signed-in visitor too: they carry a
- * pending provider authorization or a one-time desktop authorization code.
- */
-const OAUTH_SURFACE_ROUTE_IDS: readonly SdkworkAuthRouteId[] = [
-  "desktop-launch",
-  "oauth-callback",
-];
 
 export interface BuildSdkworkAuthQrEntryPathOptions {
   basePath?: string;
@@ -262,7 +258,6 @@ export interface SdkworkAuthWorkspaceRoutes {
 
 export interface SdkworkAuthRouteIntent {
   focusWindow: boolean;
-  provider?: string;
   redirectTo?: string;
   route: string;
   routeId: SdkworkAuthRouteId;
@@ -272,7 +267,6 @@ export interface SdkworkAuthRouteIntent {
 
 export interface CreateAuthRouteIntentOptions {
   focusWindow?: boolean;
-  provider?: string;
   redirectTo?: string | null;
   routes?: readonly SdkworkAuthRouteDefinition[];
 }
@@ -412,17 +406,9 @@ function resolveAuthRouteDefinition(
 
 function buildAuthRoute(
   route: SdkworkAuthRouteDefinition,
-  options: CreateAuthRouteIntentOptions,
 ): string {
-  if (route.id === "oauth-callback") {
-    const provider = options.provider;
-    if (!provider || isBlank(provider)) {
-      throw new Error("Third-party login callback route requires a provider.");
-    }
-
-    return route.path.replace(":provider", provider.trim());
-  }
-
+  // The catalog is the account surface only: every route is a literal path, and
+  // a provider callback is built from the OAuth pattern instead.
   return route.path;
 }
 
@@ -459,14 +445,6 @@ export function createAuthRouteCatalog(basePath = "/auth"): SdkworkAuthRouteDefi
       path: `${resolvedBasePath}/forgot-password`,
     },
     {
-      // Provider callback of the website's OAuth client. A provider round trip
-      // is an OAuth hop, so the route keeps the protocol path under `/oauth`
-      // instead of following the account base path above.
-      access: "anonymous-only",
-      id: "oauth-callback",
-      path: SDKWORK_OAUTH_PROVIDER_CALLBACK_ROUTE_PATTERN,
-    },
-    {
       access: "anonymous-only",
       id: "qr-login",
       path: `${resolvedBasePath}/qr-login`,
@@ -475,16 +453,6 @@ export function createAuthRouteCatalog(basePath = "/auth"): SdkworkAuthRouteDefi
       access: "anonymous-only",
       id: "qr-entry",
       path: `${resolvedBasePath}/qr/:sessionKey`,
-    },
-    {
-      // Hosted login-success hand-off page: after an authorization started by
-      // a desktop app (Electron/Tauri) completes in the browser, the browser
-      // lands here and deep-links back into the desktop app. The page serves
-      // the native-application flow only, so it keeps the protocol path under
-      // `/oauth` instead of following the auth base path above.
-      access: "anonymous-only",
-      id: "desktop-launch",
-      path: SDKWORK_OAUTH_APP_LAUNCH_PATH,
     },
   ];
 }
@@ -528,10 +496,13 @@ export function resolveAuthWorkspaceRoutes(basePath = "/auth"): SdkworkAuthWorks
   const routes = createAuthRouteCatalog(basePath);
 
   return {
-    desktopLaunchRoutePath: resolveAuthRoutePath("desktop-launch", routes),
+    // The OAuth surfaces are fixed protocol paths rather than catalog routes:
+    // the account catalog above never yields them, and a host mounts them from
+    // `SDKWORK_OAUTH_ROUTES`.
+    desktopLaunchRoutePath: SDKWORK_OAUTH_APP_LAUNCH_PATH,
     forgotPasswordRoutePath: resolveAuthRoutePath("forgot-password", routes),
     loginRoutePath: resolveAuthRoutePath("login", routes),
-    oauthCallbackRoutePattern: resolveAuthRoutePath("oauth-callback", routes),
+    oauthCallbackRoutePattern: SDKWORK_OAUTH_PROVIDER_CALLBACK_ROUTE_PATTERN,
     qrRoutePath: resolveAuthRoutePath("qr-login", routes),
     registerRoutePath: resolveAuthRoutePath("register", routes),
   };
@@ -593,17 +564,11 @@ export function resolveAuthAccess({
   // after completing a desktop authorization, in both cases already
   // authenticated; bouncing either to the app home would drop the one-time
   // code or the provider authorization the flow is carrying.
-  for (const routeId of OAUTH_SURFACE_ROUTE_IDS) {
-    const oauthSurfaceRoute = routes.find((route) => route.id === routeId);
-    if (
-      oauthSurfaceRoute
-      && pathMatchesRoutePattern(oauthSurfaceRoute.path, currentPath)
-    ) {
-      return {
-        allowed: true,
-        status,
-      };
-    }
+  if (isSdkworkOAuthHostedPath(currentPath)) {
+    return {
+      allowed: true,
+      status,
+    };
   }
 
   if (status === "authenticating") {
@@ -1002,7 +967,7 @@ export function createAuthRouteIntent(
   const redirectTo = options.redirectTo === undefined
     ? undefined
     : resolveAuthRedirectTarget(options.redirectTo, "/dashboard", authBasePath);
-  const routeValue = buildAuthRoute(route, options);
+  const routeValue = buildAuthRoute(route);
   const queryParams = new URLSearchParams();
 
   if (redirectTo && redirectTo !== "/dashboard") {
@@ -1013,7 +978,6 @@ export function createAuthRouteIntent(
 
   return {
     focusWindow: options.focusWindow !== false,
-    ...(options.provider && !isBlank(options.provider) ? { provider: trim(options.provider) } : {}),
     ...(redirectTo ? { redirectTo } : {}),
     route: `${routeValue}${querySuffix}`,
     routeId,

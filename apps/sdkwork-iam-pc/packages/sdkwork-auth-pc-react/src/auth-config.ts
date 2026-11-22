@@ -1,4 +1,5 @@
-import { createAuthRouteCatalog, resolveAuthRedirectTarget } from "./auth.ts";
+import { resolveAuthRedirectTarget } from "./auth.ts";
+import { SDKWORK_OAUTH_PROVIDER_CALLBACK_ROUTE_PATTERN } from "./oauth-app-paths.ts";
 import {
   DEFAULT_BASE_PATH,
   normalizeBasePath,
@@ -129,14 +130,8 @@ export function buildSdkworkAuthOAuthCallbackUri(
     throw new Error("Third-party login callback URL is unavailable in the current runtime.");
   }
 
-  const routes = createAuthRouteCatalog(options.basePath ?? DEFAULT_BASE_PATH);
-  const callbackPath = routes
-    .find((route) => route.id === "oauth-callback")
-    ?.path.replace(":provider", provider.trim());
-
-  if (!callbackPath) {
-    throw new Error("Third-party login callback route is unavailable.");
-  }
+  const callbackPath = SDKWORK_OAUTH_PROVIDER_CALLBACK_ROUTE_PATTERN
+    .replace(":provider", provider.trim());
 
   const resolvedRedirectTarget = resolveAuthRedirectTarget(
     redirectTarget,

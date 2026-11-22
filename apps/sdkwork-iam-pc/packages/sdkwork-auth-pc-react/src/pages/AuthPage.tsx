@@ -86,6 +86,7 @@ import {
   resolveAuthRedirectTarget,
 } from "../auth.ts";
 import { storeSdkworkDesktopLaunchRedirect } from "../desktop-launch-handoff.ts";
+import { isSdkworkOAuthHostedPath } from "../oauth-app-paths.ts";
 import type { SdkworkAuthDesktopBrowserLoginBinding } from "../desktop-browser-login.ts";
 import {
   buildSdkworkAuthRouteWithContext,
@@ -659,14 +660,23 @@ function SdkworkAuthPageContent({
     location.pathname,
     basePath,
   );
-  const oauthAuthorizationStateId = searchParams.get("oauthAuthorizationStateId")?.trim() || "";
+  // A pending OAuth authorization is only meaningful on an OAuth hosted path.
+  // The account surface (`/auth/*`) ignores both the state parameter and an
+  // authorization request, so a stray link cannot turn the website's own login
+  // page into an OAuth step.
+  const isOAuthHostedPath = isSdkworkOAuthHostedPath(location.pathname);
+  const oauthAuthorizationStateId = isOAuthHostedPath
+    ? searchParams.get("oauthAuthorizationStateId")?.trim() || ""
+    : "";
   // The platform's authorize entry renders this page in place for a desktop
   // request that has no IAM state yet: the state is created when the browser
   // actually signs in, so an anonymous visitor sees the login form and a
   // signed-in browser sees the account choice right away.
   const appAuthorizeRequest = useMemo(
-    () => (oauthAuthorizationStateId ? undefined : readSdkworkAuthAppAuthorizeRequest(searchParams)),
-    [oauthAuthorizationStateId, searchParams],
+    () => (!isOAuthHostedPath || oauthAuthorizationStateId
+      ? undefined
+      : readSdkworkAuthAppAuthorizeRequest(searchParams)),
+    [isOAuthHostedPath, oauthAuthorizationStateId, searchParams],
   );
   const pendingAppAuthorization = Boolean(oauthAuthorizationStateId) || appAuthorizeRequest !== undefined;
   const qrPurpose = qrEntryKey ? resolveQrEntryPurpose(searchParams) : undefined;

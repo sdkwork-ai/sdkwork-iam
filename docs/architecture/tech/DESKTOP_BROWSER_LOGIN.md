@@ -252,15 +252,22 @@ bridge) and pass it to the runtime. Bridge method names follow
 
 ## Auth-surface semantics
 
-- The hosted hand-off page (`/oauth/desktop/launch`) is exempt from the
-  authenticated-user bounce in `resolveAuthAccess`: the user is always
-  authenticated in the browser when they land there, and every other auth
-  route still redirects away as before.
+- The OAuth surfaces and the account surface are disjoint. The OAuth hosted
+  paths — `/oauth/*` plus the platform's authorize entry (`/iam/oauth/authorize`
+  and `/iam/v3/oauth/authorize`) — are the only ones that read
+  `oauthAuthorizationStateId` or an authorization request (`isSdkworkOAuthHostedPath`).
+  A page rendered anywhere else, the account surface in particular, ignores both,
+  so a stray link cannot turn `/auth/login` into an OAuth step.
+- `resolveAuthAccess` never bounces the OAuth protocol routes
+  (`/oauth/callback`, `/oauth/desktop/launch`) to the app home: the browser is
+  authenticated when it lands there, and every account route still redirects
+  away as before. A host that guards its own auth mount needs no hand-off
+  exemption, because the OAuth routes live outside that mount.
 - `AuthPage` never paints the login form before the stored session is
   revalidated: the first paint is the session-check card while `bootstrap()`
   answers (bounded by `SESSION_CHECK_BUDGET_MS`, so a stalled endpoint releases
-  the form instead of withholding it). An authenticated browser with a pending
-  `oauthAuthorizationStateId` gets the account-choice card
+  the form instead of withholding it). On the OAuth login step, an authenticated
+  browser with a pending `oauthAuthorizationStateId` gets the account-choice card
   (`SdkworkAuthAccountChoice`) instead of a second login form, and the
   authorization completes only from that card's account row; its
   "sign in with another account" action switches the page to the login form.

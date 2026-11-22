@@ -64,10 +64,23 @@ function renderAuthPage(
         <MemoryRouter
           initialEntries={[
             options.entry
-              ?? `/auth/login?oauthAuthorizationStateId=${PENDING_AUTHORIZATION}`,
+              ?? `/oauth/login?oauthAuthorizationStateId=${PENDING_AUTHORIZATION}`,
           ]}
         >
           <Routes>
+            {/* The OAuth login step owns the pending authorization; the
+                account surface still renders the same page for a plain login. */}
+            <Route
+              element={
+                <SdkworkAuthPage
+                  basePath="/auth"
+                  brand={options.brand}
+                  brandHeader={options.brandHeader}
+                  controller={controller}
+                />
+              }
+              path="/oauth/login"
+            />
             <Route
               element={
                 <SdkworkAuthPage
@@ -308,7 +321,7 @@ describe("app authorization rendered before its state exists", () => {
           <span>SDKWork</span>
         </span>
       ),
-      entry: `/auth/login?oauthAuthorizationStateId=${PENDING_AUTHORIZATION}`,
+      entry: `/oauth/login?oauthAuthorizationStateId=${PENDING_AUTHORIZATION}`,
     });
 
     // Wait for the settled choice card: the header remounts between the
@@ -335,7 +348,7 @@ describe("app authorization rendered before its state exists", () => {
       createOAuthAuthorizationState,
     });
 
-    renderAuthPage(controller, { entry: `/auth/login?${APP_AUTHORIZE_SEARCH}` });
+    renderAuthPage(controller, { entry: `/oauth/login?${APP_AUTHORIZE_SEARCH}` });
 
     // The anonymous visitor reaches the login form immediately: no waiting
     // page, no bounce to the product home page.
@@ -373,7 +386,7 @@ describe("app authorization rendered before its state exists", () => {
 
     renderAuthPage(controller, {
       brand: { name: "BirdCoder" },
-      entry: `/auth/login?${APP_AUTHORIZE_SEARCH}`,
+      entry: `/oauth/login?${APP_AUTHORIZE_SEARCH}`,
     });
 
     expect(
@@ -409,6 +422,48 @@ describe("auth page session check gating", () => {  it("renders the login form f
     expect(
       screen.queryByTestId("sdkwork-auth-session-check"),
     ).not.toBeInTheDocument();
+  });
+
+  it("ignores a pending OAuth authorization on the account surface", async () => {
+    const completeOAuthAuthorization = vi.fn();
+    const controller = createSdkworkAuthController({
+      service: {
+        completeOAuthAuthorization,
+        getCurrentSession: vi.fn().mockResolvedValue(sessionFor("Current Operator")),
+        getCurrentUser: vi.fn().mockResolvedValue(null),
+        signOut: vi.fn(),
+      },
+    });
+
+    // `oauthAuthorizationStateId` belongs to the OAuth login step. On the
+    // account page it is inert: an authenticated browser revisiting the login
+    // page goes home instead of being turned into an OAuth account-choice step.
+    renderAuthPage(controller, { entry: `/auth/login?oauthAuthorizationStateId=${PENDING_AUTHORIZATION}` });
+
+    expect(await screen.findByText("desktop-launch")).toBeInTheDocument();
+    expect(screen.queryByTestId("sdkwork-auth-account-choice")).not.toBeInTheDocument();
+    expect(completeOAuthAuthorization).not.toHaveBeenCalled();
+  });
+
+  it("ignores an app authorization request on the account surface", async () => {
+    const createOAuthAuthorizationState = vi.fn(async () => "created-state-3");
+    const controller = createSdkworkAuthController({
+      service: {
+        createOAuthAuthorizationState,
+        getCurrentSession: vi.fn().mockResolvedValue(sessionFor("Current Operator")),
+        getCurrentUser: vi.fn().mockResolvedValue(null),
+        signOut: vi.fn(),
+      },
+    });
+
+    // The desktop request renders on the OAuth login step, never on the
+    // account page: the authenticated browser is sent home and no state is
+    // created for it.
+    renderAuthPage(controller, { entry: `/auth/login?${APP_AUTHORIZE_SEARCH}` });
+
+    expect(await screen.findByText("desktop-launch")).toBeInTheDocument();
+    expect(screen.queryByTestId("sdkwork-auth-account-choice")).not.toBeInTheDocument();
+    expect(createOAuthAuthorizationState).not.toHaveBeenCalled();
   });
 
   it("settles back onto the login form when a stored session no longer holds", async () => {

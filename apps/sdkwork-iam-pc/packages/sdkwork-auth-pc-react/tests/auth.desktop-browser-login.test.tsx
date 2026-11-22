@@ -553,11 +553,11 @@ describe("auth page account choice for an already-authenticated browser user", (
 
     render(
       <SdkworkI18nProvider catalogs={[SDKWORK_AUTH_I18N_CATALOG]} locale="en-US">
-        <MemoryRouter initialEntries={["/auth/login?oauthAuthorizationStateId=pending-state-9"]}>
+        <MemoryRouter initialEntries={["/oauth/login?oauthAuthorizationStateId=pending-state-9"]}>
           <Routes>
             <Route
               element={<SdkworkAuthPage basePath="/auth" controller={controller} />}
-              path="/auth/login"
+              path="/oauth/login"
             />
           </Routes>
         </MemoryRouter>

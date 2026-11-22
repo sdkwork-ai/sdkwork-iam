@@ -167,7 +167,6 @@ export function createSdkworkCanonicalAuthDefinition<
     return createSdkworkCanonicalAuthRouteIntent(routeId, {
       basePath: routeIntentOptions.basePath ?? basePath,
       focusWindow: routeIntentOptions.focusWindow,
-      provider: routeIntentOptions.provider,
       redirectTo: routeIntentOptions.redirectTo,
       routes: routeIntentOptions.routes,
       sourcePackageName: options.sourcePackageName,
