@@ -6,6 +6,7 @@ mod ephemeral;
 mod ephemeral_pool;
 #[allow(dead_code)]
 mod handlers;
+mod login_follow_qr;
 mod manifest;
 mod oauth_login;
 mod oauth_phone_binding;

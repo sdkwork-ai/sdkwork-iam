@@ -689,6 +689,10 @@ pub fn apply_oauth_routes(router: Router<BackendIamState>) -> Router<BackendIamS
             get(retrieve_scan_login_settings).patch(update_scan_login_settings),
         )
         .route(
+            "/backend/v3/api/iam/oauth/login_follow_qr",
+            get(retrieve_login_follow_qr_settings).patch(update_login_follow_qr_settings),
+        )
+        .route(
             "/backend/v3/api/iam/oauth/scan_login_previews",
             post(create_scan_login_preview),
         )

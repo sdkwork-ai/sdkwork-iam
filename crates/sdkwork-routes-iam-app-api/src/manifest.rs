@@ -98,6 +98,12 @@ const IAM_APP_API_ROUTES: &[HttpRoute] = &[
         "scanLoginModes.list",
     ),
     HttpRoute::credential_entry_bootstrap(
+        HttpMethod::Get,
+        "/app/v3/api/oauth/login_follow_qr",
+        "oauth",
+        "loginFollowQr.retrieve",
+    ),
+    HttpRoute::credential_entry_bootstrap(
         HttpMethod::Post,
         "/app/v3/api/oauth/authorization_urls",
         "oauth",

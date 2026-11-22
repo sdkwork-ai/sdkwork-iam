@@ -39,6 +39,10 @@ export const BACKEND_OAUTH_RESOURCE_TREE = {
     "retrieve": [],
     "update": []
   },
+  "loginFollowQr": {
+    "retrieve": [],
+    "update": []
+  },
   "operationalResources": {
     "create": [],
     "delete": [],

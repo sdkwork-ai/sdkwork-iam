@@ -60,7 +60,7 @@ Security properties (per `IAM_OAUTH_SPEC.md` section 7):
 - `apps/sdkwork-iam-pc/packages/sdkwork-iam-pc-tauri` — `createTauriDesktopAuthHost` over injected deep-link/opener plugin handles.
 - `apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react` — `SdkworkAuthDesktopLaunchPage`, `desktopBrowserLogin` binding on `SdkworkAuthPage`, `SdkworkIamAuthRoutes` dispatch.
 
-The login-success page exists for the case where the browser is in the foreground after completion: it auto-attempts the deep-link navigation, offers a manual "open desktop app" button, renders the same hand-off as a user-activatable link for browsers that refuse a scripted custom-scheme navigation, and explains what to check when nothing opens. The link's text is copy, never the URL, so the one-time authorization code stays out of the rendered page. When the desktop app is already waiting (browser-login entry used), the same page still fires the deep link and the app-side listener completes the flow.
+The login-success page exists for the case where the browser is in the foreground after completion: it confirms the login (a success mark plus "return to <product>") and, when the tenant has pinned an official account, shows that account's follow QR under the "follow our official account" line. The operator picks the account in the OAuth admin surface's **Follow QR** page (`/admin/iam/oauth/login-follow-qr`), which generates the account's permanent follow QR once, previews it for scanning, and saves it as the login-success QR (`iam_oauth_scan_login_config.login_follow_qr_*`, written through `iam.oauth.loginFollowQr.update`). The page reads the published image through the anonymous `GET /app/v3/api/oauth/login_follow_qr`, so neither the browser nor the page ever holds the account AppSecret; an unconfigured tenant renders the page without a QR. The page still auto-attempts the deep-link navigation, offers a manual "open desktop app" button, renders the same hand-off as a user-activatable link for browsers that refuse a scripted custom-scheme navigation, and explains what to check when nothing opens. The link's text is copy, never the URL, so the one-time authorization code stays out of the rendered page. When the desktop app is already waiting (browser-login entry used), the same page still fires the deep link and the app-side listener completes the flow.
 
 ## Standard integration for any desktop application
 
@@ -185,9 +185,15 @@ bridge) and pass it to the runtime. Bridge method names follow
    them against the pending flow, redeems the code through
    `oauth.desktopSessions.create`, and commits the standard dual-token
    session. The desktop page flips from "waiting" to logged in.
-2. **Browser already signed in.** Same as above, but the hosted login page
-   skips the form entirely (auto-complete effect) and goes straight to the
-   success page.
+2. **Browser already signed in.** The hosted login page revalidates the stored
+   session before it paints anything that assumes a visitor: the first paint is
+   the session check, never the login form. A valid session then renders the
+   account-choice card — the current account (name plus the product the
+   authorization is for) and a "sign in with another account" action — and the
+   pending authorization completes only when the account row is used. That
+   action raises the normal login form, and the authorization completes through
+   the form's own flow. A session that no longer holds falls back to the login
+   form.
 3. **Third-party provider during a desktop authorization.** If the user
    picks WeChat/GitHub/… on the hosted login page, the pending
    `oauthAuthorizationStateId` rides along the provider round-trip; after the
@@ -249,8 +255,19 @@ bridge) and pass it to the runtime. Bridge method names follow
   authenticated-user bounce in `resolveAuthAccess`: the user is always
   authenticated in the browser when they land there, and every other auth
   route still redirects away as before.
-- `AuthPage` auto-completes an `oauthAuthorizationStateId` authorization when
-  the browser user is already authenticated — no second login form.
+- `AuthPage` never paints the login form before the stored session is
+  revalidated: the first paint is the session-check card while `bootstrap()`
+  answers (bounded by `SESSION_CHECK_BUDGET_MS`, so a stalled endpoint releases
+  the form instead of withholding it). An authenticated browser with a pending
+  `oauthAuthorizationStateId` gets the account-choice card
+  (`SdkworkAuthAccountChoice`) instead of a second login form, and the
+  authorization completes only from that card's account row; its
+  "sign in with another account" action switches the page to the login form.
+  A failed completion keeps the card (and reports the failure through a toast)
+  so the choice can be retried.
+- `SdkworkAuthDesktopLaunchPage` fetches the follow QR through the controller's
+  `getLoginFollowQr()` once on mount; the read is best-effort, so a missing or
+  failed QR never delays or fails the hand-off.
 - `AuthOAuthCallbackPage` keeps the component mounted when a threaded
   `oauthAuthorizationStateId` is present (the authenticated Navigate is
   suppressed until the pending authorization completes and the hand-off

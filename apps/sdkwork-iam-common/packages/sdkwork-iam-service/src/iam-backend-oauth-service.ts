@@ -46,6 +46,10 @@ export type IamBackendOauthService = {
       retrieve(...args: unknown[]): Promise<unknown>;
       update(...args: unknown[]): Promise<unknown>;
     };
+    loginFollowQr: {
+      retrieve(): Promise<unknown>;
+      update(body?: Record<string, unknown>): Promise<unknown>;
+    };
     operationalResources: {
       create(...args: unknown[]): Promise<unknown>;
       delete(...args: unknown[]): Promise<unknown>;
@@ -195,6 +199,10 @@ export function createIamBackendOauthService(
         list: (params?: Record<string, unknown>) => callBackendOauth(backendOauth, (oauth) => oauth?.integrations, "list", "iam.oauth.integrations.list", iamOauthListQuery(params)),
         retrieve: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.integrations, "retrieve", "iam.oauth.integrations.retrieve", ...args),
         update: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.integrations, "update", "iam.oauth.integrations.update", ...args),
+      },
+      loginFollowQr: {
+        retrieve: () => callBackendOauth(backendOauth, (oauth) => oauth?.loginFollowQr, "retrieve", "iam.oauth.loginFollowQr.retrieve"),
+        update: (body?: Record<string, unknown>) => callBackendOauth(backendOauth, (oauth) => oauth?.loginFollowQr, "update", "iam.oauth.loginFollowQr.update", body),
       },
       operationalResources: {
         create: (...args: unknown[]) => callBackendOauth(backendOauth, (oauth) => oauth?.operationalResources, "create", "iam.oauth.operationalResources.create", ...args),

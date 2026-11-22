@@ -13,6 +13,13 @@ export interface SdkworkAuthMessages {
     signedInAs: string;
     signingOut: string;
   };
+  accountChoice: {
+    checking: string;
+    continuing: string;
+    personalAccount: string;
+    switchAccount: string;
+    title: string;
+  };
   callback: {
     backToLogin: string;
     badge: string;
@@ -58,8 +65,11 @@ export interface SdkworkAuthMessages {
     browserLoginMethod: string;
     browserLoginWaitingHint: string;
     cancelBrowserLogin: string;
-    launchBadge: string;
-    launchDescription: string;
+    /** Template naming the product the visitor should return to (`{brand}`). */
+    continueInApp: string;
+    /** Caption under the operator-published official-account follow QR. */
+    followQrCaption: string;
+    followQrAlt: string;
     launchFailed: string;
     launchTitle: string;
     /** Clickable fallback link for a browser that blocked the automatic hand-off. */
@@ -230,6 +240,13 @@ const EN_US_MESSAGES: SdkworkAuthMessages = {
     signedInAs: "Signed in as",
     signingOut: "Signing out\u2026",
   },
+  accountChoice: {
+    checking: "Checking your sign-in status\u2026",
+    continuing: "Completing sign-in\u2026",
+    personalAccount: "Personal user",
+    switchAccount: "Sign in with another account",
+    title: "Choose an account",
+  },
   callback: {
     backToLogin: "Back to login",
     badge: "Identity",
@@ -277,8 +294,9 @@ const EN_US_MESSAGES: SdkworkAuthMessages = {
     browserLoginWaitingHint:
       "Finish signing in from your default browser. This app opens automatically once login succeeds.",
     cancelBrowserLogin: "Cancel browser sign-in",
-    launchBadge: "Signed in",
-    launchDescription: "You are signed in. Returning to the desktop app…",
+    continueInApp: "Return to {brand} to keep using it.",
+    followQrAlt: "Official account follow QR code",
+    followQrCaption: "Follow our official account for the latest updates",
     launchFailed: "The desktop app could not be opened automatically.",
     launchTitle: "Login successful",
     manualLink: "Open the sign-in link manually",
@@ -451,6 +469,13 @@ const ZH_CN_MESSAGES: SdkworkAuthMessages = {
     signedInAs: "\u5df2\u767b\u5f55\u4e3a",
     signingOut: "\u6b63\u5728\u9000\u51fa\u2026",
   },
+  accountChoice: {
+    checking: "\u6b63\u5728\u786e\u8ba4\u767b\u5f55\u72b6\u6001\u2026",
+    continuing: "\u6b63\u5728\u5b8c\u6210\u767b\u5f55\u2026",
+    personalAccount: "\u4e2a\u4eba\u7528\u6237",
+    switchAccount: "\u767b\u5f55\u5176\u5b83\u8d26\u53f7",
+    title: "\u9009\u62e9\u767b\u5f55\u8d26\u53f7",
+  },
   callback: {
     backToLogin: "\u8fd4\u56de\u767b\u5f55",
     badge: "\u8eab\u4efd\u8ba4\u8bc1",
@@ -498,8 +523,9 @@ const ZH_CN_MESSAGES: SdkworkAuthMessages = {
     browserLoginWaitingHint:
       "\u8bf7\u5728\u9ed8\u8ba4\u6d4f\u89c8\u5668\u4e2d\u5b8c\u6210\u767b\u5f55\uff0c\u767b\u5f55\u6210\u529f\u540e\u5e94\u7528\u4f1a\u81ea\u52a8\u6253\u5f00\u3002",
     cancelBrowserLogin: "\u53d6\u6d88\u6d4f\u89c8\u5668\u767b\u5f55",
-    launchBadge: "\u767b\u5f55\u6210\u529f",
-    launchDescription: "\u767b\u5f55\u6210\u529f\uff0c\u6b63\u5728\u8fd4\u56de\u684c\u9762\u5e94\u7528\u2026",
+    continueInApp: "\u8bf7\u8fd4\u56de {brand} \u7ee7\u7eed\u4f7f\u7528",
+    followQrAlt: "\u5173\u6ce8\u516c\u4f17\u53f7\u4e8c\u7ef4\u7801",
+    followQrCaption: "\u5173\u6ce8\u516c\u4f17\u53f7\uff0c\u83b7\u53d6\u6700\u65b0\u6d88\u606f",
     launchFailed: "\u65e0\u6cd5\u81ea\u52a8\u6253\u5f00\u684c\u9762\u5e94\u7528\u3002",
     launchTitle: "\u767b\u5f55\u6210\u529f",
     manualLink: "\u624b\u52a8\u6253\u5f00\u767b\u5f55\u94fe\u63a5",

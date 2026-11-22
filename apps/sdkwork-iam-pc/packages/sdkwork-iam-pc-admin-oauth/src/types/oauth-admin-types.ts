@@ -420,6 +420,31 @@ export interface SdkworkIamOauthScanLoginPreview {
 }
 
 /**
+ * Tenant-level "follow our official account" QR shown on the hosted desktop
+ * login-success page.
+ *
+ * The operator pins one WeChat official account; the backend generated that
+ * account's permanent follow QR once and stores the image URL, so the page
+ * renders it without calling WeChat. `enabled` is false when no QR is stored.
+ */
+export interface SdkworkIamOauthLoginFollowQrSettings {
+  accountName: string;
+  enabled: boolean;
+  qrCode: string;
+  resourceAccountId: string;
+  scene: string;
+  updatedAt: string;
+}
+
+/** Draft the admin page sends to the login-success follow QR endpoint. */
+export interface SdkworkIamOauthLoginFollowQrDraft {
+  enabled: boolean;
+  /** Regenerate the account's permanent QR instead of reusing the stored one. */
+  refreshQrCode?: boolean;
+  resourceAccountId?: string;
+}
+
+/**
  * WeChat permanent parameterized follow QR for one official account.
  *
  * `qrCode` is the `mp.weixin.qq.com/cgi-bin/showqrcode?ticket=...` image URL;
@@ -634,6 +659,10 @@ export interface SdkworkIamOauthAdminController {
   updateRelyingParty(body: SdkworkIamOauthRelyingPartyDraft): Promise<unknown>;
   loadScanLoginSettings(): Promise<SdkworkIamOauthScanLoginSettings>;
   updateScanLoginSettings(body: SdkworkIamOauthScanLoginSettingsDraft): Promise<SdkworkIamOauthScanLoginSettings>;
+  loadLoginFollowQrSettings(): Promise<SdkworkIamOauthLoginFollowQrSettings>;
+  saveLoginFollowQrSettings(
+    body: SdkworkIamOauthLoginFollowQrDraft,
+  ): Promise<SdkworkIamOauthLoginFollowQrSettings>;
   generateScanLoginPreview(
     qrMode: string,
     accountId?: string,

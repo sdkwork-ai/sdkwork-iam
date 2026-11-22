@@ -3,7 +3,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { ArrowRight, ExternalLink, MonitorSmartphone } from "lucide-react";
+import { ArrowRight, Check, ExternalLink } from "lucide-react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@sdkwork/ui-pc-react";
 import {
@@ -15,9 +15,10 @@ import {
   useSdkworkAuthControllerState,
   type SdkworkAuthController,
 } from "../auth-controller.ts";
+import type { SdkworkAuthLoginFollowQr } from "../auth-service.ts";
+import { formatSdkworkAuthTemplate } from "../auth-copy.ts";
 import { SdkworkAuthAccountMenu } from "../components/auth-account-menu.tsx";
 import {
-  createSdkworkAuthDarkHeaderStyle,
   createSdkworkAuthLightShellStyle,
   SDKWORK_AUTH_SURFACE_THEME_STYLE,
   mergeSdkworkAuthClassNames,
@@ -117,6 +118,26 @@ function SdkworkAuthDesktopLaunchPageContent({
   const launchAttemptedRef = useRef(false);
   const bootstrapAttemptedRef = useRef(false);
   const [signingOut, setSigningOut] = useState(false);
+  // Operator-published follow QR for this tenant. Optional decoration: the
+  // hand-off renders the moment the page mounts, and the QR joins it when (and
+  // if) the public read answers.
+  const [followQr, setFollowQr] = useState<SdkworkAuthLoginFollowQr | null>(null);
+
+  useEffect(() => {
+    let disposed = false;
+    void controller.getLoginFollowQr()
+      .then((qr) => {
+        if (!disposed) {
+          setFollowQr(qr);
+        }
+      })
+      .catch(() => {
+        // A missing/failed QR read never fails the login-success page.
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [controller]);
 
   // The header can only name the account when the session is hydrated, but the
   // success hand-off must render immediately: bootstrap runs once in the
@@ -258,38 +279,45 @@ function SdkworkAuthDesktopLaunchPageContent({
       >
         <div
           className={mergeSdkworkAuthClassNames(
-            "border-b border-zinc-200/80 bg-zinc-950 px-8 py-6 text-white dark:border-zinc-800",
+            "flex flex-col items-center px-8 pt-10 pb-8 text-center",
             resolvedAppearance?.callbackHeaderClassName,
           )}
-          style={mergeSdkworkAuthStyles(
-            createSdkworkAuthDarkHeaderStyle(),
-            resolvedAppearance?.callbackHeaderStyle,
-          )}
+          style={resolvedAppearance?.callbackHeaderStyle}
         >
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-600/90">
-              <MonitorSmartphone className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.24em] text-primary-200">
-                {copy.desktop.launchBadge}
-              </div>
-              <h1 className="mt-1 text-2xl font-black tracking-tight">
-                {copy.desktop.launchTitle}
-              </h1>
-            </div>
-          </div>
+          <span
+            aria-hidden="true"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm"
+            data-testid="sdkwork-desktop-launch-success"
+          >
+            <Check className="h-6 w-6" strokeWidth={3} />
+          </span>
+          <h1 className="mt-4 text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+            {copy.desktop.launchTitle}
+          </h1>
+          <p
+            className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400"
+            data-testid="sdkwork-desktop-launch-description"
+          >
+            {formatSdkworkAuthTemplate(copy.desktop.continueInApp, { brand: brandName })}
+          </p>
         </div>
 
-        <div className="space-y-6 px-8 py-8">
+        <div className="space-y-5 px-8 pb-8">
+          {followQr ? (
+            <figure className="flex flex-col items-center gap-3">
+              <img
+                alt={copy.desktop.followQrAlt}
+                className="h-44 w-44 rounded-2xl border border-zinc-200 bg-white object-contain p-2 dark:border-zinc-800"
+                data-testid="sdkwork-desktop-launch-follow-qr"
+                src={followQr.qrCode}
+              />
+              <figcaption className="text-center text-sm text-zinc-500 dark:text-zinc-400">
+                {copy.desktop.followQrCaption}
+              </figcaption>
+            </figure>
+          ) : null}
           {redirectUrl ? (
             <>
-              <p
-                className="text-sm leading-7 text-zinc-600 dark:text-zinc-300"
-                data-testid="sdkwork-desktop-launch-description"
-              >
-                {copy.desktop.launchDescription}
-              </p>
               <Button
                 className="h-auto w-full py-3 font-bold"
                 data-testid="sdkwork-desktop-launch-open-app"
@@ -316,11 +344,9 @@ function SdkworkAuthDesktopLaunchPageContent({
               </a>
             </>
           ) : (
-            <>
-              <p className="text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-                {copy.desktop.missingRedirect}
-              </p>
-            </>
+            <p className="text-sm leading-7 text-zinc-600 dark:text-zinc-300">
+              {copy.desktop.missingRedirect}
+            </p>
           )}
           <Button
             className="h-auto w-full border border-zinc-200 bg-transparent py-3 font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-900"

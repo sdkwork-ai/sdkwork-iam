@@ -11,6 +11,7 @@ import {
   isSdkworkAuthSession,
   type SdkworkAuthEmailLoginInput,
   type SdkworkAuthLoginInput,
+  type SdkworkAuthLoginFollowQr,
   type SdkworkAuthLoginQrCode,
   type SdkworkAuthScanLoginMode,
   type SdkworkAuthLoginQrCodeCallbackInput,
@@ -61,6 +62,7 @@ export interface SdkworkAuthController {
   confirmLoginQrCode(input: SdkworkAuthLoginQrCodeConfirmInput): Promise<SdkworkAuthLoginQrCodeStatusResult>;
   completeOAuthAuthorization(authorizationStateId: string): Promise<SdkworkAuthOAuthAuthorizationCompletion>;
   generateLoginQrCode(input?: SdkworkAuthLoginQrCodeCreateInput): Promise<SdkworkAuthLoginQrCode>;
+  getLoginFollowQr(): Promise<SdkworkAuthLoginFollowQr | null>;
   getOAuthAuthorizationUrl(input: SdkworkAuthOAuthAuthorizationInput): Promise<string>;
   getVerificationPolicy(): Promise<SdkworkAuthResolvedVerificationPolicy>;
   listOAuthProviders(): Promise<string[]>;
@@ -246,6 +248,11 @@ export function createSdkworkAuthController(
     },
     async generateLoginQrCode(input) {
       return runAction(() => service.generateLoginQrCode(input));
+    },
+    async getLoginFollowQr() {
+      // A success-page decoration, not an auth action: it must not flip the
+      // controller's busy state or surface an error the page cannot act on.
+      return service.getLoginFollowQr ? service.getLoginFollowQr() : null;
     },
     async listScanLoginModes() {
       return runAction(() => service.listScanLoginModes());

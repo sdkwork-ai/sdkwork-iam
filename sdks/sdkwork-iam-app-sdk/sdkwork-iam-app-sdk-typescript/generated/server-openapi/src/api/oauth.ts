@@ -120,6 +120,20 @@ export class OauthMiniProgramSessionsApi {
   }
 }
 
+export class OauthLoginFollowQrApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Login Follow Qr retrieve. */
+  async retrieve(requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(appApiPath(`/oauth/login_follow_qr`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, accessTokenOnly: true, sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export interface OauthGrantsListParams {
   page?: number;
   pageSize?: number;
@@ -356,6 +370,7 @@ export class OauthApi {
   public readonly desktopSessions: OauthDesktopSessionsApi;
   public readonly deviceAuthorizations: OauthDeviceAuthorizationsApi;
   public readonly grants: OauthGrantsApi;
+  public readonly loginFollowQr: OauthLoginFollowQrApi;
   public readonly miniProgramSessions: OauthMiniProgramSessionsApi;
   public readonly phoneBindingSessions: OauthPhoneBindingSessionsApi;
   public readonly providers: OauthProvidersApi;
@@ -370,6 +385,7 @@ export class OauthApi {
     this.desktopSessions = new OauthDesktopSessionsApi(client);
     this.deviceAuthorizations = new OauthDeviceAuthorizationsApi(client);
     this.grants = new OauthGrantsApi(client);
+    this.loginFollowQr = new OauthLoginFollowQrApi(client);
     this.miniProgramSessions = new OauthMiniProgramSessionsApi(client);
     this.phoneBindingSessions = new OauthPhoneBindingSessionsApi(client);
     this.providers = new OauthProvidersApi(client);

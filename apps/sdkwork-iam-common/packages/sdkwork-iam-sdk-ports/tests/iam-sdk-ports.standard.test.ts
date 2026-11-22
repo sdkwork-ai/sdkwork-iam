@@ -640,6 +640,9 @@ function createAppOAuthResources(createResource?: () => object) {
     scanLoginModes: Object.assign(resource(), {
       list: vi.fn(),
     }),
+    loginFollowQr: Object.assign(resource(), {
+      retrieve: vi.fn(),
+    }),
     callbacks: Object.assign(resource(), {
       create: vi.fn(),
       retrieve: vi.fn(),

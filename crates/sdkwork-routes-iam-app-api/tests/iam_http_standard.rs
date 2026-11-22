@@ -926,6 +926,7 @@ fn app_route_manifest_matches_the_standard_operation_surface() {
         "deviceAuthorizations.sessionExchanges.create",
         "grants.delete",
         "grants.list",
+        "loginFollowQr.retrieve",
         "oauth.officialAccountSettings.retrieve",
         "oauth.officialAccounts.create",
         "oauth.officialAccounts.customMenus.publish",

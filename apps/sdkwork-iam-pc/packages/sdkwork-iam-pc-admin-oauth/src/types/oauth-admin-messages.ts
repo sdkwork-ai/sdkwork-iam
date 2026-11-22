@@ -403,6 +403,24 @@ export interface SdkworkIamOauthAdminMessages {
       titleHint: string;
     };
   };
+  loginFollowQr: {
+    accountLabel: string;
+    accountPlaceholder: string;
+    captionHint: string;
+    currentTitle: string;
+    description: string;
+    empty: string;
+    enabledLabel: string;
+    generate: string;
+    previewTitle: string;
+    refresh: string;
+    regenerate: string;
+    save: string;
+    saved: string;
+    sceneLabel: string;
+    title: string;
+    updatedAt: string;
+  };
   quickSetup: {
     logoAttachFailed: string;
     accountType: {

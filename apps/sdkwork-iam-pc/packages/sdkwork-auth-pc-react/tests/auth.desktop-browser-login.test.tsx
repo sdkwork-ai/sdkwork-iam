@@ -190,6 +190,58 @@ describe("sdkwork desktop launch page", () => {
     expect(onLaunch).toHaveBeenCalledTimes(2);
   });
 
+  it("shows the operator-published follow QR on the success page", async () => {
+    const getLoginFollowQr = vi.fn(async () => ({
+      accountName: "\u793a\u4f8b\u516c\u4f17\u53f7",
+      qrCode: "https://cdn.example.test/follow-qr.png",
+      scene: "follow:iamora-1",
+    }));
+    const controller = createSdkworkAuthController({
+      service: {
+        getCurrentSession: vi.fn().mockResolvedValue(null),
+        getCurrentUser: vi.fn().mockResolvedValue(null),
+        getLoginFollowQr,
+      },
+    });
+
+    renderLaunchPage(
+      buildSdkworkAuthDesktopLaunchLocation("birdcoder://auth/callback?code=abc&state=xyz"),
+      { brand: { name: "WorkBuddy" }, controller },
+    );
+
+    const qr = await screen.findByTestId("sdkwork-desktop-launch-follow-qr");
+    expect(qr).toHaveAttribute("src", "https://cdn.example.test/follow-qr.png");
+    expect(screen.getByText("Follow our official account for the latest updates")).toBeInTheDocument();
+    // The success line names the product the visitor should return to.
+    expect(screen.getByText("Return to WorkBuddy to keep using it.")).toBeInTheDocument();
+    expect(screen.getByTestId("sdkwork-desktop-launch-success")).toBeInTheDocument();
+  });
+
+  it("renders the success hand-off without a QR when none is configured", async () => {
+    const getLoginFollowQr = vi.fn(async () => null);
+    const controller = createSdkworkAuthController({
+      service: {
+        getCurrentSession: vi.fn().mockResolvedValue(null),
+        getCurrentUser: vi.fn().mockResolvedValue(null),
+        getLoginFollowQr,
+      },
+    });
+
+    renderLaunchPage(
+      buildSdkworkAuthDesktopLaunchLocation("birdcoder://auth/callback?code=abc&state=xyz"),
+      { controller },
+    );
+
+    expect(await screen.findByTestId("sdkwork-desktop-launch-description")).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(getLoginFollowQr).toHaveBeenCalledTimes(1);
+    });
+    expect(
+      screen.queryByTestId("sdkwork-desktop-launch-follow-qr"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("sdkwork-desktop-launch-open-app")).toBeInTheDocument();
+  });
+
   it("stores, reads, and clears the launch redirect without touching the URL", () => {
     const redirect = "birdcoder://auth/callback?code=abc&state=xyz";
     expect(storeSdkworkDesktopLaunchRedirect(redirect)).toBe(true);
@@ -404,7 +456,7 @@ describe("sdkwork auth page desktop browser-login entry", () => {
     };
 
     renderAuthPage(binding);
-    const entry = screen.getByTestId("sdkwork-desktop-browser-login-entry");
+    const entry = await screen.findByTestId("sdkwork-desktop-browser-login-entry");
     fireEvent.click(entry);
     await vi.waitFor(() => {
       expect(begin).toHaveBeenCalledTimes(1);
@@ -480,17 +532,18 @@ describe("provider login completes a pending desktop authorization", () => {
   });
 });
 
-describe("auth page auto-complete for an already-authenticated browser user", () => {
-  it("auto-completes the pending authorization exactly once even when it fails", async () => {
-    const completeOAuthAuthorization = vi.fn(async () => {
-      throw new Error("authorization state expired");
-    });
+describe("auth page account choice for an already-authenticated browser user", () => {
+  it("shows the account choice instead of auto-completing the pending authorization", async () => {
+    const completeOAuthAuthorization = vi.fn(async () => ({
+      authorizationCode: "authz-code",
+      redirectUrl: "sdkwork-iam://auth/callback?code=final-code&state=s",
+    }));
     const controller = createSdkworkAuthController({
       service: {
         completeOAuthAuthorization,
         getCurrentSession: vi.fn().mockResolvedValue({
-          accessToken: mockAccessToken("auto-complete-access"),
-          authToken: mockAuthToken("auto-complete-auth"),
+          accessToken: mockAccessToken("account-choice-access"),
+          authToken: mockAuthToken("account-choice-auth"),
           user: { displayName: "Session User" },
         }),
         getCurrentUser: vi.fn().mockResolvedValue(null),
@@ -510,15 +563,12 @@ describe("auth page auto-complete for an already-authenticated browser user", ()
       </SdkworkI18nProvider>,
     );
 
-    // The auto-completion fires once for the authenticated browser session.
-    await vi.waitFor(() => {
-      expect(completeOAuthAuthorization).toHaveBeenCalledTimes(1);
-    });
-    // Let every pending re-render settle; a failure must not retrigger the
-    // completion (completeAuthFlow is a new reference on every render).
-    await vi.waitFor(() => {
-      expect(controller.getState().isBusy).toBe(false);
-    });
-    expect(completeOAuthAuthorization).toHaveBeenCalledTimes(1);
+    // The browser user confirms the account first: landing on the pending
+    // authorization never signs the app in behind their back.
+    expect(
+      await screen.findByTestId("sdkwork-auth-account-choice"),
+    ).toBeInTheDocument();
+    expect(completeOAuthAuthorization).not.toHaveBeenCalled();
+    expect(screen.getByText("Session User")).toBeInTheDocument();
   });
 });

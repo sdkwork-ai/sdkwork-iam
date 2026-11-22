@@ -3263,71 +3263,71 @@ async fn create_authorization_refresh(
     insert_diagnostic_run(&state, &ctx, &payload, "authorization_refresh").await
 }
 
-/// Creates the WeChat permanent parameterized follow QR (`QR_LIMIT_STR_SCENE`)
-/// for an official account. The scene is pinned to `follow:{accountId}` so the
-/// QR stays stable for long-term distribution; scanning it subscribes the user
-/// to the account and the `subscribe` event carries the scene back through the
-/// message webhook.
-async fn create_resource_account_follow_qr_code(
-    State(state): State<BackendIamState>,
-    ctx: WebRequestContext,
-    Path(resource_account_id): Path<String>,
-    Json(_body): Json<Value>,
-) -> Response {
-    let Ok(pg) = postgres_pool_or_error(&state) else {
-        return postgres_pool_or_error(&state)
-            .err()
-            .expect("error response");
-    };
-    let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
-        return tenant_id_from_context(&ctx).err().expect("error response");
-    };
+/// A generated WeChat permanent follow QR of one official account.
+struct FollowQrCode {
+    account_name: String,
+    image_url: String,
+    scene: String,
+    ticket: String,
+}
 
+/// Generates the WeChat permanent parameterized follow QR
+/// (`QR_LIMIT_STR_SCENE`) of one official account. The scene is pinned to
+/// `follow:{accountId}` so the QR stays stable for long-term distribution;
+/// scanning it subscribes the user to the account and the `subscribe` event
+/// carries the scene back through the message webhook.
+async fn create_follow_qr_for_resource_account(
+    pg: &PgPool,
+    ctx: &WebRequestContext,
+    tenant_id: &str,
+    resource_account_id: &str,
+) -> Result<FollowQrCode, Response> {
     let row = match sqlx::query(
         "SELECT ra.integration_id, ra.provider_code, ra.resource_account_kind, \
-                ra.provider_account_id, ra.oauth_client_id \
+                ra.provider_account_id, ra.oauth_client_id, ra.display_name \
          FROM iam_oauth_resource_account ra \
          WHERE ra.tenant_id = $1 AND ra.id = $2",
     )
-    .bind(&tenant_id)
-    .bind(&resource_account_id)
+    .bind(tenant_id)
+    .bind(resource_account_id)
     .fetch_optional(pg)
     .await
     {
         Ok(value) => value,
         Err(error) => {
-            return internal_handler_error("iam_oauth_follow_qr_code_failed", error);
+            return Err(internal_handler_error("iam_oauth_follow_qr_code_failed", error));
         }
     };
     let Some(row) = row else {
-        return appbase_error(
+        return Err(appbase_error(
             StatusCode::NOT_FOUND,
             "iam_oauth_resource_account_not_found",
             "resource account not found",
-        );
+        ));
     };
     let integration_id: String = row.get(0);
     let provider_code: String = row.get(1);
     let resource_account_kind: String = row.get(2);
     if provider_code != "wechat" || resource_account_kind != "official_account" {
-        return appbase_error(
+        return Err(appbase_error(
             StatusCode::CONFLICT,
             "iam_oauth_follow_qr_code_unavailable",
             "follow QR codes are only available for WeChat official accounts",
-        );
+        ));
     }
     let provider_account_id: Option<String> = row.get(3);
     let oauth_client_id: Option<String> = row.get(4);
+    let display_name: String = row.get(5);
     let Some(app_id) = provider_account_id
         .as_deref()
         .map(str::trim)
         .filter(|value| !value.is_empty())
     else {
-        return appbase_error(
+        return Err(appbase_error(
             StatusCode::CONFLICT,
             "iam_oauth_follow_qr_code_unavailable",
             "official account credentials are not configured; fill in AppID and AppSecret first",
-        );
+        ));
     };
 
     // Generating a follow QR only needs valid provider credentials; the
@@ -3336,9 +3336,9 @@ async fn create_resource_account_follow_qr_code(
     // non-active account, and the WeChat API validates their authenticity.
     let exchange = match load_resource_account_exchange_context(
         pg,
-        &ctx,
-        &tenant_id,
-        &resource_account_id,
+        ctx,
+        tenant_id,
+        resource_account_id,
         &integration_id,
         &provider_code,
         app_id,
@@ -3348,13 +3348,13 @@ async fn create_resource_account_follow_qr_code(
     {
         Ok(Some(exchange)) => exchange,
         Ok(None) => {
-            return appbase_error(
+            return Err(appbase_error(
                 StatusCode::CONFLICT,
                 "iam_oauth_follow_qr_code_unavailable",
                 "official account credentials are not configured; fill in AppID and AppSecret first",
-            );
+            ));
         }
-        Err(_) => return resource_account_binding_error("iam_oauth_follow_qr_code_unavailable"),
+        Err(_) => return Err(resource_account_binding_error("iam_oauth_follow_qr_code_unavailable")),
     };
 
     // One stable scene per account keeps the permanent QR constant and under
@@ -3370,19 +3370,235 @@ async fn create_resource_account_follow_qr_code(
     {
         Ok(value) => value,
         Err(error) => {
-            return internal_handler_error("iam_oauth_follow_qr_code_failed", error);
+            return Err(internal_handler_error("iam_oauth_follow_qr_code_failed", error));
         }
     };
-    appbase_ok(json!({
-        "expireSeconds": 0,
-        "permanent": true,
-        "qrCode": qr.image_url,
-        "qrContent": qr.image_url,
-        "qrMode": "official_account",
-        "scene": qr.scene,
-        "ticket": qr.ticket,
+    Ok(FollowQrCode {
+        account_name: display_name,
+        image_url: qr.image_url,
+        scene: qr.scene,
+        ticket: qr.ticket,
+    })
+}
+
+async fn create_resource_account_follow_qr_code(
+    State(state): State<BackendIamState>,
+    ctx: WebRequestContext,
+    Path(resource_account_id): Path<String>,
+    Json(_body): Json<Value>,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+    let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
+        return tenant_id_from_context(&ctx).err().expect("error response");
+    };
+    match create_follow_qr_for_resource_account(pg, &ctx, &tenant_id, &resource_account_id).await {
+        Ok(qr) => appbase_ok(json!({
+            "expireSeconds": 0,
+            "permanent": true,
+            "qrCode": qr.image_url,
+            "qrContent": qr.image_url,
+            "qrMode": "official_account",
+            "scene": qr.scene,
+            "ticket": qr.ticket,
+        })),
+        Err(response) => response,
+    }
+}
+
+// ── Login-success follow QR ───────────────────────────────────────
+
+/// Reads the tenant's login-success follow QR configuration.
+///
+/// The hosted desktop login-success page renders exactly this QR: the operator
+/// pins one official account in the OAuth admin surface, the update path
+/// generates that account's permanent follow QR once, and this row keeps the
+/// image URL so the page never has to hold the account AppSecret.
+async fn login_follow_qr_settings_json(pg: &PgPool, tenant_id: &str) -> Result<Value, String> {
+    let row = sqlx::query(
+        "SELECT login_follow_qr_enabled, login_follow_qr_account_id, login_follow_qr_account_name, \
+                login_follow_qr_image_url, login_follow_qr_scene, login_follow_qr_updated_at \
+         FROM iam_oauth_scan_login_config WHERE tenant_id = $1",
+    )
+    .bind(tenant_id)
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| format!("load login follow QR config failed: {error}"))?;
+    let Some(row) = row else {
+        return Ok(json!({
+            "accountName": "",
+            "enabled": false,
+            "qrCode": "",
+            "resourceAccountId": "",
+            "scene": "",
+            "updatedAt": "",
+        }));
+    };
+    let enabled: i32 = row.get(0);
+    let account_id: String = row.get(1);
+    let account_name: String = row.get(2);
+    let image_url: String = row.get(3);
+    let scene: String = row.get(4);
+    let updated_at: String = row.get(5);
+    Ok(json!({
+        "accountName": account_name,
+        "enabled": enabled != 0 && !image_url.trim().is_empty(),
+        "qrCode": image_url,
+        "resourceAccountId": account_id,
+        "scene": scene,
+        "updatedAt": updated_at,
     }))
 }
+
+async fn retrieve_login_follow_qr_settings(
+    State(state): State<BackendIamState>,
+    ctx: WebRequestContext,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+    let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
+        return tenant_id_from_context(&ctx).err().expect("error response");
+    };
+    match login_follow_qr_settings_json(pg, &tenant_id).await {
+        Ok(settings) => appbase_ok(settings),
+        Err(error) => internal_handler_error("iam_oauth_login_follow_qr_retrieve_failed", error),
+    }
+}
+
+/// Pins the official account whose follow QR the login-success page shows.
+///
+/// Enabling with a different account (or with no QR generated yet) generates
+/// the account's permanent follow QR and stores the image URL; disabling keeps
+/// the stored account and image so re-enabling is one switch. Only the
+/// follow-QR columns are written, so the scan-login settings stored on the same
+/// tenant row keep their values.
+async fn update_login_follow_qr_settings(
+    State(state): State<BackendIamState>,
+    ctx: WebRequestContext,
+    Json(body): Json<Value>,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+    let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
+        return tenant_id_from_context(&ctx).err().expect("error response");
+    };
+
+    let existing = match sqlx::query(
+        "SELECT login_follow_qr_enabled, login_follow_qr_account_id, login_follow_qr_account_name, \
+                login_follow_qr_image_url, login_follow_qr_scene \
+         FROM iam_oauth_scan_login_config WHERE tenant_id = $1",
+    )
+    .bind(&tenant_id)
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(value) => value,
+        Err(error) => {
+            return internal_handler_error("iam_oauth_login_follow_qr_update_failed", error);
+        }
+    };
+    let (
+        mut enabled,
+        mut account_id,
+        mut account_name,
+        mut image_url,
+        mut scene,
+    ) = match existing {
+        Some(row) => {
+            let enabled: i32 = row.get(0);
+            let account_id: String = row.get(1);
+            let account_name: String = row.get(2);
+            let image_url: String = row.get(3);
+            let scene: String = row.get(4);
+            (enabled != 0, account_id, account_name, image_url, scene)
+        }
+        None => (false, String::new(), String::new(), String::new(), String::new()),
+    };
+
+    let previous_account_id = account_id.trim().to_string();
+    if let Some(value) = read_i32_field(&body, &["enabled"]) {
+        enabled = value != 0;
+    }
+    if let Some(value) = read_string_field(&body, &["resourceAccountId", "resource_account_id"]) {
+        account_id = value.trim().to_string();
+    }
+    let pin_changed = account_id.trim() != previous_account_id;
+    let refresh_requested = body
+        .get("refreshQrCode")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+
+    if enabled {
+        if account_id.is_empty() {
+            return appbase_error(
+                StatusCode::CONFLICT,
+                "iam_oauth_login_follow_qr_unavailable",
+                "select the WeChat official account whose follow QR the login-success page shows",
+            );
+        }
+        // Regenerate only when the pin moved, the operator asked to refresh,
+        // or no QR was generated yet: a no-op save must not depend on the
+        // WeChat API being reachable.
+        if pin_changed || refresh_requested || image_url.trim().is_empty() {
+            match create_follow_qr_for_resource_account(pg, &ctx, &tenant_id, &account_id).await {
+                Ok(qr) => {
+                    account_name = qr.account_name;
+                    image_url = qr.image_url;
+                    scene = qr.scene;
+                }
+                Err(response) => return response,
+            }
+        }
+    }
+
+    let now = Utc::now().to_rfc3339();
+    match sqlx::query(
+        "INSERT INTO iam_oauth_scan_login_config \
+         (tenant_id, login_follow_qr_enabled, login_follow_qr_account_id, \
+          login_follow_qr_account_name, login_follow_qr_image_url, \
+          login_follow_qr_scene, login_follow_qr_updated_at, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
+         ON CONFLICT (tenant_id) DO UPDATE SET \
+           login_follow_qr_enabled = EXCLUDED.login_follow_qr_enabled, \
+           login_follow_qr_account_id = EXCLUDED.login_follow_qr_account_id, \
+           login_follow_qr_account_name = EXCLUDED.login_follow_qr_account_name, \
+           login_follow_qr_image_url = EXCLUDED.login_follow_qr_image_url, \
+           login_follow_qr_scene = EXCLUDED.login_follow_qr_scene, \
+           login_follow_qr_updated_at = EXCLUDED.login_follow_qr_updated_at, \
+           updated_at = EXCLUDED.updated_at",
+    )
+    .bind(&tenant_id)
+    .bind(if enabled { 1 } else { 0 })
+    .bind(&account_id)
+    .bind(&account_name)
+    .bind(&image_url)
+    .bind(&scene)
+    .bind(&now)
+    .bind(&now)
+    .execute(pg)
+    .await
+    {
+        Ok(_) => {}
+        Err(error) => {
+            return internal_handler_error("iam_oauth_login_follow_qr_update_failed", error);
+        }
+    };
+
+    match login_follow_qr_settings_json(pg, &tenant_id).await {
+        Ok(settings) => appbase_ok(settings),
+        Err(error) => internal_handler_error("iam_oauth_login_follow_qr_update_failed", error),
+    }
+}
+
 
 fn persisted_custom_menu(config: &Value) -> Option<&Value> {
     config

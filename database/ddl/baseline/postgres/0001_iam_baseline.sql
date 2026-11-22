@@ -3706,3 +3706,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_iam_oauth_authorizer_inbox_authorizer
 
 CREATE INDEX IF NOT EXISTS idx_iam_oauth_authorizer_inbox_unclaimed
   ON iam_oauth_authorizer_inbox (claimed_tenant_id, authorization_status);
+
+-- folded migration: migrations/postgres/0048_iam_login_follow_qr.up.sql
+-- Hosted desktop login-success follow QR: the OAuth admin surface pins one
+-- WeChat official account per tenant and the backend stores that account's
+-- generated permanent follow QR image here, so the login-success page renders
+-- it without calling WeChat or holding the AppSecret.
+ALTER TABLE iam_oauth_scan_login_config
+    ADD COLUMN IF NOT EXISTS login_follow_qr_enabled INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS login_follow_qr_account_id TEXT NOT NULL DEFAULT '',
+    ADD COLUMN IF NOT EXISTS login_follow_qr_account_name TEXT NOT NULL DEFAULT '',
+    ADD COLUMN IF NOT EXISTS login_follow_qr_image_url TEXT NOT NULL DEFAULT '',
+    ADD COLUMN IF NOT EXISTS login_follow_qr_scene TEXT NOT NULL DEFAULT '',
+    ADD COLUMN IF NOT EXISTS login_follow_qr_updated_at TEXT NOT NULL DEFAULT '';

@@ -618,6 +618,11 @@ export const SDKWORK_IAM_API_ROUTES = {
         forbidCredentialHeaders: true,
       }),
     },
+    loginFollowQr: {
+      retrieve: operation("GET", `${app}/oauth/login_follow_qr`, "oauth", "oauth.loginFollowQr.retrieve", "public", {
+        forbidCredentialHeaders: true,
+      }),
+    },
     accountLinks: {
       list: operation("GET", `${app}/oauth/account_links`, "oauth", "oauth.accountLinks.list", "dualToken"),
       delete: operation("DELETE", `${app}/oauth/account_links/{accountLinkId}`, "oauth", "oauth.accountLinks.delete", "dualToken"),
@@ -881,6 +886,10 @@ export const SDKWORK_IAM_API_ROUTES = {
         retrieve: operation("GET", `${backend}/iam/oauth/scan_login_settings`, "iam", "iam.oauth.scanLoginSettings.retrieve", "dualToken"),
         update: operation("PATCH", `${backend}/iam/oauth/scan_login_settings`, "iam", "iam.oauth.scanLoginSettings.update", "dualToken"),
       },
+      loginFollowQr: {
+        retrieve: operation("GET", `${backend}/iam/oauth/login_follow_qr`, "iam", "iam.oauth.loginFollowQr.retrieve", "dualToken"),
+        update: operation("PATCH", `${backend}/iam/oauth/login_follow_qr`, "iam", "iam.oauth.loginFollowQr.update", "dualToken"),
+      },
       resourceAuthorizations: {
         create: operation("POST", `${backend}/iam/oauth/resource_authorizations`, "iam", "iam.oauth.resourceAuthorizations.create", "dualToken"),
         list: operation("GET", `${backend}/iam/oauth/resource_authorizations`, "iam", "iam.oauth.resourceAuthorizations.list", "dualToken"),
@@ -1055,6 +1064,7 @@ export const SDKWORK_IAM_CAPABILITIES = [
       "oauth.deviceAuthorizations.sessionExchanges.create",
       "oauth.grants.delete",
       "oauth.grants.list",
+      "oauth.loginFollowQr.retrieve",
       "oauth.miniProgramSessions.create",
       "oauth.phoneBindingSessions.create",
       "oauth.phoneBindingSessions.verificationCodeRequests.create",
@@ -1141,6 +1151,8 @@ export const SDKWORK_IAM_CAPABILITIES = [
       "iam.oauth.integrations.list",
       "iam.oauth.integrations.retrieve",
       "iam.oauth.integrations.update",
+      "iam.oauth.loginFollowQr.retrieve",
+      "iam.oauth.loginFollowQr.update",
       "iam.oauth.operationalResources.create",
       "iam.oauth.operationalResources.delete",
       "iam.oauth.operationalResources.list",

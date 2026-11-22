@@ -23,6 +23,7 @@ import {
   type SdkworkAuthLoginQrCodeConfirmInput,
   type SdkworkAuthLoginQrCodeCreateInput,
   type SdkworkAuthLoginQrCodeStatusResult,
+  type SdkworkAuthLoginFollowQr,
   type SdkworkAuthScanLoginMode,
   type SdkworkAuthOAuthAuthorizationInput,
   type SdkworkAuthOAuthAuthorizationCompletion,
@@ -139,6 +140,9 @@ export interface SdkworkIamRuntimeAuthRuntimeLike {
       };
       scanLoginModes?: {
         list?(): Promise<unknown>;
+      };
+      loginFollowQr?: {
+        retrieve?(): Promise<unknown>;
       };
       authorizationUrls?: {
         create?(params?: Record<string, unknown>): Promise<unknown>;
@@ -888,6 +892,33 @@ export function createSdkworkIamRuntimeAuthService(
     }));
   }
 
+  async function getLoginFollowQr(): Promise<SdkworkAuthLoginFollowQr | null> {
+    const runtime = await readRuntime();
+    const retrieve = runtime.service.oauth?.loginFollowQr?.retrieve;
+    if (!retrieve) {
+      return null;
+    }
+    try {
+      const record = toRecord(unwrapRuntimeResponse(await retrieve()));
+      if (record.enabled !== true) {
+        return null;
+      }
+      const qrCode = normalizeOptionalScalar(record.qrCode);
+      if (!qrCode) {
+        return null;
+      }
+      return {
+        accountName: normalizeOptionalScalar(record.accountName) ?? "",
+        qrCode,
+        scene: normalizeOptionalScalar(record.scene) ?? "",
+      };
+    } catch {
+      // The success page must still render its hand-off when the optional QR
+      // read fails: no QR is better than no login-success page.
+      return null;
+    }
+  }
+
   async function listScanLoginModes(): Promise<SdkworkAuthScanLoginMode[]> {
     const runtime = await readRuntime();
     const listModes = runtime.service.oauth?.scanLoginModes?.list;
@@ -896,8 +927,7 @@ export function createSdkworkIamRuntimeAuthService(
       // login page keeps its static runtime-config fallback instead of
       // treating an absent API as "scan login disabled".
       throw new Error(methodUnavailableMessage);
-    }
-    const payload = unwrapRuntimeResponse(await listModes());
+    }    const payload = unwrapRuntimeResponse(await listModes());
     const record = toRecord(payload);
     // The tenant master switch is authoritative even if a stale registry
     // still lists modes.
@@ -1078,6 +1108,7 @@ export function createSdkworkIamRuntimeAuthService(
     generateLoginQrCode,
     getCurrentSession,
     getCurrentUser,
+    getLoginFollowQr,
     getVerificationPolicy,
     listOAuthProviders,
     listScanLoginModes,

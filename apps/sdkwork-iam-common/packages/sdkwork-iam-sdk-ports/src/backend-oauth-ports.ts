@@ -41,6 +41,10 @@ export interface IamBackendOAuthResourceClient {
     retrieve?: IamSdkMethod;
     update?: IamSdkMethod;
   };
+  loginFollowQr?: {
+    retrieve?: IamSdkMethod;
+    update?: IamSdkMethod;
+  };
   operationalResources?: {
     create?: IamSdkMethod;
     delete?: IamSdkMethod;

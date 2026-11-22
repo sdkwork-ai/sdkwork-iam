@@ -45,6 +45,11 @@ import {
   type SdkworkAuthAppearanceConfig,
   type SdkworkAuthPresentation,
 } from "../auth-appearance.ts";
+import {
+  resolveSdkworkAuthBrandLogoUrl,
+  resolveSdkworkAuthBrandName,
+  type SdkworkAuthBrand,
+} from "../auth-brand.ts";
 import { useSdkworkAuthIntl } from "../auth-intl.tsx";
 import {
   buildSdkworkAuthOAuthCallbackUri,
@@ -101,6 +106,10 @@ import { SdkworkForgotPasswordFlow } from "../components/auth/ForgotPasswordFlow
 import { SdkworkPhoneCodeLoginForm } from "../components/auth/PhoneCodeLoginForm.tsx";
 import { SdkworkRegisterFlow } from "../components/auth/RegisterFlow.tsx";
 import { SdkworkSessionBridgeLoginForm } from "../components/auth/SessionBridgeLoginForm.tsx";
+import {
+  SdkworkAuthAccountChoice,
+  SdkworkAuthSessionCheck,
+} from "../components/auth-account-choice.tsx";
 import { SdkworkAuthPageShell } from "../components/auth-page-shell.tsx";
 import { SdkworkOAuthProviderGrid } from "../components/oauth-provider-grid.tsx";
 import { SdkworkOrganizationSelectionDialog } from "../components/organization-selection-dialog.tsx";
@@ -123,6 +132,13 @@ const QR_PENDING_POLL_INTERVAL_MS = 5_000;
 const QR_RETRY_POLL_INTERVAL_MS = 10_000;
 const QR_SESSION_CACHE_FALLBACK_TTL_MS = 5_000;
 const QR_SESSION_CACHE_EXPIRY_SAFETY_MS = 5_000;
+/**
+ * Longest the page withholds the login form while the stored session is
+ * revalidated. A session read normally answers in well under a second, so this
+ * budget only exists so a stalled endpoint cannot leave the page on the
+ * session-check card.
+ */
+const SESSION_CHECK_BUDGET_MS = 8_000;
 
 const SDKWORK_AUTH_CHANGE_PASSWORD_PATH = "/user/sections/security";
 
@@ -390,6 +406,30 @@ function sameVerificationPolicy(
     && left.oauthLoginEnabled === right.oauthLoginEnabled;
 }
 
+/**
+ * Short fallback mark for an account row that has no avatar.
+ *
+ * Two words read as their initials (`Bird Coder` -> `BC`); a single word keeps
+ * its first two characters so CJK names still produce a readable mark.
+ */
+function resolveSdkworkAccountInitials(value: string): string {
+  const normalized = value.trim();
+  if (!normalized) {
+    return "?";
+  }
+
+  const words = normalized.split(/\s+/u).filter(Boolean);
+  if (words.length >= 2) {
+    return words
+      .slice(0, 2)
+      .map((word) => Array.from(word)[0] ?? "")
+      .join("")
+      .toUpperCase();
+  }
+
+  return Array.from(normalized).slice(0, 2).join("").toUpperCase();
+}
+
 function SdkworkAuthAsideContent({
   appearance,
   highlights,
@@ -528,6 +568,12 @@ function DefaultSdkworkAuthModeFooter({
 export interface SdkworkAuthPageProps {
   appearance?: SdkworkAuthAppearanceConfig;
   basePath?: string;
+  /**
+   * Host-supplied product brand. The account-choice card names the product the
+   * browser session is being signed in to, so a host that brands its auth
+   * surfaces shows its own name here instead of the shared IAM identity.
+   */
+  brand?: SdkworkAuthBrand;
   controller?: SdkworkAuthController;
   /**
    * Desktop (Electron/Tauri) browser-login entry. Provided by product
@@ -571,6 +617,7 @@ function SdkworkAuthPageRouted(props: SdkworkAuthPageProps) {
 function SdkworkAuthPageContent({
   appearance,
   basePath = "/auth",
+  brand,
   controller: providedController,
   desktopBrowserLogin,
   events,
@@ -969,36 +1016,28 @@ function SdkworkAuthPageContent({
     }
   };
 
-  // A browser user the authorize endpoint sent back with an
-  // oauthAuthorizationStateId who is already authenticated must not face the
-  // login form again — complete the authorization immediately (first-party
-  // relying parties have no consent screen). One auto-attempt per landing:
-  // `completeAuthFlow` is re-created every render, so the guard MUST NOT
-  // reset on failure or every unrelated re-render would retry a
-  // deterministically failing completion forever. A failed auto-complete
-  // surfaces as a toast; the user can still sign in through the form, which
-  // completes the authorization through the normal flow.
-  const autoCompleteOauthRef = useRef(false);
-  useEffect(() => {
-    if (
-      !oauthAuthorizationStateId
-      || !authState.isAuthenticated
-      || authState.isBusy
-      || autoCompleteOauthRef.current
-    ) {
+  // The browser may already hold a session, and the authorize endpoint sends
+  // such a visitor back with an oauthAuthorizationStateId. The session is
+  // revalidated asynchronously, so the page holds a neutral card while that
+  // read is in flight and then renders the account choice below: the visitor
+  // confirms which account the waiting authorization belongs to instead of
+  // being handed a login form they do not need.
+  const [bootstrapSettled, setBootstrapSettled] = useState(false);
+  const [accountChoiceBusy, setAccountChoiceBusy] = useState(false);
+  const [accountSwitchRequested, setAccountSwitchRequested] = useState(false);
+
+  const continueWithSignedInAccount = () => {
+    if (accountChoiceBusy) {
       return;
     }
-    autoCompleteOauthRef.current = true;
+    setAccountChoiceBusy(true);
+    // A successful completion replaces this page; only a failure comes back
+    // here, where the card re-enables the choice so a retry stays possible.
     void completeAuthFlow().catch((error: unknown) => {
+      setAccountChoiceBusy(false);
       sdkToast.error(readSdkworkIdentityErrorMessage(error, copy.common.requestFailed));
     });
-  }, [
-    authState.isAuthenticated,
-    authState.isBusy,
-    completeAuthFlow,
-    copy.common.requestFailed,
-    oauthAuthorizationStateId,
-  ]);
+  };
 
   const [desktopBrowserLoginWaiting, setDesktopBrowserLoginWaiting] = useState(
     () => desktopBrowserLogin?.isWaiting?.() ?? false,
@@ -1017,8 +1056,33 @@ function SdkworkAuthPageContent({
   }, [desktopBrowserLogin]);
 
   useEffect(() => {
-    void controller.bootstrap();
+    let disposed = false;
+    void controller.bootstrap()
+      // A failed bootstrap reports through the controller's own `lastError`
+      // and leaves the page anonymous; the settle flag below only stops the
+      // session check from holding a browser that has nothing left to check.
+      .catch(() => undefined)
+      .finally(() => {
+        if (!disposed) {
+          setBootstrapSettled(true);
+        }
+      });
+    return () => {
+      disposed = true;
+    };
   }, [controller]);
+
+  useEffect(() => {
+    if (bootstrapSettled) {
+      return undefined;
+    }
+    // The session check holds the login form back, so it must never be able to
+    // hold it forever: a stalled session endpoint releases the page onto the
+    // anonymous surface after this budget. A later bootstrap answer still
+    // applies, so a slow session that turns out valid moves the page on.
+    const timer = setTimeout(() => { setBootstrapSettled(true) }, SESSION_CHECK_BUDGET_MS);
+    return () => { clearTimeout(timer) };
+  }, [bootstrapSettled]);
 
   useEffect(() => {
     if (!qrEntryKey) {
@@ -1421,6 +1485,69 @@ function SdkworkAuthPageContent({
       ? SDKWORK_AUTH_CHANGE_PASSWORD_PATH
       : redirectTarget;
     return <Navigate replace to={authenticatedTarget} />;
+  }
+
+  // A waiting authorization plus an existing session is a choice, not a
+  // redirect: the browser user says which account the app receives. The
+  // account method form is one action away for a visitor who wants to sign in
+  // as somebody else, and choosing it keeps the page on the form (the
+  // authorization then completes through the form's own flow).
+  const showAccountChoice =
+    Boolean(oauthAuthorizationStateId)
+    && mode === "login"
+    && !qrEntryKey
+    && authState.isAuthenticated
+    && !accountSwitchRequested;
+
+  if (showAccountChoice) {
+    const user = authState.user;
+    const accountName =
+      user?.displayName?.trim()
+      || user?.username?.trim()
+      || user?.email?.trim()
+      || copy.accountChoice.personalAccount;
+    return (
+      <>
+        <SdkworkToaster />
+        <SdkworkAuthAccountChoice
+          accountName={accountName}
+          appearance={appearance}
+          avatarUrl={
+            getSdkworkMediaDeliveryUrl(user?.avatar)
+            ?? resolveSdkworkAuthBrandLogoUrl(brand)
+          }
+          brandName={resolveSdkworkAuthBrandName(brand)}
+          busy={accountChoiceBusy}
+          copy={copy.accountChoice}
+          initials={resolveSdkworkAccountInitials(user?.initials || accountName)}
+          onContinue={continueWithSignedInAccount}
+          onSwitchAccount={() => { setAccountSwitchRequested(true) }}
+          presentation={presentation}
+        />
+      </>
+    );
+  }
+
+  // The login form waits for the session read so an already signed-in browser
+  // never sees it painted and torn away. The holding card is bounded by
+  // SESSION_CHECK_BUDGET_MS, so a stalled session endpoint still releases the
+  // form.
+  const showSessionCheck =
+    !authState.isAuthenticated
+    && !authState.isBootstrapped
+    && !bootstrapSettled;
+
+  if (showSessionCheck) {
+    return (
+      <>
+        <SdkworkToaster />
+        <SdkworkAuthSessionCheck
+          appearance={appearance}
+          copy={copy.accountChoice}
+          presentation={presentation}
+        />
+      </>
+    );
   }
 
   const buildAuthRoute = (

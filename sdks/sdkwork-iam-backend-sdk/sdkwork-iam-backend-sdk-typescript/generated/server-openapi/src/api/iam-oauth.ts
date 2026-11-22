@@ -687,6 +687,25 @@ export class IamOauthIamOauthOperationalResourcesApi {
   }
 }
 
+export class IamOauthIamOauthLoginFollowQrApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Iam oauth login Follow Qr retrieve. */
+  async retrieve(requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/oauth/login_follow_qr`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+
+/** Iam oauth login Follow Qr update. */
+  async update(body?: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/oauth/login_follow_qr`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PATCH' as any, ...(body !== undefined ? { body, contentType: 'application/json' } : {}), sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export interface IamOauthIamOauthIntegrationsListParams {
   page?: number;
   pageSize?: number;
@@ -1008,6 +1027,7 @@ export class IamOauthIamOauthApi {
   public readonly flowConfigs: IamOauthIamOauthFlowConfigsApi;
   public readonly grants: IamOauthIamOauthGrantsApi;
   public readonly integrations: IamOauthIamOauthIntegrationsApi;
+  public readonly loginFollowQr: IamOauthIamOauthLoginFollowQrApi;
   public readonly operationalResources: IamOauthIamOauthOperationalResourcesApi;
   public readonly operatorPlatforms: IamOauthIamOauthOperatorPlatformsApi;
   public readonly policies: IamOauthIamOauthPoliciesApi;
@@ -1031,6 +1051,7 @@ export class IamOauthIamOauthApi {
     this.flowConfigs = new IamOauthIamOauthFlowConfigsApi(client);
     this.grants = new IamOauthIamOauthGrantsApi(client);
     this.integrations = new IamOauthIamOauthIntegrationsApi(client);
+    this.loginFollowQr = new IamOauthIamOauthLoginFollowQrApi(client);
     this.operationalResources = new IamOauthIamOauthOperationalResourcesApi(client);
     this.operatorPlatforms = new IamOauthIamOauthOperatorPlatformsApi(client);
     this.policies = new IamOauthIamOauthPoliciesApi(client);

@@ -10,5 +10,6 @@ export { OauthAuthorizedAccountsPage as SdkworkIamOauthAuthorizedAccountsPage } 
 export { SdkworkIamOauthOfficialAccountsPage } from "./pages/OauthOfficialAccountsPage";
 export { SdkworkIamOauthOfficialAccountCustomMenuPage } from "./pages/OauthOfficialAccountCustomMenuPage";
 export { SdkworkIamOauthScanLoginSettingsPage } from "./pages/OauthScanLoginSettingsPage";
+export { SdkworkIamOauthLoginFollowQrPage } from "./pages/OauthLoginFollowQrPage";
 export * from "./i18n";
 export { IAM_PC_ADMIN_OAUTH_ROUTES } from "./routes/oauth-admin-routes";

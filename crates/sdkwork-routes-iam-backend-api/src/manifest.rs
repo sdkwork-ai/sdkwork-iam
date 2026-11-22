@@ -1102,6 +1102,18 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         "iam.oauth",
         "iam.oauth.scanLoginPreviews.create",
     ),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/iam/oauth/login_follow_qr",
+        "iam.oauth",
+        "iam.oauth.loginFollowQr.retrieve",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Patch,
+        "/backend/v3/api/iam/oauth/login_follow_qr",
+        "iam.oauth",
+        "iam.oauth.loginFollowQr.update",
+    ),
     // Canonical installation surface. One operation per installation action;
     // permissions keep the historical `iam.installations.*` codes until
     // the permission migration renames them.

@@ -21,10 +21,26 @@ This package is the standard auth UI layer for appbase-based desktop apps. Host 
   optional `desktopBrowserLogin` binding (built by product composition from
   `@sdkwork/iam-desktop-auth` + a host adapter) that renders the
   system-browser login entry for Electron/Tauri shells; absent on pure web.
+- The login form never paints before the stored session is revalidated: the
+  first paint is `SdkworkAuthSessionCheck` (the `accountChoice.checking` line)
+  until `bootstrap()` answers, and only that holding card has a budget
+  (`SESSION_CHECK_BUDGET_MS`, eight seconds) so a stalled session endpoint
+  cannot withhold the form. When the session still holds and an
+  `oauthAuthorizationStateId` authorization is waiting, the page renders
+  `SdkworkAuthAccountChoice` instead of the form: the current account (name
+  plus the product brand the authorization is for) continues the sign-in when
+  its row is used, and `accountChoice.switchAccount` raises the account method
+  form so a different account can sign in. A failed completion keeps the card
+  and reports the failure through a toast. `SdkworkAuthPage`'s optional
+  `brand` names the product on that card.
 - `SdkworkAuthOAuthCallbackPage` handles OAuth callback completion with the same visual standard, including completing a pending desktop/first-party authorization threaded through the provider round-trip.
 - `SdkworkAuthDesktopLaunchPage` is the hosted login-success hand-off page
-  (`/auth/desktop/launch`): after a desktop-originated authorization
-  completes, it receives the deep link through the same-origin
+  (`/auth/desktop/launch`): it confirms the login (success mark, "login
+  successful", and "return to <brand> to keep using it"), shows the tenant's
+  operator-published official-account follow QR when one is configured
+  (`controller.getLoginFollowQr()` → the anonymous
+  `GET /app/v3/api/oauth/login_follow_qr`; an unconfigured or failed read
+  simply renders no QR), receives the deep link through the same-origin
   `storeSdkworkDesktopLaunchRedirect` transfer (the older `redirectUrl` query
   form is still read for already-issued links and stripped from the visible
   URL), fires the deep-link back into the desktop app, and offers a manual
@@ -75,6 +91,8 @@ Key exports:
 - `createSdkworkSyntheticAuthSession` (compatibility helper; requires explicit dual tokens)
 - `SdkworkQrLoginPanel`
 - `SdkworkOAuthProviderGrid`
+- `SdkworkAuthAccountChoice`
+- `SdkworkAuthSessionCheck`
 - `SdkworkAccountPasswordLoginForm`
 - `SdkworkEmailCodeLoginForm`
 - `SdkworkPhoneCodeLoginForm`
@@ -497,7 +515,9 @@ pages do not fall back to the IAM identity:
 ```
 
 `brand` is optional. The hosted desktop hand-off page renders it in its page
-header; a host that omits it keeps the shipped `SDKWork IAM` name and mark.
+header, and the account-choice card names it as the product the waiting
+authorization is for; a host that omits it keeps the shipped `SDKWork IAM` name
+and mark.
 
 ## Integration rule
 

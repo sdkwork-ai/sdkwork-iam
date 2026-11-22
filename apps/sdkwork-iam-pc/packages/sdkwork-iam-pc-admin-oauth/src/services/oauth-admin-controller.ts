@@ -20,6 +20,8 @@ import type {
   SdkworkIamOauthDiagnosticRunDraft,
   SdkworkIamOauthFlowConfigDraft,
   SdkworkIamOauthIntegrationDraft,
+  SdkworkIamOauthLoginFollowQrDraft,
+  SdkworkIamOauthLoginFollowQrSettings,
   SdkworkIamOauthOperatorPlatformDraft,
   SdkworkIamOauthPolicyDraft,
   SdkworkIamOauthProviderCatalogDraft,
@@ -1276,6 +1278,32 @@ export function createSdkworkIamOauthAdminController(
           throw error;
         });
     },
+    loadLoginFollowQrSettings() {
+      return service.iam.oauth.loginFollowQr.retrieve()
+        .then((detail) => normalizeLoginFollowQrSettings(detail));
+    },
+    saveLoginFollowQrSettings(body: SdkworkIamOauthLoginFollowQrDraft) {
+      setState({ status: "saving", lastError: undefined });
+      const wireBody: Record<string, unknown> = { enabled: body.enabled };
+      if (body.refreshQrCode !== undefined) {
+        wireBody.refreshQrCode = body.refreshQrCode;
+      }
+      if (body.resourceAccountId !== undefined) {
+        wireBody.resourceAccountId = body.resourceAccountId;
+      }
+      return service.iam.oauth.loginFollowQr.update(wireBody)
+        .then((detail) => {
+          setState({ status: "ready" });
+          return normalizeLoginFollowQrSettings(detail);
+        })
+        .catch((error) => {
+          setState({
+            status: "error",
+            lastError: error instanceof Error ? error.message : "Failed to save the login-success follow QR",
+          });
+          throw error;
+        });
+    },
     async loadAccountCustomMenu(resourceAccountId) {
       setState({ status: "loading", lastError: undefined });
       try {
@@ -1528,6 +1556,18 @@ function normalizeAccountFollowQrCode(value: unknown): SdkworkIamOauthAccountFol
     qrMode: optionalString(record.qrMode) || "official_account",
     scene: optionalString(record.scene) || "",
     ticket: optionalString(record.ticket) || "",
+  };
+}
+
+function normalizeLoginFollowQrSettings(value: unknown): SdkworkIamOauthLoginFollowQrSettings {
+  const record = toRecord(value);
+  return {
+    accountName: optionalString(record.accountName) || "",
+    enabled: record.enabled === true,
+    qrCode: optionalString(record.qrCode) || "",
+    resourceAccountId: optionalString(record.resourceAccountId) || "",
+    scene: optionalString(record.scene) || "",
+    updatedAt: optionalString(record.updatedAt) || "",
   };
 }
 

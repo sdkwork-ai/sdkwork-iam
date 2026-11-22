@@ -158,6 +158,22 @@ export interface SdkworkAuthSession extends Required<Pick<SdkworkAuthStoredSessi
   user?: SdkworkAuthUser;
 }
 
+/**
+ * The official-account follow QR the desktop login-success page renders.
+ *
+ * It is operator-published tenant configuration, never account data: the IAM
+ * backend generated the QR once and stores its image URL, so this value only
+ * carries what the page paints.
+ */
+export interface SdkworkAuthLoginFollowQr {
+  /** Display name of the official account the QR subscribes the visitor to. */
+  accountName: string;
+  /** Delivery URL of the generated follow QR image. */
+  qrCode: string;
+  /** WeChat scene parameter embedded in the QR (`follow:{accountId}`). */
+  scene: string;
+}
+
 export const SDKWORK_AUTH_SESSION_REQUIRED_MESSAGE = "Valid IAM auth session is required.";
 
 /** Longest a sign-out waits for the server-side session revocation. */
@@ -492,6 +508,11 @@ export interface SdkworkAuthService {
   generateLoginQrCode(input?: SdkworkAuthLoginQrCodeCreateInput): Promise<SdkworkAuthLoginQrCode>;
   getCurrentSession(): Promise<SdkworkAuthSession | null>;
   getCurrentUser(): Promise<SdkworkAuthUser | null>;
+  /**
+   * The follow QR the hosted desktop login-success page shows, or null when
+   * this runtime has no such resource or the operator has not configured one.
+   */
+  getLoginFollowQr?(): Promise<SdkworkAuthLoginFollowQr | null>;
   getVerificationPolicy(): Promise<SdkworkAuthResolvedVerificationPolicy>;
   listOAuthProviders(): Promise<string[]>;
   listScanLoginModes(): Promise<SdkworkAuthScanLoginMode[]>;

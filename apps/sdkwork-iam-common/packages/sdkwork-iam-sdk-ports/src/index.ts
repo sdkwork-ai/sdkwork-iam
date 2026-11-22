@@ -144,6 +144,9 @@ export interface IamAppOAuthResourceClient {
   scanLoginModes?: {
     list?: IamSdkMethod;
   };
+  loginFollowQr?: {
+    retrieve?: IamSdkMethod;
+  };
   callbacks?: {
     create?: IamSdkMethod;
     retrieve?: IamSdkMethod;

@@ -95,8 +95,8 @@ const result = await client.iam.accessCredentials.create(body);
 ### iam_oauth
 
 ```typescript
-// Iam oauth scan Login Settings retrieve.
-const result = await client.iamOauth.iam.oauth.scanLoginSettings.retrieve();
+// Iam oauth login Follow Qr retrieve.
+const result = await client.iamOauth.iam.oauth.loginFollowQr.retrieve();
 ```
 
 ## Error Handling

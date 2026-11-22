@@ -169,6 +169,9 @@ export interface SdkworkIamService {
     scanLoginModes: {
       list(params?: Record<string, unknown>): Promise<unknown>;
     };
+    loginFollowQr: {
+      retrieve(): Promise<unknown>;
+    };
     callbacks: {
       create(body?: Record<string, unknown>): Promise<unknown>;
       retrieve(params?: Record<string, unknown>): Promise<unknown>;
@@ -565,6 +568,9 @@ export function createSdkworkIamService(input: CreateSdkworkIamServiceInput): Sd
       },
       scanLoginModes: {
         list: (params) => callRaw(appOauth?.scanLoginModes, "list", "appbaseAppClient.oauth.scanLoginModes.list", iamListQuery(params)),
+      },
+      loginFollowQr: {
+        retrieve: () => callRaw(appOauth?.loginFollowQr, "retrieve", "appbaseAppClient.oauth.loginFollowQr.retrieve"),
       },
       callbacks: {
         retrieve: (params) => callRaw(appOauth?.callbacks, "retrieve", "appbaseAppClient.oauth.callbacks.retrieve", params),

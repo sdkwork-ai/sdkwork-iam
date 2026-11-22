@@ -190,6 +190,10 @@ fn build_sdkwork_iam_app_api_core_router(state: LocalIamState) -> Router {
             get(list_scan_login_modes),
         )
         .route(
+            "/app/v3/api/oauth/login_follow_qr",
+            get(get_login_follow_qr),
+        )
+        .route(
             "/app/v3/api/oauth/authorization_urls",
             post(create_oauth_authorization_url),
         )
@@ -2075,12 +2079,51 @@ async fn list_scan_login_modes(
     }
 }
 
+/// Reads the follow QR the hosted login-success page renders.
+///
+/// Anonymous by construction (the page runs after the desktop authorization
+/// completed, but before the app has any session): the response carries only
+/// the operator-published image URL and the account display name.
+async fn get_login_follow_qr(
+    State(state): State<LocalIamState>,
+    ctx: WebRequestContext,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+    let tenant_id = ctx
+        .tenant_id()
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+        .unwrap_or_else(|| "__local__".to_string());
+    match crate::login_follow_qr::load_login_follow_qr(pg, &tenant_id).await {
+        Ok(Some(qr)) => appbase_ok(json!({
+            "accountName": qr.account_name,
+            "enabled": true,
+            "qrCode": qr.image_url,
+            "scene": qr.scene,
+        })),
+        Ok(None) => appbase_ok(json!({
+            "accountName": "",
+            "enabled": false,
+            "qrCode": "",
+            "scene": "",
+        })),
+        Err(error) => appbase_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "iam_oauth_login_follow_qr_failed",
+            &error,
+        ),
+    }
+}
+
 async fn list_oauth_providers(
     State(state): State<LocalIamState>,
     ctx: WebRequestContext,
     Query(query): Query<HashMap<String, String>>,
-) -> Response {
-    let policy = match postgres_pool_or_error(&state) {
+) -> Response {    let policy = match postgres_pool_or_error(&state) {
         Ok(pg) => effective_public_account_binding_policy(&state, pg).await,
         Err(_) => default_account_binding_policy(),
     };

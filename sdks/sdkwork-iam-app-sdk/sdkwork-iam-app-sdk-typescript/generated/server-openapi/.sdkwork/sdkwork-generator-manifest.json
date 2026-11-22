@@ -68,7 +68,7 @@
     },
     {
       "path": "src/api/oauth.ts",
-      "sha256": "b689aa9d6f8ab79a4079f40ecd808d19526ca7fcaea6392b4ae3c6ccb2a3428b"
+      "sha256": "c39e6b85d8f2313a79a5d4711fea3e03afa5fcd0cdcd8d212104679559987696"
     },
     {
       "path": "src/api/paths.ts",

@@ -9,10 +9,12 @@
     "protocol": "http",
     "packageName": "@sdkwork/iam-app-sdk"
   },
-  "changeFingerprint": "6abe05b2e180321cb3e06d4599738d646c398dc7ec0baee51dc5c2e2e6bd8ee5",
+  "changeFingerprint": "45e8537fc8e884ec25810d900f393541e7d9ce80149db717b9bd963a3ecbda60",
   "changes": {
     "createdGeneratedFiles": [],
-    "updatedGeneratedFiles": [],
+    "updatedGeneratedFiles": [
+      "src/api/oauth.ts"
+    ],
     "unchangedGeneratedFiles": [
       "bin/publish-core.mjs",
       "bin/publish.ps1",
@@ -28,7 +30,6 @@
       "src/api/base.ts",
       "src/api/iam.ts",
       "src/api/index.ts",
-      "src/api/oauth.ts",
       "src/api/paths.ts",
       "src/api/system.ts",
       "src/auth/index.ts",
@@ -76,36 +77,120 @@
       "src/types/wechat-mini-program-session-create-command.ts",
       "tsconfig.json"
     ],
-    "deletedGeneratedFiles": [],
+    "deletedGeneratedFiles": [
+      "src/api/auth.d.ts",
+      "src/api/iam.d.ts",
+      "src/api/oauth.d.ts",
+      "src/types/authorizations-completions-create-response201.d.ts",
+      "src/types/authorizations-create-response201.d.ts",
+      "src/types/desktop-sessions-create-response201.d.ts",
+      "src/types/iam-app-access-token-create-command.d.ts",
+      "src/types/iam-app-access-token.d.ts",
+      "src/types/index.d.ts"
+    ],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/build-runtime.mjs",
       "custom/README.md"
     ],
-    "backedUpFiles": []
+    "backedUpFiles": [
+      "src/api/auth.d.ts",
+      "src/api/iam.d.ts",
+      "src/api/oauth.d.ts",
+      "src/types/authorizations-completions-create-response201.d.ts",
+      "src/types/authorizations-create-response201.d.ts",
+      "src/types/desktop-sessions-create-response201.d.ts",
+      "src/types/iam-app-access-token-create-command.d.ts",
+      "src/types/iam-app-access-token.d.ts",
+      "src/types/index.d.ts"
+    ]
   },
   "impact": {
     "schemaVersion": 1,
-    "areas": [],
-    "details": [],
-    "requiresVerification": false,
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped."
+    "areas": [
+      "api-surface",
+      "models"
+    ],
+    "details": [
+      {
+        "area": "api-surface",
+        "paths": [
+          "src/api/auth.d.ts",
+          "src/api/iam.d.ts",
+          "src/api/oauth.d.ts",
+          "src/api/oauth.ts"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "src/types/authorizations-completions-create-response201.d.ts",
+          "src/types/authorizations-create-response201.d.ts",
+          "src/types/desktop-sessions-create-response201.d.ts",
+          "src/types/iam-app-access-token-create-command.d.ts",
+          "src/types/iam-app-access-token.d.ts",
+          "src/types/index.d.ts"
+        ]
+      }
+    ],
+    "requiresVerification": true,
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
   },
   "verificationPlan": {
-    "shouldRun": false,
-    "runPhase": "skip",
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped.",
-    "steps": []
+    "shouldRun": true,
+    "runPhase": "now",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "steps": [
+      {
+        "id": "check",
+        "title": "Unified package check",
+        "required": true,
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "typescript",
+          "--project-dir",
+          ".",
+          "--action",
+          "check"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action check"
+      },
+      {
+        "id": "build",
+        "title": "Unified package build",
+        "required": true,
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-typescript\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "typescript",
+          "--project-dir",
+          ".",
+          "--action",
+          "build"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action build"
+      }
+    ]
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "low",
-    "nextAction": "skip",
+    "riskLevel": "high",
+    "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
-    "summary": "No actionable changes were detected. No apply or verification step is required.",
+    "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "no-actionable-changes"
+      "backed-up-generated-files",
+      "deleted-generated-files",
+      "manual-review-required",
+      "verification-required"
     ]
   },
   "preservedLegacyFiles": false
