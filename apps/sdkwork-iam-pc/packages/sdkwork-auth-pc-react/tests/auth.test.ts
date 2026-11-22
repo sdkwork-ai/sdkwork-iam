@@ -53,7 +53,7 @@ describe("sdkwork-auth-pc-react", () => {
       "/auth/oauth/callback/:provider",
       "/auth/qr-login",
       "/auth/qr/:sessionKey",
-      "/auth/desktop/launch",
+      "/oauth/desktop/launch",
     ]);
     expect(isAuthRoute(routes, "/auth/oauth/callback/github")).toBe(true);
     expect(isAuthRoute(routes, "/auth/qr/qr_abc123")).toBe(true);
@@ -92,7 +92,7 @@ describe("sdkwork-auth-pc-react", () => {
       "/auth/oauth/callback/:provider",
       "/auth/qr-login",
       "/auth/qr/:sessionKey",
-      "/auth/desktop/launch",
+      "/oauth/desktop/launch",
     ]);
     expect(integration.manifest).toMatchObject({
       architecture: "pc-react",

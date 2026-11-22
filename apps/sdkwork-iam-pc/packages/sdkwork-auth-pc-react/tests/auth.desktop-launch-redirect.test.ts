@@ -1,5 +1,5 @@
 /**
- * Hand-off URL safety: `/auth/desktop/launch?redirectUrl=...` is reachable by
+ * Hand-off URL safety: `/oauth/desktop/launch?redirectUrl=...` is reachable by
  * anyone, so only a native app surface (custom scheme) or an RFC 8252 loopback
  * redirect may be auto-navigated to. A web origin, `javascript:`, `data:` or
  * `file:` URL would turn the page into an open redirect.

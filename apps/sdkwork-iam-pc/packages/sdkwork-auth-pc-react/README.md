@@ -52,7 +52,7 @@ This package is the standard auth UI layer for appbase-based desktop apps. Host 
   `brand` names the product on that card.
 - `SdkworkAuthOAuthCallbackPage` handles OAuth callback completion with the same visual standard, including completing a pending desktop/first-party authorization threaded through the provider round-trip.
 - `SdkworkAuthDesktopLaunchPage` is the hosted login-success hand-off page
-  (`/auth/desktop/launch`): it confirms the login (success mark, "login
+  (`/oauth/desktop/launch`): it confirms the login (success mark, "login
   successful", and "return to <brand> to keep using it"), shows the tenant's
   operator-published official-account follow QR when one is configured
   (`controller.getLoginFollowQr()` → the anonymous

@@ -2,7 +2,7 @@
  * Same-origin transfer for the desktop deep-link redirect URL.
  *
  * The URL carries a single-use authorization code. Passing it through the
- * `/auth/desktop/launch?redirectUrl=...` query string would put that code in
+ * `/oauth/desktop/launch?redirectUrl=...` query string would put that code in
  * the browser history, the address bar, and potentially in a `Referer` header
  * or an access log. The writer stores it in `sessionStorage` and the launch
  * page consumes it instead; the query-string form stays readable for links

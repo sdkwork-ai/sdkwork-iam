@@ -32,20 +32,23 @@ describe("desktop deep-link classification", () => {
 describe("desktop launch location", () => {
   it("carries the deep link in the redirectUrl parameter", () => {
     const redirect = "birdcoder://auth/callback?code=abc&state=xyz";
-    expect(buildSdkworkAuthDesktopLaunchPath()).toBe("/auth/desktop/launch");
+    expect(buildSdkworkAuthDesktopLaunchPath()).toBe("/oauth/desktop/launch");
     expect(buildSdkworkAuthDesktopLaunchLocation(redirect)).toBe(
-      `/auth/desktop/launch?redirectUrl=${encodeURIComponent(redirect)}`,
+      `/oauth/desktop/launch?redirectUrl=${encodeURIComponent(redirect)}`,
     );
   });
 
-  it("honours a custom auth base path", () => {
-    expect(buildSdkworkAuthDesktopLaunchLocation("birdcoder://auth/callback", { basePath: "/iam-auth" }))
-      .toBe(`/iam-auth/desktop/launch?redirectUrl=${encodeURIComponent("birdcoder://auth/callback")}`);
+  it("stays on the protocol route whatever auth base path a host mounts", () => {
+    expect(buildSdkworkAuthDesktopLaunchLocation("birdcoder://auth/callback"))
+      .toBe(`/oauth/desktop/launch?redirectUrl=${encodeURIComponent("birdcoder://auth/callback")}`);
+    const customBaseRoutes = createAuthRouteCatalog("/iam-auth");
+    expect(customBaseRoutes.find(route => route.id === "desktop-launch")?.path)
+      .toBe("/oauth/desktop/launch");
   });
 
   it("keeps the launch route in the auth route catalog", () => {
     const routes = createAuthRouteCatalog("/auth");
     const launch = routes.find(route => route.id === "desktop-launch");
-    expect(launch?.path).toBe("/auth/desktop/launch");
+    expect(launch?.path).toBe("/oauth/desktop/launch");
   });
 });

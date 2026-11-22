@@ -5,6 +5,7 @@ import {
 } from "@sdkwork/appbase-pc-react";
 import { isBlank, trim } from "@sdkwork/utils";
 import { isSafeSdkworkDesktopLaunchUrl } from "./auth-redirect.ts";
+import { SDKWORK_OAUTH_APP_LAUNCH_PATH } from "./oauth-app-paths.ts";
 import {
   isSdkworkAuthRoutePath,
   normalizeSdkworkAuthBasePath,
@@ -461,10 +462,12 @@ export function createAuthRouteCatalog(basePath = "/auth"): SdkworkAuthRouteDefi
     {
       // Hosted login-success hand-off page: after an authorization started by
       // a desktop app (Electron/Tauri) completes in the browser, the browser
-      // lands here and deep-links back into the desktop app.
+      // lands here and deep-links back into the desktop app. The page serves
+      // the native-application flow only, so it keeps the protocol path under
+      // `/oauth` instead of following the auth base path above.
       access: "anonymous-only",
       id: "desktop-launch",
-      path: `${resolvedBasePath}/desktop/launch`,
+      path: SDKWORK_OAUTH_APP_LAUNCH_PATH,
     },
   ];
 }
@@ -802,22 +805,17 @@ export function resolveAuthRedirectTarget(
   return sanitizeSdkworkAuthRedirectTarget(rawTarget, fallbackRoute, authBasePath);
 }
 
-export interface BuildSdkworkAuthDesktopLaunchPathOptions {
-  basePath?: string;
-}
-
 /**
  * Path of the hosted login-success page the browser lands on after an
  * authorization started by a desktop app completes. The page receives the
  * deep-link redirect URL through the `redirectUrl` query parameter and hands
  * it to the operating system.
+ *
+ * The path is the protocol-level `/oauth/desktop/launch` route, so it does not
+ * follow the host's auth base path: only native-application logins reach it.
  */
-export function buildSdkworkAuthDesktopLaunchPath(
-  options: BuildSdkworkAuthDesktopLaunchPathOptions = {},
-): string {
-  const resolvedBasePath = normalizeSdkworkAuthBasePath(options.basePath ?? "/auth");
-  return createAuthRouteCatalog(resolvedBasePath).find((route) => route.id === "desktop-launch")
-    ?.path ?? `${resolvedBasePath}/desktop/launch`;
+export function buildSdkworkAuthDesktopLaunchPath(): string {
+  return SDKWORK_OAUTH_APP_LAUNCH_PATH;
 }
 
 /**
@@ -832,9 +830,8 @@ export function buildSdkworkAuthDesktopLaunchPath(
  */
 export function buildSdkworkAuthDesktopLaunchLocation(
   redirectUrl: string,
-  options: BuildSdkworkAuthDesktopLaunchPathOptions = {},
 ): string {
-  return `${buildSdkworkAuthDesktopLaunchPath(options)}?redirectUrl=${encodeURIComponent(redirectUrl)}`;
+  return `${buildSdkworkAuthDesktopLaunchPath()}?redirectUrl=${encodeURIComponent(redirectUrl)}`;
 }
 
 /**
@@ -905,7 +902,7 @@ export function buildSdkworkDesktopAuthErrorRedirect(input: {
 
 export function createAuthWorkspaceManifest({
   description = "Auth workspace for anonymous-entry routing, OAuth callbacks, and reusable auth surface assembly.",
-  desktopLaunchRoutePath = "/auth/desktop/launch",
+  desktopLaunchRoutePath = SDKWORK_OAUTH_APP_LAUNCH_PATH,
   forgotPasswordRoutePath = "/auth/forgot-password",
   host,
   id = "sdkwork-auth",

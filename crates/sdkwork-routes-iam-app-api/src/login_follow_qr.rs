@@ -1,6 +1,6 @@
 //! Public read of the tenant's login-success follow QR.
 //!
-//! The hosted desktop login-success page (`/auth/desktop/launch`) shows the
+//! The hosted desktop login-success page (`/oauth/desktop/launch`) shows the
 //! official-account follow QR the operator pinned in the OAuth admin surface.
 //! The backend generated that QR once and stored its image URL on the tenant's
 //! scan-login configuration row, so this read never touches WeChat and never

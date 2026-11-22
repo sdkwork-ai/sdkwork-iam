@@ -20,8 +20,10 @@ pub const DESKTOP_AUTH_CALLBACK_PATH: &str = "/auth/callback";
 pub const HOSTED_LOGIN_PATH: &str = "/auth/login";
 
 /// Path of the hosted login-success surface the browser lands on before the
-/// deeplink hand-off.
-pub const HOSTED_DESKTOP_LAUNCH_PATH: &str = "/auth/desktop/launch";
+/// deeplink hand-off. The page serves the native-application flow only, so it
+/// stays on the protocol-level `/oauth` route rather than the portal's `/auth`
+/// account surface.
+pub const HOSTED_DESKTOP_LAUNCH_PATH: &str = "/oauth/desktop/launch";
 
 /// Open-api authorization endpoint path (IAM as OAuth authorization server).
 pub const OAUTH_AUTHORIZE_PATH: &str = "/iam/v3/oauth/authorize";
@@ -205,7 +207,7 @@ mod tests {
         );
         assert_eq!(
             contract.hosted_desktop_launch_url("https://web.example.com"),
-            "https://web.example.com/auth/desktop/launch",
+            "https://web.example.com/oauth/desktop/launch",
         );
         assert_eq!(
             contract.desktop_session_endpoint("https://iam.sdkwork.local"),

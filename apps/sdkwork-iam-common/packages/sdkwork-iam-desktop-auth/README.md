@@ -19,7 +19,7 @@ desktop app (Electron/Tauri)
   2. user completes login / registration / forgot-password on the hosted
      web surface (identical flow no matter where it started)
   3. browser completes the authorization and lands on the hosted
-     login-success page (/auth/desktop/launch), which deep-links back to
+     login-success page (/oauth/desktop/launch), which deep-links back to
      sdkwork-iam://auth/callback?code=...&state=...
   4. handleOpenUrl(url)
        validates scheme/path/state/expiry, then redeems the code through

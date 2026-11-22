@@ -23,7 +23,7 @@ A desktop application (Electron or Tauri shell) must never render its own login 
       │                                              {authorizationStateId}/completions
       │                                                       │
       │ 4. OS routes the deep link                            ▼
-      │ ◀────────────────────────────── 3. browser lands on /auth/desktop/launch
+      │ ◀────────────────────────────── 3. browser lands on /oauth/desktop/launch
 ┌─────┴──────┐                                   (login-success page) which hands the
 │ Desktop app │                                   redirect URL to the OS
 │ receives    │
@@ -49,7 +49,7 @@ Security properties (per `IAM_OAUTH_SPEC.md` section 7):
 | `POST /app/v3/api/oauth/desktop_sessions` redeem endpoint (`oauth.desktopSessions.create`, pure anonymous) | `sdkwork-routes-iam-app-api` |
 | Desktop deep-link contract (scheme derivation, endpoint paths, bridge names) | `sdkwork-iam-tauri-host` crate (`desktop_login.rs`) |
 | PKCE, state, callback validation, redeem via `oauth.desktopSessions.create`, pending-flow store | `@sdkwork/iam-desktop-auth` |
-| Hosted login-success page (`/auth/desktop/launch`) and the browser-login entry on the login page | `@sdkwork/auth-pc-react` |
+| Hosted login-success page (`/oauth/desktop/launch`) and the browser-login entry on the login page | `@sdkwork/auth-pc-react` |
 | OS protocol registration, deep-link routing, preload allowlist | `@sdkwork/iam-pc-electron` (Electron) / Tauri deep-link + opener plugins via `@sdkwork/iam-pc-tauri` |
 | Session commit into the auth runtime | Product composition (session bridge), never the host adapter |
 
@@ -179,7 +179,7 @@ bridge) and pass it to the runtime. Bridge method names follow
    the IAM authorize endpoint → hosted login page (`/auth/login?oauthAuthorizationStateId=…`)
    → the user signs in, registers, or resets a password — the full web
    experience, login-context selection included → completion triggers the
-   hosted login-success page (`/auth/desktop/launch`) → the page shows the
+   hosted login-success page (`/oauth/desktop/launch`) → the page shows the
    confirmation for two seconds and then fires the deep link (with a manual
    "Open desktop app" button and guidance if nothing opens) → the desktop app
    receives `code` + `state`, validates
@@ -252,7 +252,7 @@ bridge) and pass it to the runtime. Bridge method names follow
 
 ## Auth-surface semantics
 
-- The hosted hand-off page (`/auth/desktop/launch`) is exempt from the
+- The hosted hand-off page (`/oauth/desktop/launch`) is exempt from the
   authenticated-user bounce in `resolveAuthAccess`: the user is always
   authenticated in the browser when they land there, and every other auth
   route still redirects away as before.
@@ -374,6 +374,13 @@ constants equal to the pages the hosted login actually renders, so a platform
 entry (the CloudRouter PC entry is the reference) validates and forwards to the
 same paths without local literals.
 
+Every route that exists only to serve a native application's browser login lives
+in the `/oauth` namespace: the `/oauth/app` alias entry and the
+`/oauth/desktop/launch` hand-off page. The portal's own account surface keeps the
+`/auth` namespace (`/auth/login`, `/auth/register`, `/auth/sign-out`), and the
+launch page is a protocol-level route, so it does not follow the auth base path a
+host mounts.
+
 ## Reusing the flow in another application
 
 The only product-specific inputs are the tenant `app_id`, the registered
@@ -385,7 +392,7 @@ redirect URI, the deep-link scheme, and the deployment's
    optionally the loopback) URI, `confidential: false`, and the scopes the app
    may request.
 2. **Browser side** — reuse `@sdkwork/auth-pc-react`: `SdkworkIamAuthRoutes`
-   serves the hosted login and `/auth/desktop/launch` dispatches the deep link
+   serves the hosted login and `/oauth/desktop/launch` dispatches the deep link
    (`SdkworkAuthDesktopLaunchPage`); the launch page only follows native-app
    redirect surfaces (`isSafeSdkworkDesktopLaunchUrl`). A platform entry reads
    its paths from `@sdkwork/auth-pc-react/oauth-app-paths` rather than

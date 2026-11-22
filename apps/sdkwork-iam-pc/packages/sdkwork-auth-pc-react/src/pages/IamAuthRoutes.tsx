@@ -42,6 +42,7 @@ import {
   mergeSdkworkAuthClassNames,
   mergeSdkworkAuthStyles,
 } from "../auth-appearance.ts";
+import { SDKWORK_OAUTH_APP_LAUNCH_PATH } from "../oauth-app-paths.ts";
 
 export interface SdkworkIamAuthRoutesProps {
   appearance?: SdkworkAuthAppearanceConfig;
@@ -88,10 +89,11 @@ function isOAuthCallbackRoute(pathname: string, basePath: string): boolean {
     || pathname.startsWith(`${normalizedBasePath}/oauth/callback/`);
 }
 
-function isDesktopLaunchRoute(pathname: string, basePath: string): boolean {
-  const normalizedBasePath = normalizeBasePath(basePath);
-  return pathname === `${normalizedBasePath}/desktop/launch`
-    || pathname.startsWith(`${normalizedBasePath}/desktop/launch/`);
+function isDesktopLaunchRoute(pathname: string): boolean {
+  // The hand-off page is a protocol-level route under `/oauth`, not a page of
+  // the host's auth base path: only a native-application login lands here.
+  return pathname === SDKWORK_OAUTH_APP_LAUNCH_PATH
+    || pathname.startsWith(`${SDKWORK_OAUTH_APP_LAUNCH_PATH}/`);
 }
 
 export function SdkworkIamAuthRoutes({
@@ -207,7 +209,7 @@ function SdkworkIamAuthRoutesPage({
     return <SdkworkAuthSignOutPage {...commonProps} brand={brand} />;
   }
 
-  if (isDesktopLaunchRoute(location.pathname, basePath)) {
+  if (isDesktopLaunchRoute(location.pathname)) {
     return <SdkworkAuthDesktopLaunchPage {...commonProps} brand={brand} brandHeader={brandHeader} />;
   }
 

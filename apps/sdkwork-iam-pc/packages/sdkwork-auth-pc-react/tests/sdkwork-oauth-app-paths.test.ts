@@ -7,6 +7,7 @@
 import { describe, expect, it } from "vitest";
 import { createAuthRouteCatalog } from "../src/auth.ts";
 import {
+  SDKWORK_OAUTH_APP_ALIAS_PATH,
   SDKWORK_OAUTH_APP_AUTHORIZE_ENDPOINT_PATH,
   SDKWORK_OAUTH_APP_AUTHORIZE_PATH,
   SDKWORK_OAUTH_APP_AUTHORIZE_PATHS,
@@ -22,6 +23,14 @@ describe("hosted app-login path contract", () => {
     const pathFor = (id: string) => routes.find((route) => route.id === id)?.path;
     expect(SDKWORK_OAUTH_APP_LOGIN_PATH).toBe(pathFor("login"));
     expect(SDKWORK_OAUTH_APP_LAUNCH_PATH).toBe(pathFor("desktop-launch"));
+  });
+
+  it("keeps the native-application flow in the /oauth namespace", () => {
+    // The portal's own account surface (/auth/login, /auth/register,
+    // /auth/sign-out) stays untouched; only application-only routes move.
+    expect(SDKWORK_OAUTH_APP_ALIAS_PATH).toBe("/oauth/app");
+    expect(SDKWORK_OAUTH_APP_LAUNCH_PATH).toBe("/oauth/desktop/launch");
+    expect(SDKWORK_OAUTH_APP_LOGIN_PATH).toBe("/auth/login");
   });
 
   it("keeps the versioned, versionless, and forward endpoint distinct", () => {

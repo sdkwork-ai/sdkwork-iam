@@ -24,7 +24,7 @@ import { OauthAdminSelectField } from "../components/oauth-admin-ui";
  * Login-success follow QR configuration.
  *
  * A desktop app that signs in through the system browser lands on the hosted
- * login-success page (`/auth/desktop/launch`). That page shows the official
+ * login-success page (`/oauth/desktop/launch`). That page shows the official
  * account's follow QR so the visitor can subscribe while the app reopens. The
  * operator picks one WeChat official account here; the backend generates that
  * account's permanent follow QR once and stores it, so the success page renders

@@ -13,7 +13,7 @@ deep-link and opener plugins onto the `@sdkwork/iam-desktop-auth` host port.
 ```text
 Tauri app -> system browser (authorize endpoint, PKCE S256)
 browser   -> hosted login (login / register / forgot password)
-browser   -> hosted success page (/auth/desktop/launch)
+browser   -> hosted success page (/oauth/desktop/launch)
 browser   -> deep link sdkwork-iam://auth/callback?code=...&state=...
 Tauri     -> deep-link plugin event / getCurrent
 renderer  -> handleOpenUrl -> oauth.desktopSessions.create -> session

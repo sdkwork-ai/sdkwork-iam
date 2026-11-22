@@ -242,8 +242,8 @@ function SdkworkAuthOAuthCallbackPageContent({
             startTransition(() => {
               navigate(
                 transferred
-                  ? buildSdkworkAuthDesktopLaunchPath({ basePath })
-                  : buildSdkworkAuthDesktopLaunchLocation(completion.redirectUrl, { basePath }),
+                  ? buildSdkworkAuthDesktopLaunchPath()
+                  : buildSdkworkAuthDesktopLaunchLocation(completion.redirectUrl),
                 { replace: true },
               );
             });

@@ -15,7 +15,7 @@ deep-link protocol registration, the `sdkwork:deepLinks:*` /
 ```text
 Electron app -> system browser (authorize endpoint, PKCE S256)
 browser      -> hosted login (login / register / forgot password)
-browser      -> hosted success page (/auth/desktop/launch)
+browser      -> hosted success page (/oauth/desktop/launch)
 browser      -> deep link sdkwork-iam://auth/callback?code=...&state=...
 Electron     -> open-url (macOS) / second-instance (Windows/Linux)
 renderer     -> handleOpenUrl -> oauth.desktopSessions.create -> session

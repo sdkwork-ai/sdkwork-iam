@@ -40,14 +40,11 @@ describe("desktop deep-link redirect helpers", () => {
   });
 
   it("builds the hosted desktop launch location", () => {
-    expect(buildSdkworkAuthDesktopLaunchPath()).toBe("/auth/desktop/launch");
-    expect(buildSdkworkAuthDesktopLaunchPath({ basePath: "/iam-auth" })).toBe(
-      "/iam-auth/desktop/launch",
-    );
+    expect(buildSdkworkAuthDesktopLaunchPath()).toBe("/oauth/desktop/launch");
     const location = buildSdkworkAuthDesktopLaunchLocation(
       "sdkwork-iam://auth/callback?code=a b&state=x",
     );
-    expect(location).toContain("/auth/desktop/launch?redirectUrl=");
+    expect(location).toContain("/oauth/desktop/launch?redirectUrl=");
     expect(location).not.toContain(" ");
   });
 
@@ -107,7 +104,7 @@ describe("auth access for the desktop hand-off page", () => {
     // The user just completed login in the browser; the hand-off page must
     // still render even though every other auth route redirects away.
     const decision = resolveAuthAccess({
-      currentPath: "/auth/desktop/launch",
+      currentPath: "/oauth/desktop/launch",
       routes,
       session: authenticatedSession,
     });
@@ -128,7 +125,7 @@ describe("auth access for the desktop hand-off page", () => {
 
   it("allows anonymous users on the desktop launch page without redirect loops", () => {
     const decision = resolveAuthAccess({
-      currentPath: "/auth/desktop/launch",
+      currentPath: "/oauth/desktop/launch",
       routes,
       session: null,
     });
@@ -156,7 +153,7 @@ function renderLaunchPage(
                 onLaunch={options.onLaunch}
               />
             }
-            path="/auth/desktop/launch"
+            path="/oauth/desktop/launch"
           />
           <Route element={<output>login-page</output>} path="/auth/login" />
         </Routes>
@@ -261,7 +258,7 @@ describe("sdkwork desktop launch page", () => {
       const redirect = "birdcoder://auth/callback?code=transfer&state=xyz";
       storeSdkworkDesktopLaunchRedirect(redirect);
       const onLaunch = vi.fn();
-      renderLaunchPage("/auth/desktop/launch", { onLaunch });
+      renderLaunchPage("/oauth/desktop/launch", { onLaunch });
 
       expect(screen.getByTestId("sdkwork-desktop-launch-description")).toBeInTheDocument();
       vi.advanceTimersByTime(2500);
@@ -285,7 +282,7 @@ describe("sdkwork desktop launch page", () => {
   });
 
   it("shows the fallback copy when the redirect parameter is missing", () => {
-    renderLaunchPage("/auth/desktop/launch");
+    renderLaunchPage("/oauth/desktop/launch");
     expect(
       screen.getByText(/hand-off link is missing or invalid/iu),
     ).toBeInTheDocument();
@@ -295,13 +292,13 @@ describe("sdkwork desktop launch page", () => {
   });
 
   it("navigates back to the login route", () => {
-    renderLaunchPage("/auth/desktop/launch");
+    renderLaunchPage("/oauth/desktop/launch");
     fireEvent.click(screen.getByText("Back to login"));
     expect(screen.getByText("login-page")).toBeInTheDocument();
   });
 
   it("renders the host brand name and logo instead of the IAM identity", () => {
-    renderLaunchPage("/auth/desktop/launch", {
+    renderLaunchPage("/oauth/desktop/launch", {
       brand: {
         logoUrl: "https://cdn.example.test/cloud-router-logo.png",
         name: "Cloud Router",
@@ -319,7 +316,7 @@ describe("sdkwork desktop launch page", () => {
   });
 
   it("falls back to an initials mark when the host configures only a name", () => {
-    renderLaunchPage("/auth/desktop/launch", {
+    renderLaunchPage("/oauth/desktop/launch", {
       brand: { name: "Cloud Router" },
     });
 
@@ -329,7 +326,7 @@ describe("sdkwork desktop launch page", () => {
   });
 
   it("keeps the shipped IAM identity when the host supplies no brand", () => {
-    renderLaunchPage("/auth/desktop/launch");
+    renderLaunchPage("/oauth/desktop/launch");
 
     const header = screen.getByRole("banner");
     expect(within(header).getByTestId("sdkwork-auth-brand-name")).toHaveTextContent("SDKWork IAM");
@@ -365,7 +362,7 @@ describe("sdkwork desktop launch page account header", () => {
         signOut,
       },
     });
-    renderLaunchPage("/auth/desktop/launch", { controller });
+    renderLaunchPage("/oauth/desktop/launch", { controller });
     return { controller, signOut };
   }
 
