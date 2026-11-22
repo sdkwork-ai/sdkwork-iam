@@ -397,7 +397,9 @@ path a host mounts.
 
 A deployment that overrides `SDKWORK_IAM_LOGIN_BASE_URL` must point it at the
 web base that serves `/oauth/login` (the default is `/oauth`, producing
-`/oauth/login?oauthAuthorizationStateId=…`).
+`/oauth/login?oauthAuthorizationStateId=…`). A base that still ends in `/auth`
+is migrated to its `/oauth` sibling at runtime with a warning, because the
+account surface no longer completes an OAuth authorization.
 
 ## Reusing the flow in another application
 
