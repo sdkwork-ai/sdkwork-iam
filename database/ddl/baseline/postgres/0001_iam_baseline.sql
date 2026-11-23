@@ -3823,3 +3823,13 @@ CREATE INDEX IF NOT EXISTS idx_iam_organization_membership_reports_to
 
 CREATE INDEX IF NOT EXISTS idx_iam_position_reports_to
     ON iam_position (tenant_id, organization_id, reports_to_position_id);
+
+-- folded migration: migrations/postgres/0053_iam_personnel_semantics_comments.up.sql
+COMMENT ON COLUMN iam_role_binding.condition_json IS
+    'Reserved. The authorization resolver does not evaluate this field; conditions are expressed through scope_kind/scope_id, data_scope_kind and the effective window.';
+
+COMMENT ON COLUMN iam_position.headcount IS
+    'Approved opening (migration 0052). NULL or 0 means the position is not headcount-limited; positionAssignments.create rejects a new active holder at or above the limit.';
+
+COMMENT ON COLUMN iam_organization_membership.reports_to_membership_id IS
+    'Person-to-person reporting line (migration 0052). Must reference an active membership in the same tenant and organization; edits that would close a cycle are rejected.';
