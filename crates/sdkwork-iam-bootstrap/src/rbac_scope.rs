@@ -26,7 +26,19 @@ const BINDING_SCOPE_SQL: &str = " \
     $3::text IS NULL \
     OR ($3::text <> '' AND $3::text <> '0' AND b.scope_kind = 'organization' AND b.scope_id = $3) \
     OR b.scope_kind = 'tenant' \
-  )";
+    OR ($3::text <> '' AND $3::text <> '0' AND b.scope_kind = 'department' AND b.scope_id IN ( \
+      SELECT da.department_id FROM iam_department_assignment da \
+      WHERE da.tenant_id = $1 AND da.status = 'active' \
+        AND da.organization_membership_id IN ( \
+          SELECT id FROM iam_organization_membership \
+          WHERE tenant_id = $1 AND user_id = $2 AND status = 'active'))) \
+  ) \
+  AND (b.effective_from IS NULL OR b.effective_from = '' \
+       OR (b.effective_from ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' \
+           AND b.effective_from::timestamptz <= now())) \
+  AND (b.effective_to IS NULL OR b.effective_to = '' \
+       OR (b.effective_to ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' \
+           AND b.effective_to::timestamptz > now()))";
 
 const PRINCIPAL_MATCH_SQL: &str = " \
   ( \

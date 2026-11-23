@@ -661,6 +661,7 @@ async fn list_role_bindings(
         let mut statement = sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
                     b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
+                    b.data_scope_kind, b.effective_from, b.effective_to, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_role_binding b \
              JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id \
@@ -684,6 +685,7 @@ async fn list_role_bindings(
         let mut statement = sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
                     b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
+                    b.data_scope_kind, b.effective_from, b.effective_to, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_role_binding b \
              JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id \
@@ -755,6 +757,54 @@ async fn create_role_binding(
         );
     }
 
+    // Data scope and effective window: an operator can narrow what a role grants
+    // and until when. `scope` keeps the pre-0049 semantics (same as the binding
+    // scope) for callers that do not send the field.
+    let data_scope_kind = read_string_field(&body, &["dataScopeKind", "data_scope_kind"])
+        .unwrap_or_else(|| "scope".to_owned());
+    if !matches!(
+        data_scope_kind.as_str(),
+        "scope" | "self" | "department" | "department_and_children" | "organization" | "tenant"
+    ) {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_role_binding_invalid_data_scope",
+            "dataScopeKind must be scope, self, department, department_and_children, organization, or tenant",
+        );
+    }
+    let effective_from = read_string_field(&body, &["effectiveFrom", "effective_from"]);
+    let effective_to = read_string_field(&body, &["effectiveTo", "effective_to"]);
+    if let (Some(from), Some(to)) = (&effective_from, &effective_to) {
+        if to < from {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_role_binding_invalid_effective_window",
+                "effectiveTo must not precede effectiveFrom",
+            );
+        }
+    }
+    if scope_kind == "department" {
+        let exists: Option<i32> = match sqlx::query_scalar(
+            "SELECT 1 FROM iam_department \
+             WHERE tenant_id = $1 AND id = $2 AND status = 'active'",
+        )
+        .bind(&tenant_id)
+        .bind(&scope_id)
+        .fetch_optional(pg)
+        .await
+        {
+            Ok(value) => value,
+            Err(error) => return internal_handler_error("iam_role_binding_create_failed", error),
+        };
+        if exists.is_none() {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_role_binding_department_scope_not_found",
+                "scopeId must reference an active department in this tenant",
+            );
+        }
+    }
+
     let role_row = match fetch_role_row(pg, &tenant_id, &role_ref).await {
         Ok(Some(row)) => row,
         Ok(None) => {
@@ -822,6 +872,9 @@ async fn create_role_binding(
     let scope_kind_insert = scope_kind.clone();
     let scope_id_insert = scope_id.clone();
     let effect_insert = effect.clone();
+    let data_scope_insert = data_scope_kind.clone();
+    let effective_from_insert = effective_from.clone();
+    let effective_to_insert = effective_to.clone();
     let result = directory_create_with_audit(
         pg,
         &ctx,
@@ -832,8 +885,8 @@ async fn create_role_binding(
             sqlx::query(
                 "INSERT INTO iam_role_binding \
                     (id, tenant_id, organization_id, role_id, principal_kind, principal_id, scope_kind, scope_id, \
-                     effect, status, created_at, updated_at) \
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active', $10, $10)",
+                     effect, data_scope_kind, effective_from, effective_to, status, created_at, updated_at) \
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $11, $12, $13, 'active', $10, $10)",
             )
             .bind(binding_id_insert)
             .bind(tenant_id_insert)
@@ -845,6 +898,9 @@ async fn create_role_binding(
             .bind(scope_id_insert)
             .bind(effect_insert)
             .bind(now)
+            .bind(data_scope_insert)
+            .bind(effective_from_insert)
+            .bind(effective_to_insert)
             .execute(&mut **tx)
             .await
             .map(|_| ())
@@ -856,7 +912,8 @@ async fn create_role_binding(
         Ok(_) => {
             let row = sqlx::query(
                 "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
-                        b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status \
+                        b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
+                        b.data_scope_kind, b.effective_from, b.effective_to \
                  FROM iam_role_binding b \
                  JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id \
                  WHERE b.id = $1",
@@ -1559,7 +1616,10 @@ fn permission_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
 
 fn role_binding_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
     json!({
+        "dataScopeKind": row.get::<String, _>(11),
         "effect": row.get::<String, _>(9),
+        "effectiveFrom": row.get::<Option<String>, _>(12),
+        "effectiveTo": row.get::<Option<String>, _>(13),
         "id": row.get::<String, _>(0),
         "organizationId": row.get::<String, _>(2),
         "principalId": row.get::<String, _>(6),
