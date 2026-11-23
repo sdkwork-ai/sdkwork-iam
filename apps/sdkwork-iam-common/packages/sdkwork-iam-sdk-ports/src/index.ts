@@ -195,6 +195,12 @@ export interface IamBackendIamResourceClient {
   organizationMemberships?: {
     create?: IamSdkMethod;
     update?: IamSdkMethod;
+    departments?: {
+      update?: IamSdkMethod;
+    };
+    roster?: {
+      list?: IamSdkMethod;
+    };
   };
   departments?: {
     create?: IamSdkMethod;

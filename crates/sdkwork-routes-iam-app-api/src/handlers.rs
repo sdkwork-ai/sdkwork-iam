@@ -6480,7 +6480,7 @@ async fn paged_departments_for_session(
         ],
     );
     let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
-        "SELECT id, tenant_id, organization_id, parent_department_id, name, status, \
+        "SELECT id, tenant_id, organization_id, parent_department_id, name, status, sort_order, \
                 COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
          FROM iam_department \
          WHERE tenant_id = $1 AND status = 'active' AND organization_id = ANY($2) \
@@ -6488,7 +6488,7 @@ async fn paged_departments_for_session(
            AND ($4::text IS NULL OR id = $4) \
            AND ($5::text IS NULL OR parent_department_id = $5) \
            AND ($6::text IS NULL OR LOWER(name) LIKE $6 OR LOWER(id) LIKE $6) \
-         ORDER BY name, id \
+         ORDER BY sort_order, name, id \
          LIMIT $7 OFFSET $8"
     )))
     .bind(&session.context.tenant_id)
@@ -6512,7 +6512,12 @@ async fn paged_departments_for_session(
             parent_department_id: row.get(3),
             name: row.get(4),
             status: row.get(5),
-            order: index as i64,
+            // Persisted sibling order (migration 0049); falls back to the page
+            // index only for the tree endpoint, which still maps by position.
+            order: row
+                .try_get::<i32, _>(6)
+                .map(i64::from)
+                .unwrap_or(index as i64),
         })
         .collect();
     Ok((departments, total, params))
