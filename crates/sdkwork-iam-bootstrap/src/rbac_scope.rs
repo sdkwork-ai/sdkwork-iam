@@ -66,13 +66,17 @@ pub enum DataScope {
 
 /// Resolves the widest data scope an allow binding grants for a read surface.
 ///
-/// The function-level permission check already decided *whether* the caller may
-/// read; this decides *how much data* the read may return. Empty input fails
-/// closed to [`DataScope::SelfOnly`]; `deny` bindings are handled earlier by the
-/// permission resolver and are ignored here.
-pub fn resolve_data_scope<'a>(
-    allow_bindings: impl IntoIterator<Item = &'a str>,
-) -> DataScope {
+/// Each binding contributes `(scope_kind, data_scope_kind)`. `data_scope_kind`
+/// is either an explicit narrowing or the legacy `scope` value added by
+/// migration 0049 as the column default — `scope` means "same as the binding's
+/// own scope", so it expands through `scope_kind` instead of collapsing to
+/// `self`. The function-level permission check already decided *whether* the
+/// caller may read; this decides *how much data* may be returned. Empty or
+/// unknown input fails closed; `deny` bindings are handled earlier.
+pub fn resolve_data_scope<'a, I>(bindings: I) -> DataScope
+where
+    I: IntoIterator<Item = (&'a str, &'a str)>,
+{
     let mut widest = DataScope::SelfOnly;
     let rank = |scope: DataScope| match scope {
         DataScope::SelfOnly => 0,
@@ -81,13 +85,20 @@ pub fn resolve_data_scope<'a>(
         DataScope::Organization => 3,
         DataScope::Tenant => 4,
     };
-    for kind in allow_bindings {
-        let scope = match kind {
+    for (scope_kind, data_scope_kind) in bindings {
+        let scope = match data_scope_kind {
             "tenant" => DataScope::Tenant,
             "organization" => DataScope::Organization,
             "department_and_children" => DataScope::DepartmentAndChildren,
             "department" => DataScope::Department,
-            "scope" | "self" | "" => DataScope::SelfOnly,
+            // Legacy default: inherit the binding's own scope.
+            "scope" | "" => match scope_kind {
+                "tenant" => DataScope::Tenant,
+                "organization" => DataScope::Organization,
+                "department" => DataScope::Department,
+                _ => DataScope::SelfOnly,
+            },
+            "self" => DataScope::SelfOnly,
             _ => DataScope::SelfOnly,
         };
         if rank(scope) > rank(widest) {
@@ -103,25 +114,52 @@ mod data_scope_tests {
 
     #[test]
     fn empty_bindings_fail_closed_to_self() {
-        assert_eq!(resolve_data_scope([] as [&str; 0]), DataScope::SelfOnly);
+        assert_eq!(resolve_data_scope([] as [(&str, &str); 0]), DataScope::SelfOnly);
     }
 
     #[test]
     fn widest_allow_wins_regardless_of_order() {
         assert_eq!(
-            resolve_data_scope(["department", "tenant", "organization"]),
+            resolve_data_scope([
+                ("department", "department"),
+                ("tenant", "tenant"),
+                ("organization", "organization"),
+            ]),
             DataScope::Tenant,
         );
         assert_eq!(
-            resolve_data_scope(["department_and_children", "department"]),
+            resolve_data_scope([
+                ("department", "department_and_children"),
+                ("department", "department"),
+            ]),
             DataScope::DepartmentAndChildren,
         );
     }
 
     #[test]
-    fn unknown_or_scope_kind_degrades_to_self() {
+    fn legacy_scope_value_inherits_the_binding_scope() {
         assert_eq!(
-            resolve_data_scope(["scope", "unexpected"]),
+            resolve_data_scope([("tenant", "scope")]),
+            DataScope::Tenant,
+        );
+        assert_eq!(
+            resolve_data_scope([("organization", "scope")]),
+            DataScope::Organization,
+        );
+        assert_eq!(
+            resolve_data_scope([("organization", "scope"), ("tenant", "scope")]),
+            DataScope::Tenant,
+        );
+    }
+
+    #[test]
+    fn unknown_values_degrade_to_self() {
+        assert_eq!(
+            resolve_data_scope([("tenant", "unexpected"), ("unknown", "scope")]),
+            DataScope::SelfOnly,
+        );
+        assert_eq!(
+            resolve_data_scope([("tenant", "self")]),
             DataScope::SelfOnly,
         );
     }
