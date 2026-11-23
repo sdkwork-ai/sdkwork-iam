@@ -1891,6 +1891,72 @@ async fn organization_membership_roster(
     let search_pattern = list_search_pattern(&query);
     let now = Utc::now().to_rfc3339();
 
+    // Data scope (G3): the permission check already let the caller read; this
+    // narrows *which* members. Callers without a matching allow binding resolve
+    // to SelfOnly (fail-closed). Legacy `scope` bindings inherit their own scope
+    // inside resolve_principal_data_scope.
+    let caller_user_id = match actor_user_id_from_context(&ctx) {
+        Some(value) => value,
+        None => {
+            return appbase_error(
+                StatusCode::FORBIDDEN,
+                "iam_member_roster_session_required",
+                "a signed-in user is required for the member roster",
+            )
+        }
+    };
+    let data_scope = match sdkwork_iam_bootstrap::rbac_scope::resolve_principal_data_scope(
+        pg,
+        &tenant_id,
+        &caller_user_id,
+        "iam.memberships.read",
+    )
+    .await
+    {
+        Ok(scope) => scope,
+        Err(error) => return internal_handler_error("iam_member_roster_failed", error),
+    };
+    let department_scope_ids: Vec<String> = if matches!(
+        data_scope,
+        sdkwork_iam_bootstrap::rbac_scope::DataScope::Department
+            | sdkwork_iam_bootstrap::rbac_scope::DataScope::DepartmentAndChildren
+    ) {
+        let rows: Result<Vec<String>, sqlx::Error> = sqlx::query_scalar(
+            "SELECT DISTINCT b.scope_id FROM iam_role_binding b \
+             JOIN iam_role_permission rp ON rp.tenant_id = b.tenant_id AND rp.role_id = b.role_id \
+             JOIN iam_permission p ON p.id = rp.permission_id \
+             WHERE b.tenant_id = $1 AND b.status = 'active' AND b.effect = 'allow' \
+               AND b.scope_kind = 'department' AND p.code = 'iam.memberships.read' \
+               AND ((b.principal_kind = 'user' AND b.principal_id = $2) \
+                    OR (b.principal_kind = 'organization_membership' AND b.principal_id IN ( \
+                          SELECT id FROM iam_organization_membership \
+                           WHERE tenant_id = $1 AND user_id = $2 AND status = 'active'))) \
+               AND (b.effective_from IS NULL OR b.effective_from = '' \
+                    OR b.effective_from::timestamptz <= now()) \
+               AND (b.effective_to IS NULL OR b.effective_to = '' \
+                    OR b.effective_to::timestamptz > now())",
+        )
+        .bind(&tenant_id)
+        .bind(&caller_user_id)
+        .fetch_all(pg)
+        .await;
+        match rows {
+            Ok(rows) => rows,
+            Err(error) => return internal_handler_error("iam_member_roster_failed", error),
+        }
+    } else {
+        Vec::new()
+    };
+    let scope_kind: Option<&str> = match data_scope {
+        sdkwork_iam_bootstrap::rbac_scope::DataScope::Tenant => None,
+        sdkwork_iam_bootstrap::rbac_scope::DataScope::Organization => Some("organization"),
+        sdkwork_iam_bootstrap::rbac_scope::DataScope::SelfOnly => Some("self"),
+        sdkwork_iam_bootstrap::rbac_scope::DataScope::Department => Some("department"),
+        sdkwork_iam_bootstrap::rbac_scope::DataScope::DepartmentAndChildren => {
+            Some("department_and_children")
+        }
+    };
+
     let department_ids: Option<Vec<String>> = match optional_query_value(&query, "department_id") {
         None => None,
         Some(department_id) => {
@@ -1975,6 +2041,20 @@ async fn organization_membership_roster(
                      AND da2.organization_id = m.organization_id \
                      AND da2.organization_membership_id = m.id \
                      AND da2.status = 'active' AND da2.department_id = ANY($6))) \
+            AND ($8::text IS NULL OR $8 = 'organization' \
+                 OR ($8 = 'self' AND m.user_id = $10) \
+                 OR ($8 IN ('department', 'department_and_children') AND EXISTS ( \
+                       SELECT 1 FROM iam_department_assignment dsa \
+                        WHERE dsa.tenant_id = m.tenant_id \
+                          AND dsa.organization_id = m.organization_id \
+                          AND dsa.organization_membership_id = m.id \
+                          AND dsa.status = 'active' \
+                          AND (dsa.department_id = ANY($9) \
+                               OR ($8 = 'department_and_children' AND dsa.department_id IN ( \
+                                     SELECT c.descendant_department_id FROM iam_department_closure c \
+                                      WHERE c.tenant_id = m.tenant_id \
+                                        AND c.organization_id = m.organization_id \
+                                        AND c.ancestor_department_id = ANY($9))))))) \
           ORDER BY m.joined_at DESC NULLS LAST, m.id \
           LIMIT $3 OFFSET $4"
     )))
@@ -1985,6 +2065,9 @@ async fn organization_membership_roster(
     .bind(&search_pattern)
     .bind(department_ids.as_deref())
     .bind(&now)
+    .bind(scope_kind)
+    .bind(department_scope_ids.as_slice())
+    .bind(&caller_user_id)
     .fetch_all(pg)
     .await;
 
