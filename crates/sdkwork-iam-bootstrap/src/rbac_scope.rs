@@ -55,6 +55,78 @@ const PRINCIPAL_MATCH_SQL: &str = " \
     OR (b.principal_kind = 'service_account' AND b.principal_id = $2) \
   )";
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DataScope {
+    Department,
+    DepartmentAndChildren,
+    Organization,
+    SelfOnly,
+    Tenant,
+}
+
+/// Resolves the widest data scope an allow binding grants for a read surface.
+///
+/// The function-level permission check already decided *whether* the caller may
+/// read; this decides *how much data* the read may return. Empty input fails
+/// closed to [`DataScope::SelfOnly`]; `deny` bindings are handled earlier by the
+/// permission resolver and are ignored here.
+pub fn resolve_data_scope<'a>(
+    allow_bindings: impl IntoIterator<Item = &'a str>,
+) -> DataScope {
+    let mut widest = DataScope::SelfOnly;
+    let rank = |scope: DataScope| match scope {
+        DataScope::SelfOnly => 0,
+        DataScope::Department => 1,
+        DataScope::DepartmentAndChildren => 2,
+        DataScope::Organization => 3,
+        DataScope::Tenant => 4,
+    };
+    for kind in allow_bindings {
+        let scope = match kind {
+            "tenant" => DataScope::Tenant,
+            "organization" => DataScope::Organization,
+            "department_and_children" => DataScope::DepartmentAndChildren,
+            "department" => DataScope::Department,
+            "scope" | "self" | "" => DataScope::SelfOnly,
+            _ => DataScope::SelfOnly,
+        };
+        if rank(scope) > rank(widest) {
+            widest = scope;
+        }
+    }
+    widest
+}
+
+#[cfg(test)]
+mod data_scope_tests {
+    use super::{resolve_data_scope, DataScope};
+
+    #[test]
+    fn empty_bindings_fail_closed_to_self() {
+        assert_eq!(resolve_data_scope([] as [&str; 0]), DataScope::SelfOnly);
+    }
+
+    #[test]
+    fn widest_allow_wins_regardless_of_order() {
+        assert_eq!(
+            resolve_data_scope(["department", "tenant", "organization"]),
+            DataScope::Tenant,
+        );
+        assert_eq!(
+            resolve_data_scope(["department_and_children", "department"]),
+            DataScope::DepartmentAndChildren,
+        );
+    }
+
+    #[test]
+    fn unknown_or_scope_kind_degrades_to_self() {
+        assert_eq!(
+            resolve_data_scope(["scope", "unexpected"]),
+            DataScope::SelfOnly,
+        );
+    }
+}
+
 pub fn violates_role_exclusion(
     active_role_codes: &BTreeSet<String>,
     new_role_code: &str,
