@@ -2628,7 +2628,14 @@ async fn apply_department_parent_move(
 
     let now = Utc::now().to_rfc3339();
     let sort_order = match requested_sort_order {
-        Some(value) => value.max(0),
+        Some(value) if (0..=1_000_000).contains(&value) => value,
+        Some(_) => {
+            return Err(appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_department_invalid_sort_order",
+                "sortOrder must be between 0 and 1000000",
+            ))
+        }
         None if parent_changed => {
             // Append to the end of the target sibling group.
             let next: i32 = sqlx::query_scalar(
