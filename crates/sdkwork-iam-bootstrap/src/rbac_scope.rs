@@ -108,6 +108,45 @@ where
     widest
 }
 
+/// Loads the caller's active allow bindings for one permission and resolves the
+/// widest data scope they grant. Bindings outside their effective window are
+/// ignored; a caller with no matching binding gets `SelfOnly` (fail-closed).
+pub async fn resolve_principal_data_scope(
+    pg: &PgPool,
+    tenant_id: &str,
+    user_id: &str,
+    permission_code: &str,
+) -> Result<DataScope, sqlx::Error> {
+    let rows: Vec<(String, String)> = sqlx::query_as(
+        "SELECT b.scope_kind, b.data_scope_kind \
+           FROM iam_role_binding b \
+           JOIN iam_role_permission rp \
+             ON rp.tenant_id = b.tenant_id AND rp.role_id = b.role_id \
+           JOIN iam_permission p ON p.id = rp.permission_id \
+          WHERE b.tenant_id = $1 AND b.status = 'active' AND b.effect = 'allow' \
+            AND p.code = $3 \
+            AND ((b.principal_kind = 'user' AND b.principal_id = $2) \
+                 OR (b.principal_kind = 'organization_membership' \
+                     AND b.principal_id IN ( \
+                       SELECT id FROM iam_organization_membership \
+                        WHERE tenant_id = $1 AND user_id = $2 AND status = 'active'))) \
+            AND (b.effective_from IS NULL OR b.effective_from = '' \
+                 OR b.effective_from::timestamptz <= now()) \
+            AND (b.effective_to IS NULL OR b.effective_to = '' \
+                 OR b.effective_to::timestamptz > now())",
+    )
+    .bind(tenant_id)
+    .bind(user_id)
+    .bind(permission_code)
+    .fetch_all(pg)
+    .await?;
+    Ok(resolve_data_scope(
+        rows.iter().map(|(scope_kind, data_scope_kind)| {
+            (scope_kind.as_str(), data_scope_kind.as_str())
+        }),
+    ))
+}
+
 #[cfg(test)]
 mod data_scope_tests {
     use super::{resolve_data_scope, DataScope};
