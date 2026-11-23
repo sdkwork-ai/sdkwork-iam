@@ -905,6 +905,7 @@ pub(crate) fn department_to_json(d: &LocalDepartment) -> Value {
     json!({
         "departmentId": d.id, "displayName": d.name, "id": d.id, "name": d.name, "order": d.order,
         "sortOrder": d.order,
+        "version": d.version,
         "organizationId": d.organization_id, "parentDepartmentId": d.parent_department_id,
         "parentId": d.parent_department_id, "status": d.status, "tenantId": d.tenant_id
     })

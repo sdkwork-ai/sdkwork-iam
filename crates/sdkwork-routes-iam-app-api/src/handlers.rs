@@ -6453,6 +6453,7 @@ async fn scoped_departments_for_session(
             name: row.get(4),
             status: row.get(5),
             order: index as i64,
+            version: row.try_get::<i32, _>(6).unwrap_or(0),
         })
         .collect())
 }
@@ -6480,7 +6481,7 @@ async fn paged_departments_for_session(
         ],
     );
     let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
-        "SELECT id, tenant_id, organization_id, parent_department_id, name, status, sort_order, \
+        "SELECT id, tenant_id, organization_id, parent_department_id, name, status, sort_order, version, \
                 COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
          FROM iam_department \
          WHERE tenant_id = $1 AND status = 'active' AND organization_id = ANY($2) \
@@ -6518,6 +6519,7 @@ async fn paged_departments_for_session(
                 .try_get::<i32, _>(6)
                 .map(i64::from)
                 .unwrap_or(index as i64),
+            version: row.try_get::<i32, _>(7).unwrap_or(0),
         })
         .collect();
     Ok((departments, total, params))
