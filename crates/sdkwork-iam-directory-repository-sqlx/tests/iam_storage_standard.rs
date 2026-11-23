@@ -1084,6 +1084,7 @@ fn database_baseline_folds_department_ordering_and_member_scope() {
         "ADD COLUMN IF NOT EXISTS effective_from",
         "ADD COLUMN IF NOT EXISTS effective_to",
         "chk_iam_role_binding_data_scope_kind",
+        "ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 0",
     ] {
         assert!(
             sql.contains(fragment),
