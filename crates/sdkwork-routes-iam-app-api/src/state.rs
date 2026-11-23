@@ -139,6 +139,7 @@ pub(crate) struct LocalDepartment {
     pub(crate) parent_department_id: Option<String>,
     pub(crate) status: String,
     pub(crate) tenant_id: String,
+    pub(crate) version: i32,
 }
 
 #[derive(Clone)]

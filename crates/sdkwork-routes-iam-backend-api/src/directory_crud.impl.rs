@@ -449,7 +449,8 @@ async fn fetch_department_row<'e>(
     department_id: &str,
 ) -> Result<Option<sqlx::postgres::PgRow>, sqlx::Error> {
     sqlx::query(
-        "SELECT id, tenant_id, organization_id, code, name, status, parent_department_id \
+        "SELECT id, tenant_id, organization_id, code, name, status, parent_department_id, \
+                sort_order, department_kind, path, version \
          FROM iam_department WHERE tenant_id = $1 AND id = $2 LIMIT 1",
     )
     .bind(tenant_id)
@@ -1849,6 +1850,503 @@ async fn create_organization_membership(State(state): State<BackendIamState>, ct
     }
 }
 
+/// Reads a `jsonb_agg(...)::text` projection into a JSON array, tolerating a
+/// NULL aggregate (member without departments/positions/roles).
+fn json_array_column(row: &sqlx::postgres::PgRow, index: usize) -> Value {
+    row.get::<Option<String>, _>(index)
+        .and_then(|text| serde_json::from_str::<Value>(&text).ok())
+        .filter(Value::is_array)
+        .unwrap_or_else(|| json!([]))
+}
+
+/// Personnel-management roster: one page of organization members joined with
+/// their departments, positions, and active role bindings. This is the read
+/// model behind the "人员管理" member table; it keeps the join server-side so the
+/// console never assembles N+1 cross-product views.
+async fn organization_membership_roster(
+    State(state): State<BackendIamState>,
+    ctx: WebRequestContext,
+    Query(query): Query<HashMap<String, String>>,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state).err().expect("error response");
+    };
+    let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
+        return tenant_id_from_context(&ctx).err().expect("error response");
+    };
+    let organization_id = optional_query_value(&query, "organization_id")
+        .or_else(|| organization_id_from_context(&ctx));
+    let Some(organization_id) = organization_id else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_organization_required",
+            "organization_id is required for the member roster",
+        );
+    };
+    let Ok(params) = list_page_params_or_error(&query) else {
+        return list_page_params_or_error(&query)
+            .err()
+            .expect("error response");
+    };
+    let search_pattern = list_search_pattern(&query);
+    let now = Utc::now().to_rfc3339();
+
+    // Data scope (G3): the permission check already let the caller read; this
+    // narrows *which* members. Callers without a matching allow binding resolve
+    // to SelfOnly (fail-closed). Legacy `scope` bindings inherit their own scope
+    // inside resolve_principal_data_scope.
+    let caller_user_id = match actor_user_id_from_context(&ctx) {
+        Some(value) => value,
+        None => {
+            return appbase_error(
+                StatusCode::FORBIDDEN,
+                "iam_member_roster_session_required",
+                "a signed-in user is required for the member roster",
+            )
+        }
+    };
+    let data_scope = match sdkwork_iam_bootstrap::rbac_scope::resolve_principal_data_scope(
+        pg,
+        &tenant_id,
+        &caller_user_id,
+        "iam.memberships.read",
+    )
+    .await
+    {
+        Ok(scope) => scope,
+        Err(error) => return internal_handler_error("iam_member_roster_failed", error),
+    };
+    let department_scope_ids: Vec<String> = if matches!(
+        data_scope,
+        sdkwork_iam_bootstrap::rbac_scope::DataScope::Department
+            | sdkwork_iam_bootstrap::rbac_scope::DataScope::DepartmentAndChildren
+    ) {
+        let rows: Result<Vec<String>, sqlx::Error> = sqlx::query_scalar(
+            "SELECT DISTINCT b.scope_id FROM iam_role_binding b \
+             JOIN iam_role_permission rp ON rp.tenant_id = b.tenant_id AND rp.role_id = b.role_id \
+             JOIN iam_permission p ON p.id = rp.permission_id \
+             WHERE b.tenant_id = $1 AND b.status = 'active' AND b.effect = 'allow' \
+               AND b.scope_kind = 'department' AND p.code = 'iam.memberships.read' \
+               AND ((b.principal_kind = 'user' AND b.principal_id = $2) \
+                    OR (b.principal_kind = 'organization_membership' AND b.principal_id IN ( \
+                          SELECT id FROM iam_organization_membership \
+                           WHERE tenant_id = $1 AND user_id = $2 AND status = 'active'))) \
+               AND (b.effective_from IS NULL OR b.effective_from = '' \
+                    OR b.effective_from::timestamptz <= now()) \
+               AND (b.effective_to IS NULL OR b.effective_to = '' \
+                    OR b.effective_to::timestamptz > now())",
+        )
+        .bind(&tenant_id)
+        .bind(&caller_user_id)
+        .fetch_all(pg)
+        .await;
+        match rows {
+            Ok(rows) => rows,
+            Err(error) => return internal_handler_error("iam_member_roster_failed", error),
+        }
+    } else {
+        Vec::new()
+    };
+    let scope_kind: Option<&str> = match data_scope {
+        sdkwork_iam_bootstrap::rbac_scope::DataScope::Tenant => None,
+        sdkwork_iam_bootstrap::rbac_scope::DataScope::Organization => Some("organization"),
+        sdkwork_iam_bootstrap::rbac_scope::DataScope::SelfOnly => Some("self"),
+        sdkwork_iam_bootstrap::rbac_scope::DataScope::Department => Some("department"),
+        sdkwork_iam_bootstrap::rbac_scope::DataScope::DepartmentAndChildren => {
+            Some("department_and_children")
+        }
+    };
+
+    let department_ids: Option<Vec<String>> = match optional_query_value(&query, "department_id") {
+        None => None,
+        Some(department_id) => {
+            let include_descendants = query
+                .get("include_descendants")
+                .map(|value| value != "false")
+                .unwrap_or(true);
+            if !include_descendants {
+                Some(vec![department_id])
+            } else {
+                let rows: Result<Vec<String>, sqlx::Error> = sqlx::query_scalar(
+                    "SELECT descendant_department_id FROM iam_department_closure \
+                     WHERE tenant_id = $1 AND organization_id = $2 AND ancestor_department_id = $3",
+                )
+                .bind(&tenant_id)
+                .bind(&organization_id)
+                .bind(&department_id)
+                .fetch_all(pg)
+                .await;
+                match rows {
+                    Ok(rows) if !rows.is_empty() => Some(rows),
+                    Ok(_) => Some(vec![department_id]),
+                    Err(error) => return internal_handler_error("iam_member_roster_failed", error),
+                }
+            }
+        }
+    };
+
+    let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
+        "SELECT m.id, m.tenant_id, m.organization_id, m.user_id, \
+                COALESCE(NULLIF(m.display_name, ''), u.display_name) AS display_name, \
+                m.employee_no, u.username, u.email, u.phone, m.membership_kind, m.status, \
+                m.joined_at, m.is_primary, \
+                dept.departments::text, pos.positions::text, bind.roles::text, \
+                COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
+           FROM iam_organization_membership m \
+           JOIN iam_user u ON u.id = m.user_id AND u.tenant_id = m.tenant_id \
+           LEFT JOIN LATERAL ( \
+                 SELECT jsonb_agg(jsonb_build_object( \
+                            'assignmentId', da.id, 'departmentId', d.id, 'code', d.code, \
+                            'name', d.name, 'isPrimary', da.is_primary = 1) \
+                        ORDER BY da.is_primary DESC, d.sort_order, d.name) AS departments \
+                   FROM iam_department_assignment da \
+                   JOIN iam_department d ON d.id = da.department_id \
+                    AND d.tenant_id = da.tenant_id AND d.organization_id = da.organization_id \
+                  WHERE da.tenant_id = m.tenant_id AND da.organization_id = m.organization_id \
+                    AND da.organization_membership_id = m.id AND da.status = 'active') dept ON TRUE \
+           LEFT JOIN LATERAL ( \
+                 SELECT jsonb_agg(jsonb_build_object( \
+                            'positionId', p.id, 'code', p.code, 'name', p.name, \
+                            'departmentId', da.department_id, 'isPrimary', pa.is_primary = 1) \
+                        ORDER BY pa.is_primary DESC, p.name) AS positions \
+                   FROM iam_department_assignment da \
+                   JOIN iam_position_assignment pa ON pa.department_assignment_id = da.id \
+                    AND pa.tenant_id = da.tenant_id AND pa.organization_id = da.organization_id \
+                   JOIN iam_position p ON p.id = pa.position_id AND p.tenant_id = pa.tenant_id \
+                  WHERE da.tenant_id = m.tenant_id AND da.organization_id = m.organization_id \
+                    AND da.organization_membership_id = m.id \
+                    AND da.status = 'active' AND pa.status = 'active') pos ON TRUE \
+           LEFT JOIN LATERAL ( \
+                 SELECT jsonb_agg(jsonb_build_object( \
+                            'roleBindingId', rb.id, 'roleId', r.id, 'roleCode', r.code, \
+                            'scopeKind', rb.scope_kind, 'scopeId', rb.scope_id, \
+                            'dataScopeKind', rb.data_scope_kind, 'effect', rb.effect, \
+                            'effectiveFrom', rb.effective_from, 'effectiveTo', rb.effective_to) \
+                        ORDER BY r.code) AS roles \
+                   FROM iam_role_binding rb \
+                   JOIN iam_role r ON r.id = rb.role_id AND r.tenant_id = rb.tenant_id \
+                  WHERE rb.tenant_id = m.tenant_id AND rb.organization_id = m.organization_id \
+                    AND rb.principal_kind = 'organization_membership' \
+                    AND rb.principal_id = m.id AND rb.status = 'active' \
+                    AND (rb.effective_from IS NULL OR rb.effective_from <= $7) \
+                    AND (rb.effective_to IS NULL OR rb.effective_to > $7)) bind ON TRUE \
+          WHERE m.tenant_id = $1 AND m.organization_id = $2 AND m.status = 'active' \
+            AND ($5::text IS NULL \
+                 OR LOWER(COALESCE(NULLIF(m.display_name, ''), u.display_name)) LIKE $5 \
+                 OR LOWER(u.username) LIKE $5 OR LOWER(COALESCE(u.email, '')) LIKE $5 \
+                 OR COALESCE(u.phone, '') LIKE $5) \
+            AND ($6::text[] IS NULL OR EXISTS ( \
+                  SELECT 1 FROM iam_department_assignment da2 \
+                   WHERE da2.tenant_id = m.tenant_id \
+                     AND da2.organization_id = m.organization_id \
+                     AND da2.organization_membership_id = m.id \
+                     AND da2.status = 'active' AND da2.department_id = ANY($6))) \
+            AND ($8::text IS NULL OR $8 = 'organization' \
+                 OR ($8 = 'self' AND m.user_id = $10) \
+                 OR ($8 IN ('department', 'department_and_children') AND EXISTS ( \
+                       SELECT 1 FROM iam_department_assignment dsa \
+                        WHERE dsa.tenant_id = m.tenant_id \
+                          AND dsa.organization_id = m.organization_id \
+                          AND dsa.organization_membership_id = m.id \
+                          AND dsa.status = 'active' \
+                          AND (dsa.department_id = ANY($9) \
+                               OR ($8 = 'department_and_children' AND dsa.department_id IN ( \
+                                     SELECT c.descendant_department_id FROM iam_department_closure c \
+                                      WHERE c.tenant_id = m.tenant_id \
+                                        AND c.organization_id = m.organization_id \
+                                        AND c.ancestor_department_id = ANY($9))))))) \
+          ORDER BY m.joined_at DESC NULLS LAST, m.id \
+          LIMIT $3 OFFSET $4"
+    )))
+    .bind(&tenant_id)
+    .bind(&organization_id)
+    .bind(params.page_size)
+    .bind(params.offset)
+    .bind(&search_pattern)
+    .bind(department_ids.as_deref())
+    .bind(&now)
+    .bind(scope_kind)
+    .bind(department_scope_ids.as_slice())
+    .bind(&caller_user_id)
+    .fetch_all(pg)
+    .await;
+
+    match rows {
+        Ok(rows) => appbase_ok(page_json_from_rows(
+            rows,
+            &params,
+            |row| {
+                json!({
+                    "departments": json_array_column(row, 13),
+                    "displayName": row.get::<String, _>(4),
+                    "email": row.get::<Option<String>, _>(7),
+                    "employeeNo": row.get::<Option<String>, _>(5),
+                    "isPrimary": row.get::<i32, _>(12) == 1,
+                    "joinedAt": row.get::<String, _>(11),
+                    "membershipId": row.get::<String, _>(0),
+                    "membershipKind": row.get::<String, _>(9),
+                    "organizationId": row.get::<String, _>(2),
+                    "phone": row.get::<Option<String>, _>(8),
+                    "positions": json_array_column(row, 14),
+                    "roles": json_array_column(row, 15),
+                    "status": row.get::<String, _>(10),
+                    "tenantId": row.get::<String, _>(1),
+                    "userId": row.get::<String, _>(3),
+                    "username": row.get::<String, _>(6),
+                })
+            },
+        )),
+        Err(error) => internal_handler_error("iam_member_roster_failed", error),
+    }
+}
+
+/// Replaces the department assignments of one membership in a single
+/// transaction: create/reactivate the desired departments, deactivate the ones
+/// omitted, and enforce exactly one active primary department. Positions are
+/// managed through `position_assignments` and are not touched here.
+async fn replace_organization_membership_departments(
+    State(state): State<BackendIamState>,
+    ctx: WebRequestContext,
+    Path(membership_id): Path<String>,
+    Json(body): Json<Value>,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state).err().expect("error response");
+    };
+    let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
+        return tenant_id_from_context(&ctx).err().expect("error response");
+    };
+    let organization_id = read_string_field(&body, &["organizationId", "organization_id"])
+        .or_else(|| organization_id_from_context(&ctx));
+    let Some(organization_id) = organization_id else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_organization_required",
+            "organizationId is required",
+        );
+    };
+    let Some(entries) = body.get("departments").and_then(Value::as_array) else {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_membership_departments_invalid",
+            "departments must be an array",
+        );
+    };
+    let mut wanted: Vec<(String, bool)> = Vec::new();
+    for entry in entries {
+        let Some(department_id) = read_string_field(entry, &["departmentId", "department_id"]) else {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_membership_departments_invalid",
+                "every department needs a departmentId",
+            );
+        };
+        if wanted.iter().any(|(existing, _)| *existing == department_id) {
+            continue;
+        }
+        let is_primary = entry
+            .get("isPrimary")
+            .or_else(|| entry.get("is_primary"))
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        wanted.push((department_id, is_primary));
+    }
+    if wanted.iter().filter(|(_, primary)| *primary).count() > 1 {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_membership_primary_department_conflict",
+            "only one department may be primary",
+        );
+    }
+    if !wanted.is_empty() && !wanted.iter().any(|(_, primary)| *primary) {
+        if let Some(first) = wanted.first_mut() {
+            first.1 = true;
+        }
+    }
+
+    let membership: Option<(String, String)> = match sqlx::query_as(
+        "SELECT user_id, organization_id FROM iam_organization_membership \
+         WHERE tenant_id = $1 AND id = $2 AND status = 'active'",
+    )
+    .bind(&tenant_id)
+    .bind(&membership_id)
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(value) => value,
+        Err(error) => return internal_handler_error("iam_membership_departments_failed", error),
+    };
+    let Some((user_id, membership_organization_id)) = membership else {
+        return appbase_error(
+            StatusCode::NOT_FOUND,
+            "iam_membership_not_found",
+            "organization membership not found",
+        );
+    };
+    if membership_organization_id != organization_id {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_membership_organization_mismatch",
+            "the membership does not belong to organizationId",
+        );
+    }
+    if !wanted.is_empty() {
+        let department_ids: Vec<String> =
+            wanted.iter().map(|(department, _)| department.clone()).collect();
+        let found: i64 = match sqlx::query_scalar(
+            "SELECT COUNT(*) FROM iam_department \
+             WHERE tenant_id = $1 AND organization_id = $2 AND status = 'active' \
+               AND id = ANY($3)",
+        )
+        .bind(&tenant_id)
+        .bind(&organization_id)
+        .bind(department_ids.as_slice())
+        .fetch_one(pg)
+        .await
+        {
+            Ok(value) => value,
+            Err(error) => {
+                return internal_handler_error("iam_membership_departments_failed", error)
+            }
+        };
+        if found != department_ids.len() as i64 {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_department_not_found",
+                "every departmentId must reference an active department in this organization",
+            );
+        }
+    }
+
+    let now = Utc::now().to_rfc3339();
+    let mut tx = match pg.begin().await {
+        Ok(tx) => tx,
+        Err(error) => return internal_handler_error("iam_membership_departments_failed", error),
+    };
+    let existing: Result<Vec<(String, String)>, sqlx::Error> = sqlx::query_as(
+        "SELECT id, department_id FROM iam_department_assignment \
+         WHERE tenant_id = $1 AND organization_id = $2 AND organization_membership_id = $3 \
+           AND status = 'active'",
+    )
+    .bind(&tenant_id)
+    .bind(&organization_id)
+    .bind(&membership_id)
+    .fetch_all(&mut *tx)
+    .await;
+    let existing = match existing {
+        Ok(rows) => rows,
+        Err(error) => return internal_handler_error("iam_membership_departments_failed", error),
+    };
+
+    for (assignment_id, department_id) in &existing {
+        if wanted
+            .iter()
+            .any(|(wanted_department, _)| wanted_department == department_id)
+        {
+            continue;
+        }
+        if let Err(error) = sqlx::query(
+            "UPDATE iam_department_assignment \
+                SET status = 'inactive', is_primary = 0, effective_to = $4, updated_at = $4 \
+              WHERE tenant_id = $1 AND organization_id = $2 AND id = $3",
+        )
+        .bind(&tenant_id)
+        .bind(&organization_id)
+        .bind(assignment_id)
+        .bind(&now)
+        .execute(&mut *tx)
+        .await
+        {
+            return internal_handler_error("iam_membership_departments_failed", error);
+        }
+    }
+
+    for (department_id, is_primary) in &wanted {
+        let primary_flag = i32::from(*is_primary);
+        let existing_assignment = existing
+            .iter()
+            .find(|(_, existing_department)| existing_department == department_id);
+        let outcome = match existing_assignment {
+            Some((assignment_id, _)) => {
+                sqlx::query(
+                    "UPDATE iam_department_assignment SET is_primary = $4, updated_at = $5 \
+                     WHERE tenant_id = $1 AND organization_id = $2 AND id = $3",
+                )
+                .bind(&tenant_id)
+                .bind(&organization_id)
+                .bind(assignment_id)
+                .bind(primary_flag)
+                .bind(&now)
+                .execute(&mut *tx)
+                .await
+                .map(|_| ())
+            }
+            None => {
+                let assignment_id = format!("iamda-{}", Uuid::new_v4());
+                sqlx::query(
+                    "INSERT INTO iam_department_assignment \
+                     (id, tenant_id, organization_id, organization_membership_id, department_id, \
+                      user_id, assignment_kind, is_primary, effective_from, status, created_at, updated_at) \
+                     VALUES ($1, $2, $3, $4, $5, $6, 'standard', $7, $8, 'active', $8, $8)",
+                )
+                .bind(&assignment_id)
+                .bind(&tenant_id)
+                .bind(&organization_id)
+                .bind(&membership_id)
+                .bind(department_id)
+                .bind(&user_id)
+                .bind(primary_flag)
+                .bind(&now)
+                .execute(&mut *tx)
+                .await
+                .map(|_| ())
+            }
+        };
+        if let Err(error) = outcome {
+            return internal_handler_error("iam_membership_departments_failed", error);
+        }
+    }
+
+    if let Err(error) = record_backend_mutation_audit_tx(
+        &mut *tx,
+        &ctx,
+        "iam_organization_membership.departments.replace",
+        "iam_organization_membership",
+        &membership_id,
+        json!({
+            "departments": wanted
+                .iter()
+                .map(|(department, primary)| json!({
+                    "departmentId": department,
+                    "isPrimary": primary,
+                }))
+                .collect::<Vec<_>>(),
+        }),
+    )
+    .await
+    {
+        return internal_handler_error(
+            "iam_membership_departments_failed",
+            sqlx::Error::Protocol(error),
+        );
+    }
+    if let Err(error) = tx.commit().await {
+        return internal_handler_error("iam_membership_departments_failed", error);
+    }
+
+    appbase_ok(json!({
+        "departments": wanted
+            .iter()
+            .map(|(department, primary)| json!({
+                "departmentId": department,
+                "isPrimary": primary,
+            }))
+            .collect::<Vec<_>>(),
+        "membershipId": membership_id,
+        "organizationId": organization_id,
+    }))
+}
+
 async fn update_organization_membership(State(state): State<BackendIamState>, ctx: WebRequestContext, Path(membership_id): Path<String>, Json(body): Json<Value>) -> Response {
     let Ok(pg) = postgres_pool_or_error(&state) else { return postgres_pool_or_error(&state).err().expect("error response"); };
     let Ok(tenant_id) = tenant_id_from_context(&ctx) else { return tenant_id_from_context(&ctx).err().expect("error response"); };
@@ -1870,6 +2368,9 @@ async fn create_department(State(state): State<BackendIamState>, ctx: WebRequest
     }
     let organization_id = organization_id.expect("validated");
     let parent_department_id = read_string_field(&body, &["parentDepartmentId", "parent_department_id"]);
+    // New siblings append to the end of their group unless the caller pins an
+    // explicit ordinal (the tree editor renumbers on drop).
+    let requested_sort_order = read_i32_field(&body, &["sortOrder", "sort_order"]);
     let path = if let Some(parent_id) = parent_department_id.as_deref() {
         match sqlx::query("SELECT path FROM iam_department WHERE tenant_id = $1 AND organization_id = $2 AND id = $3 AND status <> 'disabled'")
             .bind(&tenant_id).bind(&organization_id).bind(parent_id).fetch_optional(pg).await
@@ -1906,7 +2407,13 @@ async fn create_department(State(state): State<BackendIamState>, ctx: WebRequest
             let now = now;
             
                 sqlx::query(
-                    "INSERT INTO iam_department (id, tenant_id, organization_id, parent_department_id, code, name, department_kind, path, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, 'standard', $7, 'active', $8, $8)",
+                    "INSERT INTO iam_department (id, tenant_id, organization_id, parent_department_id, code, name, department_kind, path, sort_order, status, created_at, updated_at) \
+                     VALUES ($1, $2, $3, $4, $5, $6, 'standard', $7, \
+                       COALESCE($9, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM iam_department \
+                                      WHERE tenant_id = $2 AND organization_id = $3 \
+                                        AND parent_department_id IS NOT DISTINCT FROM $4 \
+                                        AND status = 'active')), \
+                       'active', $8, $8)",
                 )
                 .bind(&insert_id)
                 .bind(&tenant_id)
@@ -1916,6 +2423,7 @@ async fn create_department(State(state): State<BackendIamState>, ctx: WebRequest
                 .bind(&name_value)
                 .bind(&path)
                 .bind(now)
+                .bind(requested_sort_order)
                 .execute(&mut **tx)
                 .await
                 .map(|_| ())
@@ -1952,30 +2460,522 @@ async fn retrieve_department(State(state): State<BackendIamState>, ctx: WebReque
     }
 }
 
+/// Column allowlist accepted by departments.update. The tree facts (parent,
+/// materialized path, sibling order) are deliberately absent: a re-parent or a
+/// reorder needs the closure table and the path rewritten in the same
+/// transaction, so it goes through `apply_department_parent_move` instead of the
+/// generic column patch.
+fn department_patch_fields(body: &Value) -> Vec<(String, PatchValue)> {
+    let mut assignments = Vec::new();
+    for (column, keys) in [
+        ("name", ["name"].as_slice()),
+        ("code", ["code"].as_slice()),
+        ("status", ["status"].as_slice()),
+        ("department_kind", ["departmentKind", "department_kind"].as_slice()),
+    ] {
+        if let Some(value) = read_string_field(body, keys) {
+            assignments.push((column.to_owned(), PatchValue::Text(value)));
+        }
+    }
+    assignments
+}
+
+/// Reads the parent move from a departments.update body:
+/// `Ok(None)` — key absent, parent unchanged; `Ok(Some(None))` — move to root;
+/// `Ok(Some(Some(id)))` — re-parent under `id`.
+fn read_department_parent_move_request(body: &Value) -> Result<Option<Option<String>>, Response> {
+    let Some(value) = body
+        .get("parentDepartmentId")
+        .or_else(|| body.get("parent_department_id"))
+    else {
+        return Ok(None);
+    };
+    let parent = match value {
+        Value::Null => None,
+        Value::String(text) => {
+            let trimmed = text.trim();
+            if trimmed.is_empty() { None } else { Some(trimmed.to_owned()) }
+        }
+        _ => {
+            return Err(appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_department_invalid_parent",
+                "parentDepartmentId must be a string",
+            ))
+        }
+    };
+    Ok(Some(parent))
+}
+
+/// Applies a department re-parent or reorder inside the caller's transaction.
+///
+/// Validates the target (same organization, not itself, not a descendant via the
+/// closure table), rewrites the moved subtree's materialized `path`, rebuilds
+/// the `iam_department_closure` links that cross the subtree boundary, and
+/// normalizes the sibling order by shifting the target group. Returns the parent
+/// to persist (`None` = root) plus the effective `sort_order`.
+async fn apply_department_parent_move(
+    tx: &mut sqlx::postgres::PgConnection,
+    tenant_id: &str,
+    organization_id: &str,
+    department_id: &str,
+    request: Option<Option<String>>,
+    requested_sort_order: Option<i32>,
+    code_override: Option<String>,
+) -> Result<(Option<String>, i32), Response> {
+    let row = sqlx::query(
+        "SELECT parent_department_id, path, code FROM iam_department \
+         WHERE tenant_id = $1 AND organization_id = $2 AND id = $3",
+    )
+    .bind(tenant_id)
+    .bind(organization_id)
+    .bind(department_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|error| internal_handler_error("iam_department_update_failed", error))?;
+    let Some(row) = row else {
+        return Err(appbase_error(
+            StatusCode::NOT_FOUND,
+            "iam_department_not_found",
+            "department not found",
+        ));
+    };
+    let current_parent: Option<String> = row.get(0);
+    let old_path: String = row.get(1);
+    let current_code: String = row.get(2);
+    // A code change renames the node inside every descendant path, so it takes
+    // the same subtree rewrite as a re-parent.
+    let code_changed = code_override
+        .as_deref()
+        .is_some_and(|value| value != current_code);
+    let code = code_override.unwrap_or(current_code);
+
+    if let Some(parent_id) = request.as_ref().and_then(|parent| parent.as_ref()) {
+        if parent_id == department_id {
+            return Err(appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_department_parent_cycle",
+                "a department cannot be its own parent",
+            ));
+        }
+        let exists: Option<i32> = sqlx::query_scalar(
+            "SELECT 1 FROM iam_department \
+             WHERE tenant_id = $1 AND organization_id = $2 AND id = $3 AND status = 'active'",
+        )
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(parent_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|error| internal_handler_error("iam_department_update_failed", error))?;
+        if exists.is_none() {
+            return Err(appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_department_parent_not_found",
+                "parentDepartmentId does not reference an active department in this organization",
+            ));
+        }
+        let descendant: Option<i32> = sqlx::query_scalar(
+            "SELECT 1 FROM iam_department_closure \
+             WHERE tenant_id = $1 AND organization_id = $2 \
+               AND ancestor_department_id = $3 AND descendant_department_id = $4",
+        )
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(department_id)
+        .bind(parent_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|error| internal_handler_error("iam_department_update_failed", error))?;
+        if descendant.is_some() {
+            return Err(appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_department_parent_cycle",
+                "parentDepartmentId is a descendant of the department",
+            ));
+        }
+    }
+
+    let target_parent = request
+        .as_ref()
+        .and_then(|parent| parent.clone())
+        .filter(|value| !value.is_empty());
+    let parent_changed = match &request {
+        None => false,
+        Some(parent) => *parent != current_parent,
+    };
+    let path_rewrite = parent_changed || code_changed;
+    let new_path = if path_rewrite {
+        match target_parent.as_deref() {
+            Some(parent_id) => {
+                let parent_path: String = sqlx::query_scalar(
+                    "SELECT path FROM iam_department \
+                     WHERE tenant_id = $1 AND organization_id = $2 AND id = $3",
+                )
+                .bind(tenant_id)
+                .bind(organization_id)
+                .bind(parent_id)
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(|error| internal_handler_error("iam_department_update_failed", error))?;
+                format!("{parent_path}/{code}")
+            }
+            None => format!("/{organization_id}/{code}"),
+        }
+    } else {
+        old_path.clone()
+    };
+
+    let now = Utc::now().to_rfc3339();
+    let sort_order = match requested_sort_order {
+        Some(value) if (0..=1_000_000).contains(&value) => value,
+        Some(_) => {
+            return Err(appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_department_invalid_sort_order",
+                "sortOrder must be between 0 and 1000000",
+            ))
+        }
+        None if parent_changed => {
+            // Append to the end of the target sibling group.
+            let next: i32 = sqlx::query_scalar(
+                "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM iam_department \
+                 WHERE tenant_id = $1 AND organization_id = $2 \
+                   AND parent_department_id IS NOT DISTINCT FROM $3 AND status = 'active'",
+            )
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(&target_parent)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|error| internal_handler_error("iam_department_update_failed", error))?;
+            next
+        }
+        None => {
+            let current: Option<i32> = sqlx::query_scalar(
+                "SELECT sort_order FROM iam_department \
+                 WHERE tenant_id = $1 AND organization_id = $2 AND id = $3",
+            )
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(department_id)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|error| internal_handler_error("iam_department_update_failed", error))?;
+            current.unwrap_or(0)
+        }
+    };
+
+    if path_rewrite {
+        if parent_changed {
+            // Keep the requested ordinal free inside the target sibling group.
+            sqlx::query(
+                "UPDATE iam_department SET sort_order = sort_order + 1, updated_at = $4 \
+                 WHERE tenant_id = $1 AND organization_id = $2 \
+                   AND parent_department_id IS NOT DISTINCT FROM $3 \
+                   AND sort_order >= $5 AND id <> $6",
+            )
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(&target_parent)
+            .bind(&now)
+            .bind(sort_order)
+            .bind(department_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|error| internal_handler_error("iam_department_update_failed", error))?;
+        }
+
+        // Rewrite the moved subtree's materialized path. `old_path` is a strict
+        // prefix of every descendant path, so the suffix is preserved.
+        sqlx::query(
+            "UPDATE iam_department \
+                SET path = $4 || substring(path FROM char_length($5) + 1), updated_at = $6 \
+              WHERE tenant_id = $1 AND organization_id = $2 \
+                AND id IN (SELECT descendant_department_id FROM iam_department_closure \
+                            WHERE tenant_id = $1 AND organization_id = $2 \
+                              AND ancestor_department_id = $3)",
+        )
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(department_id)
+        .bind(&new_path)
+        .bind(&old_path)
+        .bind(&now)
+        .execute(&mut *tx)
+        .await
+        .map_err(|error| internal_handler_error("iam_department_update_failed", error))?;
+
+        // Rebuild the closure links that cross the subtree boundary. Intrinsic
+        // links inside the subtree stay untouched.
+        let tree_limit = sdkwork_iam_bootstrap::IAM_TREE_MAX_NODES + 1;
+        let subtree: Vec<(String, i32)> = sqlx::query_as(
+            "SELECT descendant_department_id, depth FROM iam_department_closure \
+             WHERE tenant_id = $1 AND organization_id = $2 AND ancestor_department_id = $3 \
+             LIMIT $4",
+        )
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(department_id)
+        .bind(tree_limit)
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(|error| internal_handler_error("iam_department_update_failed", error))?;
+        if subtree.len() > sdkwork_iam_bootstrap::IAM_TREE_MAX_NODES as usize {
+            return Err(appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_departments_tree_too_large",
+                "department subtree exceeds configured node limit",
+            ));
+        }
+
+        sqlx::query(
+            "DELETE FROM iam_department_closure \
+             WHERE tenant_id = $1 AND organization_id = $2 \
+               AND descendant_department_id IN (\
+                 SELECT descendant_department_id FROM iam_department_closure \
+                  WHERE tenant_id = $1 AND organization_id = $2 \
+                    AND ancestor_department_id = $3) \
+               AND ancestor_department_id NOT IN (\
+                 SELECT descendant_department_id FROM iam_department_closure \
+                  WHERE tenant_id = $1 AND organization_id = $2 \
+                    AND ancestor_department_id = $3)",
+        )
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(department_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|error| internal_handler_error("iam_department_update_failed", error))?;
+
+        if let Some(parent_id) = &target_parent {
+            let ancestors: Vec<(String, i32)> = sqlx::query_as(
+                "SELECT ancestor_department_id, depth FROM iam_department_closure \
+                 WHERE tenant_id = $1 AND organization_id = $2 AND descendant_department_id = $3 \
+                 ORDER BY depth",
+            )
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(parent_id)
+            .fetch_all(&mut *tx)
+            .await
+            .map_err(|error| internal_handler_error("iam_department_update_failed", error))?;
+            for (ancestor_id, ancestor_depth) in ancestors {
+                for (descendant_id, descendant_depth) in &subtree {
+                    sqlx::query(
+                        "INSERT INTO iam_department_closure \
+                         (id, tenant_id, organization_id, ancestor_department_id, \
+                          descendant_department_id, depth, created_at) \
+                         VALUES ($1, $2, $3, $4, $5, $6, $7) \
+                         ON CONFLICT (tenant_id, organization_id, ancestor_department_id, \
+                                      descendant_department_id) DO NOTHING",
+                    )
+                    .bind(format!(
+                        "iam-dept-closure-{tenant_id}-{organization_id}-{ancestor_id}-{descendant_id}-{}",
+                        ancestor_depth + 1 + descendant_depth
+                    ))
+                    .bind(tenant_id)
+                    .bind(organization_id)
+                    .bind(&ancestor_id)
+                    .bind(descendant_id)
+                    .bind(ancestor_depth + 1 + descendant_depth)
+                    .bind(&now)
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(|error| internal_handler_error("iam_department_update_failed", error))?;
+                }
+            }
+        }
+    }
+
+    Ok((target_parent, sort_order))
+}
+
 async fn update_department(State(state): State<BackendIamState>, ctx: WebRequestContext, Path(department_id): Path<String>, Json(body): Json<Value>) -> Response {
     let Ok(pg) = postgres_pool_or_error(&state) else { return postgres_pool_or_error(&state).err().expect("error response"); };
     let Ok(tenant_id) = tenant_id_from_context(&ctx) else { return tenant_id_from_context(&ctx).err().expect("error response"); };
-    let mut assignments = patch_fields(&body); assignments.push(("updated_at".to_owned(), PatchValue::Text(Utc::now().to_rfc3339())));
-    match patch_directory_row(pg, &ctx, &tenant_id, "iam_department", &department_id, &assignments).await {
-        Ok(true) => retrieve_department(State(state), ctx, Path(department_id)).await,
-        Ok(false) => appbase_error(StatusCode::NOT_FOUND, "iam_department_not_found", "department not found"),
-        Err(error) => internal_handler_error("iam_department_update_failed", error),
+    let parent_request = match read_department_parent_move_request(&body) { Ok(value) => value, Err(response) => return response };
+    let requested_sort_order = read_i32_field(&body, &["sortOrder", "sort_order"]);
+    let code_override = read_string_field(&body, &["code"]);
+    if parent_request.is_none() && requested_sort_order.is_none() && code_override.is_none() {
+        // Plain profile edit: no tree facts involved.
+        let mut assignments = department_patch_fields(&body);
+        assignments.push(("updated_at".to_owned(), PatchValue::Text(Utc::now().to_rfc3339())));
+        return match patch_directory_row(pg, &ctx, &tenant_id, "iam_department", &department_id, &assignments).await {
+            Ok(true) => retrieve_department(State(state), ctx, Path(department_id)).await,
+            Ok(false) => appbase_error(StatusCode::NOT_FOUND, "iam_department_not_found", "department not found"),
+            Err(error) => internal_handler_error("iam_department_update_failed", error),
+        };
     }
+
+    let expected_version = read_i32_field(&body, &["expectedVersion", "expected_version"]);
+    let row: Option<(String, i32)> = match sqlx::query_as(
+        "SELECT organization_id, version FROM iam_department WHERE tenant_id = $1 AND id = $2",
+    )
+    .bind(&tenant_id)
+    .bind(&department_id)
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(value) => value,
+        Err(error) => return internal_handler_error("iam_department_update_failed", error),
+    };
+    let Some((organization_id, current_version)) = row else {
+        return appbase_error(StatusCode::NOT_FOUND, "iam_department_not_found", "department not found");
+    };
+    if let Some(expected) = expected_version {
+        if expected != current_version {
+            // Two operators dragging the same subtree: fail closed instead of
+            // silently overwriting the other edit's order and closure.
+            return appbase_error(
+                StatusCode::CONFLICT,
+                "iam_department_version_conflict",
+                "the department changed since it was loaded; reload the tree and retry",
+            );
+        }
+    }
+
+    let parent_move = parent_request.clone();
+    let mut tx = match pg.begin().await {
+        Ok(tx) => tx,
+        Err(error) => return internal_handler_error("iam_department_update_failed", error),
+    };
+    let (effective_parent, effective_sort) = match apply_department_parent_move(
+        &mut *tx,
+        &tenant_id,
+        &organization_id,
+        &department_id,
+        parent_request,
+        requested_sort_order,
+        code_override,
+    )
+    .await
+    {
+        Ok(outcome) => outcome,
+        // Dropping the transaction rolls the move back.
+        Err(response) => return response,
+    };
+    let mut assignments = department_patch_fields(&body);
+    if parent_move.is_some() {
+        assignments.push((
+            "parent_department_id".to_owned(),
+            effective_parent.map_or(PatchValue::NullText, PatchValue::Text),
+        ));
+    }
+    assignments.push(("sort_order".to_owned(), PatchValue::Int(effective_sort)));
+    assignments.push((
+        "version".to_owned(),
+        PatchValue::Int(current_version.saturating_add(1)),
+    ));
+    if let Err(error) = patch_tenant_row_tx(
+        &mut *tx,
+        &tenant_id,
+        "iam_department",
+        &department_id,
+        &assignments,
+    )
+    .await
+    {
+        return internal_handler_error("iam_department_update_failed", error);
+    }
+    if let Err(error) = record_backend_mutation_audit_tx(
+        &mut *tx,
+        &ctx,
+        "iam_department.update",
+        "iam_department",
+        &department_id,
+        json!({
+            "movedToParent": parent_move.clone().flatten(),
+            "sortOrder": effective_sort,
+        }),
+    )
+    .await
+    {
+        return internal_handler_error(
+            "iam_department_update_failed",
+            sqlx::Error::Protocol(error),
+        );
+    }
+    if let Err(error) = tx.commit().await {
+        return internal_handler_error("iam_department_update_failed", error);
+    }
+    retrieve_department(State(state), ctx, Path(department_id)).await
 }
 
+
 async fn delete_department(State(state): State<BackendIamState>, ctx: WebRequestContext, Path(department_id): Path<String>) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else { return postgres_pool_or_error(&state).err().expect("error response"); };
+    let Ok(tenant_id) = tenant_id_from_context(&ctx) else { return tenant_id_from_context(&ctx).err().expect("error response"); };
+    // Business rule (personnel management): a department can only be retired
+    // when it has no active child department and no active member assignment.
+    // Soft-deleting either case would leave orphaned tree nodes or memberships
+    // pointing at a disabled department.
+    let organization_id: Option<String> = match sqlx::query_scalar(
+        "SELECT organization_id FROM iam_department WHERE tenant_id = $1 AND id = $2 AND status = 'active'",
+    )
+    .bind(&tenant_id)
+    .bind(&department_id)
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(value) => value,
+        Err(error) => return internal_handler_error("iam_department_delete_failed", error),
+    };
+    let Some(organization_id) = organization_id else {
+        return appbase_error(StatusCode::NOT_FOUND, "iam_department_not_found", "department not found");
+    };
+    let has_children: Option<i32> = match sqlx::query_scalar(
+        "SELECT 1 FROM iam_department \
+         WHERE tenant_id = $1 AND organization_id = $2 AND parent_department_id = $3 \
+           AND status = 'active' LIMIT 1",
+    )
+    .bind(&tenant_id)
+    .bind(&organization_id)
+    .bind(&department_id)
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(value) => value,
+        Err(error) => return internal_handler_error("iam_department_delete_failed", error),
+    };
+    if has_children.is_some() {
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_department_has_children",
+            "move or delete the child departments before deleting this department",
+        );
+    }
+    let has_assignments: Option<i32> = match sqlx::query_scalar(
+        "SELECT 1 FROM iam_department_assignment \
+         WHERE tenant_id = $1 AND department_id = $2 AND status = 'active' LIMIT 1",
+    )
+    .bind(&tenant_id)
+    .bind(&department_id)
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(value) => value,
+        Err(error) => return internal_handler_error("iam_department_delete_failed", error),
+    };
+    if has_assignments.is_some() {
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_department_has_assignments",
+            "reassign or remove the active members before deleting this department",
+        );
+    }
     soft_delete(&state, &ctx, "iam_department", &department_id, "iam_department_not_found", "iam_department_delete_failed").await
 }
 
-async fn departments_tree(State(state): State<BackendIamState>, ctx: WebRequestContext) -> Response {
+async fn departments_tree(State(state): State<BackendIamState>, ctx: WebRequestContext, Query(query): Query<HashMap<String, String>>) -> Response {
     let Ok(pg) = postgres_pool_or_error(&state) else { return postgres_pool_or_error(&state).err().expect("error response"); };
     let Ok(tenant_id) = tenant_id_from_context(&ctx) else { return tenant_id_from_context(&ctx).err().expect("error response"); };
-    let organization_id = organization_id_from_context(&ctx);
+    let organization_id = optional_query_value(&query, "organization_id").or_else(|| organization_id_from_context(&ctx));
     let tree_limit = sdkwork_iam_bootstrap::IAM_TREE_MAX_NODES + 1;
     let rows = if let Some(organization_id) = organization_id.as_deref() {
-        sqlx::query("SELECT id, tenant_id, organization_id, code, name, status, parent_department_id FROM iam_department WHERE tenant_id = $1 AND organization_id = $2 AND status = 'active' ORDER BY name, id LIMIT $3").bind(&tenant_id).bind(organization_id).bind(tree_limit).fetch_all(pg).await
+        sqlx::query("SELECT id, tenant_id, organization_id, code, name, status, parent_department_id, sort_order, department_kind, path, version FROM iam_department WHERE tenant_id = $1 AND organization_id = $2 AND status = 'active' ORDER BY sort_order, name, id LIMIT $3").bind(&tenant_id).bind(organization_id).bind(tree_limit).fetch_all(pg).await
     } else {
-        sqlx::query("SELECT id, tenant_id, organization_id, code, name, status, parent_department_id FROM iam_department WHERE tenant_id = $1 AND status = 'active' ORDER BY name, id LIMIT $2").bind(&tenant_id).bind(tree_limit).fetch_all(pg).await
+        sqlx::query("SELECT id, tenant_id, organization_id, code, name, status, parent_department_id, sort_order, department_kind, path, version FROM iam_department WHERE tenant_id = $1 AND status = 'active' ORDER BY sort_order, name, id LIMIT $2").bind(&tenant_id).bind(tree_limit).fetch_all(pg).await
     };
     match rows {
         Ok(rows) => {

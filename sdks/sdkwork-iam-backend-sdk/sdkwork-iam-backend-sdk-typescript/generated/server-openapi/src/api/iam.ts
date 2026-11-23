@@ -822,19 +822,74 @@ export class IamOrganizationsApi {
   }
 }
 
+export interface IamOrganizationMembershipsRosterListParams {
+  page?: number;
+  pageSize?: number;
+  cursor?: string;
+  sort?: string;
+  q?: string;
+  organizationId?: string;
+  departmentId?: string;
+  includeDescendants?: boolean;
+}
+
+export class IamOrganizationMembershipsRosterApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Organization Memberships roster list. */
+  async list(params?: IamOrganizationMembershipsRosterListParams, requestOptions?: ApiRequestOptions): Promise<SdkWorkPageData> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
+      { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+      { name: 'organization_id', value: params?.organizationId, style: 'form', explode: true, allowReserved: false },
+      { name: 'department_id', value: params?.departmentId, style: 'form', explode: true, allowReserved: false },
+      { name: 'include_descendants', value: params?.includeDescendants, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/iam/organization_memberships/roster`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+}
+
+export class IamOrganizationMembershipsDepartmentsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Organization Memberships departments update. */
+  async update(membershipId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/organization_memberships/${serializePathParameter(membershipId, { name: 'membershipId', style: 'simple', explode: false })}/departments`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PUT' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export interface IamOrganizationMembershipsListParams {
   page?: number;
   pageSize?: number;
   cursor?: string;
   sort?: string;
   q?: string;
+  organizationId?: string;
+  departmentId?: string;
 }
 
 export class IamOrganizationMembershipsApi {
   private client: HttpClient;
+  public readonly departments: IamOrganizationMembershipsDepartmentsApi;
+  public readonly roster: IamOrganizationMembershipsRosterApi;
 
   constructor(client: HttpClient) {
     this.client = client;
+    this.departments = new IamOrganizationMembershipsDepartmentsApi(client);
+    this.roster = new IamOrganizationMembershipsRosterApi(client);
   }
 
 
@@ -846,6 +901,8 @@ export class IamOrganizationMembershipsApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+      { name: 'organization_id', value: params?.organizationId, style: 'form', explode: true, allowReserved: false },
+      { name: 'department_id', value: params?.departmentId, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/iam/organization_memberships`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
@@ -1177,6 +1234,10 @@ export class IamGroupsApi {
   }
 }
 
+export interface IamDepartmentsTreeRetrieveParams {
+  organizationId?: string;
+}
+
 export class IamDepartmentsTreeApi {
   private client: HttpClient;
 
@@ -1186,8 +1247,11 @@ export class IamDepartmentsTreeApi {
 
 
 /** Departments tree retrieve. */
-  async retrieve(requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
-    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/departments/tree`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  async retrieve(params?: IamDepartmentsTreeRetrieveParams, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    const query = buildQueryString([
+      { name: 'organization_id', value: params?.organizationId, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<Record<string, unknown>>(appendQueryString(backendApiPath(`/iam/departments/tree`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -1197,6 +1261,7 @@ export interface IamDepartmentsListParams {
   cursor?: string;
   sort?: string;
   q?: string;
+  organizationId?: string;
 }
 
 export class IamDepartmentsApi {
@@ -1217,6 +1282,7 @@ export class IamDepartmentsApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+      { name: 'organization_id', value: params?.organizationId, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/iam/departments`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }

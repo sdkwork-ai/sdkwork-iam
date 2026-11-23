@@ -239,6 +239,14 @@ export interface SdkworkIamService {
       create(body: Record<string, unknown>): Promise<unknown>;
       list(params?: Record<string, unknown>): Promise<unknown>;
       update(membershipId: string, body: Record<string, unknown>): Promise<unknown>;
+      /** Personnel management: replace the member's department set atomically. */
+      departments: {
+        update(membershipId: string, body: Record<string, unknown>): Promise<unknown>;
+      };
+      /** Personnel management: members joined with departments, positions, roles. */
+      roster: {
+        list(params?: Record<string, unknown>): Promise<unknown>;
+      };
     };
     departments: {
       create(body: Record<string, unknown>): Promise<unknown>;
@@ -689,6 +697,12 @@ export function createSdkworkIamService(input: CreateSdkworkIamServiceInput): Sd
         create: (body) => callBackendIam(backendIam, (iam) => iam.organizationMemberships, "create", "iam.organizationMemberships.create", body),
         list: (params) => callRaw(appIam?.organizationMemberships, "list", "appbaseAppClient.iam.organizationMemberships.list", iamListQuery(params)),
         update: (membershipId, body) => callBackendIam(backendIam, (iam) => iam.organizationMemberships, "update", "iam.organizationMemberships.update", membershipId, body),
+        departments: {
+          update: (membershipId, body) => callBackendIam(backendIam, (iam) => iam.organizationMemberships?.departments, "update", "iam.organizationMemberships.departments.update", membershipId, body),
+        },
+        roster: {
+          list: (params) => callBackendIam(backendIam, (iam) => iam.organizationMemberships?.roster, "list", "iam.organizationMemberships.roster.list", iamListQuery(params)),
+        },
       },
       departments: {
         create: (body) => callBackendIam(backendIam, (iam) => iam.departments, "create", "iam.departments.create", body),

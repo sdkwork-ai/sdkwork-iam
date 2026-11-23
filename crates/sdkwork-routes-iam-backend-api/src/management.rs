@@ -6,7 +6,7 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{delete, get, patch, post},
+    routing::{delete, get, patch, post, put},
     Json, Router,
 };
 use chrono::Utc;
@@ -22,7 +22,8 @@ use crate::backend_audit::{
 };
 use crate::backend_sql::{
     cursor_page_json, encode_timeline_keyset_cursor, internal_handler_error,
-    list_page_params_or_error, list_search_pattern, list_tenant_rows, page_json_from_rows,
+    list_page_params_or_error, list_search_pattern, list_tenant_rows, optional_query_value,
+    page_json_from_rows,
     patch_tenant_row_tx, read_i32_field, read_patch_text, read_string_field, retrieve_tenant_row,
     role_binding_list_filter_sql, role_binding_list_filter_values, timeline_cursor_page_from_rows,
     timeline_list_params_or_error, tree_resource_json, PatchValue, TimelineListParams,
@@ -103,6 +104,14 @@ pub fn apply_management_routes(router: Router<BackendIamState>) -> Router<Backen
         .route(
             "/backend/v3/api/iam/organization_memberships/{membershipId}",
             patch(update_organization_membership),
+        )
+        .route(
+            "/backend/v3/api/iam/organization_memberships/roster",
+            get(organization_membership_roster),
+        )
+        .route(
+            "/backend/v3/api/iam/organization_memberships/{membershipId}/departments",
+            put(replace_organization_membership_departments),
         )
         .route(
             "/backend/v3/api/iam/departments",
@@ -652,6 +661,7 @@ async fn list_role_bindings(
         let mut statement = sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
                     b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
+                    b.data_scope_kind, b.effective_from, b.effective_to, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_role_binding b \
              JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id \
@@ -675,6 +685,7 @@ async fn list_role_bindings(
         let mut statement = sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
                     b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
+                    b.data_scope_kind, b.effective_from, b.effective_to, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_role_binding b \
              JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id \
@@ -746,6 +757,54 @@ async fn create_role_binding(
         );
     }
 
+    // Data scope and effective window: an operator can narrow what a role grants
+    // and until when. `scope` keeps the pre-0049 semantics (same as the binding
+    // scope) for callers that do not send the field.
+    let data_scope_kind = read_string_field(&body, &["dataScopeKind", "data_scope_kind"])
+        .unwrap_or_else(|| "scope".to_owned());
+    if !matches!(
+        data_scope_kind.as_str(),
+        "scope" | "self" | "department" | "department_and_children" | "organization" | "tenant"
+    ) {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_role_binding_invalid_data_scope",
+            "dataScopeKind must be scope, self, department, department_and_children, organization, or tenant",
+        );
+    }
+    let effective_from = read_string_field(&body, &["effectiveFrom", "effective_from"]);
+    let effective_to = read_string_field(&body, &["effectiveTo", "effective_to"]);
+    if let (Some(from), Some(to)) = (&effective_from, &effective_to) {
+        if to < from {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_role_binding_invalid_effective_window",
+                "effectiveTo must not precede effectiveFrom",
+            );
+        }
+    }
+    if scope_kind == "department" {
+        let exists: Option<i32> = match sqlx::query_scalar(
+            "SELECT 1 FROM iam_department \
+             WHERE tenant_id = $1 AND id = $2 AND status = 'active'",
+        )
+        .bind(&tenant_id)
+        .bind(&scope_id)
+        .fetch_optional(pg)
+        .await
+        {
+            Ok(value) => value,
+            Err(error) => return internal_handler_error("iam_role_binding_create_failed", error),
+        };
+        if exists.is_none() {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_role_binding_department_scope_not_found",
+                "scopeId must reference an active department in this tenant",
+            );
+        }
+    }
+
     let role_row = match fetch_role_row(pg, &tenant_id, &role_ref).await {
         Ok(Some(row)) => row,
         Ok(None) => {
@@ -813,6 +872,9 @@ async fn create_role_binding(
     let scope_kind_insert = scope_kind.clone();
     let scope_id_insert = scope_id.clone();
     let effect_insert = effect.clone();
+    let data_scope_insert = data_scope_kind.clone();
+    let effective_from_insert = effective_from.clone();
+    let effective_to_insert = effective_to.clone();
     let result = directory_create_with_audit(
         pg,
         &ctx,
@@ -823,8 +885,8 @@ async fn create_role_binding(
             sqlx::query(
                 "INSERT INTO iam_role_binding \
                     (id, tenant_id, organization_id, role_id, principal_kind, principal_id, scope_kind, scope_id, \
-                     effect, status, created_at, updated_at) \
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active', $10, $10)",
+                     effect, data_scope_kind, effective_from, effective_to, status, created_at, updated_at) \
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $11, $12, $13, 'active', $10, $10)",
             )
             .bind(binding_id_insert)
             .bind(tenant_id_insert)
@@ -836,6 +898,9 @@ async fn create_role_binding(
             .bind(scope_id_insert)
             .bind(effect_insert)
             .bind(now)
+            .bind(data_scope_insert)
+            .bind(effective_from_insert)
+            .bind(effective_to_insert)
             .execute(&mut **tx)
             .await
             .map(|_| ())
@@ -847,7 +912,8 @@ async fn create_role_binding(
         Ok(_) => {
             let row = sqlx::query(
                 "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
-                        b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status \
+                        b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
+                        b.data_scope_kind, b.effective_from, b.effective_to \
                  FROM iam_role_binding b \
                  JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id \
                  WHERE b.id = $1",
@@ -983,7 +1049,9 @@ async fn list_organization_memberships(
     let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
         return tenant_id_from_context(&ctx).err().expect("error response");
     };
-    let organization_id = organization_id_from_context(&ctx);
+    let organization_id = optional_query_value(&query, "organization_id")
+        .or_else(|| organization_id_from_context(&ctx));
+    let department_id = optional_query_value(&query, "department_id");
 
     let Ok(params) = list_page_params_or_error(&query) else {
         return list_page_params_or_error(&query)
@@ -994,13 +1062,19 @@ async fn list_organization_memberships(
     let rows = if let Some(organization_id) = organization_id.as_deref() {
         sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT m.id, m.tenant_id, m.organization_id, m.user_id, m.membership_kind, m.status, \
-                    u.username, u.display_name, u.email, \
+                    u.username, u.display_name, u.email, u.phone, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_organization_membership m \
              JOIN iam_user u ON u.id = m.user_id AND u.tenant_id = m.tenant_id \
              WHERE m.tenant_id = $1 AND m.organization_id = $2 AND m.status = 'active' \
                AND ($5::text IS NULL OR LOWER(u.username) LIKE $5 OR LOWER(u.display_name) LIKE $5 \
                     OR LOWER(COALESCE(u.email, '')) LIKE $5) \
+               AND ($6::text IS NULL OR EXISTS (\
+                     SELECT 1 FROM iam_department_assignment da \
+                      WHERE da.tenant_id = m.tenant_id \
+                        AND da.organization_id = m.organization_id \
+                        AND da.organization_membership_id = m.id \
+                        AND da.department_id = $6 AND da.status = 'active')) \
              ORDER BY m.joined_at DESC NULLS LAST, m.id \
              LIMIT $3 OFFSET $4"
         )))
@@ -1009,18 +1083,25 @@ async fn list_organization_memberships(
         .bind(params.page_size)
         .bind(params.offset)
         .bind(&search_pattern)
+        .bind(&department_id)
         .fetch_all(pg)
         .await
     } else {
         sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT m.id, m.tenant_id, m.organization_id, m.user_id, m.membership_kind, m.status, \
-                    u.username, u.display_name, u.email, \
+                    u.username, u.display_name, u.email, u.phone, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_organization_membership m \
              JOIN iam_user u ON u.id = m.user_id AND u.tenant_id = m.tenant_id \
              WHERE m.tenant_id = $1 AND m.status = 'active' \
                AND ($4::text IS NULL OR LOWER(u.username) LIKE $4 OR LOWER(u.display_name) LIKE $4 \
                     OR LOWER(COALESCE(u.email, '')) LIKE $4) \
+               AND ($5::text IS NULL OR EXISTS (\
+                     SELECT 1 FROM iam_department_assignment da \
+                      WHERE da.tenant_id = m.tenant_id \
+                        AND da.organization_id = m.organization_id \
+                        AND da.organization_membership_id = m.id \
+                        AND da.department_id = $5 AND da.status = 'active')) \
              ORDER BY m.joined_at DESC NULLS LAST, m.id \
              LIMIT $2 OFFSET $3"
         )))
@@ -1028,6 +1109,7 @@ async fn list_organization_memberships(
         .bind(params.page_size)
         .bind(params.offset)
         .bind(&search_pattern)
+        .bind(&department_id)
         .fetch_all(pg)
         .await
     };
@@ -1051,7 +1133,8 @@ async fn list_departments(
     let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
         return tenant_id_from_context(&ctx).err().expect("error response");
     };
-    let organization_id = organization_id_from_context(&ctx);
+    let organization_id = optional_query_value(&query, "organization_id")
+        .or_else(|| organization_id_from_context(&ctx));
 
     let Ok(params) = list_page_params_or_error(&query) else {
         return list_page_params_or_error(&query)
@@ -1062,11 +1145,12 @@ async fn list_departments(
     let rows = if let Some(organization_id) = organization_id.as_deref() {
         sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT id, tenant_id, organization_id, code, name, status, parent_department_id, \
+                    sort_order, department_kind, path, version, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_department \
              WHERE tenant_id = $1 AND organization_id = $2 AND status = 'active' \
                AND ($5::text IS NULL OR LOWER(name) LIKE $5 OR LOWER(code) LIKE $5) \
-             ORDER BY name, id \
+             ORDER BY sort_order, name, id \
              LIMIT $3 OFFSET $4"
         )))
         .bind(&tenant_id)
@@ -1079,11 +1163,12 @@ async fn list_departments(
     } else {
         sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT id, tenant_id, organization_id, code, name, status, parent_department_id, \
+                    sort_order, department_kind, path, version, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_department \
              WHERE tenant_id = $1 AND status = 'active' \
                AND ($4::text IS NULL OR LOWER(name) LIKE $4 OR LOWER(code) LIKE $4) \
-             ORDER BY name, id \
+             ORDER BY sort_order, name, id \
              LIMIT $2 OFFSET $3"
         )))
         .bind(&tenant_id)
@@ -1531,7 +1616,10 @@ fn permission_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
 
 fn role_binding_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
     json!({
+        "dataScopeKind": row.get::<String, _>(11),
         "effect": row.get::<String, _>(9),
+        "effectiveFrom": row.get::<Option<String>, _>(12),
+        "effectiveTo": row.get::<Option<String>, _>(13),
         "id": row.get::<String, _>(0),
         "organizationId": row.get::<String, _>(2),
         "principalId": row.get::<String, _>(6),
@@ -1578,6 +1666,7 @@ fn membership_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
         "membershipId": row.get::<String, _>(0),
         "membershipKind": row.get::<String, _>(4),
         "organizationId": row.get::<String, _>(2),
+        "phone": row.get::<Option<String>, _>(9),
         "status": row.get::<String, _>(5),
         "tenantId": row.get::<String, _>(1),
         "userId": row.get::<String, _>(3),
@@ -1589,12 +1678,16 @@ fn department_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
     json!({
         "code": row.get::<String, _>(3),
         "departmentId": row.get::<String, _>(0),
+        "departmentKind": row.get::<String, _>(8),
         "id": row.get::<String, _>(0),
         "name": row.get::<String, _>(4),
         "organizationId": row.get::<String, _>(2),
         "parentDepartmentId": row.get::<Option<String>, _>(6),
+        "path": row.get::<String, _>(9),
+        "sortOrder": row.get::<i32, _>(7),
         "status": row.get::<String, _>(5),
         "tenantId": row.get::<String, _>(1),
+        "version": row.get::<i32, _>(10),
     })
 }
 

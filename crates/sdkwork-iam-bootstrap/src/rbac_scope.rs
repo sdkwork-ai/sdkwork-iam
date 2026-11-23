@@ -26,7 +26,19 @@ const BINDING_SCOPE_SQL: &str = " \
     $3::text IS NULL \
     OR ($3::text <> '' AND $3::text <> '0' AND b.scope_kind = 'organization' AND b.scope_id = $3) \
     OR b.scope_kind = 'tenant' \
-  )";
+    OR ($3::text <> '' AND $3::text <> '0' AND b.scope_kind = 'department' AND b.scope_id IN ( \
+      SELECT da.department_id FROM iam_department_assignment da \
+      WHERE da.tenant_id = $1 AND da.status = 'active' \
+        AND da.organization_membership_id IN ( \
+          SELECT id FROM iam_organization_membership \
+          WHERE tenant_id = $1 AND user_id = $2 AND status = 'active'))) \
+  ) \
+  AND (b.effective_from IS NULL OR b.effective_from = '' \
+       OR (b.effective_from ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' \
+           AND b.effective_from::timestamptz <= now())) \
+  AND (b.effective_to IS NULL OR b.effective_to = '' \
+       OR (b.effective_to ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' \
+           AND b.effective_to::timestamptz > now()))";
 
 const PRINCIPAL_MATCH_SQL: &str = " \
   ( \
@@ -42,6 +54,155 @@ const PRINCIPAL_MATCH_SQL: &str = " \
     )) \
     OR (b.principal_kind = 'service_account' AND b.principal_id = $2) \
   )";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DataScope {
+    Department,
+    DepartmentAndChildren,
+    Organization,
+    SelfOnly,
+    Tenant,
+}
+
+/// Resolves the widest data scope an allow binding grants for a read surface.
+///
+/// Each binding contributes `(scope_kind, data_scope_kind)`. `data_scope_kind`
+/// is either an explicit narrowing or the legacy `scope` value added by
+/// migration 0049 as the column default — `scope` means "same as the binding's
+/// own scope", so it expands through `scope_kind` instead of collapsing to
+/// `self`. The function-level permission check already decided *whether* the
+/// caller may read; this decides *how much data* may be returned. Empty or
+/// unknown input fails closed; `deny` bindings are handled earlier.
+pub fn resolve_data_scope<'a, I>(bindings: I) -> DataScope
+where
+    I: IntoIterator<Item = (&'a str, &'a str)>,
+{
+    let mut widest = DataScope::SelfOnly;
+    let rank = |scope: DataScope| match scope {
+        DataScope::SelfOnly => 0,
+        DataScope::Department => 1,
+        DataScope::DepartmentAndChildren => 2,
+        DataScope::Organization => 3,
+        DataScope::Tenant => 4,
+    };
+    for (scope_kind, data_scope_kind) in bindings {
+        let scope = match data_scope_kind {
+            "tenant" => DataScope::Tenant,
+            "organization" => DataScope::Organization,
+            "department_and_children" => DataScope::DepartmentAndChildren,
+            "department" => DataScope::Department,
+            // Legacy default: inherit the binding's own scope.
+            "scope" | "" => match scope_kind {
+                "tenant" => DataScope::Tenant,
+                "organization" => DataScope::Organization,
+                "department" => DataScope::Department,
+                _ => DataScope::SelfOnly,
+            },
+            "self" => DataScope::SelfOnly,
+            _ => DataScope::SelfOnly,
+        };
+        if rank(scope) > rank(widest) {
+            widest = scope;
+        }
+    }
+    widest
+}
+
+/// Loads the caller's active allow bindings for one permission and resolves the
+/// widest data scope they grant. Bindings outside their effective window are
+/// ignored; a caller with no matching binding gets `SelfOnly` (fail-closed).
+pub async fn resolve_principal_data_scope(
+    pg: &PgPool,
+    tenant_id: &str,
+    user_id: &str,
+    permission_code: &str,
+) -> Result<DataScope, sqlx::Error> {
+    let rows: Vec<(String, String)> = sqlx::query_as(
+        "SELECT b.scope_kind, b.data_scope_kind \
+           FROM iam_role_binding b \
+           JOIN iam_role_permission rp \
+             ON rp.tenant_id = b.tenant_id AND rp.role_id = b.role_id \
+           JOIN iam_permission p ON p.id = rp.permission_id \
+          WHERE b.tenant_id = $1 AND b.status = 'active' AND b.effect = 'allow' \
+            AND p.code = $3 \
+            AND ((b.principal_kind = 'user' AND b.principal_id = $2) \
+                 OR (b.principal_kind = 'organization_membership' \
+                     AND b.principal_id IN ( \
+                       SELECT id FROM iam_organization_membership \
+                        WHERE tenant_id = $1 AND user_id = $2 AND status = 'active'))) \
+            AND (b.effective_from IS NULL OR b.effective_from = '' \
+                 OR b.effective_from::timestamptz <= now()) \
+            AND (b.effective_to IS NULL OR b.effective_to = '' \
+                 OR b.effective_to::timestamptz > now())",
+    )
+    .bind(tenant_id)
+    .bind(user_id)
+    .bind(permission_code)
+    .fetch_all(pg)
+    .await?;
+    Ok(resolve_data_scope(
+        rows.iter().map(|(scope_kind, data_scope_kind)| {
+            (scope_kind.as_str(), data_scope_kind.as_str())
+        }),
+    ))
+}
+
+#[cfg(test)]
+mod data_scope_tests {
+    use super::{resolve_data_scope, DataScope};
+
+    #[test]
+    fn empty_bindings_fail_closed_to_self() {
+        assert_eq!(resolve_data_scope([] as [(&str, &str); 0]), DataScope::SelfOnly);
+    }
+
+    #[test]
+    fn widest_allow_wins_regardless_of_order() {
+        assert_eq!(
+            resolve_data_scope([
+                ("department", "department"),
+                ("tenant", "tenant"),
+                ("organization", "organization"),
+            ]),
+            DataScope::Tenant,
+        );
+        assert_eq!(
+            resolve_data_scope([
+                ("department", "department_and_children"),
+                ("department", "department"),
+            ]),
+            DataScope::DepartmentAndChildren,
+        );
+    }
+
+    #[test]
+    fn legacy_scope_value_inherits_the_binding_scope() {
+        assert_eq!(
+            resolve_data_scope([("tenant", "scope")]),
+            DataScope::Tenant,
+        );
+        assert_eq!(
+            resolve_data_scope([("organization", "scope")]),
+            DataScope::Organization,
+        );
+        assert_eq!(
+            resolve_data_scope([("organization", "scope"), ("tenant", "scope")]),
+            DataScope::Tenant,
+        );
+    }
+
+    #[test]
+    fn unknown_values_degrade_to_self() {
+        assert_eq!(
+            resolve_data_scope([("tenant", "unexpected"), ("unknown", "scope")]),
+            DataScope::SelfOnly,
+        );
+        assert_eq!(
+            resolve_data_scope([("tenant", "self")]),
+            DataScope::SelfOnly,
+        );
+    }
+}
 
 pub fn violates_role_exclusion(
     active_role_codes: &BTreeSet<String>,

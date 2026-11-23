@@ -2012,6 +2012,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Organization whose departments are returned. Omitted falls back to the request context organization."
+            }
           }
         ],
         "responses": {
@@ -2141,7 +2150,17 @@
         ],
         "summary": "Departments tree retrieve.",
         "operationId": "departments.tree.retrieve",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Organization whose departments are returned. Omitted falls back to the request context organization."
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3593,6 +3612,24 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Organization whose memberships are returned. Omitted falls back to the request context organization."
+            }
+          },
+          {
+            "name": "department_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Only members with an active assignment to this department (personnel management roster filter)."
             }
           }
         ],
