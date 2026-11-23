@@ -3802,3 +3802,10 @@ ALTER TABLE iam_department
 
 ALTER TABLE iam_department_assignment
     ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 0;
+
+-- folded migration: migrations/postgres/0051_iam_personnel_roster_indexes.up.sql
+CREATE INDEX IF NOT EXISTS idx_iam_organization_membership_org_joined
+    ON iam_organization_membership (tenant_id, organization_id, status, joined_at DESC, id);
+
+CREATE INDEX IF NOT EXISTS idx_iam_department_assignment_membership
+    ON iam_department_assignment (tenant_id, organization_id, organization_membership_id, status);
