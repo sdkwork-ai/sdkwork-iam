@@ -1145,7 +1145,7 @@ async fn list_departments(
     let rows = if let Some(organization_id) = organization_id.as_deref() {
         sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT id, tenant_id, organization_id, code, name, status, parent_department_id, \
-                    sort_order, department_kind, path, \
+                    sort_order, department_kind, path, version, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_department \
              WHERE tenant_id = $1 AND organization_id = $2 AND status = 'active' \
@@ -1163,7 +1163,7 @@ async fn list_departments(
     } else {
         sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT id, tenant_id, organization_id, code, name, status, parent_department_id, \
-                    sort_order, department_kind, path, \
+                    sort_order, department_kind, path, version, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_department \
              WHERE tenant_id = $1 AND status = 'active' \
@@ -1687,6 +1687,7 @@ fn department_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
         "sortOrder": row.get::<i32, _>(7),
         "status": row.get::<String, _>(5),
         "tenantId": row.get::<String, _>(1),
+        "version": row.get::<i32, _>(10),
     })
 }
 

@@ -3795,3 +3795,10 @@ UPDATE iam_position_assignment
 CREATE UNIQUE INDEX IF NOT EXISTS uk_iam_position_assignment_primary
     ON iam_position_assignment (tenant_id, organization_id, department_assignment_id)
     WHERE is_primary = 1 AND status = 'active';
+
+-- folded migration: migrations/postgres/0050_iam_department_version.up.sql
+ALTER TABLE iam_department
+    ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE iam_department_assignment
+    ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 0;

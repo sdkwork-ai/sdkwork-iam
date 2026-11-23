@@ -450,7 +450,7 @@ async fn fetch_department_row<'e>(
 ) -> Result<Option<sqlx::postgres::PgRow>, sqlx::Error> {
     sqlx::query(
         "SELECT id, tenant_id, organization_id, code, name, status, parent_department_id, \
-                sort_order, department_kind, path \
+                sort_order, department_kind, path, version \
          FROM iam_department WHERE tenant_id = $1 AND id = $2 LIMIT 1",
     )
     .bind(tenant_id)
@@ -2718,8 +2718,9 @@ async fn update_department(State(state): State<BackendIamState>, ctx: WebRequest
         };
     }
 
-    let organization_id: Option<String> = match sqlx::query_scalar(
-        "SELECT organization_id FROM iam_department WHERE tenant_id = $1 AND id = $2",
+    let expected_version = read_i32_field(&body, &["expectedVersion", "expected_version"]);
+    let row: Option<(String, i32)> = match sqlx::query_as(
+        "SELECT organization_id, version FROM iam_department WHERE tenant_id = $1 AND id = $2",
     )
     .bind(&tenant_id)
     .bind(&department_id)
@@ -2729,9 +2730,20 @@ async fn update_department(State(state): State<BackendIamState>, ctx: WebRequest
         Ok(value) => value,
         Err(error) => return internal_handler_error("iam_department_update_failed", error),
     };
-    let Some(organization_id) = organization_id else {
+    let Some((organization_id, current_version)) = row else {
         return appbase_error(StatusCode::NOT_FOUND, "iam_department_not_found", "department not found");
     };
+    if let Some(expected) = expected_version {
+        if expected != current_version {
+            // Two operators dragging the same subtree: fail closed instead of
+            // silently overwriting the other edit's order and closure.
+            return appbase_error(
+                StatusCode::CONFLICT,
+                "iam_department_version_conflict",
+                "the department changed since it was loaded; reload the tree and retry",
+            );
+        }
+    }
 
     let parent_move = parent_request.clone();
     let mut tx = match pg.begin().await {
@@ -2761,6 +2773,10 @@ async fn update_department(State(state): State<BackendIamState>, ctx: WebRequest
         ));
     }
     assignments.push(("sort_order".to_owned(), PatchValue::Int(effective_sort)));
+    assignments.push((
+        "version".to_owned(),
+        PatchValue::Int(current_version.saturating_add(1)),
+    ));
     if let Err(error) = patch_tenant_row_tx(
         &mut *tx,
         &tenant_id,
@@ -2807,9 +2823,9 @@ async fn departments_tree(State(state): State<BackendIamState>, ctx: WebRequestC
     let organization_id = optional_query_value(&query, "organization_id").or_else(|| organization_id_from_context(&ctx));
     let tree_limit = sdkwork_iam_bootstrap::IAM_TREE_MAX_NODES + 1;
     let rows = if let Some(organization_id) = organization_id.as_deref() {
-        sqlx::query("SELECT id, tenant_id, organization_id, code, name, status, parent_department_id, sort_order, department_kind, path FROM iam_department WHERE tenant_id = $1 AND organization_id = $2 AND status = 'active' ORDER BY sort_order, name, id LIMIT $3").bind(&tenant_id).bind(organization_id).bind(tree_limit).fetch_all(pg).await
+        sqlx::query("SELECT id, tenant_id, organization_id, code, name, status, parent_department_id, sort_order, department_kind, path, version FROM iam_department WHERE tenant_id = $1 AND organization_id = $2 AND status = 'active' ORDER BY sort_order, name, id LIMIT $3").bind(&tenant_id).bind(organization_id).bind(tree_limit).fetch_all(pg).await
     } else {
-        sqlx::query("SELECT id, tenant_id, organization_id, code, name, status, parent_department_id, sort_order, department_kind, path FROM iam_department WHERE tenant_id = $1 AND status = 'active' ORDER BY sort_order, name, id LIMIT $2").bind(&tenant_id).bind(tree_limit).fetch_all(pg).await
+        sqlx::query("SELECT id, tenant_id, organization_id, code, name, status, parent_department_id, sort_order, department_kind, path, version FROM iam_department WHERE tenant_id = $1 AND status = 'active' ORDER BY sort_order, name, id LIMIT $2").bind(&tenant_id).bind(tree_limit).fetch_all(pg).await
     };
     match rows {
         Ok(rows) => {
