@@ -2382,6 +2382,28 @@ async fn create_department(State(state): State<BackendIamState>, ctx: WebRequest
     } else {
         format!("/{organization_id}/{}", code.as_ref().expect("validated"))
     };
+    let code_conflict: Option<i32> = match sqlx::query_scalar(
+        "SELECT 1 FROM iam_department \
+         WHERE tenant_id = $1 AND organization_id = $2 AND code = $3 LIMIT 1",
+    )
+    .bind(&tenant_id)
+    .bind(&organization_id)
+    .bind(code.as_ref().expect("validated"))
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(value) => value,
+        Err(error) => return internal_handler_error("iam_department_create_failed", error),
+    };
+    if code_conflict.is_some() {
+        // The unique key also covers disabled rows, so report the conflict
+        // explicitly instead of surfacing the raw constraint violation as 500.
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_department_code_conflict",
+            "a department with this code already exists in the organization",
+        );
+    }
     let id = format!("iamdept-{}", Uuid::new_v4()); let now = Utc::now();
     let insert_id = id.clone();
     let code_value = code.as_ref().expect("validated").clone();
