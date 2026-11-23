@@ -3,7 +3,7 @@
 -- engine: postgres
 -- module: sdkwork-iam
 -- purpose: Persist the tenant-level "follow our official account" QR shown on
---   the hosted desktop login-success page (`/oauth/desktop/launch`). An
+--   the hosted desktop login-success page (`/auth/desktop/launch`). An
 --   operator picks one WeChat official account in the OAuth admin surface; the
 --   backend generates that account's permanent parameterized follow QR once
 --   and stores it here, so the success page can render the image without
