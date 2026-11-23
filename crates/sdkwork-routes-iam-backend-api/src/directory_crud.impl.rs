@@ -3311,6 +3311,55 @@ async fn create_position_assignment(State(state): State<BackendIamState>, ctx: W
     let department_assignment_id = department_assignment_id.expect("validated");
     let position_id = position_id.expect("validated");
     let user_id = user_id.expect("validated");
+    // Headcount guard (migration 0052): an approved opening caps active holders.
+    // NULL or 0 means the position is not headcount-limited.
+    let position_headcount: Option<i32> = match sqlx::query_scalar(
+        "SELECT headcount FROM iam_position \
+         WHERE tenant_id = $1 AND organization_id = $2 AND id = $3",
+    )
+    .bind(&tenant_id)
+    .bind(&organization_id)
+    .bind(&position_id)
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(Some(value)) => value,
+        Ok(None) => {
+            return appbase_error(
+                StatusCode::NOT_FOUND,
+                "iam_position_not_found",
+                "position not found",
+            )
+        }
+        Err(error) => return internal_handler_error("iam_position_assignment_create_failed", error),
+    };
+    if let Some(headcount) = position_headcount {
+        if headcount > 0 {
+            let active: i64 = match sqlx::query_scalar(
+                "SELECT COUNT(*) FROM iam_position_assignment \
+                 WHERE tenant_id = $1 AND organization_id = $2 AND position_id = $3 \
+                   AND status = 'active'",
+            )
+            .bind(&tenant_id)
+            .bind(&organization_id)
+            .bind(&position_id)
+            .fetch_one(pg)
+            .await
+            {
+                Ok(value) => value,
+                Err(error) => {
+                    return internal_handler_error("iam_position_assignment_create_failed", error)
+                }
+            };
+            if active >= i64::from(headcount) {
+                return appbase_error(
+                    StatusCode::CONFLICT,
+                    "iam_position_headcount_exceeded",
+                    "the position has no remaining headcount",
+                );
+            }
+        }
+    }
     let id_insert = id.clone();
     let tenant_id_insert = tenant_id.clone();
     let organization_id_insert = organization_id.clone();
