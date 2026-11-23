@@ -2350,7 +2350,99 @@ async fn replace_organization_membership_departments(
 async fn update_organization_membership(State(state): State<BackendIamState>, ctx: WebRequestContext, Path(membership_id): Path<String>, Json(body): Json<Value>) -> Response {
     let Ok(pg) = postgres_pool_or_error(&state) else { return postgres_pool_or_error(&state).err().expect("error response"); };
     let Ok(tenant_id) = tenant_id_from_context(&ctx) else { return tenant_id_from_context(&ctx).err().expect("error response"); };
-    let mut assignments = patch_fields(&body); assignments.push(("updated_at".to_owned(), PatchValue::Text(Utc::now().to_rfc3339())));
+    let mut assignments = patch_fields(&body);
+    if let Some(reports_to) = read_string_field(&body, &["reportsToMembershipId", "reports_to_membership_id"]) {
+        if reports_to == membership_id {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_membership_reports_to_cycle",
+                "a membership cannot report to itself",
+            );
+        }
+        let current: Option<String> = match sqlx::query_scalar(
+            "SELECT organization_id FROM iam_organization_membership \
+             WHERE tenant_id = $1 AND id = $2 AND status = 'active'",
+        )
+        .bind(&tenant_id)
+        .bind(&membership_id)
+        .fetch_optional(pg)
+        .await
+        {
+            Ok(value) => value,
+            Err(error) => return internal_handler_error("iam_membership_update_failed", error),
+        };
+        let Some(organization_id) = current else {
+            return appbase_error(
+                StatusCode::NOT_FOUND,
+                "iam_membership_not_found",
+                "organization membership not found",
+            );
+        };
+        let target: Option<String> = match sqlx::query_scalar(
+            "SELECT organization_id FROM iam_organization_membership \
+             WHERE tenant_id = $1 AND id = $2 AND status = 'active'",
+        )
+        .bind(&tenant_id)
+        .bind(&reports_to)
+        .fetch_optional(pg)
+        .await
+        {
+            Ok(value) => value,
+            Err(error) => return internal_handler_error("iam_membership_update_failed", error),
+        };
+        match target {
+            None => {
+                return appbase_error(
+                    StatusCode::BAD_REQUEST,
+                    "iam_membership_reports_to_not_found",
+                    "reportsToMembershipId does not reference an active membership in this tenant",
+                )
+            }
+            Some(target_organization_id) if target_organization_id != organization_id => {
+                return appbase_error(
+                    StatusCode::BAD_REQUEST,
+                    "iam_membership_reports_to_organization_mismatch",
+                    "the manager must belong to the same organization",
+                )
+            }
+            Some(_) => {}
+        }
+        // Walk the manager chain from the proposed manager. If it reaches this
+        // membership, the edit would create a reporting cycle.
+        let cycle: Option<i32> = match sqlx::query_scalar(
+            "WITH RECURSIVE chain(id, depth) AS ( \
+                 SELECT $2::text, 0 \
+                 UNION ALL \
+                 SELECT parent.reports_to_membership_id, chain.depth + 1 \
+                   FROM iam_organization_membership parent \
+                   JOIN chain ON parent.id = chain.id \
+                  WHERE parent.tenant_id = $1 \
+                    AND parent.reports_to_membership_id IS NOT NULL \
+                    AND chain.depth < 64 \
+             ) SELECT 1 FROM chain WHERE id = $3 LIMIT 1",
+        )
+        .bind(&tenant_id)
+        .bind(&reports_to)
+        .bind(&membership_id)
+        .fetch_optional(pg)
+        .await
+        {
+            Ok(value) => value,
+            Err(error) => return internal_handler_error("iam_membership_update_failed", error),
+        };
+        if cycle.is_some() {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_membership_reports_to_cycle",
+                "the reporting line would create a cycle",
+            );
+        }
+        assignments.push((
+            "reports_to_membership_id".to_owned(),
+            PatchValue::Text(reports_to),
+        ));
+    }
+    assignments.push(("updated_at".to_owned(), PatchValue::Text(Utc::now().to_rfc3339())));
     match patch_directory_row(pg, &ctx, &tenant_id, "iam_organization_membership", &membership_id, &assignments).await {
         Ok(true) => appbase_ok(json!({ "membershipId": membership_id })),
         Ok(false) => appbase_error(StatusCode::NOT_FOUND, "iam_membership_not_found", "membership not found"),
