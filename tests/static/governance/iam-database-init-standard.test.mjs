@@ -483,6 +483,7 @@ const FOLDED_BLOCK_ORDER = [
   "migrations/postgres/0034_drop_iam_user_official_account.up.sql",
   "migrations/postgres/0035_official_account_orphan_client_cleanup.up.sql",
   "migrations/postgres/0036_iam_oauth_resource_account_access_mode_canonical.up.sql",
+  "migrations/postgres/0049_iam_department_ordering_and_member_scope.up.sql",
 ];
 
 const FOLDED_BLOCKS_WITHOUT_SOURCE = [

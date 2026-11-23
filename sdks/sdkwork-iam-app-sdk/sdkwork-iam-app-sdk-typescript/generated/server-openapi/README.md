@@ -97,8 +97,8 @@ const result = await client.auth.sessions.create(body);
 ### iam
 
 ```typescript
-// Departments tree retrieve.
-const result = await client.iam.departments.tree.retrieve();
+// Oauth official Account Settings retrieve.
+const result = await client.iam.oauth.officialAccountSettings.retrieve();
 ```
 
 ### oauth

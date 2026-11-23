@@ -1067,6 +1067,31 @@ fn database_baseline_does_not_reference_removed_crate_migration_paths() {
     );
 }
 
+/// The personnel-management migration is folded as `ALTER TABLE` blocks, so the
+/// column and index assertions above (which read the `CREATE TABLE` body) cannot
+/// see it. Pin the folded fragments directly: a fresh install and an upgraded
+/// install must agree on department ordering, the unique-primary invariants, and
+/// the role-binding data scope.
+#[test]
+fn database_baseline_folds_department_ordering_and_member_scope() {
+    let sql = iam_database_baseline_sql();
+    for fragment in [
+        "ADD COLUMN IF NOT EXISTS sort_order",
+        "idx_iam_department_sibling_order",
+        "uk_iam_department_assignment_primary",
+        "uk_iam_position_assignment_primary",
+        "ADD COLUMN IF NOT EXISTS data_scope_kind",
+        "ADD COLUMN IF NOT EXISTS effective_from",
+        "ADD COLUMN IF NOT EXISTS effective_to",
+        "chk_iam_role_binding_data_scope_kind",
+    ] {
+        assert!(
+            sql.contains(fragment),
+            "baseline must fold personnel-management DDL fragment {fragment}",
+        );
+    }
+}
+
 fn table_definition<'a>(sql: &'a str, table_name: &str) -> Option<&'a str> {
     let marker = format!("CREATE TABLE IF NOT EXISTS {table_name} (");
     let start = sql.find(&marker)?;

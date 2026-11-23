@@ -828,6 +828,8 @@ export interface IamOrganizationMembershipsListParams {
   cursor?: string;
   sort?: string;
   q?: string;
+  organizationId?: string;
+  departmentId?: string;
 }
 
 export class IamOrganizationMembershipsApi {
@@ -846,6 +848,8 @@ export class IamOrganizationMembershipsApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+      { name: 'organization_id', value: params?.organizationId, style: 'form', explode: true, allowReserved: false },
+      { name: 'department_id', value: params?.departmentId, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/iam/organization_memberships`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
@@ -1177,6 +1181,10 @@ export class IamGroupsApi {
   }
 }
 
+export interface IamDepartmentsTreeRetrieveParams {
+  organizationId?: string;
+}
+
 export class IamDepartmentsTreeApi {
   private client: HttpClient;
 
@@ -1186,8 +1194,11 @@ export class IamDepartmentsTreeApi {
 
 
 /** Departments tree retrieve. */
-  async retrieve(requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
-    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/departments/tree`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  async retrieve(params?: IamDepartmentsTreeRetrieveParams, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
+    const query = buildQueryString([
+      { name: 'organization_id', value: params?.organizationId, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<Record<string, unknown>>(appendQueryString(backendApiPath(`/iam/departments/tree`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -1197,6 +1208,7 @@ export interface IamDepartmentsListParams {
   cursor?: string;
   sort?: string;
   q?: string;
+  organizationId?: string;
 }
 
 export class IamDepartmentsApi {
@@ -1217,6 +1229,7 @@ export class IamDepartmentsApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+      { name: 'organization_id', value: params?.organizationId, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/iam/departments`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }

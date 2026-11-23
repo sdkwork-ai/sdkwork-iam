@@ -22,7 +22,8 @@ use crate::backend_audit::{
 };
 use crate::backend_sql::{
     cursor_page_json, encode_timeline_keyset_cursor, internal_handler_error,
-    list_page_params_or_error, list_search_pattern, list_tenant_rows, page_json_from_rows,
+    list_page_params_or_error, list_search_pattern, list_tenant_rows, optional_query_value,
+    page_json_from_rows,
     patch_tenant_row_tx, read_i32_field, read_patch_text, read_string_field, retrieve_tenant_row,
     role_binding_list_filter_sql, role_binding_list_filter_values, timeline_cursor_page_from_rows,
     timeline_list_params_or_error, tree_resource_json, PatchValue, TimelineListParams,
@@ -983,7 +984,9 @@ async fn list_organization_memberships(
     let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
         return tenant_id_from_context(&ctx).err().expect("error response");
     };
-    let organization_id = organization_id_from_context(&ctx);
+    let organization_id = optional_query_value(&query, "organization_id")
+        .or_else(|| organization_id_from_context(&ctx));
+    let department_id = optional_query_value(&query, "department_id");
 
     let Ok(params) = list_page_params_or_error(&query) else {
         return list_page_params_or_error(&query)
@@ -994,13 +997,19 @@ async fn list_organization_memberships(
     let rows = if let Some(organization_id) = organization_id.as_deref() {
         sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT m.id, m.tenant_id, m.organization_id, m.user_id, m.membership_kind, m.status, \
-                    u.username, u.display_name, u.email, \
+                    u.username, u.display_name, u.email, u.phone, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_organization_membership m \
              JOIN iam_user u ON u.id = m.user_id AND u.tenant_id = m.tenant_id \
              WHERE m.tenant_id = $1 AND m.organization_id = $2 AND m.status = 'active' \
                AND ($5::text IS NULL OR LOWER(u.username) LIKE $5 OR LOWER(u.display_name) LIKE $5 \
                     OR LOWER(COALESCE(u.email, '')) LIKE $5) \
+               AND ($6::text IS NULL OR EXISTS (\
+                     SELECT 1 FROM iam_department_assignment da \
+                      WHERE da.tenant_id = m.tenant_id \
+                        AND da.organization_id = m.organization_id \
+                        AND da.organization_membership_id = m.id \
+                        AND da.department_id = $6 AND da.status = 'active')) \
              ORDER BY m.joined_at DESC NULLS LAST, m.id \
              LIMIT $3 OFFSET $4"
         )))
@@ -1009,18 +1018,25 @@ async fn list_organization_memberships(
         .bind(params.page_size)
         .bind(params.offset)
         .bind(&search_pattern)
+        .bind(&department_id)
         .fetch_all(pg)
         .await
     } else {
         sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT m.id, m.tenant_id, m.organization_id, m.user_id, m.membership_kind, m.status, \
-                    u.username, u.display_name, u.email, \
+                    u.username, u.display_name, u.email, u.phone, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_organization_membership m \
              JOIN iam_user u ON u.id = m.user_id AND u.tenant_id = m.tenant_id \
              WHERE m.tenant_id = $1 AND m.status = 'active' \
                AND ($4::text IS NULL OR LOWER(u.username) LIKE $4 OR LOWER(u.display_name) LIKE $4 \
                     OR LOWER(COALESCE(u.email, '')) LIKE $4) \
+               AND ($5::text IS NULL OR EXISTS (\
+                     SELECT 1 FROM iam_department_assignment da \
+                      WHERE da.tenant_id = m.tenant_id \
+                        AND da.organization_id = m.organization_id \
+                        AND da.organization_membership_id = m.id \
+                        AND da.department_id = $5 AND da.status = 'active')) \
              ORDER BY m.joined_at DESC NULLS LAST, m.id \
              LIMIT $2 OFFSET $3"
         )))
@@ -1028,6 +1044,7 @@ async fn list_organization_memberships(
         .bind(params.page_size)
         .bind(params.offset)
         .bind(&search_pattern)
+        .bind(&department_id)
         .fetch_all(pg)
         .await
     };
@@ -1051,7 +1068,8 @@ async fn list_departments(
     let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
         return tenant_id_from_context(&ctx).err().expect("error response");
     };
-    let organization_id = organization_id_from_context(&ctx);
+    let organization_id = optional_query_value(&query, "organization_id")
+        .or_else(|| organization_id_from_context(&ctx));
 
     let Ok(params) = list_page_params_or_error(&query) else {
         return list_page_params_or_error(&query)
@@ -1062,11 +1080,12 @@ async fn list_departments(
     let rows = if let Some(organization_id) = organization_id.as_deref() {
         sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT id, tenant_id, organization_id, code, name, status, parent_department_id, \
+                    sort_order, department_kind, path, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_department \
              WHERE tenant_id = $1 AND organization_id = $2 AND status = 'active' \
                AND ($5::text IS NULL OR LOWER(name) LIKE $5 OR LOWER(code) LIKE $5) \
-             ORDER BY name, id \
+             ORDER BY sort_order, name, id \
              LIMIT $3 OFFSET $4"
         )))
         .bind(&tenant_id)
@@ -1079,11 +1098,12 @@ async fn list_departments(
     } else {
         sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT id, tenant_id, organization_id, code, name, status, parent_department_id, \
+                    sort_order, department_kind, path, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_department \
              WHERE tenant_id = $1 AND status = 'active' \
                AND ($4::text IS NULL OR LOWER(name) LIKE $4 OR LOWER(code) LIKE $4) \
-             ORDER BY name, id \
+             ORDER BY sort_order, name, id \
              LIMIT $2 OFFSET $3"
         )))
         .bind(&tenant_id)
@@ -1578,6 +1598,7 @@ fn membership_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
         "membershipId": row.get::<String, _>(0),
         "membershipKind": row.get::<String, _>(4),
         "organizationId": row.get::<String, _>(2),
+        "phone": row.get::<Option<String>, _>(9),
         "status": row.get::<String, _>(5),
         "tenantId": row.get::<String, _>(1),
         "userId": row.get::<String, _>(3),
@@ -1589,10 +1610,13 @@ fn department_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
     json!({
         "code": row.get::<String, _>(3),
         "departmentId": row.get::<String, _>(0),
+        "departmentKind": row.get::<String, _>(8),
         "id": row.get::<String, _>(0),
         "name": row.get::<String, _>(4),
         "organizationId": row.get::<String, _>(2),
         "parentDepartmentId": row.get::<Option<String>, _>(6),
+        "path": row.get::<String, _>(9),
+        "sortOrder": row.get::<i32, _>(7),
         "status": row.get::<String, _>(5),
         "tenantId": row.get::<String, _>(1),
     })
