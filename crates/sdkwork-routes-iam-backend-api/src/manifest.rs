@@ -126,6 +126,18 @@ const IAM_BACKEND_API_ROUTES: &[HttpRoute] = &[
         "organizationMemberships.update",
     ),
     HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/iam/organization_memberships/roster",
+        "iam",
+        "organizationMemberships.roster.list",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Put,
+        "/backend/v3/api/iam/organization_memberships/{membershipId}/departments",
+        "iam",
+        "organizationMemberships.departments.update",
+    ),
+    HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/iam/departments",
         "iam",

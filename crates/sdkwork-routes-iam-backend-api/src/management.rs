@@ -6,7 +6,7 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{delete, get, patch, post},
+    routing::{delete, get, patch, post, put},
     Json, Router,
 };
 use chrono::Utc;
@@ -104,6 +104,14 @@ pub fn apply_management_routes(router: Router<BackendIamState>) -> Router<Backen
         .route(
             "/backend/v3/api/iam/organization_memberships/{membershipId}",
             patch(update_organization_membership),
+        )
+        .route(
+            "/backend/v3/api/iam/organization_memberships/roster",
+            get(organization_membership_roster),
+        )
+        .route(
+            "/backend/v3/api/iam/organization_memberships/{membershipId}/departments",
+            put(replace_organization_membership_departments),
         )
         .route(
             "/backend/v3/api/iam/departments",

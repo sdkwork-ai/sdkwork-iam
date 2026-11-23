@@ -872,6 +872,25 @@ function buildOperation(surface, route) {
     );
   }
 
+  if (route.operationId === 'organizationMemberships.roster.list') {
+    operation.parameters.push(
+      queryParameter('organization_id', {
+        type: 'string',
+        description:
+          'Organization whose member roster is returned. Omitted falls back to the request context organization.',
+      }),
+      queryParameter('department_id', {
+        type: 'string',
+        description: 'Only members assigned to this department (see include_descendants).',
+      }),
+      queryParameter('include_descendants', {
+        type: 'boolean',
+        default: true,
+        description: 'Include members assigned to descendant departments of department_id.',
+      }),
+    );
+  }
+
   if (route.operationId === 'providerAccounts.list') {
     operation.parameters.push(
       queryParameter('vendor_code', {
