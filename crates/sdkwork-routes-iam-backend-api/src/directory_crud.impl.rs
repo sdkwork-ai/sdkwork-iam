@@ -2814,6 +2814,66 @@ async fn update_department(State(state): State<BackendIamState>, ctx: WebRequest
 
 
 async fn delete_department(State(state): State<BackendIamState>, ctx: WebRequestContext, Path(department_id): Path<String>) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else { return postgres_pool_or_error(&state).err().expect("error response"); };
+    let Ok(tenant_id) = tenant_id_from_context(&ctx) else { return tenant_id_from_context(&ctx).err().expect("error response"); };
+    // Business rule (personnel management): a department can only be retired
+    // when it has no active child department and no active member assignment.
+    // Soft-deleting either case would leave orphaned tree nodes or memberships
+    // pointing at a disabled department.
+    let organization_id: Option<String> = match sqlx::query_scalar(
+        "SELECT organization_id FROM iam_department WHERE tenant_id = $1 AND id = $2 AND status = 'active'",
+    )
+    .bind(&tenant_id)
+    .bind(&department_id)
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(value) => value,
+        Err(error) => return internal_handler_error("iam_department_delete_failed", error),
+    };
+    let Some(organization_id) = organization_id else {
+        return appbase_error(StatusCode::NOT_FOUND, "iam_department_not_found", "department not found");
+    };
+    let has_children: Option<i32> = match sqlx::query_scalar(
+        "SELECT 1 FROM iam_department \
+         WHERE tenant_id = $1 AND organization_id = $2 AND parent_department_id = $3 \
+           AND status = 'active' LIMIT 1",
+    )
+    .bind(&tenant_id)
+    .bind(&organization_id)
+    .bind(&department_id)
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(value) => value,
+        Err(error) => return internal_handler_error("iam_department_delete_failed", error),
+    };
+    if has_children.is_some() {
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_department_has_children",
+            "move or delete the child departments before deleting this department",
+        );
+    }
+    let has_assignments: Option<i32> = match sqlx::query_scalar(
+        "SELECT 1 FROM iam_department_assignment \
+         WHERE tenant_id = $1 AND department_id = $2 AND status = 'active' LIMIT 1",
+    )
+    .bind(&tenant_id)
+    .bind(&department_id)
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(value) => value,
+        Err(error) => return internal_handler_error("iam_department_delete_failed", error),
+    };
+    if has_assignments.is_some() {
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_department_has_assignments",
+            "reassign or remove the active members before deleting this department",
+        );
+    }
     soft_delete(&state, &ctx, "iam_department", &department_id, "iam_department_not_found", "iam_department_delete_failed").await
 }
 
