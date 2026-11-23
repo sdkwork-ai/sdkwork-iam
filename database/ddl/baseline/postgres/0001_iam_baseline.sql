@@ -3809,3 +3809,17 @@ CREATE INDEX IF NOT EXISTS idx_iam_organization_membership_org_joined
 
 CREATE INDEX IF NOT EXISTS idx_iam_department_assignment_membership
     ON iam_department_assignment (tenant_id, organization_id, organization_membership_id, status);
+
+-- folded migration: migrations/postgres/0052_iam_reporting_line_and_position_headcount.up.sql
+ALTER TABLE iam_organization_membership
+    ADD COLUMN IF NOT EXISTS reports_to_membership_id TEXT;
+
+ALTER TABLE iam_position
+    ADD COLUMN IF NOT EXISTS headcount INTEGER,
+    ADD COLUMN IF NOT EXISTS reports_to_position_id TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_iam_organization_membership_reports_to
+    ON iam_organization_membership (tenant_id, organization_id, reports_to_membership_id);
+
+CREATE INDEX IF NOT EXISTS idx_iam_position_reports_to
+    ON iam_position (tenant_id, organization_id, reports_to_position_id);

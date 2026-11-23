@@ -486,6 +486,7 @@ const FOLDED_BLOCK_ORDER = [
   "migrations/postgres/0049_iam_department_ordering_and_member_scope.up.sql",
   "migrations/postgres/0050_iam_department_version.up.sql",
   "migrations/postgres/0051_iam_personnel_roster_indexes.up.sql",
+  "migrations/postgres/0052_iam_reporting_line_and_position_headcount.up.sql",
 ];
 
 const FOLDED_BLOCKS_WITHOUT_SOURCE = [
