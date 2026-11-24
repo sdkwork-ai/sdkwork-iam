@@ -561,6 +561,33 @@ pub fn build_web_framework_builder_with_open_api_prefixes<R>(
 where
     R: sdkwork_web_core::WebRequestContextResolver + Clone + std::any::Any,
 {
+    build_web_framework_builder_with_open_api_prefixes_and_external_protocols(
+        resolver,
+        route_manifest,
+        extra_public_path_prefixes,
+        open_api_prefixes,
+        Vec::new(),
+    )
+}
+
+/// Builds the IAM-configured framework host, also declaring which prefixes host a
+/// vendor-compatibility protocol.
+///
+/// A prefix listed as an external protocol carries the upstream's own request
+/// vocabulary, so its top-level JSON keys are payload rather than SDKWork context
+/// selectors. Declaring them here keeps the framework's client-context guard from
+/// buffering a prompt body it has no business judging — the guard reads the whole
+/// body, and a body it cannot restore is a body the dependent service never sees.
+pub fn build_web_framework_builder_with_open_api_prefixes_and_external_protocols<R>(
+    resolver: R,
+    route_manifest: HttpRouteManifest,
+    extra_public_path_prefixes: Vec<String>,
+    open_api_prefixes: Vec<String>,
+    external_protocol_prefixes: Vec<String>,
+) -> sdkwork_web_bootstrap::WebFrameworkBuilder<R>
+where
+    R: sdkwork_web_core::WebRequestContextResolver + Clone + std::any::Any,
+{
     let environment = resolve_web_environment_from_process_env();
     let security_policy = iam_web_security_policy(&environment);
     let authorization_policy =
@@ -577,6 +604,7 @@ where
             open_api_prefixes,
             public_path_prefixes: extra_public_path_prefixes,
             gateway_api_prefixes,
+            external_protocol_prefixes,
             environment,
             ..WebRequestContextProfile::default()
         })
