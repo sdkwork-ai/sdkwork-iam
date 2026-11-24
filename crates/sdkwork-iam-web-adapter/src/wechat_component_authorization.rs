@@ -63,6 +63,16 @@ pub trait ComponentPlatformConfigReader: Send + Sync {
         &self,
         platform_id: &str,
     ) -> Result<Option<ComponentPlatformConfig>, WechatComponentAuthorizationError>;
+
+    /// Loads component credentials only when the platform belongs to tenant.
+    ///
+    /// Tenant-scoped callers must use this method so ownership is checked by
+    /// IAM before encrypted component secrets are selected or decoded.
+    async fn load_for_tenant(
+        &self,
+        tenant_id: &str,
+        platform_id: &str,
+    ) -> Result<Option<ComponentPlatformConfig>, WechatComponentAuthorizationError>;
 }
 
 /// The authorization entry handed to the admin surface.
@@ -222,41 +232,34 @@ impl PgComponentPlatformConfigReader {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
-}
 
-#[async_trait]
-impl ComponentPlatformConfigReader for PgComponentPlatformConfigReader {
-    async fn load(
+    /// Loads and decrypts component credentials after matching tenant ownership.
+    pub async fn load_for_tenant(
         &self,
+        tenant_id: &str,
         platform_id: &str,
     ) -> Result<Option<ComponentPlatformConfig>, WechatComponentAuthorizationError> {
-        let row = sqlx::query(
-            "SELECT op.id, op.tenant_id, op.organization_id, op.integration_id, \
-                    op.component_appid, op.platform_type, \
-                    app_secret.secret_ref AS app_secret_ref, \
-                    ticket.secret_ref AS ticket_ref \
-             FROM iam_oauth_operator_platform op \
-             LEFT JOIN LATERAL ( \
-                SELECT secret_ref FROM iam_oauth_secret \
-                WHERE operator_platform_id = op.id \
-                  AND secret_kind = 'component_app_secret' \
-                  AND status = 'active' \
-                ORDER BY active_from DESC, updated_at DESC, id DESC \
-                LIMIT 1 \
-             ) app_secret ON TRUE \
-             LEFT JOIN LATERAL ( \
-                SELECT secret_ref FROM iam_oauth_secret \
-                WHERE operator_platform_id = op.id \
-                  AND secret_kind = 'component_verify_ticket' \
-                  AND status = 'active' \
-                ORDER BY active_from DESC, updated_at DESC, id DESC \
-                LIMIT 1 \
-             ) ticket ON TRUE \
-             WHERE op.id = $1",
-        )
-        .bind(platform_id)
-        .fetch_optional(&self.pool)
-        .await
+        self.load_matching(Some(tenant_id), platform_id).await
+    }
+
+    async fn load_matching(
+        &self,
+        tenant_id: Option<&str>,
+        platform_id: &str,
+    ) -> Result<Option<ComponentPlatformConfig>, WechatComponentAuthorizationError> {
+        let tenant_scoped = tenant_id.is_some();
+        let query = component_platform_config_query(tenant_scoped);
+        let query = sqlx::query(query);
+        let row = match tenant_id {
+            Some(tenant_id) => {
+                query
+                    .bind(tenant_id)
+                    .bind(platform_id)
+                    .fetch_optional(&self.pool)
+                    .await
+            }
+            None => query.bind(platform_id).fetch_optional(&self.pool).await,
+        }
         .map_err(|error| WechatComponentAuthorizationError::Store(error.to_string()))?;
         let Some(row) = row else {
             return Ok(None);
@@ -297,6 +300,74 @@ impl ComponentPlatformConfigReader for PgComponentPlatformConfigReader {
                 .try_get("platform_type")
                 .map_err(|error| WechatComponentAuthorizationError::Store(error.to_string()))?,
         }))
+    }
+}
+
+#[async_trait]
+impl ComponentPlatformConfigReader for PgComponentPlatformConfigReader {
+    async fn load(
+        &self,
+        platform_id: &str,
+    ) -> Result<Option<ComponentPlatformConfig>, WechatComponentAuthorizationError> {
+        self.load_matching(None, platform_id).await
+    }
+
+    async fn load_for_tenant(
+        &self,
+        tenant_id: &str,
+        platform_id: &str,
+    ) -> Result<Option<ComponentPlatformConfig>, WechatComponentAuthorizationError> {
+        PgComponentPlatformConfigReader::load_for_tenant(self, tenant_id, platform_id).await
+    }
+}
+
+fn component_platform_config_query(tenant_scoped: bool) -> &'static str {
+    if tenant_scoped {
+        "SELECT op.id, op.tenant_id, op.organization_id, op.integration_id, \
+                op.component_appid, op.platform_type, \
+                app_secret.secret_ref AS app_secret_ref, \
+                ticket.secret_ref AS ticket_ref \
+         FROM iam_oauth_operator_platform op \
+         LEFT JOIN LATERAL ( \
+            SELECT secret_ref FROM iam_oauth_secret \
+            WHERE operator_platform_id = op.id \
+              AND secret_kind = 'component_app_secret' \
+              AND status = 'active' \
+            ORDER BY active_from DESC, updated_at DESC, id DESC \
+            LIMIT 1 \
+         ) app_secret ON TRUE \
+         LEFT JOIN LATERAL ( \
+            SELECT secret_ref FROM iam_oauth_secret \
+            WHERE operator_platform_id = op.id \
+              AND secret_kind = 'component_verify_ticket' \
+              AND status = 'active' \
+            ORDER BY active_from DESC, updated_at DESC, id DESC \
+            LIMIT 1 \
+         ) ticket ON TRUE \
+         WHERE op.tenant_id = $1 AND op.id = $2"
+    } else {
+        "SELECT op.id, op.tenant_id, op.organization_id, op.integration_id, \
+                op.component_appid, op.platform_type, \
+                app_secret.secret_ref AS app_secret_ref, \
+                ticket.secret_ref AS ticket_ref \
+         FROM iam_oauth_operator_platform op \
+         LEFT JOIN LATERAL ( \
+            SELECT secret_ref FROM iam_oauth_secret \
+            WHERE operator_platform_id = op.id \
+              AND secret_kind = 'component_app_secret' \
+              AND status = 'active' \
+            ORDER BY active_from DESC, updated_at DESC, id DESC \
+            LIMIT 1 \
+         ) app_secret ON TRUE \
+         LEFT JOIN LATERAL ( \
+            SELECT secret_ref FROM iam_oauth_secret \
+            WHERE operator_platform_id = op.id \
+              AND secret_kind = 'component_verify_ticket' \
+              AND status = 'active' \
+            ORDER BY active_from DESC, updated_at DESC, id DESC \
+            LIMIT 1 \
+         ) ticket ON TRUE \
+         WHERE op.id = $1"
     }
 }
 
@@ -361,5 +432,23 @@ mod tests {
                 "component_verify_ticket"
             ))
         ));
+    }
+
+    #[test]
+    fn tenant_scoped_component_query_matches_ownership_before_returning_secret_refs() {
+        let query = component_platform_config_query(true);
+        let ownership_filter = "WHERE op.tenant_id = $1 AND op.id = $2";
+
+        assert!(query.contains(ownership_filter));
+        assert!(
+            query.find(ownership_filter).unwrap()
+                > query.find("FROM iam_oauth_operator_platform").unwrap()
+        );
+        assert!(query.contains("app_secret.secret_ref AS app_secret_ref"));
+        assert!(query.contains("ticket.secret_ref AS ticket_ref"));
+
+        let unscoped_query = component_platform_config_query(false);
+        assert!(unscoped_query.contains("WHERE op.id = $1"));
+        assert!(!unscoped_query.contains("op.tenant_id ="));
     }
 }

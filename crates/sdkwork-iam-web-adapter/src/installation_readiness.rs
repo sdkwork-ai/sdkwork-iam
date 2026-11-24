@@ -36,8 +36,7 @@ pub const IAM_INSTALLATION_RECONCILED_AUDIT_ACTION: &str = "iam.installation.rec
 pub const INSTALLATION_UPDATE_REPAIR_OPERATION: &str = "iam.installations.update";
 
 /// Operation that owns the environment rows.
-pub const INSTALLATION_ENVIRONMENT_REPAIR_OPERATION: &str =
-    "iam.installations.environments.update";
+pub const INSTALLATION_ENVIRONMENT_REPAIR_OPERATION: &str = "iam.installations.environments.update";
 
 /// Installation status that admits token issuance and login.
 const INSTALLATION_STATUS_ENABLED: &str = "enabled";
@@ -101,9 +100,7 @@ impl InstallationDefectCode {
     pub fn auto_repairable(self) -> bool {
         matches!(
             self,
-            Self::DeployApplicationUnbound
-                | Self::InstallationDisabled
-                | Self::RelyingPartyMissing
+            Self::DeployApplicationUnbound | Self::InstallationDisabled | Self::RelyingPartyMissing
         )
     }
 
@@ -244,7 +241,8 @@ impl InstallationReadiness {
 
 /// Failure reading an installation for assessment.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum InstallationReadinessError {    /// The selector names no installation of the tenant.
+pub enum InstallationReadinessError {
+    /// The selector names no installation of the tenant.
     NotFound(String),
     /// Storage failed; the caller must not read this as "not ready".
     Internal(String),
@@ -442,11 +440,7 @@ pub fn assess_installation(
                  deployApplicationId before any login or access token can name this deployment",
                 installation.id, installation.app_id
             ),
-            blocks: planes(&[
-                ("issuance", true),
-                ("login", true),
-                ("enable", false),
-            ]),
+            blocks: planes(&[("issuance", true), ("login", true), ("enable", false)]),
         });
     }
     if !has_relying_party(&installation.runtime_config) {
@@ -457,11 +451,7 @@ pub fn assess_installation(
                  hosted authorization page has no client to start",
                 installation.id
             ),
-            blocks: planes(&[
-                ("issuance", false),
-                ("login", true),
-                ("enable", false),
-            ]),
+            blocks: planes(&[("issuance", false), ("login", true), ("enable", false)]),
         });
     }
     if installation.status != INSTALLATION_STATUS_ENABLED {
@@ -471,11 +461,7 @@ pub fn assess_installation(
                 "installation {} is {} and must be enabled before it can issue credentials",
                 installation.id, installation.status
             ),
-            blocks: planes(&[
-                ("issuance", true),
-                ("login", true),
-                ("enable", false),
-            ]),
+            blocks: planes(&[("issuance", true), ("login", true), ("enable", false)]),
         });
     }
     if crate::is_blank(installation.primary_domain.as_deref()) {
@@ -485,11 +471,7 @@ pub fn assess_installation(
                 "installation {} has no primary domain, which blocks enabling it",
                 installation.id
             ),
-            blocks: planes(&[
-                ("issuance", false),
-                ("login", false),
-                ("enable", true),
-            ]),
+            blocks: planes(&[("issuance", false), ("login", false), ("enable", true)]),
         });
     }
     if installation.access_permissions.is_empty() {
@@ -500,11 +482,7 @@ pub fn assess_installation(
                  credential can be issued for it",
                 installation.id
             ),
-            blocks: planes(&[
-                ("issuance", true),
-                ("login", false),
-                ("enable", true),
-            ]),
+            blocks: planes(&[("issuance", true), ("login", false), ("enable", true)]),
         });
     }
     if environments.is_empty() {
@@ -520,11 +498,7 @@ pub fn assess_installation(
                  cannot address it",
                 installation.id
             ),
-            blocks: planes(&[
-                ("issuance", false),
-                ("login", false),
-                ("enable", false),
-            ]),
+            blocks: planes(&[("issuance", false), ("login", false), ("enable", false)]),
         });
     } else if !environments
         .iter()
@@ -537,11 +511,7 @@ pub fn assess_installation(
                  is refused",
                 installation.id
             ),
-            blocks: planes(&[
-                ("issuance", true),
-                ("login", false),
-                ("enable", false),
-            ]),
+            blocks: planes(&[("issuance", true), ("login", false), ("enable", false)]),
         });
     }
     if installation.ownership_scope.as_str() == "USER" && installation.owner_user_id.is_none() {
@@ -552,17 +522,16 @@ pub fn assess_installation(
                  undefined",
                 installation.id
             ),
-            blocks: planes(&[
-                ("issuance", true),
-                ("login", false),
-                ("enable", false),
-            ]),
+            blocks: planes(&[("issuance", true), ("login", false), ("enable", false)]),
         });
     }
 
-    let ready = !defects
-        .iter()
-        .any(|defect| defect.blocks.iter().any(|plane| *plane == "issuance" || *plane == "login"));
+    let ready = !defects.iter().any(|defect| {
+        defect
+            .blocks
+            .iter()
+            .any(|plane| *plane == "issuance" || *plane == "login")
+    });
 
     InstallationReadiness {
         installation_id: installation.id.clone(),
@@ -590,8 +559,8 @@ pub async fn load_installation_readiness(
     tenant_id: &str,
     installation_id: &str,
 ) -> Result<InstallationReadiness, InstallationReadinessError> {
-    let (installation, environments) = load_installation_and_environments(pg, tenant_id, installation_id)
-        .await?;
+    let (installation, environments) =
+        load_installation_and_environments(pg, tenant_id, installation_id).await?;
     Ok(assess_installation(&installation, &environments))
 }
 
@@ -706,7 +675,9 @@ pub async fn reconcile_installation(
                     steps.push(InstallationReconcileStep {
                         field: "deployApplicationId",
                         status: InstallationReconcileStepStatus::Planned,
-                        detail: format!("would bind the installation to deploy application {requested}"),
+                        detail: format!(
+                            "would bind the installation to deploy application {requested}"
+                        ),
                     });
                 } else {
                     bind_tenant_application_deploy_application_id(
@@ -729,7 +700,10 @@ pub async fn reconcile_installation(
     }
 
     if let Some(runtime_config) = command.runtime_config.as_ref() {
-        if !runtime_config.is_object() || runtime_config.as_object().is_some_and(|object| object.is_empty())
+        if !runtime_config.is_object()
+            || runtime_config
+                .as_object()
+                .is_some_and(|object| object.is_empty())
         {
             return Err(InstallationReconcileError::Invalid(
                 "runtimeConfig must be a non-empty object when supplied".to_string(),
@@ -798,9 +772,10 @@ pub async fn reconcile_installation(
     let readiness_after = if command.dry_run || !changed {
         readiness_before.clone()
     } else {
-        let (installation, environments) = load_installation_and_environments(pg, tenant_id, installation_id)
-            .await
-            .map_err(map_readiness_error)?;
+        let (installation, environments) =
+            load_installation_and_environments(pg, tenant_id, installation_id)
+                .await
+                .map_err(map_readiness_error)?;
         assess_installation(&installation, &environments)
     };
 
@@ -848,15 +823,21 @@ async fn load_stored_domain_config(
     .fetch_optional(pg)
     .await
     .map_err(|error| {
-        InstallationReconcileError::Internal(format!("load installation domain config failed: {error}"))
+        InstallationReconcileError::Internal(format!(
+            "load installation domain config failed: {error}"
+        ))
     })?;
     Ok(stored.unwrap_or_else(|| json!({})))
 }
 
 fn map_readiness_error(error: InstallationReadinessError) -> InstallationReconcileError {
     match error {
-        InstallationReadinessError::NotFound(message) => InstallationReconcileError::NotFound(message),
-        InstallationReadinessError::Internal(message) => InstallationReconcileError::Internal(message),
+        InstallationReadinessError::NotFound(message) => {
+            InstallationReconcileError::NotFound(message)
+        }
+        InstallationReadinessError::Internal(message) => {
+            InstallationReconcileError::Internal(message)
+        }
     }
 }
 
@@ -899,7 +880,12 @@ fn planes(entries: &[(&'static str, bool)]) -> Vec<&'static str> {
 }
 
 fn read_deploy_application_id(body: &Value) -> Result<Option<String>, String> {
-    for key in ["deployApplicationId", "deploy_application_id", "appId", "app_id"] {
+    for key in [
+        "deployApplicationId",
+        "deploy_application_id",
+        "appId",
+        "app_id",
+    ] {
         let Some(raw) = body.get(key) else { continue };
         if raw.is_null() {
             return Ok(None);
@@ -1051,7 +1037,10 @@ mod tests {
     fn repair_detail_names_the_codes_and_the_repair_operation() {
         let readiness = assess_installation(&installation(), &active_environment());
         let detail = readiness.repair_detail("issuance");
-        assert!(detail.contains("deploy_application_unbound(deployApplicationId)"), "{detail}");
+        assert!(
+            detail.contains("deploy_application_unbound(deployApplicationId)"),
+            "{detail}"
+        );
         assert!(detail.contains("iam.installations.reconcile"), "{detail}");
         assert!(!readiness.issuance_ready());
     }

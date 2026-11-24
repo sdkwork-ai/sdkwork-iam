@@ -111,8 +111,7 @@ pub use application_registry::{
     TenantApplicationProvisionCommand, TenantApplicationUpdateCommand, DEPLOY_APPLICATION_ID_ENV,
     IAM_INSTALLATIONS_DISABLE_PERMISSION, IAM_INSTALLATIONS_ENABLE_PERMISSION,
     IAM_INSTALLATIONS_PROVISION_PERMISSION, IAM_INSTALLATIONS_RECONCILE_PERMISSION,
-    IAM_INSTALLATIONS_UPDATE_PERMISSION,
-    PLATFORM_INSTALLATION_ANCHOR,
+    IAM_INSTALLATIONS_UPDATE_PERMISSION, PLATFORM_INSTALLATION_ANCHOR,
 };
 pub use application_scope::{
     ensure_public_token_subject_is_installation_owner, ensure_requested_scope_matches_installation,
@@ -317,10 +316,14 @@ pub use wechat_component_token_pg::{
 };
 pub use wechat_mp::{
     create_wechat_mp_permanent_qr_code, create_wechat_mp_temp_qr_code,
-    fetch_wechat_mp_access_token, generate_wechat_mp_scene, parse_oauth_follow_login_scene,
-    record_oauth_follow_login_confirmation, wechat_mp_api_base, OAuthFollowLoginConfirmation,
-    WechatMpTempQrCode, OAUTH_QR_FOLLOW_CONFIRMED_STATUS, OAUTH_QR_FOLLOW_LOGIN_FIELD,
-    OAUTH_QR_SCENE_EVENT_KEY_PREFIX, OAUTH_QR_SESSION_KIND, OAUTH_QR_SESSION_SCOPE,
+    fetch_wechat_mp_access_token, fetch_wechat_mp_access_token_details,
+    fetch_wechat_mp_stable_access_token, generate_wechat_mp_scene,
+    parse_oauth_follow_login_scene, record_oauth_follow_login_confirmation, wechat_mp_api_base,
+    wechat_mp_stable_access_token_cache_key, OAuthFollowLoginConfirmation,
+    WechatMpAccessToken, WechatMpStableAccessToken, WechatMpTempQrCode,
+    OAUTH_QR_FOLLOW_CONFIRMED_STATUS,
+    OAUTH_QR_FOLLOW_LOGIN_FIELD, OAUTH_QR_SCENE_EVENT_KEY_PREFIX, OAUTH_QR_SESSION_KIND,
+    OAUTH_QR_SESSION_SCOPE,
 };
 
 #[cfg(test)]

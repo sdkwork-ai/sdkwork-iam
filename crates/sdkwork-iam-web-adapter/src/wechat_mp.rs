@@ -41,6 +41,7 @@ pub const OAUTH_QR_FOLLOW_CONFIRMED_STATUS: &str = "follow_confirmed";
 pub const OAUTH_QR_FOLLOW_LOGIN_FIELD: &str = "followLogin";
 
 const KIND_WECHAT_TOKEN: &str = "wechat_mp_token";
+const KIND_WECHAT_STABLE_TOKEN: &str = "wechat_mp_stable_token";
 const WECHAT_API_BASE_DEFAULT: &str = "https://api.weixin.qq.com";
 const WECHAT_QR_IMAGE_BASE: &str = "https://mp.weixin.qq.com/cgi-bin/showqrcode";
 const WECHAT_UNSUPPORTED_MENU_ACTION_BYTE_LIMIT: usize = 4096;
@@ -53,6 +54,13 @@ pub struct WechatMpTempQrCode {
     pub image_url: String,
     pub expire_seconds: u64,
     pub scene: String,
+}
+
+/// A stable WeChat Mini Program access token and its provider-declared lifetime.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WechatMpStableAccessToken {
+    pub access_token: String,
+    pub expires_in: u64,
 }
 
 /// Retrieves the current default custom menu from a WeChat Official Account
@@ -769,6 +777,18 @@ fn wechat_mp_access_token_cache_key(app_id: &str, app_secret: &str) -> String {
     )
 }
 
+/// Cache key for the stable-token endpoint. The stable-token cache is kept
+/// separate from the ordinary `/cgi-bin/token` cache because WeChat invalidates
+/// the prior stable token when `force_refresh` is used, while the two endpoint
+/// families otherwise have independent lifecycles.
+pub fn wechat_mp_stable_access_token_cache_key(app_id: &str, app_secret: &str) -> String {
+    let secret_fingerprint = sdkwork_iam_bootstrap::hash_secret_ref(app_secret);
+    ephemeral_artifact_key(
+        KIND_WECHAT_STABLE_TOKEN,
+        &format!("{}:{secret_fingerprint}", app_id.trim()),
+    )
+}
+
 /// Generates a random scene string bound to a QR login session.
 pub fn generate_wechat_mp_scene(kind: &str) -> String {
     let mut bytes = [0u8; 24];
@@ -785,11 +805,27 @@ fn http_client() -> Result<reqwest::Client, String> {
 
 /// Fetches (and caches in `iam_ephemeral_artifact`) the official account
 /// `cgi-bin/token` access token for the given appId/appSecret pair.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WechatMpAccessToken {
+    pub access_token: String,
+    pub expires_in: u64,
+}
+
 pub async fn fetch_wechat_mp_access_token(
     pg: &PgPool,
     app_id: &str,
     app_secret: &str,
 ) -> Result<String, String> {
+    Ok(fetch_wechat_mp_access_token_details(pg, app_id, app_secret)
+        .await?
+        .access_token)
+}
+
+pub async fn fetch_wechat_mp_access_token_details(
+    pg: &PgPool,
+    app_id: &str,
+    app_secret: &str,
+) -> Result<WechatMpAccessToken, String> {
     let cache_key = wechat_mp_access_token_cache_key(app_id, app_secret);
     let cached = sqlx::query(
         "SELECT payload_json FROM iam_ephemeral_artifact \
@@ -809,7 +845,14 @@ pub async fn fetch_wechat_mp_access_token(
             .map(str::trim)
             .filter(|value| !value.is_empty())
         {
-            return Ok(token.to_string());
+            return Ok(WechatMpAccessToken {
+                access_token: token.to_string(),
+                expires_in: payload
+                    .0
+                    .get("expiresIn")
+                    .and_then(Value::as_u64)
+                    .unwrap_or(7200),
+            });
         }
     }
 
@@ -874,7 +917,7 @@ pub async fn fetch_wechat_mp_access_token(
     .bind(&cache_key)
     .bind(OAUTH_QR_SESSION_SCOPE)
     .bind(KIND_WECHAT_TOKEN)
-    .bind(Json(json!({ "accessToken": token })))
+    .bind(Json(json!({ "accessToken": token, "expiresIn": expires_in })))
     .bind(millis_to_timestamp(current_millis() + ttl_ms))
     .bind(current_timestamp_utc())
     .bind(current_timestamp_utc())
@@ -882,7 +925,144 @@ pub async fn fetch_wechat_mp_access_token(
     .await
     .map_err(|error| format!("cache WeChat access token failed: {error}"))?;
 
-    Ok(token.to_string())
+    Ok(WechatMpAccessToken {
+        access_token: token.to_string(),
+        expires_in,
+    })
+}
+
+/// Fetches the stable Mini Program access token and caches it in IAM's shared
+/// ephemeral artifact store. `force_refresh` only bypasses and replaces the
+/// stable-token cache key. It never invalidates the ordinary access-token cache.
+pub async fn fetch_wechat_mp_stable_access_token(
+    pg: &PgPool,
+    app_id: &str,
+    app_secret: &str,
+    force_refresh: bool,
+) -> Result<WechatMpStableAccessToken, String> {
+    let app_id = app_id.trim();
+    let app_secret = app_secret.trim();
+    if app_id.is_empty() {
+        return Err("WeChat stable access token appid is required".to_string());
+    }
+    if app_secret.is_empty() {
+        return Err("WeChat stable access token secret is required".to_string());
+    }
+
+    let cache_key = wechat_mp_stable_access_token_cache_key(app_id, app_secret);
+    if !force_refresh {
+        let cached = sqlx::query(
+            "SELECT payload_json, expires_at FROM iam_ephemeral_artifact \
+             WHERE artifact_key = $1 AND expires_at > $2",
+        )
+        .bind(&cache_key)
+        .bind(current_timestamp_utc())
+        .fetch_optional(pg)
+        .await
+        .map_err(|error| format!("load WeChat stable token cache failed: {error}"))?;
+        if let Some(row) = cached {
+            let payload: Json<Value> = row.get(0);
+            let expires_at: DateTime<Utc> = row.get(1);
+            if let Some(token) = payload
+                .0
+                .get("stableAccessToken")
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+            {
+                let expires_in = (expires_at - current_timestamp_utc()).num_seconds().max(0) as u64;
+                return Ok(WechatMpStableAccessToken {
+                    access_token: token.to_string(),
+                    expires_in,
+                });
+            }
+        }
+    }
+
+    let response = http_client()?
+        .post(format!("{}/cgi-bin/stable_token", wechat_mp_api_base()))
+        .header(ACCEPT, "application/json")
+        .json(&json!({
+            "grant_type": "client_credential",
+            "appid": app_id,
+            "secret": app_secret,
+            "force_refresh": force_refresh,
+        }))
+        .send()
+        .await
+        .map_err(|error| format!("WeChat stable access token request failed: {error}"))?;
+    let status = response.status();
+    let body = response
+        .text()
+        .await
+        .map_err(|error| format!("read WeChat stable access token response failed: {error}"))?;
+    if !status.is_success() {
+        return Err(format!(
+            "WeChat stable access token request failed with status {}",
+            status.as_u16()
+        ));
+    }
+
+    let token = parse_wechat_mp_stable_access_token_response(&body)?;
+    let ttl_ms = ((token.expires_in.saturating_sub(300)).min(7000) as u128) * 1000;
+    sqlx::query(
+        "INSERT INTO iam_ephemeral_artifact \
+         (artifact_key, tenant_id, artifact_kind, payload_json, expires_at, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7) \
+         ON CONFLICT (artifact_key) DO UPDATE SET \
+           payload_json = EXCLUDED.payload_json, \
+           expires_at = EXCLUDED.expires_at, \
+           updated_at = EXCLUDED.updated_at",
+    )
+    .bind(&cache_key)
+    .bind(OAUTH_QR_SESSION_SCOPE)
+    .bind(KIND_WECHAT_STABLE_TOKEN)
+    .bind(Json(json!({ "stableAccessToken": token.access_token })))
+    .bind(millis_to_timestamp(current_millis() + ttl_ms))
+    .bind(current_timestamp_utc())
+    .bind(current_timestamp_utc())
+    .execute(pg)
+    .await
+    .map_err(|error| format!("cache WeChat stable access token failed: {error}"))?;
+
+    Ok(token)
+}
+
+fn parse_wechat_mp_stable_access_token_response(
+    body: &str,
+) -> Result<WechatMpStableAccessToken, String> {
+    let payload: Value = serde_json::from_str(body)
+        .map_err(|error| format!("WeChat stable access token response is invalid: {error}"))?;
+    if let Some(error_code) = payload.get("errcode").and_then(Value::as_i64) {
+        if error_code != 0 {
+            let message = payload
+                .get("errmsg")
+                .and_then(Value::as_str)
+                .unwrap_or("unknown error");
+            let safe_message = message
+                .chars()
+                .filter(|character| !character.is_control())
+                .take(256)
+                .collect::<String>();
+            return Err(format!(
+                "WeChat stable access token request failed: {error_code} {safe_message}"
+            ));
+        }
+    }
+    let access_token = payload
+        .get("access_token")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| "WeChat stable access token response is missing access_token".to_string())?;
+    let expires_in = payload
+        .get("expires_in")
+        .and_then(Value::as_u64)
+        .ok_or_else(|| "WeChat stable access token response is missing expires_in".to_string())?;
+    Ok(WechatMpStableAccessToken {
+        access_token: access_token.to_string(),
+        expires_in,
+    })
 }
 
 async fn invalidate_wechat_mp_access_token(
@@ -1505,6 +1685,40 @@ mod tests {
         assert_ne!(first, other_app);
         assert!(!first.contains("first-secret"));
         assert!(first.starts_with("__local__:wechat_mp_token:wx-app:"));
+    }
+
+    #[test]
+    fn stable_token_cache_key_isolated_from_ordinary_token_cache() {
+        let ordinary = wechat_mp_access_token_cache_key("wx-app", "secret");
+        let stable = wechat_mp_stable_access_token_cache_key("wx-app", "secret");
+        assert_ne!(ordinary, stable);
+        assert!(stable.starts_with("__local__:wechat_mp_stable_token:wx-app:"));
+        assert!(!stable.contains("secret"));
+    }
+
+    #[test]
+    fn parses_stable_access_token_response_and_rejects_missing_fields() {
+        let token = parse_wechat_mp_stable_access_token_response(
+            r#"{"access_token":"stable-token","expires_in":7200}"#,
+        )
+        .expect("stable token");
+        assert_eq!(
+            token,
+            WechatMpStableAccessToken {
+                access_token: "stable-token".to_owned(),
+                expires_in: 7200
+            }
+        );
+        assert!(
+            parse_wechat_mp_stable_access_token_response(r#"{"access_token":"stable-token"}"#)
+                .expect_err("expires_in is required")
+                .contains("missing expires_in")
+        );
+        assert!(parse_wechat_mp_stable_access_token_response(
+            r#"{"errcode":40125,"errmsg":"invalid appsecret"}"#
+        )
+        .expect_err("provider error")
+        .contains("40125"));
     }
 
     #[test]

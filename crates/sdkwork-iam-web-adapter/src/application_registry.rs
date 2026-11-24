@@ -2973,13 +2973,18 @@ mod tests {
                 "legacyFlag": true
             }
         });
-        let merged = merge_runtime_config_patch(&existing, &json!({ "oauth": { "relyingParty": null } }));
+        let merged =
+            merge_runtime_config_patch(&existing, &json!({ "oauth": { "relyingParty": null } }));
         assert!(merged["oauth"].get("relyingParty").is_none(), "{merged}");
         assert_eq!(merged["oauth"]["legacyFlag"], json!(true));
         // Deregistering is idempotent, and an unbound installation may still do it:
         // the anchor guard only constrains registering a client.
-        let merged_again = merge_runtime_config_patch(&merged, &json!({ "oauth": { "relyingParty": null } }));
-        assert!(merged_again["oauth"].get("relyingParty").is_none(), "{merged_again}");
+        let merged_again =
+            merge_runtime_config_patch(&merged, &json!({ "oauth": { "relyingParty": null } }));
+        assert!(
+            merged_again["oauth"].get("relyingParty").is_none(),
+            "{merged_again}"
+        );
     }
 
     #[test]
