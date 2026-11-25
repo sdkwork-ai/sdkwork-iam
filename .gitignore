@@ -66,6 +66,8 @@ __pycache__/
 **/.sdkwork/sdkwork-generator-changes.json
 **/.sdkwork/sdkwork-generator-manifest.json
 **/.sdkwork/sdkwork-generator-report.json
+# Stale JS copies parked by generator runs while regenerating the SDK family.
+**/.sdkwork/stale-js-backup-*/
 
 # Dart / Flutter local tooling
 .dart_tool/
