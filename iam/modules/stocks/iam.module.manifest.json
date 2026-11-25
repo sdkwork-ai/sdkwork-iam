@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "stocks",
+  "domain": "stocks",
+  "owner": "sdkwork-stocks",
+  "displayName": "SDKWork Stocks Module",
+  "catalogVersion": "1.0.0",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "stocks.alerts.read",
+        "name": "Read stock alert rules and events",
+        "resource": "alerts",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "stocks.alerts.write",
+        "name": "Write stock alert rules",
+        "resource": "alerts",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "stocks.watchlists.read",
+        "name": "Read stock watchlists",
+        "resource": "watchlists",
+        "action": "read",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "stocks.watchlists.write",
+        "name": "Write stock watchlists",
+        "resource": "watchlists",
+        "action": "write",
+        "status": "active",
+        "since": "1.0.0",
+        "replacementCode": null
+      }
+    ],
+    "openapiAuthorities": [
+      "sdkwork-stocks-app-api",
+      "sdkwork-stocks-open-api"
+    ]
+  },
+  "roles": {
+    "domainStandardRoles": [],
+    "roleExclusions": [],
+    "roleGrantExtensions": [
+      {
+        "roleCode": "app_user",
+        "patterns": [
+          "stocks.alerts.write",
+          "stocks.watchlists.write"
+        ]
+      },
+      {
+        "roleCode": "org_admin",
+        "patterns": [
+          "stocks.*"
+        ]
+      }
+    ]
+  },
+  "directory": {
+    "organizationTemplates": [],
+    "departmentTemplates": [],
+    "positionTemplates": [],
+    "membershipTemplates": []
+  },
+  "policyConditions": {
+    "supportedAttributes": []
+  },
+  "oauthScopeMappings": [],
+  "dependencies": {
+    "requiresModules": [
+      "iam-kernel"
+    ]
+  }
+}
