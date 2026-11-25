@@ -1655,9 +1655,10 @@ async fn retrieve_official_account_settings(
     match result {
         Ok(row) => {
             let server_ips = row
-                .map(|row| row.get::<String, _>(0))
-                .unwrap_or_else(|| "[]".to_string());
-            appbase_ok(json!({ "serverIps": normalize_server_ips(&server_ips) }))
+                .as_ref()
+                .map(decode_server_ips)
+                .unwrap_or_else(|| json!([]));
+            appbase_ok(json!({ "serverIps": server_ips }))
         }
         Err(error) => official_account_storage_error(
             "iam_official_account_settings_retrieve_failed",
@@ -1666,10 +1667,30 @@ async fn retrieve_official_account_settings(
     }
 }
 
+/// Decodes the JSONB `server_ips` allowlist without a type assumption.
+///
+/// Migration `0037_iam_official_account_server_ips` declares the column as
+/// JSONB; reading it as `String` panics inside sqlx. Keep TEXT as the
+/// compatibility fallback for a deployment that has not applied that migration.
+fn decode_server_ips(row: &sqlx::postgres::PgRow) -> Value {
+    if let Ok(sqlx::types::Json(value)) = row.try_get::<sqlx::types::Json<Value>, _>(0) {
+        return normalize_server_ips_value(&value);
+    }
+    if let Ok(text) = row.try_get::<String, _>(0) {
+        return normalize_server_ips(&text);
+    }
+    json!([])
+}
+
 /// Normalizes the stored allowlist document into a deduplicated string array.
 fn normalize_server_ips(value: &str) -> Value {
     let parsed = serde_json::from_str::<Value>(value).unwrap_or_else(|_| json!([]));
-    let Some(entries) = parsed.as_array() else {
+    normalize_server_ips_value(&parsed)
+}
+
+/// Drops blank entries and duplicates from a decoded allowlist.
+fn normalize_server_ips_value(value: &Value) -> Value {
+    let Some(entries) = value.as_array() else {
         return json!([]);
     };
     let mut seen = std::collections::HashSet::new();

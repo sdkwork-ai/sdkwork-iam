@@ -5449,6 +5449,23 @@ mod oauth_account_patch_tests {
         assert!(RESOURCE_ACCOUNT_IDENTITY_CONFLICT.contains("already exists"));
         assert!(INTEGRATION_CREDENTIAL_BINDING_CONFLICT.contains("exactly one"));
     }
+
+    #[test]
+    fn server_ips_normalization_trims_blanks_and_duplicates() {
+        // `server_ips` is JSONB; the decoded document is normalized exactly like
+        // the TEXT compatibility fallback so both paths answer the same array.
+        let decoded = json!([" 1.2.3.4 ", "", "1.2.3.4", "5.6.7.8", 42, null]);
+        assert_eq!(
+            json!(["1.2.3.4", "5.6.7.8"]),
+            normalize_server_ips_value(&decoded)
+        );
+        assert_eq!(
+            json!(["9.9.9.9"]),
+            normalize_server_ips_json(r#"["9.9.9.9", " 9.9.9.9 "]"#)
+        );
+        assert_eq!(json!([]), normalize_server_ips_json("not-json"));
+        assert_eq!(json!([]), normalize_server_ips_value(&json!({ "ip": "1.2.3.4" })));
+    }
 }
 
 async fn create_surface(
@@ -6455,7 +6472,7 @@ async fn scan_login_settings_json(pg: &PgPool, tenant_id: &str) -> Result<Value,
     .fetch_optional(pg)
     .await
     .map_err(|error| format!("load scan login config failed: {error}"))?;
-    let (h5_login_origin, url_login_enabled, default_qr_mode, modes_json, scan_login_enabled, server_ips_json) =
+    let (h5_login_origin, url_login_enabled, default_qr_mode, modes_json, scan_login_enabled, server_ips) =
         match config_row {
             Some(row) => {
                 let origin: String = row.get(0);
@@ -6463,8 +6480,7 @@ async fn scan_login_settings_json(pg: &PgPool, tenant_id: &str) -> Result<Value,
                 let mode: String = row.get(2);
                 let modes: String = row.get(3);
                 let scan_enabled: i32 = row.get(4);
-                let server_ips: String = row.get(5);
-                (origin, enabled != 0, mode, modes, scan_enabled != 0, server_ips)
+                (origin, enabled != 0, mode, modes, scan_enabled != 0, decode_server_ips(&row, 5))
             }
             None => (
                 String::new(),
@@ -6472,12 +6488,11 @@ async fn scan_login_settings_json(pg: &PgPool, tenant_id: &str) -> Result<Value,
                 "auto".to_string(),
                 "[]".to_string(),
                 true,
-                "[]".to_string(),
+                json!([]),
             ),
         };
     let modes = serde_json::from_str::<Value>(&normalize_scan_login_modes_json(&modes_json))
         .unwrap_or_else(|_| json!([]));
-    let server_ips = normalize_server_ips_json(&server_ips_json);
 
     let accounts = sqlx::query(
         "SELECT ra.id, ra.display_name, ra.enabled, ra.qr_default_enabled, ra.verification_status, \
@@ -6568,10 +6583,34 @@ async fn scan_login_settings_json(pg: &PgPool, tenant_id: &str) -> Result<Value,
     }))
 }
 
+/// Decodes the stored server-IP allowlist from its JSONB column.
+///
+/// Migration `0037_iam_official_account_server_ips` declares
+/// `iam_oauth_scan_login_config.server_ips` as JSONB, so reading it as
+/// `String` panics inside sqlx (`String/TEXT` is not compatible with `JSONB`).
+/// The web framework turns that panic into a `50301` for every
+/// `iam.oauth.scanLoginSettings.retrieve` call, so this helper is the single
+/// decode point: JSON first, TEXT as the compatibility fallback for a
+/// deployment that has not applied migration 0037 yet.
+fn decode_server_ips(row: &sqlx::postgres::PgRow, index: usize) -> Value {
+    if let Ok(sqlx::types::Json(value)) = row.try_get::<sqlx::types::Json<Value>, _>(index) {
+        return normalize_server_ips_value(&value);
+    }
+    if let Ok(text) = row.try_get::<String, _>(index) {
+        return normalize_server_ips_json(&text);
+    }
+    json!([])
+}
+
 /// Normalizes the stored server-IP allowlist document into a string array.
 fn normalize_server_ips_json(value: &str) -> Value {
     let parsed = serde_json::from_str::<Value>(value).unwrap_or_else(|_| json!([]));
-    let Some(entries) = parsed.as_array() else {
+    normalize_server_ips_value(&parsed)
+}
+
+/// Drops blank entries and duplicates from a decoded server-IP allowlist.
+fn normalize_server_ips_value(value: &Value) -> Value {
+    let Some(entries) = value.as_array() else {
         return json!([]);
     };
     let mut seen = std::collections::HashSet::new();
@@ -6639,7 +6678,7 @@ async fn update_scan_login_settings(
         mut default_qr_mode,
         mut modes_json,
         mut scan_login_enabled,
-        mut server_ips_json,
+        mut server_ips,
     ) = match existing {
         Some(row) => {
             let origin: String = row.get(0);
@@ -6647,8 +6686,7 @@ async fn update_scan_login_settings(
             let mode: String = row.get(2);
             let modes: String = row.get(3);
             let scan_enabled: i32 = row.get(4);
-            let server_ips: String = row.get(5);
-            (origin, enabled != 0, mode, modes, scan_enabled != 0, server_ips)
+            (origin, enabled != 0, mode, modes, scan_enabled != 0, decode_server_ips(&row, 5))
         }
         None => (
             String::new(),
@@ -6656,7 +6694,7 @@ async fn update_scan_login_settings(
             "auto".to_string(),
             "[]".to_string(),
             true,
-            "[]".to_string(),
+            json!([]),
         ),
     };
 
@@ -6681,7 +6719,7 @@ async fn update_scan_login_settings(
         modes_json = normalize_scan_login_modes_json(&modes_value.to_string());
     }
     if let Some(server_ips_value) = body.get("serverIps") {
-        server_ips_json = normalize_server_ips_json(&server_ips_value.to_string()).to_string();
+        server_ips = normalize_server_ips_value(server_ips_value);
     }
 
     let now = Utc::now().to_rfc3339();
@@ -6704,7 +6742,9 @@ async fn update_scan_login_settings(
     .bind(&default_qr_mode)
     .bind(&modes_json)
     .bind(if scan_login_enabled { 1 } else { 0 })
-    .bind(&server_ips_json)
+    // `server_ips` is JSONB (migration 0037); binding a `String` here fails the
+    // write the same way the retrieve path used to panic on the read.
+    .bind(sqlx::types::Json(server_ips))
     .bind(&now)
     .execute(pg)
     .await
@@ -7062,4 +7102,97 @@ fn normalize_scan_login_modes_json(raw: &str) -> String {
         })
         .collect::<Vec<_>>();
     serde_json::to_string(&normalized).unwrap_or_else(|_| "[]".to_string())
+}
+
+/// Database-backed regression for the JSONB `server_ips` read.
+///
+/// `iam_oauth_scan_login_config.server_ips` is JSONB (migration
+/// `0037_iam_official_account_server_ips`); reading it as `String` panicked
+/// inside sqlx, and the web framework turned that panic into `503 / 50301` for
+/// every admin console load. Skips when no PostgreSQL is reachable so the
+/// workspace unit-test run stays portable.
+#[cfg(test)]
+mod scan_login_settings_json_tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[tokio::test]
+    async fn reads_the_jsonb_server_ips_column_without_panicking() {
+        let app_root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        sdkwork_iam_database_host::unified_postgres_env::apply_workspace_postgres_env(&app_root);
+        let Ok(url) = std::env::var("SDKWORK_DATABASE_URL") else {
+            return;
+        };
+        if url.trim().is_empty() {
+            return;
+        }
+        let pool = match sqlx::postgres::PgPoolOptions::new()
+            .max_connections(1)
+            .acquire_timeout(Duration::from_secs(5))
+            .connect(&url)
+            .await
+        {
+            Ok(pool) => pool,
+            Err(error) => {
+                eprintln!("SKIP reads_the_jsonb_server_ips_column_without_panicking: {error}");
+                return;
+            }
+        };
+
+        let tenant_id = sdkwork_iam_bootstrap::DEFAULT_IAM_TENANT_ID;
+        let previous: Option<String> = sqlx::query_scalar(
+            "SELECT server_ips::text FROM iam_oauth_scan_login_config WHERE tenant_id = $1",
+        )
+        .bind(tenant_id)
+        .fetch_optional(&pool)
+        .await
+        .expect("read previous server_ips");
+
+        sqlx::query(
+            r#"INSERT INTO iam_oauth_scan_login_config
+               (tenant_id, h5_login_origin, url_login_enabled, default_qr_mode, modes_json,
+                scan_login_enabled, server_ips, updated_at)
+               VALUES ($1, '', 1, 'auto', '[]', 1,
+                       '["1.2.3.4", " 5.6.7.8 ", "1.2.3.4", ""]'::jsonb, 'seed')
+               ON CONFLICT (tenant_id) DO UPDATE SET
+                 scan_login_enabled = EXCLUDED.scan_login_enabled,
+                 server_ips = EXCLUDED.server_ips"#,
+        )
+        .bind(tenant_id)
+        .execute(&pool)
+        .await
+        .expect("seed JSONB server_ips row");
+
+        let settings = scan_login_settings_json(&pool, tenant_id)
+            .await
+            .expect("scan-login settings must decode the JSONB allowlist");
+        assert_eq!(
+            json!(["1.2.3.4", "5.6.7.8"]),
+            settings["serverIps"],
+            "JSONB server_ips must be trimmed and deduplicated"
+        );
+        assert_eq!(json!(true), settings["enabled"]);
+
+        match previous {
+            Some(server_ips) => {
+                sqlx::query(
+                    "UPDATE iam_oauth_scan_login_config SET server_ips = $2::jsonb \
+                     WHERE tenant_id = $1",
+                )
+                .bind(tenant_id)
+                .bind(server_ips)
+                .execute(&pool)
+                .await
+                .expect("restore previous server_ips");
+            }
+            None => {
+                sqlx::query("DELETE FROM iam_oauth_scan_login_config WHERE tenant_id = $1")
+                    .bind(tenant_id)
+                    .execute(&pool)
+                    .await
+                    .expect("remove seeded scan-login settings row");
+            }
+        }
+        pool.close().await;
+    }
 }
