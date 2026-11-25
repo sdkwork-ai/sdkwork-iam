@@ -2350,7 +2350,99 @@ async fn replace_organization_membership_departments(
 async fn update_organization_membership(State(state): State<BackendIamState>, ctx: WebRequestContext, Path(membership_id): Path<String>, Json(body): Json<Value>) -> Response {
     let Ok(pg) = postgres_pool_or_error(&state) else { return postgres_pool_or_error(&state).err().expect("error response"); };
     let Ok(tenant_id) = tenant_id_from_context(&ctx) else { return tenant_id_from_context(&ctx).err().expect("error response"); };
-    let mut assignments = patch_fields(&body); assignments.push(("updated_at".to_owned(), PatchValue::Text(Utc::now().to_rfc3339())));
+    let mut assignments = patch_fields(&body);
+    if let Some(reports_to) = read_string_field(&body, &["reportsToMembershipId", "reports_to_membership_id"]) {
+        if reports_to == membership_id {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_membership_reports_to_cycle",
+                "a membership cannot report to itself",
+            );
+        }
+        let current: Option<String> = match sqlx::query_scalar(
+            "SELECT organization_id FROM iam_organization_membership \
+             WHERE tenant_id = $1 AND id = $2 AND status = 'active'",
+        )
+        .bind(&tenant_id)
+        .bind(&membership_id)
+        .fetch_optional(pg)
+        .await
+        {
+            Ok(value) => value,
+            Err(error) => return internal_handler_error("iam_membership_update_failed", error),
+        };
+        let Some(organization_id) = current else {
+            return appbase_error(
+                StatusCode::NOT_FOUND,
+                "iam_membership_not_found",
+                "organization membership not found",
+            );
+        };
+        let target: Option<String> = match sqlx::query_scalar(
+            "SELECT organization_id FROM iam_organization_membership \
+             WHERE tenant_id = $1 AND id = $2 AND status = 'active'",
+        )
+        .bind(&tenant_id)
+        .bind(&reports_to)
+        .fetch_optional(pg)
+        .await
+        {
+            Ok(value) => value,
+            Err(error) => return internal_handler_error("iam_membership_update_failed", error),
+        };
+        match target {
+            None => {
+                return appbase_error(
+                    StatusCode::BAD_REQUEST,
+                    "iam_membership_reports_to_not_found",
+                    "reportsToMembershipId does not reference an active membership in this tenant",
+                )
+            }
+            Some(target_organization_id) if target_organization_id != organization_id => {
+                return appbase_error(
+                    StatusCode::BAD_REQUEST,
+                    "iam_membership_reports_to_organization_mismatch",
+                    "the manager must belong to the same organization",
+                )
+            }
+            Some(_) => {}
+        }
+        // Walk the manager chain from the proposed manager. If it reaches this
+        // membership, the edit would create a reporting cycle.
+        let cycle: Option<i32> = match sqlx::query_scalar(
+            "WITH RECURSIVE chain(id, depth) AS ( \
+                 SELECT $2::text, 0 \
+                 UNION ALL \
+                 SELECT parent.reports_to_membership_id, chain.depth + 1 \
+                   FROM iam_organization_membership parent \
+                   JOIN chain ON parent.id = chain.id \
+                  WHERE parent.tenant_id = $1 \
+                    AND parent.reports_to_membership_id IS NOT NULL \
+                    AND chain.depth < 64 \
+             ) SELECT 1 FROM chain WHERE id = $3 LIMIT 1",
+        )
+        .bind(&tenant_id)
+        .bind(&reports_to)
+        .bind(&membership_id)
+        .fetch_optional(pg)
+        .await
+        {
+            Ok(value) => value,
+            Err(error) => return internal_handler_error("iam_membership_update_failed", error),
+        };
+        if cycle.is_some() {
+            return appbase_error(
+                StatusCode::BAD_REQUEST,
+                "iam_membership_reports_to_cycle",
+                "the reporting line would create a cycle",
+            );
+        }
+        assignments.push((
+            "reports_to_membership_id".to_owned(),
+            PatchValue::Text(reports_to),
+        ));
+    }
+    assignments.push(("updated_at".to_owned(), PatchValue::Text(Utc::now().to_rfc3339())));
     match patch_directory_row(pg, &ctx, &tenant_id, "iam_organization_membership", &membership_id, &assignments).await {
         Ok(true) => appbase_ok(json!({ "membershipId": membership_id })),
         Ok(false) => appbase_error(StatusCode::NOT_FOUND, "iam_membership_not_found", "membership not found"),
@@ -2382,6 +2474,28 @@ async fn create_department(State(state): State<BackendIamState>, ctx: WebRequest
     } else {
         format!("/{organization_id}/{}", code.as_ref().expect("validated"))
     };
+    let code_conflict: Option<i32> = match sqlx::query_scalar(
+        "SELECT 1 FROM iam_department \
+         WHERE tenant_id = $1 AND organization_id = $2 AND code = $3 LIMIT 1",
+    )
+    .bind(&tenant_id)
+    .bind(&organization_id)
+    .bind(code.as_ref().expect("validated"))
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(value) => value,
+        Err(error) => return internal_handler_error("iam_department_create_failed", error),
+    };
+    if code_conflict.is_some() {
+        // The unique key also covers disabled rows, so report the conflict
+        // explicitly instead of surfacing the raw constraint violation as 500.
+        return appbase_error(
+            StatusCode::CONFLICT,
+            "iam_department_code_conflict",
+            "a department with this code already exists in the organization",
+        );
+    }
     let id = format!("iamdept-{}", Uuid::new_v4()); let now = Utc::now();
     let insert_id = id.clone();
     let code_value = code.as_ref().expect("validated").clone();
@@ -3197,6 +3311,55 @@ async fn create_position_assignment(State(state): State<BackendIamState>, ctx: W
     let department_assignment_id = department_assignment_id.expect("validated");
     let position_id = position_id.expect("validated");
     let user_id = user_id.expect("validated");
+    // Headcount guard (migration 0052): an approved opening caps active holders.
+    // NULL or 0 means the position is not headcount-limited.
+    let position_headcount: Option<i32> = match sqlx::query_scalar(
+        "SELECT headcount FROM iam_position \
+         WHERE tenant_id = $1 AND organization_id = $2 AND id = $3",
+    )
+    .bind(&tenant_id)
+    .bind(&organization_id)
+    .bind(&position_id)
+    .fetch_optional(pg)
+    .await
+    {
+        Ok(Some(value)) => value,
+        Ok(None) => {
+            return appbase_error(
+                StatusCode::NOT_FOUND,
+                "iam_position_not_found",
+                "position not found",
+            )
+        }
+        Err(error) => return internal_handler_error("iam_position_assignment_create_failed", error),
+    };
+    if let Some(headcount) = position_headcount {
+        if headcount > 0 {
+            let active: i64 = match sqlx::query_scalar(
+                "SELECT COUNT(*) FROM iam_position_assignment \
+                 WHERE tenant_id = $1 AND organization_id = $2 AND position_id = $3 \
+                   AND status = 'active'",
+            )
+            .bind(&tenant_id)
+            .bind(&organization_id)
+            .bind(&position_id)
+            .fetch_one(pg)
+            .await
+            {
+                Ok(value) => value,
+                Err(error) => {
+                    return internal_handler_error("iam_position_assignment_create_failed", error)
+                }
+            };
+            if active >= i64::from(headcount) {
+                return appbase_error(
+                    StatusCode::CONFLICT,
+                    "iam_position_headcount_exceeded",
+                    "the position has no remaining headcount",
+                );
+            }
+        }
+    }
     let id_insert = id.clone();
     let tenant_id_insert = tenant_id.clone();
     let organization_id_insert = organization_id.clone();

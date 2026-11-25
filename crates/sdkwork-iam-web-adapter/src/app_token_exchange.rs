@@ -307,7 +307,8 @@ pub async fn issue_application_access_credential(
     )
     .await
     .map_err(AppTokenExchangeError::Internal)?;
-    let readiness = crate::installation_readiness::assess_installation(&installation, &environments);
+    let readiness =
+        crate::installation_readiness::assess_installation(&installation, &environments);
     if !readiness.issuance_ready() {
         return Err(AppTokenExchangeError::NotReady(
             readiness.repair_detail("issuance"),
