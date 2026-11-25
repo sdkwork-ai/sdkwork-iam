@@ -10,7 +10,12 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./panel-tailwind.css": "./src/panel-tailwind.css"
+    "./panel-tailwind.css": "./src/panel-tailwind.css",
+    "./i18n": {
+      "types": "./src/messages.ts",
+      "import": "./src/messages.ts",
+      "default": "./src/messages.ts"
+    }
   },
   "files": [
     "src",
@@ -29,8 +34,12 @@
     "react-dom": ">=18.2.0 <20.0.0"
   },
   "peerDependenciesMeta": {
-    "react": { "optional": true },
-    "react-dom": { "optional": true }
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@testing-library/react": "catalog:",

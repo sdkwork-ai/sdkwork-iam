@@ -55,6 +55,7 @@ const readOnlyPermissions = {
 
 const roleAdminMessages = {
   "en-US": {
+    actions: "Actions",
     action: "Action",
     assignPermission: "Assign permission",
     assignPermissionDescription: "Select a permission from the catalog to grant to this role.",
@@ -125,6 +126,7 @@ const roleAdminMessages = {
     tenant: "Tenant",
   },
   "zh-CN": {
+    actions: "操作",
     action: "操作",
     assignPermission: "分配权限",
     assignPermissionDescription: "从权限目录中选择一项权限授予该角色。",
@@ -471,6 +473,7 @@ export function SdkworkIamRoleAdminWorkspace({
           getRowId={(item) => item.roleId}
           loading={loading}
           onRowClick={openRoleDetails}
+          rowActionsLabel={copy.actions}
           rowActions={(item) => (
             <div className="flex items-center gap-1">
               {permissions.roles.update ? (
@@ -588,6 +591,7 @@ export function SdkworkIamRoleAdminWorkspace({
                       )}
                       getRowId={(item) => item.permissionId}
                       loading={detailLoading}
+                      rowActionsLabel={copy.actions}
                       rowActions={permissions.rolePermissions.delete ? (item) => (
                         <Button aria-label={`${copy.revokePermission}: ${item.code}`} onClick={() => setRevokePermissionTarget(item)} size="icon" title={copy.revokePermission} type="button" variant="ghost">
                           <Trash2 aria-hidden="true" className="h-4 w-4" />
@@ -629,6 +633,7 @@ export function SdkworkIamRoleAdminWorkspace({
                       )}
                       getRowId={(item) => item.id}
                       loading={detailLoading}
+                      rowActionsLabel={copy.actions}
                       rowActions={permissions.roleBindings.delete ? (item) => (
                         <Button aria-label={copy.revokeBinding} onClick={() => setRevokeBindingTarget(item)} size="icon" title={copy.revokeBinding} type="button" variant="ghost">
                           <Trash2 aria-hidden="true" className="h-4 w-4" />

@@ -108,6 +108,14 @@ export default defineConfig({
   root: workspaceRoot,
   plugins: [react()],
   resolve: {
+    // Authored TypeScript is the source of truth for workspace packages
+    // (`package.json#exports` → `src/index.ts`), the same way the PC host apps
+    // resolve them. Vite's default order tries `.js` before `.ts`/`.tsx`, so a
+    // gitignored in-place `tsc` artifact left next to the authored module
+    // (for example `src/client/panel.js` next to `panel.tsx`) shadows the fresh
+    // source and a test silently exercises stale compiled code. Keep the
+    // TypeScript extensions first and `.json` last.
+    extensions: [".mts", ".ts", ".tsx", ".mjs", ".js", ".jsx", ".json"],
     alias: [
       {
         find: "react",

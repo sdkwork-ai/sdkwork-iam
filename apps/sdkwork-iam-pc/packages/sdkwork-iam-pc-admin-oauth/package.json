@@ -10,7 +10,12 @@
       "import": "./src/index.tsx",
       "default": "./src/index.tsx"
     },
-    "./panel-tailwind.css": "./src/panel-tailwind.css"
+    "./panel-tailwind.css": "./src/panel-tailwind.css",
+    "./i18n": {
+      "types": "./src/i18n/index.ts",
+      "import": "./src/i18n/index.ts",
+      "default": "./src/i18n/index.ts"
+    }
   },
   "files": [
     "src",

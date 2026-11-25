@@ -41,6 +41,7 @@ const initialPasswordMaxLength = 64;
 const avatarMaxBytes = 5 * 1024 * 1024;
 const userAdminMessages = {
   "en-US": {
+    actions: "Actions",
     locale: "en-US",
     avatar: "Avatar",
     avatarHint: "JPG, PNG, WebP, and other image formats up to 5 MB",
@@ -113,6 +114,7 @@ const userAdminMessages = {
     view: "View user",
   },
   "zh-CN": {
+    actions: "操作",
     locale: "zh-CN",
     avatar: "头像",
     avatarHint: "支持 JPG、PNG、WebP 等图片格式，不超过 5 MB",
@@ -393,6 +395,7 @@ export function SdkworkIamUserAdminWorkspace({
           getRowId={(user) => user.userId}
           loading={loading}
           onRowClick={(user) => void openUserDrawer(user, "view")}
+          rowActionsLabel={copy.actions}
           rowActions={(user) => (
             <div className="flex items-center gap-1">
               <Button aria-label={`${copy.view}: ${user.displayName || user.username || user.userId}`} onClick={() => void openUserDrawer(user, "view")} size="icon" title={copy.view} type="button" variant="ghost">

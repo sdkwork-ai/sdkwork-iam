@@ -264,6 +264,7 @@ function EventList({
       loading={busy}
       onRowClick={(item) => onSelectItem?.(item.id)}
       rowActions={(item) => <Button disabled={busy} onClick={() => onSelectItem?.(item.id)} size="sm" type="button" variant="outline">{viewDetailLabel}</Button>}
+      rowActionsLabel={messages.common.actions}
       rows={items}
       slotProps={{
         surface: { className: "flex min-h-0 flex-col" },

@@ -504,6 +504,7 @@ export function DiagnosticRunResourceList({
           </Button>
         );
       }}
+      rowActionsLabel={messages.common.actions}
       rows={diagnosticRuns}
       slotProps={{
         surface: { className: "flex min-h-0 flex-1 flex-col" },

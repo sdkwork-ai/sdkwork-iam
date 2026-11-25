@@ -35,6 +35,7 @@ const readOnlyPermissions = { policies: { create: false, delete: false, update: 
 
 const policyAdminMessages = {
   "en-US": {
+    actions: "Actions",
     cancel: "Cancel",
     code: "Code",
     create: "Create policy",
@@ -69,6 +70,7 @@ const policyAdminMessages = {
     statuses: { active: "Active", disabled: "Disabled", unknown: "Unknown" },
   },
   "zh-CN": {
+    actions: "操作",
     cancel: "取消",
     code: "编码",
     create: "创建策略",
@@ -258,6 +260,7 @@ export function SdkworkIamPolicyAdminWorkspace({
           getRowId={(item) => item.policyId}
           loading={loading}
           onRowClick={(item) => { if (permissions.policies.update) openEditDrawer(item); }}
+          rowActionsLabel={copy.actions}
           rowActions={(item) => (
             <div className="flex items-center gap-1">
               {permissions.policies.update ? (

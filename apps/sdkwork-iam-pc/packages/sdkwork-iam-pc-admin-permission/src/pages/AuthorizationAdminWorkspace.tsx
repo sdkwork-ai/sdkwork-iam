@@ -36,6 +36,7 @@ const readOnlyPermissions = { roleBindings: { create: false, delete: false } } a
 
 const authorizationAdminMessages = {
   "en-US": {
+    actions: "Actions",
     cancel: "Cancel",
     createBinding: "Create binding",
     createBindingDescription: "Bind a role to a principal within a scope.",
@@ -76,6 +77,7 @@ const authorizationAdminMessages = {
     statuses: { active: "Active", disabled: "Disabled", unknown: "Unknown" },
   },
   "zh-CN": {
+    actions: "操作",
     cancel: "取消",
     createBinding: "创建绑定",
     createBindingDescription: "将角色绑定到某个范围内的主体。",
@@ -352,6 +354,7 @@ export function SdkworkIamAuthorizationAdminWorkspace({
           )}
           getRowId={(item) => item.id}
           loading={loading}
+          rowActionsLabel={copy.actions}
           rowActions={permissions.roleBindings.delete ? (item) => (
             <Button aria-label={`${copy.revoke}: ${item.id}`} onClick={() => setRevokeTarget(item)} size="icon" title={copy.revoke} type="button" variant="ghost">
               <Trash2 aria-hidden="true" className="h-4 w-4" />

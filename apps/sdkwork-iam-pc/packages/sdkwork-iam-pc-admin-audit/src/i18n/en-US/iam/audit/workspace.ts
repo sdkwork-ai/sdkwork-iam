@@ -2,6 +2,7 @@ import type { SdkworkIamAuditAdminMessages } from "../../../../types/audit-admin
 
 export const sdkworkIamAuditAdminMessages: SdkworkIamAuditAdminMessages = {
   common: {
+    actions: "Actions",
     event: "Event",
     context: "Context",
   },

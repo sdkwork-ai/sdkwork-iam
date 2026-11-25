@@ -1,5 +1,6 @@
 export interface SdkworkIamAuditAdminMessages {
   common: {
+    actions: string;
     event: string;
     context: string;
   };

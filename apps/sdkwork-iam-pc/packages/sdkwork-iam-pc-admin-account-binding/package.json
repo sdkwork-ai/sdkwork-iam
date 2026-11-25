@@ -9,6 +9,11 @@
       "types": "./src/index.tsx",
       "import": "./src/index.tsx",
       "default": "./src/index.tsx"
+    },
+    "./i18n": {
+      "types": "./src/i18n/index.ts",
+      "import": "./src/i18n/index.ts",
+      "default": "./src/i18n/index.ts"
     }
   },
   "files": [

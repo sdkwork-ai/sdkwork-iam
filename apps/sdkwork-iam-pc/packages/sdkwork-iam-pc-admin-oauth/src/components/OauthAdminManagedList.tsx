@@ -140,13 +140,17 @@ export function ManagedOAuthResourceList({
         rowActions={(row) => {
           const resourceId = readId(row.item);
           const statusIsActive = row.status === "active";
-          return <div className="flex flex-wrap gap-2">
+          // Row actions stay on one line: the shared table gives the action
+          // column a content-sized width, so a wrapping group stacks the
+          // buttons vertically and inflates every row.
+          return <div className="flex flex-nowrap items-center justify-end gap-2">
             {toggleEnabled ? <Button disabled={disabled || actionBusy || !resourceId || row.enabled === undefined} onClick={() => { if (resourceId && row.enabled !== undefined) execute(() => toggleEnabled(resourceId, !row.enabled)); }} size="sm" type="button" variant="outline">{row.enabled ? messages.common.disable : messages.common.enable}</Button> : null}
             {toggleStatus && row.status ? <Button disabled={disabled || actionBusy || !resourceId} onClick={() => { if (resourceId) execute(() => toggleStatus(resourceId, !statusIsActive)); }} size="sm" type="button" variant="outline">{statusIsActive ? messages.common.deactivate : messages.common.activate}</Button> : null}
             {actions.map((action) => <Button disabled={disabled || actionBusy || !resourceId} key={action.label} onClick={() => { if (!resourceId) return; if (action.confirmMessage) setPendingAction({ label: action.label, message: action.confirmMessage, run: () => action.onAction(resourceId) }); else execute(() => action.onAction(resourceId)); }} size="sm" type="button" variant={action.confirmMessage ? "danger" : "outline"}>{action.label}</Button>)}
             {onDelete ? <Button disabled={disabled || actionBusy || !resourceId} onClick={() => { if (!resourceId) return; if (confirmDeleteMessage) setPendingAction({ label: messages.common.delete, message: confirmDeleteMessage, run: () => onDelete(resourceId) }); else execute(() => onDelete(resourceId)); }} size="sm" type="button" variant="danger">{messages.common.delete}</Button> : null}
           </div>;
         }}
+        rowActionsLabel={messages.common.actions}
         rows={rows}
         slotProps={{
           surface: { className: "flex min-h-0 flex-col" },

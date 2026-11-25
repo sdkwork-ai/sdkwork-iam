@@ -65,6 +65,7 @@ export const sdkworkIamOauthAdminMessages: SdkworkIamOauthAdminMessages = {
     title: "OAuth clients",
   },
   common: {
+    actions: "Actions",
     activate: "Activate",
     all: "All",
     booleanFalse: "No",

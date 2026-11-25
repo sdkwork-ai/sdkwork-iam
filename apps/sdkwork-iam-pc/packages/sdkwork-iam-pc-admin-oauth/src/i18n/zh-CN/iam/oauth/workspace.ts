@@ -65,6 +65,7 @@ export const sdkworkIamOauthAdminMessages: SdkworkIamOauthAdminMessages = {
     title: "OAuth 客户端",
   },
   common: {
+    actions: "操作",
     activate: "激活",
     all: "全部",
     booleanFalse: "否",

@@ -29,6 +29,7 @@ const readOnlyPermissions = { permissions: { create: false, delete: false, updat
 
 const permissionAdminMessages = {
   "en-US": {
+    actions: "Actions",
     action: "Action",
     cancel: "Cancel",
     code: "Code",
@@ -65,6 +66,7 @@ const permissionAdminMessages = {
     searchPlaceholder: "Search code, name, resource, or action",
   },
   "zh-CN": {
+    actions: "操作",
     action: "操作",
     cancel: "取消",
     code: "权限码",
@@ -257,6 +259,7 @@ export function SdkworkIamPermissionAdminWorkspace({
           getRowId={(item) => item.permissionId}
           loading={loading}
           onRowClick={(item) => { if (permissions.permissions.update) openEditDrawer(item); }}
+          rowActionsLabel={copy.actions}
           rowActions={(item) => (
             <div className="flex items-center gap-1">
               {permissions.permissions.update ? (

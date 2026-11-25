@@ -34,6 +34,22 @@ import type { MiniProgramMessages } from "../messages";
 const FIELD_CLASS_NAME =
   "w-full rounded-[0.75rem] border border-[var(--sdk-color-border-default)] bg-transparent px-3 py-2 text-sm";
 
+/**
+ * List grid shared by the sticky header and every account row: name, AppID,
+ * status, login check, and actions.
+ *
+ * Every track is fixed or `fr`, never content-sized (`auto`, `min-content`,
+ * `max-content`). A content-sized track is resolved from that cell's own
+ * content, so the header label ("操作"/"Actions", ~2em) and the row's action
+ * buttons (edit + remove, ~9rem) would make the `fr` tracks split a different
+ * remainder per row — the data columns then drift left of their headers. The
+ * action track is sized for both locales' button set.
+ */
+const ACCOUNT_ROW_GRID = "grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_8rem_9rem_9rem]";
+
+/** Minimum list width, so the identity columns never collapse to slivers. */
+const ACCOUNT_LIST_MIN_WIDTH = "min-w-[56rem]";
+
 /** WeChat mini-program AppID shape accepted by the backend setup route. */
 const APP_ID_PATTERN = /^[A-Za-z0-9_-]{4,64}$/u;
 
@@ -115,6 +131,24 @@ function accountTypeLabel(
   return messages.accountType.unset;
 }
 
+/**
+ * The muted second line of the name cell: account type plus the optional
+ * environment and release channel, joined with the same separator.
+ * @param account - the row being rendered.
+ * @param messages - resolved copy.
+ * @returns the composed detail line.
+ */
+function accountTypeDetail(
+  account: MiniProgramAccount,
+  messages: MiniProgramMessages,
+): string {
+  return [
+    accountTypeLabel(account, messages),
+    account.environment === undefined ? "" : messages.environment[account.environment],
+    account.releaseChannel === undefined ? "" : messages.releaseChannel[account.releaseChannel],
+  ].filter((part) => part !== "").join(" · ");
+}
+
 /** Resolves the login-check label. */
 function loginCheckLabel(
   status: MiniProgramLoginCheckStatus,
@@ -141,31 +175,32 @@ function AccountRow({
 }): ReactNode {
   return (
     <div
-      className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_8rem_9rem_auto] items-center gap-3 border-b border-[var(--sdk-color-border-subtle)] px-3 py-3 text-sm last:border-b-0"
+      className={`grid ${ACCOUNT_ROW_GRID} items-center gap-3 border-b border-[var(--sdk-color-border-subtle)] px-3 py-3 text-sm transition-colors last:border-b-0 hover:bg-[var(--sdk-color-surface-panel-muted)]`}
       data-mini-program-row={account.miniProgramId}
     >
       <div className="min-w-0">
         <button
-          className="block w-full truncate text-left font-medium text-[var(--sdk-color-text-primary)] hover:underline"
+          className="block w-full truncate text-left font-medium text-[var(--sdk-color-text-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sdk-color-border-focus)]"
           onClick={onEdit}
+          title={account.displayName}
           type="button"
         >
           {account.displayName}
         </button>
-        <span className="block truncate text-xs text-[var(--sdk-color-text-muted)]">
-          {accountTypeLabel(account, messages)}
-          {account.environment === undefined
-            ? ""
-            : ` · ${messages.environment[account.environment]}`}
-          {account.releaseChannel === undefined
-            ? ""
-            : ` · ${messages.releaseChannel[account.releaseChannel]}`}
+        <span
+          className="block truncate text-xs text-[var(--sdk-color-text-muted)]"
+          title={accountTypeDetail(account, messages)}
+        >
+          {accountTypeDetail(account, messages)}
         </span>
       </div>
-      <span className="truncate font-mono text-xs text-[var(--sdk-color-text-secondary)]">
+      <span
+        className="min-w-0 truncate font-mono text-xs text-[var(--sdk-color-text-secondary)]"
+        title={account.appId}
+      >
         {account.appId}
       </span>
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2 whitespace-nowrap">
         {capabilities.setEnabled
           ? (
             <Switch
@@ -180,10 +215,10 @@ function AccountRow({
           status={account.enabled ? "enabled" : "disabled"}
         />
       </div>
-      <span className="truncate text-xs text-[var(--sdk-color-text-secondary)]">
+      <span className="min-w-0 truncate text-xs text-[var(--sdk-color-text-secondary)]">
         {loginCheckLabel(account.loginCheckStatus, messages)}
       </span>
-      <div className="flex items-center justify-end gap-1">
+      <div className="flex min-w-0 flex-wrap items-center justify-end gap-1">
         <Button onClick={onEdit} size="sm" variant="ghost">{messages.actions.edit}</Button>
         {capabilities.deleteAccount
           ? <Button onClick={onDelete} size="sm" variant="ghost">{messages.actions.remove}</Button>
@@ -410,31 +445,38 @@ export function SdkworkMiniProgramPanel({
 
       {state.error !== undefined ? <StatusNotice tone="danger">{state.error}</StatusNotice> : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto rounded-[1rem] border border-[var(--sdk-color-border-default)]">
-        <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_8rem_9rem_auto] items-center gap-3 border-b border-[var(--sdk-color-border-default)] px-3 py-2 text-xs font-medium text-[var(--sdk-color-text-muted)]">
-          <span>{messages.columns.name}</span>
-          <span>{messages.columns.appId}</span>
-          <span>{messages.columns.status}</span>
-          <span>{messages.columns.loginCheck}</span>
-          <span className="text-right">{messages.columns.actions}</span>
+      <div className="min-h-0 flex-1 overflow-auto rounded-[1rem] border border-[var(--sdk-color-border-default)]">
+        <div className={ACCOUNT_LIST_MIN_WIDTH}>
+          <div
+            className={`sticky top-0 z-10 grid ${ACCOUNT_ROW_GRID} items-center gap-3 border-b border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-panel)] px-3 py-2 text-xs font-medium text-[var(--sdk-color-text-muted)]`}
+            data-mini-program-header=""
+          >
+            <span className="min-w-0 truncate">{messages.columns.name}</span>
+            <span className="min-w-0 truncate">{messages.columns.appId}</span>
+            <span className="min-w-0 truncate">{messages.columns.status}</span>
+            <span className="min-w-0 truncate">{messages.columns.loginCheck}</span>
+            {/* The action buttons are ghost buttons with their own `px-3`, so the
+              label carries the same inset to share their text baseline. */}
+            <span className="min-w-0 truncate pr-3 text-right">{messages.columns.actions}</span>
+          </div>
+          {state.items.length === 0
+            ? (
+              <p className="px-3 py-12 text-center text-sm text-[var(--sdk-color-text-muted)]">
+                {state.status === "loading" ? messages.panel.loading : messages.panel.empty}
+              </p>
+            )
+            : state.items.map((account) => (
+              <AccountRow
+                account={account}
+                capabilities={capabilities}
+                key={account.miniProgramId}
+                messages={messages}
+                onDelete={() => setPendingDelete(account)}
+                onEdit={() => openEdit(account)}
+                onToggle={(enabled) => { void controller.setEnabled(account.miniProgramId, enabled); }}
+              />
+            ))}
         </div>
-        {state.items.length === 0
-          ? (
-            <p className="px-3 py-12 text-center text-sm text-[var(--sdk-color-text-muted)]">
-              {state.status === "loading" ? messages.panel.loading : messages.panel.empty}
-            </p>
-          )
-          : state.items.map((account) => (
-            <AccountRow
-              account={account}
-              capabilities={capabilities}
-              key={account.miniProgramId}
-              messages={messages}
-              onDelete={() => setPendingDelete(account)}
-              onEdit={() => openEdit(account)}
-              onToggle={(enabled) => { void controller.setEnabled(account.miniProgramId, enabled); }}
-            />
-          ))}
       </div>
 
       <footer className="flex items-center justify-end gap-2 text-xs text-[var(--sdk-color-text-muted)]">

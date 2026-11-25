@@ -10,7 +10,12 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./panel-tailwind.css": "./src/panel-tailwind.css"
+    "./panel-tailwind.css": "./src/panel-tailwind.css",
+    "./i18n": {
+      "types": "./src/client/messages.ts",
+      "import": "./src/client/messages.ts",
+      "default": "./src/client/messages.ts"
+    }
   },
   "files": [
     "src",

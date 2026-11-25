@@ -72,17 +72,27 @@ const BUSINESS_DOMAIN_LIMIT = 3;
  * Operator list grid: name, identifiers, type, organization, maintainer,
  * status, menu, and actions. The owner columns only exist on an operator
  * surface — a self-service list only ever shows the caller's own accounts.
+ *
+ * The header row and every account row MUST resolve to the same track list.
+ * Every track is therefore fixed or `fr`: a content-sized track (`auto`,
+ * `min-content`, `max-content`) is resolved from that cell's own content, which
+ * differs between the header label ("操作"/"Actions", ~2em) and the row's action
+ * buttons (up to three permission-gated buttons). The `fr` tracks then split a
+ * different remainder per row, so the data columns drifted left of their
+ * headers (the reported 公众号账号 misalignment). The action column is sized for
+ * the widest supported set — edit, follow QR code, delete — in both locales, and
+ * the menu column fits its longest copy ("尚未配置菜单。"/"No menu configured.").
  */
 const OPERATOR_ROW_GRID =
-  "grid-cols-[minmax(0,1.5fr)_minmax(0,1.2fr)_5.5rem_minmax(0,1fr)_minmax(0,1fr)_8.5rem_7rem_auto]";
+  "grid-cols-[minmax(0,1.5fr)_minmax(0,1.2fr)_7rem_minmax(0,1fr)_minmax(0,1fr)_8rem_9rem_13rem]";
 
 /** Self-service list grid: the operator-only owner columns are omitted. */
 const SELF_SERVICE_ROW_GRID =
-  "grid-cols-[minmax(0,1.5fr)_minmax(0,1.2fr)_5.5rem_8.5rem_7rem_auto]";
+  "grid-cols-[minmax(0,1.5fr)_minmax(0,1.2fr)_7rem_8rem_9rem_13rem]";
 
 /** Minimum list width, so identity and owner columns never collapse to slivers. */
-const OPERATOR_LIST_MIN_WIDTH = "min-w-[68rem]";
-const SELF_SERVICE_LIST_MIN_WIDTH = "min-w-[52rem]";
+const OPERATOR_LIST_MIN_WIDTH = "min-w-[72rem]";
+const SELF_SERVICE_LIST_MIN_WIDTH = "min-w-[60rem]";
 
 /** Drawer tabs: account credentials and the WeChat domain/server configuration. */
 type DrawerTab = "basic" | "domains" | "server";
@@ -272,14 +282,15 @@ function AccountRow({
   ].filter((value): value is string => value !== undefined && value !== "")
     .join(" · ") || undefined;
   const maintainerTitle = maintainerHint === maintainerLabel ? undefined : maintainerHint;
+  const rowGrid = operator ? OPERATOR_ROW_GRID : SELF_SERVICE_ROW_GRID;
   return (
     <div
-      className={`grid ${operator ? OPERATOR_ROW_GRID : SELF_SERVICE_ROW_GRID} items-center gap-3 border-b border-[var(--sdk-color-border-subtle)] px-3 py-3 text-sm last:border-b-0`}
+      className={`grid ${rowGrid} items-center gap-3 border-b border-[var(--sdk-color-border-subtle)] px-3 py-3 text-sm transition-colors last:border-b-0 hover:bg-[var(--sdk-color-surface-panel-muted)]`}
       data-official-account-row={account.id}
     >
-      <div className="min-w-0 space-y-1">
+      <div className="flex min-w-0 items-center gap-2">
         <button
-          className="block w-full truncate text-left font-medium text-[var(--sdk-color-text-primary)] hover:underline"
+          className="min-w-0 flex-1 truncate text-left font-medium text-[var(--sdk-color-text-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sdk-color-border-focus)]"
           onClick={onEdit}
           title={account.displayName}
           type="button"
@@ -289,7 +300,7 @@ function AccountRow({
         {operator && account.accessMode === "self_managed_account"
           ? (
             <span
-              className="inline-block rounded-full border border-[var(--sdk-color-border-default)] px-2 py-0.5 text-xs text-[var(--sdk-color-text-secondary)]"
+              className="shrink-0 rounded-full border border-[var(--sdk-color-border-default)] px-2 py-0.5 text-xs whitespace-nowrap text-[var(--sdk-color-text-secondary)]"
               title={messages.account.selfManagedHint}
             >
               {messages.account.selfManaged}
@@ -311,7 +322,12 @@ function AccountRow({
           {originalId === "" ? messages.account.unset : originalId}
         </span>
       </div>
-      <span className="truncate text-xs text-[var(--sdk-color-text-secondary)]">{typeLabel}</span>
+      <span
+        className="min-w-0 truncate text-xs text-[var(--sdk-color-text-secondary)]"
+        title={typeLabel}
+      >
+        {typeLabel}
+      </span>
       {operator
         ? (
           <>
@@ -330,9 +346,9 @@ function AccountRow({
           </>
         )
         : null}
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2 whitespace-nowrap">
         <Switch
-          aria-label={`${messages.actions.edit} ${account.displayName}`}
+          aria-label={`${messages.columns.status}: ${account.displayName}`}
           checked={account.enabled}
           onCheckedChange={onToggle}
         />
@@ -343,14 +359,14 @@ function AccountRow({
       </div>
       <button
         aria-label={messages.columns.menu}
-        className="truncate text-left text-xs text-[var(--sdk-color-text-secondary)] hover:underline"
+        className="min-w-0 truncate text-left text-xs text-[var(--sdk-color-text-secondary)] hover:text-[var(--sdk-color-text-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sdk-color-border-focus)]"
         onClick={onMenu}
         title={menuCount === 0 ? messages.menu.empty : `${messages.columns.menu} · ${menuCount}`}
         type="button"
       >
         {menuCount === 0 ? messages.menu.empty : `${messages.columns.menu} · ${menuCount}`}
       </button>
-      <div className="flex items-center justify-end gap-1">
+      <div className="flex min-w-0 flex-wrap items-center justify-end gap-1">
         <Button onClick={onEdit} size="sm" variant="ghost">{messages.actions.edit}</Button>
         {capabilities.manageFollowQrCode
           ? (
@@ -714,23 +730,29 @@ export function SdkworkOfficialAccountsPanel({
         <div className={capabilities.mode === "operator" ? OPERATOR_LIST_MIN_WIDTH : SELF_SERVICE_LIST_MIN_WIDTH}>
           <div
             className={`sticky top-0 z-10 grid ${capabilities.mode === "operator" ? OPERATOR_ROW_GRID : SELF_SERVICE_ROW_GRID} items-center gap-3 border-b border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-panel)] px-3 py-2 text-xs font-medium text-[var(--sdk-color-text-muted)]`}
+            data-official-accounts-header=""
           >
-            <span>{messages.columns.name}</span>
-            <span title={`${messages.columns.appId} / ${messages.columns.originalId}`}>
+            <span className="min-w-0 truncate">{messages.columns.name}</span>
+            <span
+              className="min-w-0 truncate"
+              title={`${messages.columns.appId} / ${messages.columns.originalId}`}
+            >
               {messages.columns.identifier}
             </span>
-            <span>{messages.columns.type}</span>
+            <span className="min-w-0 truncate">{messages.columns.type}</span>
             {capabilities.mode === "operator"
               ? (
                 <>
-                  <span>{messages.columns.organization}</span>
-                  <span>{messages.columns.maintainer}</span>
+                  <span className="min-w-0 truncate">{messages.columns.organization}</span>
+                  <span className="min-w-0 truncate">{messages.columns.maintainer}</span>
                 </>
               )
               : null}
-            <span>{messages.columns.status}</span>
-            <span>{messages.columns.menu}</span>
-            <span className="text-right">{messages.columns.actions}</span>
+            <span className="min-w-0 truncate">{messages.columns.status}</span>
+            <span className="min-w-0 truncate">{messages.columns.menu}</span>
+            {/* The action buttons are ghost buttons with their own `px-3`, so the
+              label carries the same inset to share their text baseline. */}
+            <span className="min-w-0 truncate pr-3 text-right">{messages.columns.actions}</span>
           </div>
           {state.accounts.length === 0
             ? (

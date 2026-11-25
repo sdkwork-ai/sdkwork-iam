@@ -69,6 +69,7 @@ export interface SdkworkIamOauthAdminMessages {
     title: string;
   };
   common: {
+    actions: string;
     activate: string;
     all: string;
     booleanFalse: string;
