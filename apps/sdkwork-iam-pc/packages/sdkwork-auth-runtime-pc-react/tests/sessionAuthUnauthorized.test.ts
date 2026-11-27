@@ -38,6 +38,47 @@ describe("session auth unauthorized integration", () => {
     })).toBe(false);
   });
 
+  it("does not treat a non-401 dependency failure as a session auth error", () => {
+    // Regression: the App Center analytics page fans out across several
+    // dependency backends. Free-text matching classified a 404/403/5xx whose
+    // detail merely looked auth-shaped as an expired session, which cleared the
+    // operator's session and navigated to /auth/login. Classification is now
+    // structural: an explicit non-401 status is always a dependency failure.
+    expect(isSdkworkSdkSessionAuthError({
+      code: "NOT_FOUND",
+      detail: "invalid token",
+      httpStatus: 404,
+      message: "invalid token",
+    })).toBe(false);
+    expect(isSdkworkSdkSessionAuthError({
+      code: "FORBIDDEN",
+      httpStatus: 403,
+      message: "not logged in",
+    })).toBe(false);
+    expect(isSdkworkSdkSessionAuthError({
+      code: "BAD_GATEWAY",
+      httpStatus: 502,
+      message: "token has expired",
+    })).toBe(false);
+    expect(isSdkworkSdkSessionAuthError({
+      detail: "invalid or expired iam session",
+      status: 500,
+    })).toBe(false);
+  });
+
+  it("still detects a genuine session auth failure without an HTTP status", () => {
+    // Envelope failures carry a business code and no HTTP status at all, so the
+    // structural check must keep matching the code alone.
+    expect(isSdkworkSdkSessionAuthError({
+      code: "TOKEN_EXPIRED",
+      msg: "whatever the backend says",
+    })).toBe(true);
+    expect(isSdkworkSdkSessionAuthError({
+      businessCode: "40103",
+      message: "session rejected",
+    })).toBe(true);
+  });
+
   it("resolves modal mode on localhost by default", () => {
     expect(resolveSdkworkSessionAuthUnauthorizedMode({
       hostname: "127.0.0.1",

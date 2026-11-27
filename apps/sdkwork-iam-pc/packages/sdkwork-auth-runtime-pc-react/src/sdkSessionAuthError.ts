@@ -7,14 +7,19 @@ export const SDKWORK_SESSION_AUTH_ERROR_CODES = new Set([
   "TOKEN_INVALID",
 ]);
 
-export const SDKWORK_SESSION_AUTH_ERROR_MESSAGES = [
-  "app session token has expired",
-  "session token has expired",
-  "token has expired",
-  "invalid or expired iam session",
-  "invalid token",
-  "not logged in",
-] as const;
+/**
+ * Retired: free-text session-auth message matching.
+ *
+ * Classification is structural only (HTTP 401, `code`, or `businessCode`).
+ * Matching on message prose logged operators out on unrelated failures: a 404
+ * or 403 whose detail merely contained a phrase like "invalid token" — for
+ * example an absent route, a missing permission, or a dependency backend that
+ * echoes a token-shaped business key — was treated as an expired session, which
+ * clears the stored session and navigates to the login page. The table stays
+ * exported (empty) so downstream imports and declarations keep resolving; it is
+ * never consulted.
+ */
+export const SDKWORK_SESSION_AUTH_ERROR_MESSAGES: readonly string[] = [];
 
 function isErrorRecord(error: unknown): error is Record<string, unknown> {
   return typeof error === "object" && error !== null && !Array.isArray(error);
@@ -81,21 +86,26 @@ export function readSdkworkSessionAuthErrorMessage(error: unknown): string {
 }
 
 export function isSdkworkSdkSessionAuthError(error: unknown): boolean {
-  const code = readSdkworkSessionAuthErrorCode(error);
   const httpStatus = readSdkworkSessionAuthErrorHttpStatus(error);
-  const businessCode = readSdkworkSessionAuthBusinessCode(error);
+  // An explicit non-401 HTTP status is never a session-auth failure, whatever
+  // the error code or message says. This keeps a business rejection (a 400/403/
+  // 404/5xx that happens to carry an auth-looking code or detail) from clearing
+  // the operator's session.
+  if (httpStatus !== undefined && httpStatus !== 401) {
+    return false;
+  }
   if (httpStatus === 401) {
     return true;
   }
+
+  const code = readSdkworkSessionAuthErrorCode(error);
   if (code && SDKWORK_SESSION_AUTH_ERROR_CODES.has(code.toUpperCase())) {
     return true;
   }
-  if (businessCode && SDKWORK_SESSION_AUTH_ERROR_CODES.has(businessCode.toUpperCase())) {
-    return true;
-  }
-
-  const message = readSdkworkSessionAuthErrorMessage(error).toLowerCase();
-  return SDKWORK_SESSION_AUTH_ERROR_MESSAGES.some((pattern) => message.includes(pattern));
+  const businessCode = readSdkworkSessionAuthBusinessCode(error);
+  return Boolean(
+    businessCode && SDKWORK_SESSION_AUTH_ERROR_CODES.has(businessCode.toUpperCase()),
+  );
 }
 
 export function formatSdkworkSessionAuthUnauthorizedDetail(
