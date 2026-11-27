@@ -78,9 +78,7 @@
       }
     ],
     "requiredPorts": [],
-    "routeIds": [
-      "console.iam.cloud-account.list"
-    ],
+    "routeIds": [],
     "permissionComposition": {
       "inheritanceMode": "module-catalog-with-overrides",
       "applicationModule": {

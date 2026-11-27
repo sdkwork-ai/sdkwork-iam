@@ -28,11 +28,15 @@ abstract class IamFlutterMobileAuthDataSource {
   /// Current session, or null when nobody is signed in.
   IamFlutterMobileAuthSession? get currentSession;
 
-  /// Exchanges a username and password for a session.
-  Future<IamFlutterMobileAuthSession> signInWithPassword({
+  /// Exchanges credentials for a final session or an explicit context challenge.
+  Future<IamFlutterMobileLoginResult> signInWithPassword({
     required String password,
     required String username,
   });
+
+  /// Continues a context challenge. No session is committed until this succeeds.
+  Future<IamFlutterMobileAuthSession> selectLoginContext(
+      Map<String, String> body);
 
   /// Asks the server to send a password-reset code to [account].
   Future<void> requestPasswordResetCode(String account);
@@ -91,8 +95,10 @@ enum IamFlutterMobileAuthResetProblem {
 IamFlutterMobileAuthResetProblem? validateIamFlutterMobileAuthResetDraft(
   IamFlutterMobileAuthResetDraft draft,
 ) {
-  if (draft.account.trim().isEmpty) return IamFlutterMobileAuthResetProblem.accountRequired;
-  if (draft.code.trim().isEmpty) return IamFlutterMobileAuthResetProblem.codeRequired;
+  if (draft.account.trim().isEmpty)
+    return IamFlutterMobileAuthResetProblem.accountRequired;
+  if (draft.code.trim().isEmpty)
+    return IamFlutterMobileAuthResetProblem.codeRequired;
   if (draft.newPassword.length < iamFlutterMobileAuthMinPasswordLength) {
     return IamFlutterMobileAuthResetProblem.newPasswordTooShort;
   }
@@ -106,7 +112,8 @@ IamFlutterMobileAuthResetProblem? validateIamFlutterMobileAuthResetDraft(
 ///
 /// Exported so the screen and the service report the same sentence: two copies of
 /// the same rule drift apart the first time one of them is edited.
-String describeIamFlutterMobileAuthResetProblem(IamFlutterMobileAuthResetProblem problem) {
+String describeIamFlutterMobileAuthResetProblem(
+    IamFlutterMobileAuthResetProblem problem) {
   switch (problem) {
     case IamFlutterMobileAuthResetProblem.accountRequired:
       return 'The account is required.';
@@ -130,7 +137,8 @@ const Map<String, String> iamFlutterMobileAuthRoutePaths = <String, String>{
 
 /// Validation and error mapping of the `auth` capability.
 class IamFlutterMobileAuthService {
-  const IamFlutterMobileAuthService({IamFlutterMobileAuthDataSource? dataSource})
+  const IamFlutterMobileAuthService(
+      {IamFlutterMobileAuthDataSource? dataSource})
       : _dataSource = dataSource;
 
   final IamFlutterMobileAuthDataSource? _dataSource;
@@ -139,14 +147,22 @@ class IamFlutterMobileAuthService {
   bool get isAuthenticated => _requireDataSource().currentSession != null;
 
   /// Current session, if any.
-  IamFlutterMobileAuthSession? get currentSession => _requireDataSource().currentSession;
+  IamFlutterMobileAuthSession? get currentSession =>
+      _requireDataSource().currentSession;
 
   /// Signs in with a username and password.
-  Future<IamFlutterMobileAuthSession> signInWithPassword({
+  Future<IamFlutterMobileLoginResult> signInWithPassword({
     required String password,
     required String username,
   }) {
-    return _requireDataSource().signInWithPassword(password: password, username: username);
+    return _requireDataSource()
+        .signInWithPassword(password: password, username: username);
+  }
+
+  /// Continues an explicit personal or organization context selection.
+  Future<IamFlutterMobileAuthSession> selectLoginContext(
+      Map<String, String> body) {
+    return _requireDataSource().selectLoginContext(body);
   }
 
   /// Signs out.
@@ -179,7 +195,8 @@ class IamFlutterMobileAuthService {
   /// Section 8 resolves a deep link to a route id before converting it into a
   /// navigation action, so the reverse lookup lives beside the forward one.
   String? routeIdForPath(String path) {
-    for (final MapEntry<String, String> entry in iamFlutterMobileAuthRoutePaths.entries) {
+    for (final MapEntry<String, String> entry
+        in iamFlutterMobileAuthRoutePaths.entries) {
       if (entry.value == path) return entry.key;
     }
     return null;

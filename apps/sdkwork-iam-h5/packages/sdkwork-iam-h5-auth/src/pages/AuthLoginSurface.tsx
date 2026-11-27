@@ -13,6 +13,10 @@ import { SdkworkI18nProvider } from "@sdkwork/i18n-pc-react";
 import type { ReactElement } from "react";
 
 import { SDKWORK_IAM_H5_AUTH_I18N_CATALOG } from "../i18n/index.js";
+import {
+  SdkworkIamH5AuthLoginContextSelectionScreen,
+  type SdkworkIamH5AuthLoginContextSelectionScreenProps,
+} from "./AuthLoginContextSelectionScreen.js";
 import { SdkworkIamH5AuthLoginScreen, type SdkworkIamH5AuthLoginScreenProps } from "./AuthLoginScreen.js";
 
 /** Props of {@link SdkworkIamH5AuthLoginSurface}. */
@@ -33,6 +37,24 @@ export function SdkworkIamH5AuthLoginSurface({
   return (
     <SdkworkI18nProvider catalogs={[SDKWORK_IAM_H5_AUTH_I18N_CATALOG]} locale={locale}>
       <SdkworkIamH5AuthLoginScreen {...screenProps} />
+    </SdkworkI18nProvider>
+  );
+}
+
+/** Props of {@link SdkworkIamH5AuthContextSelectionSurface}. */
+export interface SdkworkIamH5AuthContextSelectionSurfaceProps
+  extends SdkworkIamH5AuthLoginContextSelectionScreenProps {
+  locale?: string | null;
+}
+
+/** Render the context continuation screen inside its locale provider. */
+export function SdkworkIamH5AuthContextSelectionSurface({
+  locale,
+  ...screenProps
+}: SdkworkIamH5AuthContextSelectionSurfaceProps): ReactElement {
+  return (
+    <SdkworkI18nProvider catalogs={[SDKWORK_IAM_H5_AUTH_I18N_CATALOG]} locale={locale}>
+      <SdkworkIamH5AuthLoginContextSelectionScreen {...screenProps} />
     </SdkworkI18nProvider>
   );
 }

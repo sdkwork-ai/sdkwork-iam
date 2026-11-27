@@ -3,9 +3,12 @@ import { IAMMP_ROUTE_CONTRIBUTIONS } from '@sdkwork/iam-mp-core';
 
 /** Route contributions owned by `@sdkwork/iam-mp-oauth`, taken from its tier registry. */
 export const IAMMPOAUTH_ROUTE_CONTRIBUTIONS = IAMMP_ROUTE_CONTRIBUTIONS.filter(
-  (route) => route.id === 'app.iam.oauth.providers',
+  (route) =>
+    route.id === 'app.iam.oauth.providers' ||
+    route.id === 'app.iam.oauth.official-accounts',
 );
 
 export const IAMMPOAUTH_ROUTE_IDS = [
   'app.iam.oauth.providers',
+  'app.iam.oauth.official-accounts',
 ] as const;

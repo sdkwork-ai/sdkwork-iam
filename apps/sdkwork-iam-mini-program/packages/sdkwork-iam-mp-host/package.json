@@ -5,7 +5,8 @@
   "type": "module",
   "description": "host package for the sdkwork-iam-mini-program client root.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./wechat": "./src/wechat.ts"
   },
   "files": [
     "src",
@@ -15,7 +16,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@sdkwork/iam-contracts": "workspace:*"
+    "@sdkwork/iam-contracts": "workspace:*",
+    "@sdkwork/iam-mp-core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "catalog:"

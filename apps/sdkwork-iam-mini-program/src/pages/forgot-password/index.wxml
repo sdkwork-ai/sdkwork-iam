@@ -1,73 +1,95 @@
-<view class="page">
-  <view class="brand">
+<view class="page auth-page">
+  <view class="brand auth-brand">
     <text class="brand-title">{{title}}</text>
   </view>
 
-  <view wx:if="{{done}}" class="card">
-    <text class="notice">{{doneText}}</text>
-    <button class="primary" bindtap="onBackToLogin">{{toLoginText}}</button>
-  </view>
-
-  <view wx:else class="card">
-    <view class="field">
-      <text class="label">账号</text>
-      <input class="input" placeholder="手机号或邮箱" value="{{account}}" bindinput="onAccountInput" />
+  <view class="auth-content">
+    <view wx:if="{{done}}" class="card auth-card">
+      <text class="notice" role="status">{{doneText}}</text>
+      <button class="primary" bindtap="onBackToLogin">{{toLoginText}}</button>
     </view>
 
-    <view class="field">
-      <text class="label">验证码</text>
-      <view class="code-row">
+    <view wx:else class="card auth-card">
+      <view class="field">
+        <text class="label" id="forgot-account-label">{{accountLabel}}</text>
         <input
-          class="input code-input"
-          placeholder="请输入验证码"
-          value="{{code}}"
-          bindinput="onCodeInput"
+          class="input"
+          type="text"
+          confirm-type="next"
+          maxlength="254"
+          placeholder="{{accountPlaceholder}}"
+          value="{{account}}"
+          aria-labelledby="forgot-account-label"
+          bindinput="onAccountInput"
         />
-        <button
-          class="code-button"
-          disabled="{{sending || !account}}"
-          loading="{{sending}}"
-          bindtap="onSendCode"
-        >
-          {{sendCodeText}}
-        </button>
       </view>
-    </view>
 
-    <view class="field">
-      <text class="label">新密码</text>
-      <input
-        class="input"
-        password
-        placeholder="至少 8 位"
-        value="{{newPassword}}"
-        bindinput="onNewPasswordInput"
-      />
-    </view>
-    <view class="field">
-      <text class="label">确认新密码</text>
-      <input
-        class="input"
-        password
-        placeholder="再次输入新密码"
-        value="{{confirmPassword}}"
-        bindinput="onConfirmPasswordInput"
-      />
-    </view>
+      <view class="field">
+        <text class="label" id="forgot-code-label">{{codeLabel}}</text>
+        <view class="code-row">
+          <input
+            class="input code-input"
+            type="text"
+            confirm-type="next"
+            maxlength="16"
+            placeholder="{{codePlaceholder}}"
+            value="{{code}}"
+            aria-labelledby="forgot-code-label"
+            bindinput="onCodeInput"
+          />
+          <button
+            class="code-button"
+            disabled="{{sending || !account}}"
+            loading="{{sending}}"
+            bindtap="onSendCode"
+          >
+            {{sendCodeText}}
+          </button>
+        </view>
+      </view>
 
-    <text wx:if="{{errorText}}" class="error">{{errorText}}</text>
+      <view class="field">
+        <text class="label" id="forgot-password-label">{{newPasswordLabel}}</text>
+        <input
+          class="input"
+          password
+          confirm-type="next"
+          maxlength="128"
+          placeholder="{{newPasswordPlaceholder}}"
+          value="{{newPassword}}"
+          aria-labelledby="forgot-password-label"
+          bindinput="onNewPasswordInput"
+        />
+      </view>
+      <view class="field">
+        <text class="label" id="forgot-confirm-label">{{confirmPasswordLabel}}</text>
+        <input
+          class="input"
+          password
+          confirm-type="done"
+          maxlength="128"
+          placeholder="{{confirmPasswordPlaceholder}}"
+          value="{{confirmPassword}}"
+          aria-labelledby="forgot-confirm-label"
+          bindinput="onConfirmPasswordInput"
+          bindconfirm="onSubmit"
+        />
+      </view>
 
-    <button
-      class="primary"
-      disabled="{{pending || !account || !code || !newPassword || !confirmPassword}}"
-      loading="{{pending}}"
-      bindtap="onSubmit"
-    >
-      {{pending ? pendingText : submitText}}
-    </button>
+      <text wx:if="{{errorText}}" class="error" role="alert" aria-live="assertive">{{errorText}}</text>
 
-    <view class="links">
-      <text class="link" bindtap="onBackToLogin">{{toLoginText}}</text>
+      <button
+        class="primary"
+        disabled="{{pending || !account || !code || !newPassword || !confirmPassword}}"
+        loading="{{pending}}"
+        bindtap="onSubmit"
+      >
+        {{pending ? pendingText : submitText}}
+      </button>
+
+      <view class="links">
+        <button class="link" hover-class="none" bindtap="onBackToLogin">{{toLoginText}}</button>
+      </view>
     </view>
   </view>
 </view>

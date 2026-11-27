@@ -1,9 +1,9 @@
-// SDKWORK-IAM-H5-ADMIN-PERMISSION: authored barrel.
-export * from './routes/route-contribution.js';
-export * from './services/permission-service.js';
-export * from './services/admin-permission-controller.js';
+// SDKWORK-IAM-H5: authored package public surface.
 export * from './types/admin-permission-types.js';
-export * from './i18n/index.js';
+export * from './services/admin-permission-controller.js';
+export * from './services/permission-service.js';
 export * from './pages/PermissionAdminScreen.js';
-export * from './pages/RoleAdminScreen.js';
 export * from './pages/PolicyAdminScreen.js';
+export * from './pages/RoleAdminScreen.js';
+export * from './i18n/index.js';
+export * from './routes/route-contribution.js';

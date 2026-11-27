@@ -7,7 +7,7 @@ export interface SdkworkIamH5AuthModeLinksProps {
 }
 
 const LINK_CLASS =
-  "cursor-pointer active:opacity-70";
+  "flex min-h-11 cursor-pointer items-center px-1 text-left active:opacity-70";
 
 export function SdkworkIamH5AuthModeLinks({
   mode,
@@ -17,31 +17,31 @@ export function SdkworkIamH5AuthModeLinks({
   const isLogin = mode === "login-pwd" || mode === "login-code";
 
   return (
-    <div className="flex items-center justify-between px-1 text-[14px] font-medium text-[var(--iam-h5-auth-link)]">
+    <div className="flex items-center justify-between gap-2 px-1 text-[14px] font-medium text-[var(--iam-h5-auth-link)]">
       {mode === "login-pwd" ? (
-        <span className={LINK_CLASS} onClick={() => onChangeMode("login-code")}>
+        <button className={LINK_CLASS} onClick={() => onChangeMode("login-code")} type="button">
           {messages.links.loginWithCode}
-        </span>
+        </button>
       ) : null}
       {mode === "login-code" ? (
-        <span className={LINK_CLASS} onClick={() => onChangeMode("login-pwd")}>
+        <button className={LINK_CLASS} onClick={() => onChangeMode("login-pwd")} type="button">
           {messages.links.loginWithPwd}
-        </span>
+        </button>
       ) : null}
       {isLogin ? (
-        <div className="flex gap-4">
-          <span className={LINK_CLASS} onClick={() => onChangeMode("forgot")}>
+        <div className="flex gap-1">
+          <button className={LINK_CLASS} onClick={() => onChangeMode("forgot")} type="button">
             {messages.links.forgotPassword}
-          </span>
-          <span className={LINK_CLASS} onClick={() => onChangeMode("register")}>
+          </button>
+          <button className={LINK_CLASS} onClick={() => onChangeMode("register")} type="button">
             {messages.links.registerAccount}
-          </span>
+          </button>
         </div>
       ) : null}
       {!isLogin ? (
-        <span className={LINK_CLASS} onClick={() => onChangeMode("login-pwd")}>
+        <button className={LINK_CLASS} onClick={() => onChangeMode("login-pwd")} type="button">
           {messages.links.backToLogin}
-        </span>
+        </button>
       ) : null}
     </div>
   );

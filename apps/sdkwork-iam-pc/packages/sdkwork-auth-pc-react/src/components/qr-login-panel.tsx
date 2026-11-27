@@ -158,28 +158,34 @@ export function SdkworkQrLoginPanel({
             </div>
           </div>
 
-          {shouldShowStatus ? (
-            <div className={`mt-5 text-sm font-medium ${
-              qrState === "scanned"
-              || qrState === "passwordRequired"
-              || qrState === "bindRequired"
-              || qrState === "organizationSelectionRequired"
-                ? "text-amber-300"
-                : qrState === "confirmed"
-                  ? "text-emerald-300"
-                  : qrState === "expired" || qrState === "error" || qrState === "failed"
-                    ? "text-rose-300"
-                    : "text-zinc-300"
-            }`}
-            >
-              {formatQrStatusLabel(qrState)}
-            </div>
-          ) : null}
-          {statusHint ? (
-            <p className="mt-2 text-sm leading-6 text-zinc-400">
-              {statusHint}
-            </p>
-          ) : null}
+          <div
+            aria-atomic="true"
+            aria-live={isBroken ? "assertive" : "polite"}
+            role={isBroken ? "alert" : "status"}
+          >
+            {shouldShowStatus ? (
+              <div className={`mt-5 text-sm font-medium ${
+                qrState === "scanned"
+                || qrState === "passwordRequired"
+                || qrState === "bindRequired"
+                || qrState === "organizationSelectionRequired"
+                  ? "text-amber-300"
+                  : qrState === "confirmed"
+                    ? "text-emerald-300"
+                    : qrState === "expired" || qrState === "error" || qrState === "failed"
+                      ? "text-rose-300"
+                      : "text-zinc-300"
+              }`}
+              >
+                {formatQrStatusLabel(qrState)}
+              </div>
+            ) : null}
+            {statusHint ? (
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                {statusHint}
+              </p>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>

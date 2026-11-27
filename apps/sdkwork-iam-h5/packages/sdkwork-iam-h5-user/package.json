@@ -26,8 +26,8 @@
     "@sdkwork/utils": "workspace:*"
   },
   "devDependencies": {
-    "@testing-library/react": "catalog:",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "@testing-library/react": "catalog:"
   },
   "sdkwork": {
     "architecture": "h5",

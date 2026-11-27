@@ -213,6 +213,8 @@ export interface SdkworkIamH5AuthOAuthCallbackScreenProps {
 export const IAM_H5_AUTH_ROUTES = {
   /** Mobile H5 login screen; also the URL scan-login QR target. */
   loginPath: "/auth/login",
+  /** Explicit personal/organization continuation after primary authentication. */
+  contextPath: "/auth/login/context",
   /**
    * WeChat web-authorization callback screen (`code`/`state` exchange).
    *

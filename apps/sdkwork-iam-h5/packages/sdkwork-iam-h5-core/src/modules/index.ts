@@ -9,7 +9,7 @@
  * client root and every tier; only `presentation` and the mini program
  * placement are platform-specific.
  *
- * This registry holds the 12 `app`-surface route(s). The other tiers
+ * This registry holds the 13 `app`-surface route(s). The other tiers
  * own theirs in their own core package, so no tier has to depend on another.
  */
 
@@ -84,7 +84,7 @@ export const IAMH5_ROUTE_CONTRIBUTIONS: readonly IamH5RouteContribution[] = [
     screen: 'context-selection',
     path: '/auth/login/context',
     titleKey: 'iam.auth.contextSelection.title',
-    auth: 'required',
+    auth: 'public',
     presentation: { h5Mobile: 'stack' },
   },
   {
@@ -169,6 +169,18 @@ export const IAMH5_ROUTE_CONTRIBUTIONS: readonly IamH5RouteContribution[] = [
     titleKey: 'iam.oauth.providers.title',
     auth: 'required',
     permissionHint: 'iam.oauth.read',
+    presentation: { h5Mobile: 'stack' },
+  },
+  {
+    id: 'app.iam.oauth.official-accounts',
+    surface: 'app',
+    domain: 'iam',
+    capability: 'oauth',
+    screen: 'official-accounts',
+    path: '/oauth/official-accounts',
+    titleKey: 'iam.oauth.officialAccounts.title',
+    auth: 'required',
+    permissionHint: 'iam.self',
     presentation: { h5Mobile: 'stack' },
   },
 ];

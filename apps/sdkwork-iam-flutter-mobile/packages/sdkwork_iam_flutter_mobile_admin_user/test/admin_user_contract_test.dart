@@ -9,6 +9,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_user/sdkwork_iam_flutter_mobile_admin_user.dart';
+import 'package:sdkwork_iam_flutter_mobile_admin_core/sdkwork_iam_flutter_mobile_admin_core.dart';
 
 void main() {
   test('route ids and paths match the cross-client identity', () {

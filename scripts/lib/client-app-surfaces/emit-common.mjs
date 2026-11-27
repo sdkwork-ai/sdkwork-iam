@@ -242,7 +242,23 @@ export function createSurfaceWriter({
     return authoredFiles.has(rel(absolutePath));
   };
 
-  const preserveOption = (absolutePath) => ({ ifMissing: shouldPreserve(absolutePath) });
+  const hasGeneratedMarker = (absolutePath) => {
+    if (!fs.existsSync(absolutePath)) return false;
+    try {
+      return fs.readFileSync(absolutePath, 'utf8').includes(GENERATED_MARKER);
+    } catch {
+      return false;
+    }
+  };
+
+  const preserveOption = (absolutePath, { text = true } = {}) => {
+    // The git index cannot distinguish new authored work from generator output:
+    // both are uncommitted. The banner is the durable ownership marker, so an
+    // existing text file without it is always preserved, including root
+    // composition files such as App.tsx and AuthGate.tsx.
+    const preserve = shouldPreserve(absolutePath) || (text && fs.existsSync(absolutePath) && !hasGeneratedMarker(absolutePath));
+    return { ifMissing: preserve };
+  };
 
   /**
    * Write a file relative to the app root.
@@ -265,7 +281,7 @@ export function createSurfaceWriter({
     const absolute = path.join(appRoot, relativePath);
     if (dryRun) return plan(absolute);
     planned.push(absolute);
-    return writer.writeJson(absolute, value, preserveOption(absolute));
+    return writer.writeJson(absolute, value, preserveOption(absolute, { text: false }));
   };
 
   /**

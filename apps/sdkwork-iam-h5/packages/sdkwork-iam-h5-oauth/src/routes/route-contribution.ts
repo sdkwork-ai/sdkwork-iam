@@ -3,9 +3,12 @@ import { IAMH5_ROUTE_CONTRIBUTIONS } from '@sdkwork/iam-h5-core';
 
 /** Route contributions owned by `@sdkwork/iam-h5-oauth`, taken from its tier registry. */
 export const IAMH5OAUTH_ROUTE_CONTRIBUTIONS = IAMH5_ROUTE_CONTRIBUTIONS.filter(
-  (route) => route.id === 'app.iam.oauth.providers',
+  (route) =>
+    route.id === 'app.iam.oauth.providers' ||
+    route.id === 'app.iam.oauth.official-accounts',
 );
 
 export const IAMH5OAUTH_ROUTE_IDS = [
   'app.iam.oauth.providers',
+  'app.iam.oauth.official-accounts',
 ] as const;

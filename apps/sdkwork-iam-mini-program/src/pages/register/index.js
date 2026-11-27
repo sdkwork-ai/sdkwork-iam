@@ -18,12 +18,20 @@ const MIN_PASSWORD_LENGTH = 8;
 Page({
   data: {
     account: "",
+    accountLabel: "",
+    accountPlaceholder: "",
     code: "",
+    codeLabel: "",
+    codePlaceholder: "",
     confirm: "",
+    confirmLabel: "",
+    confirmPlaceholder: "",
     done: false,
     doneText: "",
     errorText: "",
     password: "",
+    passwordLabel: "",
+    passwordPlaceholder: "",
     pending: false,
     pendingText: "",
     registerAgainText: "",
@@ -37,7 +45,15 @@ Page({
     const t = (key) => resolveIamMpMessage(this.locale(), key);
     wx.setNavigationBarTitle({ title: t("register.title") });
     this.setData({
+      accountLabel: t("register.account"),
+      accountPlaceholder: t("register.accountPlaceholder"),
+      codeLabel: t("register.code"),
+      codePlaceholder: t("register.codePlaceholder"),
+      confirmLabel: t("register.confirm"),
+      confirmPlaceholder: t("register.confirmPlaceholder"),
       doneText: t("register.done"),
+      passwordLabel: t("register.password"),
+      passwordPlaceholder: t("register.passwordPlaceholder"),
       pendingText: t("register.pending"),
       registerAgainText: t("register.registerAgain"),
       sendCodeText: t("register.sendCode"),
@@ -102,11 +118,15 @@ Page({
     }
     this.setData({ errorText: "", pending: true });
     try {
-      await getIamMpRuntime().auth.register({
+      const result = await getIamMpRuntime().auth.register({
         password: this.data.password,
         username: this.data.account,
         verificationCode: this.data.code,
       });
+      if (result.kind === "loginContextSelectionRequired") {
+        getIamMpRuntime().navigation.navigateTo(IAM_MP_PAGE_PATHS.contextSelection);
+        return;
+      }
       this.setData({ done: true });
     } catch (error) {
       this.setData({

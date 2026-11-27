@@ -25,6 +25,7 @@ import {
   createSdkworkIamH5AuthController,
   SDKWORK_IAM_H5_AUTH_I18N_CATALOG,
   SdkworkIamH5AuthCallbackSurface,
+  SdkworkIamH5AuthContextSelectionSurface,
   SdkworkIamH5AuthLoginSurface,
 } from "@sdkwork/iam-h5-auth";
 import { SdkworkIamH5EmptyState, SdkworkIamH5I18nProvider, SdkworkIamH5Screen } from "@sdkwork/iam-h5-commons";
@@ -103,6 +104,7 @@ import {
 
 import { useIamH5HistoryRoute } from "./bootstrap/history-router";
 import { createIamH5BootstrapRuntime } from "./bootstrap/iamService";
+import { AuthGate } from "./AuthGate";
 import { IAM_H5_SHELL_I18N_CATALOG } from "./i18n/index";
 
 export interface AppProps {
@@ -115,6 +117,8 @@ export interface AppProps {
 const POST_LOGIN_PATH = "/tenant";
 /** Path rendered when no registered route matches. */
 const FALLBACK_PATH = "/auth/login";
+/** Context selection is an authentication continuation, never a protected screen. */
+const CONTEXT_SELECTION_ROUTE_ID = "app.iam.auth.context-selection";
 
 /**
  * The IAM H5 application.
@@ -125,7 +129,18 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
   const sessionStore = useMemo<IamH5SessionStore>(() => createIamH5SessionStore(), []);
   const [bootstrap] = useState(() => createIamH5BootstrapRuntime(sessionStore));
   const [session, setSession] = useState(() => sessionStore.get());
+  const [restoring, setRestoring] = useState(true);
   const { navigate, path, replace } = useIamH5HistoryRoute();
+
+  useEffect(() => {
+    let active = true;
+    void bootstrap.restoreSession().finally(() => {
+      if (active) setRestoring(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [bootstrap]);
 
   useEffect(() => {
     const unsubscribe = sessionStore.subscribe(setSession);
@@ -237,11 +252,19 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
 
   const authenticated = session !== undefined;
 
+  const effectiveRouteContributions = useMemo<IamH5RouteContribution[]>(
+    () => routeContributions.map((route) => (
+      route.id === CONTEXT_SELECTION_ROUTE_ID ? { ...route, auth: "public" } : route
+    )),
+    [routeContributions],
+  );
+
   const registeredRoutes = useMemo<SdkworkIamH5ShellRoute[]>(() => {
-    const byId = (id: string) => routeContributions.find((entry) => entry.id === id);
+    const byId = (id: string) => effectiveRouteContributions.find((entry) => entry.id === id);
     const loginRoute = byId("app.iam.auth.login");
     const registerRoute = byId("app.iam.auth.register");
     const forgotRoute = byId("app.iam.auth.forgot-password");
+    const contextSelectionRoute = byId(CONTEXT_SELECTION_ROUTE_ID);
     const callbackRoute = byId("app.iam.auth.oauth-callback");
     const tenantRoute = byId("app.iam.tenant.overview");
     const organizationRoute = byId("app.iam.organization.directory");
@@ -260,6 +283,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     const adminAuditRoute = byId("admin.iam.audit.events");
     const adminTenantRoute = byId("admin.iam.tenant.list");
     const adminOrganizationRoute = byId("admin.iam.organization.tree");
+    const contextSelectionChallenge = authController.getState().challenge;
     const routes: SdkworkIamH5ShellRoute[] = [];
 
     if (loginRoute) {
@@ -270,6 +294,9 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
             controller={authController}
             locale={resolvedLocale}
             onAuthenticated={handleAuthenticated}
+            onContextSelectionRequired={
+              contextSelectionRoute ? () => replace(contextSelectionRoute.path) : undefined
+            }
           />
         ),
         id: loginRoute.id,
@@ -286,6 +313,9 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
             initialMode="register"
             locale={resolvedLocale}
             onAuthenticated={handleAuthenticated}
+            onContextSelectionRequired={
+              contextSelectionRoute ? () => replace(contextSelectionRoute.path) : undefined
+            }
           />
         ),
         id: registerRoute.id,
@@ -302,11 +332,40 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
             initialMode="forgot"
             locale={resolvedLocale}
             onAuthenticated={handleAuthenticated}
+            onContextSelectionRequired={
+              contextSelectionRoute ? () => replace(contextSelectionRoute.path) : undefined
+            }
           />
         ),
         id: forgotRoute.id,
         path: forgotRoute.path,
         title: authMessages.modes.forgot,
+      });
+    }
+    if (contextSelectionRoute) {
+      routes.push({
+        access: "public",
+        element: contextSelectionChallenge ? (
+          <SdkworkIamH5AuthContextSelectionSurface
+            challenge={contextSelectionChallenge}
+            controller={authController}
+            errorMessage={authController.getState().lastError}
+            locale={resolvedLocale}
+            onAuthenticated={handleAuthenticated}
+            onCancel={() => replace(loginRoute?.path ?? FALLBACK_PATH)}
+          />
+        ) : (
+          <SdkworkIamH5Screen title={authMessages.contextSelection.title}>
+            <SdkworkIamH5EmptyState
+              action={{ label: shellMessages.loginTitle, onClick: () => replace(loginRoute?.path ?? FALLBACK_PATH) }}
+              description={authMessages.contextSelection.description}
+              title={authMessages.contextSelection.title}
+            />
+          </SdkworkIamH5Screen>
+        ),
+        id: contextSelectionRoute.id,
+        path: contextSelectionRoute.path,
+        title: authMessages.contextSelection.title,
       });
     }
     if (callbackRoute) {
@@ -521,6 +580,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     accountBindingController,
     accountBindingMessages.binding.title,
     authController,
+    authMessages.contextSelection.title,
     authMessages.modes.forgot,
     authMessages.modes.register,
     consoleTenantController,
@@ -531,6 +591,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     consoleAccountBindingMessages.list.title,
     consoleUserCenterController,
     consoleUserCenterMessages.profile.title,
+    effectiveRouteContributions,
     adminPermissionController,
     adminPermissionMessages.permissions.title,
     adminPermissionMessages.roles.title,
@@ -551,7 +612,6 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
     organizationMessages.directory.title,
     replace,
     resolvedLocale,
-    routeContributions,
     shellMessages.loginTitle,
     tenantController,
     tenantMessages.overview.title,
@@ -561,6 +621,16 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
   ]);
 
   const activeRoute = registeredRoutes.find((entry) => entry.path === path);
+  const guestOnlyPaths = useMemo(
+    () => effectiveRouteContributions
+      .filter((route) => [
+        "app.iam.auth.login",
+        "app.iam.auth.register",
+        "app.iam.auth.forgot-password",
+      ].includes(route.id))
+      .map((route) => route.path),
+    [effectiveRouteContributions],
+  );
 
   return (
     <SdkworkIamH5I18nProvider
@@ -574,7 +644,18 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
       ]}
       locale={resolvedLocale}
     >
-      <SdkworkIamH5AppShell
+      <AuthGate
+        authenticated={authenticated}
+        guestOnlyPaths={guestOnlyPaths}
+        loading={restoring}
+        loadingLabel={shellMessages.checkingSession}
+        loginPath={FALLBACK_PATH}
+        onRedirect={replace}
+        path={path}
+        postLoginPath={POST_LOGIN_PATH}
+        routes={registeredRoutes}
+      >
+        <SdkworkIamH5AppShell
         authenticated={authenticated}
         currentPath={path}
         onNavigate={navigate}
@@ -599,6 +680,7 @@ export function App({ locale, routes: routeContributions }: AppProps): ReactElem
           </SdkworkIamH5Screen>
         )}
       </SdkworkIamH5AppShell>
+      </AuthGate>
     </SdkworkIamH5I18nProvider>
   );
 }

@@ -80,13 +80,21 @@ const GENERATOR_OWNED_RELATIVE = [
   /^specs\/component\.spec\.json$/u,
   /^src\/routes\/route-contribution\.ts$/u,
   /^src\/composition\/surface-composition\.ts$/u,
-  /^src\/(?:modules|sdk|host|session)\/index\.ts$/u,
+  /^src\/(?:modules|sdk|host|session|runtime)\/index\.ts$/u,
   /^src\/services\/[^/]+-service\.ts$/u,
   /^src\/i18n\/manifest\.ts$/u,
   /^src\/i18n\/[^/]+\/iam\/[^/]+\/[^/]+\.ts$/u,
 ];
 
 const BANNER_COMMENT = GENERATED_BANNER.replace('<!-- ', '// ').replace(' -->', '');
+
+function readImplementedMiniProgramRouteIds(appRoot) {
+  const runtimePath = path.join(appRoot, 'src/bootstrap/runtimeBundle.ts');
+  const source = fs.readFileSync(runtimePath, 'utf8');
+  const match = source.match(/IAM_MP_IMPLEMENTED_ROUTE_IDS[^=]*=\s*\[([\s\S]*?)\]/u);
+  if (!match) throw new Error(`cannot read IAM_MP_IMPLEMENTED_ROUTE_IDS from ${runtimePath}`);
+  return [...match[1].matchAll(/['"]([^'"]+)['"]/gu)].map((entry) => entry[1]);
+}
 
 function docBanner(language = 'md') {
   if (language === 'md') return `${GENERATED_BANNER}\n`;
@@ -241,7 +249,7 @@ See \`AGENTS.md\` for the rules and the verification commands.
 `;
 }
 
-function runtimeEntrypoint(surface) {
+function runtimeEntrypoint(surface, implementedRouteIds = []) {
   if (surface.key === 'h5') {
     // Identifiers derive from the surface, not from literals. The core package
     // publishes `IamH5RuntimeEnv` / `createIamH5SessionStore` (PascalCase types,
@@ -479,11 +487,12 @@ export function projectAppJson(): {
   subPackages: readonly { root: string; pages: readonly string[] }[];
 } {
   const routes = resolveBootstrapRoutes();
+  const implemented = new Set(${JSON.stringify(implementedRouteIds)});
   const pages: string[] = [];
   const subpackageMap = new Map<string, string[]>();
   for (const route of routes) {
     const placement: MiniProgramRoutePlacement | undefined = route.miniProgram;
-    if (!placement) continue;
+    if (!placement || !implemented.has(route.id)) continue;
     if (!placement.subpackage) {
       pages.push(placement.pagePath);
       continue;
@@ -1060,7 +1069,7 @@ export function materializeTsSurface({
   ]) {
     write(name, `${docBanner()}${body}`);
   }
-  write('.gitignore', `.cache/\ndist/\n*.local.*\nproject.private.config.json\n`);
+  write('.gitignore', `.cache/\ndist/\ntypes/\n*.local.*\nproject.private.config.json\n`);
   write(
     '.sdkwork/README.md',
     `${docBanner()}# .sdkwork
@@ -1126,12 +1135,17 @@ Owner: \`sdkwork-iam\` maintainers.
   // artifact checked into source.
   if (surface.rootEnvFiles) {
     for (const profileId of PROFILE_IDS) {
-      write(`.env.${profileId}`, rootEnvFile(surface, profileId, repoRoot));
+      write(`.env.${profileId}`, rootEnvFile(surface, profileId, repoRoot, appRoot), {
+        ifMissing: false,
+      });
     }
   }
 
   // ---- root: entry and bootstrap ----
-  for (const [relativePath, content] of Object.entries(runtimeEntrypoint(surface))) {
+  const implementedMiniProgramRoutes = surface.key === 'mp'
+    ? readImplementedMiniProgramRouteIds(appRoot)
+    : [];
+  for (const [relativePath, content] of Object.entries(runtimeEntrypoint(surface, implementedMiniProgramRoutes))) {
     write(`${surface.sourceRoot}/${relativePath}`, content);
   }
   write(`${surface.sourceRoot}/index.css`, `:root { color-scheme: light dark; }\n`);
@@ -1146,6 +1160,7 @@ Owner: \`sdkwork-iam\` maintainers.
     const rootPages = [];
     const subPackagePages = new Map();
     for (const route of ROUTES) {
+      if (!implementedMiniProgramRoutes.includes(routeId(route))) continue;
       const placement = miniProgramPlacement(route);
       if (placement.subpackage === null) {
         if (!rootPages.includes(placement.pagePath)) rootPages.push(placement.pagePath);
@@ -1190,7 +1205,7 @@ Owner: \`sdkwork-iam\` maintainers.
       version: '0.1.0',
       type: 'module',
       packageManager: 'pnpm@10.33.0',
-      scripts: rootScripts(),
+      scripts: rootScripts(surface),
       dependencies: Object.fromEntries(
         packages
           .map((entry) => [entry.name, 'workspace:*'])
@@ -1248,6 +1263,8 @@ import { fileURLToPath } from 'node:url';
 
 import { createSdkworkPublicApplicationAccessTokenVitePlugin } from '@sdkwork/iam-credential-entry/vite';
 import { defineConfig, loadEnv } from 'vite';
+import { resolveBrowserDistOutDir } from '../../../sdkwork-specs/tools/browser-dist-layout.mjs';
+import { resolveViteRuntimeProfile } from '../../../sdkwork-specs/tools/vite-runtime-profile.mjs';
 
 const appRoot = path.dirname(fileURLToPath(import.meta.url));
 
@@ -1301,10 +1318,17 @@ export default defineConfig(({ mode }) => {
   // plugin rejects every other value.
   const profileEnv = readProfileDotenv(mode);
   const env = loadEnv(mode, appRoot, '');
+  const runtimeProfile = resolveViteRuntimeProfile(mode, process.env);
   const environment = (profileEnv.VITE_SDKWORK_ENVIRONMENT ?? env.VITE_SDKWORK_ENVIRONMENT ?? '').trim();
   const profileId = (profileEnv.VITE_SDKWORK_PROFILE_ID ?? env.VITE_SDKWORK_PROFILE_ID ?? mode).trim();
 
   return {
+    resolve: {
+      // Linked sibling packages resolve React from their own pnpm store, so a
+      // dev server can load several React copies and fail with "Invalid hook
+      // call". Pin one copy for the renderer and every linked dependency.
+      dedupe: ['react', 'react-dom'],
+    },
     plugins: [
       // The committed public application access token is the only credential a
       // renderer carries before login. The plugin validates it and throws during
@@ -1319,7 +1343,7 @@ export default defineConfig(({ mode }) => {
       }),
     ],
     build: {
-      outDir: 'dist',
+      outDir: resolveBrowserDistOutDir(runtimeProfile.environment, runtimeProfile.deploymentProfile),
       emptyOutDir: true,
     },
   };
@@ -1332,7 +1356,7 @@ export default defineConfig(({ mode }) => {
       version: '0.1.0',
       type: 'module',
       packageManager: 'pnpm@10.33.0',
-      scripts: rootScripts(),
+      scripts: rootScripts(surface),
       dependencies: Object.fromEntries(
         packages
           .map((entry) => [entry.name, 'workspace:*'])
@@ -1344,6 +1368,7 @@ export default defineConfig(({ mode }) => {
       ),
       devDependencies: {
         '@types/node': 'catalog:',
+        esbuild: '^0.28.1',
         // The root tsconfig sets `types: ['node', 'miniprogram-api-typings']`, so
         // the typings package is a hard requirement of the typecheck, not an
         // optional convenience. Version range matches the sibling
@@ -1402,8 +1427,17 @@ export default defineConfig(({ mode }) => {
     // package already tracks `src/i18n/index.ts` and only authors i18n where the
     // package has none.
     const i18nIndexPath = path.join(appRoot, packageDir, 'src/i18n/index.ts');
-    const hasAuthoredI18n =
-      authoredFiles === null ? fs.existsSync(i18nIndexPath) : authoredFiles.has(rel(i18nIndexPath));
+    const i18nIndexSource = fs.existsSync(i18nIndexPath)
+      ? fs.readFileSync(i18nIndexPath, 'utf8')
+      : '';
+    const hasAuthoredI18n = i18nIndexSource.length > 0 && !i18nIndexSource.startsWith(BANNER_COMMENT);
+    // An authored barrel may still bind the generated aggregation manifest: the
+    // package authors its locale fragments and catalog but leaves
+    // `src/i18n/manifest.ts` to the generator. Deferring the manifest too would
+    // prune a file the authored barrel imports, so keep emitting it whenever the
+    // barrel references it.
+    const i18nNeedsGeneratedManifest =
+      !hasAuthoredI18n || /from\s+['"]\.\/manifest\.js['"]/u.test(i18nIndexSource);
 
     writeManifest(`${packageDir}/package.json`, packageManifest(surface, entry));
     write(
@@ -1435,6 +1469,10 @@ ${routes.length > 0 ? `## Routes\n\n${routes.map((route) => `- \`${routeId(route
       write(`${packageDir}/src/modules/index.ts`, coreModulesSource(surface, tier));
       write(`${packageDir}/src/host/index.ts`, coreHostSource(surface, tier));
       write(`${packageDir}/src/session/index.ts`, coreSessionSource(surface, tier));
+      const hasRuntimeEntry = fs.existsSync(path.join(appRoot, packageDir, 'src/runtime/iam-service.ts'));
+      if (hasRuntimeEntry) {
+        write(`${packageDir}/src/runtime/index.ts`, `${BANNER_COMMENT}\nexport * from './iam-service.js';\n`);
+      }
       write(`${packageDir}/src/composition/surface-composition.ts`, coreCompositionSource(surface, packages, tier));
       writeEntry(
         `${packageDir}/src/index.ts`,
@@ -1443,7 +1481,7 @@ export * from './modules/index.js';
 export * from './sdk/index.js';
 export * from './host/index.js';
 export * from './session/index.js';
-export * from './composition/surface-composition.js';
+${hasRuntimeEntry ? "export * from './runtime/index.js';\n" : ''}export * from './composition/surface-composition.js';
 `,
       );
       writeEntry(
@@ -1527,11 +1565,13 @@ export type ${symbolBase}MessageKey = keyof typeof ${symbolBase}Messages;
 `,
           );
         }
-        // I18N_SPEC.md section 6: the locale fragments are the authored source of
-        // truth and a thin aggregation file binds them. Both locale fragments
-        // export the same symbol name, so a bare `export *` from each of them
-        // collides (TS2308); the manifest aliases them instead, and `index.ts`
-        // re-exports only the default locale by name.
+      }
+      // I18N_SPEC.md section 6: the locale fragments are the authored source of
+      // truth and a thin aggregation file binds them. Both locale fragments
+      // export the same symbol name, so a bare `export *` from each of them
+      // collides (TS2308); the manifest aliases them instead, and `index.ts`
+      // re-exports only the default locale by name.
+      if (i18nNeedsGeneratedManifest) {
         write(
           `${packageDir}/src/i18n/manifest.ts`,
           `${BANNER_COMMENT}
@@ -1553,6 +1593,8 @@ export type ${symbolBase}LocaleMessages =
   (typeof ${symbolBase.toUpperCase()}_I18N_FRAGMENTS)[typeof ${symbolBase.toUpperCase()}_DEFAULT_LOCALE];
 `,
         );
+      }
+      if (!hasAuthoredI18n) {
         write(
           `${packageDir}/src/i18n/index.ts`,
           `${BANNER_COMMENT}
@@ -1655,8 +1697,9 @@ export const ${prefix.toUpperCase()}_COMMONS_DESIGN_TOKENS = {
  * `@sdkwork/app-topology` is a declared dependency because these scripts invoke
  * `pnpm exec sdkwork-app`; the gate rejects relying on an undeclared CLI.
  */
-function rootScripts() {
+function rootScripts(surface) {
   const specsTools = '../../../sdkwork-specs/tools';
+  const miniProgramBuild = surface.runtimeTarget !== 'browser';
   return {
     dev: 'pnpm dev:standalone',
     'dev:standalone': 'pnpm exec sdkwork-app dev --root ../.. --deployment-profile standalone',
@@ -1681,9 +1724,15 @@ function rootScripts() {
      * topology declares rather than a leftover document from the other one.
      * Sibling roots expose the same pair.
      */
-    'build:dev': `node ${specsTools}/build-browser-client.mjs --app-root . --environment dev`,
-    'build:dev:cloud': `node ${specsTools}/build-browser-client.mjs --app-root . --environment dev --deployment-profile cloud`,
-    '_sdkwork:build': `node ${specsTools}/build-browser-client.mjs --app-root . --environment dev`,
+    'build:dev': miniProgramBuild
+      ? 'node scripts/build-runtime.mjs'
+      : `node ${specsTools}/build-browser-client.mjs --app-root . --environment dev`,
+    'build:dev:cloud': miniProgramBuild
+      ? 'node scripts/build-runtime.mjs --deployment-profile cloud --environment development'
+      : `node ${specsTools}/build-browser-client.mjs --app-root . --environment dev --deployment-profile cloud`,
+    '_sdkwork:build': miniProgramBuild
+      ? 'node scripts/build-runtime.mjs'
+      : `node ${specsTools}/build-browser-client.mjs --app-root . --environment dev`,
     '_sdkwork:test': 'node --test tests/*.test.mjs',
     '_sdkwork:check': 'pnpm run typecheck && pnpm run test:config',
     '_sdkwork:verify': 'pnpm run _sdkwork:check && pnpm run _sdkwork:test',
@@ -1750,10 +1799,18 @@ function mergeManifest(previous, generated) {
  * @param {string} repoRoot absolute path of the repository root, which owns the
  *   deployment authority the runtime document is derived from
  */
-function rootEnvFile(surface, profileId, repoRoot) {
+function rootEnvFile(surface, profileId, repoRoot, appRoot) {
   const [deploymentProfile, environment] = profileId.split('.');
   const isStandalone = deploymentProfile === 'standalone';
   const topology = readProfileEnvValues(repoRoot, profileId);
+  const envPath = path.join(appRoot, `.env.${profileId}`);
+  const previousTokenLine = fs.existsSync(envPath)
+    ? fs
+        .readFileSync(envPath, 'utf8')
+        .split(/\r?\n/u)
+        .find((line) => line.trimStart().startsWith('SDKWORK_ACCESS_TOKEN='))
+    : undefined;
+  const previousToken = previousTokenLine?.slice(previousTokenLine.indexOf('=') + 1).trim();
   /**
    * `/` is the canonical same-origin SDK base of a `standalone` browser surface,
    * and the value the runtime document carries for that profile. A `cloud`
@@ -1787,6 +1844,9 @@ function rootEnvFile(surface, profileId, repoRoot) {
         { deploymentProfile, environment, profileId },
         { repositoryRoot: repoRoot, origins: cloudApiOriginsFor(repoRoot, environment) },
       );
+  if (previousToken) {
+    entries.SDKWORK_ACCESS_TOKEN = previousToken;
+  }
   return [
     `# Generated from etc/topology/${profileId}.env (${profileId}).`,
     '# Regenerate with: pnpm workflow:materialize-client-env',
@@ -1870,9 +1930,13 @@ function packageManifest(surface, entry) {
         './modules': './src/modules/index.ts',
         './host': './src/host/index.ts',
         './session': './src/session/index.ts',
+        ...(surface.runtimeTarget !== 'browser' ? { './session-persistent': './src/session/persistent.ts' } : {}),
+        ...(entry.role === 'core' ? { './runtime': './src/runtime/index.ts' } : {}),
         './composition': './src/composition/index.ts',
       }
-    : { '.': './src/index.ts' };
+    : entry.role === 'host' && surface.runtimeTarget !== 'browser'
+      ? { '.': './src/index.ts', './wechat': './src/wechat.ts' }
+      : { '.': './src/index.ts' };
 
   const dependencies = {};
   if (entry.role === 'capability') {
@@ -1917,6 +1981,7 @@ function packageManifest(surface, entry) {
   }
   if (entry.role === 'host') {
     dependencies['@sdkwork/iam-contracts'] = 'workspace:*';
+    if (surface.runtimeTarget !== 'browser') dependencies[surface.coreName] = 'workspace:*';
   }
 
   return {

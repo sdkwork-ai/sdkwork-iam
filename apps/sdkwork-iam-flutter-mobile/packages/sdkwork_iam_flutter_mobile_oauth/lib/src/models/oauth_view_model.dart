@@ -12,6 +12,9 @@ class IamFlutterMobileOauthRoutes {
 
   /// Route id of `/oauth/providers`.
   static const String providersRouteId = 'app.iam.oauth.providers';
+
+  /// Route id of `/oauth/official-accounts`.
+  static const String officialAccountsRouteId = 'app.iam.oauth.official-accounts';
 }
 
 /// Presentation state of the `oauth` capability.

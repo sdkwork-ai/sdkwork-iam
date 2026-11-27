@@ -81,7 +81,7 @@ export function SdkworkIamH5AuthThirdPartyLogin({
 
   const renderFallback = providers.length === 0;
   const iconCellClass =
-    "flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-[var(--iam-h5-auth-border)] bg-[var(--iam-h5-auth-btn-disabled-bg)] transition-transform active:scale-95";
+    "flex h-12 w-12 items-center justify-center rounded-full border border-[var(--iam-h5-auth-border)] bg-[var(--iam-h5-auth-btn-disabled-bg)] transition-transform active:scale-95";
 
   return (
     <div className="mb-4 mt-10 flex flex-col items-center">
@@ -95,28 +95,42 @@ export function SdkworkIamH5AuthThirdPartyLogin({
       <div className="flex w-full max-w-[240px] items-center justify-center gap-8">
         {renderFallback ? (
           <>
-            <div className={iconCellClass} onClick={() => onLogin(messages.thirdParty.wechat)}>
+            <button
+              type="button"
+              aria-label={messages.thirdParty.wechat}
+              className={iconCellClass}
+              onClick={() => onLogin(messages.thirdParty.wechat)}
+            >
               <WeChatGlyph />
-            </div>
-            <div className={iconCellClass} onClick={() => onLogin(messages.thirdParty.apple)}>
+            </button>
+            <button
+              type="button"
+              aria-label={messages.thirdParty.apple}
+              className={iconCellClass}
+              onClick={() => onLogin(messages.thirdParty.apple)}
+            >
               <AppleGlyph />
-            </div>
-            <div
+            </button>
+            <button
+              type="button"
+              aria-label={messages.thirdParty.google}
               className={iconCellClass + " font-serif text-[24px] text-[#4285F4]"}
               onClick={() => onLogin(messages.thirdParty.google)}
             >
               G
-            </div>
+            </button>
           </>
         ) : (
           providers.map((provider) => (
-            <div
+            <button
               key={provider.providerCode}
+              type="button"
+              aria-label={provider.displayName || provider.providerCode}
               className={iconCellClass}
               onClick={() => onLogin(provider.providerCode)}
             >
               <ProviderIcon provider={provider} />
-            </div>
+            </button>
           ))
         )}
       </div>

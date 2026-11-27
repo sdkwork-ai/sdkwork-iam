@@ -58,13 +58,24 @@ class _FakeAuthDataSource implements IamFlutterMobileAuthDataSource {
   IamFlutterMobileAuthSession? get currentSession => session;
 
   @override
-  Future<IamFlutterMobileAuthSession> signInWithPassword({
+  Future<IamFlutterMobileLoginResult> signInWithPassword({
     required String password,
     required String username,
   }) async {
     signInCalls += 1;
-    session = const IamFlutterMobileAuthSession(accessToken: 'token-1', userId: 'user-1');
-    return session!;
+    session = const IamFlutterMobileAuthSession(
+      accessToken: 'token-1',
+      authToken: 'auth-1',
+      tenantId: 'tenant-1',
+      userId: 'user-1',
+    );
+    return IamFlutterMobileLoginSessionResult(session!);
+  }
+
+  @override
+  Future<IamFlutterMobileAuthSession> selectLoginContext(
+      Map<String, String> body) async {
+    throw UnimplementedError();
   }
 
   @override
@@ -92,7 +103,8 @@ class _FakeTenantDataSource implements IamFlutterMobileTenantDataSource {
   }
 }
 
-class _FakeOrganizationDataSource implements IamFlutterMobileOrganizationDataSource {
+class _FakeOrganizationDataSource
+    implements IamFlutterMobileOrganizationDataSource {
   @override
   Future<IamFlutterMobileOrganizationPage> fetchPage({
     required int page,
@@ -101,7 +113,8 @@ class _FakeOrganizationDataSource implements IamFlutterMobileOrganizationDataSou
   }) async {
     return const IamFlutterMobileOrganizationPage(
       items: <IamFlutterMobileOrganizationRow>[
-        IamFlutterMobileOrganizationRow(id: 'org-9', title: 'Directory Acme', detail: 'org-9'),
+        IamFlutterMobileOrganizationRow(
+            id: 'org-9', title: 'Directory Acme', detail: 'org-9'),
       ],
     );
   }
@@ -139,7 +152,8 @@ const Map<String, String> _accountBindingMessages = <String, String>{
   'unlinkConfirm': 'Remove this sign-in method?',
 };
 
-class _FakeAccountBindingDataSource implements IamFlutterMobileAccountBindingDataSource {
+class _FakeAccountBindingDataSource
+    implements IamFlutterMobileAccountBindingDataSource {
   @override
   Future<IamFlutterMobileAccountBindingPolicy> loadPolicy() async {
     return const IamFlutterMobileAccountBindingPolicy(
@@ -155,7 +169,8 @@ class _FakeAccountBindingDataSource implements IamFlutterMobileAccountBindingDat
   }) async {
     return const IamFlutterMobileAccountLinkPage(
       items: <IamFlutterMobileAccountLink>[
-        IamFlutterMobileAccountLink(accountLinkId: 'link-1', provider: 'github'),
+        IamFlutterMobileAccountLink(
+            accountLinkId: 'link-1', provider: 'github'),
       ],
     );
   }
@@ -186,20 +201,23 @@ const Map<String, String> _userCenterMessages = <String, String>{
   'title': 'My profile',
 };
 
-class _FakeUserCenterDataSource implements IamFlutterMobileUserCenterDataSource {
+class _FakeUserCenterDataSource
+    implements IamFlutterMobileUserCenterDataSource {
   @override
   Future<void> changePassword(IamFlutterMobileUserPasswordDraft draft) async {}
 
   @override
   Future<IamFlutterMobileUserProfile> loadProfile() async {
-    return const IamFlutterMobileUserProfile(displayName: 'Ada', userId: 'user-1');
+    return const IamFlutterMobileUserProfile(
+        displayName: 'Ada', userId: 'user-1');
   }
 
   @override
   Future<IamFlutterMobileUserProfile> updateProfile(
     IamFlutterMobileUserProfileDraft draft,
   ) async {
-    return IamFlutterMobileUserProfile(displayName: draft.displayName, userId: 'user-1');
+    return IamFlutterMobileUserProfile(
+        displayName: draft.displayName, userId: 'user-1');
   }
 }
 
@@ -240,7 +258,8 @@ class _FakeAdminAccountBindingDataSource
   }
 
   @override
-  Future<void> savePolicy(IamFlutterMobileAdminAccountBindingPolicy policy) async {}
+  Future<void> savePolicy(
+      IamFlutterMobileAdminAccountBindingPolicy policy) async {}
 }
 
 const Map<String, String> _adminAuditMessages = <String, String>{
@@ -255,7 +274,8 @@ const Map<String, String> _adminAuditMessages = <String, String>{
   'title': 'Audit events',
 };
 
-class _FakeAdminAuditDataSource implements IamFlutterMobileAdminAuditDataSource {
+class _FakeAdminAuditDataSource
+    implements IamFlutterMobileAdminAuditDataSource {
   @override
   Future<IamFlutterMobileAdminAuditPage> fetchPage({
     required int page,
@@ -279,7 +299,8 @@ const Map<String, String> _adminOAuthMessages = <String, String>{
   'title': 'Sign-in providers',
 };
 
-class _FakeAdminOAuthDataSource implements IamFlutterMobileAdminOAuthDataSource {
+class _FakeAdminOAuthDataSource
+    implements IamFlutterMobileAdminOAuthDataSource {
   @override
   Future<IamFlutterMobileAdminOAuthProviderPage> fetchProvidersPage({
     required int page,
@@ -298,7 +319,8 @@ const Map<String, String> _adminOrganizationMessages = <String, String>{
   'title': 'Organization tree',
 };
 
-class _FakeAdminOrganizationDataSource implements IamFlutterMobileAdminOrganizationDataSource {
+class _FakeAdminOrganizationDataSource
+    implements IamFlutterMobileAdminOrganizationDataSource {
   @override
   Future<List<IamFlutterMobileAdminOrganizationNode>> loadTree() async {
     return const <IamFlutterMobileAdminOrganizationNode>[];
@@ -317,7 +339,8 @@ const Map<String, String> _adminTenantMessages = <String, String>{
   'title': 'Tenants',
 };
 
-class _FakeAdminTenantDataSource implements IamFlutterMobileAdminTenantDataSource {
+class _FakeAdminTenantDataSource
+    implements IamFlutterMobileAdminTenantDataSource {
   @override
   Future<IamFlutterMobileAdminTenantPage> fetchPage({
     required int page,
@@ -340,7 +363,8 @@ const Map<String, String> _adminPermissionMessages = <String, String>{
   'title': 'Permissions',
 };
 
-class _FakeAdminPermissionDataSource implements IamFlutterMobileAdminPermissionDataSource {
+class _FakeAdminPermissionDataSource
+    implements IamFlutterMobileAdminPermissionDataSource {
   @override
   Future<IamFlutterMobileAdminPolicyPage> fetchPoliciesPage({
     required int page,
@@ -434,7 +458,8 @@ class _FakeConsoleUserCenterDataSource
   }
 
   @override
-  Future<IamFlutterMobileConsoleUserVerificationPolicy> loadVerificationPolicy() async {
+  Future<IamFlutterMobileConsoleUserVerificationPolicy>
+      loadVerificationPolicy() async {
     return const IamFlutterMobileConsoleUserVerificationPolicy();
   }
 }
@@ -451,7 +476,8 @@ const Map<String, String> _consoleOrganizationMessages = <String, String>{
   'title': 'Organization management',
 };
 
-class _FakeConsoleOrganizationDataSource implements IamFlutterMobileConsoleOrganizationDataSource {
+class _FakeConsoleOrganizationDataSource
+    implements IamFlutterMobileConsoleOrganizationDataSource {
   @override
   Future<IamFlutterMobileConsoleOrganizationPage> fetchPage({
     required int page,
@@ -484,7 +510,8 @@ const Map<String, String> _consoleTenantMessages = <String, String>{
   'user': 'Operator',
 };
 
-class _FakeConsoleTenantDataSource implements IamFlutterMobileConsoleTenantDataSource {
+class _FakeConsoleTenantDataSource
+    implements IamFlutterMobileConsoleTenantDataSource {
   @override
   Future<IamFlutterMobileConsoleTenantOrganizationPage> fetchOrganizationsPage({
     required int page,
@@ -514,7 +541,8 @@ class _FakeOAuthDataSource implements IamFlutterMobileOAuthDataSource {
   @override
   Future<List<IamFlutterMobileOAuthProvider>> loadProviders() async {
     return const <IamFlutterMobileOAuthProvider>[
-      IamFlutterMobileOAuthProvider(displayName: 'GitHub', providerKey: 'github'),
+      IamFlutterMobileOAuthProvider(
+          displayName: 'GitHub', providerKey: 'github'),
     ];
   }
 }
@@ -569,7 +597,8 @@ Widget _shell(_FakeAuthDataSource source, {List<String>? openedUrls}) {
 }
 
 void main() {
-  testWidgets('signed out, the shell opens the sign-in screen', (WidgetTester tester) async {
+  testWidgets('signed out, the shell opens the sign-in screen',
+      (WidgetTester tester) async {
     await tester.pumpWidget(_shell(_FakeAuthDataSource()));
     await tester.pumpAndSettle();
 
@@ -579,7 +608,8 @@ void main() {
     expect(find.text('Acme'), findsNothing);
   });
 
-  testWidgets('a successful sign-in swaps to the tenant screen', (WidgetTester tester) async {
+  testWidgets('a successful sign-in swaps to the tenant screen',
+      (WidgetTester tester) async {
     final _FakeAuthDataSource source = _FakeAuthDataSource();
     await tester.pumpWidget(_shell(source));
     await tester.pumpAndSettle();
@@ -594,20 +624,23 @@ void main() {
     expect(find.text('tenant-1'), findsOneWidget);
   });
 
-  testWidgets('an existing session opens the tenant screen directly', (WidgetTester tester) async {
-    final _FakeAuthDataSource source =
-        _FakeAuthDataSource(session: const IamFlutterMobileAuthSession(accessToken: 'token-1'));
+  testWidgets('an existing session opens the tenant screen directly',
+      (WidgetTester tester) async {
+    final _FakeAuthDataSource source = _FakeAuthDataSource(
+        session: const IamFlutterMobileAuthSession(accessToken: 'token-1'));
     await tester.pumpWidget(_shell(source));
     await tester.pumpAndSettle();
 
     expect(find.text('Acme'), findsOneWidget);
   });
 
-  testWidgets('registers both screens under their cross-client route ids', (WidgetTester tester) async {
+  testWidgets('registers both screens under their cross-client route ids',
+      (WidgetTester tester) async {
     await tester.pumpWidget(_shell(_FakeAuthDataSource()));
     await tester.pumpAndSettle();
 
-    final MaterialApp app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    final MaterialApp app =
+        tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.routes, isNotNull);
     expect(app.routes!.containsKey('/auth/login'), isTrue);
     expect(app.routes!.containsKey('/auth/forgot-password'), isTrue);
@@ -634,48 +667,63 @@ void main() {
     // contribute; a mismatch would break deep links while the UI still looked
     // correct.
     final Set<String> contributed = <String>{
-      for (final RouteContribution contribution in iamFlutterMobileAuthRouteContributions)
+      for (final RouteContribution contribution
+          in iamFlutterMobileAuthRouteContributions)
         '${contribution.id}:${contribution.path}',
-      for (final RouteContribution contribution in iamFlutterMobileTenantRouteContributions)
+      for (final RouteContribution contribution
+          in iamFlutterMobileTenantRouteContributions)
         '${contribution.id}:${contribution.path}',
-      for (final RouteContribution contribution in iamFlutterMobileOrganizationRouteContributions)
+      for (final RouteContribution contribution
+          in iamFlutterMobileOrganizationRouteContributions)
         '${contribution.id}:${contribution.path}',
       for (final RouteContribution contribution
           in iamFlutterMobileAccountBindingRouteContributions)
         '${contribution.id}:${contribution.path}',
-      for (final RouteContribution contribution in iamFlutterMobileUserCenterRouteContributions)
+      for (final RouteContribution contribution
+          in iamFlutterMobileUserCenterRouteContributions)
         '${contribution.id}:${contribution.path}',
-      for (final RouteContribution contribution in iamFlutterMobileOauthRouteContributions)
+      for (final RouteContribution contribution
+          in iamFlutterMobileOauthRouteContributions)
         '${contribution.id}:${contribution.path}',
       // The console tier owns its own RouteContribution type (console-core registry), so
       // this loop infers rather than naming the app-core type.
-      for (final contribution in iamFlutterMobileConsoleTenantRouteContributions)
+      for (final contribution
+          in iamFlutterMobileConsoleTenantRouteContributions)
         '${contribution.id}:${contribution.path}',
-      for (final contribution in iamFlutterMobileConsoleOrganizationRouteContributions)
+      for (final contribution
+          in iamFlutterMobileConsoleOrganizationRouteContributions)
         '${contribution.id}:${contribution.path}',
-      for (final contribution in iamFlutterMobileConsoleAccountBindingRouteContributions)
+      for (final contribution
+          in iamFlutterMobileConsoleAccountBindingRouteContributions)
         '${contribution.id}:${contribution.path}',
-      for (final contribution in iamFlutterMobileConsoleUserCenterRouteContributions)
+      for (final contribution
+          in iamFlutterMobileConsoleUserCenterRouteContributions)
         '${contribution.id}:${contribution.path}',
     };
     expect(contributed, contains('app.iam.auth.login:/auth/login'));
-    expect(contributed, contains('app.iam.auth.forgot-password:/auth/forgot-password'));
+    expect(contributed,
+        contains('app.iam.auth.forgot-password:/auth/forgot-password'));
     expect(contributed, contains('app.iam.tenant.overview:/tenant'));
-    expect(contributed, contains('app.iam.organization.directory:/organizations'));
-    expect(contributed, contains('app.iam.account-binding.list:/user/account-binding'));
+    expect(
+        contributed, contains('app.iam.organization.directory:/organizations'));
+    expect(contributed,
+        contains('app.iam.account-binding.list:/user/account-binding'));
     expect(contributed, contains('app.iam.user-center.profile:/user/profile'));
-    expect(contributed, contains('app.iam.user-center.password:/user/password'));
+    expect(
+        contributed, contains('app.iam.user-center.password:/user/password'));
     expect(contributed, contains('app.iam.oauth.providers:/oauth/providers'));
-    expect(contributed, contains('console.iam.tenant.overview:/console/iam/tenant'));
+    expect(contributed,
+        contains('console.iam.tenant.overview:/console/iam/tenant'));
     expect(
       contributed,
       contains('console.iam.organization.directory:/console/iam/organizations'),
     );
   });
 
-  testWidgets('opens the organization directory from the tenant screen', (WidgetTester tester) async {
-    final _FakeAuthDataSource source =
-        _FakeAuthDataSource(session: const IamFlutterMobileAuthSession(accessToken: 'token-1'));
+  testWidgets('opens the organization directory from the tenant screen',
+      (WidgetTester tester) async {
+    final _FakeAuthDataSource source = _FakeAuthDataSource(
+        session: const IamFlutterMobileAuthSession(accessToken: 'token-1'));
     await tester.pumpWidget(_shell(source));
     await tester.pumpAndSettle();
 
@@ -687,13 +735,14 @@ void main() {
 
   testWidgets('opens the OAuth authorization URL through the host opener',
       (WidgetTester tester) async {
-    final _FakeAuthDataSource source =
-        _FakeAuthDataSource(session: const IamFlutterMobileAuthSession(accessToken: 'token-1'));
+    final _FakeAuthDataSource source = _FakeAuthDataSource(
+        session: const IamFlutterMobileAuthSession(accessToken: 'token-1'));
     final List<String> opened = <String>[];
     await tester.pumpWidget(_shell(source, openedUrls: opened));
     await tester.pumpAndSettle();
 
-    final NavigatorState navigator = tester.state<NavigatorState>(find.byType(Navigator).first);
+    final NavigatorState navigator =
+        tester.state<NavigatorState>(find.byType(Navigator).first);
     navigator.pushNamed('/oauth/providers');
     await tester.pumpAndSettle();
 
@@ -702,6 +751,7 @@ void main() {
 
     // The shell, not the capability package, opens the URL: this is the seam that
     // keeps platform plugins out of capability code.
-    expect(opened, <String>['https://idp.example.com/authorize?provider=github']);
+    expect(
+        opened, <String>['https://idp.example.com/authorize?provider=github']);
   });
 }

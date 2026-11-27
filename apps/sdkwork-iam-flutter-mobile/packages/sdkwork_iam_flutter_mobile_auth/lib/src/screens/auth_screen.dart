@@ -1,19 +1,11 @@
 // SDKWORK-IAM-FLUTTER-AUTH: authored screen.
-/**
- * Sign-in screen of the `auth` capability (`app.iam.auth.login`, `/auth/login`).
- *
- * Screens render state and forward intents; they hold no transport, no runtime
- * configuration and no platform-channel call (APP_FLUTTER_UI_SPEC.md).
- *
- * Copy arrives as a decoded `.arb` map so the package stays locale-neutral; the
- * shell owns asset loading and passes the fragment down.
- */
-
 import 'package:flutter/material.dart';
 import 'package:sdkwork_iam_flutter_mobile_commons/sdkwork_iam_flutter_mobile_commons.dart';
 
 import '../controllers/auth_controller.dart';
+import '../login_context.dart';
 import '../state/auth_state.dart';
+import 'auth_form_layout.dart';
 
 /// Entry screen of the `auth` capability.
 class IamFlutterMobileAuthScreen extends StatefulWidget {
@@ -23,36 +15,35 @@ class IamFlutterMobileAuthScreen extends StatefulWidget {
     this.controller,
     this.onSignedIn,
     this.onOpenForgotPassword,
+    this.onContextSelectionRequired,
   });
 
-  /// Decoded locale fragment of this capability.
   final Map<String, String> messages;
-
-  /// Injected controller; a default one is built when omitted.
   final IamFlutterMobileAuthController? controller;
-
-  /// Invoked once a session exists, so the shell can swap to the signed-in tree.
   final VoidCallback? onSignedIn;
-
-  /// Opens the password reset screen; the action is rendered only when provided.
   final VoidCallback? onOpenForgotPassword;
 
-  /// Locale key of this screen's title.
+  /// Receives the pending challenge so the host can open its dedicated route.
+  final ValueChanged<IamLoginContextSelectionChallenge>?
+      onContextSelectionRequired;
+
   static const String titleKey = 'iam.auth.login.title';
 
   @override
-  State<IamFlutterMobileAuthScreen> createState() => _IamFlutterMobileAuthScreenState();
+  State<IamFlutterMobileAuthScreen> createState() =>
+      _IamFlutterMobileAuthScreenState();
 }
 
-class _IamFlutterMobileAuthScreenState extends State<IamFlutterMobileAuthScreen> {
+class _IamFlutterMobileAuthScreenState
+    extends State<IamFlutterMobileAuthScreen> {
   late final IamFlutterMobileAuthController _controller =
       widget.controller ?? IamFlutterMobileAuthController();
-
   late final void Function() _unsubscribe;
   late IamFlutterMobileAuthState _state;
-
   final TextEditingController _account = TextEditingController();
   final TextEditingController _password = TextEditingController();
+  bool _obscurePassword = true;
+  String? _validationMessage;
 
   @override
   void initState() {
@@ -61,6 +52,10 @@ class _IamFlutterMobileAuthScreenState extends State<IamFlutterMobileAuthScreen>
     _unsubscribe = _controller.addListener((IamFlutterMobileAuthState next) {
       if (!mounted) return;
       setState(() => _state = next);
+      if (next.status == IamFlutterMobileAuthStatus.selectingContext &&
+          next.challenge != null) {
+        widget.onContextSelectionRequired?.call(next.challenge!);
+      }
     });
   }
 
@@ -76,63 +71,92 @@ class _IamFlutterMobileAuthScreenState extends State<IamFlutterMobileAuthScreen>
 
   Future<void> _submit() async {
     final String account = _account.text.trim();
-    if (account.isEmpty || _password.text.isEmpty) return;
-    final bool signedIn = await _controller.signIn(password: _password.text, username: account);
-    if (!mounted) return;
-    if (signedIn) {
-      widget.onSignedIn?.call();
+    if (account.isEmpty || _password.text.isEmpty) {
+      setState(() => _validationMessage = _message('required'));
+      return;
     }
+    setState(() => _validationMessage = null);
+    final bool signedIn =
+        await _controller.signIn(password: _password.text, username: account);
+    if (!mounted) return;
+    if (signedIn) widget.onSignedIn?.call();
   }
 
   @override
   Widget build(BuildContext context) {
+    final String? error = _validationMessage ?? _state.errorMessage;
     return SdkworkScaffold(
       titleKey: _message('title'),
-      body: ListView(
-        children: <Widget>[
-          Text(_message('subtitle'), style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: SdkworkDesignTokens.spaceMd),
-          TextField(
-            autocorrect: false,
-            decoration: InputDecoration(labelText: _message('accountLabel')),
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.next,
-            controller: _account,
-          ),
-          const SizedBox(height: SdkworkDesignTokens.spaceSm),
-          TextField(
-            decoration: InputDecoration(labelText: _message('passwordLabel')),
-            obscureText: true,
-            onSubmitted: (_) => _submit(),
-            textInputAction: TextInputAction.done,
-            controller: _password,
-          ),
-          if (_state.errorMessage != null) ...<Widget>[
+      fullBleedBody: true,
+      body: IamAuthFormLayout(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(_message('subtitle'),
+                style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: SdkworkDesignTokens.spaceMd),
+            Semantics(
+              label: _message('accountLabel'),
+              child: TextField(
+                autocorrect: false,
+                enableSuggestions: false,
+                autofillHints: const <String>[AutofillHints.username],
+                decoration:
+                    InputDecoration(labelText: _message('accountLabel')),
+                keyboardType: TextInputType.text,
+                textInputAction: TextInputAction.next,
+                controller: _account,
+              ),
+            ),
             const SizedBox(height: SdkworkDesignTokens.spaceSm),
-            Text(
-              _state.errorMessage!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            Semantics(
+              label: _message('passwordLabel'),
+              child: TextField(
+                decoration: InputDecoration(
+                  labelText: _message('passwordLabel'),
+                  suffixIcon: IconButton(
+                    tooltip: _obscurePassword
+                        ? _message('showPassword')
+                        : _message('hidePassword'),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                    icon: Icon(_obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined),
+                  ),
+                ),
+                obscureText: _obscurePassword,
+                autocorrect: false,
+                enableSuggestions: false,
+                autofillHints: const <String>[AutofillHints.password],
+                onSubmitted: (_) => _submit(),
+                textInputAction: TextInputAction.done,
+                controller: _password,
+              ),
             ),
+            if (error != null) ...<Widget>[
+              const SizedBox(height: SdkworkDesignTokens.spaceSm),
+              IamAuthErrorText(key: ValueKey<String>(error), message: error),
+            ],
+            const SizedBox(height: SdkworkDesignTokens.spaceMd),
+            FilledButton(
+              style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+              onPressed: _state.submitting ? null : _submit,
+              child: _state.submitting
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : Text(_message('submitLabel')),
+            ),
+            if (widget.onOpenForgotPassword != null)
+              TextButton(
+                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                onPressed: widget.onOpenForgotPassword,
+                child: Text(_message('forgotPasswordAction')),
+              ),
           ],
-          const SizedBox(height: SdkworkDesignTokens.spaceMd),
-          FilledButton(
-            // Disabled while submitting and while the form is incomplete: an empty
-            // submit is a validation the server should never have to answer.
-            onPressed: _state.submitting ? null : _submit,
-            child: _state.submitting
-                ? const SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(_message('submitLabel')),
-          ),
-          if (widget.onOpenForgotPassword != null)
-            TextButton(
-              onPressed: widget.onOpenForgotPassword,
-              child: Text(_message('forgotPasswordAction')),
-            ),
-        ],
+        ),
       ),
     );
   }

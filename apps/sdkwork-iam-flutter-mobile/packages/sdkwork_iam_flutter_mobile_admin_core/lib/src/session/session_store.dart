@@ -12,8 +12,11 @@ class IamFlutterMobileAdminCoreSessionContext {
     this.userId,
     this.tenantId,
     this.organizationId,
+    this.sessionId,
     this.accessToken,
+    this.authToken,
     this.refreshToken,
+    this.loginScope,
   });
 
   /// Authenticated user id.
@@ -25,14 +28,36 @@ class IamFlutterMobileAdminCoreSessionContext {
   /// Active organization id.
   final String? organizationId;
 
+  /// Server-side session id of this session.
+  final String? sessionId;
+
   /// Access token of this session, mirrored from the token manager.
   final String? accessToken;
+
+  /// User authentication token sent as `Authorization: Bearer`.
+  final String? authToken;
 
   /// Refresh token of this session, mirrored from the token manager.
   final String? refreshToken;
 
-  /// True when every field a signed-in session needs is present.
-  bool get isComplete => userId != null && accessToken != null;
+  /// Login scope (`TENANT` or `ORGANIZATION`) selected for this session.
+  final String? loginScope;
+
+  /// True only for a complete, coherent user session.
+  ///
+  /// Both session tokens and the user/tenant context are mandatory. Organization
+  /// `0` is the personal-login sentinel, never an organization session.
+  bool get isComplete {
+    if (userId == null || tenantId == null || accessToken == null || authToken == null) {
+      return false;
+    }
+    final String organization = organizationId ?? '';
+    if (loginScope == 'ORGANIZATION') {
+      return organization.isNotEmpty && organization != '0';
+    }
+    if (loginScope == 'TENANT') return organization.isEmpty || organization == '0';
+    return loginScope == null && (organization.isEmpty || organization == '0');
+  }
 }
 
 /// In-memory context store of the `admin` tier.

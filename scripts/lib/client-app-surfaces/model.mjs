@@ -554,7 +554,7 @@ export const ROUTES = [
     screen: 'context-selection',
     path: '/auth/login/context',
     titleKey: 'iam.auth.contextSelection.title',
-    auth: 'required',
+    auth: 'public',
     permissionHint: null,
     presentation: {
       pc: 'page',
@@ -686,7 +686,7 @@ export const ROUTES = [
     path: '/oauth/official-accounts',
     titleKey: 'iam.oauth.officialAccounts.title',
     auth: 'required',
-    permissionHint: 'iam:self',
+    permissionHint: 'iam.self',
     presentation: {
       pc: 'page',
       h5Mobile: 'stack',

@@ -59,7 +59,13 @@ const SCAN_LOGIN_PROVIDER_STATE_PREFIX = "p:";
 
 const WECHAT_PROVIDER = "wechat";
 
-/** Message shown when the host did not inject a verification-code client. */
+/**
+ * Message shown when the host did not inject a verification-code client.
+ *
+ * This repository has no canonical generated messaging client yet. The intended
+ * dependency is `@sdkwork/messaging-app-sdk`; until it exists, auth must fail
+ * closed rather than call an invented transport.
+ */
 export const SDKWORK_IAM_H5_AUTH_VERIFICATION_UNAVAILABLE_MESSAGE =
   "Verification code service is unavailable in this app; try password login.";
 
@@ -300,14 +306,17 @@ export function createSdkworkIamH5AuthController(
     },
     resolveScanLoginContext: () => resolveScanLoginContext(),
     logout: async () => {
-      setState({ status: "loading" });
+      setState({ lastError: undefined, status: "loading" });
       try {
         await service.auth.sessions.current.delete();
-        setState({ challenge: undefined, session: undefined, status: "ready" });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Logout failed";
         setState({ lastError: message, status: "error" });
         throw error;
+      } finally {
+        // Remote revocation is best-effort from the client's perspective. The
+        // local identity must never survive a failed DELETE.
+        setState({ challenge: undefined, session: undefined, status: "ready" });
       }
     },
     selectOrganization: async (input) => {

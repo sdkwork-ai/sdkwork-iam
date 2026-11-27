@@ -13,10 +13,10 @@ export const SDKWORK_AUTH_ICON_INPUT_CLASS_NAME =
  * the field is a pure fill surface with no outline and no focus ring.
  */
 export const SDKWORK_AUTH_ICON_FIELD_FRAME_CLASS_NAME =
-  "grid w-full overflow-hidden rounded-lg border-0 shadow-none outline-none transition-colors";
+  "sdkwork-auth-field-frame grid w-full overflow-hidden rounded-lg border-0 shadow-none outline-none transition-colors";
 
 export const SDKWORK_AUTH_PASSWORD_FRAME_CLASS_NAME =
-  "grid w-full overflow-hidden rounded-lg border-0 bg-[var(--sdkwork-auth-field-background-color,#f4f4f5)] shadow-none outline-none transition-colors dark:bg-zinc-900/70";
+  "sdkwork-auth-field-frame grid w-full overflow-hidden rounded-lg border-0 bg-[var(--sdkwork-auth-field-background-color,#f4f4f5)] shadow-none outline-none transition-colors dark:bg-zinc-900/70";
 
 export const SDKWORK_AUTH_PASSWORD_FRAME_STYLE = {
   alignItems: "center",
@@ -185,7 +185,6 @@ export const SDKWORK_AUTH_PASSWORD_INPUT_STYLE = {
   color: "var(--sdkwork-auth-field-text-color, #09090b)",
   height: "2.75rem",
   outline: "none",
-  padding: "0",
   paddingBottom: "0",
   paddingLeft: "0",
   paddingRight: "0",

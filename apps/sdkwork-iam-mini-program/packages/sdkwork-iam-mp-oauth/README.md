@@ -12,4 +12,5 @@
 ## Routes
 
 - `app.iam.oauth.providers` → `/oauth/providers` (`iam.oauth.providers.title`)
+- `app.iam.oauth.official-accounts` → `/oauth/official-accounts` (`iam.oauth.officialAccounts.title`)
 

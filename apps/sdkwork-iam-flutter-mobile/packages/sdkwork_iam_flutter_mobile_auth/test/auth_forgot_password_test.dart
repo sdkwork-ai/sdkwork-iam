@@ -28,19 +28,18 @@ const Map<String, String> _messages = <String, String>{
 };
 
 class _FakeDataSource implements IamFlutterMobileAuthDataSource {
-  _FakeDataSource({this.codeError, this.resetError});
+  _FakeDataSource({this.resetError});
 
-  final Object? codeError;
   final Object? resetError;
   final List<String> codeRequests = <String>[];
-  final List<IamFlutterMobileAuthResetDraft> resets = <IamFlutterMobileAuthResetDraft>[];
+  final List<IamFlutterMobileAuthResetDraft> resets =
+      <IamFlutterMobileAuthResetDraft>[];
 
   @override
   IamFlutterMobileAuthSession? get currentSession => null;
 
   @override
   Future<void> requestPasswordResetCode(String account) async {
-    if (codeError != null) throw codeError!;
     codeRequests.add(account);
   }
 
@@ -51,11 +50,19 @@ class _FakeDataSource implements IamFlutterMobileAuthDataSource {
   }
 
   @override
-  Future<IamFlutterMobileAuthSession> signInWithPassword({
+  Future<IamFlutterMobileLoginResult> signInWithPassword({
     required String password,
     required String username,
   }) async {
-    return const IamFlutterMobileAuthSession(accessToken: 'token');
+    return const IamFlutterMobileLoginSessionResult(
+      IamFlutterMobileAuthSession(accessToken: 'token', authToken: 'auth'),
+    );
+  }
+
+  @override
+  Future<IamFlutterMobileAuthSession> selectLoginContext(
+      Map<String, String> body) async {
+    throw UnimplementedError();
   }
 
   @override
@@ -83,7 +90,8 @@ void main() {
     await tester.pumpWidget(_screen(source));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextField, 'Phone or email'), 'ada@example.com');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Phone or email'), 'ada@example.com');
     await tester.tap(find.text('Send code'));
     await tester.pumpAndSettle();
 
@@ -97,9 +105,12 @@ void main() {
     await tester.pumpWidget(_screen(source));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextField, 'Phone or email'), 'ada@example.com');
-    await tester.enterText(find.widgetWithText(TextField, 'New password'), 'new-secret');
-    await tester.enterText(find.widgetWithText(TextField, 'Repeat new password'), 'new-secret');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Phone or email'), 'ada@example.com');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'New password'), 'new-secret');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Repeat new password'), 'new-secret');
     await tester.tap(find.text('Set new password'));
     await tester.pumpAndSettle();
 
@@ -112,10 +123,14 @@ void main() {
     await tester.pumpWidget(_screen(source));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextField, 'Phone or email'), 'ada@example.com');
-    await tester.enterText(find.widgetWithText(TextField, 'Verification code'), '123456');
-    await tester.enterText(find.widgetWithText(TextField, 'New password'), 'new-secret');
-    await tester.enterText(find.widgetWithText(TextField, 'Repeat new password'), 'other-secret');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Phone or email'), 'ada@example.com');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Verification code'), '123456');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'New password'), 'new-secret');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Repeat new password'), 'other-secret');
     await tester.tap(find.text('Set new password'));
     await tester.pumpAndSettle();
 
@@ -123,15 +138,20 @@ void main() {
     expect(source.resets, isEmpty);
   });
 
-  testWidgets('submits a valid reset and clears the secrets', (WidgetTester tester) async {
+  testWidgets('submits a valid reset and clears the secrets',
+      (WidgetTester tester) async {
     final _FakeDataSource source = _FakeDataSource();
     await tester.pumpWidget(_screen(source));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextField, 'Phone or email'), 'ada@example.com');
-    await tester.enterText(find.widgetWithText(TextField, 'Verification code'), '123456');
-    await tester.enterText(find.widgetWithText(TextField, 'New password'), 'new-secret');
-    await tester.enterText(find.widgetWithText(TextField, 'Repeat new password'), 'new-secret');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Phone or email'), 'ada@example.com');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Verification code'), '123456');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'New password'), 'new-secret');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Repeat new password'), 'new-secret');
     await tester.tap(find.text('Set new password'));
     await tester.pumpAndSettle();
 
@@ -143,17 +163,22 @@ void main() {
     expect(find.widgetWithText(TextField, 'new-secret'), findsNothing);
   });
 
-  testWidgets('a rejected reset keeps the failure on screen', (WidgetTester tester) async {
+  testWidgets('a rejected reset keeps the failure on screen',
+      (WidgetTester tester) async {
     final _FakeDataSource source = _FakeDataSource(
       resetError: StateError('The code expired.'),
     );
     await tester.pumpWidget(_screen(source));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextField, 'Phone or email'), 'ada@example.com');
-    await tester.enterText(find.widgetWithText(TextField, 'Verification code'), '000000');
-    await tester.enterText(find.widgetWithText(TextField, 'New password'), 'new-secret');
-    await tester.enterText(find.widgetWithText(TextField, 'Repeat new password'), 'new-secret');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Phone or email'), 'ada@example.com');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Verification code'), '000000');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'New password'), 'new-secret');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Repeat new password'), 'new-secret');
     await tester.tap(find.text('Set new password'));
     await tester.pumpAndSettle();
 

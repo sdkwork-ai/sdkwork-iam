@@ -20,3 +20,4 @@ export * from './host/index.js';
 export * from './session/index.js';
 export * from './runtime/iam-service.js';
 export * from './composition/surface-composition.js';
+export * from './runtime/index.js';

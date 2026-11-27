@@ -2,7 +2,7 @@
 /**
  * Route composition of the `app` tier.
  *
- * Joins the 12 `app` route contribution(s) of this tier's capability
+ * Joins the 13 `app` route contribution(s) of this tier's capability
  * packages into the order the tier navigator mounts them. Ids come from
  * `sdkwork_iam_flutter_mobile_core`, which
  * owns the registry, so this file adds no identities of its own.

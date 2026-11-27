@@ -10,6 +10,7 @@
     "./modules": "./src/modules/index.ts",
     "./host": "./src/host/index.ts",
     "./session": "./src/session/index.ts",
+    "./session-persistent": "./src/session/persistent.ts",
     "./composition": "./src/composition/index.ts"
   },
   "files": [

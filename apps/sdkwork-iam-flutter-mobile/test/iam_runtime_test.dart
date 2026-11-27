@@ -22,6 +22,7 @@ import 'package:sdkwork_iam_flutter_mobile_core/sdkwork_iam_flutter_mobile_core.
 
 const String _bootstrapToken = 'bootstrap-application-token';
 const String _sessionToken = 'session-access-token';
+const String _authToken = 'session-auth-token';
 const String _refreshToken = 'session-refresh-token';
 
 class _MemorySecureStorage extends FlutterSecureStorage {
@@ -89,15 +90,33 @@ class _MemorySecureStorage extends FlutterSecureStorage {
   }
 }
 
-IamRuntime _runtime(_MemorySecureStorage storage) {
+IamRuntime _runtime(
+  _MemorySecureStorage storage, {
+  IamCurrentSessionValidator? validator,
+}) {
   return IamRuntime.createIamRuntime(
     secureStorage: storage,
     bootstrapAccessTokenResolver: () => _bootstrapToken,
+    currentSessionValidator: validator ??
+        (_) async => <String, dynamic>{
+              'accessToken': _sessionToken,
+              'authToken': _authToken,
+              'refreshToken': _refreshToken,
+              'context': <String, dynamic>{
+                'userId': 'user-1',
+                'tenantId': 'tenant-1',
+                'organizationId': '42',
+                'sessionId': 'session-1',
+                'loginScope': 'ORGANIZATION',
+              },
+            },
   );
 }
 
 Map<String, String> _persistedSession() => <String, String>{
       iamSessionAccessTokenStorageKey: _sessionToken,
+      iamSessionAuthTokenStorageKey: _authToken,
+      iamSessionLoginScopeStorageKey: 'ORGANIZATION',
       iamSessionRefreshTokenStorageKey: _refreshToken,
       iamSessionOrganizationIdStorageKey: '42',
       iamSessionIdStorageKey: 'session-1',
@@ -106,7 +125,8 @@ Map<String, String> _persistedSession() => <String, String>{
     };
 
 void main() {
-  test('initialize seeds the bootstrap token before any SDK client exists', () async {
+  test('initialize seeds the bootstrap token before any SDK client exists',
+      () async {
     final _MemorySecureStorage storage = _MemorySecureStorage();
     final IamRuntime runtime = _runtime(storage);
 
@@ -127,7 +147,8 @@ void main() {
     expect(runtime.hasSession, isFalse);
   });
 
-  test('initialize fails closed naming the environment key and profile file', () async {
+  test('initialize fails closed naming the environment key and profile file',
+      () async {
     // No resolver and no dart-define: the production default path must reject the
     // launch instead of constructing clients without an Access-Token.
     final IamRuntime runtime = IamRuntime.createIamRuntime(
@@ -151,17 +172,21 @@ void main() {
   });
 
   test('initialize restores every persisted session field', () async {
-    final _MemorySecureStorage storage = _MemorySecureStorage(_persistedSession());
+    final _MemorySecureStorage storage =
+        _MemorySecureStorage(_persistedSession());
     final IamRuntime runtime = _runtime(storage);
 
     await runtime.initialize();
 
     expect(runtime.tokenManager.currentAccessToken, _sessionToken);
+    expect(runtime.tokenManager.currentAuthToken, _authToken);
     expect(runtime.tokenManager.currentRefreshToken, _refreshToken);
     expect(runtime.hasSession, isTrue);
-    final IamFlutterMobileCoreSessionContext? context = runtime.contextStore.current;
+    final IamFlutterMobileCoreSessionContext? context =
+        runtime.contextStore.current;
     expect(context, isNotNull);
     expect(context?.accessToken, _sessionToken);
+    expect(context?.authToken, _authToken);
     expect(context?.refreshToken, _refreshToken);
     expect(context?.userId, 'user-1');
     expect(context?.tenantId, 'tenant-1');
@@ -169,7 +194,8 @@ void main() {
     expect(context?.sessionId, 'session-1');
   });
 
-  test('initialize drops a partial persisted record instead of half-signing-in', () async {
+  test('initialize drops a partial persisted record instead of half-signing-in',
+      () async {
     final _MemorySecureStorage storage = _MemorySecureStorage(<String, String>{
       iamSessionAccessTokenStorageKey: _sessionToken,
     });
@@ -182,14 +208,17 @@ void main() {
     expect(storage.snapshot(), isEmpty);
   });
 
-  test('establishSession persists all six fields and replaces the bootstrap token', () async {
+  test('establishSession persists all fields and replaces the bootstrap token',
+      () async {
     final _MemorySecureStorage storage = _MemorySecureStorage();
     final IamRuntime runtime = _runtime(storage);
     await runtime.initialize();
 
     await runtime.establishSession(
       accessToken: _sessionToken,
+      authToken: _authToken,
       organizationId: '42',
+      loginScope: 'ORGANIZATION',
       refreshToken: _refreshToken,
       sessionId: 'session-1',
       tenantId: 'tenant-1',
@@ -197,13 +226,16 @@ void main() {
     );
 
     expect(runtime.tokenManager.currentAccessToken, _sessionToken);
+    expect(runtime.tokenManager.currentAuthToken, _authToken);
     expect(runtime.tokenManager.currentRefreshToken, _refreshToken);
     expect(runtime.hasSession, isTrue);
     expect(storage.snapshot(), _persistedSession());
   });
 
-  test('logout restores the bootstrap token and clears the persisted session', () async {
-    final _MemorySecureStorage storage = _MemorySecureStorage(_persistedSession());
+  test('logout restores the bootstrap token and clears the persisted session',
+      () async {
+    final _MemorySecureStorage storage =
+        _MemorySecureStorage(_persistedSession());
     final IamRuntime runtime = _runtime(storage);
     await runtime.initialize();
     expect(runtime.hasSession, isTrue);
@@ -211,13 +243,15 @@ void main() {
     await runtime.clearSession();
 
     expect(runtime.tokenManager.currentAccessToken, _bootstrapToken);
+    expect(runtime.tokenManager.currentAuthToken, isNull);
     expect(runtime.tokenManager.currentRefreshToken, isNull);
     expect(runtime.contextStore.current, isNull);
     expect(runtime.hasSession, isFalse);
     expect(storage.snapshot(), isEmpty);
   });
 
-  test('the runtime survives logout so the sign-in screen keeps working', () async {
+  test('the runtime survives logout so the sign-in screen keeps working',
+      () async {
     final IamRuntime runtime = _runtime(_MemorySecureStorage());
     await runtime.initialize();
     final IamRuntime created = runtime;
@@ -228,14 +262,17 @@ void main() {
     // captured it before logout keeps a live token manager with the bootstrap
     // credential.
     expect(IamRuntime.instance, same(created));
-    expect(IamRuntime.instance.tokenManager.currentAccessToken, _bootstrapToken);
+    expect(
+        IamRuntime.instance.tokenManager.currentAccessToken, _bootstrapToken);
   });
 
-  test('every committed profile carries a public token the resolver accepts', () {
+  test('every committed profile carries a public token the resolver accepts',
+      () {
     // APP_ACCESS_TOKEN_SPEC sections 1 and 3: the public application token is the
     // only credential a profile may embed, in staging and production too.
-    final List<FileSystemEntity> entries = Directory('env').listSync()..sort(
-        (FileSystemEntity left, FileSystemEntity right) => left.path.compareTo(right.path));
+    final List<FileSystemEntity> entries = Directory('env').listSync()
+      ..sort((FileSystemEntity left, FileSystemEntity right) =>
+          left.path.compareTo(right.path));
     expect(entries, isNotEmpty);
     for (final FileSystemEntity entity in entries) {
       if (entity is! File || !entity.path.endsWith('.json')) continue;
@@ -244,10 +281,13 @@ void main() {
       if (decoded is! Map<String, dynamic>) continue;
       final String? token = _readString(decoded['SDKWORK_ACCESS_TOKEN']);
       final String? environment = _readString(decoded['SDKWORK_ENVIRONMENT']);
-      expect(token, isNotNull, reason: '${entity.path} is missing SDKWORK_ACCESS_TOKEN');
-      expect(environment, isNotNull, reason: '${entity.path} is missing SDKWORK_ENVIRONMENT');
+      expect(token, isNotNull,
+          reason: '${entity.path} is missing SDKWORK_ACCESS_TOKEN');
+      expect(environment, isNotNull,
+          reason: '${entity.path} is missing SDKWORK_ENVIRONMENT');
       if (token == null || environment == null) continue;
-      expect(isSdkworkPublicApplicationAccessToken(token), isTrue, reason: entity.path);
+      expect(isSdkworkPublicApplicationAccessToken(token), isTrue,
+          reason: entity.path);
       expect(
         resolveSdkworkFlutterCredentialEntryBootstrapAccessToken(
           environment: environment,

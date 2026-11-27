@@ -125,6 +125,7 @@ describe("sdkwork-auth-pc-react oauth callback page", () => {
       await screen.findByText(/third-party login method is not available/i),
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Third-party login failed" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(/third-party login method is not available/i);
     expect(screen.queryByText(/provider is not configured/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/provider handshake/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /back to login/i })).toBeInTheDocument();
@@ -227,6 +228,7 @@ describe("sdkwork-auth-pc-react oauth callback page", () => {
     await waitFor(() => {
       expect(controller.service.signInWithOAuth).toHaveBeenCalledTimes(1);
     });
+    expect(screen.getByText(/completing third-party login\. this usually takes a moment\./i)).toHaveAttribute("role", "status");
 
     fireEvent.click(screen.getByRole("button", { name: /rerender/i }));
     expect(controller.service.signInWithOAuth).toHaveBeenCalledTimes(1);

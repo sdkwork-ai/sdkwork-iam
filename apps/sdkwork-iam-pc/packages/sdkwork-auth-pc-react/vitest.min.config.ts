@@ -15,6 +15,7 @@ const uiPcReactSrc = path.resolve(PACKAGE_DIR, "../../../../..", "sdkwork-ui/sdk
 // esbuild transforms TSX via the package tsconfig.
 export default defineConfig({
   resolve: {
+    extensions: [".mts", ".ts", ".tsx", ".mjs", ".js", ".jsx", ".json"],
     alias: {
       "@sdkwork/ui-pc-react": uiPcReactSrc,
     },

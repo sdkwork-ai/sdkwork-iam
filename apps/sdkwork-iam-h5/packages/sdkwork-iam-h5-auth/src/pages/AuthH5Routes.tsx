@@ -8,6 +8,7 @@ import type {
   SdkworkIamH5AuthSession,
 } from "../types/auth-h5-types";
 import { IAM_H5_AUTH_ROUTES } from "../types/auth-h5-types";
+import { SdkworkIamH5AuthLoginContextSelectionScreen } from "./AuthLoginContextSelectionScreen";
 import { SdkworkIamH5AuthLoginScreen } from "./AuthLoginScreen";
 import { SdkworkIamH5AuthOAuthCallbackScreen } from "./AuthOAuthCallbackScreen";
 
@@ -61,6 +62,7 @@ function isOAuthCallbackRoute(pathname: string, oauthCallbackPath: string): bool
  * host IAM service.
  */
 export function SdkworkIamH5AuthRoutes({
+  basePath = "/auth",
   controller,
   locale,
   onAuthenticated,
@@ -70,6 +72,8 @@ export function SdkworkIamH5AuthRoutes({
   oauthCallbackPath = IAM_H5_AUTH_ROUTES.callbackPath,
 }: SdkworkIamH5AuthRoutesProps) {
   const location = useLocation();
+  const contextPath = `${basePath.replace(/\/+$/u, "")}/login/context`;
+  const challenge = controller.getState().challenge;
 
   return (
     <SdkworkI18nProvider

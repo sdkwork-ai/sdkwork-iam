@@ -11,7 +11,8 @@ bool isIamLoginEligibleOrganizationId(String value) {
   return normalized.isNotEmpty && !isIamPlatformOrganizationId(normalized);
 }
 
-Map<String, String> buildPersonalLoginContextSelectionBody(String continuationToken) {
+Map<String, String> buildPersonalLoginContextSelectionBody(
+    String continuationToken) {
   return {
     'continuationToken': sdkworkTrim(continuationToken),
     'loginScope': 'TENANT',
@@ -64,15 +65,18 @@ class IamLoginContextSelectionChallenge {
 IamLoginContextSelectionChallenge? parseIamLoginContextSelectionChallenge(
   Map<String, dynamic> payload,
 ) {
-  final challengeType = _optionalString(payload['challengeType']);
+  final challengeType = _optionalString(payload['challengeType']) ??
+      _optionalString(payload['challenge_type']);
   if (challengeType != 'LOGIN_CONTEXT_SELECTION' &&
       challengeType != 'ORGANIZATION_SELECTION') {
     return null;
   }
 
-  final continuationToken = _optionalString(payload['continuationToken']);
+  final continuationToken = _optionalString(payload['continuationToken']) ??
+      _optionalString(payload['continuation_token']);
   if (continuationToken == null) {
-    return null;
+    throw const FormatException(
+        'The login-context challenge has no continuation token.');
   }
 
   final organizations = <IamLoginContextOrganizationChoice>[];
@@ -86,7 +90,8 @@ IamLoginContextSelectionChallenge? parseIamLoginContextSelectionChallenge(
       final organizationId = _optionalString(item['organizationId']) ??
           _optionalString(item['organization_id']) ??
           _optionalString(item['id']);
-      if (organizationId == null || !isIamLoginEligibleOrganizationId(organizationId)) {
+      if (organizationId == null ||
+          !isIamLoginEligibleOrganizationId(organizationId)) {
         continue;
       }
 

@@ -7,7 +7,7 @@
  * `<surface>.<domain>.<capability>.<screen>` and is identical across every IAM
  * client root and every tier; only `presentation` is platform-specific.
  *
- * This registry holds the 12 `app`-surface route(s) and imports no
+ * This registry holds the 13 `app`-surface route(s) and imports no
  * other package. Section 5 orders the flow `core, commons -> shell -> capabilities
  * -> entry -> host`, so a registry that pulled in the capability packages would be
  * an upward edge and a cycle. Capability packages instead derive their own slice
@@ -112,7 +112,7 @@ const List<RouteContribution> iamFlutterMobileCoreRouteContributions = <RouteCon
     screen: 'context-selection',
     path: '/auth/login/context',
     titleKey: 'iam.auth.contextSelection.title',
-    auth: RouteAuth.required,
+    auth: RouteAuth.public,
     presentation: 'route',
   ),
   RouteContribution(
@@ -191,6 +191,17 @@ const List<RouteContribution> iamFlutterMobileCoreRouteContributions = <RouteCon
     auth: RouteAuth.required,
     presentation: 'route',
     permissionHint: 'iam.oauth.read',
+  ),
+  RouteContribution(
+    id: 'app.iam.oauth.official-accounts',
+    surface: 'app',
+    capability: 'oauth',
+    screen: 'official-accounts',
+    path: '/oauth/official-accounts',
+    titleKey: 'iam.oauth.officialAccounts.title',
+    auth: RouteAuth.required,
+    presentation: 'route',
+    permissionHint: 'iam.self',
   ),
 ];
 

@@ -2,7 +2,8 @@
   "pages": [
     "pages/login/index",
     "pages/register/index",
-    "pages/forgot-password/index"
+    "pages/forgot-password/index",
+    "pages/context-selection/index"
   ],
   "subPackages": [
     {

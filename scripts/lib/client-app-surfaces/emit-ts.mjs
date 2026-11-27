@@ -759,7 +759,7 @@ function coreSdkSource(surface, tier = 'app') {
   /**
    * Surface flags are optional: the canonical per-profile document carries the
    * identity, the deployed API edges and the public application token
-   * (\`APP_ACCESS_TOKEN_SPEC.md\` 搂2) and does not repeat feature switches.
+   * (\`APP_ACCESS_TOKEN_SPEC.md\` §2) and does not repeat feature switches.
    */
   SDKWORK_FEATURE_APP_SURFACE?: boolean;
   SDKWORK_FEATURE_CONSOLE_SURFACE?: boolean;

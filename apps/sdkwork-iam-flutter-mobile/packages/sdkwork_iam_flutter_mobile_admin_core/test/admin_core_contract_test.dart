@@ -5,7 +5,7 @@
  * Proves the package publishes the composition surface its component spec declares.
  */
 
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_core/sdkwork_iam_flutter_mobile_admin_core.dart';
 
 void main() {

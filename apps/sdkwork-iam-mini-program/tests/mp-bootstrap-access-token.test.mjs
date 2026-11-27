@@ -185,7 +185,7 @@ test('sign-out restores the application token instead of clearing the credential
   try {
     const runtime = await bundle.bootstrapIamMpApp({ runtimeEnv: profile });
     await runtime.auth.loginPassword({ password: 'secret', username: 'alice' });
-    runtime.auth.signOut();
+    await runtime.auth.signOut();
 
     assert.equal(runtime.auth.isAuthenticated(), false, 'sign-out must clear the session');
     assert.equal(runtime.session.get(), undefined, 'sign-out must empty the session store');
@@ -275,4 +275,125 @@ test('bootstrap rejects a token that is not a public application token', async (
     /not a valid public application token/u,
     'a malformed token must fail closed',
   );
+});
+
+function challengeResponse() {
+  return new Response(
+    JSON.stringify({
+      code: 0,
+      data: {
+        challengeType: 'LOGIN_CONTEXT_SELECTION',
+        continuationToken: 'continuation-token',
+        organizations: [{ organizationId: '100001', name: 'Engineering' }],
+      },
+      traceId: 'trace-mp-context',
+    }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } },
+  );
+}
+
+test('login context continuation commits a session only after explicit selection', async () => {
+  const bundle = loadBundle();
+  const profile = readProfile();
+  let requestCount = 0;
+  const { calls, restore } = stubFetch((url) => {
+    requestCount += 1;
+    if (requestCount === 1) return challengeResponse();
+    assert.match(url, /login_context_selection/u);
+    return sessionResponse();
+  });
+  try {
+    const runtime = await bundle.bootstrapIamMpApp({ runtimeEnv: profile });
+    const result = await runtime.auth.loginPassword({ password: 'secret', username: 'alice' });
+
+    assert.equal(result.kind, 'loginContextSelectionRequired');
+    assert.equal(runtime.auth.isAuthenticated(), false, 'a continuation challenge is not an authenticated session');
+    assert.equal(runtime.auth.getLoginChallenge()?.continuationToken, 'continuation-token');
+
+    await runtime.auth.selectPersonalLogin();
+    assert.equal(runtime.auth.isAuthenticated(), true);
+    assert.equal(runtime.auth.getLoginChallenge(), undefined);
+    assert.equal(calls.length, 2);
+  } finally {
+    restore();
+  }
+});
+
+test('WeChat login exchanges the platform code through the generated OAuth contract', async () => {
+  const bundle = loadBundle();
+  const profile = readProfile();
+  const originalWx = globalThis.wx;
+  globalThis.wx = { login: async () => ({ code: 'wechat-login-code' }) };
+  const { calls, restore } = stubFetch((url) => {
+    assert.match(url, /mini_program_sessions/u);
+    return sessionResponse();
+  });
+  try {
+    const runtime = await bundle.bootstrapIamMpApp({ runtimeEnv: profile });
+    const result = await runtime.auth.loginWechat();
+
+    assert.equal(result.kind, 'session');
+    assert.equal(runtime.auth.isAuthenticated(), true);
+    assert.equal(calls.length, 1);
+  } finally {
+    restore();
+    globalThis.wx = originalWx;
+  }
+});
+
+test('sign-out clears local authentication even when remote revocation fails', async () => {
+  const bundle = loadBundle();
+  const profile = readProfile();
+  const { restore } = stubFetch((url) => {
+    if (url.endsWith('/auth/sessions')) return sessionResponse();
+    return new Response(
+      JSON.stringify({ code: 40101, traceId: 'trace-mp-sign-out' }),
+      { status: 401, headers: { 'Content-Type': 'application/problem+json' } },
+    );
+  });
+  try {
+    const runtime = await bundle.bootstrapIamMpApp({ runtimeEnv: profile });
+    await runtime.auth.loginPassword({ password: 'secret', username: 'alice' });
+
+    await assert.rejects(runtime.auth.signOut());
+    assert.equal(runtime.auth.isAuthenticated(), false);
+    assert.equal(runtime.session.get(), undefined);
+    assert.equal(runtime.service.getAccessToken(), profile.SDKWORK_ACCESS_TOKEN);
+  } finally {
+    restore();
+  }
+});
+
+test('bootstrap rejects a persisted session that the server no longer accepts', async () => {
+  const bundle = loadBundle();
+  const profile = readProfile();
+  const originalWx = globalThis.wx;
+  const storage = new Map([
+    ['sdkwork-iam-mp/session/v2', JSON.stringify({
+      accessToken: 'persisted-access-token',
+      authToken: 'persisted-auth-token',
+      refreshToken: 'persisted-refresh-token',
+    })],
+  ]);
+  globalThis.wx = {
+    getStorageSync: (key) => storage.get(key),
+    removeStorageSync: (key) => storage.delete(key),
+    setStorageSync: (key, value) => storage.set(key, value),
+  };
+  const { calls, restore } = stubFetch(() => new Response(
+    JSON.stringify({ code: 40101, traceId: 'trace-mp-restore' }),
+    { status: 401, headers: { 'Content-Type': 'application/problem+json' } },
+  ));
+  try {
+    const runtime = await bundle.bootstrapIamMpApp({ runtimeEnv: profile });
+
+    assert.equal(calls.length, 1, 'a restored session must be validated before use');
+    assert.equal(runtime.auth.isAuthenticated(), false);
+    assert.equal(runtime.session.get(), undefined);
+    assert.equal(storage.has('sdkwork-iam-mp/session/v2'), false);
+    assert.equal(runtime.service.getAccessToken(), profile.SDKWORK_ACCESS_TOKEN);
+  } finally {
+    restore();
+    globalThis.wx = originalWx;
+  }
 });

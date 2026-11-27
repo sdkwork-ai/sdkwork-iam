@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 import { createSdkworkPublicApplicationAccessTokenVitePlugin } from '@sdkwork/iam-credential-entry/vite';
 import { defineConfig, loadEnv } from 'vite';
+import { resolveBrowserDistOutDir } from '../../../sdkwork-specs/tools/browser-dist-layout.mjs';
+import { resolveViteRuntimeProfile } from '../../../sdkwork-specs/tools/vite-runtime-profile.mjs';
 
 const appRoot = path.dirname(fileURLToPath(import.meta.url));
 
@@ -58,10 +60,17 @@ export default defineConfig(({ mode }) => {
   // plugin rejects every other value.
   const profileEnv = readProfileDotenv(mode);
   const env = loadEnv(mode, appRoot, '');
+  const runtimeProfile = resolveViteRuntimeProfile(mode, process.env);
   const environment = (profileEnv.VITE_SDKWORK_ENVIRONMENT ?? env.VITE_SDKWORK_ENVIRONMENT ?? '').trim();
   const profileId = (profileEnv.VITE_SDKWORK_PROFILE_ID ?? env.VITE_SDKWORK_PROFILE_ID ?? mode).trim();
 
   return {
+    resolve: {
+      // Linked sibling packages resolve React from their own pnpm store, so a
+      // dev server can load several React copies and fail with "Invalid hook
+      // call". Pin one copy for the renderer and every linked dependency.
+      dedupe: ['react', 'react-dom'],
+    },
     plugins: [
       // The committed public application access token is the only credential a
       // renderer carries before login. The plugin validates it and throws during
@@ -76,7 +85,7 @@ export default defineConfig(({ mode }) => {
       }),
     ],
     build: {
-      outDir: 'dist',
+      outDir: resolveBrowserDistOutDir(runtimeProfile.environment, runtimeProfile.deploymentProfile),
       emptyOutDir: true,
     },
   };

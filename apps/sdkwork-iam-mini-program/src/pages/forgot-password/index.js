@@ -17,12 +17,20 @@ const MIN_PASSWORD_LENGTH = 8;
 Page({
   data: {
     account: "",
+    accountLabel: "",
+    accountPlaceholder: "",
     code: "",
+    codeLabel: "",
+    codePlaceholder: "",
     confirmPassword: "",
+    confirmPasswordLabel: "",
+    confirmPasswordPlaceholder: "",
     done: false,
     doneText: "",
     errorText: "",
     newPassword: "",
+    newPasswordLabel: "",
+    newPasswordPlaceholder: "",
     pending: false,
     pendingText: "",
     sendCodeText: "",
@@ -36,7 +44,15 @@ Page({
     const t = (key) => resolveIamMpMessage(this.locale(), key);
     wx.setNavigationBarTitle({ title: t("forgot.title") });
     this.setData({
+      accountLabel: t("forgot.account"),
+      accountPlaceholder: t("forgot.accountPlaceholder"),
+      codeLabel: t("forgot.code"),
+      codePlaceholder: t("forgot.codePlaceholder"),
+      confirmPasswordLabel: t("forgot.confirmPassword"),
+      confirmPasswordPlaceholder: t("forgot.confirmPasswordPlaceholder"),
       doneText: t("forgot.done"),
+      newPasswordLabel: t("forgot.newPassword"),
+      newPasswordPlaceholder: t("forgot.newPasswordPlaceholder"),
       pendingText: t("forgot.pending"),
       sendCodeText: t("forgot.sendCode"),
       submitText: t("forgot.action"),

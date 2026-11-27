@@ -18,6 +18,7 @@ class SdkworkScaffold extends StatelessWidget {
     required this.titleKey,
     required this.body,
     this.loading = false,
+    this.fullBleedBody = false,
   });
 
   /// Locale key of the page title.
@@ -29,16 +30,25 @@ class SdkworkScaffold extends StatelessWidget {
   /// True while the page is still fetching.
   final bool loading;
 
+  /// True when [body] owns its own padding, safe area and scroll view.
+  ///
+  /// Auth screens wrap their form in a full-bleed layout so a phone keyboard
+  /// cannot leave the submit field under a fixed inset; the scaffold then only
+  /// contributes the route frame.
+  final bool fullBleedBody;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(titleKey)),
       body: loading
           ? const SdkworkLoadingView()
-          : Padding(
-              padding: const EdgeInsets.all(SdkworkDesignTokens.spaceMd),
-              child: body,
-            ),
+          : fullBleedBody
+              ? body
+              : Padding(
+                  padding: const EdgeInsets.all(SdkworkDesignTokens.spaceMd),
+                  child: body,
+                ),
     );
   }
 }

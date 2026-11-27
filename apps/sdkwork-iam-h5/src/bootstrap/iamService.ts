@@ -16,6 +16,7 @@ import {
   createIamH5AppSdkClient,
   createIamH5RuntimeService,
   readIamH5RuntimeEnv,
+  restoreValidatedIamH5Session,
   type IamH5RuntimeService,
   type IamH5SessionSnapshot,
   type IamH5SessionStore,
@@ -24,6 +25,7 @@ import {
   createIamH5AdminBackendAdminSdkClient,
   createIamH5AdminService,
 } from "@sdkwork/iam-h5-admin-core";
+import type { IamSession } from "@sdkwork/iam-service";
 
 /**
  * Compose the runtime service for this page load.
@@ -33,6 +35,7 @@ import {
 export function createIamH5BootstrapRuntime(sessionStore: IamH5SessionStore): {
   adminService: ReturnType<typeof createIamH5AdminService>;
   detach: () => void;
+  restoreSession: () => Promise<boolean>;
   runtime: IamH5RuntimeService;
 } {
   const env = readIamH5RuntimeEnv();
@@ -47,28 +50,23 @@ export function createIamH5BootstrapRuntime(sessionStore: IamH5SessionStore): {
   const bootstrapAccessToken = readBootstrapAccessTokenFromProcessEnv();
   const resolveAccessToken = (snapshot: IamH5SessionSnapshot | undefined): string | undefined =>
     snapshot?.accessToken || bootstrapAccessToken;
-  const initialAccessToken = resolveAccessToken(sessionStore.get());
+  const initialSnapshot = sessionStore.get();
+  const initialAccessToken = resolveAccessToken(initialSnapshot);
 
   const runtime = createIamH5RuntimeService({
     baseUrl,
     ...(initialAccessToken ? { accessToken: initialAccessToken } : {}),
+    ...(initialSnapshot?.authToken ? { authToken: initialSnapshot.authToken } : {}),
     clearSession: () => {
       sessionStore.clear();
     },
-    commitSession: (session) => {
-      sessionStore.set(toSessionSnapshot(session));
+    commitSession: (session, options) => {
+      sessionStore.set(toSessionSnapshot(
+        session,
+        options?.preserveRefreshToken ? sessionStore.get()?.refreshToken : undefined,
+      ));
     },
   });
-
-  // Re-apply the token after every session change, including the one the commit
-  // callback just made: the generated client holds its own copy and a stale copy
-  // is an unauthenticated request that looks like a permission failure. A sign-out
-  // emits no session, so this falls back to the injected bootstrap token.
-  const applySession = (snapshot: IamH5SessionSnapshot | undefined) => {
-    runtime.setAccessToken(resolveAccessToken(snapshot));
-  };
-  applySession(sessionStore.get());
-  const unsubscribe = sessionStore.subscribe(applySession);
 
   // The admin surface reads backend-api resources through the same IAM service, with
   // the generated backend client attached. The credential is read at request time from
@@ -78,16 +76,33 @@ export function createIamH5BootstrapRuntime(sessionStore: IamH5SessionStore): {
   // access-token-only backend call before login is never sent credential-free.
   const backendClient = createIamH5AdminBackendAdminSdkClient({
     baseUrl: env.backendApiBaseUrl || baseUrl,
-    getAccessToken: () => resolveAccessToken(sessionStore.get()),
+    ...(initialAccessToken ? { accessToken: initialAccessToken } : {}),
+    ...(initialSnapshot?.authToken ? { authToken: initialSnapshot.authToken } : {}),
   });
   const adminService = createIamH5AdminService({
     appbaseAppClient: runtime.client,
     backendClient,
   });
 
+  // Re-apply the token pair after every session change, including the one the
+  // commit callback just made. Sign-out clears the identity token and restores
+  // only the injected public application access token.
+  const applySession = (snapshot: IamH5SessionSnapshot | undefined) => {
+    const accessToken = resolveAccessToken(snapshot);
+    runtime.setAccessToken(accessToken);
+    runtime.setAuthToken(snapshot?.authToken);
+    backendClient.setAccessToken(accessToken);
+    backendClient.setAuthToken(snapshot?.authToken);
+  };
+  applySession(sessionStore.get());
+  const unsubscribe = sessionStore.subscribe(applySession);
+
+  const restoreSession = () => restoreValidatedIamH5Session(runtime.service, sessionStore);
+
   return {
     adminService,
     detach: unsubscribe,
+    restoreSession,
     runtime,
   };
 }
@@ -97,19 +112,18 @@ export function createIamH5BootstrapRuntime(sessionStore: IamH5SessionStore): {
  * @param session - the session the service returned.
  * @returns the snapshot the store keeps.
  */
-function toSessionSnapshot(session: {
-  accessToken: string;
-  context?: { organizationId?: string; tenantId?: string };
-  refreshToken?: string;
-  sessionId?: string;
-  user?: { id?: string };
-}): IamH5SessionSnapshot {
+function toSessionSnapshot(session: IamSession, preservedRefreshToken?: string): IamH5SessionSnapshot {
+  const refreshToken = session.refreshToken || preservedRefreshToken;
+  const sessionId = session.sessionId || session.context?.sessionId;
   return {
     accessToken: session.accessToken,
-    ...(session.refreshToken ? { refreshToken: session.refreshToken } : {}),
-    ...(session.sessionId ? { sessionId: session.sessionId } : {}),
+    authToken: session.authToken,
+    ...(session.context ? { context: session.context } : {}),
+    ...(session.expiresAt !== undefined ? { expiresAt: session.expiresAt } : {}),
+    ...(refreshToken ? { refreshToken } : {}),
+    ...(sessionId ? { sessionId } : {}),
     ...(session.context?.tenantId ? { tenantId: session.context.tenantId } : {}),
     ...(session.context?.organizationId ? { organizationId: session.context.organizationId } : {}),
-    ...(session.user?.id ? { userId: session.user.id } : {}),
+    ...(session.context?.userId ? { userId: session.context.userId } : {}),
   };
 }

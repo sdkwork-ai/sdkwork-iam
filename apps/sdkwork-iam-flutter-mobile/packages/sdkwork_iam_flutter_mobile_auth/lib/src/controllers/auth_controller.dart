@@ -7,6 +7,8 @@
  * (section 5).
  */
 
+import '../auth_session_controller.dart';
+import '../login_context.dart';
 import '../services/auth_service.dart';
 import '../state/auth_state.dart';
 
@@ -32,7 +34,8 @@ class IamFlutterMobileAuthController {
   IamFlutterMobileAuthState get state => _state;
 
   /// Registers a state listener and returns its unsubscribe callback.
-  void Function() addListener(void Function(IamFlutterMobileAuthState) listener) {
+  void Function() addListener(
+      void Function(IamFlutterMobileAuthState) listener) {
     _listeners.add(listener);
     return () => _listeners.remove(listener);
   }
@@ -49,11 +52,56 @@ class IamFlutterMobileAuthController {
   ///
   /// The failure is recorded in state rather than rethrown: the screen renders
   /// [IamFlutterMobileAuthState.errorMessage], so a form submit needs no try/catch.
-  Future<bool> signIn({required String password, required String username}) async {
+  Future<bool> signIn(
+      {required String password, required String username}) async {
+    _emit(_state.asSubmitting());
+    try {
+      final IamFlutterMobileLoginResult result = await _service
+          .signInWithPassword(password: password, username: username);
+      switch (result) {
+        case IamFlutterMobileLoginSessionResult():
+          _emit(_state.signedIn(result.session));
+          return true;
+        case IamFlutterMobileLoginContextSelectionRequiredResult():
+          _emit(_state.contextSelectionRequired(result.challenge));
+          return false;
+      }
+    } catch (error) {
+      _emit(_state.failed('$error'));
+      return false;
+    }
+  }
+
+  /// Continues the stored challenge using only an explicit user choice.
+  Future<bool> selectPersonalContext() async {
+    final IamLoginContextSelectionChallenge? challenge = _state.challenge;
+    if (challenge == null) return false;
+    return _continueContext(
+        buildPersonalLoginContextSelectionBody(challenge.continuationToken));
+  }
+
+  /// Continues the stored challenge for a chosen, non-sentinel organization.
+  Future<bool> selectOrganizationContext(String organizationId) async {
+    final IamLoginContextSelectionChallenge? challenge = _state.challenge;
+    if (challenge == null) return false;
+    if (!challenge.organizations.any(
+        (IamLoginContextOrganizationChoice choice) =>
+            choice.organizationId == organizationId)) {
+      _emit(_state
+          .failed('The selected organization is not part of this challenge.'));
+      return false;
+    }
+    return _continueContext(buildOrganizationLoginContextSelectionBody(
+      challenge.continuationToken,
+      organizationId,
+    ));
+  }
+
+  Future<bool> _continueContext(Map<String, String> body) async {
     _emit(_state.asSubmitting());
     try {
       final IamFlutterMobileAuthSession session =
-          await _service.signInWithPassword(password: password, username: username);
+          await _service.selectLoginContext(body);
       _emit(_state.signedIn(session));
       return true;
     } catch (error) {
@@ -98,7 +146,8 @@ class IamFlutterMobileAuthController {
   }
 
   /// Renders a thrown value as user-safe text.
-  String _describe(Object error) => error is StateError ? error.message : '$error';
+  String _describe(Object error) =>
+      error is StateError ? error.message : '$error';
 
   /// Resolves the cross-client route id for a physical Flutter location.
   String? routeIdForPath(String path) => _service.routeIdForPath(path);

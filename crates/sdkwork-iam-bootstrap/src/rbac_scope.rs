@@ -140,11 +140,9 @@ pub async fn resolve_principal_data_scope(
     .bind(permission_code)
     .fetch_all(pg)
     .await?;
-    Ok(resolve_data_scope(
-        rows.iter().map(|(scope_kind, data_scope_kind)| {
-            (scope_kind.as_str(), data_scope_kind.as_str())
-        }),
-    ))
+    Ok(resolve_data_scope(rows.iter().map(
+        |(scope_kind, data_scope_kind)| (scope_kind.as_str(), data_scope_kind.as_str()),
+    )))
 }
 
 #[cfg(test)]
@@ -153,7 +151,10 @@ mod data_scope_tests {
 
     #[test]
     fn empty_bindings_fail_closed_to_self() {
-        assert_eq!(resolve_data_scope([] as [(&str, &str); 0]), DataScope::SelfOnly);
+        assert_eq!(
+            resolve_data_scope([] as [(&str, &str); 0]),
+            DataScope::SelfOnly
+        );
     }
 
     #[test]
@@ -177,10 +178,7 @@ mod data_scope_tests {
 
     #[test]
     fn legacy_scope_value_inherits_the_binding_scope() {
-        assert_eq!(
-            resolve_data_scope([("tenant", "scope")]),
-            DataScope::Tenant,
-        );
+        assert_eq!(resolve_data_scope([("tenant", "scope")]), DataScope::Tenant,);
         assert_eq!(
             resolve_data_scope([("organization", "scope")]),
             DataScope::Organization,

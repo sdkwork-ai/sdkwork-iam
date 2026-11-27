@@ -7,6 +7,7 @@ import type { IamH5ShellMessages } from "../../../en-US/iam/h5/shell.js";
 
 export const iamH5ShellMessages: IamH5ShellMessages = {
   loginTitle: "登录",
+  checkingSession: "正在验证登录状态…",
   notFound: {
     title: "页面不存在",
     detail: "该客户端暂时没有这个页面。",

@@ -622,8 +622,7 @@ async fn retrieve_installation_readiness_handler(
             .err()
             .expect("error response");
     };
-    if let Some(response) =
-        enforce_backend_rate_limit(pg, "backend:installations:readiness").await
+    if let Some(response) = enforce_backend_rate_limit(pg, "backend:installations:readiness").await
     {
         return response;
     }
@@ -675,8 +674,7 @@ async fn reconcile_installation_handler(
             .err()
             .expect("error response");
     };
-    if let Some(response) =
-        enforce_backend_rate_limit(pg, "backend:installations:reconcile").await
+    if let Some(response) = enforce_backend_rate_limit(pg, "backend:installations:reconcile").await
     {
         return response;
     }

@@ -1,64 +1,98 @@
-<view class="page">
-  <view class="brand">
+<view class="page auth-page">
+  <view class="brand auth-brand">
     <text class="brand-title">{{title}}</text>
   </view>
 
-  <view wx:if="{{done}}" class="card">
-    <text class="notice">{{doneText}}</text>
-    <button class="primary" bindtap="onBackToLogin">{{toLoginText}}</button>
-    <view class="links">
-      <text class="link" bindtap="onRegisterAgain">{{registerAgainText}}</text>
-    </view>
-  </view>
-
-  <view wx:else class="card">
-    <view class="field">
-      <text class="label">账号</text>
-      <input class="input" placeholder="手机号或邮箱" value="{{account}}" bindinput="onAccountInput" />
-    </view>
-
-    <view class="field">
-      <text class="label">验证码</text>
-      <view class="code-row">
-        <input
-          class="input code-input"
-          placeholder="请输入验证码"
-          value="{{code}}"
-          bindinput="onCodeInput"
-        />
-        <button
-          class="code-button"
-          disabled="{{sending || !account}}"
-          loading="{{sending}}"
-          bindtap="onSendCode"
-        >
-          {{sendCodeText}}
-        </button>
+  <view class="auth-content">
+    <view wx:if="{{done}}" class="card auth-card">
+      <text class="notice" role="status">{{doneText}}</text>
+      <button class="primary" bindtap="onBackToLogin">{{toLoginText}}</button>
+      <view class="links">
+        <button class="link" hover-class="none" bindtap="onRegisterAgain">{{registerAgainText}}</button>
       </view>
     </view>
 
-    <view class="field">
-      <text class="label">密码</text>
-      <input class="input" password placeholder="至少 8 位" value="{{password}}" bindinput="onPasswordInput" />
-    </view>
-    <view class="field">
-      <text class="label">确认密码</text>
-      <input class="input" password placeholder="再次输入密码" value="{{confirm}}" bindinput="onConfirmInput" />
-    </view>
+    <view wx:else class="card auth-card">
+      <view class="field">
+        <text class="label" id="register-account-label">{{accountLabel}}</text>
+        <input
+          class="input"
+          type="text"
+          confirm-type="next"
+          maxlength="254"
+          placeholder="{{accountPlaceholder}}"
+          value="{{account}}"
+          aria-labelledby="register-account-label"
+          bindinput="onAccountInput"
+        />
+      </view>
 
-    <text wx:if="{{errorText}}" class="error">{{errorText}}</text>
+      <view class="field">
+        <text class="label" id="register-code-label">{{codeLabel}}</text>
+        <view class="code-row">
+          <input
+            class="input code-input"
+            type="text"
+            confirm-type="next"
+            maxlength="16"
+            placeholder="{{codePlaceholder}}"
+            value="{{code}}"
+            aria-labelledby="register-code-label"
+            bindinput="onCodeInput"
+          />
+          <button
+            class="code-button"
+            disabled="{{sending || !account}}"
+            loading="{{sending}}"
+            bindtap="onSendCode"
+          >
+            {{sendCodeText}}
+          </button>
+        </view>
+      </view>
 
-    <button
-      class="primary"
-      disabled="{{pending || !account || !code || !password || !confirm}}"
-      loading="{{pending}}"
-      bindtap="onSubmit"
-    >
-      {{pending ? pendingText : title}}
-    </button>
+      <view class="field">
+        <text class="label" id="register-password-label">{{passwordLabel}}</text>
+        <input
+          class="input"
+          password
+          confirm-type="next"
+          maxlength="128"
+          placeholder="{{passwordPlaceholder}}"
+          value="{{password}}"
+          aria-labelledby="register-password-label"
+          bindinput="onPasswordInput"
+        />
+      </view>
+      <view class="field">
+        <text class="label" id="register-confirm-label">{{confirmLabel}}</text>
+        <input
+          class="input"
+          password
+          confirm-type="done"
+          maxlength="128"
+          placeholder="{{confirmPlaceholder}}"
+          value="{{confirm}}"
+          aria-labelledby="register-confirm-label"
+          bindinput="onConfirmInput"
+          bindconfirm="onSubmit"
+        />
+      </view>
 
-    <view class="links">
-      <text class="link" bindtap="onBackToLogin">{{toLoginText}}</text>
+      <text wx:if="{{errorText}}" class="error" role="alert" aria-live="assertive">{{errorText}}</text>
+
+      <button
+        class="primary"
+        disabled="{{pending || !account || !code || !password || !confirm}}"
+        loading="{{pending}}"
+        bindtap="onSubmit"
+      >
+        {{pending ? pendingText : title}}
+      </button>
+
+      <view class="links">
+        <button class="link" hover-class="none" bindtap="onBackToLogin">{{toLoginText}}</button>
+      </view>
     </view>
   </view>
 </view>

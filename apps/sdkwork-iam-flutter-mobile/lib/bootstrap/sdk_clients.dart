@@ -83,14 +83,17 @@ IamSdkClients createSdkClients() {
   final SdkworkAppClient iamFlutterMobileCore = SdkworkAppClient.withBaseUrl(
     baseUrl: env.appApiBaseUrl,
     accessToken: tokenManager.currentAccessToken,
+    authToken: tokenManager.currentAuthToken,
   );
   final SdkworkAppClient iamFlutterMobileConsoleCore = SdkworkAppClient.withBaseUrl(
     baseUrl: env.appApiBaseUrl,
     accessToken: tokenManager.currentAccessToken,
+    authToken: tokenManager.currentAuthToken,
   );
   final SdkworkBackendClient iamFlutterMobileAdminCore = SdkworkBackendClient.withBaseUrl(
     baseUrl: env.apiBaseUrl,
     accessToken: tokenManager.currentAccessToken,
+    authToken: tokenManager.currentAuthToken,
   );
 
   tokenManager.addListener((String? token) {
@@ -100,6 +103,12 @@ IamSdkClients createSdkClients() {
       setConsoleClientAccessToken: iamFlutterMobileConsoleCore.setAccessToken,
       setAdminClientAccessToken: iamFlutterMobileAdminCore.setAccessToken,
     );
+  });
+  tokenManager.addAuthTokenListener((String? token) {
+    final String authToken = token ?? '';
+    iamFlutterMobileCore.setAuthToken(authToken);
+    iamFlutterMobileConsoleCore.setAuthToken(authToken);
+    iamFlutterMobileAdminCore.setAuthToken(authToken);
   });
 
   final IamSdkClients clients = IamSdkClients(

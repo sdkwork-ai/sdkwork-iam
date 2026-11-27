@@ -2115,6 +2115,9 @@ importers:
 
   apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react:
     dependencies:
+      '@sdkwork/auth-runtime-pc-react':
+        specifier: workspace:*
+        version: link:../sdkwork-auth-runtime-pc-react
       '@sdkwork/appbase-pc-react':
         specifier: workspace:*
         version: link:../../../../../sdkwork-appbase/packages/pc-react/foundation/sdkwork-appbase-pc-react

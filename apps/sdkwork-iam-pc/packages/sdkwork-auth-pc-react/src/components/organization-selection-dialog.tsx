@@ -1,4 +1,9 @@
 import {
+  useEffect,
+  useId,
+  useRef,
+} from "react";
+import {
   Building2,
   Loader2,
   UserRound,
@@ -58,6 +63,15 @@ function resolvePersonalDisplayName(
   return personalOption?.displayName || fallback;
 }
 
+const FOCUSABLE_SELECTOR = [
+  "button:not(:disabled)",
+  "a[href]",
+  "input:not(:disabled)",
+  "select:not(:disabled)",
+  "textarea:not(:disabled)",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
+
 export function SdkworkOrganizationSelectionDialog({
   challenge,
   copy,
@@ -72,17 +86,91 @@ export function SdkworkOrganizationSelectionDialog({
   const showPersonalOption = challenge.challengeType === "LOGIN_CONTEXT_SELECTION"
     && typeof onSelectPersonal === "function";
   const isBusy = Boolean(selectedOrganizationId) || selectingPersonal;
+  const titleId = useId();
+  const descriptionId = useId();
+  const dialogRef = useRef<HTMLElement>(null);
+  const onCancelRef = useRef(onCancel);
+  const isBusyRef = useRef(isBusy);
+
+  useEffect(() => {
+    onCancelRef.current = onCancel;
+    isBusyRef.current = isBusy;
+  }, [isBusy, onCancel]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) {
+      return;
+    }
+
+    const previouslyFocusedElement = document.activeElement;
+    const previousBodyOverflow = document.body.style.overflow;
+    const firstFocusableElement = dialog.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    (firstFocusableElement ?? dialog).focus();
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (!isBusyRef.current) {
+          onCancelRef.current();
+        }
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusableElements = Array.from(
+        dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+      );
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+      if (event.shiftKey && (activeElement === firstElement || activeElement === dialog)) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && (activeElement === lastElement || !dialog.contains(activeElement))) {
+        event.preventDefault();
+        firstElement.focus();
+      } else if (!dialog.contains(activeElement)) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousBodyOverflow;
+      if (previouslyFocusedElement instanceof HTMLElement && previouslyFocusedElement.isConnected) {
+        previouslyFocusedElement.focus();
+      }
+    };
+  }, []);
+
   const organizationChoices = challenge.organizations.filter((organization) =>
     isLoginEligibleOrganizationId(organization.organizationId),
   );
 
   return (
-    <div className={`fixed inset-0 flex items-center justify-center bg-zinc-950/40 px-4 py-6 ${overlayClassName ?? "z-50"}`}>
+    <div className={`sdkwork-auth-focus-scope fixed inset-0 flex items-center justify-center bg-zinc-950/40 px-4 py-6 ${overlayClassName ?? "z-50"}`}>
       <section
-        aria-labelledby="sdkwork-auth-organization-selection-title"
+        aria-busy={isBusy}
+        aria-describedby={descriptionId}
+        aria-labelledby={titleId}
         aria-modal="true"
         className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
+        ref={dialogRef}
         role="dialog"
+        tabIndex={-1}
       >
         <div className="flex items-start gap-4">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-200">
@@ -91,11 +179,11 @@ export function SdkworkOrganizationSelectionDialog({
           <div className="min-w-0 flex-1">
             <h2
               className="text-lg font-semibold text-zinc-950 dark:text-zinc-50"
-              id="sdkwork-auth-organization-selection-title"
+              id={titleId}
             >
               {copy.title}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+            <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300" id={descriptionId}>
               {copy.description}
             </p>
           </div>
@@ -111,10 +199,14 @@ export function SdkworkOrganizationSelectionDialog({
           </div>
         ) : null}
 
+        <p aria-live="polite" className="sr-only" role="status">
+          {isBusy ? copy.selecting : ""}
+        </p>
+
         <div className="mt-6 grid gap-3">
           {showPersonalOption ? (
             <button
-              className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-left transition hover:border-primary-300 hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-500/35 disabled:cursor-wait disabled:opacity-70 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-primary-700 dark:hover:bg-primary-950/30"
+              className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-left transition hover:border-primary-300 hover:bg-primary-50 disabled:cursor-wait disabled:opacity-70 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-primary-700 dark:hover:bg-primary-950/30"
               disabled={isBusy}
               onClick={onSelectPersonal}
               type="button"
@@ -141,7 +233,7 @@ export function SdkworkOrganizationSelectionDialog({
             const isSelecting = selectedOrganizationId === organization.organizationId;
             return (
               <button
-                className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-left transition hover:border-primary-300 hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-500/35 disabled:cursor-wait disabled:opacity-70 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-primary-700 dark:hover:bg-primary-950/30"
+                className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-left transition hover:border-primary-300 hover:bg-primary-50 disabled:cursor-wait disabled:opacity-70 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-primary-700 dark:hover:bg-primary-950/30"
                 disabled={isBusy}
                 key={organization.organizationId}
                 onClick={() => onSelectOrganization(organization.organizationId)}

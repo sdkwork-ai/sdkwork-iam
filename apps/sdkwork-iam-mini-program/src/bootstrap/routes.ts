@@ -13,11 +13,12 @@ export function projectAppJson(): {
   subPackages: readonly { root: string; pages: readonly string[] }[];
 } {
   const routes = resolveBootstrapRoutes();
+  const implemented = new Set(["app.iam.auth.login","app.iam.auth.register","app.iam.auth.forgot-password","app.iam.auth.context-selection","app.iam.tenant.overview","app.iam.organization.directory","app.iam.user-center.profile","app.iam.user-center.password","app.iam.account-binding.list","console.iam.organization.directory","console.iam.account-binding.list","console.iam.user-center.profile","console.iam.tenant.overview"]);
   const pages: string[] = [];
   const subpackageMap = new Map<string, string[]>();
   for (const route of routes) {
     const placement: MiniProgramRoutePlacement | undefined = route.miniProgram;
-    if (!placement) continue;
+    if (!placement || !implemented.has(route.id)) continue;
     if (!placement.subpackage) {
       pages.push(placement.pagePath);
       continue;

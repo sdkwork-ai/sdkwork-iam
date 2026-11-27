@@ -41,14 +41,9 @@ function renderLogin(controller: SdkworkIamH5AuthController) {
   );
 }
 
-/** Clicks the round terms checkbox that precedes the terms paragraph. */
+/** Toggles the round terms checkbox (the visible span is decorative). */
 function clickTermsCheckbox() {
-  const termsText = screen.getByText(/我已阅读并同意/);
-  const checkbox = termsText.previousElementSibling as HTMLElement | null;
-  if (!checkbox) {
-    throw new Error("terms checkbox not found");
-  }
-  fireEvent.click(checkbox);
+  fireEvent.click(screen.getByRole("checkbox"));
 }
 
 describe("@sdkwork/iam-h5-auth login screen (design)", () => {
@@ -67,9 +62,9 @@ describe("@sdkwork/iam-h5-auth login screen (design)", () => {
     expect(screen.getByText("找回密码")).toBeTruthy();
     expect(screen.getByText("注册账号")).toBeTruthy();
     expect(screen.getByText("其他开放平台登录")).toBeTruthy();
-    expect(screen.getByText(/我已阅读并同意/)).toBeTruthy();
-    expect(screen.getByText("软件许可及服务协议")).toBeTruthy();
-    expect(screen.getByText("隐私保护指引")).toBeTruthy();
+    expect(screen.getByRole("checkbox")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "软件许可及服务协议" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "隐私保护指引" })).toBeTruthy();
   });
 
   it("switches to code login, register and forgot modes and back", () => {
@@ -198,12 +193,10 @@ describe("@sdkwork/iam-h5-auth login screen (design)", () => {
     renderLogin(controller);
 
     // Fallback third-party row renders the WeChat glyph (green #07C160 path).
-    const wechatGlyph = document.querySelector('svg path[fill="#07C160"]');
-    expect(wechatGlyph).not.toBeNull();
-    const iconCell = wechatGlyph?.closest("div.cursor-pointer");
-    expect(iconCell).not.toBeNull();
+    const wechatButton = screen.getByRole("button", { name: "微信" });
+    expect(wechatButton.querySelector('svg path[fill="#07C160"]')).not.toBeNull();
 
-    fireEvent.click(iconCell as HTMLElement);
+    fireEvent.click(wechatButton);
 
     await vi.waitFor(() => {
       expect(controller.beginOAuthAuthorization).toHaveBeenCalledTimes(1);
@@ -227,8 +220,8 @@ describe("@sdkwork/iam-h5-auth login screen (design)", () => {
     });
     renderLogin(controller);
 
-    const wechatGlyph = document.querySelector('svg path[fill="#07C160"]');
-    fireEvent.click(wechatGlyph?.closest("div.cursor-pointer") as HTMLElement);
+    const wechatButton = screen.getByRole("button", { name: "微信" });
+    fireEvent.click(wechatButton);
 
     await vi.waitFor(() => {
       expect(screen.getByText(/微信登录仅支持在微信中打开/)).toBeTruthy();

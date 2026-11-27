@@ -2131,7 +2131,8 @@ async fn list_oauth_providers(
     State(state): State<LocalIamState>,
     ctx: WebRequestContext,
     Query(query): Query<HashMap<String, String>>,
-) -> Response {    let policy = match postgres_pool_or_error(&state) {
+) -> Response {
+    let policy = match postgres_pool_or_error(&state) {
         Ok(pg) => effective_public_account_binding_policy(&state, pg).await,
         Err(_) => default_account_binding_policy(),
     };

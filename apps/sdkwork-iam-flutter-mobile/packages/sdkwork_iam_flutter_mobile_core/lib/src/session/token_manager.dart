@@ -9,14 +9,17 @@
 
 /// Single access/refresh token owner of the application root.
 class SdkworkTokenManager {
-  SdkworkTokenManager({String? accessToken, String? refreshToken})
+  SdkworkTokenManager({String? accessToken, String? authToken, String? refreshToken})
       : _accessToken = normalizeAccessToken(accessToken),
+        _authToken = normalizeAccessToken(authToken),
         _refreshToken = normalizeAccessToken(refreshToken);
 
   String? _accessToken;
+  String? _authToken;
   String? _refreshToken;
 
   final List<void Function(String?)> _listeners = <void Function(String?)>[];
+  final List<void Function(String?)> _authListeners = <void Function(String?)>[];
 
   /// Normalized form of one credential value: trimmed, with empty as null.
   static String? normalizeAccessToken(String? value) {
@@ -27,6 +30,9 @@ class SdkworkTokenManager {
   /// Current access token, or null when the session was cleared.
   String? get currentAccessToken => _accessToken;
 
+  /// Current user authentication token, or null when no user session exists.
+  String? get currentAuthToken => _authToken;
+
   /// Current refresh token, or null.
   String? get currentRefreshToken => _refreshToken;
 
@@ -35,6 +41,9 @@ class SdkworkTokenManager {
   /// This answers "can a credential-entry request be dispatched", not "is a user
   /// signed in": the public application access token is present before login.
   bool get hasAccessToken => _accessToken != null;
+
+  /// True when the user authentication token is held.
+  bool get hasAuthToken => _authToken != null;
 
   /// Seeds the public application access token exactly once.
   ///
@@ -49,12 +58,16 @@ class SdkworkTokenManager {
     setTokens(accessToken: normalized);
   }
 
-  /// Replaces the credential pair after a successful login or refresh.
-  void setTokens({String? accessToken, String? refreshToken}) {
+  /// Replaces the complete credential set. Omitting a token clears it.
+  void setTokens({String? accessToken, String? authToken, String? refreshToken}) {
     _accessToken = normalizeAccessToken(accessToken);
+    _authToken = normalizeAccessToken(authToken);
     _refreshToken = normalizeAccessToken(refreshToken);
     for (final void Function(String?) listener in List<void Function(String?)>.of(_listeners)) {
       listener(_accessToken);
+    }
+    for (final void Function(String?) listener in List<void Function(String?)>.of(_authListeners)) {
+      listener(_authToken);
     }
   }
 
@@ -70,5 +83,11 @@ class SdkworkTokenManager {
   void Function() addListener(void Function(String?) listener) {
     _listeners.add(listener);
     return () => _listeners.remove(listener);
+  }
+
+  /// Notifies the listener whenever the user authentication token changes.
+  void Function() addAuthTokenListener(void Function(String?) listener) {
+    _authListeners.add(listener);
+    return () => _authListeners.remove(listener);
   }
 }

@@ -1,4 +1,4 @@
-﻿// SDKWORK-CLIENT-APP-SURFACES-GENERATED: do not edit by hand; regenerate with `node scripts/materialize-client-app-surfaces.mjs`.
+// SDKWORK-CLIENT-APP-SURFACES-GENERATED: do not edit by hand; regenerate with `node scripts/materialize-client-app-surfaces.mjs`.
 /**
  * Route contribution test of `sdkwork_iam_flutter_mobile_admin_tenant`.
  *
@@ -8,8 +8,8 @@
  */
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sdkwork_iam_flutter_mobile_admin_core/sdkwork_iam_flutter_mobile_admin_core.dart';
 import 'package:sdkwork_iam_flutter_mobile_admin_tenant/sdkwork_iam_flutter_mobile_admin_tenant.dart';
+import 'package:sdkwork_iam_flutter_mobile_admin_core/sdkwork_iam_flutter_mobile_admin_core.dart';
 
 void main() {
   test('route ids and paths match the cross-client identity', () {

@@ -88,6 +88,22 @@
   "@newPasswordTooShort": {
     "description": "Validation: the new password is too short."
   },
+  "showPassword": "Show password",
+  "@showPassword": { "description": "Password visibility action." },
+  "hidePassword": "Hide password",
+  "@hidePassword": { "description": "Password visibility action." },
+  "required": "Enter your account and password.",
+  "@required": { "description": "Validation: required login field." },
+  "contextTitle": "Choose login context",
+  "@contextTitle": { "description": "Title of context selection." },
+  "contextSubtitle": "Choose how to continue. No organization is selected automatically.",
+  "@contextSubtitle": { "description": "Context selection guidance." },
+  "personalChoice": "Personal account",
+  "@personalChoice": { "description": "Tenant-scoped login choice." },
+  "contextUnavailable": "This login request has expired. Sign in again.",
+  "@contextUnavailable": { "description": "Missing challenge error." },
+  "back": "Back",
+  "@back": { "description": "Return to sign in." },
   "confirmMismatch": "The confirmation does not match.",
   "@confirmMismatch": {
     "description": "Validation: the confirmation differs from the new password."

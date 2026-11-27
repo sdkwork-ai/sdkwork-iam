@@ -96,6 +96,7 @@ await esbuild.build({
   format: "cjs",
   legalComments: "none",
   logLevel: "info",
+  minify: true,
   outfile: bundlePath,
   platform: "browser",
   // ES2020 rather than ES2019: the bundled decimal helper uses BigInt literals,

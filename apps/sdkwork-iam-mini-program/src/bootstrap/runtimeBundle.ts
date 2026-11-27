@@ -14,13 +14,23 @@
  */
 
 import {
+  buildOrganizationLoginContextSelectionBody,
+  buildPersonalLoginContextSelectionBody,
+  normalizeIamLoginContextSelectionChallenge,
+  type IamAppContext,
+  type IamLoginContextSelectionChallenge,
+} from "@sdkwork/iam-contracts";
+import {
+  createIamMpPersistentSessionStore,
+  type IamMpPersistentSession,
+  type IamMpPersistentSessionStore,
+} from "@sdkwork/iam-mp-core/session-persistent";
+import { createIamMpWechatHost } from "@sdkwork/iam-mp-host/wechat";
+import {
   IAMMP_ROUTE_CONTRIBUTIONS,
   createIamMpRuntimeService,
-  createIamMpSessionStore,
   type IamMpRuntimeEnv,
   type IamMpRuntimeService,
-  type IamMpSessionSnapshot,
-  type IamMpSessionStore,
 } from "@sdkwork/iam-mp-core";
 import { IAMMPCONSOLE_ROUTE_CONTRIBUTIONS } from "@sdkwork/iam-mp-console-core";
 
@@ -72,6 +82,7 @@ export const IAM_MP_IMPLEMENTED_ROUTE_IDS: readonly string[] = [
   "app.iam.auth.login",
   "app.iam.auth.register",
   "app.iam.auth.forgot-password",
+  "app.iam.auth.context-selection",
   "app.iam.tenant.overview",
   "app.iam.organization.directory",
   "app.iam.user-center.profile",
@@ -98,11 +109,29 @@ const MESSAGES: Record<string, { "en-US": string; "zh-CN": string }> = {
   "login.pending": { "en-US": "Signing in…", "zh-CN": "登录中…" },
   "login.toRegister": { "en-US": "Create an account", "zh-CN": "注册账号" },
   "login.toForgot": { "en-US": "Forgot password", "zh-CN": "找回密码" },
+  "login.wechat": { "en-US": "Continue with WeChat", "zh-CN": "微信一键登录" },
+  "login.or": { "en-US": "or sign in with password", "zh-CN": "或使用账号密码登录" },
+  "login.passwordVisible": { "en-US": "Show password", "zh-CN": "显示密码" },
+  "login.passwordHidden": { "en-US": "Hide password", "zh-CN": "隐藏密码" },
+  "context.title": { "en-US": "Choose a workspace", "zh-CN": "选择工作空间" },
+  "context.subtitle": {
+    "en-US": "Choose how you want to continue. Your account may belong to several organizations.",
+    "zh-CN": "请选择本次登录的工作空间，你的账号可能属于多个组织。",
+  },
+  "context.personal": { "en-US": "Personal workspace", "zh-CN": "个人空间" },
+  "context.organizations": { "en-US": "Organizations", "zh-CN": "组织" },
+  "context.retry": { "en-US": "Sign in again", "zh-CN": "重新登录" },
+  "context.unavailable": { "en-US": "This sign-in request is no longer available. Please sign in again.", "zh-CN": "登录请求已失效，请重新登录。" },
+  "context.failed": { "en-US": "Could not complete sign-in.", "zh-CN": "登录失败，请重试。" },
   "register.title": { "en-US": "Create account", "zh-CN": "注册账号" },
   "register.account": { "en-US": "Phone or email", "zh-CN": "手机号或邮箱" },
+  "register.accountPlaceholder": { "en-US": "Enter phone or email", "zh-CN": "请输入手机号或邮箱" },
   "register.code": { "en-US": "Verification code", "zh-CN": "验证码" },
+  "register.codePlaceholder": { "en-US": "Enter verification code", "zh-CN": "请输入验证码" },
   "register.password": { "en-US": "Password", "zh-CN": "密码" },
+  "register.passwordPlaceholder": { "en-US": "At least 8 characters", "zh-CN": "至少 8 位" },
   "register.confirm": { "en-US": "Confirm password", "zh-CN": "确认密码" },
+  "register.confirmPlaceholder": { "en-US": "Enter password again", "zh-CN": "再次输入密码" },
   "register.sendCode": { "en-US": "Send code", "zh-CN": "获取验证码" },
   "register.action": { "en-US": "Register", "zh-CN": "注册" },
   "register.pending": { "en-US": "Registering…", "zh-CN": "注册中…" },
@@ -111,9 +140,13 @@ const MESSAGES: Record<string, { "en-US": string; "zh-CN": string }> = {
   "register.toLogin": { "en-US": "Back to sign in", "zh-CN": "返回登录" },
   "forgot.title": { "en-US": "Reset password", "zh-CN": "找回密码" },
   "forgot.account": { "en-US": "Phone or email", "zh-CN": "手机号或邮箱" },
+  "forgot.accountPlaceholder": { "en-US": "Enter phone or email", "zh-CN": "请输入手机号或邮箱" },
   "forgot.code": { "en-US": "Verification code", "zh-CN": "验证码" },
+  "forgot.codePlaceholder": { "en-US": "Enter verification code", "zh-CN": "请输入验证码" },
   "forgot.newPassword": { "en-US": "New password", "zh-CN": "新密码" },
+  "forgot.newPasswordPlaceholder": { "en-US": "At least 8 characters", "zh-CN": "至少 8 位" },
   "forgot.confirmPassword": { "en-US": "Confirm new password", "zh-CN": "确认新密码" },
+  "forgot.confirmPasswordPlaceholder": { "en-US": "Enter new password again", "zh-CN": "再次输入新密码" },
   "forgot.sendCode": { "en-US": "Send code", "zh-CN": "获取验证码" },
   "forgot.action": { "en-US": "Update password", "zh-CN": "更新密码" },
   "forgot.pending": { "en-US": "Updating…", "zh-CN": "更新中…" },
@@ -124,6 +157,7 @@ const MESSAGES: Record<string, { "en-US": string; "zh-CN": string }> = {
   "error.accountRequired": { "en-US": "Enter your account.", "zh-CN": "请输入账号。" },
   "error.codeRequired": { "en-US": "Enter the verification code.", "zh-CN": "请输入验证码。" },
   "error.signInFailed": { "en-US": "Sign-in failed.", "zh-CN": "登录失败。" },
+  "error.passwordRequired": { "en-US": "Enter your password.", "zh-CN": "请输入密码。" },
   "error.registerFailed": { "en-US": "Registration failed.", "zh-CN": "注册失败。" },
   "error.resetFailed": { "en-US": "Password reset failed.", "zh-CN": "找回密码失败。" },
   "error.sendCodeFailed": { "en-US": "Could not send the code.", "zh-CN": "验证码发送失败。" },
@@ -278,11 +312,17 @@ export function resolveIamMpMessage(locale: string | null | undefined, key: stri
 }
 
 /** Auth operations the pages may call. */
+export type IamMpLoginResult =
+  | { kind: "session" }
+  | { challenge: IamLoginContextSelectionChallenge; kind: "loginContextSelectionRequired" };
+
 export interface IamMpAuthPort {
+  getLoginChallenge(): IamLoginContextSelectionChallenge | undefined;
   isAuthenticated(): boolean;
-  loginCode(input: { code: string; phone: string }): Promise<void>;
-  loginPassword(input: { password: string; username: string }): Promise<void>;
-  register(input: { password: string; username: string; verificationCode: string }): Promise<void>;
+  loginCode(input: { code: string; phone: string }): Promise<IamMpLoginResult>;
+  loginPassword(input: { password: string; username: string }): Promise<IamMpLoginResult>;
+  loginWechat(): Promise<IamMpLoginResult>;
+  register(input: { password: string; username: string; verificationCode: string }): Promise<IamMpLoginResult>;
   requestVerificationCode(input: { account: string; scene: string }): Promise<void>;
   resetPassword(input: {
     account: string;
@@ -290,7 +330,9 @@ export interface IamMpAuthPort {
     confirmPassword: string;
     newPassword: string;
   }): Promise<void>;
-  signOut(): void;
+  selectOrganization(organizationId: string): Promise<void>;
+  selectPersonalLogin(): Promise<void>;
+  signOut(): Promise<void>;
 }
 
 /** Navigation port, so pages never call `wx.*` directly. */
@@ -392,7 +434,7 @@ export interface IamMpRuntime {
   readonly organization: IamMpOrganizationPort;
   readonly profile: IamMpProfilePort;
   readonly service: IamMpRuntimeService;
-  readonly session: IamMpSessionStore;
+  readonly session: IamMpPersistentSessionStore;
   readonly tenant: IamMpTenantPort;
   message(key: string): string;
 }
@@ -550,31 +592,37 @@ export async function bootstrapIamMpApp(input: { runtimeEnv: IamMpRuntimeEnv }):
   // first credential-entry call.
   const bootstrapAccessToken = requireBootstrapAccessToken(runtimeEnv);
 
-  const session = createIamMpSessionStore();
+  const host = createIamMpWechatHost();
+  const session = createIamMpPersistentSessionStore(host.storage);
+  const restored = session.get();
   const service = createIamMpRuntimeService({
     baseUrl: requireAppApiBaseUrl(runtimeEnv),
     bootstrapAccessToken,
-    ...(session.get()?.accessToken ? { accessToken: session.get()?.accessToken } : {}),
+    ...(restored?.accessToken ? { accessToken: restored.accessToken } : {}),
     clearSession: () => session.clear(),
     commitSession: (next) => {
       session.set(toSnapshot(next));
     },
   });
-  // A restored session wins; otherwise the client keeps the bootstrap token that
-  // `createIamMpRuntimeService` seeded in its constructor. A cleared session
-  // (sign-out, failed refresh, or the login hand-off that clears stale
-  // credentials first) must restore that token rather than empty the credential,
-  // or the login screen loses its own `access-token-only` calls.
-  const applySession = (snapshot: IamMpSessionSnapshot | undefined) => {
+  const applySession = (snapshot: IamMpPersistentSession | undefined) => {
     service.setAccessToken(snapshot?.accessToken);
+    service.client.setAuthToken(snapshot?.authToken ?? "");
   };
-  applySession(session.get());
+  applySession(restored);
   session.subscribe(applySession);
+
+  if (restored) {
+    try {
+      await service.service.auth.sessions.current.retrieve();
+    } catch {
+      session.clear();
+    }
+  }
 
   const locale = resolveLocale();
   runtime = {
     accountBinding: createAccountBindingPort(service),
-    auth: createAuthPort(service, session),
+    auth: createAuthPort(service, session, host),
     environment: runtimeEnv,
     locale,
     message: (key) => resolveIamMpMessage(locale, key),
@@ -629,29 +677,55 @@ export function composeIamMpAppJson(): {
   };
 }
 
-function createAuthPort(service: IamMpRuntimeService, session: IamMpSessionStore): IamMpAuthPort {
+function createAuthPort(
+  service: IamMpRuntimeService,
+  session: IamMpPersistentSessionStore,
+  host: ReturnType<typeof createIamMpWechatHost>,
+): IamMpAuthPort {
+  let challenge: IamLoginContextSelectionChallenge | undefined;
+  const resolveLoginResult = (response: unknown): IamMpLoginResult => {
+    const normalized = normalizeIamLoginContextSelectionChallenge(response);
+    if (normalized) {
+      challenge = normalized;
+      return { challenge: normalized, kind: "loginContextSelectionRequired" };
+    }
+    challenge = undefined;
+    return { kind: "session" };
+  };
+
   return {
+    getLoginChallenge: () => challenge,
     isAuthenticated: () => session.get() !== undefined,
     async loginCode(input) {
-      await service.service.auth.sessions.create({
+      return resolveLoginResult(await service.service.auth.sessions.create({
         code: input.code.trim(),
         grantType: "phone_code",
         phone: input.phone.trim(),
-      });
+      }));
     },
     async loginPassword(input) {
-      await service.service.auth.sessions.create({
+      return resolveLoginResult(await service.service.auth.sessions.create({
         grantType: "password",
         password: input.password,
         username: input.username.trim(),
-      });
+      }));
+    },
+    async loginWechat() {
+      const login = await host.login();
+      if (!login.ok) {
+        throw new Error(login.error.message);
+      }
+      return resolveLoginResult(await service.service.oauth.miniProgramSessions.create({
+        jsCode: login.value,
+        providerCode: "wechat_mini_program",
+      }));
     },
     async register(input) {
-      await service.service.auth.registrations.create({
+      return resolveLoginResult(await service.service.auth.registrations.create({
         password: input.password,
         username: input.username.trim(),
         verificationCode: input.verificationCode.trim(),
-      });
+      }));
     },
     async requestVerificationCode(input) {
       await service.service.auth.verificationCodeRequests.create({
@@ -667,8 +741,31 @@ function createAuthPort(service: IamMpRuntimeService, session: IamMpSessionStore
         newPassword: input.newPassword,
       });
     },
-    signOut() {
-      session.clear();
+    async selectOrganization(organizationId) {
+      if (!challenge) {
+        throw new Error("Login context selection is not pending");
+      }
+      await service.service.auth.sessions.loginContextSelection.create(
+        buildOrganizationLoginContextSelectionBody(challenge.continuationToken, organizationId),
+      );
+      challenge = undefined;
+    },
+    async selectPersonalLogin() {
+      if (!challenge) {
+        throw new Error("Login context selection is not pending");
+      }
+      await service.service.auth.sessions.loginContextSelection.create(
+        buildPersonalLoginContextSelectionBody(challenge.continuationToken),
+      );
+      challenge = undefined;
+    },
+    async signOut() {
+      try {
+        await service.service.auth.sessions.current.delete();
+      } finally {
+        challenge = undefined;
+        session.clear();
+      }
     },
   };
 }
@@ -876,18 +973,20 @@ function readString(value: unknown): string | undefined {
 
 function toSnapshot(session: {
   accessToken: string;
-  context?: { organizationId?: string; tenantId?: string };
+  authToken: string;
+  context?: IamAppContext;
+  expiresAt?: number | string;
   refreshToken?: string;
   sessionId?: string;
   user?: { id?: string };
-}): IamMpSessionSnapshot {
+}): IamMpPersistentSession {
   return {
     accessToken: session.accessToken,
+    authToken: session.authToken,
+    ...(session.context ? { context: session.context } : {}),
+    ...(session.expiresAt !== undefined ? { expiresAt: session.expiresAt } : {}),
     ...(session.refreshToken ? { refreshToken: session.refreshToken } : {}),
     ...(session.sessionId ? { sessionId: session.sessionId } : {}),
-    ...(session.context?.tenantId ? { tenantId: session.context.tenantId } : {}),
-    ...(session.context?.organizationId ? { organizationId: session.context.organizationId } : {}),
-    ...(session.user?.id ? { userId: session.user.id } : {}),
   };
 }
 
@@ -895,7 +994,12 @@ function toSnapshot(session: {
 declare const wx: {
   getAppBaseInfo?: () => { language?: string };
   getSystemInfoSync: () => { language?: string };
+  getStorageSync: (key: string) => unknown;
+  login: (options: { timeout: number }) => Promise<{ code?: string }>;
   navigateBack: (options: { delta: number }) => void;
   navigateTo: (options: { url: string }) => void;
   reLaunch: (options: { url: string }) => void;
+  removeStorageSync: (key: string) => void;
+  setNavigationBarTitle: (options: { title: string }) => void;
+  setStorageSync: (key: string, value: string) => void;
 };

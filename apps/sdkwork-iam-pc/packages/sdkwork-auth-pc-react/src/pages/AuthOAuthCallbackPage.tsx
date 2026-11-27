@@ -42,7 +42,7 @@ import {
 } from "../auth.ts";
 import { storeSdkworkDesktopLaunchRedirect } from "../desktop-launch-handoff.ts";
 import { isSdkworkOAuthHostedPath } from "../oauth-app-paths.ts";
-import { buildSdkworkLoginRedirectPath } from "../../../sdkwork-auth-runtime-pc-react/src/sessionAuthRedirect.ts";
+import { buildSdkworkLoginRedirectPath } from "@sdkwork/auth-runtime-pc-react/sessionAuthRedirect";
 import {
   buildSdkworkAuthOAuthCallbackUri,
   isConfiguredSdkworkAuthOAuthProvider,
@@ -350,7 +350,11 @@ function SdkworkAuthOAuthCallbackPageContent({
         <div className="space-y-6 px-8 py-8">
           {isProcessing ? (
             <>
-              <p className="text-sm leading-7 text-zinc-600 dark:text-zinc-300">
+              <p
+                aria-live="polite"
+                className="text-sm leading-7 text-zinc-600 dark:text-zinc-300"
+                role="status"
+              >
                 {copy.callback.processingDescription}
               </p>
               <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/60">
@@ -362,7 +366,12 @@ function SdkworkAuthOAuthCallbackPageContent({
             </>
           ) : (
             <>
-              <p className="text-sm leading-7 text-zinc-600 dark:text-zinc-300">{errorMessage}</p>
+              <p
+                className="text-sm leading-7 text-zinc-600 dark:text-zinc-300"
+                role="alert"
+              >
+                {errorMessage}
+              </p>
               <Button
                 className="h-auto w-full py-3 font-bold"
                 onClick={() => navigate(loginRoute, { replace: true })}

@@ -38,7 +38,7 @@ describe("@sdkwork/iam-h5-auth route host", () => {
     renderRoutes("/auth/login");
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("密码登录");
     expect(screen.getByText("同意并登录")).toBeTruthy();
-    expect(screen.getByText(/我已阅读并同意/)).toBeTruthy();
+    expect(screen.getByRole("checkbox")).toBeTruthy();
   });
 
   it("renders the OAuth callback screen at the OAuth callback path", () => {

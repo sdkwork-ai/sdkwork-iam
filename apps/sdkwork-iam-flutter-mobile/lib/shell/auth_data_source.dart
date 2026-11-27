@@ -2,9 +2,9 @@
 /**
  * App-api implementation of the auth capability's data port.
  *
- * It is the one place that knows the generated SDK's session command and the
- * three places a session lives (token manager, context store, secure storage), so
- * the capability package stays network-free and storage-free.
+ * Credential-entry calls use only the public bootstrap Access-Token. A context
+ * challenge never updates the token manager, context store or secure storage;
+ * only a final complete dual-token session establishes authenticated state.
  */
 
 import 'package:sdkwork_iam_app_sdk/sdkwork_iam_app_sdk.dart';
@@ -26,81 +26,97 @@ class IamAuthAppSdkDataSource implements IamFlutterMobileAuthDataSource {
 
   @override
   IamFlutterMobileAuthSession? get currentSession {
-    // The context store, not the token manager, decides whether someone is signed
-    // in: the public application access token is present before login.
-    final IamFlutterMobileCoreSessionContext? context = _runtime.contextStore.current;
+    final IamFlutterMobileCoreSessionContext? context =
+        _runtime.contextStore.current;
     if (context == null || !context.isComplete) return null;
     return IamFlutterMobileAuthSession(
       accessToken: context.accessToken,
+      authToken: context.authToken,
       refreshToken: context.refreshToken,
       sessionId: context.sessionId,
       userId: context.userId,
+      tenantId: context.tenantId,
+      organizationId: context.organizationId,
+      loginScope: context.loginScope,
     );
   }
 
   @override
-  Future<IamFlutterMobileAuthSession> signInWithPassword({
+  Future<IamFlutterMobileLoginResult> signInWithPassword({
     required String password,
     required String username,
   }) async {
-    // The generated Dart command carries no `grantType`; the app-api infers the
-    // password grant from `username` + `password`. The TypeScript client sends an
-    // explicit `grantType`, which is recorded in the completeness ledger as a
-    // generated-SDK drift to reconcile.
-    final SdkWorkResourceResponse? response = await _client.auth.sessionsCreate(
-      AppbaseSessionCreateCommand(password: password, username: username),
+    final Map<String, dynamic> data = await _credentialEntry(
+      () => _client.auth.sessionsCreate(
+        AppbaseSessionCreateCommand(password: password, username: username),
+      ),
     );
-    final Map<String, dynamic> data = _sessionData(response);
-    final String? accessToken =
-        _readString(data['accessToken']) ?? _readString(data['access_token']);
-    if (accessToken == null) {
-      throw StateError('The sign-in response carried no access token.');
+    final IamLoginContextSelectionChallenge? challenge =
+        parseIamLoginContextSelectionChallenge(data);
+    if (challenge != null) {
+      return IamFlutterMobileLoginContextSelectionRequiredResult(challenge);
     }
-    final Map<String, dynamic> context = _readMap(data['context']);
-    final Map<String, dynamic> user = _readMap(data['user']);
-    final String? userId = _readString(context['userId']) ??
-        _readString(context['user_id']) ??
-        _readString(user['userId']) ??
-        _readString(user['id']);
-    if (userId == null) {
-      throw StateError('The sign-in response carried no user id.');
+    return IamFlutterMobileLoginSessionResult(await _commit(data));
+  }
+
+  @override
+  Future<IamFlutterMobileAuthSession> selectLoginContext(
+    Map<String, String> body,
+  ) async {
+    final String? continuationToken = body['continuationToken']?.trim();
+    if (continuationToken == null || continuationToken.isEmpty) {
+      throw const FormatException('A continuation token is required.');
     }
-    final String? refreshToken =
-        _readString(data['refreshToken']) ?? _readString(data['refresh_token']);
-    final String? tenantId = _readString(context['tenantId']) ??
-        _readString(context['tenant_id']) ??
-        _readString(user['tenantId']) ??
-        _readString(user['tenant_id']);
-    final String? organizationId =
-        _readString(context['organizationId']) ?? _readString(context['organization_id']);
-    final String? sessionId = _readString(context['sessionId']) ??
-        _readString(context['session_id']) ??
-        _readString(data['sessionId']) ??
-        _readString(data['session_id']);
-    // The runtime replaces the bootstrap token, writes the context store and
-    // mirrors the session into secure storage; the token-manager listener then
-    // pushes the new access token into every tier client.
+    final Map<String, dynamic> data = await _credentialEntry(
+      () => _client.auth.sessionsLoginContextSelectionCreate(body),
+    );
+    // A second challenge is not a final session and must fail closed.
+    final IamLoginContextSelectionChallenge? challenge =
+        parseIamLoginContextSelectionChallenge(data);
+    if (challenge != null) {
+      throw StateError(
+          'Login-context selection returned another challenge instead of a session.');
+    }
+    return _commit(data);
+  }
+
+  Future<IamFlutterMobileAuthSession> _commit(Map<String, dynamic> data) async {
+    final IamFlutterMobileAuthSession session =
+        parseIamFlutterMobileAuthSession(data);
     await _runtime.establishSession(
-      accessToken: accessToken,
-      organizationId: organizationId,
-      refreshToken: refreshToken,
-      sessionId: sessionId,
-      tenantId: tenantId,
-      userId: userId,
+      accessToken: session.accessToken!,
+      authToken: session.authToken!,
+      refreshToken: session.refreshToken,
+      userId: session.userId!,
+      tenantId: session.tenantId!,
+      organizationId: session.organizationId,
+      loginScope: session.loginScope,
+      sessionId: session.sessionId,
     );
-    return IamFlutterMobileAuthSession(
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-      sessionId: sessionId,
-      userId: userId,
-    );
+    return session;
+  }
+
+  Future<Map<String, dynamic>> _credentialEntry(
+    Future<SdkWorkResourceResponse?> Function() request,
+  ) async {
+    final String? bootstrap = _runtime.bootstrapAccessToken;
+    if (bootstrap == null) {
+      throw StateError('The bootstrap credential is unavailable.');
+    }
+    _client.setAccessToken(bootstrap);
+    _client.setAuthToken('');
+    try {
+      return _sessionData(await request());
+    } catch (_) {
+      if (!_runtime.hasSession) _runtime.restoreBootstrapAccessToken();
+      rethrow;
+    }
   }
 
   @override
   Future<void> requestPasswordResetCode(String account) async {
-    // The server sends the code; the response body carries no token the client
-    // needs, so only a transport failure can end this call badly.
-    await _client.auth.passwordResetRequestsCreate(<String, dynamic>{'account': account});
+    await _client.auth
+        .passwordResetRequestsCreate(<String, dynamic>{'account': account});
   }
 
   @override
@@ -118,8 +134,7 @@ class IamAuthAppSdkDataSource implements IamFlutterMobileAuthDataSource {
     try {
       await _client.auth.sessionsCurrentDelete();
     } catch (_) {
-      // A failed server-side sign-out must not keep the local session alive: the
-      // local credentials are cleared in `clearSession` regardless.
+      // Local credentials are cleared even when server-side sign-out fails.
     }
     await _runtime.clearSession();
   }
@@ -129,17 +144,4 @@ Map<String, dynamic> _sessionData(SdkWorkResourceResponse? response) {
   final Object? data = response?.data;
   if (data is Map) return Map<String, dynamic>.from(data);
   throw StateError('The sign-in response carried no data object.');
-}
-
-Map<String, dynamic> _readMap(Object? value) {
-  if (value is Map) return Map<String, dynamic>.from(value);
-  return <String, dynamic>{};
-}
-
-String? _readString(Object? value) {
-  if (value is String) {
-    final String trimmed = value.trim();
-    return trimmed.isEmpty ? null : trimmed;
-  }
-  return null;
 }

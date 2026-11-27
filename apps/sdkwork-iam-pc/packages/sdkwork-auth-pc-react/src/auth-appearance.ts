@@ -337,6 +337,23 @@ export const SDKWORK_AUTH_SURFACE_THEME_STYLE = `
   box-shadow: none;
 }
 
+.sdkwork-auth-surface :is(button, a[href], input, select, textarea, [tabindex]):focus-visible,
+.sdkwork-auth-focus-scope :is(button, a[href], input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--sdk-color-brand-primary, #dc2626);
+  outline-offset: 3px;
+}
+
+.sdkwork-auth-surface .sdkwork-auth-field-frame:focus-within,
+.sdkwork-auth-focus-scope .sdkwork-auth-field-frame:focus-within {
+  outline: 2px solid var(--sdk-color-brand-primary, #dc2626);
+  outline-offset: 3px;
+}
+
+.sdkwork-auth-surface .sdkwork-auth-field-frame input:focus-visible,
+.sdkwork-auth-focus-scope .sdkwork-auth-field-frame input:focus-visible {
+  outline: none;
+}
+
 .sdkwork-auth-surface input:-webkit-autofill,
 .sdkwork-auth-surface input:-webkit-autofill:hover,
 .sdkwork-auth-surface input:-webkit-autofill:focus {

@@ -32,6 +32,7 @@ void main() {
       'app.iam.auth.login',
       'app.iam.auth.oauth-callback',
       'app.iam.auth.register',
+      'app.iam.oauth.official-accounts',
       'app.iam.oauth.providers',
       'app.iam.organization.directory',
       'app.iam.tenant.overview',

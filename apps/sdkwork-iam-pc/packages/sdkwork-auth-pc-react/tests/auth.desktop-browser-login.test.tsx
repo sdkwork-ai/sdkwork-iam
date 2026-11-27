@@ -466,6 +466,7 @@ describe("sdkwork auth page desktop browser-login entry", () => {
       expect(screen.getByTestId("sdkwork-desktop-browser-login-waiting")).toBeInTheDocument();
     });
     expect(screen.getByText(/Finish signing in from your default browser/iu)).toBeInTheDocument();
+    expect(screen.getByText(/Finish signing in from your default browser/iu)).toHaveAttribute("role", "status");
 
     fireEvent.click(screen.getByTestId("sdkwork-desktop-browser-login-cancel"));
     await vi.waitFor(() => {

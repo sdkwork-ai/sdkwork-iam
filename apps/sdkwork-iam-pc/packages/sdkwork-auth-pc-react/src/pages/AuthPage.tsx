@@ -2007,7 +2007,7 @@ function SdkworkAuthPageContent({
                 >
                   <div className="flex items-start gap-3 text-sm leading-6 text-zinc-700 dark:text-zinc-200">
                     <MonitorSmartphone className="mt-0.5 h-4 w-4 shrink-0 text-primary-500" />
-                    <span>{copy.desktop.browserLoginWaitingHint}</span>
+                    <span role="status">{copy.desktop.browserLoginWaitingHint}</span>
                   </div>
                   {desktopBrowserLogin?.cancel ? (
                     <button

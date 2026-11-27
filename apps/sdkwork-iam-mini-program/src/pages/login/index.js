@@ -1,15 +1,3 @@
-/**
- * Login page.
- *
- * Authority: `MINI_PROGRAM_APP_ARCHITECTURE_SPEC.md` section 7. The page owns
- * rendering only: it calls the runtime's auth port and navigates. It does not
- * touch `wx.login`, the IAM SDK or storage — those are host, core and bootstrap
- * responsibilities.
- *
- * This is the first entry in `app.json#pages`, so it must render with no session,
- * no gateway, and a failed bootstrap.
- */
-
 const {
   IAM_MP_PAGE_PATHS,
   getIamMpRuntime,
@@ -19,14 +7,25 @@ const {
 Page({
   data: {
     account: "",
+    accountLabel: "",
+    accountPlaceholder: "",
     actionText: "",
     errorText: "",
-    pending: false,
-    pendingText: "",
+    orText: "",
     password: "",
+    passwordLabel: "",
+    passwordPlaceholder: "",
+    passwordVisible: false,
+    passwordVisibilityText: "",
+    showPasswordText: "",
+    hidePasswordText: "",
+    pending: false,
+    pendingMode: "",
+    pendingText: "",
     title: "",
     toForgot: "",
     toRegister: "",
+    wechatText: "",
   },
 
   onLoad() {
@@ -35,45 +34,86 @@ Page({
     const t = (key) => resolveIamMpMessage(locale, key);
     wx.setNavigationBarTitle({ title: t("login.title") });
     this.setData({
+      accountLabel: t("login.account"),
+      accountPlaceholder: t("login.account"),
       actionText: t("login.action"),
+      orText: t("login.or"),
+      passwordLabel: t("login.password"),
+      passwordPlaceholder: t("login.password"),
+      passwordVisibilityText: t("login.passwordVisible"),
+      showPasswordText: t("login.passwordVisible"),
+      hidePasswordText: t("login.passwordHidden"),
       pendingText: t("login.pending"),
       title: t("login.title"),
       toForgot: t("login.toForgot"),
       toRegister: t("login.toRegister"),
+      wechatText: t("login.wechat"),
     });
 
     if (!app.globalData.runtimeReady) {
-      // Bootstrap failed in `app.js`; that reason is the only actionable text.
       this.setData({ errorText: app.globalData.runtimeError || t("common.runtimeUnavailable") });
     }
   },
 
   onAccountInput(event) {
-    this.setData({ account: event.detail.value });
+    this.setData({ account: event.detail.value, errorText: "" });
   },
 
   onPasswordInput(event) {
-    this.setData({ password: event.detail.value });
+    this.setData({ password: event.detail.value, errorText: "" });
+  },
+
+  onTogglePassword() {
+    const visible = !this.data.passwordVisible;
+    this.setData({
+      passwordVisible: visible,
+      passwordVisibilityText: this.data.passwordVisible ? this.data.hidePasswordText : this.data.showPasswordText,
+    });
+  },
+
+  completeLogin(result) {
+    if (result.kind === "loginContextSelectionRequired") {
+      getIamMpRuntime().navigation.navigateTo(IAM_MP_PAGE_PATHS.contextSelection);
+      return;
+    }
+    getIamMpRuntime().navigation.reLaunch(IAM_MP_PAGE_PATHS.tenantOverview);
   },
 
   async onSubmit() {
     if (this.data.pending) return;
+    const t = (key) => resolveIamMpMessage(this.locale(), key);
     const account = this.data.account.trim();
     if (!account) {
-      this.setData({ errorText: resolveIamMpMessage(this.locale(), "error.accountRequired") });
+      this.setData({ errorText: t("error.accountRequired") });
       return;
     }
-    this.setData({ errorText: "", pending: true });
+    if (!this.data.password) {
+      this.setData({ errorText: t("error.passwordRequired") });
+      return;
+    }
+    this.setData({ errorText: "", pending: true, pendingMode: "password" });
     try {
-      const runtime = getIamMpRuntime();
-      await runtime.auth.loginPassword({ password: this.data.password, username: account });
-      runtime.navigation.reLaunch(IAM_MP_PAGE_PATHS.tenantOverview);
+      this.completeLogin(await getIamMpRuntime().auth.loginPassword({
+        password: this.data.password,
+        username: account,
+      }));
     } catch (error) {
-      this.setData({
-        errorText: error && error.message ? error.message : resolveIamMpMessage(this.locale(), "error.signInFailed"),
-      });
+      this.setData({ errorText: error?.message || t("error.signInFailed") });
     } finally {
-      this.setData({ pending: false });
+      this.setData({ pending: false, pendingMode: "" });
+    }
+  },
+
+  async onWechatLogin() {
+    if (this.data.pending) return;
+    const t = (key) => resolveIamMpMessage(this.locale(), key);
+    this.setData({ errorText: "", pending: true, pendingMode: "wechat" });
+    try {
+      this.completeLogin(await getIamMpRuntime().auth.loginWechat());
+    } catch (error) {
+      this.setData({ errorText: error?.message || t("error.signInFailed") });
+    } finally {
+      this.setData({ pending: false, pendingMode: "" });
     }
   },
 

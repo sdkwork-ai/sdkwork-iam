@@ -79,7 +79,8 @@
     ],
     "requiredPorts": [],
     "routeIds": [
-      "app.iam.oauth.providers"
+      "app.iam.oauth.providers",
+      "app.iam.oauth.official-accounts"
     ],
     "permissionComposition": {
       "inheritanceMode": "module-catalog-with-overrides",

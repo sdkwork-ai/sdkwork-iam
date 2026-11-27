@@ -1,29 +1,66 @@
-// SDKWORK-CLIENT-APP-SURFACES-GENERATED: do not edit by hand; regenerate with `node scripts/materialize-client-app-surfaces.mjs`.
-import type { ReactElement, ReactNode } from 'react';
-import type { IamH5RouteContribution } from '@sdkwork/iam-h5-core';
+// SDKWORK-IAM-H5-BOOTSTRAP: authored application composition.
+import { useEffect, type ReactElement, type ReactNode } from "react";
 
-import { createIamH5SessionStore } from '@sdkwork/iam-h5-core';
-
-const sessionStore = createIamH5SessionStore();
+export interface AuthGateRoute {
+  access: "protected" | "public";
+  path: string;
+}
 
 export interface AuthGateProps {
+  authenticated: boolean;
   children: ReactNode;
-  routes: readonly IamH5RouteContribution[];
+  guestOnlyPaths: readonly string[];
+  loading: boolean;
+  loadingLabel: string;
+  loginPath: string;
+  onRedirect: (path: string) => void;
+  path: string;
+  postLoginPath: string;
+  routes: readonly AuthGateRoute[];
 }
 
 /**
- * AuthGate reads the shared session store and renders the public route set
- * while the session is empty. Route guards stay in shell/runtime, never in
- * capability packages (APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC §7).
+ * Fail-closed route guard for the H5 root.
+ *
+ * Protected content is never rendered while bootstrap validation is pending or
+ * while the active route is anonymous. Authentication-only screens redirect an
+ * already authenticated visitor to the post-login landing route.
  */
-export function AuthGate({ children, routes }: AuthGateProps): ReactElement {
-  const session = sessionStore.get();
-  const visible = session
-    ? routes
-    : routes.filter((route) => route.auth === 'public');
-  return (
-    <div data-authenticated={session ? 'true' : 'false'} data-visible-routes={visible.length}>
-      {children}
-    </div>
-  );
+export function AuthGate({
+  authenticated,
+  children,
+  guestOnlyPaths,
+  loading,
+  loadingLabel,
+  loginPath,
+  onRedirect,
+  path,
+  postLoginPath,
+  routes,
+}: AuthGateProps): ReactElement {
+  const activeRoute = routes.find((route) => route.path === path);
+  const requiresLogin = !loading && activeRoute?.access === "protected" && !authenticated;
+  const redirectAuthenticatedGuest = !loading
+    && authenticated
+    && guestOnlyPaths.includes(path);
+
+  useEffect(() => {
+    if (requiresLogin) onRedirect(loginPath);
+    else if (redirectAuthenticatedGuest) onRedirect(postLoginPath);
+  }, [onRedirect, postLoginPath, redirectAuthenticatedGuest, requiresLogin, loginPath]);
+
+  if (loading || requiresLogin || redirectAuthenticatedGuest) {
+    return (
+      <div
+        aria-live="polite"
+        className="flex min-h-[100dvh] items-center justify-center bg-[var(--iam-h5-auth-bg)] px-8 text-center text-[14px] text-[var(--iam-h5-auth-text-sub)]"
+        data-auth-gate-state={loading ? "loading" : "redirecting"}
+        role="status"
+      >
+        {loadingLabel}
+      </div>
+    );
+  }
+
+  return <div data-authenticated={authenticated ? "true" : "false"}>{children}</div>;
 }

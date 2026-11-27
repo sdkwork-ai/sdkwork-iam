@@ -18,6 +18,7 @@ export function createiamH5OauthService(input: CreateiamH5OauthServiceInput): ia
       void service;
       return [
         'providers',
+        'official-accounts',
       ];
     },
   };

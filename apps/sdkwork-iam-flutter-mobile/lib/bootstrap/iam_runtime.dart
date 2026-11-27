@@ -1,5 +1,6 @@
 // SDKWORK-CLIENT-APP-SURFACES-GENERATED: do not edit by hand; regenerate with `node scripts/materialize-client-app-surfaces.mjs`.
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:sdkwork_iam_app_sdk/sdkwork_iam_app_sdk.dart';
 import 'package:sdkwork_iam_flutter_mobile_core/sdkwork_iam_flutter_mobile_core.dart';
 
 import 'environment.dart';
@@ -10,11 +11,18 @@ import 'environment.dart';
 /// so seed, restore and clear are exercised without platform channels.
 typedef IamBootstrapAccessTokenResolver = String Function();
 
+/// Validates a persisted session through the generated current-session API.
+typedef IamCurrentSessionValidator = Future<Map<String, dynamic>> Function(
+  IamFlutterMobileCoreSessionContext session,
+);
+
 /// Secure-storage keys of the session fields persisted at login.
 ///
 /// The values are session tokens and identifiers, never the public application
 /// access token: that one is rebuilt from the committed profile at launch.
 const String iamSessionAccessTokenStorageKey = 'sdkwork.iam.session.access_token';
+const String iamSessionAuthTokenStorageKey = 'sdkwork.iam.session.auth_token';
+const String iamSessionLoginScopeStorageKey = 'sdkwork.iam.session.login_scope';
 const String iamSessionRefreshTokenStorageKey = 'sdkwork.iam.session.refresh_token';
 const String iamSessionUserIdStorageKey = 'sdkwork.iam.session.user_id';
 const String iamSessionTenantIdStorageKey = 'sdkwork.iam.session.tenant_id';
@@ -23,6 +31,8 @@ const String iamSessionIdStorageKey = 'sdkwork.iam.session.session_id';
 
 const List<String> iamSessionStorageKeys = <String>[
   iamSessionAccessTokenStorageKey,
+  iamSessionAuthTokenStorageKey,
+  iamSessionLoginScopeStorageKey,
   iamSessionRefreshTokenStorageKey,
   iamSessionUserIdStorageKey,
   iamSessionTenantIdStorageKey,
@@ -36,9 +46,11 @@ class IamRuntime {
   IamRuntime._({
     FlutterSecureStorage? secureStorage,
     IamBootstrapAccessTokenResolver? bootstrapAccessTokenResolver,
+    IamCurrentSessionValidator? currentSessionValidator,
   })  : secureStorage = secureStorage ?? const FlutterSecureStorage(),
         _resolveBootstrapAccessToken =
-            bootstrapAccessTokenResolver ?? _resolveDartDefineBootstrapAccessToken;
+            bootstrapAccessTokenResolver ?? _resolveDartDefineBootstrapAccessToken,
+        _validateCurrentSession = currentSessionValidator ?? _validateWithGeneratedSdk;
 
   static IamRuntime? _instance;
 
@@ -58,10 +70,12 @@ class IamRuntime {
   static IamRuntime createIamRuntime({
     FlutterSecureStorage? secureStorage,
     IamBootstrapAccessTokenResolver? bootstrapAccessTokenResolver,
+    IamCurrentSessionValidator? currentSessionValidator,
   }) =>
       _instance = IamRuntime._(
         secureStorage: secureStorage,
         bootstrapAccessTokenResolver: bootstrapAccessTokenResolver,
+        currentSessionValidator: currentSessionValidator,
       );
 
   /// Global token manager shared by every tier client.
@@ -74,6 +88,7 @@ class IamRuntime {
   final FlutterSecureStorage secureStorage;
 
   final IamBootstrapAccessTokenResolver _resolveBootstrapAccessToken;
+  final IamCurrentSessionValidator _validateCurrentSession;
 
   String? _bootstrapAccessToken;
   bool _initialized = false;
@@ -114,34 +129,59 @@ class IamRuntime {
   /// complete session.
   Future<void> establishSession({
     required String accessToken,
+    required String authToken,
     String? refreshToken,
     required String userId,
-    String? tenantId,
+    required String tenantId,
     String? organizationId,
     String? sessionId,
+    String? loginScope,
   }) async {
     final String? normalizedAccessToken = sdkworkNormalizeOptionalString(accessToken);
+    final String? normalizedAuthToken = sdkworkNormalizeOptionalString(authToken);
     final String? normalizedUserId = sdkworkNormalizeOptionalString(userId);
-    if (normalizedAccessToken == null) {
-      throw StateError('A session access token is required to establish a session.');
+    final String? normalizedTenantId = sdkworkNormalizeOptionalString(tenantId);
+    if (normalizedAccessToken == null || normalizedAuthToken == null) {
+      throw StateError('Both session access and auth tokens are required to establish a session.');
     }
-    if (normalizedUserId == null) {
-      throw StateError('A user id is required to establish a session.');
+    if (normalizedUserId == null || normalizedTenantId == null) {
+      throw StateError('A user id and tenant id are required to establish a session.');
     }
     final IamFlutterMobileCoreSessionContext context = IamFlutterMobileCoreSessionContext(
       accessToken: normalizedAccessToken,
+      authToken: normalizedAuthToken,
       refreshToken: sdkworkNormalizeOptionalString(refreshToken),
       organizationId: sdkworkNormalizeOptionalString(organizationId),
+      loginScope: sdkworkNormalizeOptionalString(loginScope),
       sessionId: sdkworkNormalizeOptionalString(sessionId),
-      tenantId: sdkworkNormalizeOptionalString(tenantId),
+      tenantId: normalizedTenantId,
       userId: normalizedUserId,
     );
-    await _persistSession(context);
-    tokenManager.setTokens(
-      accessToken: context.accessToken,
-      refreshToken: context.refreshToken,
-    );
-    contextStore.set(context);
+    if (!context.isComplete) {
+      throw StateError('The session context is incomplete or incoherent.');
+    }
+    final IamFlutterMobileCoreSessionContext? previous = contextStore.current;
+    try {
+      await _persistSession(context);
+      tokenManager.setTokens(
+        accessToken: context.accessToken,
+        authToken: context.authToken,
+        refreshToken: context.refreshToken,
+      );
+      contextStore.set(context);
+    } catch (_) {
+      tokenManager.setTokens(
+        accessToken: previous?.accessToken ?? _bootstrapAccessToken,
+        authToken: previous?.authToken,
+        refreshToken: previous?.refreshToken,
+      );
+      if (previous == null) {
+        contextStore.clear();
+      } else {
+        contextStore.set(previous);
+      }
+      rethrow;
+    }
   }
 
   /// Restores the public application access token after the session ends.
@@ -164,18 +204,16 @@ class IamRuntime {
   }
 
   Future<void> _restorePersistedSession() async {
-    final String? accessToken =
-        sdkworkNormalizeOptionalString(await secureStorage.read(key: iamSessionAccessTokenStorageKey));
-    final String? userId =
-        sdkworkNormalizeOptionalString(await secureStorage.read(key: iamSessionUserIdStorageKey));
-    if (accessToken == null || userId == null) {
-      // A partial record is not a session; drop it so the next launch starts from
-      // a clean bootstrap state instead of restoring half a session.
-      await _deletePersistedSession();
-      return;
-    }
     final IamFlutterMobileCoreSessionContext context = IamFlutterMobileCoreSessionContext(
-      accessToken: accessToken,
+      accessToken: sdkworkNormalizeOptionalString(
+        await secureStorage.read(key: iamSessionAccessTokenStorageKey),
+      ),
+      authToken: sdkworkNormalizeOptionalString(
+        await secureStorage.read(key: iamSessionAuthTokenStorageKey),
+      ),
+      loginScope: sdkworkNormalizeOptionalString(
+        await secureStorage.read(key: iamSessionLoginScopeStorageKey),
+      ),
       organizationId: sdkworkNormalizeOptionalString(
         await secureStorage.read(key: iamSessionOrganizationIdStorageKey),
       ),
@@ -188,17 +226,75 @@ class IamRuntime {
       tenantId: sdkworkNormalizeOptionalString(
         await secureStorage.read(key: iamSessionTenantIdStorageKey),
       ),
-      userId: userId,
+      userId: sdkworkNormalizeOptionalString(
+        await secureStorage.read(key: iamSessionUserIdStorageKey),
+      ),
     );
-    tokenManager.setTokens(
-      accessToken: context.accessToken,
-      refreshToken: context.refreshToken,
-    );
-    contextStore.set(context);
+    // Legacy single-token records cannot be authenticated. Drop them before any
+    // client or context store can observe a partial session.
+    if (!context.isComplete) {
+      await _deletePersistedSession();
+      return;
+    }
+    try {
+      final Map<String, dynamic> current = await _validateCurrentSession(context);
+      final IamFlutterMobileCoreSessionContext validated = _contextFromPayload(
+        current,
+        fallbackRefreshToken: context.refreshToken,
+      );
+      if (!validated.isComplete) throw StateError('The current session is incomplete.');
+      await establishSession(
+        accessToken: validated.accessToken!,
+        authToken: validated.authToken!,
+        refreshToken: validated.refreshToken,
+        userId: validated.userId!,
+        tenantId: validated.tenantId!,
+        organizationId: validated.organizationId,
+        loginScope: validated.loginScope,
+        sessionId: validated.sessionId,
+      );
+    } catch (_) {
+      // Offline, revoked, malformed and incomplete sessions all fail closed.
+      await clearSession();
+    }
   }
+
+  IamFlutterMobileCoreSessionContext _contextFromPayload(
+    Map<String, dynamic> payload, {
+    String? fallbackRefreshToken,
+  }) {
+    final Map<String, dynamic> context = _map(payload['context']);
+    final Map<String, dynamic> user = _map(payload['user']);
+    String? read(Iterable<String> keys) {
+      for (final String key in keys) {
+        final String? value = _string(payload[key]) ?? _string(context[key]);
+        if (value != null) return value;
+      }
+      return null;
+    }
+
+    return IamFlutterMobileCoreSessionContext(
+      accessToken: read(<String>['accessToken', 'access_token']),
+      authToken: read(<String>['authToken', 'auth_token']),
+      refreshToken: read(<String>['refreshToken', 'refresh_token']) ?? fallbackRefreshToken,
+      userId: read(<String>['userId', 'user_id', 'id']) ?? _string(user['userId']) ?? _string(user['id']),
+      tenantId: read(<String>['tenantId', 'tenant_id']) ?? _string(user['tenantId']) ?? _string(user['tenant_id']),
+      organizationId: read(<String>['organizationId', 'organization_id']),
+      sessionId: read(<String>['sessionId', 'session_id']),
+      loginScope: read(<String>['loginScope', 'login_scope']),
+    );
+  }
+
+  static Map<String, dynamic> _map(Object? value) =>
+      value is Map ? Map<String, dynamic>.from(value) : <String, dynamic>{};
+
+  static String? _string(Object? value) =>
+      value is String && value.trim().isNotEmpty ? value.trim() : null;
 
   Future<void> _persistSession(IamFlutterMobileCoreSessionContext context) async {
     await _writeOrDelete(iamSessionAccessTokenStorageKey, context.accessToken);
+    await _writeOrDelete(iamSessionAuthTokenStorageKey, context.authToken);
+    await _writeOrDelete(iamSessionLoginScopeStorageKey, context.loginScope);
     await _writeOrDelete(iamSessionRefreshTokenStorageKey, context.refreshToken);
     await _writeOrDelete(iamSessionUserIdStorageKey, context.userId);
     await _writeOrDelete(iamSessionTenantIdStorageKey, context.tenantId);
@@ -218,6 +314,24 @@ class IamRuntime {
   Future<void> _deletePersistedSession() async {
     for (final String key in iamSessionStorageKeys) {
       await secureStorage.delete(key: key);
+    }
+  }
+
+  static Future<Map<String, dynamic>> _validateWithGeneratedSdk(
+    IamFlutterMobileCoreSessionContext session,
+  ) async {
+    final SdkworkRuntimeEnv env = resolveEnvironment();
+    final SdkworkAppClient client = SdkworkAppClient.withBaseUrl(
+      baseUrl: env.appApiBaseUrl,
+      authToken: session.authToken,
+      accessToken: session.accessToken,
+    );
+    try {
+      final Object? data = (await client.auth.sessionsCurrentRetrieve())?.data;
+      if (data is! Map) throw StateError('The current-session response carried no data.');
+      return Map<String, dynamic>.from(data);
+    } finally {
+      client.close();
     }
   }
 

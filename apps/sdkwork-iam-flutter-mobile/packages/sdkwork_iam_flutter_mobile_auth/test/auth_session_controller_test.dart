@@ -1,23 +1,27 @@
+import 'package:flutter_test/flutter_test.dart';
 import 'package:sdkwork_iam_flutter_mobile_auth/sdkwork_iam_flutter_mobile_auth.dart';
-import 'package:test/test.dart';
+
+Map<String, dynamic> _session() => <String, dynamic>{
+      'sessionId': 'sess-1',
+      'userId': '1',
+      'tenantId': 'tenant-1',
+      'accessToken': 'token',
+      'authToken': 'auth-token',
+    };
 
 void main() {
   test('login and signOut manage session state', () async {
     var loggedOut = false;
     final controller = IamFlutterMobileAuthSessionController(
-      createSession: (_) async => {
-        'sessionId': 'sess-1',
-        'userId': '1',
-        'accessToken': 'token',
-        'authToken': 'auth-token',
-      },
+      createSession: (_) async => _session(),
       logout: () async {
         loggedOut = true;
       },
     );
 
     final result = await controller.login(
-      const IamFlutterMobileLoginCredentials(username: 'alice', password: 'secret'),
+      const IamFlutterMobileLoginCredentials(
+          username: 'alice', password: 'secret'),
     );
 
     expect(result, isA<IamFlutterMobileLoginSessionResult>());
@@ -29,7 +33,8 @@ void main() {
     expect(controller.session, isNull);
   });
 
-  test('login context selection completes personal login with organizationId 0', () async {
+  test('login context selection completes personal login with organizationId 0',
+      () async {
     Map<String, String>? capturedBody;
     final controller = IamFlutterMobileAuthSessionController(
       createSession: (_) async => {
@@ -41,20 +46,24 @@ void main() {
       },
       createLoginContextSelection: (body) async {
         capturedBody = body;
-        return {
+        return <String, dynamic>{
+          ..._session(),
           'sessionId': 'sess-2',
-          'userId': '1',
-          'accessToken': 'token',
-          'authToken': 'auth-token',
+          'context': <String, dynamic>{
+            'loginScope': 'TENANT',
+            'organizationId': '0'
+          },
         };
       },
       logout: () async {},
     );
 
     final loginResult = await controller.login(
-      const IamFlutterMobileLoginCredentials(username: 'alice', password: 'secret'),
+      const IamFlutterMobileLoginCredentials(
+          username: 'alice', password: 'secret'),
     );
-    expect(loginResult, isA<IamFlutterMobileLoginContextSelectionRequiredResult>());
+    expect(loginResult,
+        isA<IamFlutterMobileLoginContextSelectionRequiredResult>());
     expect(controller.challenge?.continuationToken, 'continue-1');
 
     final session = await controller.selectPersonalLogin('continue-1');
@@ -70,13 +79,15 @@ void main() {
     Map<String, String>? miniBody;
     final controller = IamFlutterMobileAuthSessionController(
       createSession: (_) async => {},
-      createOAuthSession: (body) async => {
+      createOAuthSession: (body) async => <String, dynamic>{
+        ..._session(),
         'authToken': 'oauth-auth',
         'accessToken': 'oauth-access',
       },
       createMiniProgramSession: (body) async {
         miniBody = body;
-        return {
+        return <String, dynamic>{
+          ..._session(),
           'authToken': 'mini-auth',
           'accessToken': 'mini-access',
         };

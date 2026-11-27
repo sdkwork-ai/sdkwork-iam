@@ -102,7 +102,8 @@ class IamHomeShell extends StatefulWidget {
   final Map<String, String>? adminAuditMessages;
 
   /// Overrides the backend-api admin account-binding data source.
-  final IamFlutterMobileAdminAccountBindingDataSource? adminAccountBindingDataSource;
+  final IamFlutterMobileAdminAccountBindingDataSource?
+      adminAccountBindingDataSource;
 
   /// Overrides the admin account-binding copy.
   final Map<String, String>? adminAccountBindingMessages;
@@ -114,7 +115,8 @@ class IamHomeShell extends StatefulWidget {
   final Map<String, String>? adminOAuthMessages;
 
   /// Overrides the backend-api admin organization data source.
-  final IamFlutterMobileAdminOrganizationDataSource? adminOrganizationDataSource;
+  final IamFlutterMobileAdminOrganizationDataSource?
+      adminOrganizationDataSource;
 
   /// Overrides the admin organization copy.
   final Map<String, String>? adminOrganizationMessages;
@@ -153,19 +155,22 @@ class IamHomeShell extends StatefulWidget {
   final Map<String, String>? consoleTenantMessages;
 
   /// Overrides the app-api console-account-binding data source.
-  final IamFlutterMobileConsoleAccountBindingDataSource? consoleAccountBindingDataSource;
+  final IamFlutterMobileConsoleAccountBindingDataSource?
+      consoleAccountBindingDataSource;
 
   /// Overrides the console-account-binding copy.
   final Map<String, String>? consoleAccountBindingMessages;
 
   /// Overrides the app-api console-user-center data source.
-  final IamFlutterMobileConsoleUserCenterDataSource? consoleUserCenterDataSource;
+  final IamFlutterMobileConsoleUserCenterDataSource?
+      consoleUserCenterDataSource;
 
   /// Overrides the console-user-center copy.
   final Map<String, String>? consoleUserCenterMessages;
 
   /// Overrides the app-api console-organization data source.
-  final IamFlutterMobileConsoleOrganizationDataSource? consoleOrganizationDataSource;
+  final IamFlutterMobileConsoleOrganizationDataSource?
+      consoleOrganizationDataSource;
 
   /// Overrides the console-organization copy.
   final Map<String, String>? consoleOrganizationMessages;
@@ -199,9 +204,10 @@ class IamHomeShell extends StatefulWidget {
 
 class _IamHomeShellState extends State<IamHomeShell> {
   late final Future<_IamShellCopy> _copy = _loadCopy();
-  late final IamFlutterMobileAuthController _auth =
-      widget.authController ?? IamFlutterMobileAuthController(
-        service: IamFlutterMobileAuthService(dataSource: IamAuthAppSdkDataSource()),
+  late final IamFlutterMobileAuthController _auth = widget.authController ??
+      IamFlutterMobileAuthController(
+        service:
+            IamFlutterMobileAuthService(dataSource: IamAuthAppSdkDataSource()),
       );
 
   late final void Function() _unsubscribeAuth;
@@ -233,7 +239,8 @@ class _IamHomeShellState extends State<IamHomeShell> {
           // The first frame must not be an empty app: while the fragments load the
           // shell shows the shared loading state under its own MaterialApp.
           return MaterialApp(
-            theme: ThemeData(colorSchemeSeed: const Color(0xFF17202A), useMaterial3: true),
+            theme: ThemeData(
+                colorSchemeSeed: const Color(0xFF17202A), useMaterial3: true),
             home: const Scaffold(body: SdkworkLoadingView()),
           );
         }
@@ -244,10 +251,13 @@ class _IamHomeShellState extends State<IamHomeShell> {
             messages: copy.auth,
             onOpenForgotPassword: () =>
                 Navigator.of(screenContext).pushNamed('/auth/forgot-password'),
+            onContextSelectionRequired: (_) =>
+                Navigator.of(screenContext).pushNamed('/auth/login/context'),
           ),
         );
         final Widget forgotPasswordScreen = Builder(
-          builder: (BuildContext screenContext) => IamFlutterMobileAuthForgotPasswordScreen(
+          builder: (BuildContext screenContext) =>
+              IamFlutterMobileAuthForgotPasswordScreen(
             // Built inside the route builder: the reset controller needs the app-api
             // client, and constructing it eagerly would make every launch (including
             // the sign-in screen) depend on a client it never uses.
@@ -260,29 +270,44 @@ class _IamHomeShellState extends State<IamHomeShell> {
             onReset: () => Navigator.of(screenContext).pop(),
           ),
         );
+        final Widget contextSelectionScreen = Builder(
+          builder: (BuildContext screenContext) =>
+              IamFlutterMobileAuthContextSelectionScreen(
+            controller: _auth,
+            messages: copy.auth,
+            onSignedIn: () => Navigator.of(screenContext).popUntil(
+              (Route<dynamic> route) => route.isFirst,
+            ),
+          ),
+        );
         final Widget tenantScreen = Builder(
           builder: (BuildContext screenContext) => IamFlutterMobileTenantScreen(
             controller: IamFlutterMobileTenantController(
               service: IamFlutterMobileTenantService(
-                dataSource: widget.tenantDataSource ?? IamTenantAppSdkDataSource(),
+                dataSource:
+                    widget.tenantDataSource ?? IamTenantAppSdkDataSource(),
               ),
             ),
             messages: copy.tenant,
-            onOpenOrganizations: () => Navigator.of(screenContext).pushNamed('/organizations'),
+            onOpenOrganizations: () =>
+                Navigator.of(screenContext).pushNamed('/organizations'),
           ),
         );
         final Widget organizationScreen = IamFlutterMobileOrganizationScreen(
           controller: IamFlutterMobileOrganizationController(
             service: IamFlutterMobileOrganizationService(
-              dataSource: widget.organizationDataSource ?? IamOrganizationAppSdkDataSource(),
+              dataSource: widget.organizationDataSource ??
+                  IamOrganizationAppSdkDataSource(),
             ),
           ),
           messages: copy.organization,
         );
-        final Widget accountBindingScreen = IamFlutterMobileAccountBindingScreen(
+        final Widget accountBindingScreen =
+            IamFlutterMobileAccountBindingScreen(
           controller: IamFlutterMobileAccountBindingController(
             service: IamFlutterMobileAccountBindingService(
-              dataSource: widget.accountBindingDataSource ?? IamAccountBindingAppSdkDataSource(),
+              dataSource: widget.accountBindingDataSource ??
+                  IamAccountBindingAppSdkDataSource(),
             ),
           ),
           messages: copy.accountBinding,
@@ -290,18 +315,21 @@ class _IamHomeShellState extends State<IamHomeShell> {
         final IamFlutterMobileUserCenterController profileController =
             IamFlutterMobileUserCenterController(
           service: IamFlutterMobileUserCenterService(
-            dataSource: widget.userCenterDataSource ?? IamUserCenterAppSdkDataSource(),
+            dataSource:
+                widget.userCenterDataSource ?? IamUserCenterAppSdkDataSource(),
           ),
         );
         final Widget oauthScreen = Builder(
           builder: (BuildContext screenContext) => IamFlutterMobileOauthScreen(
             controller: IamFlutterMobileOauthController(
               service: IamFlutterMobileOAuthService(
-                dataSource: widget.oauthDataSource ?? IamOAuthAppSdkDataSource(),
+                dataSource:
+                    widget.oauthDataSource ?? IamOAuthAppSdkDataSource(),
               ),
             ),
             messages: copy.oauth,
-            onAuthorize: (String url) => _openAuthorizationUrl(screenContext, copy.oauth, url),
+            onAuthorize: (String url) =>
+                _openAuthorizationUrl(screenContext, copy.oauth, url),
           ),
         );
         // Built inside the route builder: the console workspace needs the app-api client,
@@ -311,25 +339,28 @@ class _IamHomeShellState extends State<IamHomeShell> {
           builder: (BuildContext _) => IamFlutterMobileConsoleTenantScreen(
             controller: IamFlutterMobileConsoleTenantController(
               service: IamFlutterMobileConsoleTenantService(
-                dataSource: widget.consoleTenantDataSource ?? IamConsoleTenantAppSdkDataSource(),
+                dataSource: widget.consoleTenantDataSource ??
+                    IamConsoleTenantAppSdkDataSource(),
               ),
             ),
             messages: copy.consoleTenant,
           ),
         );
         final Widget consoleOrganizationScreen = Builder(
-          builder: (BuildContext _) => IamFlutterMobileConsoleOrganizationScreen(
+          builder: (BuildContext _) =>
+              IamFlutterMobileConsoleOrganizationScreen(
             controller: IamFlutterMobileConsoleOrganizationController(
               service: IamFlutterMobileConsoleOrganizationService(
-                dataSource:
-                    widget.consoleOrganizationDataSource ?? IamConsoleOrganizationAppSdkDataSource(),
+                dataSource: widget.consoleOrganizationDataSource ??
+                    IamConsoleOrganizationAppSdkDataSource(),
               ),
             ),
             messages: copy.consoleOrganization,
           ),
         );
         final Widget adminAccountBindingScreen = Builder(
-          builder: (BuildContext _) => IamFlutterMobileAdminAccountBindingScreen(
+          builder: (BuildContext _) =>
+              IamFlutterMobileAdminAccountBindingScreen(
             controller: IamFlutterMobileAdminAccountBindingController(
               service: IamFlutterMobileAdminAccountBindingService(
                 dataSource: widget.adminAccountBindingDataSource ??
@@ -343,7 +374,8 @@ class _IamHomeShellState extends State<IamHomeShell> {
           builder: (BuildContext _) => IamFlutterMobileAdminAuditScreen(
             controller: IamFlutterMobileAdminAuditController(
               service: IamFlutterMobileAdminAuditService(
-                dataSource: widget.adminAuditDataSource ?? IamAdminAuditBackendSdkDataSource(),
+                dataSource: widget.adminAuditDataSource ??
+                    IamAdminAuditBackendSdkDataSource(),
               ),
             ),
             messages: copy.adminAudit,
@@ -364,7 +396,8 @@ class _IamHomeShellState extends State<IamHomeShell> {
           builder: (BuildContext _) => IamFlutterMobileAdminOAuthScreen(
             controller: IamFlutterMobileAdminOAuthController(
               service: IamFlutterMobileAdminOAuthService(
-                dataSource: widget.adminOAuthDataSource ?? IamAdminOAuthBackendSdkDataSource(),
+                dataSource: widget.adminOAuthDataSource ??
+                    IamAdminOAuthBackendSdkDataSource(),
               ),
             ),
             messages: copy.adminOAuth,
@@ -373,13 +406,19 @@ class _IamHomeShellState extends State<IamHomeShell> {
         final Widget adminRolesScreen = Builder(
           builder: (BuildContext _) {
             final IamFlutterMobileAdminPermissionDataSource source =
-                widget.adminPermissionDataSource ?? IamAdminPermissionBackendSdkDataSource();
+                widget.adminPermissionDataSource ??
+                    IamAdminPermissionBackendSdkDataSource();
             return IamFlutterMobileAdminRolesScreen(
-              controller: IamFlutterMobileAdminPagedController<IamFlutterMobileAdminRoleRow>(
-                fetch: ({required int page, required int pageSize, String? q}) async {
-                  final IamFlutterMobileAdminRolePage data =
-                      await source.fetchRolesPage(page: page, pageSize: pageSize, q: q);
-                  return IamFlutterMobileAdminPagedPage<IamFlutterMobileAdminRoleRow>(
+              controller: IamFlutterMobileAdminPagedController<
+                  IamFlutterMobileAdminRoleRow>(
+                fetch: (
+                    {required int page,
+                    required int pageSize,
+                    String? q}) async {
+                  final IamFlutterMobileAdminRolePage data = await source
+                      .fetchRolesPage(page: page, pageSize: pageSize, q: q);
+                  return IamFlutterMobileAdminPagedPage<
+                      IamFlutterMobileAdminRoleRow>(
                     hasMore: data.hasMore,
                     items: data.items,
                   );
@@ -392,13 +431,19 @@ class _IamHomeShellState extends State<IamHomeShell> {
         final Widget adminPoliciesScreen = Builder(
           builder: (BuildContext _) {
             final IamFlutterMobileAdminPermissionDataSource source =
-                widget.adminPermissionDataSource ?? IamAdminPermissionBackendSdkDataSource();
+                widget.adminPermissionDataSource ??
+                    IamAdminPermissionBackendSdkDataSource();
             return IamFlutterMobileAdminPoliciesScreen(
-              controller: IamFlutterMobileAdminPagedController<IamFlutterMobileAdminPolicyRow>(
-                fetch: ({required int page, required int pageSize, String? q}) async {
-                  final IamFlutterMobileAdminPolicyPage data =
-                      await source.fetchPoliciesPage(page: page, pageSize: pageSize, q: q);
-                  return IamFlutterMobileAdminPagedPage<IamFlutterMobileAdminPolicyRow>(
+              controller: IamFlutterMobileAdminPagedController<
+                  IamFlutterMobileAdminPolicyRow>(
+                fetch: (
+                    {required int page,
+                    required int pageSize,
+                    String? q}) async {
+                  final IamFlutterMobileAdminPolicyPage data = await source
+                      .fetchPoliciesPage(page: page, pageSize: pageSize, q: q);
+                  return IamFlutterMobileAdminPagedPage<
+                      IamFlutterMobileAdminPolicyRow>(
                     hasMore: data.hasMore,
                     items: data.items,
                   );
@@ -407,11 +452,13 @@ class _IamHomeShellState extends State<IamHomeShell> {
               messages: copy.adminPermission,
             );
           },
-        );        final Widget adminTenantScreen = Builder(
+        );
+        final Widget adminTenantScreen = Builder(
           builder: (BuildContext _) => IamFlutterMobileAdminTenantScreen(
             controller: IamFlutterMobileAdminTenantController(
               service: IamFlutterMobileAdminTenantService(
-                dataSource: widget.adminTenantDataSource ?? IamAdminTenantBackendSdkDataSource(),
+                dataSource: widget.adminTenantDataSource ??
+                    IamAdminTenantBackendSdkDataSource(),
               ),
             ),
             messages: copy.adminTenant,
@@ -429,7 +476,8 @@ class _IamHomeShellState extends State<IamHomeShell> {
           ),
         );
         final Widget consoleAccountBindingScreen = Builder(
-          builder: (BuildContext _) => IamFlutterMobileConsoleAccountBindingScreen(
+          builder: (BuildContext _) =>
+              IamFlutterMobileConsoleAccountBindingScreen(
             controller: IamFlutterMobileConsoleAccountBindingController(
               service: IamFlutterMobileConsoleAccountBindingService(
                 dataSource: widget.consoleAccountBindingDataSource ??
@@ -443,24 +491,27 @@ class _IamHomeShellState extends State<IamHomeShell> {
           builder: (BuildContext _) => IamFlutterMobileConsoleUserCenterScreen(
             controller: IamFlutterMobileConsoleUserCenterController(
               service: IamFlutterMobileConsoleUserCenterService(
-                dataSource:
-                    widget.consoleUserCenterDataSource ?? IamConsoleUserCenterAppSdkDataSource(),
+                dataSource: widget.consoleUserCenterDataSource ??
+                    IamConsoleUserCenterAppSdkDataSource(),
               ),
             ),
             messages: copy.consoleUserCenter,
           ),
         );
         final Widget profileScreen = Builder(
-          builder: (BuildContext screenContext) => IamFlutterMobileUserCenterScreen(
+          builder: (BuildContext screenContext) =>
+              IamFlutterMobileUserCenterScreen(
             controller: profileController,
             messages: copy.userCenter,
-            onOpenPassword: () => Navigator.of(screenContext).pushNamed('/user/password'),
+            onOpenPassword: () =>
+                Navigator.of(screenContext).pushNamed('/user/password'),
           ),
         );
         final Widget passwordScreen = IamFlutterMobileUserCenterPasswordScreen(
           controller: IamFlutterMobileUserCenterController(
             service: IamFlutterMobileUserCenterService(
-              dataSource: widget.userCenterDataSource ?? IamUserCenterAppSdkDataSource(),
+              dataSource: widget.userCenterDataSource ??
+                  IamUserCenterAppSdkDataSource(),
             ),
           ),
           messages: copy.userCenter,
@@ -478,6 +529,11 @@ class _IamHomeShellState extends State<IamHomeShell> {
               builder: (_) => forgotPasswordScreen,
               path: '/auth/forgot-password',
               routeId: IamFlutterMobileAuthRoutes.forgotPasswordRouteId,
+            ),
+            SdkworkRouteEntry(
+              builder: (_) => contextSelectionScreen,
+              path: '/auth/login/context',
+              routeId: IamFlutterMobileAuthRoutes.contextSelectionRouteId,
             ),
             SdkworkRouteEntry(
               builder: (_) => tenantScreen,
@@ -517,7 +573,8 @@ class _IamHomeShellState extends State<IamHomeShell> {
             SdkworkRouteEntry(
               builder: (_) => consoleOrganizationScreen,
               path: '/console/iam/organizations',
-              routeId: IamFlutterMobileConsoleOrganizationRoutes.directoryRouteId,
+              routeId:
+                  IamFlutterMobileConsoleOrganizationRoutes.directoryRouteId,
             ),
             SdkworkRouteEntry(
               builder: (_) => consoleUserCenterScreen,
@@ -558,7 +615,8 @@ class _IamHomeShellState extends State<IamHomeShell> {
               builder: (_) => adminPoliciesScreen,
               path: '/admin/iam/policies',
               routeId: IamFlutterMobileAdminPermissionRoutes.policiesRouteId,
-            ),            SdkworkRouteEntry(
+            ),
+            SdkworkRouteEntry(
               builder: (_) => adminTenantScreen,
               path: '/admin/iam/tenants',
               routeId: IamFlutterMobileAdminTenantRoutes.listRouteId,
@@ -581,10 +639,11 @@ class _IamHomeShellState extends State<IamHomeShell> {
   /// to the package alone resolves in tests but not in the bundled application.
   Future<_IamShellCopy> _loadCopy() async {
     final String locale = _resolveLocale();
-    final Map<String, String> auth =
-        widget.authMessages ?? await _loadFragment('sdkwork_iam_flutter_mobile_auth', 'auth', locale);
+    final Map<String, String> auth = widget.authMessages ??
+        await _loadFragment('sdkwork_iam_flutter_mobile_auth', 'auth', locale);
     final Map<String, String> tenant = widget.tenantMessages ??
-        await _loadFragment('sdkwork_iam_flutter_mobile_tenant', 'tenant', locale);
+        await _loadFragment(
+            'sdkwork_iam_flutter_mobile_tenant', 'tenant', locale);
     final Map<String, String> organization = widget.organizationMessages ??
         await _loadFragment(
           'sdkwork_iam_flutter_mobile_organization',
@@ -604,51 +663,62 @@ class _IamHomeShellState extends State<IamHomeShell> {
           locale,
         );
     final Map<String, String> oauth = widget.oauthMessages ??
-        await _loadFragment('sdkwork_iam_flutter_mobile_oauth', 'oauth', locale);
+        await _loadFragment(
+            'sdkwork_iam_flutter_mobile_oauth', 'oauth', locale);
     final Map<String, String> consoleTenant = widget.consoleTenantMessages ??
         await _loadFragment(
           'sdkwork_iam_flutter_mobile_console_tenant',
           'console_tenant',
           locale,
         );
-    final Map<String, String> consoleAccountBinding = widget.consoleAccountBindingMessages ??
-        await _loadFragment(
-          'sdkwork_iam_flutter_mobile_console_account_binding',
-          'console_account_binding',
-          locale,
-        );
-    final Map<String, String> consoleUserCenter = widget.consoleUserCenterMessages ??
-        await _loadFragment(
-          'sdkwork_iam_flutter_mobile_console_user_center',
-          'console_user_center',
-          locale,
-        );
-    final Map<String, String> consoleOrganization = widget.consoleOrganizationMessages ??
-        await _loadFragment(
-          'sdkwork_iam_flutter_mobile_console_organization',
-          'console_organization',
-          locale,
-        );
+    final Map<String, String> consoleAccountBinding =
+        widget.consoleAccountBindingMessages ??
+            await _loadFragment(
+              'sdkwork_iam_flutter_mobile_console_account_binding',
+              'console_account_binding',
+              locale,
+            );
+    final Map<String, String> consoleUserCenter =
+        widget.consoleUserCenterMessages ??
+            await _loadFragment(
+              'sdkwork_iam_flutter_mobile_console_user_center',
+              'console_user_center',
+              locale,
+            );
+    final Map<String, String> consoleOrganization =
+        widget.consoleOrganizationMessages ??
+            await _loadFragment(
+              'sdkwork_iam_flutter_mobile_console_organization',
+              'console_organization',
+              locale,
+            );
     final Map<String, String> adminAudit = widget.adminAuditMessages ??
-        await _loadFragment('sdkwork_iam_flutter_mobile_admin_audit', 'admin_audit', locale);
-    final Map<String, String> adminAccountBinding = widget.adminAccountBindingMessages ??
         await _loadFragment(
-          'sdkwork_iam_flutter_mobile_admin_account_binding',
-          'admin_account_binding',
-          locale,
-        );
+            'sdkwork_iam_flutter_mobile_admin_audit', 'admin_audit', locale);
+    final Map<String, String> adminAccountBinding =
+        widget.adminAccountBindingMessages ??
+            await _loadFragment(
+              'sdkwork_iam_flutter_mobile_admin_account_binding',
+              'admin_account_binding',
+              locale,
+            );
     final Map<String, String> adminOAuth = widget.adminOAuthMessages ??
-        await _loadFragment('sdkwork_iam_flutter_mobile_admin_oauth', 'admin_oauth', locale);
-    final Map<String, String> adminOrganization = widget.adminOrganizationMessages ??
         await _loadFragment(
-          'sdkwork_iam_flutter_mobile_admin_organization',
-          'admin_organization',
-          locale,
-        );
+            'sdkwork_iam_flutter_mobile_admin_oauth', 'admin_oauth', locale);
+    final Map<String, String> adminOrganization =
+        widget.adminOrganizationMessages ??
+            await _loadFragment(
+              'sdkwork_iam_flutter_mobile_admin_organization',
+              'admin_organization',
+              locale,
+            );
     final Map<String, String> adminTenant = widget.adminTenantMessages ??
-        await _loadFragment('sdkwork_iam_flutter_mobile_admin_tenant', 'admin_tenant', locale);
-    final Map<String, String> adminPermission = widget.adminPermissionMessages ??
-        await _loadFragment('sdkwork_iam_flutter_mobile_admin_permission', 'admin_permission', locale);
+        await _loadFragment(
+            'sdkwork_iam_flutter_mobile_admin_tenant', 'admin_tenant', locale);
+    final Map<String, String> adminPermission =
+        widget.adminPermissionMessages ??
+            await _loadFragment('sdkwork_iam_flutter_mobile_admin_permission',
+                'admin_permission', locale);
     return _IamShellCopy(
       accountBinding: accountBinding,
       adminAccountBinding: adminAccountBinding,
@@ -669,7 +739,8 @@ class _IamHomeShellState extends State<IamHomeShell> {
     );
   }
 
-  Future<Map<String, String>> _loadFragment(String package, String capability, String locale) {
+  Future<Map<String, String>> _loadFragment(
+      String package, String capability, String locale) {
     final SdkworkArbBundle bundle = SdkworkArbBundle(
       assetPathBuilder: (String requested) =>
           'packages/$package/lib/src/i18n/$requested/iam/$capability/$capability.arb',
@@ -686,18 +757,21 @@ class _IamHomeShellState extends State<IamHomeShell> {
     Map<String, String> copy,
     String url,
   ) async {
-    final Future<bool> Function(String url) opener =
-        widget.urlOpener ?? (String target) => const IamUrlOpenerAdapter().open(target);
+    final Future<bool> Function(String url) opener = widget.urlOpener ??
+        (String target) => const IamUrlOpenerAdapter().open(target);
     final bool opened = await opener(url);
     if (opened || !context.mounted) return;
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(content: Text(copy['authorizeUnavailable'] ?? 'Unable to open the provider.')),
+      SnackBar(
+          content: Text(
+              copy['authorizeUnavailable'] ?? 'Unable to open the provider.')),
     );
   }
 
   /// Maps the platform locale onto one of the two fragments this build ships.
   String _resolveLocale() {
-    final String language = PlatformDispatcher.instance.locale.languageCode.toLowerCase();
+    final String language =
+        PlatformDispatcher.instance.locale.languageCode.toLowerCase();
     return language == 'zh' ? 'zh-CN' : 'en-US';
   }
 }

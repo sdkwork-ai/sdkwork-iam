@@ -1,4 +1,4 @@
-﻿// SDKWORK-IAM-FLUTTER-AUTH: authored screen.
+// SDKWORK-IAM-FLUTTER-AUTH: authored screen.
 /**
  * Password reset screen of the `auth` capability
  * (`app.iam.auth.forgot-password`, `/auth/forgot-password`).
@@ -16,6 +16,7 @@ import 'package:sdkwork_iam_flutter_mobile_commons/sdkwork_iam_flutter_mobile_co
 import '../controllers/auth_controller.dart';
 import '../services/auth_service.dart';
 import '../state/auth_state.dart';
+import 'auth_form_layout.dart';
 
 /// Password reset screen of the `auth` capability.
 class IamFlutterMobileAuthForgotPasswordScreen extends StatefulWidget {
@@ -55,6 +56,8 @@ class _IamFlutterMobileAuthForgotPasswordScreenState
   final TextEditingController _code = TextEditingController();
   final TextEditingController _newPassword = TextEditingController();
   final TextEditingController _confirmPassword = TextEditingController();
+  bool _obscureNewPassword = true;
+  bool _obscureConfirmPassword = true;
 
   /// Local validation result of the last submit.
   IamFlutterMobileAuthResetProblem? _problem;
@@ -129,78 +132,133 @@ class _IamFlutterMobileAuthForgotPasswordScreenState
     final String? problem = _problemMessage();
     return SdkworkScaffold(
       titleKey: _message('forgotTitle'),
-      body: ListView(
-        children: <Widget>[
-          Text(_message('forgotSubtitle'), style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: SdkworkDesignTokens.spaceSm),
-          TextField(
-            autocorrect: false,
-            decoration: InputDecoration(labelText: _message('accountLabel')),
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.next,
-            controller: _account,
-          ),
-          const SizedBox(height: SdkworkDesignTokens.spaceSm),
-          OutlinedButton(
-            onPressed: _state.sendingCode ? null : _sendCode,
-            child: _state.sendingCode
-                ? const SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(_message('sendCodeAction')),
-          ),
-          const SizedBox(height: SdkworkDesignTokens.spaceSm),
-          TextField(
-            decoration: InputDecoration(labelText: _message('codeLabel')),
-            keyboardType: TextInputType.number,
-            textInputAction: TextInputAction.next,
-            controller: _code,
-          ),
-          const SizedBox(height: SdkworkDesignTokens.spaceSm),
-          TextField(
-            decoration: InputDecoration(labelText: _message('newPasswordLabel')),
-            obscureText: true,
-            textInputAction: TextInputAction.next,
-            controller: _newPassword,
-          ),
-          const SizedBox(height: SdkworkDesignTokens.spaceSm),
-          TextField(
-            decoration: InputDecoration(labelText: _message('confirmPasswordLabel')),
-            obscureText: true,
-            onSubmitted: (_) => _submit(),
-            controller: _confirmPassword,
-          ),
-          if (problem != null) ...<Widget>[
+      fullBleedBody: true,
+      body: IamAuthFormLayout(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(_message('forgotSubtitle'),
+                style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: SdkworkDesignTokens.spaceSm),
-            Text(problem, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-          ],
-          if (_state.errorMessage != null) ...<Widget>[
+            Semantics(
+              label: _message('accountLabel'),
+              child: TextField(
+                autocorrect: false,
+                enableSuggestions: false,
+                autofillHints: const <String>[AutofillHints.username],
+                decoration:
+                    InputDecoration(labelText: _message('accountLabel')),
+                keyboardType: TextInputType.text,
+                textInputAction: TextInputAction.next,
+                controller: _account,
+              ),
+            ),
             const SizedBox(height: SdkworkDesignTokens.spaceSm),
-            Text(
-              _state.errorMessage!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
+              onPressed: _state.sendingCode ? null : _sendCode,
+              child: _state.sendingCode
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(_message('sendCodeAction')),
+            ),
+            const SizedBox(height: SdkworkDesignTokens.spaceSm),
+            Semantics(
+              label: _message('codeLabel'),
+              child: TextField(
+                decoration: InputDecoration(labelText: _message('codeLabel')),
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.next,
+                controller: _code,
+              ),
+            ),
+            const SizedBox(height: SdkworkDesignTokens.spaceSm),
+            Semantics(
+              label: _message('newPasswordLabel'),
+              child: TextField(
+                decoration: InputDecoration(
+                  labelText: _message('newPasswordLabel'),
+                  suffixIcon: IconButton(
+                    tooltip: _obscureNewPassword
+                        ? _message('showPassword')
+                        : _message('hidePassword'),
+                    onPressed: () => setState(
+                        () => _obscureNewPassword = !_obscureNewPassword),
+                    icon: Icon(_obscureNewPassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined),
+                  ),
+                ),
+                obscureText: _obscureNewPassword,
+                autocorrect: false,
+                enableSuggestions: false,
+                autofillHints: const <String>[AutofillHints.newPassword],
+                textInputAction: TextInputAction.next,
+                controller: _newPassword,
+              ),
+            ),
+            const SizedBox(height: SdkworkDesignTokens.spaceSm),
+            Semantics(
+              label: _message('confirmPasswordLabel'),
+              child: TextField(
+                decoration: InputDecoration(
+                  labelText: _message('confirmPasswordLabel'),
+                  suffixIcon: IconButton(
+                    tooltip: _obscureConfirmPassword
+                        ? _message('showPassword')
+                        : _message('hidePassword'),
+                    onPressed: () => setState(() =>
+                        _obscureConfirmPassword = !_obscureConfirmPassword),
+                    icon: Icon(_obscureConfirmPassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined),
+                  ),
+                ),
+                obscureText: _obscureConfirmPassword,
+                autocorrect: false,
+                enableSuggestions: false,
+                autofillHints: const <String>[AutofillHints.newPassword],
+                onSubmitted: (_) => _submit(),
+                controller: _confirmPassword,
+              ),
+            ),
+            if (problem != null) ...<Widget>[
+              const SizedBox(height: SdkworkDesignTokens.spaceSm),
+              IamAuthErrorText(
+                  key: ValueKey<String>(problem), message: problem),
+            ],
+            if (_state.errorMessage != null) ...<Widget>[
+              const SizedBox(height: SdkworkDesignTokens.spaceSm),
+              IamAuthErrorText(
+                key: ValueKey<String>(_state.errorMessage!),
+                message: _state.errorMessage!,
+              ),
+            ],
+            if (_state.notice != null) ...<Widget>[
+              const SizedBox(height: SdkworkDesignTokens.spaceSm),
+              Text(
+                _state.notice == 'code-sent'
+                    ? _message('codeSent')
+                    : _message('passwordReset'),
+              ),
+            ],
+            const SizedBox(height: SdkworkDesignTokens.spaceMd),
+            FilledButton(
+              style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+              onPressed: _state.resetting ? null : _submit,
+              child: _state.resetting
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(_message('submitAction')),
             ),
           ],
-          if (_state.notice != null) ...<Widget>[
-            const SizedBox(height: SdkworkDesignTokens.spaceSm),
-            Text(
-              _state.notice == 'code-sent' ? _message('codeSent') : _message('passwordReset'),
-            ),
-          ],
-          const SizedBox(height: SdkworkDesignTokens.spaceMd),
-          FilledButton(
-            onPressed: _state.resetting ? null : _submit,
-            child: _state.resetting
-                ? const SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(_message('submitAction')),
-          ),
-        ],
+        ),
       ),
     );
   }

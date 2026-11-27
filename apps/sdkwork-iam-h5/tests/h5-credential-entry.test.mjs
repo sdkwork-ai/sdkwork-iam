@@ -130,13 +130,15 @@ test('the bootstrap reads the injected token and seeds it into the IAM runtime',
   // The initial access token is the session token when present, otherwise the
   // injected public application token: a fresh page load must never start empty.
   assert.match(source, /const resolveAccessToken[\s\S]*bootstrapAccessToken/u, 'the resolver must fall back to the bootstrap token');
-  assert.match(source, /const initialAccessToken = resolveAccessToken\(sessionStore\.get\(\)\)/u);
+  assert.match(source, /const initialSnapshot = sessionStore\.get\(\)/u);
+  assert.match(source, /const initialAccessToken = resolveAccessToken\(initialSnapshot\)/u);
   assert.match(source, /accessToken: initialAccessToken/u, 'the runtime must be seeded with the initial access token');
   // A sign-out emits no session, so the subscription must revert to the bootstrap
   // token rather than clearing to an empty value.
-  assert.match(source, /runtime\.setAccessToken\(resolveAccessToken\(snapshot\)\)/u);
-  // The admin backend client shares the same fallback at request time.
-  assert.match(source, /getAccessToken:\s*\(\) => resolveAccessToken\(sessionStore\.get\(\)\)/u);
+  assert.match(source, /runtime\.setAccessToken\(accessToken\)/u);
+  // The admin backend client follows the same session subscription and fallback.
+  assert.match(source, /backendClient\.setAccessToken\(accessToken\)/u);
+  assert.match(source, /backendClient\.setAuthToken\(snapshot\?\.authToken\)/u);
 });
 
 test('the app declares the credential-entry workspace dependency', () => {

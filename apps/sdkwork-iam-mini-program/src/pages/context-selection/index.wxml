@@ -1,0 +1,26 @@
+<view class="page auth-page">
+  <view class="brand auth-brand">
+    <text class="brand-title">{{title}}</text>
+    <text class="brand-subtitle">{{subtitle}}</text>
+  </view>
+  <view class="auth-content">
+    <text wx:if="{{errorText}}" class="error" role="alert" aria-live="assertive">{{errorText}}</text>
+    <button wx:if="{{errorText}}" class="primary" bindtap="onRetry">{{retryText}}</button>
+    <view wx:else class="card auth-card">
+      <button class="choice" disabled="{{pending}}" loading="{{pending}}" bindtap="onPersonal">
+        {{personalText}}
+      </button>
+      <view wx:if="{{organizations.length}}" class="section-title">{{organizationsTitle}}</view>
+      <button
+        wx:for="{{organizations}}"
+        wx:key="id"
+        class="choice secondary"
+        disabled="{{pending}}"
+        data-id="{{item.id}}"
+        bindtap="onOrganization"
+      >
+        {{item.title}}
+      </button>
+    </view>
+  </view>
+</view>

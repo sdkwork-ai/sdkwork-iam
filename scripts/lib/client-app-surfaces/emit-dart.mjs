@@ -65,7 +65,7 @@ const PUBLIC_DOC_LINE = 'Owner: `sdkwork-iam` maintainers.';
 function pascalFromDir(dir) {
   return dir
     .replace(/^sdkwork_/u, '')
-    .split('_')
+    .split(/[^A-Za-z0-9]+/u)
     .filter(Boolean)
     .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
     .join('');
@@ -1258,14 +1258,17 @@ function coreTokenManagerSource(surface) {
 
 /// Single access/refresh token owner of the application root.
 class SdkworkTokenManager {
-  SdkworkTokenManager({String? accessToken, String? refreshToken})
+  SdkworkTokenManager({String? accessToken, String? authToken, String? refreshToken})
       : _accessToken = normalizeAccessToken(accessToken),
+        _authToken = normalizeAccessToken(authToken),
         _refreshToken = normalizeAccessToken(refreshToken);
 
   String? _accessToken;
+  String? _authToken;
   String? _refreshToken;
 
   final List<void Function(String?)> _listeners = <void Function(String?)>[];
+  final List<void Function(String?)> _authListeners = <void Function(String?)>[];
 
   /// Normalized form of one credential value: trimmed, with empty as null.
   static String? normalizeAccessToken(String? value) {
@@ -1276,6 +1279,9 @@ class SdkworkTokenManager {
   /// Current access token, or null when the session was cleared.
   String? get currentAccessToken => _accessToken;
 
+  /// Current user authentication token, or null when no user session exists.
+  String? get currentAuthToken => _authToken;
+
   /// Current refresh token, or null.
   String? get currentRefreshToken => _refreshToken;
 
@@ -1284,6 +1290,9 @@ class SdkworkTokenManager {
   /// This answers "can a credential-entry request be dispatched", not "is a user
   /// signed in": the public application access token is present before login.
   bool get hasAccessToken => _accessToken != null;
+
+  /// True when the user authentication token is held.
+  bool get hasAuthToken => _authToken != null;
 
   /// Seeds the public application access token exactly once.
   ///
@@ -1298,12 +1307,16 @@ class SdkworkTokenManager {
     setTokens(accessToken: normalized);
   }
 
-  /// Replaces the credential pair after a successful login or refresh.
-  void setTokens({String? accessToken, String? refreshToken}) {
+  /// Replaces the complete credential set. Omitting a token clears it.
+  void setTokens({String? accessToken, String? authToken, String? refreshToken}) {
     _accessToken = normalizeAccessToken(accessToken);
+    _authToken = normalizeAccessToken(authToken);
     _refreshToken = normalizeAccessToken(refreshToken);
     for (final void Function(String?) listener in List<void Function(String?)>.of(_listeners)) {
       listener(_accessToken);
+    }
+    for (final void Function(String?) listener in List<void Function(String?)>.of(_authListeners)) {
+      listener(_authToken);
     }
   }
 
@@ -1319,6 +1332,12 @@ class SdkworkTokenManager {
   void Function() addListener(void Function(String?) listener) {
     _listeners.add(listener);
     return () => _listeners.remove(listener);
+  }
+
+  /// Notifies the listener whenever the user authentication token changes.
+  void Function() addAuthTokenListener(void Function(String?) listener) {
+    _authListeners.add(listener);
+    return () => _authListeners.remove(listener);
   }
 }
 `;
@@ -1342,7 +1361,9 @@ class ${pascal}SessionContext {
     this.organizationId,
     this.sessionId,
     this.accessToken,
+    this.authToken,
     this.refreshToken,
+    this.loginScope,
   });
 
   /// Authenticated user id.
@@ -1360,11 +1381,30 @@ class ${pascal}SessionContext {
   /// Access token of this session, mirrored from the token manager.
   final String? accessToken;
 
+  /// User authentication token sent as \`Authorization: Bearer\`.
+  final String? authToken;
+
   /// Refresh token of this session, mirrored from the token manager.
   final String? refreshToken;
 
-  /// True when every field a signed-in session needs is present.
-  bool get isComplete => userId != null && accessToken != null;
+  /// Login scope (\`TENANT\` or \`ORGANIZATION\`) selected for this session.
+  final String? loginScope;
+
+  /// True only for a complete, coherent user session.
+  ///
+  /// Both session tokens and the user/tenant context are mandatory. Organization
+  /// \`0\` is the personal-login sentinel, never an organization session.
+  bool get isComplete {
+    if (userId == null || tenantId == null || accessToken == null || authToken == null) {
+      return false;
+    }
+    final String organization = organizationId ?? '';
+    if (loginScope == 'ORGANIZATION') {
+      return organization.isNotEmpty && organization != '0';
+    }
+    if (loginScope == 'TENANT') return organization.isEmpty || organization == '0';
+    return loginScope == null && (organization.isEmpty || organization == '0');
+  }
 }
 
 /// In-memory context store of the \`${tier}\` tier.
@@ -1611,6 +1651,7 @@ function commonsScaffoldSource() {
 import 'package:flutter/material.dart';
 
 import '../theme/design_tokens.dart';
+import 'sdkwork_loading_view.dart';
 
 /// Page scaffold every capability screen builds on.
 class SdkworkScaffold extends StatelessWidget {
@@ -1619,6 +1660,7 @@ class SdkworkScaffold extends StatelessWidget {
     required this.titleKey,
     required this.body,
     this.loading = false,
+    this.fullBleedBody = false,
   });
 
   /// Locale key of the page title.
@@ -1630,16 +1672,25 @@ class SdkworkScaffold extends StatelessWidget {
   /// True while the page is still fetching.
   final bool loading;
 
+  /// True when [body] owns its own padding, safe area and scroll view.
+  ///
+  /// Auth screens wrap their form in a full-bleed layout so a phone keyboard
+  /// cannot leave the submit field under a fixed inset; the scaffold then only
+  /// contributes the route frame.
+  final bool fullBleedBody;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(titleKey)),
       body: loading
           ? const SdkworkLoadingView()
-          : Padding(
-              padding: const EdgeInsets.all(SdkworkDesignTokens.spaceMd),
-              child: body,
-            ),
+          : fullBleedBody
+              ? body
+              : Padding(
+                  padding: const EdgeInsets.all(SdkworkDesignTokens.spaceMd),
+                  child: body,
+                ),
     );
   }
 }
@@ -2325,14 +2376,17 @@ IamSdkClients createSdkClients() {
   final ${APP_SDK_CLIENT} ${appTier} = ${APP_SDK_CLIENT}.withBaseUrl(
     baseUrl: env.appApiBaseUrl,
     accessToken: tokenManager.currentAccessToken,
+    authToken: tokenManager.currentAuthToken,
   );
   final ${APP_SDK_CLIENT} ${consoleTier} = ${APP_SDK_CLIENT}.withBaseUrl(
     baseUrl: env.appApiBaseUrl,
     accessToken: tokenManager.currentAccessToken,
+    authToken: tokenManager.currentAuthToken,
   );
   final ${BACKEND_SDK_CLIENT} ${adminTier} = ${BACKEND_SDK_CLIENT}.withBaseUrl(
     baseUrl: env.apiBaseUrl,
     accessToken: tokenManager.currentAccessToken,
+    authToken: tokenManager.currentAuthToken,
   );
 
   tokenManager.addListener((String? token) {
@@ -2342,6 +2396,12 @@ IamSdkClients createSdkClients() {
       setConsoleClientAccessToken: ${consoleTier}.setAccessToken,
       setAdminClientAccessToken: ${adminTier}.setAccessToken,
     );
+  });
+  tokenManager.addAuthTokenListener((String? token) {
+    final String authToken = token ?? '';
+    ${appTier}.setAuthToken(authToken);
+    ${consoleTier}.setAuthToken(authToken);
+    ${adminTier}.setAuthToken(authToken);
   });
 
   final IamSdkClients clients = IamSdkClients(
@@ -2371,6 +2431,7 @@ function rootIamRuntimeSource(surface) {
   const corePascal = pascalFromDir(core);
   return `${BANNER}
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:${APP_SDK_PACKAGE}/${APP_SDK_PACKAGE}.dart';
 import 'package:${core}/${core}.dart';
 
 import 'environment.dart';
@@ -2381,11 +2442,18 @@ import 'environment.dart';
 /// so seed, restore and clear are exercised without platform channels.
 typedef IamBootstrapAccessTokenResolver = String Function();
 
+/// Validates a persisted session through the generated current-session API.
+typedef IamCurrentSessionValidator = Future<Map<String, dynamic>> Function(
+  ${corePascal}SessionContext session,
+);
+
 /// Secure-storage keys of the session fields persisted at login.
 ///
 /// The values are session tokens and identifiers, never the public application
 /// access token: that one is rebuilt from the committed profile at launch.
 const String iamSessionAccessTokenStorageKey = 'sdkwork.iam.session.access_token';
+const String iamSessionAuthTokenStorageKey = 'sdkwork.iam.session.auth_token';
+const String iamSessionLoginScopeStorageKey = 'sdkwork.iam.session.login_scope';
 const String iamSessionRefreshTokenStorageKey = 'sdkwork.iam.session.refresh_token';
 const String iamSessionUserIdStorageKey = 'sdkwork.iam.session.user_id';
 const String iamSessionTenantIdStorageKey = 'sdkwork.iam.session.tenant_id';
@@ -2394,6 +2462,8 @@ const String iamSessionIdStorageKey = 'sdkwork.iam.session.session_id';
 
 const List<String> iamSessionStorageKeys = <String>[
   iamSessionAccessTokenStorageKey,
+  iamSessionAuthTokenStorageKey,
+  iamSessionLoginScopeStorageKey,
   iamSessionRefreshTokenStorageKey,
   iamSessionUserIdStorageKey,
   iamSessionTenantIdStorageKey,
@@ -2407,9 +2477,11 @@ class IamRuntime {
   IamRuntime._({
     FlutterSecureStorage? secureStorage,
     IamBootstrapAccessTokenResolver? bootstrapAccessTokenResolver,
+    IamCurrentSessionValidator? currentSessionValidator,
   })  : secureStorage = secureStorage ?? const FlutterSecureStorage(),
         _resolveBootstrapAccessToken =
-            bootstrapAccessTokenResolver ?? _resolveDartDefineBootstrapAccessToken;
+            bootstrapAccessTokenResolver ?? _resolveDartDefineBootstrapAccessToken,
+        _validateCurrentSession = currentSessionValidator ?? _validateWithGeneratedSdk;
 
   static IamRuntime? _instance;
 
@@ -2429,10 +2501,12 @@ class IamRuntime {
   static IamRuntime createIamRuntime({
     FlutterSecureStorage? secureStorage,
     IamBootstrapAccessTokenResolver? bootstrapAccessTokenResolver,
+    IamCurrentSessionValidator? currentSessionValidator,
   }) =>
       _instance = IamRuntime._(
         secureStorage: secureStorage,
         bootstrapAccessTokenResolver: bootstrapAccessTokenResolver,
+        currentSessionValidator: currentSessionValidator,
       );
 
   /// Global token manager shared by every tier client.
@@ -2445,6 +2519,7 @@ class IamRuntime {
   final FlutterSecureStorage secureStorage;
 
   final IamBootstrapAccessTokenResolver _resolveBootstrapAccessToken;
+  final IamCurrentSessionValidator _validateCurrentSession;
 
   String? _bootstrapAccessToken;
   bool _initialized = false;
@@ -2485,34 +2560,59 @@ class IamRuntime {
   /// complete session.
   Future<void> establishSession({
     required String accessToken,
+    required String authToken,
     String? refreshToken,
     required String userId,
-    String? tenantId,
+    required String tenantId,
     String? organizationId,
     String? sessionId,
+    String? loginScope,
   }) async {
     final String? normalizedAccessToken = sdkworkNormalizeOptionalString(accessToken);
+    final String? normalizedAuthToken = sdkworkNormalizeOptionalString(authToken);
     final String? normalizedUserId = sdkworkNormalizeOptionalString(userId);
-    if (normalizedAccessToken == null) {
-      throw StateError('A session access token is required to establish a session.');
+    final String? normalizedTenantId = sdkworkNormalizeOptionalString(tenantId);
+    if (normalizedAccessToken == null || normalizedAuthToken == null) {
+      throw StateError('Both session access and auth tokens are required to establish a session.');
     }
-    if (normalizedUserId == null) {
-      throw StateError('A user id is required to establish a session.');
+    if (normalizedUserId == null || normalizedTenantId == null) {
+      throw StateError('A user id and tenant id are required to establish a session.');
     }
     final ${corePascal}SessionContext context = ${corePascal}SessionContext(
       accessToken: normalizedAccessToken,
+      authToken: normalizedAuthToken,
       refreshToken: sdkworkNormalizeOptionalString(refreshToken),
       organizationId: sdkworkNormalizeOptionalString(organizationId),
+      loginScope: sdkworkNormalizeOptionalString(loginScope),
       sessionId: sdkworkNormalizeOptionalString(sessionId),
-      tenantId: sdkworkNormalizeOptionalString(tenantId),
+      tenantId: normalizedTenantId,
       userId: normalizedUserId,
     );
-    await _persistSession(context);
-    tokenManager.setTokens(
-      accessToken: context.accessToken,
-      refreshToken: context.refreshToken,
-    );
-    contextStore.set(context);
+    if (!context.isComplete) {
+      throw StateError('The session context is incomplete or incoherent.');
+    }
+    final ${corePascal}SessionContext? previous = contextStore.current;
+    try {
+      await _persistSession(context);
+      tokenManager.setTokens(
+        accessToken: context.accessToken,
+        authToken: context.authToken,
+        refreshToken: context.refreshToken,
+      );
+      contextStore.set(context);
+    } catch (_) {
+      tokenManager.setTokens(
+        accessToken: previous?.accessToken ?? _bootstrapAccessToken,
+        authToken: previous?.authToken,
+        refreshToken: previous?.refreshToken,
+      );
+      if (previous == null) {
+        contextStore.clear();
+      } else {
+        contextStore.set(previous);
+      }
+      rethrow;
+    }
   }
 
   /// Restores the public application access token after the session ends.
@@ -2535,18 +2635,16 @@ class IamRuntime {
   }
 
   Future<void> _restorePersistedSession() async {
-    final String? accessToken =
-        sdkworkNormalizeOptionalString(await secureStorage.read(key: iamSessionAccessTokenStorageKey));
-    final String? userId =
-        sdkworkNormalizeOptionalString(await secureStorage.read(key: iamSessionUserIdStorageKey));
-    if (accessToken == null || userId == null) {
-      // A partial record is not a session; drop it so the next launch starts from
-      // a clean bootstrap state instead of restoring half a session.
-      await _deletePersistedSession();
-      return;
-    }
     final ${corePascal}SessionContext context = ${corePascal}SessionContext(
-      accessToken: accessToken,
+      accessToken: sdkworkNormalizeOptionalString(
+        await secureStorage.read(key: iamSessionAccessTokenStorageKey),
+      ),
+      authToken: sdkworkNormalizeOptionalString(
+        await secureStorage.read(key: iamSessionAuthTokenStorageKey),
+      ),
+      loginScope: sdkworkNormalizeOptionalString(
+        await secureStorage.read(key: iamSessionLoginScopeStorageKey),
+      ),
       organizationId: sdkworkNormalizeOptionalString(
         await secureStorage.read(key: iamSessionOrganizationIdStorageKey),
       ),
@@ -2559,17 +2657,75 @@ class IamRuntime {
       tenantId: sdkworkNormalizeOptionalString(
         await secureStorage.read(key: iamSessionTenantIdStorageKey),
       ),
-      userId: userId,
+      userId: sdkworkNormalizeOptionalString(
+        await secureStorage.read(key: iamSessionUserIdStorageKey),
+      ),
     );
-    tokenManager.setTokens(
-      accessToken: context.accessToken,
-      refreshToken: context.refreshToken,
-    );
-    contextStore.set(context);
+    // Legacy single-token records cannot be authenticated. Drop them before any
+    // client or context store can observe a partial session.
+    if (!context.isComplete) {
+      await _deletePersistedSession();
+      return;
+    }
+    try {
+      final Map<String, dynamic> current = await _validateCurrentSession(context);
+      final ${corePascal}SessionContext validated = _contextFromPayload(
+        current,
+        fallbackRefreshToken: context.refreshToken,
+      );
+      if (!validated.isComplete) throw StateError('The current session is incomplete.');
+      await establishSession(
+        accessToken: validated.accessToken!,
+        authToken: validated.authToken!,
+        refreshToken: validated.refreshToken,
+        userId: validated.userId!,
+        tenantId: validated.tenantId!,
+        organizationId: validated.organizationId,
+        loginScope: validated.loginScope,
+        sessionId: validated.sessionId,
+      );
+    } catch (_) {
+      // Offline, revoked, malformed and incomplete sessions all fail closed.
+      await clearSession();
+    }
   }
+
+  ${corePascal}SessionContext _contextFromPayload(
+    Map<String, dynamic> payload, {
+    String? fallbackRefreshToken,
+  }) {
+    final Map<String, dynamic> context = _map(payload['context']);
+    final Map<String, dynamic> user = _map(payload['user']);
+    String? read(Iterable<String> keys) {
+      for (final String key in keys) {
+        final String? value = _string(payload[key]) ?? _string(context[key]);
+        if (value != null) return value;
+      }
+      return null;
+    }
+
+    return ${corePascal}SessionContext(
+      accessToken: read(<String>['accessToken', 'access_token']),
+      authToken: read(<String>['authToken', 'auth_token']),
+      refreshToken: read(<String>['refreshToken', 'refresh_token']) ?? fallbackRefreshToken,
+      userId: read(<String>['userId', 'user_id', 'id']) ?? _string(user['userId']) ?? _string(user['id']),
+      tenantId: read(<String>['tenantId', 'tenant_id']) ?? _string(user['tenantId']) ?? _string(user['tenant_id']),
+      organizationId: read(<String>['organizationId', 'organization_id']),
+      sessionId: read(<String>['sessionId', 'session_id']),
+      loginScope: read(<String>['loginScope', 'login_scope']),
+    );
+  }
+
+  static Map<String, dynamic> _map(Object? value) =>
+      value is Map ? Map<String, dynamic>.from(value) : <String, dynamic>{};
+
+  static String? _string(Object? value) =>
+      value is String && value.trim().isNotEmpty ? value.trim() : null;
 
   Future<void> _persistSession(${corePascal}SessionContext context) async {
     await _writeOrDelete(iamSessionAccessTokenStorageKey, context.accessToken);
+    await _writeOrDelete(iamSessionAuthTokenStorageKey, context.authToken);
+    await _writeOrDelete(iamSessionLoginScopeStorageKey, context.loginScope);
     await _writeOrDelete(iamSessionRefreshTokenStorageKey, context.refreshToken);
     await _writeOrDelete(iamSessionUserIdStorageKey, context.userId);
     await _writeOrDelete(iamSessionTenantIdStorageKey, context.tenantId);
@@ -2589,6 +2745,24 @@ class IamRuntime {
   Future<void> _deletePersistedSession() async {
     for (final String key in iamSessionStorageKeys) {
       await secureStorage.delete(key: key);
+    }
+  }
+
+  static Future<Map<String, dynamic>> _validateWithGeneratedSdk(
+    ${corePascal}SessionContext session,
+  ) async {
+    final SdkworkRuntimeEnv env = resolveEnvironment();
+    final SdkworkAppClient client = SdkworkAppClient.withBaseUrl(
+      baseUrl: env.appApiBaseUrl,
+      authToken: session.authToken,
+      accessToken: session.accessToken,
+    );
+    try {
+      final Object? data = (await client.auth.sessionsCurrentRetrieve())?.data;
+      if (data is! Map) throw StateError('The current-session response carried no data.');
+      return Map<String, dynamic>.from(data);
+    } finally {
+      client.close();
     }
   }
 
@@ -2612,6 +2786,8 @@ function rootHostAdaptersSource(surface) {
   return `${BANNER}
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:${core}/${core}.dart';
+
+import 'url_opener.dart';
 
 /// Secure-storage adapter over the platform keystore.
 ///
@@ -2649,6 +2825,7 @@ final Map<String, SdkworkHostAdapter> _adapters = <String, SdkworkHostAdapter>{}
 Future<void> registerHostAdapters() async {
   _adapters.clear();
   _adapters[SdkworkHostCapability.secureStorage] = SdkworkSecureStorageAdapter();
+  _adapters[iamUrlOpenerCapability] = const IamUrlOpenerAdapter();
 }
 
 /// The adapter for [capability], or null when this platform lacks it.

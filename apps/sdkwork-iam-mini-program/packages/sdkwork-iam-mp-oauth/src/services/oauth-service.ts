@@ -18,6 +18,7 @@ export function createiamMpOauthService(input: CreateiamMpOauthServiceInput): ia
       void service;
       return [
         'providers',
+        'official-accounts',
       ];
     },
   };

@@ -8,8 +8,8 @@
  */
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sdkwork_iam_flutter_mobile_console_core/sdkwork_iam_flutter_mobile_console_core.dart';
 import 'package:sdkwork_iam_flutter_mobile_console_tenant/sdkwork_iam_flutter_mobile_console_tenant.dart';
+import 'package:sdkwork_iam_flutter_mobile_console_core/sdkwork_iam_flutter_mobile_console_core.dart';
 
 void main() {
   test('route ids and paths match the cross-client identity', () {

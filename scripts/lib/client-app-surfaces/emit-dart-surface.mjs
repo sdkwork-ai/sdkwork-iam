@@ -334,12 +334,19 @@ ${configProfiles}
 
 function packageTestSource(surface, entry) {
   const pascal = pascalFromDir(entry.dir);
-  const token = tokenOfEntry(entry);
+  // Core packages ship without the Flutter SDK, so their tests run on `test`.
+  const testImport = usesFlutterSdk(entry)
+    ? "import 'package:flutter_test/flutter_test.dart';"
+    : "import 'package:test/test.dart';";
   if (entry.role === 'capability') {
     const routes = routesOfPackage(entry);
     const expected = routes
       .map((route) => `      '${routeId(route)}': '${route.path}',`)
       .join('\n');
+    // `RouteContribution` is declared by the tier core; a generated package
+    // barrel does not necessarily re-export it, and an import inside
+    // route_manifest.dart is not transitive through the package boundary.
+    const tierCoreDir = coreDirOf(surface, tierOfEntry(entry));
     return `${BANNER}
 /**
  * Route contribution test of \`${entry.dir}\`.
@@ -351,6 +358,7 @@ function packageTestSource(surface, entry) {
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:${entry.dir}/${entry.dir}.dart';
+import 'package:${tierCoreDir}/${tierCoreDir}.dart';
 
 void main() {
   test('route ids and paths match the cross-client identity', () {
@@ -372,15 +380,15 @@ ${expected}
 }
 `;
   }
-  const tokenFile = token;
-  return `${BANNER}
+  if (isCoreRole(entry)) {
+    return `${BANNER}
 /**
  * Composition test of \`${entry.dir}\`.
  *
  * Proves the package publishes the composition surface its component spec declares.
  */
 
-import 'package:flutter_test/flutter_test.dart';
+${testImport}
 import 'package:${entry.dir}/${entry.dir}.dart';
 
 void main() {
@@ -388,7 +396,27 @@ void main() {
     expect(${camel(pascal)}ComponentSpecPath, endsWith('specs/component.spec.json'));
   });
 }
-`.replaceAll('${tokenFile}', tokenFile);
+`;
+  }
+  // Commons and shell packages publish no component-spec constant; what the
+  // manifest promises is the spec file itself, resolved from the package root.
+  return `${BANNER}
+/**
+ * Component spec test of \`${entry.dir}\`.
+ *
+ * Proves the package ships the component spec its manifest references.
+ */
+
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  test('the package ships its component spec', () {
+    expect(File('specs/component.spec.json').existsSync(), isTrue);
+  });
+}
+`;
 }
 
 function tokenOfEntry(entry) {

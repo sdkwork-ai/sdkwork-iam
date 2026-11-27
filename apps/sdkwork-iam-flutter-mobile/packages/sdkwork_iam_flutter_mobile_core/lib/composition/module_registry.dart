@@ -60,6 +60,6 @@ const List<ModuleDescriptor> iamFlutterMobileCoreModules = <ModuleDescriptor>[
   ModuleDescriptor(
     id: 'sdkwork_iam_flutter_mobile_oauth',
     capability: 'oauth',
-    routeIds: <String>['app.iam.oauth.providers'],
+    routeIds: <String>['app.iam.oauth.providers', 'app.iam.oauth.official-accounts'],
   ),
 ];

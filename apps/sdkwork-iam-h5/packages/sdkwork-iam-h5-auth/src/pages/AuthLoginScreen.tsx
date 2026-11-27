@@ -46,6 +46,7 @@ export function SdkworkIamH5AuthLoginScreen({
   controller,
   initialMode,
   onAuthenticated,
+  onContextSelectionRequired,
   onScanLoginCompleted,
   onThirdPartyLogin,
   onBack,
@@ -92,6 +93,13 @@ export function SdkworkIamH5AuthLoginScreen({
     setError(message);
   }, []);
 
+  const requireContextSelection = useCallback((
+    nextChallenge: NonNullable<ReturnType<SdkworkIamH5AuthController["getState"]>["challenge"]>,
+  ) => {
+    setChallenge(nextChallenge);
+    onContextSelectionRequired?.();
+  }, [onContextSelectionRequired]);
+
   const redirectToWechatAuthorization = useCallback(async (
     mode: SdkworkIamH5OAuthFlowMode = "silent",
   ) => {
@@ -111,11 +119,7 @@ export function SdkworkIamH5AuthLoginScreen({
       });
     } catch (redirectError) {
       setWechatRedirecting(false);
-      showError(
-        redirectError instanceof Error
-          ? redirectError.message
-          : "WeChat authorization is unavailable",
-      );
+      showError(resolveAuthErrorMessage(redirectError, messages.toasts.operationFailed));
     }
   }, [controller, resolvedOAuthCallbackPath, scanContext, showError]);
 
@@ -174,7 +178,7 @@ export function SdkworkIamH5AuthLoginScreen({
       setCountdown(CODE_COUNTDOWN_SECONDS);
       showError(messages.toasts.codeSent);
     } catch (sendError) {
-      const message = sendError instanceof Error ? sendError.message : messages.toasts.operationFailed;
+      const message = resolveAuthErrorMessage(sendError, messages.toasts.operationFailed);
       showError(
         message === SDKWORK_IAM_H5_AUTH_VERIFICATION_UNAVAILABLE_MESSAGE
           ? messages.toasts.verificationUnavailable
@@ -196,13 +200,11 @@ export function SdkworkIamH5AuthLoginScreen({
       setCompleted(true);
       onScanLoginCompleted?.();
     } catch (completionError) {
-      showError(
-        completionError instanceof Error ? completionError.message : "Scan login completion failed",
-      );
+      showError(resolveAuthErrorMessage(completionError, messages.toasts.operationFailed));
     } finally {
       setLoading(false);
     }
-  }, [controller, onScanLoginCompleted, showError]);
+  }, [controller, messages, onScanLoginCompleted, showError]);
 
   const handleAuthenticated = useCallback(async (session: SdkworkIamH5AuthSession) => {
     if (scanContext) {
@@ -232,7 +234,7 @@ export function SdkworkIamH5AuthLoginScreen({
         }
         const result = await controller.login({ password, username: account });
         if (result.kind === "loginContextSelectionRequired") {
-          setChallenge(result.challenge);
+          requireContextSelection(result.challenge);
           return;
         }
         await handleAuthenticated(result.session);
@@ -243,7 +245,7 @@ export function SdkworkIamH5AuthLoginScreen({
         }
         const result = await controller.loginWithCode({ code, target: account });
         if (result.kind === "loginContextSelectionRequired") {
-          setChallenge(result.challenge);
+          requireContextSelection(result.challenge);
           return;
         }
         await handleAuthenticated(result.session);
@@ -262,7 +264,7 @@ export function SdkworkIamH5AuthLoginScreen({
         }
         const result = await controller.register({ account, code, password, confirmPassword });
         if (result.kind === "loginContextSelectionRequired") {
-          setChallenge(result.challenge);
+          requireContextSelection(result.challenge);
           return;
         }
         await handleAuthenticated(result.session);
@@ -280,9 +282,7 @@ export function SdkworkIamH5AuthLoginScreen({
         setMode("login-pwd");
       }
     } catch (submitError) {
-      showError(
-        submitError instanceof Error ? submitError.message : messages.toasts.operationFailed,
-      );
+      showError(resolveAuthErrorMessage(submitError, messages.toasts.operationFailed));
     } finally {
       setLoading(false);
     }
@@ -295,6 +295,7 @@ export function SdkworkIamH5AuthLoginScreen({
     messages,
     mode,
     password,
+    requireContextSelection,
     showError,
   ]);
 
@@ -371,21 +372,24 @@ export function SdkworkIamH5AuthLoginScreen({
   }
 
   return (
-    <div className="sdkwork-iam-h5-auth-surface relative flex h-full flex-col overflow-y-auto">
+    <div className="sdkwork-iam-h5-auth-surface relative flex min-h-[100dvh] flex-col overflow-y-auto pb-[env(safe-area-inset-bottom,0px)]">
       {onBack ? (
         <button
           type="button"
           onClick={onBack}
           aria-label={messages.links.backToPrevious}
-          className="absolute left-4 top-[calc(env(safe-area-inset-top,0px)+0.9rem)] z-20 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition-opacity active:opacity-70"
+          className="absolute left-4 top-[calc(env(safe-area-inset-top,0px)+0.9rem)] z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition-opacity active:opacity-70"
         >
           <ChevronLeft className="h-5 w-5" aria-hidden />
         </button>
       ) : null}
-      <div className="flex min-h-[500px] flex-1 flex-col justify-center px-8 py-8">
+      <div className="flex min-h-[500px] flex-1 flex-col justify-center px-8 pb-8 pt-[calc(2rem+env(safe-area-inset-top,0px))]">
         <SdkworkIamH5AuthHeader mode={mode} />
 
-        <div className="flex w-full flex-col">
+        <div aria-busy={loading} className="flex w-full flex-col">
+          <div aria-live="polite" className="sr-only" role="status">
+            {loading ? messages.actions.pleaseWait : ""}
+          </div>
           <SdkworkIamH5AuthFormFields
             mode={mode}
             account={account}
@@ -403,7 +407,9 @@ export function SdkworkIamH5AuthLoginScreen({
           />
 
           {error ? (
-            <p className="mt-5 text-center text-[14px] text-[#EF4444]">{error}</p>
+            <p className="mt-5 text-center text-[14px] text-[#EF4444]" role="alert">
+              {error}
+            </p>
           ) : null}
 
           <div className="mt-8 flex flex-col gap-5">
@@ -468,6 +474,28 @@ function isWechatBrowser(): boolean {
   return /MicroMessenger/i.test(navigator.userAgent);
 }
 
+/**
+ * Keep server-authored business messages, replace transport noise.
+ *
+ * The SDK surfaces an unreachable edge as `HTTP 404: Not Found` / `Failed to
+ * fetch`; those are diagnostics, not copy, so the screen swaps them for the
+ * localized generic failure while preserving localized problem details such as
+ * a wrong-password message.
+ */
+function resolveAuthErrorMessage(error: unknown, fallback: string): string {
+  if (!(error instanceof Error)) {
+    return fallback;
+  }
+  const message = error.message.trim();
+  if (!message) {
+    return fallback;
+  }
+  if (/^HTTP\s+\d{3}\b/i.test(message) || /^(Failed to fetch|NetworkError|Load failed)/i.test(message)) {
+    return fallback;
+  }
+  return message;
+}
+
 export interface SdkworkIamH5AuthLoginScreenProps {
   controller: SdkworkIamH5AuthController;
   /**
@@ -479,6 +507,8 @@ export interface SdkworkIamH5AuthLoginScreenProps {
    */
   initialMode?: SdkworkIamH5AuthMode;
   onAuthenticated?: (session: SdkworkIamH5AuthSession) => void;
+  /** Invoked when login requires the explicit personal/organization continuation route. */
+  onContextSelectionRequired?: () => void;
   /** Invoked when a scan-login QR session was completed on this device. */
   onScanLoginCompleted?: () => void;
   /**

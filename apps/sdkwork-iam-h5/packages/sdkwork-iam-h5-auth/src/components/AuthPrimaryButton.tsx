@@ -32,6 +32,7 @@ export function SdkworkIamH5AuthPrimaryButton({
           ? "bg-[var(--iam-h5-auth-btn-disabled-bg)] text-[var(--iam-h5-auth-btn-disabled-text)]"
           : "bg-[var(--iam-h5-auth-green)] shadow-md shadow-[var(--iam-h5-auth-green-shadow)]")
       }
+      aria-busy={loading}
       disabled={disabled || loading}
       onClick={onClick}
     >

@@ -1,4 +1,5 @@
 .cache/
 dist/
+types/
 *.local.*
 project.private.config.json

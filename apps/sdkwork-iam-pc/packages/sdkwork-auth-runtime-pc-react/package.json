@@ -10,6 +10,11 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./sessionAuthRedirect": {
+      "types": "./src/sessionAuthRedirect.ts",
+      "import": "./src/sessionAuthRedirect.ts",
+      "default": "./src/sessionAuthRedirect.ts"
+    },
     "./handleSdkworkSessionAuthUnauthorizedError": {
       "types": "./src/handleSdkworkSessionAuthUnauthorizedError.ts",
       "import": "./src/handleSdkworkSessionAuthUnauthorizedError.ts",

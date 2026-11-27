@@ -8,6 +8,7 @@
  */
 export const iamH5ShellMessages = {
   loginTitle: "Sign in",
+  checkingSession: "Checking your session…",
   notFound: {
     title: "Page not found",
     detail: "This link is not available on this client.",

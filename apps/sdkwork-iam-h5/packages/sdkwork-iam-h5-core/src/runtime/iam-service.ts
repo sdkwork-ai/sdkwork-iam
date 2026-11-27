@@ -26,6 +26,8 @@ export interface CreateIamH5AppServiceInput {
   baseUrl: string;
   /** Access token for the signed-in session, when the caller holds one. */
   accessToken?: string;
+  /** IAM identity token paired with the application access token. */
+  authToken?: string;
   /** Clears the host session before a new one is established. */
   clearSession?: () => Promise<unknown> | unknown;
   /** Commits a freshly established session to the host store. */
@@ -49,6 +51,7 @@ export function createIamH5AppClient(input: CreateIamH5AppServiceInput): Sdkwork
   const client = createIamAppSdkClient({
     baseUrl,
     ...(input.accessToken ? { accessToken: input.accessToken } : {}),
+    ...(input.authToken ? { authToken: input.authToken } : {}),
     ...(input.tenantId ? { tenantId: input.tenantId } : {}),
     ...(input.timeoutMs !== undefined ? { timeout: input.timeoutMs } : {}),
   });
@@ -109,6 +112,8 @@ export interface IamH5RuntimeService {
    * @param token - bearer token, or `undefined` to clear.
    */
   setAccessToken(token: string | undefined): void;
+  /** Push the current IAM identity token onto the generated client. */
+  setAuthToken(token: string | undefined): void;
 }
 
 /**
@@ -131,6 +136,9 @@ export function createIamH5RuntimeService(input: CreateIamH5AppServiceInput): Ia
     service,
     setAccessToken(token: string | undefined) {
       client.setAccessToken(token ?? "");
+    },
+    setAuthToken(token: string | undefined) {
+      client.setAuthToken(token ?? "");
     },
   };
 }

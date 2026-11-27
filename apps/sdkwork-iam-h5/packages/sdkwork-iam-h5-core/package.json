@@ -14,6 +14,7 @@
     "./modules": "./src/modules/index.ts",
     "./host": "./src/host/index.ts",
     "./session": "./src/session/index.ts",
+    "./runtime": "./src/runtime/index.ts",
     "./composition": {
       "types": "./src/composition/index.ts",
       "import": "./src/composition/index.ts",

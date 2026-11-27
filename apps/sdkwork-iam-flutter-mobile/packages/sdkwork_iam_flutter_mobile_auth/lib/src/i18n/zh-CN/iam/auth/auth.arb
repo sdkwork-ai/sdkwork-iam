@@ -88,6 +88,22 @@
   "@newPasswordTooShort": {
     "description": "Validation: the new password is too short."
   },
+  "showPassword": "显示密码",
+  "@showPassword": { "description": "Password visibility action." },
+  "hidePassword": "隐藏密码",
+  "@hidePassword": { "description": "Password visibility action." },
+  "required": "请输入账号和密码。",
+  "@required": { "description": "Validation: required login field." },
+  "contextTitle": "选择登录上下文",
+  "@contextTitle": { "description": "Title of context selection." },
+  "contextSubtitle": "请选择登录方式，系统不会自动选择组织。",
+  "@contextSubtitle": { "description": "Context selection guidance." },
+  "personalChoice": "个人账号",
+  "@personalChoice": { "description": "Tenant-scoped login choice." },
+  "contextUnavailable": "登录请求已过期，请重新登录。",
+  "@contextUnavailable": { "description": "Missing challenge error." },
+  "back": "返回",
+  "@back": { "description": "Return to sign in." },
   "confirmMismatch": "两次输入的新密码不一致。",
   "@confirmMismatch": {
     "description": "Validation: the confirmation differs from the new password."

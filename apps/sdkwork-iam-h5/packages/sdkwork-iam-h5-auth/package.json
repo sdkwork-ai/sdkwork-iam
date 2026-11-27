@@ -27,8 +27,8 @@
     "lucide-react": "catalog:"
   },
   "devDependencies": {
-    "@types/react": "catalog:",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "@types/react": "catalog:"
   },
   "sdkwork": {
     "architecture": "h5",

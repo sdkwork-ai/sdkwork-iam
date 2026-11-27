@@ -2,6 +2,7 @@
 /** Locale fragment: domain `iam`, capability `oauth`, package `@sdkwork/iam-mp-oauth`. */
 export const iamMpOauthMessages = {
   'iam.oauth.providers.title': 'OAuth providers',
+  'iam.oauth.officialAccounts.title': 'iam.oauth.officialAccounts.title',
 } as const;
 
 export type iamMpOauthMessageKey = keyof typeof iamMpOauthMessages;

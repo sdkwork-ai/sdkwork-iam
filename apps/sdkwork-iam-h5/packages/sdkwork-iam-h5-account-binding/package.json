@@ -19,10 +19,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@sdkwork/iam-h5-commons": "workspace:*",
     "@sdkwork/iam-h5-core": "workspace:*",
     "@sdkwork/iam-service": "workspace:*",
     "@sdkwork/iam-contracts": "workspace:*",
+    "@sdkwork/iam-h5-commons": "workspace:*",
     "@sdkwork/utils": "workspace:*"
   },
   "devDependencies": {

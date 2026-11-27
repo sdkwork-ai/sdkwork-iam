@@ -9,7 +9,7 @@
  * client root and every tier; only `presentation` and the mini program
  * placement are platform-specific.
  *
- * This registry holds the 12 `app`-surface route(s). The other tiers
+ * This registry holds the 13 `app`-surface route(s). The other tiers
  * own theirs in their own core package, so no tier has to depend on another.
  */
 
@@ -88,7 +88,7 @@ export const IAMMP_ROUTE_CONTRIBUTIONS: readonly IamMpRouteContribution[] = [
     screen: 'context-selection',
     path: '/auth/login/context',
     titleKey: 'iam.auth.contextSelection.title',
-    auth: 'required',
+    auth: 'public',
     presentation: { miniProgram: 'subpackagePage' },
     miniProgram: { pagePath: 'pages/context-selection/index' },
   },
@@ -182,6 +182,19 @@ export const IAMMP_ROUTE_CONTRIBUTIONS: readonly IamMpRouteContribution[] = [
     permissionHint: 'iam.oauth.read',
     presentation: { miniProgram: 'subpackagePage' },
     miniProgram: { subpackage: 'app-oauth', pagePath: 'pages/providers/index' },
+  },
+  {
+    id: 'app.iam.oauth.official-accounts',
+    surface: 'app',
+    domain: 'iam',
+    capability: 'oauth',
+    screen: 'official-accounts',
+    path: '/oauth/official-accounts',
+    titleKey: 'iam.oauth.officialAccounts.title',
+    auth: 'required',
+    permissionHint: 'iam.self',
+    presentation: { miniProgram: 'subpackagePage' },
+    miniProgram: { subpackage: 'app-oauth', pagePath: 'pages/official-accounts/index' },
   },
 ];
 

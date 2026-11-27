@@ -40,7 +40,7 @@ test('root layout carries the standard Mini Program directories', () => {
 });
 
 const TIER_REGISTRIES = [
-  { tier: 'app', dir: 'sdkwork-iam-mp-core', constant: 'IAMMP_ROUTE_CONTRIBUTIONS', count: 12 },
+  { tier: 'app', dir: 'sdkwork-iam-mp-core', constant: 'IAMMP_ROUTE_CONTRIBUTIONS', count: 13 },
   { tier: 'console', dir: 'sdkwork-iam-mp-console-core', constant: 'IAMMPCONSOLE_ROUTE_CONTRIBUTIONS', count: 4 },
   { tier: 'admin', dir: 'sdkwork-iam-mp-admin-core', constant: 'IAMMPADMIN_ROUTE_CONTRIBUTIONS', count: 10 },
 ];
@@ -83,7 +83,7 @@ function allRouteIds() {
 
 test('tier registries partition the route table without overlap', () => {
   const total = TIER_REGISTRIES.reduce((sum, registry) => sum + registry.count, 0);
-  assert.equal(total, 26, 'tier route counts must sum to the whole route table');
+  assert.equal(total, 27, 'tier route counts must sum to the whole route table');
 });
 
 test('every authored package name carries the architecture segment', () => {
@@ -101,7 +101,7 @@ test('every authored package name carries the architecture segment', () => {
   }
 });
 
-test('the tier registries together declare 26 contributions with canonical ids', () => {
+test('the tier registries together declare 27 contributions with canonical ids', () => {
   const ids = allRouteIds();
   for (const id of ids) {
     const tier = id.slice(0, id.indexOf('.'));
@@ -110,7 +110,7 @@ test('the tier registries together declare 26 contributions with canonical ids',
       id + ' is declared under a known tier',
     );
   }
-  assert.equal(ids.length, 26, 'unexpected route count: ' + ids.join(', '));
+  assert.equal(ids.length, 27, 'unexpected route count: ' + ids.join(', '));
   assert.equal(new Set(ids).size, ids.length, 'duplicate route ids across tiers');
 });
 

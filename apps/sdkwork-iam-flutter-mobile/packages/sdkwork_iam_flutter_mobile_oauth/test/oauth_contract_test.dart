@@ -8,8 +8,8 @@
  */
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sdkwork_iam_flutter_mobile_core/sdkwork_iam_flutter_mobile_core.dart';
 import 'package:sdkwork_iam_flutter_mobile_oauth/sdkwork_iam_flutter_mobile_oauth.dart';
+import 'package:sdkwork_iam_flutter_mobile_core/sdkwork_iam_flutter_mobile_core.dart';
 
 void main() {
   test('route ids and paths match the cross-client identity', () {
@@ -19,6 +19,7 @@ void main() {
     };
     expect(actual, <String, String>{
       'app.iam.oauth.providers': '/oauth/providers',
+      'app.iam.oauth.official-accounts': '/oauth/official-accounts',
     });
   });
 
