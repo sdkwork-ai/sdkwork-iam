@@ -60,22 +60,15 @@ print(result);
 
 ### iam
 ```dart
-// Departments tree retrieve.
-final result = await client.iam.departmentsTreeRetrieve();
+// Oauth official Account Settings retrieve.
+final result = await client.iam.oauthOfficialAccountSettingsRetrieve();
 print(result);
 ```
 
 ### oauth
 ```dart
-// Account Links list.
-final params = <String, dynamic>{
-  'page': 1,
-  'page_size': 2,
-  'cursor': 'cursor',
-  'sort': 'sort',
-  'q': 'q',
-};
-final result = await client.oauth.accountLinksList(params);
+// Login Follow Qr retrieve.
+final result = await client.oauth.loginFollowQrRetrieve();
 print(result);
 ```
 

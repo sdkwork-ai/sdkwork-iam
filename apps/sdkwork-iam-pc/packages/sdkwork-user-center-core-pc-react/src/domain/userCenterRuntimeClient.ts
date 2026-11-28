@@ -180,7 +180,7 @@ function parseAuthorizationHeader(
   }
 
   const [scheme, ...tokenParts] = normalized.split(/\s+/u);
-  if (tokenParts.length === 0) {
+  if (!scheme || tokenParts.length === 0) {
     return {
       token: normalized,
     };

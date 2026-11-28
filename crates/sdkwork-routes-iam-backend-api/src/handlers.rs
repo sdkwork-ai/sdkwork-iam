@@ -363,7 +363,6 @@ async fn create_access_credential(
             );
         }
         Err(message) => {
-            eprintln!("bootstrap actor resolution failed: {message}");
             return appbase_error(
                 StatusCode::SERVICE_UNAVAILABLE,
                 "iam_super_admin_auth_unavailable",
@@ -402,7 +401,6 @@ async fn create_access_credential(
             &message,
         ),
         Err(message) => {
-            eprintln!("delegated access credential issuance failed: {message}");
             tracing::warn!(error = %message, "delegated access credential issuance failed");
             appbase_error(
                 StatusCode::SERVICE_UNAVAILABLE,

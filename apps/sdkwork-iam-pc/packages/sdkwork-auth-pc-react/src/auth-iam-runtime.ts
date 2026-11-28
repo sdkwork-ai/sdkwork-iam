@@ -284,10 +284,10 @@ interface AuthRefreshLockManager {
  * win and signs the other tab out. The lock is a no-op in environments without
  * `navigator.locks` (the tests and older webviews).
  */
-function withAuthRefreshLock<T>(callback: () => Promise<T>): Promise<T> {
+async function withAuthRefreshLock<T>(callback: () => Promise<T>): Promise<T> {
   const locks = (globalThis.navigator as Navigator & { locks?: AuthRefreshLockManager })?.locks;
   if (locks?.request) {
-    return locks.request("sdkwork.auth.refresh", callback);
+    return await locks.request("sdkwork.auth.refresh", callback);
   }
   return callback();
 }

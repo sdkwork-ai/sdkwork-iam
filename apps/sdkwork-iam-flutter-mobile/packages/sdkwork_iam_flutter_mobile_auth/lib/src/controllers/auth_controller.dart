@@ -58,16 +58,76 @@ class IamFlutterMobileAuthController {
     try {
       final IamFlutterMobileLoginResult result = await _service
           .signInWithPassword(password: password, username: username);
-      switch (result) {
-        case IamFlutterMobileLoginSessionResult():
-          _emit(_state.signedIn(result.session));
-          return true;
-        case IamFlutterMobileLoginContextSelectionRequiredResult():
-          _emit(_state.contextSelectionRequired(result.challenge));
-          return false;
-      }
+      return _applyLoginResult(result);
     } catch (error) {
       _emit(_state.failed('$error'));
+      return false;
+    }
+  }
+
+  /// Signs in with a verification code sent to [account].
+  ///
+  /// Mirrors [signIn]: the failure is recorded in state and the returned flag
+  /// tells the screen whether a session was established.
+  Future<bool> signInWithCode({
+    required String account,
+    required String code,
+  }) async {
+    _emit(_state.asSubmitting());
+    try {
+      final IamFlutterMobileLoginResult result = await _service
+          .signInWithCode(account: account, code: code);
+      return _applyLoginResult(result);
+    } catch (error) {
+      _emit(_state.failed(_describe(error)));
+      return false;
+    }
+  }
+
+  /// Registers [draft] and applies the resulting session or context challenge.
+  Future<bool> register(
+    IamFlutterMobileRegisterDraft draft, {
+    bool verificationRequired = false,
+  }) async {
+    _emit(_state.asSubmitting());
+    try {
+      final IamFlutterMobileLoginResult result = await _service.register(
+        draft,
+        verificationRequired: verificationRequired,
+      );
+      return _applyLoginResult(result);
+    } catch (error) {
+      _emit(_state.failed(_describe(error)));
+      return false;
+    }
+  }
+
+  bool _applyLoginResult(IamFlutterMobileLoginResult result) {
+    switch (result) {
+      case IamFlutterMobileLoginSessionResult():
+        _emit(_state.signedIn(result.session));
+        return true;
+      case IamFlutterMobileLoginContextSelectionRequiredResult():
+        _emit(_state.contextSelectionRequired(result.challenge));
+        return false;
+    }
+  }
+
+  /// Asks for a verification code of [scene] for [account].
+  ///
+  /// The failure is recorded in state rather than rethrown, so the form needs no
+  /// try/catch; the returned flag lets the screen keep the code field enabled.
+  Future<bool> requestVerificationCode({
+    required String account,
+    required IamFlutterMobileVerificationScene scene,
+  }) async {
+    _emit(_state.asSendingCode());
+    try {
+      await _service.requestVerificationCode(account: account, scene: scene);
+      _emit(_state.succeeded('code-sent'));
+      return true;
+    } catch (error) {
+      _emit(_state.failed(_describe(error)));
       return false;
     }
   }

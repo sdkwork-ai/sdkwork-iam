@@ -1759,8 +1759,9 @@ function buildSchemas() {
         enterpriseName: { type: 'string' },
         authorizationMode: { type: 'string', enum: ['all_members', 'seat'] },
         seatCount: { type: ['integer', 'null'] },
+        activeSeatCount: { type: 'integer', minimum: 0 },
         seatName: { type: ['string', 'null'], maxLength: 200 },
-        managementScope: { type: 'string', enum: ['tenant', 'organization', 'department', 'self'] },
+        managementScope: { type: 'string', enum: ['tenant', 'organization', 'department', 'department_and_children', 'self'] },
         durationMonths: { type: 'integer', enum: [3, 6, 12] },
         orderStatus: {
           type: 'string',
@@ -1794,8 +1795,9 @@ function buildSchemas() {
         enterpriseName: { type: 'string' },
         authorizationMode: { type: 'string', enum: ['all_members', 'seat'] },
         seatCount: { type: ['integer', 'null'] },
+        activeSeatCount: { type: 'integer', minimum: 0 },
         seatName: { type: ['string', 'null'], maxLength: 200 },
-        managementScope: { type: 'string', enum: ['tenant', 'organization', 'department', 'self'] },
+        managementScope: { type: 'string', enum: ['tenant', 'organization', 'department', 'department_and_children', 'self'] },
         durationMonths: { type: 'integer', enum: [3, 6, 12] },
         orderStatus: {
           type: 'string',
@@ -2768,6 +2770,14 @@ function buildSchemas() {
           type: 'string',
           description: 'Write-only password credential used by standard password login.',
           format: 'password',
+        },
+        code: {
+          type: 'string',
+          minLength: 4,
+          maxLength: 12,
+          writeOnly: true,
+          description:
+            'One-time verification code of the `phone_code`/`email_code` grants requested for the same `phone`/`email` target. Ignored by the password grant.',
         },
         externalToken: {
           type: 'string',

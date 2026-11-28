@@ -107,5 +107,53 @@
   "confirmMismatch": "两次输入的新密码不一致。",
   "@confirmMismatch": {
     "description": "Validation: the confirmation differs from the new password."
+  },
+  "loginWithCode": "验证码登录",
+  "@loginWithCode": {
+    "description": "Switch from the password form to the verification-code form."
+  },
+  "loginWithPassword": "密码登录",
+  "@loginWithPassword": {
+    "description": "Switch from the verification-code form back to the password form."
+  },
+  "registerLink": "注册账号",
+  "@registerLink": {
+    "description": "Link from the sign-in form to the registration screen."
+  },
+  "registerTitle": "注册账号",
+  "@registerTitle": {
+    "description": "Title of the registration screen."
+  },
+  "registerSubtitle": "使用用户名快速注册，或验证邮箱、手机号后注册。",
+  "@registerSubtitle": {
+    "description": "Supporting line under the registration title."
+  },
+  "registerAction": "注册",
+  "@registerAction": {
+    "description": "Label of the registration submit action."
+  },
+  "backToLogin": "返回登录",
+  "@backToLogin": {
+    "description": "Return from registration to the sign-in screen."
+  },
+  "registerAccountRequired": "请输入注册账号。",
+  "@registerAccountRequired": {
+    "description": "Validation: the registration account is empty."
+  },
+  "registerChannelUnavailable": "该账号类型暂不支持注册。",
+  "@registerChannelUnavailable": {
+    "description": "Validation: the host does not offer this registration method."
+  },
+  "codeChannelUnavailable": "该账号暂不支持验证码登录。",
+  "@codeChannelUnavailable": {
+    "description": "Validation: the host does not offer code login for this channel."
+  },
+  "passwordTooShort": "密码至少 8 个字符。",
+  "@passwordTooShort": {
+    "description": "Validation: the registration password is too short."
+  },
+  "loginUnavailable": "该应用暂未开启登录方式，请联系管理员。",
+  "@loginUnavailable": {
+    "description": "Notice: the host policy enables no sign-in method at all."
   }
 }

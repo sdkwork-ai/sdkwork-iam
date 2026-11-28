@@ -107,5 +107,53 @@
   "confirmMismatch": "The confirmation does not match.",
   "@confirmMismatch": {
     "description": "Validation: the confirmation differs from the new password."
+  },
+  "loginWithCode": "Sign in with a code",
+  "@loginWithCode": {
+    "description": "Switch from the password form to the verification-code form."
+  },
+  "loginWithPassword": "Sign in with password",
+  "@loginWithPassword": {
+    "description": "Switch from the verification-code form back to the password form."
+  },
+  "registerLink": "Create an account",
+  "@registerLink": {
+    "description": "Link from the sign-in form to the registration screen."
+  },
+  "registerTitle": "Create account",
+  "@registerTitle": {
+    "description": "Title of the registration screen."
+  },
+  "registerSubtitle": "Register with a username, or verify your email or phone.",
+  "@registerSubtitle": {
+    "description": "Supporting line under the registration title."
+  },
+  "registerAction": "Create account",
+  "@registerAction": {
+    "description": "Label of the registration submit action."
+  },
+  "backToLogin": "Back to sign in",
+  "@backToLogin": {
+    "description": "Return from registration to the sign-in screen."
+  },
+  "registerAccountRequired": "Enter the account to register.",
+  "@registerAccountRequired": {
+    "description": "Validation: the registration account is empty."
+  },
+  "registerChannelUnavailable": "This account type cannot be registered.",
+  "@registerChannelUnavailable": {
+    "description": "Validation: the host does not offer this registration method."
+  },
+  "codeChannelUnavailable": "Verification codes are not available for this account.",
+  "@codeChannelUnavailable": {
+    "description": "Validation: the host does not offer code login for this channel."
+  },
+  "passwordTooShort": "The password must be at least 8 characters.",
+  "@passwordTooShort": {
+    "description": "Validation: the registration password is too short."
+  },
+  "loginUnavailable": "Sign-in is not available for this app yet. Contact the administrator.",
+  "@loginUnavailable": {
+    "description": "Notice: the host policy enables no sign-in method at all."
   }
 }

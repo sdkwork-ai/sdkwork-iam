@@ -37,10 +37,16 @@ function resolveInitials(displayName: string, initials?: string): string {
   }
 
   if (words.length === 1) {
-    return words[0].slice(0, 2).toUpperCase();
+    const word = words[0];
+    return word === undefined ? "?" : word.slice(0, 2).toUpperCase();
   }
 
-  return `${words[0].charAt(0)}${words[words.length - 1].charAt(0)}`.toUpperCase();
+  const firstWord = words[0];
+  const lastWord = words[words.length - 1];
+  if (firstWord === undefined || lastWord === undefined) {
+    return "?";
+  }
+  return `${firstWord.charAt(0)}${lastWord.charAt(0)}`.toUpperCase();
 }
 
 /**

@@ -1194,6 +1194,370 @@ class IamOrganizationMemberListResponse {
   }
 }
 
+class IamOrganizationMembership {
+  final String? id;
+  final String userId;
+  final String membershipId;
+  final String organizationId;
+  final String? tenantId;
+  final String membershipKind;
+  final String status;
+  final String? username;
+  final String? displayName;
+  final String? email;
+  final String? phone;
+
+  IamOrganizationMembership({
+    this.id,
+    required this.userId,
+    required this.membershipId,
+    required this.organizationId,
+    this.tenantId,
+    required this.membershipKind,
+    required this.status,
+    this.username,
+    this.displayName,
+    this.email,
+    this.phone
+  });
+
+  factory IamOrganizationMembership.fromJson(Map<String, dynamic> json) {
+    return IamOrganizationMembership(
+      id: json['id']?.toString(),
+      userId: (() {
+        final value = json['userId']?.toString();
+        if (value == null) {
+          throw FormatException('IamOrganizationMembership.userId is required');
+        }
+        return value;
+      })(),
+      membershipId: (() {
+        final value = json['membershipId']?.toString();
+        if (value == null) {
+          throw FormatException('IamOrganizationMembership.membershipId is required');
+        }
+        return value;
+      })(),
+      organizationId: (() {
+        final value = json['organizationId']?.toString();
+        if (value == null) {
+          throw FormatException('IamOrganizationMembership.organizationId is required');
+        }
+        return value;
+      })(),
+      tenantId: json['tenantId']?.toString(),
+      membershipKind: (() {
+        final value = json['membershipKind']?.toString();
+        if (value == null) {
+          throw FormatException('IamOrganizationMembership.membershipKind is required');
+        }
+        return value;
+      })(),
+      status: (() {
+        final value = json['status']?.toString();
+        if (value == null) {
+          throw FormatException('IamOrganizationMembership.status is required');
+        }
+        return value;
+      })(),
+      username: json['username']?.toString(),
+      displayName: json['displayName']?.toString(),
+      email: json['email']?.toString(),
+      phone: json['phone']?.toString()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'userId': userId,
+      'membershipId': membershipId,
+      'organizationId': organizationId,
+      'tenantId': tenantId,
+      'membershipKind': membershipKind,
+      'status': status,
+      'username': username,
+      'displayName': displayName,
+      'email': email,
+      'phone': phone,
+    };
+  }
+}
+
+class IamOrganizationMembershipListResponse {
+  final int code;
+  final dynamic data;
+  final String traceId;
+
+  IamOrganizationMembershipListResponse({
+    required this.code,
+    required this.data,
+    required this.traceId
+  });
+
+  factory IamOrganizationMembershipListResponse.fromJson(Map<String, dynamic> json) {
+    return IamOrganizationMembershipListResponse(
+      code: (() {
+        final value = json['code'];
+        if (value is! int) {
+          throw FormatException('IamOrganizationMembershipListResponse.code is required');
+        }
+        return value;
+      })(),
+      data: (() {
+        final map = _sdkworkAsMap(json['data']);
+        if (map == null) {
+          throw FormatException('IamOrganizationMembershipListResponse.data is required');
+        }
+        return map;
+      })(),
+      traceId: (() {
+        final value = json['traceId']?.toString();
+        if (value == null) {
+          throw FormatException('IamOrganizationMembershipListResponse.traceId is required');
+        }
+        return value;
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'data': data,
+      'traceId': traceId,
+    };
+  }
+}
+
+class IamRoleBinding {
+  final String id;
+  final String tenantId;
+  final String organizationId;
+  final String roleId;
+  final String roleCode;
+  final String principalKind;
+  final String principalId;
+  final String? principalDisplayName;
+  final String? principalUsername;
+  final String scopeKind;
+  final String scopeId;
+  final String effect;
+  final String status;
+  final String dataScopeKind;
+  final String? effectiveFrom;
+  final String? effectiveTo;
+
+  IamRoleBinding({
+    required this.id,
+    required this.tenantId,
+    required this.organizationId,
+    required this.roleId,
+    required this.roleCode,
+    required this.principalKind,
+    required this.principalId,
+    this.principalDisplayName,
+    this.principalUsername,
+    required this.scopeKind,
+    required this.scopeId,
+    required this.effect,
+    required this.status,
+    required this.dataScopeKind,
+    required this.effectiveFrom,
+    required this.effectiveTo
+  });
+
+  factory IamRoleBinding.fromJson(Map<String, dynamic> json) {
+    return IamRoleBinding(
+      id: (() {
+        final value = json['id']?.toString();
+        if (value == null) {
+          throw FormatException('IamRoleBinding.id is required');
+        }
+        return value;
+      })(),
+      tenantId: (() {
+        final value = json['tenantId']?.toString();
+        if (value == null) {
+          throw FormatException('IamRoleBinding.tenantId is required');
+        }
+        return value;
+      })(),
+      organizationId: (() {
+        final value = json['organizationId']?.toString();
+        if (value == null) {
+          throw FormatException('IamRoleBinding.organizationId is required');
+        }
+        return value;
+      })(),
+      roleId: (() {
+        final value = json['roleId']?.toString();
+        if (value == null) {
+          throw FormatException('IamRoleBinding.roleId is required');
+        }
+        return value;
+      })(),
+      roleCode: (() {
+        final value = json['roleCode']?.toString();
+        if (value == null) {
+          throw FormatException('IamRoleBinding.roleCode is required');
+        }
+        return value;
+      })(),
+      principalKind: (() {
+        final value = json['principalKind']?.toString();
+        if (value == null) {
+          throw FormatException('IamRoleBinding.principalKind is required');
+        }
+        return value;
+      })(),
+      principalId: (() {
+        final value = json['principalId']?.toString();
+        if (value == null) {
+          throw FormatException('IamRoleBinding.principalId is required');
+        }
+        return value;
+      })(),
+      principalDisplayName: json['principalDisplayName']?.toString(),
+      principalUsername: json['principalUsername']?.toString(),
+      scopeKind: (() {
+        final value = json['scopeKind']?.toString();
+        if (value == null) {
+          throw FormatException('IamRoleBinding.scopeKind is required');
+        }
+        return value;
+      })(),
+      scopeId: (() {
+        final value = json['scopeId']?.toString();
+        if (value == null) {
+          throw FormatException('IamRoleBinding.scopeId is required');
+        }
+        return value;
+      })(),
+      effect: (() {
+        final value = json['effect']?.toString();
+        if (value == null) {
+          throw FormatException('IamRoleBinding.effect is required');
+        }
+        return value;
+      })(),
+      status: (() {
+        final value = json['status']?.toString();
+        if (value == null) {
+          throw FormatException('IamRoleBinding.status is required');
+        }
+        return value;
+      })(),
+      dataScopeKind: (() {
+        final value = json['dataScopeKind']?.toString();
+        if (value == null) {
+          throw FormatException('IamRoleBinding.dataScopeKind is required');
+        }
+        return value;
+      })(),
+      effectiveFrom: (() {
+        if (!json.containsKey('effectiveFrom')) {
+          throw FormatException('IamRoleBinding.effectiveFrom is required');
+        }
+        final _sdkworkRequiredValue = json['effectiveFrom'];
+        if (_sdkworkRequiredValue == null) {
+          return null;
+        }
+        return (() {
+        final value = _sdkworkRequiredValue?.toString();
+        if (value == null) {
+          throw FormatException('IamRoleBinding.effectiveFrom is required');
+        }
+        return value;
+      })();
+      })(),
+      effectiveTo: (() {
+        if (!json.containsKey('effectiveTo')) {
+          throw FormatException('IamRoleBinding.effectiveTo is required');
+        }
+        final _sdkworkRequiredValue = json['effectiveTo'];
+        if (_sdkworkRequiredValue == null) {
+          return null;
+        }
+        return (() {
+        final value = _sdkworkRequiredValue?.toString();
+        if (value == null) {
+          throw FormatException('IamRoleBinding.effectiveTo is required');
+        }
+        return value;
+      })();
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'tenantId': tenantId,
+      'organizationId': organizationId,
+      'roleId': roleId,
+      'roleCode': roleCode,
+      'principalKind': principalKind,
+      'principalId': principalId,
+      'principalDisplayName': principalDisplayName,
+      'principalUsername': principalUsername,
+      'scopeKind': scopeKind,
+      'scopeId': scopeId,
+      'effect': effect,
+      'status': status,
+      'dataScopeKind': dataScopeKind,
+      'effectiveFrom': effectiveFrom,
+      'effectiveTo': effectiveTo,
+    };
+  }
+}
+
+class IamRoleBindingListResponse {
+  final int code;
+  final dynamic data;
+  final String traceId;
+
+  IamRoleBindingListResponse({
+    required this.code,
+    required this.data,
+    required this.traceId
+  });
+
+  factory IamRoleBindingListResponse.fromJson(Map<String, dynamic> json) {
+    return IamRoleBindingListResponse(
+      code: (() {
+        final value = json['code'];
+        if (value is! int) {
+          throw FormatException('IamRoleBindingListResponse.code is required');
+        }
+        return value;
+      })(),
+      data: (() {
+        final map = _sdkworkAsMap(json['data']);
+        if (map == null) {
+          throw FormatException('IamRoleBindingListResponse.data is required');
+        }
+        return map;
+      })(),
+      traceId: (() {
+        final value = json['traceId']?.toString();
+        if (value == null) {
+          throw FormatException('IamRoleBindingListResponse.traceId is required');
+        }
+        return value;
+      })()
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'code': code,
+      'data': data,
+      'traceId': traceId,
+    };
+  }
+}
+
 class WechatMiniProgramSessionCreateCommand {
   final String jsCode;
   final String? phoneCode;
@@ -1333,6 +1697,7 @@ class AppbaseSessionCreateCommand {
   final String? username;
   final String? phone;
   final String? password;
+  final String? code;
   final String? externalToken;
   final String? providerKey;
   final String? tenantId;
@@ -1346,6 +1711,7 @@ class AppbaseSessionCreateCommand {
     this.username,
     this.phone,
     this.password,
+    this.code,
     this.externalToken,
     this.providerKey,
     this.tenantId,
@@ -1361,6 +1727,7 @@ class AppbaseSessionCreateCommand {
       username: json['username']?.toString(),
       phone: json['phone']?.toString(),
       password: json['password']?.toString(),
+      code: json['code']?.toString(),
       externalToken: json['externalToken']?.toString(),
       providerKey: json['providerKey']?.toString(),
       tenantId: json['tenantId']?.toString(),
@@ -1377,6 +1744,7 @@ class AppbaseSessionCreateCommand {
       'username': username,
       'phone': phone,
       'password': password,
+      'code': code,
       'externalToken': externalToken,
       'providerKey': providerKey,
       'tenantId': tenantId,

@@ -15,7 +15,6 @@ import {
   sdkToast,
 } from "@sdkwork/ui-pc-react";
 import {
-  DEFAULT_SDKWORK_AUTH_RECOVERY_METHODS,
   looksLikeEmailAddress,
   looksLikePhoneNumber,
   readSdkworkIdentityErrorMessage,
@@ -113,7 +112,7 @@ export function SdkworkForgotPasswordFlow({
       return;
     }
 
-    handleMethodChange(enabledMethods[0] || DEFAULT_SDKWORK_AUTH_RECOVERY_METHODS[0]);
+    handleMethodChange(enabledMethods[0] ?? "email");
   }, [enabledMethods, method]);
 
   const isAccountValid = method === "email"

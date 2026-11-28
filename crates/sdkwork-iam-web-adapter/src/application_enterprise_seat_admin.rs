@@ -157,6 +157,7 @@ async fn lock_order(
         authorization_mode: row.get("authorization_mode"),
         seat_count: row.get("seat_count"),
         seat_name: row.get("seat_name"),
+        active_seat_count: None,
         management_scope: None,
         duration_months: row.get("duration_months"),
         order_status: row.get("order_status"),
@@ -263,8 +264,8 @@ pub async fn update_enterprise_order(
             "seatCount cannot be smaller than {used} active seats"
         )));
     }
-    sqlx::query("UPDATE iam_application_enterprise_order SET seat_name = COALESCE($3, seat_name), seat_count = $4, updated_by = $5, updated_at = NOW(), version = version + 1 WHERE tenant_id = $1 AND id = $2")
-        .bind(tenant_id).bind(order_id).bind(name).bind(count).bind(actor_id).execute(&mut *tx).await
+    sqlx::query("UPDATE iam_application_enterprise_order SET seat_name = COALESCE($3, seat_name), seat_count = $4, updated_by = $5, updated_at = NOW(), version = version + 1 WHERE tenant_id = $6 AND id = $2")
+        .bind(tenant_id).bind(order_id).bind(name).bind(count).bind(actor_id).bind(&order.tenant_id).execute(&mut *tx).await
         .map_err(|e| internal("resize enterprise order failed", e))?;
     insert_event(
         &mut tx,
@@ -835,7 +836,7 @@ async fn ensure_seat_visible(
     }
     if method != "manual" {
         return Err(conflict(
-            "department-policy seats must be moved to the blacklist",
+            "department-policy seats must be released through their policy",
         ));
     }
     match scope.kind.as_str() {

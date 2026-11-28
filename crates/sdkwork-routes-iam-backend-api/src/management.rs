@@ -765,6 +765,7 @@ async fn list_role_bindings(
         }
         statement.fetch_all(pg).await
     } else {
+        let filter_sql = role_binding_list_filter_sql(&query, 5);
         let mut statement = sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
                     b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
@@ -894,26 +895,33 @@ async fn create_role_binding(
         return role_binding_error_response("create", error);
     }
 
-    let role_row = match fetch_role_row(pg, &tenant_id, &role_ref).await {
-        Ok(Some(row)) => row,
-        Ok(None) => {
-            return appbase_error(
-                StatusCode::NOT_FOUND,
-                "iam_role_not_found",
-                "role not found",
-            );
-        }
-        Err(error) => {
-            return internal_handler_error("iam_role_lookup_failed", error);
-        }
-    };
-    let role_id: String = role_row.get(0);
-    let role_code: String = role_row.get(2);
-
     let organization_id = organization_id.unwrap_or_else(|| "0".to_owned());
     let now = Utc::now().to_rfc3339();
     let result: Result<Option<RoleBindingRecord>, RoleBindingMutationError> = async {
         let mut tx = pg.begin().await.map_err(RoleBindingMutationError::internal)?;
+        let role_row = sqlx::query(
+            "SELECT id, code, status FROM iam_role \
+             WHERE tenant_id = $1 AND (id = $2 OR code = $2) LIMIT 1 FOR UPDATE",
+        )
+        .bind(&tenant_id)
+        .bind(&role_ref)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(RoleBindingMutationError::internal)?;
+        let Some(role_row) = role_row else {
+            return Err(RoleBindingMutationError::new(
+                RoleBindingErrorKind::NotFound,
+                "role not found",
+            ));
+        };
+        let role_id: String = role_row.get(0);
+        let role_code: String = role_row.get(1);
+        if role_row.get::<String, _>(2) != "active" {
+            return Err(RoleBindingMutationError::new(
+                RoleBindingErrorKind::Conflict,
+                "role must be active before assigning bindings",
+            ));
+        }
         lock_role_binding_assignment(
             &mut tx,
             &tenant_id,
@@ -2369,8 +2377,8 @@ fn role_binding_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
         "organizationId": row.get::<String, _>(2),
         "principalId": row.get::<String, _>(6),
         "principalKind": row.get::<String, _>(5),
-        "principalDisplayName": row.get::<Option<String>, _>(15),
-        "principalUsername": row.get::<Option<String>, _>(16),
+        "principalDisplayName": row.get::<Option<String>, _>(14),
+        "principalUsername": row.get::<Option<String>, _>(15),
         "roleCode": row.get::<String, _>(4),
         "roleId": row.get::<String, _>(3),
         "scopeId": row.get::<String, _>(8),
@@ -2600,8 +2608,9 @@ include!("directory_crud.impl.rs");
 mod tests {
     use super::{
         media_delivery_url, nest_tree, organization_patch_fields, parse_role_binding_patch,
-        role_binding_visibility_sql, tenant_patch_fields, validate_role_binding_effective_window,
-        validate_tenant_role_binding_scope, PatchValue, RoleBindingErrorKind,
+        role_binding_list_filter_sql, role_binding_visibility_sql, tenant_patch_fields,
+        validate_role_binding_effective_window, validate_tenant_role_binding_scope, PatchValue,
+        RoleBindingErrorKind,
     };
     use serde_json::json;
 
@@ -2779,6 +2788,22 @@ mod tests {
         assert!(sql.contains("b.scope_kind = 'organization' AND b.scope_id = $2"));
         assert!(sql.contains("d.tenant_id = b.tenant_id"));
         assert!(sql.contains("d.organization_id = $2"));
+    }
+
+    #[test]
+    fn role_binding_filter_placeholders_start_after_the_fixed_context_binds() {
+        let query = std::collections::HashMap::from([
+            ("role_id".to_owned(), "role-1".to_owned()),
+            ("principal_kind".to_owned(), "user".to_owned()),
+        ]);
+        assert_eq!(
+            role_binding_list_filter_sql(&query, 5),
+            " AND b.role_id = $5 AND b.principal_kind = $6"
+        );
+        assert_eq!(
+            role_binding_list_filter_sql(&query, 6),
+            " AND b.role_id = $6 AND b.principal_kind = $7"
+        );
     }
 
     #[test]

@@ -7,10 +7,11 @@ use sdkwork_iam_web_adapter::{
     bulk_release_enterprise_seats, create_enterprise_seat_policy, delete_enterprise_seat_blacklist,
     delete_enterprise_seat_policy, export_enterprise_seats, list_enterprise_seat_blacklist,
     list_enterprise_seat_policies, reconcile_enterprise_authorization_seats,
-    resolve_enterprise_management_scope, retrieve_enterprise_seat_policy, update_enterprise_order,
-    update_enterprise_seat_policy, EnterpriseOrderUpdateCommand, EnterpriseSeatBlacklistCommand,
-    EnterpriseSeatBulkReleaseCommand, EnterpriseSeatExportCommand, EnterpriseSeatPolicyCommand,
-    EnterpriseSeatPolicyDisposition, EnterpriseSeatPolicyUpdateCommand,
+    release_enterprise_seat, resolve_enterprise_management_scope, retrieve_enterprise_seat_policy,
+    update_enterprise_order, update_enterprise_seat_policy, EnterpriseOrderUpdateCommand,
+    EnterpriseSeatBlacklistCommand, EnterpriseSeatBulkReleaseCommand, EnterpriseSeatExportCommand,
+    EnterpriseSeatPolicyCommand, EnterpriseSeatPolicyDisposition,
+    EnterpriseSeatPolicyUpdateCommand,
 };
 use sqlx::{postgres::PgPoolOptions, PgPool};
 
@@ -67,8 +68,10 @@ async fn connect() -> Option<PgPool> {
             effect TEXT NOT NULL, data_scope_kind TEXT NOT NULL, status TEXT NOT NULL,
             effective_from TEXT, effective_to TEXT);
         CREATE TEMP TABLE iam_user_identity (
-            tenant_id TEXT NOT NULL, user_id TEXT NOT NULL, provider TEXT NOT NULL,
-            subject TEXT NOT NULL, created_at TEXT NOT NULL);
+            id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, user_id TEXT NOT NULL,
+            provider TEXT NOT NULL, subject TEXT NOT NULL, created_at TEXT NOT NULL);
+        CREATE TEMP TABLE iam_tenant_application (
+            tenant_id TEXT NOT NULL, deploy_application_id TEXT NOT NULL, deleted_at TEXT);
         CREATE TEMP TABLE iam_application_enterprise_order (
             id TEXT PRIMARY KEY, order_no TEXT NOT NULL, tenant_id TEXT NOT NULL,
             organization_id TEXT NOT NULL, application_id TEXT NOT NULL,
@@ -151,13 +154,19 @@ async fn seed_base(pg: &PgPool, capacity: i32) {
         INSERT INTO iam_role_binding VALUES
             ('enterprise', 'admin-role', 'user', 'admin', 'tenant', '0', 'allow', 'tenant', 'active', NULL, NULL);
         INSERT INTO iam_tenant_member VALUES ('enterprise', 'admin', 'active');
-        INSERT INTO iam_application_enterprise_order
-            (id, order_no, tenant_id, organization_id, application_id, enterprise_tenant_id,
-             enterprise_organization_id, enterprise_name, authorization_mode, seat_count, seat_name,
-             duration_months, order_status, contact_name, contact_phone, authorized_at, expires_at)
-        VALUES ('order-1', 'EO-1', 'publisher', '0', 'app-1', 'enterprise', 'org-1',
-                'Enterprise', 'seat', $1, 'Professional', 12, 'active', 'Admin', '100', NOW(), NOW() + INTERVAL '1 year');
+        INSERT INTO iam_tenant_application VALUES ('enterprise', 'app-1', NULL);
         "#,
+    )
+    .execute(pg)
+    .await
+    .expect("seed base fixture");
+    sqlx::query(
+        "INSERT INTO iam_application_enterprise_order \
+         (id, order_no, tenant_id, organization_id, application_id, enterprise_tenant_id, \
+          enterprise_organization_id, enterprise_name, authorization_mode, seat_count, seat_name, \
+          duration_months, order_status, contact_name, contact_phone, authorized_at, expires_at) \
+         VALUES ('order-1', 'EO-1', 'publisher', '0', 'app-1', 'enterprise', 'org-1', \
+                 'Enterprise', 'seat', $1, 'Professional', 12, 'active', 'Admin', '100', NOW(), NOW() + INTERVAL '1 year')",
     )
     .bind(capacity)
     .execute(pg)
@@ -343,7 +352,7 @@ async fn pagination_keep_release_blacklist_restore_and_export_are_enforced() {
     .expect("export seats");
     assert!(exported.csv.contains("alice"));
     assert!(exported.csv.contains("carol"));
-    assert!(!exported.csv.contains("bob"));
+    assert!(exported.csv.contains("bob"));
 }
 
 #[tokio::test]
@@ -406,6 +415,46 @@ async fn primary_assignment_policy_priority_login_and_membership_changes_reconci
     ).fetch_one(&pg).await.expect("load allocation method");
     assert_eq!(method, "department_login");
 
+    let scope =
+        resolve_enterprise_management_scope(&pg, TENANT, "admin", "iam.enterprise_orders.manage")
+            .await
+            .expect("resolve release scope");
+    release_enterprise_seat(&pg, TENANT, "admin", ORDER, "unused", &scope)
+        .await
+        .expect_err("unknown seat is rejected");
+    let alice_seat: String = sqlx::query_scalar(
+        "SELECT id FROM iam_application_enterprise_seat WHERE user_id = 'alice' AND seat_status = 'active'",
+    )
+    .fetch_one(&pg)
+    .await
+    .expect("load login seat");
+    release_enterprise_seat(&pg, TENANT, "admin", ORDER, &alice_seat, &scope)
+        .await
+        .expect("release login seat");
+    assert_eq!(active_count(&pg, "alice").await, 0);
+    assert!(
+        sdkwork_iam_web_adapter::ensure_user_enterprise_authorization(
+            &pg,
+            TENANT,
+            "org-1",
+            "alice",
+            APPLICATION,
+        )
+        .await
+        .is_err(),
+        "routine credential checks do not consume login seats"
+    );
+    sdkwork_iam_web_adapter::ensure_user_enterprise_authorization_on_login(
+        &pg,
+        TENANT,
+        "org-1",
+        "alice",
+        APPLICATION,
+    )
+    .await
+    .expect("next login restores the released login seat");
+    assert_eq!(active_count(&pg, "alice").await, 1);
+
     sqlx::query(
         "UPDATE iam_organization_membership SET status = 'inactive' WHERE user_id = 'alice'",
     )
@@ -428,7 +477,11 @@ async fn primary_assignment_policy_priority_login_and_membership_changes_reconci
     reconcile_enterprise_authorization_seats(&pg, TENANT, None, true, Some(APPLICATION))
         .await
         .expect("authorization reconciliation");
-    assert_eq!(active_count(&pg, "alice").await, 1);
+    assert_eq!(
+        active_count(&pg, "alice").await,
+        0,
+        "without a primary department assignment no policy applies"
+    );
     sqlx::query("UPDATE iam_department_assignment SET is_primary = 1 WHERE user_id = 'alice'")
         .execute(&pg)
         .await
@@ -791,6 +844,13 @@ async fn patch_scope_and_dedicated_export_permission_are_enforced() {
         sqlx::query("INSERT INTO iam_role_binding VALUES ('enterprise', 'admin-role', 'user', $1, $2, $3, 'allow', $4, 'active', NULL, NULL)")
             .bind(user).bind(scope_kind).bind(scope_id).bind(data_scope)
             .execute(&pg).await.expect("seed scoped binding");
+        if user == "dept-admin" {
+            sqlx::query("INSERT INTO iam_department_assignment VALUES ('assignment-dept-admin', 'enterprise', 'org-1', 'membership-dept-admin', 'eng', 'dept-admin', 1, '2026-01-01', NULL, 'active')")
+                .execute(&pg).await.expect("seed department admin assignment");
+        }
+        if user == "self-admin" {
+            seed_manual_seat(&pg, "seat-self-admin", user).await;
+        }
         let resolved = resolve_enterprise_management_scope(
             &pg,
             TENANT,
@@ -841,6 +901,16 @@ async fn patch_scope_and_dedicated_export_permission_are_enforced() {
         .execute(&pg)
         .await
         .expect("remove export permission");
+    sqlx::query("INSERT INTO iam_role VALUES ('export-role', 'enterprise', 'active')")
+        .execute(&pg)
+        .await
+        .expect("seed export role");
+    sqlx::query("INSERT INTO iam_role_permission VALUES ('enterprise', 'export-role', 'export')")
+        .execute(&pg)
+        .await
+        .expect("grant dedicated export permission");
+    sqlx::query("INSERT INTO iam_role_binding VALUES ('enterprise', 'export-role', 'user', 'self-admin', 'tenant', '0', 'allow', 'self', 'active', NULL, NULL)")
+        .execute(&pg).await.expect("bind export role to self admin");
     assert!(
         export_enterprise_seats(
             &pg,
@@ -868,7 +938,8 @@ async fn patch_scope_and_dedicated_export_permission_are_enforced() {
     )
     .await
     .expect("self-scoped export");
-    assert!(own.csv.contains("alice"));
+    assert!(own.csv.contains("self-admin"));
+    assert!(!own.csv.contains("alice"));
 
     delete_enterprise_seat_policy(
         &pg,

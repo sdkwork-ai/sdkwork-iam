@@ -322,6 +322,19 @@ pub async fn issue_application_access_credential(
         resolve_installation_environment(pg, actor, &installation, request.environment.as_deref())
             .await?;
 
+    crate::application_enterprise_order::expire_due_enterprise_orders(pg, 100)
+        .await
+        .map_err(AppTokenExchangeError::Internal)?;
+    crate::application_enterprise_order::ensure_user_enterprise_authorization_on_login(
+        pg,
+        &actor.tenant_id,
+        &installation.organization_id,
+        user_id,
+        installation.deploy_application_id.as_deref().unwrap_or(""),
+    )
+    .await
+    .map_err(|message| AppTokenExchangeError::Denied(message))?;
+
     let internal =
         request.internal_request(&actor.tenant_id, &installation, declared_scope.as_deref());
     let issued = issue_delegated_access_credential_for_environment(

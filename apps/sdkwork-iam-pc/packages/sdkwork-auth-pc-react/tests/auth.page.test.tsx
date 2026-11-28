@@ -2347,9 +2347,9 @@ describe("sdkwork-auth-pc-react page", () => {
       confirmPassword: "Passw0rd!",
       email: "plain@example.com",
       password: "Passw0rd!",
-      phone: undefined,
       username: "plain-user",
     });
+    expect(registerPayload).not.toHaveProperty("phone");
     expect(registerPayload).not.toHaveProperty("verificationCode");
     expect(controller.service.sendVerifyCode).not.toHaveBeenCalled();
   });

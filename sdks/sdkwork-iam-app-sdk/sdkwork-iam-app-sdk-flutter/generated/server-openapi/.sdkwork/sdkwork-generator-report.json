@@ -12,19 +12,19 @@
   "mode": "apply",
   "hasChanges": true,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "50762f9ef1072de2c1cb38c2a1dd623a33a641fa80c137f7ad89f111a16d9aec",
+  "changeFingerprint": "769865076dc4b8a6e54fcf86f42517772f6561be2736c893a0629429ec40babf",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
       "api-surface",
       "models",
+      "publish-workflow",
       "documentation"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "lib/src/api/auth.dart",
           "lib/src/api/iam.dart",
           "lib/src/api/oauth.dart"
         ]
@@ -36,6 +36,12 @@
         ]
       },
       {
+        "area": "publish-workflow",
+        "paths": [
+          "bin/publish-core.mjs"
+        ]
+      },
+      {
         "area": "documentation",
         "paths": [
           "README.md"
@@ -43,7 +49,7 @@
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required."
+    "summary": "Detected impact areas: api-surface, models, publish-workflow, documentation. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
@@ -64,7 +70,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, publish-workflow, documentation.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-flutter\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -83,13 +89,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models, publish-workflow, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, publish-workflow, documentation.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-flutter\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -120,7 +126,7 @@
   },
   "stats": {
     "totalFiles": 21,
-    "models": 33,
+    "models": 37,
     "apis": 4,
     "types": 1
   },
@@ -133,24 +139,24 @@
     "skippedUnchangedGeneratedFiles": 15,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "50762f9ef1072de2c1cb38c2a1dd623a33a641fa80c137f7ad89f111a16d9aec",
+    "changeFingerprint": "769865076dc4b8a6e54fcf86f42517772f6561be2736c893a0629429ec40babf",
     "changes": {
       "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [
-        "lib/src/api/auth.dart",
+        "bin/publish-core.mjs",
         "lib/src/api/iam.dart",
         "lib/src/api/oauth.dart",
         "lib/src/models.dart",
         "README.md"
       ],
       "unchangedGeneratedFiles": [
-        "bin/publish-core.mjs",
         "bin/publish.ps1",
         "bin/publish.sh",
         "CHANGELOG.md",
         "lib/app_client.dart",
         "lib/sdkwork_iam_app_sdk.dart",
         "lib/src/api/api.dart",
+        "lib/src/api/auth.dart",
         "lib/src/api/paths.dart",
         "lib/src/api/response_helpers.dart",
         "lib/src/api/system.dart",
@@ -172,13 +178,13 @@
       "areas": [
         "api-surface",
         "models",
+        "publish-workflow",
         "documentation"
       ],
       "details": [
         {
           "area": "api-surface",
           "paths": [
-            "lib/src/api/auth.dart",
             "lib/src/api/iam.dart",
             "lib/src/api/oauth.dart"
           ]
@@ -190,6 +196,12 @@
           ]
         },
         {
+          "area": "publish-workflow",
+          "paths": [
+            "bin/publish-core.mjs"
+          ]
+        },
+        {
           "area": "documentation",
           "paths": [
             "README.md"
@@ -197,18 +209,18 @@
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface, models, documentation. Verification is required."
+      "summary": "Detected impact areas: api-surface, models, publish-workflow, documentation. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface, models, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface, models, publish-workflow, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, publish-workflow, documentation.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-iam\\sdks\\sdkwork-iam-app-sdk\\sdkwork-iam-app-sdk-flutter\\generated\\server-openapi",
           "command": "node",
           "args": [

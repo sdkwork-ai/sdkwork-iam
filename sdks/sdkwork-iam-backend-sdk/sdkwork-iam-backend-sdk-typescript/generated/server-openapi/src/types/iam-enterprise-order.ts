@@ -10,8 +10,9 @@ export interface IamEnterpriseOrder {
   enterpriseName?: string;
   authorizationMode: 'all_members' | 'seat';
   seatCount?: number | null;
+  activeSeatCount?: number;
   seatName?: string | null;
-  managementScope?: 'tenant' | 'organization' | 'department' | 'self';
+  managementScope?: 'tenant' | 'organization' | 'department' | 'department_and_children' | 'self';
   durationMonths: 3 | 6 | 12;
   orderStatus: 'pending_authorization' | 'active' | 'pending_termination' | 'terminated' | 'cancelled';
   contactName?: string;

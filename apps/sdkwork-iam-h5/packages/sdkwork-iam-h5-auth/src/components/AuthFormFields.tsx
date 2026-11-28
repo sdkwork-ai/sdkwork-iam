@@ -11,6 +11,7 @@ export interface SdkworkIamH5AuthFormFieldsProps {
   confirmPassword: string;
   countdown: number;
   password: string;
+  registerCodeRequired?: boolean;
   setAccount: (value: string) => void;
   setCode: (value: string) => void;
   setConfirmPassword: (value: string) => void;
@@ -27,6 +28,7 @@ export function SdkworkIamH5AuthFormFields({
   confirmPassword,
   countdown,
   password,
+  registerCodeRequired = true,
   setAccount,
   setCode,
   setConfirmPassword,
@@ -41,9 +43,10 @@ export function SdkworkIamH5AuthFormFields({
   const passwordId = `${fieldId}-password`;
   const confirmPasswordId = `${fieldId}-confirm-password`;
   const codeId = `${fieldId}-code`;
+  const showRegisterCode = mode === "register" && registerCodeRequired;
   const showPasswordRow = mode === "login-pwd" || mode === "register" || mode === "forgot";
   const showConfirmPasswordRow = mode === "register";
-  const showCodeRow = mode === "login-code" || mode === "register" || mode === "forgot";
+  const showCodeRow = mode === "login-code" || showRegisterCode || mode === "forgot";
 
   const codeField = showCodeRow ? (
     <div className="flex min-h-12 items-center border-b border-[var(--iam-h5-auth-border)] py-3 transition-colors focus-within:border-[var(--iam-h5-auth-green)]">
@@ -100,7 +103,7 @@ export function SdkworkIamH5AuthFormFields({
       </div>
 
       {/* Registration verifies the account before it collects a new password. */}
-      {mode === "register" ? codeField : null}
+      {showRegisterCode ? codeField : null}
 
       {showPasswordRow ? (
         <div className="flex min-h-12 items-center border-b border-[var(--iam-h5-auth-border)] py-3 transition-colors focus-within:border-[var(--iam-h5-auth-green)]">

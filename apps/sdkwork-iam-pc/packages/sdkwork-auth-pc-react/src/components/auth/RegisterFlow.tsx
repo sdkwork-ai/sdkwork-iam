@@ -18,7 +18,6 @@ import {
 } from "@sdkwork/ui-pc-react";
 import { isBlank } from "@sdkwork/utils";
 import {
-  DEFAULT_SDKWORK_AUTH_REGISTER_METHODS,
   looksLikeEmailAddress,
   looksLikePhoneNumber,
   readSdkworkIdentityErrorMessage,
@@ -80,7 +79,7 @@ export function SdkworkRegisterFlow({
   const { copy } = useSdkworkAuthIntl();
   const enabledMethods = resolveSdkworkAuthRegisterMethods(methods);
   const [method, setMethod] = useState<SdkworkAuthRegisterMethod>(
-    enabledMethods[0] ?? DEFAULT_SDKWORK_AUTH_REGISTER_METHODS[0],
+    enabledMethods[0] ?? "username",
   );
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -134,7 +133,7 @@ export function SdkworkRegisterFlow({
       return;
     }
 
-    handleMethodChange(enabledMethods[0] || DEFAULT_SDKWORK_AUTH_REGISTER_METHODS[0]);
+    handleMethodChange(enabledMethods[0] ?? "username");
   }, [enabledMethods, method]);
 
   const isUsernameMethod = method === "username";

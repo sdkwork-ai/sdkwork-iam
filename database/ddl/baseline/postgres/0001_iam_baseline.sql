@@ -4239,9 +4239,8 @@ BEGIN
          ORDER BY o.id FOR UPDATE
     LOOP
         -- Eligibility is evaluated on the member's active primary assignment.
-        -- Auto policies win before login policies; within each mode the nearest
-        -- ancestor policy wins, then policy id provides a stable final tie-break.
-        -- Manual seats are excluded unless a blacklist entry requires reclamation.
+        -- The nearest ancestor policy wins, then policy id provides a stable
+        -- final tie-break. Manual seats are excluded unless blacklisted.
         FOR v_seat IN
             SELECT s.* FROM iam_application_enterprise_seat s
              WHERE s.tenant_id = p_tenant_id AND s.order_id = v_order.id
@@ -4275,8 +4274,7 @@ BEGIN
              WHERE p.tenant_id = p_tenant_id AND p.order_id = v_order.id
                AND (v_order.enterprise_organization_id = '0'
                     OR p.organization_id = v_order.enterprise_organization_id)
-             ORDER BY CASE WHEN p.allocation_type = 'auto' THEN 0 ELSE 1 END,
-                      c.depth, p.id
+             ORDER BY c.depth, p.id
              LIMIT 1;
             IF v_policy.id IS NULL OR v_policy.id <> v_seat.policy_id
                OR NOT EXISTS (SELECT 1 FROM iam_tenant_member tm WHERE tm.tenant_id = p_tenant_id AND tm.user_id = v_seat.user_id AND tm.status = 'active')
@@ -4325,8 +4323,7 @@ BEGIN
                    WHERE p.tenant_id = p_tenant_id AND p.order_id = v_order.id
                      AND (v_order.enterprise_organization_id = '0'
                           OR p.organization_id = v_order.enterprise_organization_id)
-                   ORDER BY CASE WHEN p.allocation_type = 'auto' THEN 0 ELSE 1 END,
-                            c.depth, p.id
+                   ORDER BY c.depth, p.id
                    LIMIT 1
               ) chosen ON TRUE
              WHERE u.tenant_id = p_tenant_id AND u.status = 'active'

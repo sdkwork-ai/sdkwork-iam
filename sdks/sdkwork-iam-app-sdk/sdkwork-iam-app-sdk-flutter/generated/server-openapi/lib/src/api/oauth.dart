@@ -171,6 +171,15 @@ class OauthApi {
     await _client.delete(ApiPaths.appPath('/oauth/grants/${serializePathParameter(grantId, const PathParameterSpec('grantId', 'simple', false))}'));
   }
 
+  /// Login Follow Qr retrieve.
+  Future<SdkWorkResourceResponse?> loginFollowQrRetrieve() async {
+    final response = await _client.request('GET', ApiPaths.appPath('/oauth/login_follow_qr'), accessTokenOnly: true);
+    return (() {
+      final map = sdkworkResponseAsMap(response);
+      return map == null ? null : SdkWorkResourceResponse.fromJson(map);
+    })();
+  }
+
   /// Mini Program Sessions create.
   Future<SdkWorkResourceResponse?> miniProgramSessionsCreate(WechatMiniProgramSessionCreateCommand body) async {
     final payload = body.toJson();

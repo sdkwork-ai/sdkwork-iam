@@ -11635,6 +11635,13 @@
             "description": "Write-only password credential used by standard password login.",
             "format": "password"
           },
+          "code": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 12,
+            "writeOnly": true,
+            "description": "One-time verification code of the `phone_code`/`email_code` grants requested for the same `phone`/`email` target. Ignored by the password grant."
+          },
           "externalToken": {
             "type": "string",
             "description": "Opaque upstream credential used only by an external user-center session exchange."

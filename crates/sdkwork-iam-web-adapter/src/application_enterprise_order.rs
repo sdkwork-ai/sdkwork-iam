@@ -263,6 +263,20 @@ pub async fn resolve_enterprise_management_scope(
     scope.organization_ids.dedup();
     scope.department_ids.sort();
     scope.department_ids.dedup();
+    if scope.kind == "department_and_children" {
+        scope.department_ids = sqlx::query_scalar(
+            "SELECT DISTINCT c.descendant_department_id \
+             FROM unnest($1::text[]) AS bound(department_id) \
+             JOIN iam_department_closure c ON c.tenant_id = $2 \
+              AND c.ancestor_department_id = bound.department_id \
+             ORDER BY c.descendant_department_id",
+        )
+        .bind(&scope.department_ids)
+        .bind(tenant_id)
+        .fetch_all(pg)
+        .await
+        .map_err(|error| internal("expand enterprise department scope failed", error))?;
+    }
     if (scope.kind == "organization" && scope.organization_ids.is_empty())
         || (matches!(
             scope.kind.as_str(),
@@ -416,6 +430,8 @@ pub struct EnterpriseOrder {
     pub authorization_mode: String,
     pub seat_count: Option<i32>,
     pub seat_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active_seat_count: Option<i64>,
     /// Filled by enterprise handlers after resolving the caller's actual RBAC scope.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub management_scope: Option<String>,
@@ -682,6 +698,7 @@ fn order_from_row(row: &sqlx::postgres::PgRow) -> EnterpriseOrder {
         authorization_mode: row.get("authorization_mode"),
         seat_count: row.get("seat_count"),
         seat_name: row.get("seat_name"),
+        active_seat_count: row.try_get("active_seat_count").ok(),
         management_scope: None,
         duration_months: row.get("duration_months"),
         order_status: row.get("order_status"),
@@ -703,6 +720,13 @@ const ORDER_COLUMNS: &str = "id, order_no, tenant_id, organization_id, applicati
      seat_count, seat_name, duration_months, order_status, contact_name, contact_phone, authorized_at, \
      expires_at, terminated_at, termination_reason, termination_note, created_at, updated_at, \
      version";
+
+const GRANTED_ORDER_COLUMNS: &str = "id, order_no, tenant_id, organization_id, application_id, \
+     enterprise_tenant_id, enterprise_organization_id, enterprise_name, authorization_mode, \
+     seat_count, seat_name, duration_months, order_status, contact_name, contact_phone, authorized_at, \
+     expires_at, terminated_at, termination_reason, termination_note, created_at, updated_at, \
+     version, (SELECT COUNT(*) FROM iam_application_enterprise_seat gs \
+               WHERE gs.order_id = o.id AND gs.seat_status = 'active') AS active_seat_count";
 
 pub(crate) async fn insert_event(
     transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -960,7 +984,7 @@ pub async fn list_enterprise_orders_for_enterprise(
     .await
     .map_err(|error| internal("count granted enterprise orders failed", error))?;
     let rows = sqlx::query(AssertSqlSafe(format!(
-        "SELECT {ORDER_COLUMNS} FROM iam_application_enterprise_order o \
+        "SELECT {GRANTED_ORDER_COLUMNS} FROM iam_application_enterprise_order o \
          WHERE o.enterprise_tenant_id = $1 AND o.deleted_at IS NULL \
            AND ($2 = '' OR o.order_status = $2) AND ({visibility}) \
            AND ($9 = '' OR o.authorization_mode = $9) \
@@ -1845,9 +1869,9 @@ pub async fn release_enterprise_seat(
     let Some((user_id, method, organization_id)) = target else {
         return Err(not_found("active seat not found"));
     };
-    if method != "manual" {
+    if method == "department_auto" {
         return Err(conflict(
-            "department-policy seats must be moved to the blacklist",
+            "department-auto seats must be moved to the blacklist",
         ));
     }
     match scope.kind.as_str() {

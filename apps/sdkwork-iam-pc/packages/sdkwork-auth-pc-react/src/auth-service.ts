@@ -749,7 +749,11 @@ function parseJwtPayload(token: string): Record<string, unknown> | undefined {
   }
 
   try {
-    const normalized = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const payload = parts[1];
+  if (payload === undefined) {
+    return undefined;
+  }
+  const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
     const padded = normalized.padEnd(
       normalized.length + ((4 - (normalized.length % 4 || 4)) % 4),
       "=",
@@ -884,7 +888,7 @@ function splitDisplayName(name: string) {
 
   const [firstName, ...rest] = normalized.split(" ");
   return {
-    firstName,
+    firstName: firstName ?? "",
     lastName: rest.join(" "),
   };
 }

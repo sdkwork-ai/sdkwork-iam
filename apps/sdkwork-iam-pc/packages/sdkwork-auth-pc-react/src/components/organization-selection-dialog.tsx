@@ -133,6 +133,9 @@ export function SdkworkOrganizationSelectionDialog({
 
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
+      if (firstElement === undefined || lastElement === undefined) {
+        return;
+      }
       const activeElement = document.activeElement;
       if (event.shiftKey && (activeElement === firstElement || activeElement === dialog)) {
         event.preventDefault();

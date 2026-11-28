@@ -12,7 +12,7 @@
   "generatedFiles": [
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
+      "sha256": "6c2553df857f332f1a19e552f24b3320632d898eea5bd7a75fa5dc13a84b141b"
     },
     {
       "path": "bin/publish.ps1",
@@ -44,11 +44,11 @@
     },
     {
       "path": "lib/src/api/iam.dart",
-      "sha256": "24df5ec46f4176d736d76d0f20401435b63e2508d230d195b48254096d4e4e83"
+      "sha256": "51774318084b54fb6210d46ed37f3833989dd1f9018de3987e8ca93663d46d9f"
     },
     {
       "path": "lib/src/api/oauth.dart",
-      "sha256": "24f41a20d8ddf8ceb87495504127982e5fc946743b901e4d936915dae9c38adf"
+      "sha256": "288f72b694af32da002d7968d524ceec16c0f3e0d4efecc7c7583aba00409490"
     },
     {
       "path": "lib/src/api/paths.dart",
@@ -68,7 +68,7 @@
     },
     {
       "path": "lib/src/models.dart",
-      "sha256": "ea4951fb16e83a57d11fead491520aeba36a9843e904201e8f5c77cca7150f89"
+      "sha256": "b4b92bf396a53152d134cccc673150caf0346bebdf32d396eb5285676c1619ed"
     },
     {
       "path": "LICENSE",
@@ -84,7 +84,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "96a1c715307c02739ffe4f6b18b72f70b357d123518edfb6f0916632b49fd2fd"
+      "sha256": "20acf57a97ba054ca28157f29fb964d79f25778d8c5c5ff52341b4f1cf5f5471"
     },
     {
       "path": "sdkwork-sdk.json",

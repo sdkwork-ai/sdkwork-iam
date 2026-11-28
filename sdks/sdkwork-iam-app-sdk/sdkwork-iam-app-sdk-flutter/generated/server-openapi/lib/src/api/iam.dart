@@ -38,13 +38,14 @@ class IamApi {
   }
 
   /// Departments list.
-  Future<SdkWorkListResponse?> departmentsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<SdkWorkListResponse?> departmentsList([int? page, int? pageSize, String? cursor, String? sort, String? q, String? organizationId]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
       QueryParameterSpec('cursor', cursor, 'form', true, false, null),
       QueryParameterSpec('sort', sort, 'form', true, false, null),
-      QueryParameterSpec('q', q, 'form', true, false, null)
+      QueryParameterSpec('q', q, 'form', true, false, null),
+      QueryParameterSpec('organization_id', organizationId, 'form', true, false, null)
     ]);
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.appPath('/iam/departments'), query));
     return (() {
@@ -54,8 +55,11 @@ class IamApi {
   }
 
   /// Departments tree retrieve.
-  Future<SdkWorkResourceResponse?> departmentsTreeRetrieve() async {
-    final response = await _client.get(ApiPaths.appPath('/iam/departments/tree'));
+  Future<SdkWorkResourceResponse?> departmentsTreeRetrieve([String? organizationId]) async {
+    final query = buildQueryString([
+      QueryParameterSpec('organization_id', organizationId, 'form', true, false, null)
+    ]);
+    final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.appPath('/iam/departments/tree'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
       return map == null ? null : SdkWorkResourceResponse.fromJson(map);
@@ -152,18 +156,20 @@ class IamApi {
   }
 
   /// Organization Memberships list.
-  Future<SdkWorkListResponse?> organizationMembershipsList([int? page, int? pageSize, String? cursor, String? sort, String? q]) async {
+  Future<IamOrganizationMembershipListResponse?> organizationMembershipsList([int? page, int? pageSize, String? cursor, String? sort, String? q, String? organizationId, String? departmentId]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
       QueryParameterSpec('cursor', cursor, 'form', true, false, null),
       QueryParameterSpec('sort', sort, 'form', true, false, null),
-      QueryParameterSpec('q', q, 'form', true, false, null)
+      QueryParameterSpec('q', q, 'form', true, false, null),
+      QueryParameterSpec('organization_id', organizationId, 'form', true, false, null),
+      QueryParameterSpec('department_id', departmentId, 'form', true, false, null)
     ]);
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.appPath('/iam/organization_memberships'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : SdkWorkListResponse.fromJson(map);
+      return map == null ? null : IamOrganizationMembershipListResponse.fromJson(map);
     })();
   }
 
@@ -251,7 +257,7 @@ class IamApi {
   }
 
   /// Role Bindings list.
-  Future<SdkWorkListResponse?> roleBindingsList([int? page, int? pageSize, String? cursor, String? sort, String? q, String? roleId, String? principalKind, String? principalId, String? scopeKind, String? scopeId]) async {
+  Future<IamRoleBindingListResponse?> roleBindingsList([int? page, int? pageSize, String? cursor, String? sort, String? q, String? roleId, String? principalKind, String? principalId, String? scopeKind, String? scopeId]) async {
     final query = buildQueryString([
       QueryParameterSpec('page', page, 'form', true, false, null),
       QueryParameterSpec('page_size', pageSize, 'form', true, false, null),
@@ -267,7 +273,7 @@ class IamApi {
     final response = await _client.get(ApiPaths.appendQueryString(ApiPaths.appPath('/iam/role_bindings'), query));
     return (() {
       final map = sdkworkResponseAsMap(response);
-      return map == null ? null : SdkWorkListResponse.fromJson(map);
+      return map == null ? null : IamRoleBindingListResponse.fromJson(map);
     })();
   }
 

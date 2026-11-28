@@ -19,7 +19,7 @@ function iamListQuery(params?: Record<string, unknown>): Record<string, string |
   // the wire `page_size` query name themselves (`PAGINATION_SPEC.md` section 3),
   // so handing them the wire spelling loses the page size silently.
   const { page_size: pageSize, ...domainFilters } = query;
-  return { ...domainFilters, pageSize };
+  return pageSize === undefined ? domainFilters : { ...domainFilters, pageSize };
 }
 
 export interface IamUser {

@@ -2,6 +2,7 @@
 
 use argon2::password_hash::{rand_core::OsRng, PasswordHasher, SaltString};
 use argon2::Argon2;
+use axum::Router;
 use sdkwork_iam_bootstrap::{
     standard_role_id, upsert_postgres_standard_roles, DEFAULT_IAM_ORGANIZATION_ID,
     DEFAULT_IAM_TENANT_ID,
@@ -11,6 +12,7 @@ use sdkwork_iam_web_adapter::{
     provision_tenant_application, TenantApplicationProvisionCommand,
     SDKWORK_IAM_BOOTSTRAP_PASSWORD_ENV,
 };
+use sdkwork_routes_iam_backend_api::build_sdkwork_iam_backend_api_business_router_with_pool;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -270,6 +272,18 @@ async fn ensure_integration_organization_and_tenant_application(pg: &PgPool) -> 
         .await
         .map_err(|error| format!("enable integration organization application failed: {error}"))?;
     Ok(())
+}
+
+pub async fn build_backend_integration_business_router() -> Router {
+    let pool = sdkwork_database_sqlx::create_pool_from_env("IAM")
+        .await
+        .expect("connect backend integration PostgreSQL pool")
+        .expect("backend integration PostgreSQL pool is configured");
+    sdkwork_iam_database_host::ensure_iam_id_generator_initialized(&pool)
+        .await
+        .expect("initialize IAM id generator for backend integration tests");
+    build_sdkwork_iam_backend_api_business_router_with_pool(pool)
+        .expect("build backend integration business router")
 }
 
 pub fn integration_access_credential_request_body() -> String {

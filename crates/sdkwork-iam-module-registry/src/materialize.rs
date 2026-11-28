@@ -557,6 +557,9 @@ async fn upsert_sqlite_roles(
         let pattern_refs: Vec<&str> = patterns.iter().map(String::as_str).collect();
         let expanded = expand_permission_patterns(&pattern_refs, &catalog_codes);
         for permission_code in expanded {
+            if !catalog_codes.contains(&permission_code.as_str()) {
+                continue;
+            }
             let permission_key = permission_id(&permission_code);
             let role_permission_id =
                 standard_role_permission_id(tenant_id, &role_id, &permission_key);
@@ -586,6 +589,9 @@ async fn upsert_role_permissions_postgres(
     let pattern_refs: Vec<&str> = patterns.iter().map(String::as_str).collect();
     let expanded = expand_permission_patterns(&pattern_refs, catalog_codes);
     for permission_code in expanded {
+        if !catalog_codes.contains(&permission_code.as_str()) {
+            continue;
+        }
         let permission_key = permission_id(&permission_code);
         let role_permission_id = standard_role_permission_id(tenant_id, role_id, &permission_key);
         sqlx::query(

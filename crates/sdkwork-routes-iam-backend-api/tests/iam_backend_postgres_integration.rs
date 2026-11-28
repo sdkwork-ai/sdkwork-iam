@@ -7,6 +7,10 @@ use axum::http::{Method, Request, StatusCode};
 use http_body_util::BodyExt;
 use sdkwork_iam_bootstrap::DEFAULT_IAM_TENANT_ID;
 use sdkwork_routes_iam_backend_api::build_sdkwork_iam_backend_api_router_from_env;
+use sdkwork_web_core::{
+    ServerRequestId, WebApiSurface, WebAuthMode, WebLoginScope, WebRequestContext,
+    WebRequestPrincipal, WebTransportFacts,
+};
 use serde_json::Value;
 use sqlx::{PgPool, Row};
 use std::sync::{Mutex, MutexGuard, OnceLock};
@@ -1068,7 +1072,7 @@ async fn backend_postgres_user_create_and_update_roundtrip_with_profile_fields()
 #[tokio::test]
 async fn backend_postgres_role_resource_catalog_filters_and_relation_integrity() {
     use backend_postgres_bootstrap::{
-        configure_backend_integration_runtime_env, integration_access_credential_request_body,
+        build_backend_integration_business_router, configure_backend_integration_runtime_env,
         seed_backend_integration_bootstrap_owner, INTEGRATION_ORGANIZATION_ID,
     };
 
@@ -1135,30 +1139,21 @@ async fn backend_postgres_role_resource_catalog_filters_and_relation_integrity()
     .await
     .expect("grant resource integration permission");
 
-    let router = build_sdkwork_iam_backend_api_router_from_env().await;
-    let (status, credential_text, credential) = request_backend_route(
-        router.clone(),
-        Method::POST,
-        "/backend/v3/api/iam/access_credentials",
-        Some(&integration_access_credential_request_body()),
-    )
-    .await;
-    assert_eq!(
-        StatusCode::OK,
-        status,
-        "credential issuance failed: {credential_text}"
-    );
-    let auth_token = credential["data"]["authToken"]
-        .as_str()
-        .expect("auth token");
-    let access_token = credential["data"]["accessToken"]
-        .as_str()
-        .expect("access token");
+    let router = build_backend_integration_business_router().await;
     let prefix = format!("resource-{unique}");
     let page_router = router.clone();
     let get_page = |path: String| {
         let router = page_router.clone();
-        async move { authenticated_get_page(router, &path, auth_token, access_token).await }
+        async move {
+            backend_request_with_context(
+                router,
+                Method::GET,
+                &path,
+                Some(INTEGRATION_ORGANIZATION_ID),
+                None,
+            )
+            .await
+        }
     };
 
     let (status, text, payload, _) = get_page(
@@ -1247,6 +1242,117 @@ async fn backend_postgres_role_resource_catalog_filters_and_relation_integrity()
     assert_eq!(StatusCode::BAD_REQUEST, status, "{text}");
     assert_eq!(error_payload["code"], 40003);
 
+    let binding_id = format!("iamrb_resource_{unique}");
+    sqlx::query(
+        "INSERT INTO iam_role_binding (id, tenant_id, organization_id, role_id, principal_kind, principal_id, \
+         scope_kind, scope_id, effect, status, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, 'user', $5, 'organization', $3, 'allow', 'active', $6, $6)",
+    )
+    .bind(&binding_id)
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(INTEGRATION_ORGANIZATION_ID)
+    .bind(&role_id)
+    .bind(format!("iamu_missing_{unique}"))
+    .bind(&now)
+    .execute(&pg)
+    .await
+    .expect("insert role binding for delete regression");
+    let duplicate_grant = sqlx::query(
+        "INSERT INTO iam_role_permission (id, tenant_id, role_id, permission_id, created_at) \
+         VALUES ($1, $2, $3, $4, $5)",
+    )
+    .bind(format!("iamrp_duplicate_{unique}"))
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(&role_id)
+    .bind(&permission_ids[0])
+    .bind(&now)
+    .execute(&pg)
+    .await;
+    assert!(duplicate_grant.as_ref().is_err_and(|error| {
+        error
+            .as_database_error()
+            .is_some_and(|error| error.code().as_deref() == Some("23505"))
+    }));
+
+    for organization_id in [Some(INTEGRATION_ORGANIZATION_ID), None] {
+        let (status, text, payload, _) = backend_request_with_context(
+            router.clone(),
+            Method::GET,
+            &format!(
+                "/backend/v3/api/iam/role_bindings?page=1&page_size=20&role_id={role_id}&principal_kind=user"
+            ),
+            organization_id,
+            None,
+        )
+        .await;
+        assert_eq!(StatusCode::OK, status, "{text}");
+        assert_eq!(payload["data"]["items"][0]["id"], binding_id);
+    }
+
+    let (status, text, _, _) = backend_request_with_context(
+        router.clone(),
+        Method::DELETE,
+        &format!("/backend/v3/api/iam/roles/{role_id}"),
+        Some(INTEGRATION_ORGANIZATION_ID),
+        None,
+    )
+    .await;
+    assert_eq!(StatusCode::NO_CONTENT, status, "{text}");
+    let role_status: String =
+        sqlx::query_scalar("SELECT status FROM iam_role WHERE tenant_id = $1 AND id = $2")
+            .bind(DEFAULT_IAM_TENANT_ID)
+            .bind(&role_id)
+            .fetch_one(&pg)
+            .await
+            .expect("read soft-deleted role");
+    assert_eq!(role_status, "disabled");
+    let binding_status: String =
+        sqlx::query_scalar("SELECT status FROM iam_role_binding WHERE tenant_id = $1 AND id = $2")
+            .bind(DEFAULT_IAM_TENANT_ID)
+            .bind(&binding_id)
+            .fetch_one(&pg)
+            .await
+            .expect("read revoked role binding after role delete");
+    assert_eq!(binding_status, "revoked");
+    let retained_grants: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM iam_role_permission WHERE tenant_id = $1 AND role_id = $2",
+    )
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(&role_id)
+    .fetch_one(&pg)
+    .await
+    .expect("count retained role permissions after role delete");
+    assert_eq!(retained_grants, 1);
+
+    let disabled_binding_body = serde_json::json!({
+        "roleId": role_id,
+        "principalKind": "user",
+        "principalId": format!("iamu_missing_{unique}"),
+        "scopeKind": "organization",
+        "scopeId": INTEGRATION_ORGANIZATION_ID,
+        "effect": "allow",
+    })
+    .to_string();
+    let (status, text, _, _) = backend_request_with_context(
+        router.clone(),
+        Method::POST,
+        "/backend/v3/api/iam/role_bindings",
+        Some(INTEGRATION_ORGANIZATION_ID),
+        Some(&disabled_binding_body),
+    )
+    .await;
+    assert_eq!(StatusCode::CONFLICT, status, "{text}");
+    let active_bindings: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM iam_role_binding \
+         WHERE tenant_id = $1 AND role_id = $2 AND status = 'active'",
+    )
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(&role_id)
+    .fetch_one(&pg)
+    .await
+    .expect("count active bindings after disabled-role assignment rejection");
+    assert_eq!(active_bindings, 0);
+
     let orphan_role_id = format!("iamr_other_tenant_{unique}");
     sqlx::query(
         "INSERT INTO iam_role (id, tenant_id, code, name, status, created_at, updated_at) \
@@ -1292,74 +1398,6 @@ async fn backend_postgres_role_resource_catalog_filters_and_relation_integrity()
             .is_some_and(|error| error.code().as_deref() == Some("23503"))
     }));
 
-    let binding_id = format!("iamrb_resource_{unique}");
-    sqlx::query(
-        "INSERT INTO iam_role_binding (id, tenant_id, organization_id, role_id, principal_kind, principal_id, \
-         scope_kind, scope_id, effect, status, created_at, updated_at) \
-         VALUES ($1, $2, $3, $4, 'user', $5, 'organization', $3, 'allow', 'active', $6, $6)",
-    )
-    .bind(&binding_id)
-    .bind(DEFAULT_IAM_TENANT_ID)
-    .bind(INTEGRATION_ORGANIZATION_ID)
-    .bind(&role_id)
-    .bind(format!("iamu_missing_{unique}"))
-    .bind(&now)
-    .execute(&pg)
-    .await
-    .expect("insert role binding for delete regression");
-    let duplicate_grant = sqlx::query(
-        "INSERT INTO iam_role_permission (id, tenant_id, role_id, permission_id, created_at) \
-         VALUES ($1, $2, $3, $4, $5)",
-    )
-    .bind(format!("iamrp_duplicate_{unique}"))
-    .bind(DEFAULT_IAM_TENANT_ID)
-    .bind(&role_id)
-    .bind(&permission_ids[0])
-    .bind(&now)
-    .execute(&pg)
-    .await;
-    assert!(duplicate_grant.as_ref().is_err_and(|error| {
-        error
-            .as_database_error()
-            .is_some_and(|error| error.code().as_deref() == Some("23505"))
-    }));
-
-    let (status, text, _, _) = authenticated_backend_request(
-        router.clone(),
-        Method::DELETE,
-        &format!("/backend/v3/api/iam/roles/{role_id}"),
-        auth_token,
-        access_token,
-        None,
-    )
-    .await;
-    assert_eq!(StatusCode::NO_CONTENT, status, "{text}");
-    let role_status: String =
-        sqlx::query_scalar("SELECT status FROM iam_role WHERE tenant_id = $1 AND id = $2")
-            .bind(DEFAULT_IAM_TENANT_ID)
-            .bind(&role_id)
-            .fetch_one(&pg)
-            .await
-            .expect("read soft-deleted role");
-    assert_eq!(role_status, "disabled");
-    let binding_status: String =
-        sqlx::query_scalar("SELECT status FROM iam_role_binding WHERE tenant_id = $1 AND id = $2")
-            .bind(DEFAULT_IAM_TENANT_ID)
-            .bind(&binding_id)
-            .fetch_one(&pg)
-            .await
-            .expect("read revoked role binding after role delete");
-    assert_eq!(binding_status, "revoked");
-    let retained_grants: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM iam_role_permission WHERE tenant_id = $1 AND role_id = $2",
-    )
-    .bind(DEFAULT_IAM_TENANT_ID)
-    .bind(&role_id)
-    .fetch_one(&pg)
-    .await
-    .expect("count retained role permissions after role delete");
-    assert_eq!(retained_grants, 1);
-
     sqlx::query("DELETE FROM iam_role_binding WHERE tenant_id = $1 AND id = $2")
         .bind(DEFAULT_IAM_TENANT_ID)
         .bind(&binding_id)
@@ -1391,13 +1429,365 @@ async fn backend_postgres_role_resource_catalog_filters_and_relation_integrity()
     }
 }
 
-async fn authenticated_get_page(
+#[tokio::test]
+async fn backend_postgres_role_binding_filters_without_organization_context() {
+    use backend_postgres_bootstrap::{
+        build_backend_integration_business_router, configure_backend_integration_runtime_env,
+        seed_backend_integration_bootstrap_owner, INTEGRATION_ORGANIZATION_ID,
+    };
+
+    let _guard = lock_local_iam_env();
+    let Some(_database_url) = iam_postgres_url() else {
+        eprintln!(
+            "SKIP backend_postgres_role_binding_filters_without_organization_context: IAM postgres URL not configured"
+        );
+        return;
+    };
+    unified_database_env::apply_workspace_postgres_env();
+    configure_backend_integration_runtime_env();
+    let pg = connect_iam_postgres().await;
+    seed_backend_integration_bootstrap_owner(&pg).await;
+
+    let unique = Uuid::now_v7().simple().to_string();
+    let role_id = format!("iamr_binding_filter_{unique}");
+    let binding_id = format!("iamrb_binding_filter_{unique}");
+    let membership_binding_id = format!("iamrb_membership_filter_{unique}");
+    let principal_id = format!("iamu_binding_filter_{unique}");
+    let membership_id = format!("iamom_binding_filter_{unique}");
+    let username = format!("binding_filter_{unique}");
+    let display_name = format!("Binding Filter User {unique}");
+    let now = chrono::Utc::now().to_rfc3339();
+    sqlx::query(
+        "INSERT INTO iam_user (id, tenant_id, username, display_name, status, is_deleted, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, 'active', 0, $5, $5)",
+    )
+    .bind(&principal_id)
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(&username)
+    .bind(&display_name)
+    .bind(&now)
+    .execute(&pg)
+    .await
+    .expect("insert binding-filter user fixture");
+    sqlx::query(
+        "INSERT INTO iam_organization_membership \
+            (id, tenant_id, organization_id, user_id, membership_kind, is_primary, status, joined_at, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, 'member', 0, 'active', $5, $5, $5)",
+    )
+    .bind(&membership_id)
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(INTEGRATION_ORGANIZATION_ID)
+    .bind(&principal_id)
+    .bind(&now)
+    .execute(&pg)
+    .await
+    .expect("insert binding-filter membership fixture");
+    sqlx::query(
+        "INSERT INTO iam_role (id, tenant_id, code, name, status, created_at, updated_at) \
+         VALUES ($1, $2, $3, 'Binding Filter Role', 'active', $4, $4)",
+    )
+    .bind(&role_id)
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(format!("binding_filter_{unique}"))
+    .bind(&now)
+    .execute(&pg)
+    .await
+    .expect("insert binding-filter role fixture");
+    sqlx::query(
+        "INSERT INTO iam_role_binding \
+            (id, tenant_id, organization_id, role_id, principal_kind, principal_id, scope_kind, scope_id, \
+             effect, status, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, 'user', $5, 'organization', $3, 'allow', 'active', $6, $6)",
+    )
+    .bind(&binding_id)
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(INTEGRATION_ORGANIZATION_ID)
+    .bind(&role_id)
+    .bind(&principal_id)
+    .bind(&now)
+    .execute(&pg)
+    .await
+    .expect("insert binding-filter fixture");
+    sqlx::query(
+        "INSERT INTO iam_role_binding \
+            (id, tenant_id, organization_id, role_id, principal_kind, principal_id, scope_kind, scope_id, \
+             effect, status, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, 'organization_membership', $5, 'organization', $3, 'allow', 'active', $6, $6)",
+    )
+    .bind(&membership_binding_id)
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(INTEGRATION_ORGANIZATION_ID)
+    .bind(&role_id)
+    .bind(&membership_id)
+    .bind(&now)
+    .execute(&pg)
+    .await
+    .expect("insert binding-filter membership fixture");
+
+    let router = build_backend_integration_business_router().await;
+    for organization_id in [Some(INTEGRATION_ORGANIZATION_ID), None] {
+        let context_name = if organization_id.is_some() {
+            "organization"
+        } else {
+            "tenant"
+        };
+        let (status, text, payload, _) = backend_request_with_context(
+            router.clone(),
+            Method::GET,
+            &format!(
+                "/backend/v3/api/iam/role_bindings?page=1&page_size=20&role_id={role_id}&principal_kind=user&principal_id={principal_id}"
+            ),
+            organization_id,
+            None,
+        )
+        .await;
+        assert_eq!(StatusCode::OK, status, "{context_name}: {text}");
+        assert_eq!(
+            payload["data"]["items"].as_array().map(Vec::len),
+            Some(1),
+            "{context_name}: {text}"
+        );
+        assert_eq!(
+            payload["data"]["items"][0]["id"], binding_id,
+            "{context_name}: {text}"
+        );
+        assert_eq!(
+            payload["data"]["items"][0]["principalDisplayName"], display_name,
+            "{context_name}: {text}"
+        );
+        assert_eq!(
+            payload["data"]["items"][0]["principalUsername"], username,
+            "{context_name}: {text}"
+        );
+
+        let (status, text, payload, _) = backend_request_with_context(
+            router.clone(),
+            Method::GET,
+            &format!("/backend/v3/api/iam/role_bindings?page=1&page_size=20&role_id={role_id}"),
+            organization_id,
+            None,
+        )
+        .await;
+        assert_eq!(StatusCode::OK, status, "{context_name}: {text}");
+        let items = payload["data"]["items"]
+            .as_array()
+            .expect("role binding list items");
+        assert_eq!(items.len(), 2, "{context_name}: {text}");
+        let membership_binding = items
+            .iter()
+            .find(|item| item["id"] == membership_binding_id)
+            .expect("membership role binding");
+        assert_eq!(
+            membership_binding["principalDisplayName"], display_name,
+            "{context_name}: {text}"
+        );
+        assert_eq!(
+            membership_binding["principalUsername"], username,
+            "{context_name}: {text}"
+        );
+    }
+
+    sqlx::query("DELETE FROM iam_role_binding WHERE tenant_id = $1 AND id IN ($2, $3)")
+        .bind(DEFAULT_IAM_TENANT_ID)
+        .bind(&binding_id)
+        .bind(&membership_binding_id)
+        .execute(&pg)
+        .await
+        .expect("clean binding-filter fixtures");
+    sqlx::query("DELETE FROM iam_organization_membership WHERE tenant_id = $1 AND id = $2")
+        .bind(DEFAULT_IAM_TENANT_ID)
+        .bind(&membership_id)
+        .execute(&pg)
+        .await
+        .expect("clean binding-filter membership fixture");
+    sqlx::query("DELETE FROM iam_role WHERE tenant_id = $1 AND id = $2")
+        .bind(DEFAULT_IAM_TENANT_ID)
+        .bind(&role_id)
+        .execute(&pg)
+        .await
+        .expect("clean binding-filter role fixture");
+    sqlx::query("DELETE FROM iam_user WHERE tenant_id = $1 AND id = $2")
+        .bind(DEFAULT_IAM_TENANT_ID)
+        .bind(&principal_id)
+        .execute(&pg)
+        .await
+        .expect("clean binding-filter user fixture");
+}
+
+#[tokio::test]
+async fn backend_postgres_disabled_role_cannot_receive_active_bindings() {
+    use backend_postgres_bootstrap::{
+        build_backend_integration_business_router, configure_backend_integration_runtime_env,
+        seed_backend_integration_bootstrap_owner, INTEGRATION_ORGANIZATION_ID,
+    };
+
+    let _guard = lock_local_iam_env();
+    let Some(_database_url) = iam_postgres_url() else {
+        eprintln!(
+            "SKIP backend_postgres_disabled_role_cannot_receive_active_bindings: IAM postgres URL not configured"
+        );
+        return;
+    };
+    unified_database_env::apply_workspace_postgres_env();
+    configure_backend_integration_runtime_env();
+    let pg = connect_iam_postgres().await;
+    seed_backend_integration_bootstrap_owner(&pg).await;
+
+    let unique = Uuid::now_v7().simple().to_string();
+    let role_id = format!("iamr_disabled_binding_{unique}");
+    let binding_id = format!("iamrb_disabled_binding_{unique}");
+    let principal_id = format!("iamu_disabled_binding_{unique}");
+    let now = chrono::Utc::now().to_rfc3339();
+    sqlx::query(
+        "INSERT INTO iam_role (id, tenant_id, code, name, status, created_at, updated_at) \
+         VALUES ($1, $2, $3, 'Disabled Binding Role', 'active', $4, $4)",
+    )
+    .bind(&role_id)
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(format!("disabled_binding_{unique}"))
+    .bind(&now)
+    .execute(&pg)
+    .await
+    .expect("insert disabled-binding role fixture");
+    sqlx::query(
+        "INSERT INTO iam_role_binding \
+            (id, tenant_id, organization_id, role_id, principal_kind, principal_id, scope_kind, scope_id, \
+             effect, status, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, 'user', $5, 'organization', $3, 'allow', 'active', $6, $6)",
+    )
+    .bind(&binding_id)
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(INTEGRATION_ORGANIZATION_ID)
+    .bind(&role_id)
+    .bind(&principal_id)
+    .bind(&now)
+    .execute(&pg)
+    .await
+    .expect("insert disabled-binding role binding fixture");
+
+    let router = build_backend_integration_business_router().await;
+    let (status, text, _, _) = backend_request_with_context(
+        router.clone(),
+        Method::DELETE,
+        &format!("/backend/v3/api/iam/roles/{role_id}"),
+        Some(INTEGRATION_ORGANIZATION_ID),
+        None,
+    )
+    .await;
+    assert_eq!(StatusCode::NO_CONTENT, status, "{text}");
+    let binding_status: String =
+        sqlx::query_scalar("SELECT status FROM iam_role_binding WHERE tenant_id = $1 AND id = $2")
+            .bind(DEFAULT_IAM_TENANT_ID)
+            .bind(&binding_id)
+            .fetch_one(&pg)
+            .await
+            .expect("read revoked binding after role disable");
+    assert_eq!(binding_status, "revoked");
+
+    let body = serde_json::json!({
+        "roleId": role_id,
+        "principalKind": "user",
+        "principalId": principal_id,
+        "scopeKind": "organization",
+        "scopeId": INTEGRATION_ORGANIZATION_ID,
+        "effect": "allow",
+    })
+    .to_string();
+    let (status, text, _, _) = backend_request_with_context(
+        router,
+        Method::POST,
+        "/backend/v3/api/iam/role_bindings",
+        Some(INTEGRATION_ORGANIZATION_ID),
+        Some(&body),
+    )
+    .await;
+    assert_eq!(StatusCode::CONFLICT, status, "{text}");
+    let active_bindings: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM iam_role_binding \
+         WHERE tenant_id = $1 AND role_id = $2 AND status = 'active'",
+    )
+    .bind(DEFAULT_IAM_TENANT_ID)
+    .bind(&role_id)
+    .fetch_one(&pg)
+    .await
+    .expect("count active bindings after rejected assignment");
+    assert_eq!(active_bindings, 0);
+
+    sqlx::query("DELETE FROM iam_role_binding WHERE tenant_id = $1 AND id = $2")
+        .bind(DEFAULT_IAM_TENANT_ID)
+        .bind(&binding_id)
+        .execute(&pg)
+        .await
+        .expect("clean disabled-binding role binding fixture");
+    sqlx::query("DELETE FROM iam_role WHERE tenant_id = $1 AND id = $2")
+        .bind(DEFAULT_IAM_TENANT_ID)
+        .bind(&role_id)
+        .execute(&pg)
+        .await
+        .expect("clean disabled-binding role fixture");
+}
+
+async fn backend_request_with_context(
     router: axum::Router,
+    method: Method,
     path: &str,
-    auth_token: &str,
-    access_token: &str,
+    organization_id: Option<&str>,
+    body: Option<&str>,
 ) -> (StatusCode, String, Value, Option<String>) {
-    authenticated_backend_request(router, Method::GET, path, auth_token, access_token, None).await
+    let mut principal = WebRequestPrincipal::builder()
+        .tenant_id(DEFAULT_IAM_TENANT_ID)
+        .user_id("1")
+        .login_scope(if organization_id.is_some() {
+            WebLoginScope::Organization
+        } else {
+            WebLoginScope::Tenant
+        })
+        .organization_id(organization_id.map(str::to_owned))
+        .app_id(backend_postgres_bootstrap::INTEGRATION_DEPLOY_APPLICATION_ID)
+        .build();
+    if organization_id.is_none() {
+        // The builder applies the tenant sentinel; this branch must stay absent.
+        principal.tenancy.organization_id = None;
+    }
+    let context = WebRequestContext {
+        request_id: ServerRequestId(format!("req-{}", Uuid::now_v7().simple())),
+        api_surface: WebApiSurface::BackendApi,
+        auth_mode: WebAuthMode::DualToken,
+        principal: Some(principal),
+        transport: WebTransportFacts {
+            path: path.to_owned(),
+            method: method.as_str().to_owned(),
+            auth_token_present: true,
+            access_token_present: true,
+            api_key_present: false,
+            ingress_token_present: false,
+            oauth_bearer_present: false,
+            agent_token_present: false,
+        },
+        locale: None,
+        client_kind: None,
+        operation: None,
+        trace_id: None,
+        idempotency_key: None,
+    };
+    let mut request = Request::builder()
+        .method(method)
+        .uri(path)
+        .header("content-type", "application/json")
+        .body(Body::from(body.unwrap_or_default().to_owned()))
+        .unwrap();
+    request.extensions_mut().insert(context);
+    let response = router.oneshot(request).await.unwrap();
+    let status = response.status();
+    let content_type = response
+        .headers()
+        .get("content-type")
+        .and_then(|value| value.to_str().ok())
+        .map(str::to_owned);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let body_text = String::from_utf8(bytes.to_vec()).unwrap();
+    let payload = serde_json::from_str(&body_text).unwrap_or(Value::Null);
+    (status, body_text, payload, content_type)
 }
 
 async fn authenticated_backend_request(
