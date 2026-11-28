@@ -33,6 +33,27 @@ export interface SdkworkIamH5VerificationCodeClient {
 /** Authentication modes of the mobile login/register surface. */
 export type SdkworkIamH5AuthMode = "login-pwd" | "login-code" | "register" | "forgot";
 
+/**
+ * Host-provided auth policy.
+ *
+ * Every list is optional so an IAM host that has not adopted the policy model
+ * keeps the historical screen. When a list is present, an empty list is the
+ * explicit "flow disabled" state, and its presence also means the flows are
+ * gated (an empty register list hides registration instead of falling back).
+ */
+export interface SdkworkIamH5AuthRuntimeConfig {
+  loginMethods?: Array<"password" | "emailCode" | "phoneCode" | "sessionBridge">;
+  registerMethods?: Array<"email" | "phone" | "username">;
+  recoveryMethods?: Array<"email" | "phone">;
+  oauthLoginEnabled?: boolean;
+  verificationPolicy?: {
+    emailCodeLoginEnabled?: boolean;
+    emailRegistrationVerificationRequired?: boolean;
+    phoneCodeLoginEnabled?: boolean;
+    phoneRegistrationVerificationRequired?: boolean;
+  };
+}
+
 export interface SdkworkIamH5AuthSession {
   accessToken?: string;
   authToken?: string;
@@ -130,7 +151,13 @@ export interface SdkworkIamH5CodeLoginInput {
 /** Registration credentials collected by the register mode (手机号注册). */
 export interface SdkworkIamH5RegisterInput {
   account: string;
-  code: string;
+  /**
+   * Verification code for a contact-channel registration.
+   *
+   * Omitted for username-only registration and for a channel whose
+   * registration verification is disabled by the host configuration.
+   */
+  code?: string;
   password: string;
   /**
    * Repetition of `password`.

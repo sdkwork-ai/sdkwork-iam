@@ -158,15 +158,20 @@ export function createSdkworkIamH5AuthController(
     register: async (input: SdkworkIamH5RegisterInput) => {
       setState({ challenge: undefined, lastError: undefined, status: "loading" });
       try {
-        const verifyType = resolveSdkworkIamH5VerifyType(input.account);
+        const account = input.account.trim();
+        const code = input.code?.trim() ?? "";
         const response = await service.auth.registrations.create({
-          channel: verifyType,
+          ...(code
+            ? {
+                channel: resolveSdkworkIamH5VerifyType(account),
+                verificationCode: code,
+              }
+            : {}),
           // The server compares this with `password` and refuses the request when
           // the two differ or when the field is absent.
           confirmPassword: input.confirmPassword,
           password: input.password,
-          username: input.account.trim(),
-          verificationCode: input.code.trim(),
+          username: account,
         });
         return resolveLoginResult(response);
       } catch (error) {

@@ -500,6 +500,14 @@ function buildOperation(surface, route) {
     };
   }
 
+  if (route.operationId === 'enterpriseSeatPolicies.delete') {
+    operation.parameters.push(queryParameter('disposition', {
+      type: 'string',
+      enum: ['release', 'keep'],
+      default: 'release',
+    }));
+  }
+
   if (route.operationId === 'iam.oauth.providerCallbacks.create') {
     operation.parameters.push(
       queryParameter('signature', { type: 'string' }),
@@ -833,6 +841,16 @@ function buildOperation(surface, route) {
     );
   }
 
+  if (route.operationId === 'enterpriseGrants.list') {
+    operation.parameters.push(
+      queryParameter('authorization_mode', {
+        type: 'string',
+        enum: ['all_members', 'seat'],
+        description: 'Exact enterprise authorization mode filter.',
+      }),
+    );
+  }
+
   if (route.operationId === 'organizations.members.list') {
     operation.parameters.push(
       queryParameter('role', {
@@ -958,6 +976,47 @@ function buildOperation(surface, route) {
     );
   }
 
+  if (route.operationId === 'roles.permissions.list') {
+    operation.parameters.push(
+      queryParameter('resource', {
+        type: 'string',
+        description: 'Exact case-sensitive permission resource filter.',
+      }),
+    );
+  }
+
+  if (route.operationId === 'permissions.list') {
+    operation.parameters.push(
+      queryParameter('resource', {
+        type: 'string',
+        description: 'Exact case-sensitive permission resource filter (for example iam.roles).',
+      }),
+      queryParameter('role_id', {
+        type: 'string',
+        description: 'Role whose grants are used by the assigned filter.',
+      }),
+      queryParameter('assigned', {
+        type: 'boolean',
+        description:
+          'With role_id, return granted permissions when true or unassigned catalog permissions when false.',
+      }),
+    );
+  }
+
+  if (route.operationId === 'enterpriseSeats.list') {
+    operation.parameters.push(
+      queryParameter('q', {
+        type: 'string',
+        description: 'Server-side case-insensitive search over display name, OneID and department.',
+      }),
+      queryParameter('status', {
+        type: 'string',
+        enum: ['active', 'released'],
+        description: 'Exact seat status filter.',
+      }),
+    );
+  }
+
   if (route.operationId === 'users.list') {
     operation.parameters.push(
       queryParameter('status', {
@@ -1021,11 +1080,50 @@ function requestBodySchemaRef(route) {
   if (route.operationId === 'appAccessTokens.create') {
     return '#/components/schemas/IamAppAccessTokenCreateCommand';
   }
+  if (route.operationId === 'roleBindings.update') {
+    return '#/components/schemas/IamRoleBindingUpdateCommand';
+  }
   if (route.operationId === 'users.current.persona.update') {
     return '#/components/schemas/IamUserPersonaUpdateCommand';
   }
   if (route.operationId === 'sessions.create') {
     return '#/components/schemas/AppbaseSessionCreateCommand';
+  }
+  if (operationId === 'enterpriseOrders.create') {
+    return '#/components/schemas/IamEnterpriseOrderCreateCommand';
+  }
+  if (operationId === 'enterpriseOrders.update' || operationId === 'enterpriseGrants.update') {
+    return '#/components/schemas/IamEnterpriseOrderUpdateCommand';
+  }
+  if (operationId === 'enterpriseSeatPolicies.create') {
+    return '#/components/schemas/IamEnterpriseSeatPolicyCommand';
+  }
+  if (operationId === 'enterpriseSeatPolicies.update') {
+    return '#/components/schemas/IamEnterpriseSeatPolicyUpdateCommand';
+  }
+  if (operationId === 'enterpriseSeatBlacklist.create') {
+    return '#/components/schemas/IamEnterpriseSeatBlacklistCommand';
+  }
+  if (operationId === 'enterpriseSeats.bulkRelease') {
+    return '#/components/schemas/IamEnterpriseSeatBulkReleaseCommand';
+  }
+  if (operationId === 'enterpriseSeats.export') {
+    return '#/components/schemas/IamEnterpriseSeatExportCommand';
+  }
+  if (operationId === 'enterpriseOrders.terminate') {
+    return '#/components/schemas/IamEnterpriseOrderTerminateCommand';
+  }
+  if (
+    operationId === 'enterpriseOrderAuthorizations.create'
+    || operationId === 'enterpriseOrderTerminations.create'
+  ) {
+    return '#/components/schemas/IamEnterpriseOrderLinkConfirmCommand';
+  }
+  if (operationId === 'enterpriseSeats.create') {
+    return '#/components/schemas/IamEnterpriseSeatAssignCommand';
+  }
+  if (operationId === 'installations.credentials.policy.update') {
+    return '#/components/schemas/IamInstallationCredentialPolicyUpdateCommand';
   }
   if (operationId === 'installations.create') {
     return '#/components/schemas/AppbaseInstallationProvisionCommand';
@@ -1137,10 +1235,27 @@ function typedListSuccessSchemaRef(route) {
   switch (route.operationId) {
     case 'organizations.members.list':
       return '#/components/schemas/IamOrganizationMemberListResponse';
+    case 'roleBindings.list':
+      return '#/components/schemas/IamRoleBindingListResponse';
+    case 'permissions.resources.list':
+      return '#/components/schemas/IamPermissionResourceListResponse';
+    case 'organizationMemberships.list':
+      return '#/components/schemas/IamOrganizationMembershipListResponse';
     case 'installations.environments.list':
       return '#/components/schemas/IamInstallationEnvironmentListResponse';
     case 'installations.credentials.list':
       return '#/components/schemas/IamInstallationCredentialListResponse';
+    case 'enterpriseOrders.list':
+    case 'enterpriseGrants.list':
+      return '#/components/schemas/IamEnterpriseOrderListResponse';
+    case 'enterpriseOrders.events.list':
+      return '#/components/schemas/IamEnterpriseOrderEventListResponse';
+    case 'enterpriseSeats.list':
+      return '#/components/schemas/IamEnterpriseOrderSeatListResponse';
+    case 'enterpriseSeatPolicies.list':
+      return '#/components/schemas/IamEnterpriseSeatPolicyListResponse';
+    case 'enterpriseSeatBlacklist.list':
+      return '#/components/schemas/IamEnterpriseSeatBlacklistListResponse';
     default:
       return undefined;
   }
@@ -1156,14 +1271,80 @@ function typedResourceSuccessSchemaRef(route) {
   switch (route.operationId) {
     case 'appAccessTokens.create':
       return '#/components/schemas/IamAppAccessTokenResponse';
+    case 'roleBindings.create':
+    case 'roleBindings.update':
+      return '#/components/schemas/IamRoleBindingResponse';
     case 'installations.environments.update':
       return '#/components/schemas/IamInstallationEnvironmentResponse';
+    case 'enterpriseOrders.retrieve':
+    case 'publisherEnterpriseOrders.retrieve':
+    case 'enterpriseOrders.update':
+    case 'enterpriseOrders.cancel':
+    case 'enterpriseOrderAuthorizations.create':
+    case 'enterpriseOrderTerminations.create':
+      return '#/components/schemas/IamEnterpriseOrderResponse';
+    case 'enterpriseOrders.create':
+    case 'enterpriseOrders.terminate':
+      return '#/components/schemas/IamEnterpriseOrderWithLinkResponse';
+    case 'enterpriseSeats.create':
+    case 'enterpriseOrders.update':
+    case 'enterpriseGrants.update':
+      return '#/components/schemas/IamEnterpriseOrderResponse';
+    case 'enterpriseSeatPolicies.create':
+    case 'enterpriseSeatPolicies.retrieve':
+    case 'enterpriseSeatPolicies.update':
+      return '#/components/schemas/IamEnterpriseSeatPolicyResponse';
+    case 'enterpriseSeatBlacklist.create':
+      return '#/components/schemas/IamEnterpriseSeatBlacklistResponse';
+    case 'enterpriseSeats.bulkRelease':
+      return '#/components/schemas/IamEnterpriseSeatBulkReleaseResponse';
+    case 'enterpriseSeats.export':
+      return '#/components/schemas/IamEnterpriseSeatExportResponse';
+    case 'installations.credentials.policy.update':
+      return '#/components/schemas/IamInstallationCredentialPolicyResponse';
     case 'installations.credentials.create':
     case 'installations.credentials.rotate':
       return '#/components/schemas/IamInstallationCredentialResponse';
     default:
       return undefined;
   }
+}
+
+function resourceDataResponse(itemSchema) {
+  return {
+    allOf: [
+      { $ref: '#/components/schemas/SdkWorkApiResponse' },
+      {
+        type: 'object', required: ['data'],
+        properties: {
+          data: {
+            type: 'object', additionalProperties: false, required: ['item'],
+            properties: { item: { $ref: `#/components/schemas/${itemSchema}` } },
+          },
+        },
+      },
+    ],
+  };
+}
+
+function listDataResponse(itemSchema) {
+  return {
+    allOf: [
+      { $ref: '#/components/schemas/SdkWorkApiResponse' },
+      {
+        type: 'object', required: ['data'],
+        properties: {
+          data: {
+            type: 'object', additionalProperties: false, required: ['items', 'pageInfo'],
+            properties: {
+              items: { type: 'array', items: { $ref: `#/components/schemas/${itemSchema}` } },
+              pageInfo: { $ref: '#/components/schemas/PageInfo' },
+            },
+          },
+        },
+      },
+    ],
+  };
 }
 
 function buildSchemas() {
@@ -1551,6 +1732,453 @@ function buildSchemas() {
         },
       ],
     },
+    IamEnterpriseOrder: {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'id',
+        'orderNo',
+        'tenantId',
+        'applicationId',
+        'enterpriseTenantId',
+        'authorizationMode',
+        'durationMonths',
+        'orderStatus',
+      ],
+      description:
+        'One enterprise authorization order. tenantId is the publisher; enterpriseTenantId is the '
+        + 'grantee enterprise.',
+      properties: {
+        id: { type: 'string' },
+        orderNo: { type: 'string' },
+        tenantId: { type: 'string' },
+        organizationId: { type: 'string' },
+        applicationId: { type: 'string' },
+        enterpriseTenantId: { type: 'string' },
+        enterpriseOrganizationId: { type: 'string' },
+        enterpriseName: { type: 'string' },
+        authorizationMode: { type: 'string', enum: ['all_members', 'seat'] },
+        seatCount: { type: ['integer', 'null'] },
+        seatName: { type: ['string', 'null'], maxLength: 200 },
+        managementScope: { type: 'string', enum: ['tenant', 'organization', 'department', 'self'] },
+        durationMonths: { type: 'integer', enum: [3, 6, 12] },
+        orderStatus: {
+          type: 'string',
+          enum: ['pending_authorization', 'active', 'pending_termination', 'terminated', 'cancelled'],
+        },
+        contactName: { type: 'string' },
+        contactPhone: { type: 'string' },
+        authorizedAt: { type: ['string', 'null'], format: 'date-time' },
+        expiresAt: { type: ['string', 'null'], format: 'date-time' },
+        terminatedAt: { type: ['string', 'null'], format: 'date-time' },
+        terminationReason: { type: ['string', 'null'] },
+        terminationNote: { type: ['string', 'null'] },
+        createdAt: { type: 'string', format: 'date-time' },
+        updatedAt: { type: 'string', format: 'date-time' },
+        version: { type: 'string', pattern: '^[0-9]+$', 'x-sdkwork-int64-string': true },
+      },
+    },
+    IamEnterpriseOrderWithLink: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['id', 'orderNo', 'orderStatus', 'linkToken'],
+      description:
+        'The order plus the one-time plaintext token of the link it just issued. Only the SHA-256 of '
+        + 'the token is stored; it is never returned again.',
+      properties: {
+        id: { type: 'string' },
+        orderNo: { type: 'string' },
+        tenantId: { type: 'string' },
+        applicationId: { type: 'string' },
+        enterpriseTenantId: { type: 'string' },
+        enterpriseName: { type: 'string' },
+        authorizationMode: { type: 'string', enum: ['all_members', 'seat'] },
+        seatCount: { type: ['integer', 'null'] },
+        seatName: { type: ['string', 'null'], maxLength: 200 },
+        managementScope: { type: 'string', enum: ['tenant', 'organization', 'department', 'self'] },
+        durationMonths: { type: 'integer', enum: [3, 6, 12] },
+        orderStatus: {
+          type: 'string',
+          enum: ['pending_authorization', 'active', 'pending_termination', 'terminated', 'cancelled'],
+        },
+        expiresAt: { type: ['string', 'null'], format: 'date-time' },
+        linkToken: { type: 'string' },
+      },
+    },
+    IamEnterpriseOrderSeat: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['id', 'tenantId', 'orderId', 'applicationId', 'userId', 'seatStatus', 'allocationMethod', 'blacklisted'],
+      description:
+        'One seat inside the grantee enterprise. tenantId here is the enterprise, not the publisher.',
+      properties: {
+        id: { type: 'string' },
+        tenantId: { type: 'string' },
+        organizationId: { type: 'string' },
+        orderId: { type: 'string' },
+        applicationId: { type: 'string' },
+        userId: { type: 'string' },
+        displayName: { type: ['string', 'null'] },
+        oneIdId: { type: ['string', 'null'] },
+        departmentId: { type: ['string', 'null'] },
+        departmentName: { type: ['string', 'null'] },
+        allocationMethod: { type: 'string', enum: ['manual', 'department_auto', 'department_login'] },
+        policyId: { type: ['string', 'null'] },
+        blacklisted: { type: 'boolean' },
+        seatStatus: { type: 'string', enum: ['active', 'released'] },
+        assignedBy: { type: 'string' },
+        assignedAt: { type: 'string', format: 'date-time' },
+        releasedBy: { type: ['string', 'null'] },
+        releasedAt: { type: ['string', 'null'], format: 'date-time' },
+        version: { type: 'string', pattern: '^[0-9]+$', 'x-sdkwork-int64-string': true },
+      },
+    },
+    IamEnterpriseOrderEvent: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['id', 'orderId', 'eventType', 'actorKind'],
+      properties: {
+        id: { type: 'string' },
+        orderId: { type: 'string' },
+        eventType: {
+          type: 'string',
+          enum: [
+            'created',
+            'link_issued',
+            'authorized',
+            'termination_requested',
+            'termination_confirmed',
+            'expired',
+            'cancelled',
+            'seat_assigned',
+            'seat_released',
+            'order_resized',
+            'seat_policy_created',
+            'seat_policy_updated',
+            'seat_policy_deleted',
+            'seat_blacklist_added',
+            'seat_blacklist_removed',
+            'seats_bulk_released',
+            'seats_exported',
+          ],
+        },
+        actorKind: { type: 'string', enum: ['publisher', 'enterprise_admin', 'system'] },
+        actorId: { type: ['string', 'null'] },
+        payload: { type: 'object' },
+        createdAt: { type: 'string', format: 'date-time' },
+      },
+    },
+    IamEnterpriseOrderListResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['items', 'pageInfo'],
+              properties: {
+                items: { type: 'array', items: { $ref: '#/components/schemas/IamEnterpriseOrder' } },
+                pageInfo: { $ref: '#/components/schemas/PageInfo' },
+              },
+            },
+          },
+        },
+      ],
+    },
+    IamEnterpriseOrderSeatListResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['items', 'pageInfo'],
+              properties: {
+                items: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/IamEnterpriseOrderSeat' },
+                },
+                pageInfo: { $ref: '#/components/schemas/PageInfo' },
+              },
+            },
+          },
+        },
+      ],
+    },
+    IamEnterpriseOrderEventListResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['items', 'pageInfo'],
+              properties: {
+                items: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/IamEnterpriseOrderEvent' },
+                },
+                pageInfo: { $ref: '#/components/schemas/PageInfo' },
+              },
+            },
+          },
+        },
+      ],
+    },
+    IamEnterpriseOrderResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['item'],
+              properties: { item: { $ref: '#/components/schemas/IamEnterpriseOrder' } },
+            },
+          },
+        },
+      ],
+    },
+    IamEnterpriseOrderWithLinkResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['item'],
+              properties: { item: { $ref: '#/components/schemas/IamEnterpriseOrderWithLink' } },
+            },
+          },
+        },
+      ],
+    },
+    IamEnterpriseOrderSeatResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['item'],
+              properties: { item: { $ref: '#/components/schemas/IamEnterpriseOrderSeat' } },
+            },
+          },
+        },
+      ],
+    },
+    IamEnterpriseSeatPolicy: {
+      type: 'object', additionalProperties: false,
+      required: ['id', 'tenantId', 'orderId', 'applicationId', 'organizationId', 'departmentId', 'departmentName', 'allocationType', 'createdBy', 'createdAt', 'updatedAt', 'version'],
+      properties: {
+        id: { type: 'string' }, tenantId: { type: 'string' }, orderId: { type: 'string' },
+        applicationId: { type: 'string' }, organizationId: { type: 'string' },
+        departmentId: { type: 'string' }, departmentName: { type: 'string' },
+        allocationType: { type: 'string', enum: ['auto', 'login'] }, createdBy: { type: 'string' },
+        createdAt: { type: 'string', format: 'date-time' }, updatedAt: { type: 'string', format: 'date-time' },
+        version: { type: 'string', pattern: '^[0-9]+$', 'x-sdkwork-int64-string': true },
+      },
+    },
+    IamEnterpriseSeatPolicyResponse: resourceDataResponse('IamEnterpriseSeatPolicy'),
+    IamEnterpriseSeatPolicyListResponse: listDataResponse('IamEnterpriseSeatPolicy'),
+    IamEnterpriseSeatPolicyCommand: {
+      type: 'object', additionalProperties: false, required: ['departmentId', 'allocationType'],
+      properties: {
+        departmentId: { type: 'string', minLength: 1 },
+        allocationType: { type: 'string', enum: ['auto', 'login'] },
+      },
+    },
+    IamEnterpriseSeatPolicyUpdateCommand: {
+      type: 'object', additionalProperties: false, minProperties: 1,
+      properties: {
+        departmentId: { type: 'string', minLength: 1 },
+        allocationType: { type: 'string', enum: ['auto', 'login'] },
+      },
+    },
+    IamEnterpriseSeatBlacklistEntry: {
+      type: 'object', additionalProperties: false,
+      required: ['id', 'tenantId', 'orderId', 'applicationId', 'userId', 'displayName', 'createdBy', 'createdAt'],
+      properties: {
+        id: { type: 'string' }, tenantId: { type: 'string' }, orderId: { type: 'string' },
+        applicationId: { type: 'string' }, userId: { type: 'string' }, displayName: { type: 'string' },
+        oneIdId: { type: ['string', 'null'] }, departmentName: { type: ['string', 'null'] },
+        reason: { type: ['string', 'null'], maxLength: 500 }, createdBy: { type: 'string' },
+        createdAt: { type: 'string', format: 'date-time' },
+      },
+    },
+    IamEnterpriseSeatBlacklistResponse: resourceDataResponse('IamEnterpriseSeatBlacklistEntry'),
+    IamEnterpriseSeatBlacklistListResponse: listDataResponse('IamEnterpriseSeatBlacklistEntry'),
+    IamEnterpriseSeatBlacklistCommand: {
+      type: 'object', additionalProperties: false, required: ['userId'],
+      properties: { userId: { type: 'string', minLength: 1 }, reason: { type: ['string', 'null'], maxLength: 500 } },
+    },
+    IamEnterpriseSeatBulkReleaseCommand: {
+      type: 'object', additionalProperties: false, required: ['items'],
+      properties: {
+        items: {
+          type: 'array', minItems: 1, maxItems: 200,
+          items: {
+            type: 'object', additionalProperties: false, required: ['seatId'],
+            properties: { seatId: { type: 'string', minLength: 1 } },
+          },
+        },
+        reason: { type: ['string', 'null'], maxLength: 500 },
+      },
+    },
+    IamEnterpriseSeatBulkReleaseResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object', required: ['data'],
+          properties: {
+            data: {
+              type: 'object', additionalProperties: false, required: ['items', 'allOrNothing'],
+              properties: {
+                items: {
+                  type: 'array',
+                  items: {
+                    type: 'object', additionalProperties: false, required: ['seatId', 'success'],
+                    properties: { seatId: { type: 'string' }, success: { type: 'boolean' } },
+                  },
+                },
+                allOrNothing: { type: 'boolean', enum: [true] },
+              },
+            },
+          },
+        },
+      ],
+    },
+    IamEnterpriseSeatExportCommand: {
+      type: 'object', additionalProperties: false,
+      properties: {
+        status: { type: ['string', 'null'], enum: ['active', 'released', null] },
+        q: { type: ['string', 'null'] },
+      },
+    },
+    IamEnterpriseSeatExportResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object', required: ['data'],
+          properties: {
+            data: {
+              type: 'object', additionalProperties: false, required: ['fileName', 'csv'],
+              properties: {
+                fileName: { type: 'string' },
+                csv: { type: 'string', description: 'UTF-8 CSV; formula-leading cells are escaped.' },
+              },
+            },
+          },
+        },
+      ],
+    },
+    IamEnterpriseOrderUpdateCommand: {
+      type: 'object', additionalProperties: false,
+      properties: {
+        seatName: { type: ['string', 'null'], maxLength: 100 },
+        seatCount: { type: ['integer', 'null'], minimum: 1, maximum: 1_000_000 },
+      },
+    },
+    IamEnterpriseOrderCreateCommand: {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'enterpriseTenantId',
+        'enterpriseName',
+        'durationMonths',
+        'contactName',
+        'contactPhone',
+      ],
+      properties: {
+        applicationId: { type: 'string' },
+        enterpriseTenantId: { type: 'string' },
+        enterpriseOrganizationId: { type: 'string' },
+        enterpriseName: { type: 'string' },
+        authorizationMode: { type: 'string', enum: ['all_members', 'seat'] },
+        seatCount: { type: 'integer', minimum: 1 },
+        seatName: { type: ['string', 'null'], maxLength: 200 },
+        durationMonths: { type: 'integer', enum: [3, 6, 12] },
+        contactName: { type: 'string' },
+        contactPhone: { type: 'string' },
+        organizationId: { type: 'string' },
+      },
+    },
+    IamEnterpriseOrderTerminateCommand: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['reason'],
+      properties: {
+        reason: { type: 'string', maxLength: 200 },
+        note: { type: 'string', maxLength: 2000 },
+      },
+    },
+    IamEnterpriseOrderLinkConfirmCommand: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['token'],
+      properties: { token: { type: 'string' } },
+    },
+    IamEnterpriseSeatAssignCommand: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['userId'],
+      properties: { userId: { type: 'string' }, organizationId: { type: 'string' } },
+    },
+    IamInstallationCredentialPolicyUpdateCommand: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        redirectUris: { type: 'array', items: { type: 'string', maxLength: 2048 } },
+        grantedScopes: { type: 'array', items: { type: 'string', maxLength: 128 } },
+        allowedOrigins: {
+          type: 'array',
+          maxItems: 32,
+          description:
+            'Trusted browser origins (scheme://host[:port]). Empty removes the per-client restriction.',
+          items: { type: 'string', maxLength: 512 },
+        },
+        clientStatus: {
+          type: 'string',
+          enum: ['pending_review', 'enabled', 'rejected', 'disabled'],
+        },
+        reviewNote: { type: ['string', 'null'], maxLength: 2000 },
+      },
+    },
+    IamInstallationCredentialPolicyResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['item'],
+              properties: { item: { $ref: '#/components/schemas/IamInstallationCredential' } },
+            },
+          },
+        },
+      ],
+    },
     IamPersonaLabels: {
       type: 'object',
       additionalProperties: { type: 'string' },
@@ -1754,6 +2382,213 @@ function buildSchemas() {
                 items: {
                   type: 'array',
                   items: { $ref: '#/components/schemas/IamOrganizationMember' },
+                },
+                pageInfo: { $ref: '#/components/schemas/PageInfo' },
+              },
+            },
+          },
+        },
+      ],
+    },
+    IamOrganizationMembership: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['userId', 'membershipId', 'organizationId', 'membershipKind', 'status'],
+      properties: {
+        id: { type: 'string' },
+        userId: { type: 'string' },
+        membershipId: { type: 'string' },
+        organizationId: { type: 'string' },
+        tenantId: { type: 'string' },
+        membershipKind: { type: 'string' },
+        status: { type: 'string' },
+        username: { type: 'string' },
+        displayName: { type: 'string' },
+        email: { type: ['string', 'null'] },
+        phone: { type: ['string', 'null'] },
+      },
+    },
+    IamOrganizationMembershipListResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['items', 'pageInfo'],
+              properties: {
+                items: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/IamOrganizationMembership' },
+                },
+                pageInfo: { $ref: '#/components/schemas/PageInfo' },
+              },
+            },
+          },
+        },
+      ],
+    },
+    IamRoleBinding: {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'id',
+        'tenantId',
+        'organizationId',
+        'roleId',
+        'roleCode',
+        'principalKind',
+        'principalId',
+        'scopeKind',
+        'scopeId',
+        'effect',
+        'status',
+        'dataScopeKind',
+        'effectiveFrom',
+        'effectiveTo',
+      ],
+      description:
+        'One role binding. Tenant and organization identity come from the authenticated context; '
+        + 'roleId is immutable after creation and delete revokes rather than removes the row.',
+      properties: {
+        id: { type: 'string' },
+        tenantId: { type: 'string', readOnly: true },
+        organizationId: { type: 'string', readOnly: true },
+        roleId: { type: 'string', readOnly: true },
+        roleCode: { type: 'string', readOnly: true },
+        principalKind: {
+          type: 'string',
+          enum: ['user', 'organization_membership', 'group', 'service_account'],
+        },
+        principalId: { type: 'string', minLength: 1 },
+        principalDisplayName: {
+          type: ['string', 'null'],
+          readOnly: true,
+          description: 'Resolved user display name for this binding page, or null when unavailable.',
+        },
+        principalUsername: {
+          type: ['string', 'null'],
+          readOnly: true,
+          description: 'Resolved user login name for this binding page, or null when unavailable.',
+        },
+        scopeKind: { type: 'string', enum: ['tenant', 'organization', 'department'] },
+        scopeId: { type: 'string', minLength: 1 },
+        effect: { type: 'string', enum: ['allow', 'deny'] },
+        status: { type: 'string', enum: ['active', 'revoked'], readOnly: true },
+        dataScopeKind: {
+          type: 'string',
+          enum: [
+            'scope',
+            'self',
+            'department',
+            'department_and_children',
+            'organization',
+            'tenant',
+          ],
+        },
+        effectiveFrom: {
+          type: ['string', 'null'],
+          format: 'date-time',
+          description: 'Inclusive RFC3339 start instant, or null for no lower bound.',
+        },
+        effectiveTo: {
+          type: ['string', 'null'],
+          format: 'date-time',
+          description: 'Exclusive RFC3339 end instant, or null for no upper bound.',
+        },
+      },
+    },
+    IamPermissionResource: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['resource', 'permissionCount'],
+      properties: {
+        resource: { type: 'string' },
+        permissionCount: {
+          type: 'string',
+          format: 'int64',
+          pattern: '^[0-9]+$',
+          'x-sdkwork-int64-string': true,
+        },
+      },
+    },
+    IamPermissionResourceListResponse: listDataResponse('IamPermissionResource'),
+    IamRoleBindingUpdateCommand: {
+      type: 'object',
+      additionalProperties: false,
+      description:
+        'Partial role-binding update. Omitted fields keep their stored values; an explicit null '
+        + 'clears only effectiveFrom or effectiveTo. id, tenantId, organizationId, roleId, roleCode, '
+        + 'status, and audit fields are server-owned and cannot be written.',
+      properties: {
+        effect: { type: 'string', enum: ['allow', 'deny'] },
+        principalKind: {
+          type: 'string',
+          enum: ['user', 'organization_membership', 'group', 'service_account'],
+        },
+        principalId: { type: 'string', minLength: 1 },
+        scopeKind: { type: 'string', enum: ['tenant', 'organization', 'department'] },
+        scopeId: { type: 'string', minLength: 1 },
+        dataScopeKind: {
+          type: 'string',
+          enum: [
+            'scope',
+            'self',
+            'department',
+            'department_and_children',
+            'organization',
+            'tenant',
+          ],
+        },
+        effectiveFrom: {
+          type: ['string', 'null'],
+          format: 'date-time',
+          description: 'Omitted keeps the value; null clears the lower bound.',
+        },
+        effectiveTo: {
+          type: ['string', 'null'],
+          format: 'date-time',
+          description: 'Omitted keeps the value; null clears the upper bound.',
+        },
+      },
+    },
+    IamRoleBindingResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['item'],
+              properties: {
+                item: { $ref: '#/components/schemas/IamRoleBinding' },
+              },
+            },
+          },
+        },
+      ],
+    },
+    IamRoleBindingListResponse: {
+      allOf: [
+        { $ref: '#/components/schemas/SdkWorkApiResponse' },
+        {
+          type: 'object',
+          required: ['data'],
+          properties: {
+            data: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['items', 'pageInfo'],
+              properties: {
+                items: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/IamRoleBinding' },
                 },
                 pageInfo: { $ref: '#/components/schemas/PageInfo' },
               },

@@ -13,6 +13,62 @@ use crate::handlers::{
 
 type TxMutationFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, sqlx::Error>> + Send + 'a>>;
 
+/// Runs a mutation and its audit record in one transaction without erasing the
+/// database error category. Callers that distinguish constraint conflicts from
+/// infrastructure failures must use this variant rather than the legacy string
+/// error helpers.
+pub(crate) async fn execute_mutation_with_audit_typed<T, F>(
+    pg: &PgPool,
+    ctx: &WebRequestContext,
+    action: &str,
+    resource_type: &str,
+    resource_id: String,
+    detail: Value,
+    mutate: F,
+) -> Result<T, sqlx::Error>
+where
+    F: for<'a> FnOnce(&'a mut Transaction<'_, Postgres>) -> TxMutationFuture<'a, T>,
+{
+    let mut tx = pg.begin().await?;
+    let outcome = mutate(&mut tx).await?;
+    record_backend_mutation_audit_tx(&mut *tx, ctx, action, resource_type, &resource_id, detail)
+        .await
+        .map_err(sqlx::Error::Protocol)?;
+    tx.commit().await?;
+    Ok(outcome)
+}
+
+pub(crate) async fn execute_conditional_mutation_with_audit_typed<T, F>(
+    pg: &PgPool,
+    ctx: &WebRequestContext,
+    action: &str,
+    resource_type: &str,
+    resource_id: String,
+    detail: Value,
+    mutate: F,
+    should_audit: impl FnOnce(&T) -> bool,
+) -> Result<T, sqlx::Error>
+where
+    F: for<'a> FnOnce(&'a mut Transaction<'_, Postgres>) -> TxMutationFuture<'a, T>,
+{
+    let mut tx = pg.begin().await?;
+    let outcome = mutate(&mut tx).await?;
+    if should_audit(&outcome) {
+        record_backend_mutation_audit_tx(
+            &mut *tx,
+            ctx,
+            action,
+            resource_type,
+            &resource_id,
+            detail,
+        )
+        .await
+        .map_err(sqlx::Error::Protocol)?;
+    }
+    tx.commit().await?;
+    Ok(outcome)
+}
+
 pub(crate) async fn execute_mutation_with_audit<T, F>(
     pg: &PgPool,
     ctx: &WebRequestContext,

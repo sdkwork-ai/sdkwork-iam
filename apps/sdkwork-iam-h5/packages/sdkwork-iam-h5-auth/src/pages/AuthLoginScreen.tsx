@@ -5,6 +5,7 @@ import { useSdkworkIamH5AuthMessages } from "../i18n";
 import type {
   SdkworkIamH5AuthController,
   SdkworkIamH5AuthMode,
+  SdkworkIamH5AuthRuntimeConfig,
   SdkworkIamH5AuthSession,
   SdkworkIamH5OAuthFlowMode,
   SdkworkIamH5ScanLoginContext,
@@ -51,6 +52,7 @@ export function SdkworkIamH5AuthLoginScreen({
   onThirdPartyLogin,
   onBack,
   oauthCallbackPath,
+  runtimeConfig,
 }: SdkworkIamH5AuthLoginScreenProps) {
   const messages = useSdkworkIamH5AuthMessages();
   const resolvedOAuthCallbackPath = oauthCallbackPath?.trim() || IAM_H5_AUTH_ROUTES.callbackPath;
@@ -58,7 +60,47 @@ export function SdkworkIamH5AuthLoginScreen({
   // `/auth/forgot-password` mount this screen with the matching `initialMode`, so
   // the three flows stay one implementation while each stays addressable and
   // deep-linkable. The mode switcher then continues from that entry point.
-  const [mode, setMode] = useState<SdkworkIamH5AuthMode>(initialMode ?? "login-pwd");
+  const loginMethods = runtimeConfig?.loginMethods;
+  const passwordLoginEnabled = loginMethods === undefined || loginMethods.includes("password");
+  const codeLoginEnabled = loginMethods === undefined
+    || loginMethods.includes("emailCode")
+    || loginMethods.includes("phoneCode");
+  const registerMethods = runtimeConfig?.registerMethods;
+  const registerEnabled = registerMethods === undefined || registerMethods.length > 0;
+  const recoveryMethods = runtimeConfig?.recoveryMethods;
+  const recoveryEnabled = recoveryMethods === undefined || recoveryMethods.length > 0;
+  const oauthLoginEnabled = runtimeConfig?.oauthLoginEnabled ?? true;
+  const verificationPolicy = runtimeConfig?.verificationPolicy;
+  const isModeEnabled = (candidate: SdkworkIamH5AuthMode): boolean => {
+    switch (candidate) {
+      case "login-pwd":
+        return passwordLoginEnabled;
+      case "login-code":
+        return codeLoginEnabled;
+      case "register":
+        return registerEnabled;
+      case "forgot":
+        return recoveryEnabled;
+    }
+  };
+  const defaultLoginMode: SdkworkIamH5AuthMode = passwordLoginEnabled
+    ? "login-pwd"
+    : codeLoginEnabled
+      ? "login-code"
+      : "login-pwd";
+  const resolvedInitialMode: SdkworkIamH5AuthMode = (() => {
+    const requested = initialMode ?? defaultLoginMode;
+    if (isModeEnabled(requested)) {
+      return requested;
+    }
+    for (const candidate of [defaultLoginMode, "login-code", "register", "forgot"] as const) {
+      if (isModeEnabled(candidate)) {
+        return candidate;
+      }
+    }
+    return "login-pwd";
+  })();
+  const [mode, setMode] = useState<SdkworkIamH5AuthMode>(resolvedInitialMode);
 
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
@@ -76,6 +118,20 @@ export function SdkworkIamH5AuthLoginScreen({
 
   const scanContext = useMemo(() => controller.resolveScanLoginContext(), [controller]);
   const [wechatRedirecting, setWechatRedirecting] = useState(false);
+
+  const registerChannel = resolveH5RegisterChannel(account, registerMethods);
+  const registerVerificationRequired = mode === "register"
+    && registerChannel !== undefined
+    && registerChannel !== "username"
+    && Boolean(
+      registerChannel === "email"
+        ? verificationPolicy?.emailRegistrationVerificationRequired
+        : verificationPolicy?.phoneRegistrationVerificationRequired,
+    );
+  const codeLoginChannelEnabled = loginMethods === undefined
+    || loginMethods.includes(account.includes("@") ? "emailCode" : "phoneCode");
+  const recoveryChannelEnabled = recoveryMethods === undefined
+    || recoveryMethods.includes(account.includes("@") ? "email" : "phone");
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | null = null;
@@ -239,6 +295,10 @@ export function SdkworkIamH5AuthLoginScreen({
         }
         await handleAuthenticated(result.session);
       } else if (mode === "login-code") {
+        if (!codeLoginChannelEnabled) {
+          showError(messages.toasts.enterValidAccount);
+          return;
+        }
         if (!code) {
           showError(messages.toasts.enterCode);
           return;
@@ -250,8 +310,16 @@ export function SdkworkIamH5AuthLoginScreen({
         }
         await handleAuthenticated(result.session);
       } else if (mode === "register") {
-        if (!code) {
+        if (registerChannel === undefined) {
+          showError(messages.toasts.enterValidAccount);
+          return;
+        }
+        if (registerVerificationRequired && !code) {
           showError(messages.toasts.enterCode);
+          return;
+        }
+        if (!password) {
+          showError(messages.toasts.enterPassword);
           return;
         }
         if (!confirmPassword) {
@@ -262,13 +330,22 @@ export function SdkworkIamH5AuthLoginScreen({
           showError(messages.toasts.passwordMismatch);
           return;
         }
-        const result = await controller.register({ account, code, password, confirmPassword });
+        const result = await controller.register({
+          account,
+          ...(registerVerificationRequired ? { code } : {}),
+          password,
+          confirmPassword,
+        });
         if (result.kind === "loginContextSelectionRequired") {
           requireContextSelection(result.challenge);
           return;
         }
         await handleAuthenticated(result.session);
       } else if (mode === "forgot") {
+        if (!recoveryChannelEnabled) {
+          showError(messages.toasts.enterValidAccount);
+          return;
+        }
         if (!code) {
           showError(messages.toasts.enterCode);
           return;
@@ -290,11 +367,16 @@ export function SdkworkIamH5AuthLoginScreen({
     account,
     agreed,
     code,
+    codeLoginChannelEnabled,
+    confirmPassword,
     controller,
     handleAuthenticated,
     messages,
     mode,
     password,
+    recoveryChannelEnabled,
+    registerChannel,
+    registerVerificationRequired,
     requireContextSelection,
     showError,
   ]);
@@ -339,7 +421,9 @@ export function SdkworkIamH5AuthLoginScreen({
       : mode === "login-code"
         ? code.length > 0
         : mode === "register"
-          ? code.length > 0
+          ? password.length > 0
+            && confirmPassword.length > 0
+            && (!registerVerificationRequired || code.length > 0)
           : code.length > 0 && password.length > 0) &&
     agreed;
 
@@ -404,6 +488,7 @@ export function SdkworkIamH5AuthLoginScreen({
             setShowPwd={setShowPwd}
             countdown={countdown}
             handleSendCode={() => void handleSendCode()}
+            registerCodeRequired={registerVerificationRequired}
           />
 
           {error ? (
@@ -420,13 +505,23 @@ export function SdkworkIamH5AuthLoginScreen({
               onClick={() => void handleSubmit()}
             />
 
-            <SdkworkIamH5AuthModeLinks mode={mode} onChangeMode={changeMode} />
-
-            <SdkworkIamH5AuthThirdPartyLogin
-              controller={controller}
+            <SdkworkIamH5AuthModeLinks
+              defaultLoginMode={defaultLoginMode}
               mode={mode}
-              onLogin={handleThirdPartyLogin}
+              onChangeMode={changeMode}
+              showForgotPassword={recoveryEnabled}
+              showLoginWithCode={codeLoginEnabled}
+              showLoginWithPassword={passwordLoginEnabled}
+              showRegister={registerEnabled}
             />
+
+            {oauthLoginEnabled ? (
+              <SdkworkIamH5AuthThirdPartyLogin
+                controller={controller}
+                mode={mode}
+                onLogin={handleThirdPartyLogin}
+              />
+            ) : null}
           </div>
         </div>
       </div>
@@ -496,6 +591,30 @@ function resolveAuthErrorMessage(error: unknown, fallback: string): string {
   return message;
 }
 
+function resolveH5RegisterChannel(
+  account: string,
+  methods: SdkworkIamH5AuthRuntimeConfig["registerMethods"],
+): "username" | "email" | "phone" | undefined {
+  const value = account.trim();
+  if (!value) {
+    return undefined;
+  }
+  if (methods === undefined) {
+    return value.includes("@") ? "email" : "phone";
+  }
+  if (value.includes("@")) {
+    return methods.includes("email") ? "email" : undefined;
+  }
+  if (looksLikeH5Phone(value)) {
+    return methods.includes("phone") ? "phone" : undefined;
+  }
+  return methods.includes("username") ? "username" : undefined;
+}
+
+function looksLikeH5Phone(value: string): boolean {
+  return /^\+?[0-9][0-9\s-]{5,19}$/.test(value.trim());
+}
+
 export interface SdkworkIamH5AuthLoginScreenProps {
   controller: SdkworkIamH5AuthController;
   /**
@@ -532,4 +651,13 @@ export interface SdkworkIamH5AuthLoginScreenProps {
    * a first-load login never shows a dead back button.
    */
   onBack?: () => void;
+  /**
+   * Host-provided auth policy (login/register/recovery methods, verification
+   * requirements, third-party login).
+   *
+   * Omitting it keeps the historical screen. When present, disabled flows are
+   * hidden and registration collects a verification code only for a contact
+   * channel whose registration verification is required.
+   */
+  runtimeConfig?: SdkworkIamH5AuthRuntimeConfig;
 }

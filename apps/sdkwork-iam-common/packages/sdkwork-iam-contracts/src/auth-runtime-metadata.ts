@@ -1,5 +1,5 @@
 export type SdkworkAuthLoginMethod = "emailCode" | "password" | "phoneCode" | "sessionBridge";
-export type SdkworkAuthRegisterMethod = "email" | "phone";
+export type SdkworkAuthRegisterMethod = "email" | "phone" | "username";
 export type SdkworkAuthRecoveryMethod = "email" | "phone";
 export type SdkworkAuthOAuthProviderRegion = "mainland" | "overseas";
 
@@ -50,7 +50,7 @@ export function isSdkworkAuthLoginMethod(value: string | undefined): value is Sd
 }
 
 export function isSdkworkAuthRegisterMethod(value: string | undefined): value is SdkworkAuthRegisterMethod {
-  return value === "email" || value === "phone";
+  return value === "email" || value === "phone" || value === "username";
 }
 
 export function isSdkworkAuthRecoveryMethod(value: string | undefined): value is SdkworkAuthRecoveryMethod {
@@ -106,10 +106,11 @@ export function resolveSdkworkAuthRuntimeConfigFromMetadata<
           return resolvedLoginMethods.length > 0 ? resolvedLoginMethods : ["password"];
         })();
   const configuredRegisterMethods = authConfig?.registerMethods
-    ?.filter(isSdkworkAuthRegisterMethod)
-    ?? [];
+    ?.filter(isSdkworkAuthRegisterMethod);
+  // An explicit empty list disables registration; only an absent field falls
+  // back to the legacy local-credentials default.
   const registerMethods: NonNullable<SdkworkAuthRuntimeConfig["registerMethods"]> =
-    configuredRegisterMethods.length > 0
+    configuredRegisterMethods !== undefined
       ? configuredRegisterMethods
       : ((authConfig?.supportsLocalCredentials ?? true) ? ["email"] : []);
   const recoveryMethods: NonNullable<SdkworkAuthRuntimeConfig["recoveryMethods"]> =

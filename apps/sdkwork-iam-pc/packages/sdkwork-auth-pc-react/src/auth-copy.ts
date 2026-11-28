@@ -168,6 +168,7 @@ export interface SdkworkAuthMessages {
     phoneMethod: string;
     submit: string;
     title: string;
+    usernameMethod: string;
   };
   service: {
     accountAlreadyExists: string;
@@ -407,6 +408,7 @@ const EN_US_MESSAGES: SdkworkAuthMessages = {
     phoneMethod: "Register with phone",
     submit: "Sign up",
     title: "Create an account",
+    usernameMethod: "Register with username",
   },
   service: {
     accountAlreadyExists: "This account already exists. Sign in or use a different account.",
@@ -636,6 +638,7 @@ const ZH_CN_MESSAGES: SdkworkAuthMessages = {
     phoneMethod: "\u624b\u673a\u6ce8\u518c",
     submit: "\u6ce8\u518c",
     title: "\u521b\u5efa\u8d26\u53f7",
+    usernameMethod: "\u7528\u6237\u540d\u6ce8\u518c",
   },
   service: {
     accountAlreadyExists: "\u8d26\u53f7\u5df2\u5b58\u5728\uff0c\u8bf7\u76f4\u63a5\u767b\u5f55\u6216\u66f4\u6362\u8d26\u53f7\u3002",

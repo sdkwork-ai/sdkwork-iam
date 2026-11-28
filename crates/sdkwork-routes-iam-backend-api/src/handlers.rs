@@ -224,12 +224,16 @@ fn build_sdkwork_iam_backend_api_business_router_with_state(state: BackendIamSta
             post(disable_tenant_application_management_handler),
         );
 
-    crate::installation_lifecycle::apply_installation_lifecycle_routes(
-        oauth_management::apply_oauth_routes(management::apply_management_routes(
-            crate::provider_accounts::apply_provider_account_routes(
-                crate::service_account_credentials::apply_service_account_credential_routes(router),
-            ),
-        )),
+    crate::application_enterprise_order::apply_application_enterprise_order_routes(
+        crate::installation_lifecycle::apply_installation_lifecycle_routes(
+            oauth_management::apply_oauth_routes(management::apply_management_routes(
+                crate::provider_accounts::apply_provider_account_routes(
+                    crate::service_account_credentials::apply_service_account_credential_routes(
+                        router,
+                    ),
+                ),
+            )),
+        ),
     )
     .with_state(state.clone())
     .layer(middleware::from_fn_with_state(
@@ -359,6 +363,7 @@ async fn create_access_credential(
             );
         }
         Err(message) => {
+            eprintln!("bootstrap actor resolution failed: {message}");
             return appbase_error(
                 StatusCode::SERVICE_UNAVAILABLE,
                 "iam_super_admin_auth_unavailable",
@@ -397,6 +402,7 @@ async fn create_access_credential(
             &message,
         ),
         Err(message) => {
+            eprintln!("delegated access credential issuance failed: {message}");
             tracing::warn!(error = %message, "delegated access credential issuance failed");
             appbase_error(
                 StatusCode::SERVICE_UNAVAILABLE,
@@ -1520,7 +1526,7 @@ pub(crate) fn appbase_ok(data: Value) -> Response {
     iam_api_success(data)
 }
 
-fn appbase_created(data: Value) -> Response {
+pub(crate) fn appbase_created(data: Value) -> Response {
     let mut response = iam_api_success(data);
     *response.status_mut() = StatusCode::CREATED;
     response

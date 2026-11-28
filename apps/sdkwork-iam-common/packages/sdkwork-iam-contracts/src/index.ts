@@ -168,6 +168,12 @@ export const SDKWORK_IAM_TABLES = {
   oauthSecret: "iam_oauth_secret",
   oauthSurface: "iam_oauth_surface",
   oauthWebhookConfig: "iam_oauth_webhook_config",
+  applicationEnterpriseOrder: "iam_application_enterprise_order",
+  applicationEnterpriseOrderLink: "iam_application_enterprise_order_link",
+  applicationEnterpriseOrderEvent: "iam_application_enterprise_order_event",
+  applicationEnterpriseSeat: "iam_application_enterprise_seat",
+  applicationEnterpriseSeatPolicy: "iam_application_enterprise_seat_policy",
+  applicationEnterpriseSeatBlacklist: "iam_application_enterprise_seat_blacklist",
 } as const;
 
 export const SDKWORK_IAM_DOMAIN_MODELS = [

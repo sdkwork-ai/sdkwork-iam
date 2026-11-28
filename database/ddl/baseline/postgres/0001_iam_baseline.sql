@@ -290,7 +290,8 @@ CREATE TABLE IF NOT EXISTS iam_role (
   status TEXT NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  UNIQUE (tenant_id, code)
+  UNIQUE (tenant_id, code),
+  UNIQUE (tenant_id, id)
 );
 
 CREATE TABLE IF NOT EXISTS iam_permission (
@@ -320,7 +321,11 @@ CREATE TABLE IF NOT EXISTS iam_role_permission (
   role_id TEXT NOT NULL,
   permission_id TEXT NOT NULL,
   created_at TEXT NOT NULL,
-  UNIQUE (tenant_id, role_id, permission_id)
+  UNIQUE (tenant_id, role_id, permission_id),
+  CONSTRAINT fk_iam_role_permission_role FOREIGN KEY (tenant_id, role_id)
+    REFERENCES iam_role (tenant_id, id) ON DELETE RESTRICT,
+  CONSTRAINT fk_iam_role_permission_permission FOREIGN KEY (permission_id)
+    REFERENCES iam_permission (id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS iam_role_binding (
@@ -337,7 +342,9 @@ CREATE TABLE IF NOT EXISTS iam_role_binding (
   status TEXT NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  UNIQUE (tenant_id, role_id, principal_kind, principal_id, scope_kind, scope_id)
+  UNIQUE (tenant_id, role_id, principal_kind, principal_id, scope_kind, scope_id),
+  CONSTRAINT fk_iam_role_binding_role FOREIGN KEY (tenant_id, role_id)
+    REFERENCES iam_role (tenant_id, id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS iam_api_key (
@@ -3833,3 +3840,695 @@ COMMENT ON COLUMN iam_position.headcount IS
 
 COMMENT ON COLUMN iam_organization_membership.reports_to_membership_id IS
     'Person-to-person reporting line (migration 0052). Must reference an active membership in the same tenant and organization; edits that would close a cycle are rejected.';
+
+-- folded migration: migrations/postgres/0054_iam_application_enterprise_order.up.sql
+-- The publisher-side enterprise order.
+--
+-- `tenant_id` is the *publisher* (the tenant that owns the application); the
+-- enterprise that receives the authorization is named by
+-- `enterprise_tenant_id`. Keeping both on one row is what makes "the publisher
+-- manages its orders" and "the enterprise sees what it was granted" two indexed
+-- questions instead of a join through an association table.
+--
+-- `organization_id` narrows the publisher side; `enterprise_organization_id`
+-- narrows the grantee side ('0' = the whole enterprise tenant). The two are
+-- separate columns because they answer different questions and must never be
+-- confused when a query binds tenant scope.
+CREATE TABLE IF NOT EXISTS iam_application_enterprise_order (
+    id                        TEXT PRIMARY KEY,
+    -- Human-facing order number (`EO-XXXXXXXX`), unique platform-wide.
+    order_no                  TEXT NOT NULL,
+    tenant_id                 TEXT NOT NULL,
+    organization_id           TEXT NOT NULL DEFAULT '0',
+    -- The application's stable identity (`iam_application_installation.app_id`).
+    application_id            TEXT NOT NULL,
+    enterprise_tenant_id      TEXT NOT NULL,
+    enterprise_organization_id TEXT NOT NULL DEFAULT '0',
+    enterprise_name           TEXT NOT NULL,
+    -- `all_members` grants every member of the enterprise; `seat` grants only
+    -- the seats an administrator assigns. The vocabulary is closed here and in
+    -- `ck_iam_application_enterprise_order_mode`.
+    authorization_mode        TEXT NOT NULL DEFAULT 'all_members',
+    -- Required for `seat`, and NULL for `all_members`: a seat cap on an
+    -- all-members order would be a number nobody enforces.
+    seat_count                INTEGER,
+    -- Fixed duration ladder (3 / 6 / 12 months), the same choices the open
+    -- platform offers; a free-form end date would let a publisher grant an
+    -- unbounded term through the API.
+    duration_months           INTEGER NOT NULL,
+    order_status              TEXT NOT NULL DEFAULT 'pending_authorization',
+    contact_name              TEXT NOT NULL,
+    contact_phone             TEXT NOT NULL,
+    authorized_at             TIMESTAMPTZ,
+    expires_at                TIMESTAMPTZ,
+    terminated_at             TIMESTAMPTZ,
+    termination_reason        TEXT,
+    termination_note          TEXT,
+    metadata_json             TEXT NOT NULL DEFAULT '{}',
+    created_by                TEXT NOT NULL,
+    updated_by                TEXT NOT NULL,
+    created_at                TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at                TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at                TIMESTAMPTZ,
+    version                   BIGINT NOT NULL DEFAULT 0,
+    CONSTRAINT ck_iam_application_enterprise_order_status CHECK (order_status IN (
+        'pending_authorization', 'active', 'pending_termination', 'terminated', 'cancelled'
+    )),
+    CONSTRAINT ck_iam_application_enterprise_order_mode CHECK (authorization_mode IN (
+        'all_members', 'seat'
+    )),
+    CONSTRAINT ck_iam_application_enterprise_order_seat CHECK (
+        (authorization_mode = 'seat' AND seat_count IS NOT NULL AND seat_count > 0)
+        OR (authorization_mode = 'all_members' AND seat_count IS NULL)
+    ),
+    CONSTRAINT ck_iam_application_enterprise_order_duration CHECK (duration_months IN (3, 6, 12)),
+    -- The lifecycle is enforced by the timestamps as well as by the status, so a
+    -- row cannot claim `active` without an authorized_at, or `terminated`
+    -- without a terminated_at. This is what makes the state machine a database
+    -- fact rather than a service convention.
+    CONSTRAINT ck_iam_application_enterprise_order_lifecycle CHECK (
+        (order_status = 'pending_authorization'
+            AND authorized_at IS NULL AND terminated_at IS NULL)
+        OR (order_status IN ('active', 'pending_termination')
+            AND authorized_at IS NOT NULL AND terminated_at IS NULL)
+        OR (order_status = 'terminated'
+            AND authorized_at IS NOT NULL AND terminated_at IS NOT NULL)
+        OR (order_status = 'cancelled'
+            AND authorized_at IS NULL AND terminated_at IS NULL)
+    ),
+    CONSTRAINT ck_iam_application_enterprise_order_expiry CHECK (
+        expires_at IS NULL OR authorized_at IS NULL OR expires_at > authorized_at
+    ),
+    CONSTRAINT ck_iam_application_enterprise_order_termination CHECK (
+        terminated_at IS NULL OR termination_reason IS NOT NULL
+    ),
+    CONSTRAINT ck_iam_application_enterprise_order_version CHECK (version >= 0)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_iam_application_enterprise_order_no
+    ON iam_application_enterprise_order (order_no);
+
+-- One live order per (application, enterprise). A terminated or cancelled order
+-- frees the slot so the publisher can re-authorize after an expiry instead of
+-- being locked out forever; the open platform's current "one order per
+-- enterprise, ever" rule is a limitation this index deliberately does not copy.
+CREATE UNIQUE INDEX IF NOT EXISTS ux_iam_application_enterprise_order_live
+    ON iam_application_enterprise_order
+        (tenant_id, application_id, enterprise_tenant_id)
+    WHERE order_status IN ('pending_authorization', 'active', 'pending_termination')
+      AND deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS ix_iam_application_enterprise_order_publisher
+    ON iam_application_enterprise_order
+        (tenant_id, application_id, order_status, created_at DESC, id)
+    WHERE deleted_at IS NULL;
+
+-- The enterprise's own view: what has been granted to us, and what expires next.
+CREATE INDEX IF NOT EXISTS ix_iam_application_enterprise_order_enterprise
+    ON iam_application_enterprise_order
+        (enterprise_tenant_id, order_status, expires_at, id)
+    WHERE deleted_at IS NULL;
+
+-- The expiry sweep: only live orders can expire.
+CREATE INDEX IF NOT EXISTS ix_iam_application_enterprise_order_expiry_sweep
+    ON iam_application_enterprise_order (expires_at, id)
+    WHERE order_status = 'active' AND deleted_at IS NULL;
+
+-- One-time authorization / termination link.
+--
+-- Only the hash is stored: the token is shown once to the publisher and travels
+-- by mail or chat, so a database read must not be able to reconstruct a working
+-- link. `link_kind` separates "the enterprise accepts the grant" from "the
+-- enterprise accepts the early termination"; they have different confirmations
+-- and different one-time rules.
+CREATE TABLE IF NOT EXISTS iam_application_enterprise_order_link (
+    id            TEXT PRIMARY KEY,
+    tenant_id     TEXT NOT NULL,
+    order_id      TEXT NOT NULL
+        REFERENCES iam_application_enterprise_order(id) ON DELETE CASCADE,
+    link_kind     TEXT NOT NULL,
+    token_hash    TEXT NOT NULL,
+    link_status   TEXT NOT NULL DEFAULT 'active',
+    issued_by     TEXT NOT NULL,
+    issued_at     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- NULL means long-lived (the authorize link has no expiry); a non-NULL value
+    -- is set only for a link kind that must be redeemed within a window.
+    expires_at    TIMESTAMPTZ,
+    consumed_at   TIMESTAMPTZ,
+    consumed_by   TEXT,
+    revoked_at    TIMESTAMPTZ,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    version       BIGINT NOT NULL DEFAULT 0,
+    CONSTRAINT ck_iam_application_enterprise_order_link_kind CHECK (link_kind IN (
+        'authorize', 'terminate'
+    )),
+    CONSTRAINT ck_iam_application_enterprise_order_link_status CHECK (link_status IN (
+        'active', 'consumed', 'revoked'
+    )),
+    CONSTRAINT ck_iam_application_enterprise_order_link_consumed CHECK (
+        (link_status = 'consumed' AND consumed_at IS NOT NULL AND consumed_by IS NOT NULL)
+        OR (link_status <> 'consumed' AND consumed_at IS NULL AND consumed_by IS NULL)
+    ),
+    CONSTRAINT ck_iam_application_enterprise_order_link_revoked CHECK (
+        (link_status = 'revoked' AND revoked_at IS NOT NULL)
+        OR (link_status <> 'revoked' AND revoked_at IS NULL)
+    ),
+    CONSTRAINT ck_iam_application_enterprise_order_link_version CHECK (version >= 0)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_iam_application_enterprise_order_link_token
+    ON iam_application_enterprise_order_link (token_hash);
+
+-- At most one redeemable link of each kind per order: issuing a replacement
+-- revokes the previous one in the same transaction, so an old mail cannot be
+-- redeemed after a new one was issued.
+CREATE UNIQUE INDEX IF NOT EXISTS ux_iam_application_enterprise_order_link_active
+    ON iam_application_enterprise_order_link (order_id, link_kind)
+    WHERE link_status = 'active';
+
+CREATE INDEX IF NOT EXISTS ix_iam_application_enterprise_order_link_order
+    ON iam_application_enterprise_order_link (tenant_id, order_id, link_kind, issued_at DESC, id);
+
+-- Seat assignment inside the enterprise.
+--
+-- `tenant_id` here is the *grantee* tenant, not the publisher: a seat is
+-- assigned by the enterprise administrator against its own members, and the
+-- enterprise-scoped tenant predicate must hold for every seat query. The
+-- publisher-side consistency (seat.tenant_id = order.enterprise_tenant_id) is
+-- enforced by the service in the same transaction that inserts the seat.
+CREATE TABLE IF NOT EXISTS iam_application_enterprise_seat (
+    id                TEXT PRIMARY KEY,
+    tenant_id         TEXT NOT NULL,
+    organization_id   TEXT NOT NULL DEFAULT '0',
+    order_id          TEXT NOT NULL
+        REFERENCES iam_application_enterprise_order(id) ON DELETE CASCADE,
+    application_id    TEXT NOT NULL,
+    user_id           TEXT NOT NULL,
+    seat_status       TEXT NOT NULL DEFAULT 'active',
+    assigned_by       TEXT NOT NULL,
+    assigned_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    released_by       TEXT,
+    released_at       TIMESTAMPTZ,
+    metadata_json     TEXT NOT NULL DEFAULT '{}',
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    version           BIGINT NOT NULL DEFAULT 0,
+    CONSTRAINT ck_iam_application_enterprise_seat_status CHECK (seat_status IN (
+        'active', 'released'
+    )),
+    CONSTRAINT ck_iam_application_enterprise_seat_release CHECK (
+        (seat_status = 'active' AND released_at IS NULL AND released_by IS NULL)
+        OR (seat_status = 'released' AND released_at IS NOT NULL AND released_by IS NOT NULL)
+    ),
+    CONSTRAINT ck_iam_application_enterprise_seat_version CHECK (version >= 0)
+);
+
+-- One active seat per user per order; releasing frees it for reassignment.
+CREATE UNIQUE INDEX IF NOT EXISTS ux_iam_application_enterprise_seat_active
+    ON iam_application_enterprise_seat (order_id, user_id)
+    WHERE seat_status = 'active';
+
+CREATE INDEX IF NOT EXISTS ix_iam_application_enterprise_seat_order
+    ON iam_application_enterprise_seat
+        (tenant_id, order_id, seat_status, assigned_at DESC, id);
+
+-- Seat inventory by application, for "who in this enterprise can open it".
+CREATE INDEX IF NOT EXISTS ix_iam_application_enterprise_seat_application
+    ON iam_application_enterprise_seat (tenant_id, application_id, seat_status, id)
+    WHERE seat_status = 'active';
+
+-- Lifecycle event ledger. Append-only: the repository never updates or deletes a
+-- row, which is what makes the order history answerable after the order itself
+-- has been terminated and its seats released.
+CREATE TABLE IF NOT EXISTS iam_application_enterprise_order_event (
+    id            TEXT PRIMARY KEY,
+    tenant_id     TEXT NOT NULL,
+    order_id      TEXT NOT NULL
+        REFERENCES iam_application_enterprise_order(id) ON DELETE CASCADE,
+    event_type    TEXT NOT NULL,
+    actor_kind    TEXT NOT NULL,
+    actor_id      TEXT,
+    payload_json  TEXT NOT NULL DEFAULT '{}',
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_iam_application_enterprise_order_event_type CHECK (event_type IN (
+        'created', 'link_issued', 'authorized', 'termination_requested',
+        'termination_confirmed', 'expired', 'cancelled', 'seat_assigned', 'seat_released'
+    )),
+    CONSTRAINT ck_iam_application_enterprise_order_event_actor CHECK (actor_kind IN (
+        'publisher', 'enterprise_admin', 'system'
+    ))
+);
+
+CREATE INDEX IF NOT EXISTS ix_iam_application_enterprise_order_event_order
+    ON iam_application_enterprise_order_event (tenant_id, order_id, created_at, id);
+
+COMMENT ON TABLE iam_application_enterprise_order IS
+    'Enterprise authorization order: licenses one published application to one enterprise tenant. tenant_id = publisher; enterprise_tenant_id = grantee. Status lifecycle is enforced by ck_..._lifecycle together with the timestamps.';
+COMMENT ON COLUMN iam_application_enterprise_order.authorization_mode IS
+    'all_members = every member of the enterprise; seat = only seats assigned by the enterprise administrator (seat_count required).';
+COMMENT ON COLUMN iam_application_enterprise_order.duration_months IS
+    'Fixed ladder 3 / 6 / 12. expires_at is computed from authorized_at + duration_months at authorization time.';
+COMMENT ON TABLE iam_application_enterprise_order_link IS
+    'One-time enterprise authorization / termination link. Only token_hash is stored; the plaintext token is shown once to the publisher.';
+COMMENT ON TABLE iam_application_enterprise_seat IS
+    'Seat assignment inside the grantee enterprise. tenant_id is the enterprise tenant; seat.tenant_id must equal order.enterprise_tenant_id (service-enforced).';
+COMMENT ON TABLE iam_application_enterprise_order_event IS
+    'Append-only enterprise-order lifecycle ledger; no UPDATE or DELETE path exists.';
+
+-- folded migration: migrations/postgres/0055_iam_installation_credential_policy.up.sql
+ALTER TABLE iam_application_installation_credential
+    -- Trusted browser origins. Empty array means "no per-client origin
+    -- restriction", which is the behaviour every pre-existing row must keep.
+    ADD COLUMN IF NOT EXISTS allowed_origins_json JSONB NOT NULL DEFAULT '[]',
+    -- Publication state of the client itself, orthogonal to
+    -- `credential_status` (active/rotated/retired = secret lifecycle):
+    --   pending_review -> registered, waiting for a reviewer
+    --   enabled        -> the authorization server may resolve it
+    --   rejected       -> review refused; the row is kept for the author
+    --   disabled       -> previously enabled, now switched off
+    ADD COLUMN IF NOT EXISTS client_status TEXT NOT NULL DEFAULT 'enabled',
+    -- Reviewer note shown back to the application author, most useful on a
+    -- rejection; free text, never used for authorization decisions.
+    ADD COLUMN IF NOT EXISTS review_note TEXT,
+    -- When the review decision was recorded.
+    ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
+
+ALTER TABLE iam_application_installation_credential
+    ADD CONSTRAINT ck_iam_application_installation_credential_client_status
+    CHECK (client_status IN ('pending_review', 'enabled', 'rejected', 'disabled'));
+
+ALTER TABLE iam_application_installation_credential
+    ADD CONSTRAINT ck_iam_application_installation_credential_origins
+    CHECK (jsonb_typeof(allowed_origins_json) = 'array');
+
+-- The authorization server resolves a client by its globally unique client id;
+-- the partial index keeps the dual-read fallback from scanning retired rows.
+CREATE INDEX IF NOT EXISTS ix_iam_application_installation_credential_resolvable
+    ON iam_application_installation_credential (client_id, credential_status, client_status);
+
+-- The review queue, per tenant environment.
+CREATE INDEX IF NOT EXISTS ix_iam_application_installation_credential_review
+    ON iam_application_installation_credential
+        (tenant_id, installation_environment_id, client_status, updated_at DESC, id);
+
+COMMENT ON COLUMN iam_application_installation_credential.allowed_origins_json IS
+    'Trusted browser origins (scheme://host[:port]). Empty array = no per-client origin restriction. Enforced at /iam/v3/oauth/authorize when non-empty.';
+COMMENT ON COLUMN iam_application_installation_credential.client_status IS
+    'Client publication state: pending_review | enabled | rejected | disabled. Orthogonal to credential_status, which tracks the secret lifecycle.';
+COMMENT ON COLUMN iam_application_installation_credential.review_note IS
+    'Reviewer note returned to the application author; free text, not used for authorization decisions.';
+
+-- folded migration: migrations/postgres/0056_iam_enterprise_seat_management.up.sql
+ALTER TABLE iam_application_enterprise_order ADD COLUMN IF NOT EXISTS seat_name TEXT;
+ALTER TABLE iam_application_enterprise_seat
+    ADD COLUMN IF NOT EXISTS allocation_method TEXT NOT NULL DEFAULT 'manual',
+    ADD COLUMN IF NOT EXISTS policy_id TEXT;
+ALTER TABLE iam_application_enterprise_seat
+    ADD CONSTRAINT ck_iam_application_enterprise_seat_allocation
+    CHECK (allocation_method IN ('manual', 'department_auto', 'department_login'));
+ALTER TABLE iam_application_enterprise_seat
+    ADD CONSTRAINT ck_iam_application_enterprise_seat_policy_method
+    CHECK ((allocation_method = 'manual' AND policy_id IS NULL)
+        OR (allocation_method IN ('department_auto', 'department_login') AND policy_id IS NOT NULL));
+
+CREATE TABLE IF NOT EXISTS iam_application_enterprise_seat_policy (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    order_id TEXT NOT NULL REFERENCES iam_application_enterprise_order(id) ON DELETE CASCADE,
+    application_id TEXT NOT NULL,
+    organization_id TEXT NOT NULL DEFAULT '0',
+    department_id TEXT NOT NULL,
+    department_name TEXT NOT NULL,
+    allocation_type TEXT NOT NULL,
+    created_by TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    version BIGINT NOT NULL DEFAULT 0,
+    CONSTRAINT ck_iam_application_enterprise_seat_policy_type CHECK (allocation_type IN ('auto', 'login')),
+    CONSTRAINT ck_iam_application_enterprise_seat_policy_version CHECK (version >= 0)
+);
+-- Recreate the pre-release index under its canonical name so an installation
+-- that applied the draft 0056 cannot retain the weaker auto/login uniqueness.
+DROP INDEX IF EXISTS ux_iam_application_enterprise_seat_policy_department;
+CREATE UNIQUE INDEX ux_iam_application_enterprise_seat_policy_department
+    ON iam_application_enterprise_seat_policy (order_id, department_id);
+CREATE INDEX IF NOT EXISTS ix_iam_application_enterprise_seat_policy_order
+    ON iam_application_enterprise_seat_policy (tenant_id, order_id, department_id);
+CREATE INDEX IF NOT EXISTS ix_iam_application_enterprise_seat_policy_department
+    ON iam_application_enterprise_seat_policy (tenant_id, organization_id, department_id);
+
+CREATE TABLE IF NOT EXISTS iam_application_enterprise_seat_blacklist (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    order_id TEXT NOT NULL REFERENCES iam_application_enterprise_order(id) ON DELETE CASCADE,
+    application_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    one_id_id TEXT,
+    department_name TEXT,
+    reason TEXT,
+    created_by TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_iam_application_enterprise_seat_blacklist_reason CHECK (reason IS NULL OR length(reason) <= 500)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_iam_application_enterprise_seat_blacklist_user
+    ON iam_application_enterprise_seat_blacklist (order_id, user_id);
+CREATE INDEX IF NOT EXISTS ix_iam_application_enterprise_seat_blacklist_order
+    ON iam_application_enterprise_seat_blacklist (tenant_id, order_id, created_at DESC, id);
+
+ALTER TABLE iam_application_enterprise_order_event
+    DROP CONSTRAINT IF EXISTS ck_iam_application_enterprise_order_event_type;
+ALTER TABLE iam_application_enterprise_order_event
+    ADD CONSTRAINT ck_iam_application_enterprise_order_event_type CHECK (event_type IN (
+        'created', 'link_issued', 'authorized', 'termination_requested',
+        'termination_confirmed', 'expired', 'cancelled', 'seat_assigned', 'seat_released',
+        'order_resized', 'seat_policy_created', 'seat_policy_updated', 'seat_policy_deleted',
+        'seat_blacklist_added', 'seat_blacklist_removed', 'seats_bulk_released', 'seats_exported'
+    ));
+
+COMMENT ON COLUMN iam_application_enterprise_order.seat_name IS 'Display name of the licensed seat pool; nullable for legacy orders.';
+COMMENT ON COLUMN iam_application_enterprise_seat.allocation_method IS
+    'manual, department_auto or department_login. Membership, primary-department, user-status and blacklist changes release policy seats; manual seats survive membership changes but are released when blacklisted.';
+
+-- Reconcile one enterprise, optionally narrowed by application.
+-- Order rows are locked in a stable order, serializing manual assignment, policy
+-- changes and authorization reconciliation. Login policies run only when the
+-- caller explicitly asks for authorization reconciliation.
+CREATE OR REPLACE FUNCTION iam_reconcile_enterprise_seats(
+    p_tenant_id TEXT, p_user_id TEXT DEFAULT NULL, p_include_login BOOLEAN DEFAULT FALSE,
+    p_application_id TEXT DEFAULT NULL
+) RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_order RECORD;
+    v_seat RECORD;
+    v_policy RECORD;
+    v_user RECORD;
+    v_active BIGINT;
+    v_cap BIGINT;
+    v_seat_id TEXT;
+BEGIN
+    FOR v_order IN
+        SELECT * FROM iam_application_enterprise_order o
+         WHERE o.enterprise_tenant_id = p_tenant_id AND o.order_status = 'active'
+           AND o.deleted_at IS NULL AND o.authorization_mode = 'seat'
+           AND (o.expires_at IS NULL OR o.expires_at > NOW())
+           AND (p_application_id IS NULL OR o.application_id = p_application_id)
+         ORDER BY o.id FOR UPDATE
+    LOOP
+        -- Eligibility is evaluated on the member's active primary assignment.
+        -- Auto policies win before login policies; within each mode the nearest
+        -- ancestor policy wins, then policy id provides a stable final tie-break.
+        -- Manual seats are excluded unless a blacklist entry requires reclamation.
+        FOR v_seat IN
+            SELECT s.* FROM iam_application_enterprise_seat s
+             WHERE s.tenant_id = p_tenant_id AND s.order_id = v_order.id
+               AND s.seat_status = 'active'
+               AND (s.allocation_method <> 'manual' OR EXISTS (
+                   SELECT 1 FROM iam_application_enterprise_seat_blacklist b
+                    WHERE b.tenant_id = p_tenant_id AND b.order_id = v_order.id
+                      AND b.user_id = s.user_id
+               ))
+               AND (p_user_id IS NULL OR s.user_id = p_user_id)
+             ORDER BY s.id
+        LOOP
+            v_policy := NULL;
+            SELECT p.* INTO v_policy
+              FROM iam_application_enterprise_seat_policy p
+              JOIN iam_department_closure c ON c.tenant_id = p.tenant_id
+               AND c.organization_id = p.organization_id AND c.ancestor_department_id = p.department_id
+              JOIN iam_department_assignment da ON da.tenant_id = c.tenant_id
+               AND da.organization_id = c.organization_id AND da.department_id = c.descendant_department_id
+               AND da.user_id = v_seat.user_id AND da.status = 'active' AND da.is_primary = 1
+               AND (da.effective_from IS NULL OR da.effective_from = '' OR (da.effective_from ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' AND da.effective_from::timestamptz <= NOW()))
+               AND (da.effective_to IS NULL OR da.effective_to = '' OR (da.effective_to ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' AND da.effective_to::timestamptz > NOW()))
+              JOIN iam_organization_membership om ON om.tenant_id = p.tenant_id
+               AND om.organization_id = p.organization_id AND om.user_id = v_seat.user_id
+               AND om.status = 'active'
+              JOIN iam_organization org ON org.tenant_id = p.tenant_id
+               AND org.id = p.organization_id AND org.status = 'active'
+              JOIN iam_department dept ON dept.tenant_id = p.tenant_id
+               AND dept.organization_id = p.organization_id AND dept.id = p.department_id
+               AND dept.status = 'active'
+             WHERE p.tenant_id = p_tenant_id AND p.order_id = v_order.id
+               AND (v_order.enterprise_organization_id = '0'
+                    OR p.organization_id = v_order.enterprise_organization_id)
+             ORDER BY CASE WHEN p.allocation_type = 'auto' THEN 0 ELSE 1 END,
+                      c.depth, p.id
+             LIMIT 1;
+            IF v_policy.id IS NULL OR v_policy.id <> v_seat.policy_id
+               OR NOT EXISTS (SELECT 1 FROM iam_tenant_member tm WHERE tm.tenant_id = p_tenant_id AND tm.user_id = v_seat.user_id AND tm.status = 'active')
+               OR NOT EXISTS (SELECT 1 FROM iam_user u WHERE u.tenant_id = p_tenant_id AND u.id = v_seat.user_id AND u.status = 'active')
+               OR EXISTS (SELECT 1 FROM iam_application_enterprise_seat_blacklist b WHERE b.tenant_id = p_tenant_id AND b.order_id = v_order.id AND b.user_id = v_seat.user_id) THEN
+                UPDATE iam_application_enterprise_seat
+                   SET seat_status = 'released', released_by = 'system', released_at = NOW(),
+                       updated_at = NOW(), version = version + 1
+                 WHERE tenant_id = p_tenant_id AND id = v_seat.id AND seat_status = 'active';
+                INSERT INTO iam_application_enterprise_order_event
+                    (id, tenant_id, order_id, event_type, actor_kind, actor_id, payload_json, created_at)
+                VALUES ('iaeev_' || replace(gen_random_uuid()::text, '-', ''), v_order.tenant_id,
+                        v_order.id, 'seat_released', 'system', NULL,
+                        json_build_object('seatId', v_seat.id, 'reason',
+                            CASE WHEN EXISTS (SELECT 1 FROM iam_application_enterprise_seat_blacklist b
+                                               WHERE b.tenant_id = p_tenant_id AND b.order_id = v_order.id
+                                                 AND b.user_id = v_seat.user_id)
+                                 THEN 'blacklisted' ELSE 'membership_or_department_changed' END)::text, NOW());
+            END IF;
+        END LOOP;
+
+        v_active := (SELECT COUNT(*) FROM iam_application_enterprise_seat
+                      WHERE tenant_id = p_tenant_id AND order_id = v_order.id AND seat_status = 'active');
+        v_cap := v_order.seat_count;
+        FOR v_user IN
+            SELECT u.id, chosen.id AS policy_id, chosen.allocation_type, chosen.organization_id
+              FROM iam_user u
+              JOIN iam_tenant_member tm ON tm.tenant_id = u.tenant_id AND tm.user_id = u.id AND tm.status = 'active'
+              JOIN LATERAL (
+                  SELECT p.id, p.allocation_type, p.organization_id
+                    FROM iam_application_enterprise_seat_policy p
+                    JOIN iam_department_closure c ON c.tenant_id = p.tenant_id
+                     AND c.organization_id = p.organization_id AND c.ancestor_department_id = p.department_id
+                    JOIN iam_department_assignment da ON da.tenant_id = c.tenant_id
+                     AND da.organization_id = c.organization_id AND da.department_id = c.descendant_department_id
+                     AND da.user_id = u.id AND da.status = 'active' AND da.is_primary = 1
+                     AND (da.effective_from IS NULL OR da.effective_from = '' OR (da.effective_from ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' AND da.effective_from::timestamptz <= NOW()))
+                     AND (da.effective_to IS NULL OR da.effective_to = '' OR (da.effective_to ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' AND da.effective_to::timestamptz > NOW()))
+                    JOIN iam_organization_membership om ON om.tenant_id = p.tenant_id
+                     AND om.organization_id = p.organization_id AND om.user_id = u.id AND om.status = 'active'
+                    JOIN iam_organization org ON org.tenant_id = p.tenant_id
+                     AND org.id = p.organization_id AND org.status = 'active'
+                    JOIN iam_department dept ON dept.tenant_id = p.tenant_id
+                     AND dept.organization_id = p.organization_id AND dept.id = p.department_id
+                     AND dept.status = 'active'
+                   WHERE p.tenant_id = p_tenant_id AND p.order_id = v_order.id
+                     AND (v_order.enterprise_organization_id = '0'
+                          OR p.organization_id = v_order.enterprise_organization_id)
+                   ORDER BY CASE WHEN p.allocation_type = 'auto' THEN 0 ELSE 1 END,
+                            c.depth, p.id
+                   LIMIT 1
+              ) chosen ON TRUE
+             WHERE u.tenant_id = p_tenant_id AND u.status = 'active'
+               AND (p_user_id IS NULL OR u.id = p_user_id)
+               AND (p_include_login OR chosen.allocation_type = 'auto')
+               AND NOT EXISTS (SELECT 1 FROM iam_application_enterprise_seat_blacklist b
+                                WHERE b.tenant_id = p_tenant_id AND b.order_id = v_order.id AND b.user_id = u.id)
+               AND NOT EXISTS (SELECT 1 FROM iam_application_enterprise_seat s
+                                WHERE s.tenant_id = p_tenant_id AND s.order_id = v_order.id
+                                  AND s.user_id = u.id AND s.seat_status = 'active')
+             ORDER BY u.id
+             FOR UPDATE OF u SKIP LOCKED
+        LOOP
+            EXIT WHEN v_active >= v_cap;
+            v_seat_id := 'iaest_' || replace(gen_random_uuid()::text, '-', '');
+            INSERT INTO iam_application_enterprise_seat
+                (id, tenant_id, organization_id, order_id, application_id, user_id, seat_status,
+                 assigned_by, assigned_at, allocation_method, policy_id, created_at, updated_at, version)
+            VALUES (v_seat_id, p_tenant_id, CASE WHEN v_order.enterprise_organization_id = '0' THEN v_user.organization_id ELSE v_order.enterprise_organization_id END, v_order.id,
+                    v_order.application_id, v_user.id, 'active', 'system', NOW(),
+                    CASE WHEN v_user.allocation_type = 'auto' THEN 'department_auto' ELSE 'department_login' END,
+                    v_user.policy_id, NOW(), NOW(), 0);
+            INSERT INTO iam_application_enterprise_order_event
+                (id, tenant_id, order_id, event_type, actor_kind, actor_id, payload_json, created_at)
+            VALUES ('iaeev_' || replace(gen_random_uuid()::text, '-', ''), v_order.tenant_id,
+                    v_order.id, 'seat_assigned', 'system', NULL,
+                    json_build_object('userId', v_user.id, 'policyId', v_user.policy_id,
+                                      'allocationMethod', CASE WHEN v_user.allocation_type = 'auto' THEN 'department_auto' ELSE 'department_login' END)::text, NOW());
+            v_active := v_active + 1;
+        END LOOP;
+    END LOOP;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION iam_enterprise_membership_reconcile() RETURNS TRIGGER
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        PERFORM iam_reconcile_enterprise_seats(OLD.tenant_id, OLD.user_id, FALSE);
+        RETURN NULL;
+    END IF;
+    IF TG_OP = 'UPDATE' AND NEW.user_id = OLD.user_id AND NEW.tenant_id = OLD.tenant_id
+       AND NEW.status = OLD.status THEN RETURN NULL; END IF;
+    PERFORM iam_reconcile_enterprise_seats(OLD.tenant_id, OLD.user_id, FALSE);
+    IF NEW.tenant_id <> OLD.tenant_id OR NEW.user_id <> OLD.user_id THEN
+        PERFORM iam_reconcile_enterprise_seats(NEW.tenant_id, NEW.user_id, FALSE);
+    END IF;
+    RETURN NULL;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_iam_tenant_member_enterprise_seats ON iam_tenant_member;
+CREATE TRIGGER trg_iam_tenant_member_enterprise_seats AFTER INSERT OR UPDATE OR DELETE ON iam_tenant_member
+    FOR EACH ROW EXECUTE FUNCTION iam_enterprise_membership_reconcile();
+
+CREATE OR REPLACE FUNCTION iam_enterprise_organization_membership_reconcile() RETURNS TRIGGER
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        PERFORM iam_reconcile_enterprise_seats(OLD.tenant_id, OLD.user_id, FALSE);
+        RETURN NULL;
+    END IF;
+    IF TG_OP = 'UPDATE' AND NEW.user_id = OLD.user_id AND NEW.tenant_id = OLD.tenant_id
+       AND NEW.organization_id = OLD.organization_id AND NEW.status = OLD.status THEN RETURN NULL; END IF;
+    PERFORM iam_reconcile_enterprise_seats(OLD.tenant_id, OLD.user_id, FALSE);
+    IF NEW.tenant_id <> OLD.tenant_id OR NEW.user_id <> OLD.user_id THEN
+        PERFORM iam_reconcile_enterprise_seats(NEW.tenant_id, NEW.user_id, FALSE);
+    END IF;
+    RETURN NULL;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_iam_organization_membership_enterprise_seats ON iam_organization_membership;
+CREATE TRIGGER trg_iam_organization_membership_enterprise_seats AFTER INSERT OR UPDATE OR DELETE ON iam_organization_membership
+    FOR EACH ROW EXECUTE FUNCTION iam_enterprise_organization_membership_reconcile();
+
+CREATE OR REPLACE FUNCTION iam_enterprise_assignment_reconcile() RETURNS TRIGGER
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        PERFORM iam_reconcile_enterprise_seats(OLD.tenant_id, OLD.user_id, FALSE);
+        RETURN NULL;
+    END IF;
+    IF TG_OP = 'UPDATE' AND NEW.user_id = OLD.user_id AND NEW.tenant_id = OLD.tenant_id
+       AND NEW.organization_id = OLD.organization_id AND NEW.department_id = OLD.department_id
+       AND NEW.organization_membership_id = OLD.organization_membership_id
+       AND NEW.status = OLD.status AND NEW.is_primary = OLD.is_primary
+       AND NEW.effective_from = OLD.effective_from AND NEW.effective_to = OLD.effective_to THEN RETURN NULL; END IF;
+    PERFORM iam_reconcile_enterprise_seats(OLD.tenant_id, OLD.user_id, FALSE);
+    IF NEW.tenant_id <> OLD.tenant_id OR NEW.user_id <> OLD.user_id THEN
+        PERFORM iam_reconcile_enterprise_seats(NEW.tenant_id, NEW.user_id, FALSE);
+    END IF;
+    RETURN NULL;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_iam_department_assignment_enterprise_seats ON iam_department_assignment;
+CREATE TRIGGER trg_iam_department_assignment_enterprise_seats AFTER INSERT OR UPDATE OR DELETE ON iam_department_assignment
+    FOR EACH ROW EXECUTE FUNCTION iam_enterprise_assignment_reconcile();
+
+CREATE OR REPLACE FUNCTION iam_enterprise_user_reconcile() RETURNS TRIGGER
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        PERFORM iam_reconcile_enterprise_seats(OLD.tenant_id, OLD.id, FALSE);
+        RETURN NULL;
+    END IF;
+    IF TG_OP = 'UPDATE' AND NEW.id = OLD.id AND NEW.tenant_id = OLD.tenant_id
+       AND NEW.status = OLD.status THEN RETURN NULL; END IF;
+    PERFORM iam_reconcile_enterprise_seats(OLD.tenant_id, OLD.id, FALSE);
+    IF NEW.tenant_id <> OLD.tenant_id OR NEW.id <> OLD.id THEN
+        PERFORM iam_reconcile_enterprise_seats(NEW.tenant_id, NEW.id, FALSE);
+    END IF;
+    RETURN NULL;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_iam_user_enterprise_seats ON iam_user;
+CREATE TRIGGER trg_iam_user_enterprise_seats AFTER INSERT OR UPDATE OR DELETE ON iam_user
+    FOR EACH ROW EXECUTE FUNCTION iam_enterprise_user_reconcile();
+
+CREATE OR REPLACE FUNCTION iam_enterprise_policy_reconcile() RETURNS TRIGGER
+LANGUAGE plpgsql AS $$
+BEGIN
+    -- The admin service uses this transaction-local switch only while converting
+    -- kept policy seats to manual. It must never suppress capacity, blacklist,
+    -- membership or user-status reconciliation.
+    IF current_setting('sdkwork.enterprise_seat_admin', true) = 'on' THEN RETURN NULL; END IF;
+    IF TG_OP = 'DELETE' THEN
+        PERFORM iam_reconcile_enterprise_seats(OLD.tenant_id, NULL, FALSE, OLD.application_id);
+        RETURN NULL;
+    END IF;
+    IF TG_OP = 'UPDATE' AND NEW.tenant_id = OLD.tenant_id AND NEW.order_id = OLD.order_id
+       AND NEW.application_id = OLD.application_id AND NEW.organization_id = OLD.organization_id
+       AND NEW.department_id = OLD.department_id AND NEW.allocation_type = OLD.allocation_type THEN RETURN NULL; END IF;
+    PERFORM iam_reconcile_enterprise_seats(NEW.tenant_id, NULL, FALSE, NEW.application_id);
+    IF TG_OP = 'UPDATE' AND (NEW.tenant_id <> OLD.tenant_id OR NEW.order_id <> OLD.order_id
+       OR NEW.application_id <> OLD.application_id) THEN
+        PERFORM iam_reconcile_enterprise_seats(OLD.tenant_id, NULL, FALSE, OLD.application_id);
+    END IF;
+    RETURN NULL;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_iam_enterprise_seat_policy_reconcile ON iam_application_enterprise_seat_policy;
+CREATE TRIGGER trg_iam_enterprise_seat_policy_reconcile AFTER INSERT OR UPDATE OR DELETE ON iam_application_enterprise_seat_policy
+    FOR EACH ROW EXECUTE FUNCTION iam_enterprise_policy_reconcile();
+
+CREATE OR REPLACE FUNCTION iam_enterprise_blacklist_reconcile() RETURNS TRIGGER
+LANGUAGE plpgsql AS $$
+DECLARE
+    v_order RECORD;
+    v_seat RECORD;
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        -- Removal restores only auto-policy seats and only while capacity remains.
+        PERFORM iam_reconcile_enterprise_seats(
+            OLD.tenant_id, OLD.user_id, FALSE, OLD.application_id
+        );
+        RETURN NULL;
+    END IF;
+
+    -- Insertion (or an identity-changing update) reclaims every active seat,
+    -- including manual seats, even when the order is no longer reconcile-eligible.
+    IF TG_OP = 'UPDATE' AND (OLD.tenant_id <> NEW.tenant_id
+       OR OLD.order_id <> NEW.order_id OR OLD.user_id <> NEW.user_id) THEN
+        SELECT * INTO v_order FROM iam_application_enterprise_order
+         WHERE id = OLD.order_id FOR UPDATE;
+        FOR v_seat IN
+            SELECT id FROM iam_application_enterprise_seat
+             WHERE tenant_id = OLD.tenant_id AND order_id = OLD.order_id
+               AND user_id = OLD.user_id AND seat_status = 'active'
+             ORDER BY id
+        LOOP
+            UPDATE iam_application_enterprise_seat
+               SET seat_status = 'released', released_by = 'system', released_at = NOW(),
+                   updated_at = NOW(), version = version + 1
+             WHERE id = v_seat.id AND seat_status = 'active';
+            INSERT INTO iam_application_enterprise_order_event
+                (id, tenant_id, order_id, event_type, actor_kind, actor_id, payload_json, created_at)
+            VALUES ('iaeev_' || replace(gen_random_uuid()::text, '-', ''), OLD.tenant_id,
+                    OLD.order_id, 'seat_released', 'system', NULL,
+                    json_build_object('seatId', v_seat.id, 'reason', 'blacklisted')::text, NOW());
+        END LOOP;
+    END IF;
+
+    SELECT * INTO v_order FROM iam_application_enterprise_order
+     WHERE id = NEW.order_id FOR UPDATE;
+    FOR v_seat IN
+        SELECT id FROM iam_application_enterprise_seat
+         WHERE tenant_id = NEW.tenant_id AND order_id = NEW.order_id
+           AND user_id = NEW.user_id AND seat_status = 'active'
+         ORDER BY id
+    LOOP
+        UPDATE iam_application_enterprise_seat
+           SET seat_status = 'released', released_by = 'system', released_at = NOW(),
+               updated_at = NOW(), version = version + 1
+         WHERE id = v_seat.id AND seat_status = 'active';
+        INSERT INTO iam_application_enterprise_order_event
+            (id, tenant_id, order_id, event_type, actor_kind, actor_id, payload_json, created_at)
+        VALUES ('iaeev_' || replace(gen_random_uuid()::text, '-', ''), NEW.tenant_id,
+                NEW.order_id, 'seat_released', 'system', NULL,
+                json_build_object('seatId', v_seat.id, 'reason', 'blacklisted')::text, NOW());
+    END LOOP;
+    RETURN NULL;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_iam_enterprise_blacklist_reconcile ON iam_application_enterprise_seat_blacklist;
+CREATE TRIGGER trg_iam_enterprise_blacklist_reconcile AFTER INSERT OR UPDATE OR DELETE ON iam_application_enterprise_seat_blacklist
+    FOR EACH ROW EXECUTE FUNCTION iam_enterprise_blacklist_reconcile();

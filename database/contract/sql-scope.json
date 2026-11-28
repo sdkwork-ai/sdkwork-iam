@@ -5,6 +5,10 @@
   "description": "DB087/DB100-DB102 classification consumed by scripts/check-sql-tenant-scope.mjs: each runtime SQL statement must bind the scope columns of every table it references, unless an approved cross-tenant exception below matches its exact file, table, verb, and distinctive fragment.",
   "tables": {
     "iam_api_key": "tenant",
+    "iam_application_enterprise_order": "tenant",
+    "iam_application_enterprise_order_event": "tenant",
+    "iam_application_enterprise_order_link": "tenant",
+    "iam_application_enterprise_seat": "tenant",
     "iam_application_installation_credential": "tenant",
     "iam_application_installation_environment": "tenant",
     "iam_application_template": "platform",
@@ -69,7 +73,9 @@
     "iam_tenant_signing_key": "tenant",
     "iam_user": "tenant",
     "iam_user_identity": "tenant",
-    "iam_user_official_account": "tenant"
+    "iam_user_official_account": "tenant",
+    "iam_application_enterprise_seat_policy": "tenant",
+    "iam_application_enterprise_seat_blacklist": "tenant"
   },
   "exceptions": [
     {
@@ -358,6 +364,40 @@
       ],
       "contains": "WHERE client_id = $1 LIMIT 1",
       "reason": "global OAuth client-id uniqueness check before a tenant-scoped credential insert; binding tenant would miss another tenant already owning the client id"
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/application_enterprise_order.rs",
+      "table": "iam_application_enterprise_order",
+      "verbs": [
+        "SELECT",
+        "UPDATE"
+      ],
+      "contains": "enterprise_tenant_id = $1",
+      "reason": "enterprise plane: the order row is addressed by enterprise_tenant_id (the grantee); tenant_id on this table is the publisher, so binding it would return the wrong side of the contract"
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/application_enterprise_order.rs",
+      "table": "iam_department_assignment",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "Enterprise seat scope and primary-department projection intentionally resolve a tenant user across their organization memberships."
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/application_enterprise_order.rs",
+      "table": "iam_organization_membership",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "RBAC principal bindings and seat organization resolution aggregate the active memberships of one tenant user."
+    },
+    {
+      "file": "crates/sdkwork-iam-web-adapter/src/application_enterprise_seat_admin.rs",
+      "table": "iam_department_assignment",
+      "verbs": [
+        "SELECT"
+      ],
+      "reason": "Enterprise seat scope and department projection intentionally resolve a tenant user across their organization memberships."
     }
   ]
 }

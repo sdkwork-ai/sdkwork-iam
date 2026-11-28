@@ -79,7 +79,9 @@ export function SdkworkRegisterFlow({
 }: SdkworkRegisterFlowProps) {
   const { copy } = useSdkworkAuthIntl();
   const enabledMethods = resolveSdkworkAuthRegisterMethods(methods);
-  const [method, setMethod] = useState<SdkworkAuthRegisterMethod>("email");
+  const [method, setMethod] = useState<SdkworkAuthRegisterMethod>(
+    enabledMethods[0] ?? DEFAULT_SDKWORK_AUTH_REGISTER_METHODS[0],
+  );
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -92,9 +94,11 @@ export function SdkworkRegisterFlow({
   const [isSendingCode, setIsSendingCode] = useState(false);
   const { isCoolingDown, remainingSeconds, resetCooldown, startCooldown } = useSdkworkActionCooldown();
   const isRegisterVerificationRequired = (candidate: SdkworkAuthRegisterMethod) =>
-    candidate === "email"
-      ? Boolean(verificationPolicy?.emailRegistrationVerificationRequired)
-      : Boolean(verificationPolicy?.phoneRegistrationVerificationRequired);
+    candidate === "username"
+      ? false
+      : candidate === "email"
+        ? Boolean(verificationPolicy?.emailRegistrationVerificationRequired)
+        : Boolean(verificationPolicy?.phoneRegistrationVerificationRequired);
 
   const handleMethodChange = (nextMethod: SdkworkAuthRegisterMethod) => {
     if (nextMethod === method) {
@@ -133,6 +137,7 @@ export function SdkworkRegisterFlow({
     handleMethodChange(enabledMethods[0] || DEFAULT_SDKWORK_AUTH_REGISTER_METHODS[0]);
   }, [enabledMethods, method]);
 
+  const isUsernameMethod = method === "username";
   const target = method === "email" ? email.trim() : phone.trim();
   const isTargetValid = method === "email"
     ? looksLikeEmailAddress(email)
@@ -180,10 +185,12 @@ export function SdkworkRegisterFlow({
       } else if (!isTargetValid) {
         nextErrors.email = copy.validation.invalidEmail;
       }
-    } else if (isBlank(phone)) {
-      nextErrors.phone = copy.validation.phoneRequired;
-    } else if (!isTargetValid) {
-      nextErrors.phone = copy.validation.invalidPhone;
+    } else if (method === "phone") {
+      if (isBlank(phone)) {
+        nextErrors.phone = copy.validation.phoneRequired;
+      } else if (!isTargetValid) {
+        nextErrors.phone = copy.validation.invalidPhone;
+      }
     }
     if (isVerificationRequired && !trimmedVerificationCode) {
       nextErrors.verificationCode = copy.validation.verificationCodeRequired;
@@ -207,11 +214,11 @@ export function SdkworkRegisterFlow({
 
     try {
       const completed = await onSubmit({
-        channel: method === "email" ? "EMAIL" : "PHONE",
+        ...(isUsernameMethod ? {} : { channel: method === "email" ? "EMAIL" as const : "PHONE" as const }),
         confirmPassword,
-        email: method === "email" ? email.trim() : undefined,
+        ...(method === "email" ? { email: email.trim() } : {}),
         password,
-        phone: method === "phone" ? phone.trim() : undefined,
+        ...(method === "phone" ? { phone: phone.trim() } : {}),
         username: trimmedUsername,
         ...(trimmedVerificationCode ? { verificationCode: trimmedVerificationCode } : {}),
       });
@@ -239,10 +246,16 @@ export function SdkworkRegisterFlow({
       {enabledMethods.length > 1 ? (
         <SdkworkAuthMethodTabs
           items={enabledMethods.map((item) => ({
-            icon: item === "email"
-              ? <Mail className="h-4 w-4" />
-              : <Smartphone className="h-4 w-4" />,
-            label: item === "email" ? copy.register.emailMethod : copy.register.phoneMethod,
+            icon: item === "username"
+              ? <UserCircle2 className="h-4 w-4" />
+              : item === "email"
+                ? <Mail className="h-4 w-4" />
+                : <Smartphone className="h-4 w-4" />,
+            label: item === "username"
+              ? copy.register.usernameMethod
+              : item === "email"
+                ? copy.register.emailMethod
+                : copy.register.phoneMethod,
             value: item,
           }))}
           onChange={(value) => handleMethodChange(value as SdkworkAuthRegisterMethod)}
@@ -288,7 +301,7 @@ export function SdkworkRegisterFlow({
           />
         </div>
 
-        {method === "email" ? (
+        {method === "username" ? null : method === "email" ? (
           <div className="space-y-2">
             <Label className="text-[var(--sdkwork-auth-label-color)]" htmlFor="sdkwork-auth-register-email">
               {copy.common.emailLabel}

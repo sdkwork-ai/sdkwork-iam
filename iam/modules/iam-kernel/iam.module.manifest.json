@@ -594,6 +594,15 @@
         "replacementCode": null
       },
       {
+        "code": "iam.role_bindings.update",
+        "name": "Update role bindings",
+        "resource": "iam.role_bindings",
+        "action": "update",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
         "code": "iam.role_bindings.delete",
         "name": "Delete role bindings",
         "resource": "iam.role_bindings",
@@ -816,6 +825,33 @@
         "action": "update",
         "status": "active",
         "since": "1.0.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.enterprise_orders.read",
+        "name": "Read application enterprise-authorization orders",
+        "resource": "iam.enterprise_orders",
+        "action": "read",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.enterprise_seats.export",
+        "name": "Export application enterprise seat assignments",
+        "resource": "iam.enterprise_seats",
+        "action": "export",
+        "status": "active",
+        "since": "1.1.0",
+        "replacementCode": null
+      },
+      {
+        "code": "iam.enterprise_orders.manage",
+        "name": "Manage application enterprise-authorization orders, links and seats",
+        "resource": "iam.enterprise_orders",
+        "action": "manage",
+        "status": "active",
+        "since": "1.1.0",
         "replacementCode": null
       },
       {

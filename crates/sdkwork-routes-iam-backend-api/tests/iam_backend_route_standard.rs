@@ -6,7 +6,7 @@ use http_body_util::BodyExt;
 use sdkwork_routes_iam_backend_api::{
     backend_routes, build_sdkwork_iam_backend_api_router, HttpMethod, HttpRoute, BACKEND_API_PREFIX,
 };
-use serde_json::Value;
+use serde_json::{json, Value};
 use tower::ServiceExt;
 
 #[test]
@@ -348,6 +348,184 @@ fn backend_routes_expose_installation_environment_and_credential_management() {
 }
 
 #[test]
+fn permission_resource_route_precedes_the_permission_detail_route() {
+    let routes = backend_routes();
+    let resource_route = HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/iam/permissions/resources",
+        "iam",
+        "permissions.resources.list",
+    );
+    let detail_route = HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/iam/permissions/{permissionId}",
+        "iam",
+        "permissions.retrieve",
+    );
+    let resource_index = routes
+        .iter()
+        .position(|route| route == &resource_route)
+        .expect("permission resource list route");
+    let detail_index = routes
+        .iter()
+        .position(|route| route == &detail_route)
+        .expect("permission detail route");
+
+    assert!(
+        resource_index < detail_index,
+        "the static /permissions/resources route must precede /permissions/{{permissionId}}"
+    );
+    assert_eq!(
+        routes
+            .iter()
+            .filter(|route| route.operation_id == "permissions.resources.list")
+            .count(),
+        1,
+        "permission resource list must be registered exactly once"
+    );
+
+    let management_source = include_str!("../src/management.rs");
+    let runtime_resource_index = management_source
+        .find("\"/backend/v3/api/iam/permissions/resources\"")
+        .expect("runtime permission resource route");
+    let runtime_detail_index = management_source
+        .find("\"/backend/v3/api/iam/permissions/{permissionId}\"")
+        .expect("runtime permission detail route");
+    assert!(
+        runtime_resource_index < runtime_detail_index,
+        "the executable router must also register the static resource route first"
+    );
+}
+
+#[test]
+fn permission_resource_openapi_uses_the_typed_string_int64_response() {
+    let document = backend_openapi();
+    let operation = &document["paths"]["/backend/v3/api/iam/permissions/resources"]["get"];
+    assert_eq!(operation["operationId"], "permissions.resources.list");
+    assert_eq!(
+        operation["responses"]["200"]["content"]["application/json"]["schema"]["$ref"],
+        "#/components/schemas/IamPermissionResourceListResponse"
+    );
+
+    let response = &document["components"]["schemas"]["IamPermissionResourceListResponse"];
+    assert_eq!(
+        response["allOf"][0]["$ref"],
+        "#/components/schemas/SdkWorkApiResponse"
+    );
+    let data = &response["allOf"][1]["properties"]["data"];
+    assert_eq!(data["type"], "object");
+    assert_eq!(data["required"], json!(["items", "pageInfo"]));
+    assert_eq!(
+        data["properties"]["items"]["items"]["$ref"],
+        "#/components/schemas/IamPermissionResource"
+    );
+    assert_eq!(
+        data["properties"]["pageInfo"]["$ref"],
+        "#/components/schemas/PageInfo"
+    );
+
+    let permission_count = &document["components"]["schemas"]["IamPermissionResource"]
+        ["properties"]["permissionCount"];
+    assert_eq!(permission_count["type"], "string");
+    assert_eq!(permission_count["format"], "int64");
+    assert_eq!(permission_count["pattern"], "^[0-9]+$");
+    assert_eq!(permission_count["x-sdkwork-int64-string"], true);
+}
+
+#[test]
+fn permission_list_openapi_filters_use_snake_case_without_pagination_aliases() {
+    let document = backend_openapi();
+
+    for (path, operation_id, expected_query_names) in [
+        (
+            "/backend/v3/api/iam/permissions/resources",
+            "permissions.resources.list",
+            vec!["cursor", "page", "page_size", "q", "sort"],
+        ),
+        (
+            "/backend/v3/api/iam/permissions",
+            "permissions.list",
+            vec![
+                "assigned",
+                "cursor",
+                "page",
+                "page_size",
+                "q",
+                "resource",
+                "role_id",
+                "sort",
+            ],
+        ),
+        (
+            "/backend/v3/api/iam/roles/{roleId}/permissions",
+            "roles.permissions.list",
+            vec!["cursor", "page", "page_size", "q", "resource", "sort"],
+        ),
+    ] {
+        let operation = &document["paths"][path]["get"];
+        assert_eq!(operation["operationId"], operation_id);
+        let parameters = operation["parameters"]
+            .as_array()
+            .unwrap_or_else(|| panic!("{operation_id} parameters"));
+        let mut query_names = parameters
+            .iter()
+            .filter(|parameter| parameter["in"] == "query")
+            .filter_map(|parameter| parameter["name"].as_str())
+            .collect::<Vec<_>>();
+        query_names.sort_unstable();
+        assert_eq!(
+            query_names, expected_query_names,
+            "{operation_id} must expose only canonical HTTP query names"
+        );
+
+        let page_size = parameters
+            .iter()
+            .find(|parameter| parameter["name"] == "page_size")
+            .unwrap_or_else(|| panic!("{operation_id} page_size parameter"));
+        assert_eq!(page_size["in"], "query");
+        assert_eq!(page_size["schema"]["type"], "integer");
+        assert_eq!(page_size["schema"]["minimum"], 1);
+        assert_eq!(page_size["schema"]["maximum"], 200);
+        assert_eq!(page_size["schema"]["default"], 20);
+    }
+
+    let role_permission_parameters = document["paths"]
+        ["/backend/v3/api/iam/roles/{roleId}/permissions"]["get"]["parameters"]
+        .as_array()
+        .expect("role permission list parameters");
+    let role_resource = role_permission_parameters
+        .iter()
+        .find(|parameter| parameter["name"] == "resource")
+        .expect("roles.permissions.list resource filter");
+    assert_eq!(role_resource["in"], "query");
+    assert_eq!(role_resource["schema"]["type"], "string");
+
+    let permission_parameters = document["paths"]["/backend/v3/api/iam/permissions"]["get"]
+        ["parameters"]
+        .as_array()
+        .expect("permission list parameters");
+    for (name, schema_type) in [
+        ("resource", "string"),
+        ("role_id", "string"),
+        ("assigned", "boolean"),
+    ] {
+        let parameter = permission_parameters
+            .iter()
+            .find(|parameter| parameter["name"] == name)
+            .unwrap_or_else(|| panic!("permissions.list {name} filter"));
+        assert_eq!(parameter["in"], "query");
+        assert_eq!(parameter["schema"]["type"], schema_type);
+    }
+}
+
+fn backend_openapi() -> Value {
+    serde_json::from_str(include_str!(
+        "../../../apis/backend-api/iam/sdkwork-iam-backend-api.openapi.yaml"
+    ))
+    .expect("the IAM backend-api OpenAPI authority is JSON content despite its .yaml extension")
+}
+
+#[test]
 fn backend_route_manifest_matches_the_standard_management_operation_surface() {
     let mut operation_ids: Vec<&str> = backend_routes()
         .iter()
@@ -377,6 +555,29 @@ fn backend_route_manifest_matches_the_standard_management_operation_surface() {
             "departments.retrieve",
             "departments.tree.retrieve",
             "departments.update",
+            "enterpriseGrants.list",
+            "enterpriseOrderAuthorizations.create",
+            "enterpriseOrderTerminations.create",
+            "enterpriseOrders.cancel",
+            "enterpriseOrders.create",
+            "enterpriseOrders.events.list",
+            "enterpriseOrders.list",
+            "enterpriseOrders.retrieve",
+            "enterpriseOrders.terminate",
+            "enterpriseOrders.update",
+            "enterpriseSeatBlacklist.create",
+            "enterpriseSeatBlacklist.delete",
+            "enterpriseSeatBlacklist.list",
+            "enterpriseSeatPolicies.create",
+            "enterpriseSeatPolicies.delete",
+            "enterpriseSeatPolicies.list",
+            "enterpriseSeatPolicies.retrieve",
+            "enterpriseSeatPolicies.update",
+            "enterpriseSeats.bulkRelease",
+            "enterpriseSeats.create",
+            "enterpriseSeats.delete",
+            "enterpriseSeats.export",
+            "enterpriseSeats.list",
             "groups.create",
             "groups.delete",
             "groups.list",
@@ -388,6 +589,7 @@ fn backend_route_manifest_matches_the_standard_management_operation_surface() {
             "installations.create",
             "installations.credentials.create",
             "installations.credentials.list",
+            "installations.credentials.policy.update",
             "installations.credentials.revoke",
             "installations.credentials.rotate",
             "installations.enable",
@@ -406,7 +608,9 @@ fn backend_route_manifest_matches_the_standard_management_operation_surface() {
             "installations.summary.retrieve",
             "installations.update",
             "organizationMemberships.create",
+            "organizationMemberships.departments.update",
             "organizationMemberships.list",
+            "organizationMemberships.roster.list",
             "organizationMemberships.update",
             "organizations.create",
             "organizations.delete",
@@ -417,6 +621,7 @@ fn backend_route_manifest_matches_the_standard_management_operation_surface() {
             "permissions.create",
             "permissions.delete",
             "permissions.list",
+            "permissions.resources.list",
             "permissions.retrieve",
             "permissions.update",
             "policies.create",
@@ -442,9 +647,11 @@ fn backend_route_manifest_matches_the_standard_management_operation_surface() {
             "providerAccounts.retrieve",
             "providerAccounts.update",
             "providerCredentials.revoke",
+            "publisherEnterpriseOrders.retrieve",
             "roleBindings.create",
             "roleBindings.delete",
             "roleBindings.list",
+            "roleBindings.update",
             "roles.create",
             "roles.delete",
             "roles.list",
@@ -518,6 +725,60 @@ fn service_account_token_exchange_is_a_credential_entry_route() {
     assert!(route.auth.skips_credential_resolution());
     assert_eq!(RouteAuth::BootstrapBody, route.auth);
     assert!(route.forbid_credential_headers);
+}
+
+#[test]
+fn role_binding_update_route_requires_the_dedicated_update_permission() {
+    use sdkwork_routes_iam_backend_api::iam_backend_enriched_routes;
+
+    let route = iam_backend_enriched_routes()
+        .into_iter()
+        .find(|route| route.operation_id == "roleBindings.update")
+        .expect("role binding update route");
+    assert_eq!(route.method, HttpMethod::Patch);
+    assert_eq!(
+        route.path,
+        "/backend/v3/api/iam/role_bindings/{roleBindingId}"
+    );
+    assert_eq!(route.required_permission, Some("iam.role_bindings.update"));
+    assert!(!route.auth.skips_credential_resolution());
+}
+
+#[test]
+fn enterprise_seat_management_routes_use_their_server_side_permission_boundary() {
+    use sdkwork_routes_iam_backend_api::iam_backend_enriched_routes;
+
+    let routes = iam_backend_enriched_routes();
+    for operation_id in [
+        "enterpriseOrders.update",
+        "enterpriseSeatPolicies.list",
+        "enterpriseSeatPolicies.retrieve",
+        "enterpriseSeatPolicies.create",
+        "enterpriseSeatPolicies.update",
+        "enterpriseSeatPolicies.delete",
+        "enterpriseSeatBlacklist.list",
+        "enterpriseSeatBlacklist.create",
+        "enterpriseSeatBlacklist.delete",
+        "enterpriseSeats.bulkRelease",
+    ] {
+        let route = routes
+            .iter()
+            .find(|route| route.operation_id == operation_id)
+            .unwrap_or_else(|| panic!("missing route {operation_id}"));
+        assert_eq!(
+            route.required_permission,
+            Some("iam.enterprise_orders.manage"),
+            "{operation_id}"
+        );
+    }
+    let export = routes
+        .iter()
+        .find(|route| route.operation_id == "enterpriseSeats.export")
+        .expect("seat export route");
+    assert_eq!(
+        export.required_permission,
+        Some("iam.enterprise_seats.export")
+    );
 }
 
 #[test]
@@ -631,6 +892,16 @@ async fn backend_router_does_not_serve_demo_management_data_without_real_backend
             Method::PATCH,
             "/backend/v3/api/iam/organizations/org-real",
             Some(r#"{"name":"Updated Organization"}"#),
+        ),
+        (
+            Method::PATCH,
+            "/backend/v3/api/iam/role_bindings/iamrb-real",
+            Some(r#"{"effect":"deny","effectiveTo":null}"#),
+        ),
+        (
+            Method::DELETE,
+            "/backend/v3/api/iam/role_bindings/iamrb-real",
+            None,
         ),
         (
             Method::DELETE,

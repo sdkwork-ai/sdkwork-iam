@@ -488,6 +488,9 @@ const FOLDED_BLOCK_ORDER = [
   "migrations/postgres/0051_iam_personnel_roster_indexes.up.sql",
   "migrations/postgres/0052_iam_reporting_line_and_position_headcount.up.sql",
   "migrations/postgres/0053_iam_personnel_semantics_comments.up.sql",
+  "migrations/postgres/0054_iam_application_enterprise_order.up.sql",
+  "migrations/postgres/0055_iam_installation_credential_policy.up.sql",
+  "migrations/postgres/0056_iam_enterprise_seat_management.up.sql",
 ];
 
 const FOLDED_BLOCKS_WITHOUT_SOURCE = [
@@ -514,6 +517,42 @@ function foldedBlocks() {
     return { path: marker.path, body: lf.slice(start, end) };
   });
 }
+
+test("enterprise seat migration is folded and reverses only without 0056 data", () => {
+  const migration = readText(
+    "database/migrations/postgres/0056_iam_enterprise_seat_management.up.sql",
+  ).replace(/\r+\n/g, "\n");
+  const down = readText(
+    "database/migrations/postgres/0056_iam_enterprise_seat_management.down.sql",
+  ).replace(/\r+\n/g, "\n");
+  const baseline = readText(
+    "database/ddl/baseline/postgres/0001_iam_baseline.sql",
+  ).replace(/\r+\n/g, "\n");
+  const marker =
+    "-- folded migration: migrations/postgres/0056_iam_enterprise_seat_management.up.sql";
+
+  assert.ok(baseline.includes(marker));
+  const body = migration
+    .slice(migration.indexOf("BEGIN;") + "BEGIN;".length, migration.lastIndexOf("COMMIT;"))
+    .trim();
+  assert.equal(baseline.slice(baseline.indexOf(marker) + marker.length).trim(), body);
+  assert.match(down, /^-- reversible: true$/mu);
+  assert.match(down, /^-- rollback: down-migration/mu);
+  assert.match(down, /RAISE EXCEPTION/u);
+  assert.doesNotMatch(down, /\bDELETE\s+FROM\b/iu);
+  assert.ok(
+    down.indexOf("RAISE EXCEPTION") < down.indexOf("DROP TRIGGER"),
+    "down-migration data guards must precede every DDL statement",
+  );
+  for (const trigger of [
+    "trg_iam_tenant_member_enterprise_seats",
+    "trg_iam_department_assignment_enterprise_seats",
+    "trg_iam_organization_membership_enterprise_seats",
+    "trg_iam_user_enterprise_seats",
+  ]) {
+    assert.match(migration, new RegExp(`CREATE TRIGGER ${trigger}`, "u"));
+  }
+});
 
 test("baseline carries no legacy application residue", () => {
   const baseline = readText("database/ddl/baseline/postgres/0001_iam_baseline.sql");

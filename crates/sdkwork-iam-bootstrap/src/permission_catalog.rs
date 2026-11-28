@@ -383,6 +383,12 @@ pub const IAM_STANDARD_PERMISSION_SEEDS: &[PermissionSeed] = &[
         action: "create",
     },
     PermissionSeed {
+        code: "iam.role_bindings.update",
+        name: "Update role bindings",
+        resource: "iam.role_bindings",
+        action: "update",
+    },
+    PermissionSeed {
         code: "iam.role_bindings.delete",
         name: "Delete role bindings",
         resource: "iam.role_bindings",
@@ -531,6 +537,18 @@ pub const IAM_STANDARD_PERMISSION_SEEDS: &[PermissionSeed] = &[
         name: "Update installations",
         resource: "iam.installations",
         action: "update",
+    },
+    PermissionSeed {
+        code: "iam.enterprise_orders.read",
+        name: "Read application enterprise-authorization orders",
+        resource: "iam.enterprise_orders",
+        action: "read",
+    },
+    PermissionSeed {
+        code: "iam.enterprise_orders.manage",
+        name: "Manage application enterprise-authorization orders, links and seats",
+        resource: "iam.enterprise_orders",
+        action: "manage",
     },
     PermissionSeed {
         code: "iam.tenant_members.create",

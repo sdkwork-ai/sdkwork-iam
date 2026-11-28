@@ -121,7 +121,12 @@ fn explicit_bootstrap_permission(operation_id: &str) -> Option<&'static str> {
         | "installations.credentials.list"
         | "installations.credentials.create"
         | "installations.credentials.rotate"
-        | "installations.credentials.revoke" => Some("iam.installations.update"),
+        | "installations.credentials.revoke"
+        // The client policy (redirect URIs, scopes, trusted origins, publication
+        // state) is an attribute of the installation credential, so it rides on
+        // the same mutation boundary; no new code is seeded and no existing
+        // boundary is widened.
+        | "installations.credentials.policy.update" => Some("iam.installations.update"),
         "accessCredentials.create" => Some("iam.access_credentials.create"),
         "serviceAccounts.credentials.create" => Some("iam.service_account_credentials.create"),
         "serviceAccountCredentials.revoke" => Some("iam.service_account_credentials.revoke"),
@@ -139,6 +144,36 @@ fn explicit_bootstrap_permission(operation_id: &str) -> Option<&'static str> {
         // open, but the permission is what keeps an auditor role from reaching it
         // at all.
         "providerAccounts.credentials.reveal" => Some("iam.provider_credentials.reveal"),
+        // Enterprise authorization orders are their own boundary: a publisher
+        // that may update an installation must not thereby be able to license it
+        // to a third-party enterprise, and an enterprise administrator must be
+        // able to manage seats without holding any publisher right. Reads and
+        // writes are separated for the same reason every other resource family
+        // separates them.
+        "enterpriseOrders.list"
+        | "enterpriseOrders.retrieve"
+        | "publisherEnterpriseOrders.retrieve"
+        | "enterpriseOrders.events.list"
+        | "enterpriseGrants.list"
+        | "enterpriseSeats.list" => Some("iam.enterprise_orders.read"),
+        "enterpriseOrders.create"
+        | "enterpriseOrders.cancel"
+        | "enterpriseOrders.terminate"
+        | "enterpriseSeats.create"
+        | "enterpriseSeats.delete"
+        | "enterpriseSeats.bulkRelease"
+        | "enterpriseOrders.update"
+        | "enterpriseSeatPolicies.list"
+        | "enterpriseSeatPolicies.retrieve"
+        | "enterpriseSeatPolicies.create"
+        | "enterpriseSeatPolicies.update"
+        | "enterpriseSeatPolicies.delete"
+        | "enterpriseSeatBlacklist.list"
+        | "enterpriseSeatBlacklist.create"
+        | "enterpriseSeatBlacklist.delete"
+        | "enterpriseOrderAuthorizations.create"
+        | "enterpriseOrderTerminations.create" => Some("iam.enterprise_orders.manage"),
+        "enterpriseSeats.export" => Some("iam.enterprise_seats.export"),
         _ => None,
     }
 }
@@ -270,6 +305,7 @@ fn permission_code(resource: IamResource, action: IamAction) -> &'static str {
         (IamResource::ServiceAccounts, IamAction::Delete) => "iam.service_accounts.delete",
         (IamResource::RoleBindings, IamAction::Read) => "iam.role_bindings.read",
         (IamResource::RoleBindings, IamAction::Create) => "iam.role_bindings.create",
+        (IamResource::RoleBindings, IamAction::Update) => "iam.role_bindings.update",
         (IamResource::RoleBindings, IamAction::Delete) => "iam.role_bindings.delete",
         (IamResource::Users, IamAction::Read) => "iam.users.read",
         (IamResource::Users, IamAction::Create) => "iam.users.create",
@@ -323,6 +359,10 @@ mod tests {
         assert_eq!(
             iam_backend_permission_for_operation("users.list"),
             Some("iam.users.read")
+        );
+        assert_eq!(
+            iam_backend_permission_for_operation("roleBindings.update"),
+            Some("iam.role_bindings.update")
         );
         assert_eq!(
             iam_backend_permission_for_operation("roleBindings.list"),

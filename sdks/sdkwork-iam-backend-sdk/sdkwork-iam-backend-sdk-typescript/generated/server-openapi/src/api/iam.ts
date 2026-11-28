@@ -1,7 +1,7 @@
 import { backendApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { AppbaseAccessCredentialCreateCommand, AppbaseInstallationEnableCommand, AppbaseInstallationProvisionCommand, AppbaseInstallationUpdateCommand, AppbaseOperationCommand, IamInstallationCredential, IamInstallationCredentialCreateCommand, IamInstallationCredentialRotateCommand, IamInstallationCredentialWithSecret, IamInstallationEnvironment, IamInstallationEnvironmentUpsertCommand, IamInstallationManagementProvisionCommand, IamInstallationManagementUpdateCommand, IamInstallationStatusCommand, PageInfo, SdkWorkCommandData, SdkWorkPageData, ServiceAccountCredentialCreateCommand, ServiceAccountCredentialRevokeCommand, ServiceAccountTokenExchangeCommand } from '../types';
+import type { AppbaseAccessCredentialCreateCommand, AppbaseInstallationEnableCommand, AppbaseInstallationProvisionCommand, AppbaseInstallationUpdateCommand, AppbaseOperationCommand, IamEnterpriseOrder, IamEnterpriseOrderCreateCommand, IamEnterpriseOrderEvent, IamEnterpriseOrderLinkConfirmCommand, IamEnterpriseOrderSeat, IamEnterpriseOrderTerminateCommand, IamEnterpriseOrderUpdateCommand, IamEnterpriseOrderWithLink, IamEnterpriseSeatAssignCommand, IamEnterpriseSeatBlacklistCommand, IamEnterpriseSeatBlacklistEntry, IamEnterpriseSeatBulkReleaseCommand, IamEnterpriseSeatExportCommand, IamEnterpriseSeatPolicy, IamEnterpriseSeatPolicyCommand, IamEnterpriseSeatPolicyUpdateCommand, IamInstallationCredential, IamInstallationCredentialCreateCommand, IamInstallationCredentialPolicyUpdateCommand, IamInstallationCredentialRotateCommand, IamInstallationCredentialWithSecret, IamInstallationEnvironment, IamInstallationEnvironmentUpsertCommand, IamInstallationManagementProvisionCommand, IamInstallationManagementUpdateCommand, IamInstallationStatusCommand, IamOrganizationMembership, IamPermissionResource, IamRoleBinding, IamRoleBindingUpdateCommand, PageInfo, SdkWorkCommandData, SdkWorkPageData, ServiceAccountCredentialCreateCommand, ServiceAccountCredentialRevokeCommand, ServiceAccountTokenExchangeCommand } from '../types';
 
 
 export interface IamUsersListParams {
@@ -62,6 +62,310 @@ export class IamUsersApi {
 /** Users unban. */
   async unban(userId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
     return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/users/${serializePathParameter(userId, { name: 'userId', style: 'simple', explode: false })}/unban`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
+export interface IamEnterpriseSeatsListParams {
+  page?: number;
+  pageSize?: number;
+  cursor?: string;
+  sort?: string;
+  q?: string;
+  status?: 'active' | 'released';
+}
+
+export class IamEnterpriseSeatsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Enterprise Seats list. */
+  async list(tenantId: string, orderId: string, params?: IamEnterpriseSeatsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: IamEnterpriseOrderSeat[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
+      { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+      { name: 'status', value: params?.status, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: IamEnterpriseOrderSeat[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/seats`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+
+/** Enterprise Seats create. */
+  async create(tenantId: string, orderId: string, body: IamEnterpriseSeatAssignCommand, requestOptions?: ApiRequestOptions): Promise<IamEnterpriseOrder> {
+    return this.client.request<IamEnterpriseOrder>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/seats`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Enterprise Seats delete. */
+  async delete(tenantId: string, orderId: string, seatId: string, requestOptions?: ApiRequestOptions): Promise<void> {
+    return this.client.request<void>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/seats/${serializePathParameter(seatId, { name: 'seatId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'DELETE' as any });
+  }
+
+/** Enterprise Seats bulk Release. */
+  async bulkRelease(tenantId: string, orderId: string, body: IamEnterpriseSeatBulkReleaseCommand, requestOptions?: ApiRequestOptions): Promise<{ items: { seatId: string; success: boolean; }[]; allOrNothing: true; }> {
+    return this.client.request<{ items: { seatId: string; success: boolean; }[]; allOrNothing: true; }>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/seats/bulk_release`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'data' });
+  }
+
+/** Enterprise Seats export. */
+  async export(tenantId: string, orderId: string, body: IamEnterpriseSeatExportCommand, requestOptions?: ApiRequestOptions): Promise<{ fileName: string; csv: string; }> {
+    return this.client.request<{ fileName: string; csv: string; }>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/seats/export`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'data' });
+  }
+}
+
+export interface IamEnterpriseSeatPoliciesListParams {
+  page?: number;
+  pageSize?: number;
+  cursor?: string;
+  sort?: string;
+  q?: string;
+}
+
+export interface IamEnterpriseSeatPoliciesDeleteParams {
+  disposition?: 'release' | 'keep';
+}
+
+export class IamEnterpriseSeatPoliciesApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Enterprise Seat Policies list. */
+  async list(tenantId: string, orderId: string, params?: IamEnterpriseSeatPoliciesListParams, requestOptions?: ApiRequestOptions): Promise<{ items: IamEnterpriseSeatPolicy[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
+      { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: IamEnterpriseSeatPolicy[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/seat_policies`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+
+/** Enterprise Seat Policies create. */
+  async create(tenantId: string, orderId: string, body: IamEnterpriseSeatPolicyCommand, requestOptions?: ApiRequestOptions): Promise<IamEnterpriseSeatPolicy> {
+    return this.client.request<IamEnterpriseSeatPolicy>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/seat_policies`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Enterprise Seat Policies delete. */
+  async delete(tenantId: string, orderId: string, policyId: string, params?: IamEnterpriseSeatPoliciesDeleteParams, requestOptions?: ApiRequestOptions): Promise<void> {
+    const query = buildQueryString([
+      { name: 'disposition', value: params?.disposition, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<void>(appendQueryString(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/seat_policies/${serializePathParameter(policyId, { name: 'policyId', style: 'simple', explode: false })}`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'DELETE' as any });
+  }
+
+/** Enterprise Seat Policies retrieve. */
+  async retrieve(tenantId: string, orderId: string, policyId: string, requestOptions?: ApiRequestOptions): Promise<IamEnterpriseSeatPolicy> {
+    return this.client.request<IamEnterpriseSeatPolicy>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/seat_policies/${serializePathParameter(policyId, { name: 'policyId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+
+/** Enterprise Seat Policies update. */
+  async update(tenantId: string, orderId: string, policyId: string, body?: IamEnterpriseSeatPolicyUpdateCommand, requestOptions?: ApiRequestOptions): Promise<IamEnterpriseSeatPolicy> {
+    return this.client.request<IamEnterpriseSeatPolicy>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/seat_policies/${serializePathParameter(policyId, { name: 'policyId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PATCH' as any, ...(body !== undefined ? { body, contentType: 'application/json' } : {}), sdkworkUnwrapKind: 'item' });
+  }
+}
+
+export interface IamEnterpriseSeatBlacklistListParams {
+  page?: number;
+  pageSize?: number;
+  cursor?: string;
+  sort?: string;
+  q?: string;
+}
+
+export class IamEnterpriseSeatBlacklistApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Enterprise Seat Blacklist list. */
+  async list(tenantId: string, orderId: string, params?: IamEnterpriseSeatBlacklistListParams, requestOptions?: ApiRequestOptions): Promise<{ items: IamEnterpriseSeatBlacklistEntry[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
+      { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: IamEnterpriseSeatBlacklistEntry[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/seat_blacklist`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+
+/** Enterprise Seat Blacklist create. */
+  async create(tenantId: string, orderId: string, body: IamEnterpriseSeatBlacklistCommand, requestOptions?: ApiRequestOptions): Promise<IamEnterpriseSeatBlacklistEntry> {
+    return this.client.request<IamEnterpriseSeatBlacklistEntry>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/seat_blacklist`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Enterprise Seat Blacklist delete. */
+  async delete(tenantId: string, orderId: string, entryId: string, requestOptions?: ApiRequestOptions): Promise<void> {
+    return this.client.request<void>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/seat_blacklist/${serializePathParameter(entryId, { name: 'entryId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'DELETE' as any });
+  }
+}
+
+export interface IamEnterpriseGrantsListParams {
+  page?: number;
+  pageSize?: number;
+  cursor?: string;
+  sort?: string;
+  q?: string;
+  authorizationMode?: 'all_members' | 'seat';
+}
+
+export class IamEnterpriseGrantsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Enterprise Grants list. */
+  async list(tenantId: string, params?: IamEnterpriseGrantsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: IamEnterpriseOrder[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
+      { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+      { name: 'authorization_mode', value: params?.authorizationMode, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: IamEnterpriseOrder[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+}
+
+export class IamEnterpriseOrderTerminationsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Enterprise Order Terminations create. */
+  async create(tenantId: string, body: IamEnterpriseOrderLinkConfirmCommand, requestOptions?: ApiRequestOptions): Promise<IamEnterpriseOrder> {
+    return this.client.request<IamEnterpriseOrder>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_order_terminations`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
+export class IamEnterpriseOrderAuthorizationsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Enterprise Order Authorizations create. */
+  async create(tenantId: string, body: IamEnterpriseOrderLinkConfirmCommand, requestOptions?: ApiRequestOptions): Promise<IamEnterpriseOrder> {
+    return this.client.request<IamEnterpriseOrder>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_order_authorizations`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
+export class IamPublisherEnterpriseOrdersApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Publisher Enterprise Orders retrieve. */
+  async retrieve(tenantId: string, applicationId: string, orderId: string, requestOptions?: ApiRequestOptions): Promise<IamEnterpriseOrder> {
+    return this.client.request<IamEnterpriseOrder>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/applications/${serializePathParameter(applicationId, { name: 'applicationId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+}
+
+export interface IamEnterpriseOrdersEventsListParams {
+  page?: number;
+  pageSize?: number;
+  cursor?: string;
+  sort?: string;
+  q?: string;
+}
+
+export class IamEnterpriseOrdersEventsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Enterprise Orders events list. */
+  async list(tenantId: string, applicationId: string, orderId: string, params?: IamEnterpriseOrdersEventsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: IamEnterpriseOrderEvent[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
+      { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: IamEnterpriseOrderEvent[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/applications/${serializePathParameter(applicationId, { name: 'applicationId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/events`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+}
+
+export interface IamEnterpriseOrdersListParams {
+  page?: number;
+  pageSize?: number;
+  cursor?: string;
+  sort?: string;
+  q?: string;
+}
+
+export class IamEnterpriseOrdersApi {
+  private client: HttpClient;
+  public readonly events: IamEnterpriseOrdersEventsApi;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+    this.events = new IamEnterpriseOrdersEventsApi(client);
+  }
+
+
+/** Enterprise Orders list. */
+  async list(tenantId: string, applicationId: string, params?: IamEnterpriseOrdersListParams, requestOptions?: ApiRequestOptions): Promise<{ items: IamEnterpriseOrder[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
+      { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: IamEnterpriseOrder[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/applications/${serializePathParameter(applicationId, { name: 'applicationId', style: 'simple', explode: false })}/enterprise_orders`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+
+/** Enterprise Orders create. */
+  async create(tenantId: string, applicationId: string, body: IamEnterpriseOrderCreateCommand, requestOptions?: ApiRequestOptions): Promise<IamEnterpriseOrderWithLink> {
+    return this.client.request<IamEnterpriseOrderWithLink>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/applications/${serializePathParameter(applicationId, { name: 'applicationId', style: 'simple', explode: false })}/enterprise_orders`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Enterprise Orders cancel. */
+  async cancel(tenantId: string, applicationId: string, orderId: string, body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<IamEnterpriseOrder> {
+    return this.client.request<IamEnterpriseOrder>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/applications/${serializePathParameter(applicationId, { name: 'applicationId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/cancel`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Enterprise Orders terminate. */
+  async terminate(tenantId: string, applicationId: string, orderId: string, body: IamEnterpriseOrderTerminateCommand, requestOptions?: ApiRequestOptions): Promise<IamEnterpriseOrderWithLink> {
+    return this.client.request<IamEnterpriseOrderWithLink>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/applications/${serializePathParameter(applicationId, { name: 'applicationId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/terminate`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Enterprise Orders retrieve. */
+  async retrieve(tenantId: string, orderId: string, requestOptions?: ApiRequestOptions): Promise<IamEnterpriseOrder> {
+    return this.client.request<IamEnterpriseOrder>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+
+/** Enterprise Orders update. */
+  async update(tenantId: string, orderId: string, body?: IamEnterpriseOrderUpdateCommand, requestOptions?: ApiRequestOptions): Promise<IamEnterpriseOrder> {
+    return this.client.request<IamEnterpriseOrder>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/enterprise_orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PATCH' as any, ...(body !== undefined ? { body, contentType: 'application/json' } : {}), sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -293,6 +597,7 @@ export interface IamRolesPermissionsListParams {
   cursor?: string;
   sort?: string;
   q?: string;
+  resource?: string;
 }
 
 export class IamRolesPermissionsApi {
@@ -311,6 +616,7 @@ export class IamRolesPermissionsApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+      { name: 'resource', value: params?.resource, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/iam/roles/${serializePathParameter(roleId, { name: 'roleId', style: 'simple', explode: false })}/permissions`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
@@ -399,7 +705,7 @@ export class IamRoleBindingsApi {
 
 
 /** Role Bindings list. */
-  async list(params?: IamRoleBindingsListParams, requestOptions?: ApiRequestOptions): Promise<SdkWorkPageData> {
+  async list(params?: IamRoleBindingsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: IamRoleBinding[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
@@ -412,17 +718,22 @@ export class IamRoleBindingsApi {
       { name: 'scope_kind', value: params?.scopeKind, style: 'form', explode: true, allowReserved: false },
       { name: 'scope_id', value: params?.scopeId, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/iam/role_bindings`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: IamRoleBinding[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/iam/role_bindings`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Role Bindings create. */
-  async create(body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
-    return this.client.request<Record<string, unknown>>(backendApiPath(`/iam/role_bindings`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  async create(body: AppbaseOperationCommand, requestOptions?: ApiRequestOptions): Promise<IamRoleBinding> {
+    return this.client.request<IamRoleBinding>(backendApiPath(`/iam/role_bindings`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Role Bindings delete. */
   async delete(roleBindingId: string, requestOptions?: ApiRequestOptions): Promise<void> {
     return this.client.request<void>(backendApiPath(`/iam/role_bindings/${serializePathParameter(roleBindingId, { name: 'roleBindingId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'DELETE' as any });
+  }
+
+/** Role Bindings update. */
+  async update(roleBindingId: string, body?: IamRoleBindingUpdateCommand, requestOptions?: ApiRequestOptions): Promise<IamRoleBinding> {
+    return this.client.request<IamRoleBinding>(backendApiPath(`/iam/role_bindings/${serializePathParameter(roleBindingId, { name: 'roleBindingId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PATCH' as any, ...(body !== undefined ? { body, contentType: 'application/json' } : {}), sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -708,7 +1019,7 @@ export class IamPoliciesApi {
   }
 }
 
-export interface IamPermissionsListParams {
+export interface IamPermissionsResourcesListParams {
   page?: number;
   pageSize?: number;
   cursor?: string;
@@ -716,11 +1027,45 @@ export interface IamPermissionsListParams {
   q?: string;
 }
 
-export class IamPermissionsApi {
+export class IamPermissionsResourcesApi {
   private client: HttpClient;
 
   constructor(client: HttpClient) {
     this.client = client;
+  }
+
+
+/** Permissions resources list. */
+  async list(params?: IamPermissionsResourcesListParams, requestOptions?: ApiRequestOptions): Promise<{ items: IamPermissionResource[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
+      { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: IamPermissionResource[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/iam/permissions/resources`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+}
+
+export interface IamPermissionsListParams {
+  page?: number;
+  pageSize?: number;
+  cursor?: string;
+  sort?: string;
+  q?: string;
+  resource?: string;
+  roleId?: string;
+  assigned?: boolean;
+}
+
+export class IamPermissionsApi {
+  private client: HttpClient;
+  public readonly resources: IamPermissionsResourcesApi;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+    this.resources = new IamPermissionsResourcesApi(client);
   }
 
 
@@ -732,6 +1077,9 @@ export class IamPermissionsApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'sort', value: params?.sort, style: 'form', explode: true, allowReserved: false },
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
+      { name: 'resource', value: params?.resource, style: 'form', explode: true, allowReserved: false },
+      { name: 'role_id', value: params?.roleId, style: 'form', explode: true, allowReserved: false },
+      { name: 'assigned', value: params?.assigned, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/iam/permissions`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
@@ -894,7 +1242,7 @@ export class IamOrganizationMembershipsApi {
 
 
 /** Organization Memberships list. */
-  async list(params?: IamOrganizationMembershipsListParams, requestOptions?: ApiRequestOptions): Promise<SdkWorkPageData> {
+  async list(params?: IamOrganizationMembershipsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: IamOrganizationMembership[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
@@ -904,7 +1252,7 @@ export class IamOrganizationMembershipsApi {
       { name: 'organization_id', value: params?.organizationId, style: 'form', explode: true, allowReserved: false },
       { name: 'department_id', value: params?.departmentId, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<SdkWorkPageData>(appendQueryString(backendApiPath(`/iam/organization_memberships`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: IamOrganizationMembership[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/iam/organization_memberships`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Organization Memberships create. */
@@ -971,6 +1319,20 @@ export class IamInstallationsEnvironmentsApi {
   }
 }
 
+export class IamInstallationsCredentialsPolicyApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Installations credentials policy update. */
+  async update(tenantId: string, installationId: string, credentialId: string, body: IamInstallationCredentialPolicyUpdateCommand, requestOptions?: ApiRequestOptions): Promise<IamInstallationCredential> {
+    return this.client.request<IamInstallationCredential>(backendApiPath(`/iam/tenants/${serializePathParameter(tenantId, { name: 'tenantId', style: 'simple', explode: false })}/installations/${serializePathParameter(installationId, { name: 'installationId', style: 'simple', explode: false })}/credentials/${serializePathParameter(credentialId, { name: 'credentialId', style: 'simple', explode: false })}/policy`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PUT' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export interface IamInstallationsCredentialsListParams {
   page?: number;
   pageSize?: number;
@@ -981,9 +1343,11 @@ export interface IamInstallationsCredentialsListParams {
 
 export class IamInstallationsCredentialsApi {
   private client: HttpClient;
+  public readonly policy: IamInstallationsCredentialsPolicyApi;
 
   constructor(client: HttpClient) {
     this.client = client;
+    this.policy = new IamInstallationsCredentialsPolicyApi(client);
   }
 
 
@@ -1482,6 +1846,14 @@ export class IamApi {
   public readonly serviceAccountTokens: IamServiceAccountTokensApi;
   public readonly serviceAccounts: IamServiceAccountsApi;
   public readonly tenants: IamTenantsApi;
+  public readonly enterpriseOrders: IamEnterpriseOrdersApi;
+  public readonly publisherEnterpriseOrders: IamPublisherEnterpriseOrdersApi;
+  public readonly enterpriseOrderAuthorizations: IamEnterpriseOrderAuthorizationsApi;
+  public readonly enterpriseOrderTerminations: IamEnterpriseOrderTerminationsApi;
+  public readonly enterpriseGrants: IamEnterpriseGrantsApi;
+  public readonly enterpriseSeatBlacklist: IamEnterpriseSeatBlacklistApi;
+  public readonly enterpriseSeatPolicies: IamEnterpriseSeatPoliciesApi;
+  public readonly enterpriseSeats: IamEnterpriseSeatsApi;
   public readonly users: IamUsersApi;
 
   constructor(client: HttpClient) {
@@ -1508,6 +1880,14 @@ export class IamApi {
     this.serviceAccountTokens = new IamServiceAccountTokensApi(client);
     this.serviceAccounts = new IamServiceAccountsApi(client);
     this.tenants = new IamTenantsApi(client);
+    this.enterpriseOrders = new IamEnterpriseOrdersApi(client);
+    this.publisherEnterpriseOrders = new IamPublisherEnterpriseOrdersApi(client);
+    this.enterpriseOrderAuthorizations = new IamEnterpriseOrderAuthorizationsApi(client);
+    this.enterpriseOrderTerminations = new IamEnterpriseOrderTerminationsApi(client);
+    this.enterpriseGrants = new IamEnterpriseGrantsApi(client);
+    this.enterpriseSeatBlacklist = new IamEnterpriseSeatBlacklistApi(client);
+    this.enterpriseSeatPolicies = new IamEnterpriseSeatPoliciesApi(client);
+    this.enterpriseSeats = new IamEnterpriseSeatsApi(client);
     this.users = new IamUsersApi(client);
   }
 

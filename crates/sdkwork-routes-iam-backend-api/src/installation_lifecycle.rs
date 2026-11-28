@@ -21,9 +21,10 @@ use sdkwork_iam_web_adapter::{
     delete_installation_environment, installation_credential_to_json,
     installation_environment_to_json, installation_lifecycle_error_detail,
     list_installation_credentials, list_installation_environments,
-    parse_installation_credential_create_command, parse_installation_credential_rotate_command,
-    parse_installation_environment_upsert_command, revoke_installation_credential,
-    rotate_installation_credential, upsert_installation_environment,
+    parse_installation_credential_create_command, parse_installation_credential_policy_command,
+    parse_installation_credential_rotate_command, parse_installation_environment_upsert_command,
+    revoke_installation_credential, rotate_installation_credential,
+    update_installation_credential_policy, upsert_installation_environment,
     InstallationLifecycleErrorKind,
 };
 use sdkwork_utils_rust::{offset_list_page_data, sdkwork_resource_json};
@@ -59,6 +60,10 @@ pub(crate) fn apply_installation_lifecycle_routes(
         .route(
             "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials/{credentialId}/revoke",
             post(revoke_credential_handler),
+        )
+        .route(
+            "/backend/v3/api/iam/tenants/{tenantId}/installations/{installationId}/credentials/{credentialId}/policy",
+            put(update_credential_policy_handler),
         )
 }
 
@@ -318,5 +323,49 @@ async fn revoke_credential_handler(
             "status": credential.credential_status,
         })),
         Err(message) => lifecycle_error(message, "iam_installation_credential_revoke_failed"),
+    }
+}
+
+/// Replaces the client policy of one credential: redirect URIs, granted scopes,
+/// trusted origins, publication state and reviewer note.
+///
+/// `PUT` because the body describes the policy the caller wants to end up with;
+/// omitted fields keep their current value, which is what makes a status-only
+/// review decision a one-field call.
+async fn update_credential_policy_handler(
+    State(state): State<BackendIamState>,
+    context: WebRequestContext,
+    Path((tenant_id, installation_id, credential_id)): Path<(String, String, String)>,
+    Json(body): Json<Value>,
+) -> Response {
+    let pg = match postgres_pool_or_error(&state) {
+        Ok(pg) => pg,
+        Err(response) => return response,
+    };
+    if let Err(response) = ensure_target_tenant_access(&context, &tenant_id) {
+        return response;
+    }
+    let command = match parse_installation_credential_policy_command(&body) {
+        Ok(command) => command,
+        Err(message) => {
+            return lifecycle_error(message, "iam_installation_credential_policy_update_failed")
+        }
+    };
+    match update_installation_credential_policy(
+        pg,
+        &tenant_id,
+        &installation_id,
+        &credential_id,
+        &command,
+    )
+    .await
+    {
+        Ok(credential) => appbase_ok(sdkwork_resource_json(installation_credential_to_json(
+            &credential,
+            None,
+        ))),
+        Err(message) => {
+            lifecycle_error(message, "iam_installation_credential_policy_update_failed")
+        }
     }
 }

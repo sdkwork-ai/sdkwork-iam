@@ -705,6 +705,12 @@ pub struct InstallationCredential {
     pub retired_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+    /// Trusted browser origins. Empty means "no per-client restriction".
+    pub allowed_origins: Vec<String>,
+    /// `pending_review` | `enabled` | `rejected` | `disabled`.
+    pub client_status: String,
+    pub review_note: Option<String>,
+    pub reviewed_at: Option<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -745,6 +751,10 @@ pub fn installation_credential_to_json(
         "status": credential.credential_status,
         "tenantId": credential.tenant_id,
         "updatedAt": credential.updated_at,
+        "allowedOrigins": credential.allowed_origins,
+        "clientStatus": credential.client_status,
+        "reviewNote": credential.review_note,
+        "reviewedAt": credential.reviewed_at,
     });
     if let Some(client_secret) = client_secret {
         // The plaintext secret is materialized exactly once, in the create and
@@ -786,7 +796,8 @@ pub fn parse_installation_credential_rotate_command(
 
 const CREDENTIAL_COLUMNS: &str = "c.id, c.tenant_id, c.installation_environment_id, e.env_key, \
      c.client_id, c.redirect_uris_json, c.granted_scopes_json, c.credential_status, \
-     c.rotated_at::text, c.retired_at::text, c.created_at::text, c.updated_at::text";
+     c.rotated_at::text, c.retired_at::text, c.created_at::text, c.updated_at::text, \
+     c.allowed_origins_json, c.client_status, c.review_note, c.reviewed_at::text";
 
 fn credential_from_row(row: &sqlx::postgres::PgRow) -> InstallationCredential {
     InstallationCredential {
@@ -808,6 +819,13 @@ fn credential_from_row(row: &sqlx::postgres::PgRow) -> InstallationCredential {
         retired_at: row.get(9),
         created_at: row.get(10),
         updated_at: row.get(11),
+        allowed_origins: row
+            .try_get::<SqlJson<Vec<String>>, _>(12)
+            .map(|value| value.0)
+            .unwrap_or_default(),
+        client_status: row.get(13),
+        review_note: row.get(14),
+        reviewed_at: row.get(15),
     }
 }
 
@@ -1144,6 +1162,296 @@ pub async fn revoke_installation_credential(
     Ok(credential_from_row(&row))
 }
 
+// ── Credential client policy: origins, scopes, publication state ──────────
+
+/// Publication states of a client, orthogonal to the secret lifecycle
+/// (`credential_status`). Mirrors
+/// `ck_iam_application_installation_credential_client_status`.
+pub const CLIENT_STATUS_PENDING_REVIEW: &str = "pending_review";
+pub const CLIENT_STATUS_ENABLED: &str = "enabled";
+pub const CLIENT_STATUS_REJECTED: &str = "rejected";
+pub const CLIENT_STATUS_DISABLED: &str = "disabled";
+
+const CLIENT_STATUSES: [&str; 4] = [
+    CLIENT_STATUS_PENDING_REVIEW,
+    CLIENT_STATUS_ENABLED,
+    CLIENT_STATUS_REJECTED,
+    CLIENT_STATUS_DISABLED,
+];
+
+/// Longest trusted-origin list one client may carry.
+const MAX_ALLOWED_ORIGINS: usize = 32;
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct InstallationCredentialPolicyCommand {
+    /// Replace the redirect URI set when present.
+    pub redirect_uris: Option<Vec<String>>,
+    /// Replace the granted scope set when present.
+    pub granted_scopes: Option<Vec<String>>,
+    /// Replace the trusted origin set when present.
+    pub allowed_origins: Option<Vec<String>>,
+    /// Move the client between publication states when present.
+    pub client_status: Option<String>,
+    /// `None` keeps the current note; `Some(None)` clears it.
+    pub review_note: Option<Option<String>>,
+}
+
+pub fn parse_installation_credential_policy_command(
+    body: &Value,
+) -> Result<InstallationCredentialPolicyCommand, String> {
+    let redirect_uris = read_string_array(body, &["redirectUris", "redirect_uris"]);
+    let granted_scopes = read_string_array(body, &["grantedScopes", "granted_scopes"]);
+    let allowed_origins = read_string_array(body, &["allowedOrigins", "allowed_origins"]);
+    let client_status = read_optional_string(body, &["clientStatus", "client_status"]);
+    let review_note = match body.get("reviewNote").or_else(|| body.get("review_note")) {
+        None => None,
+        Some(Value::Null) => Some(None),
+        Some(Value::String(value)) => {
+            let value = value.trim();
+            Some(if value.is_empty() {
+                None
+            } else if value.chars().count() > 2000 {
+                return Err(invalid("reviewNote must be at most 2000 characters"));
+            } else {
+                Some(value.to_owned())
+            })
+        }
+        Some(_) => return Err(invalid("reviewNote must be a string or null")),
+    };
+    if let Some(status) = client_status.as_deref() {
+        if !CLIENT_STATUSES
+            .iter()
+            .any(|candidate| candidate.eq_ignore_ascii_case(status.trim()))
+        {
+            return Err(invalid(
+                "clientStatus must be one of pending_review, enabled, rejected, disabled",
+            ));
+        }
+    }
+    Ok(InstallationCredentialPolicyCommand {
+        redirect_uris,
+        granted_scopes,
+        allowed_origins,
+        client_status,
+        review_note,
+    })
+}
+
+/// Normalizes one trusted origin to its canonical `scheme://host[:port]` form.
+///
+/// A browser origin never carries a path, query, fragment, or userinfo, so a
+/// value that does is rejected instead of silently truncated: truncation would
+/// widen the allow-list to an origin the caller never named.
+fn normalize_origin(raw: &str) -> Result<String, String> {
+    let value = raw.trim();
+    if value.is_empty() {
+        return Err(invalid("origin must not be empty"));
+    }
+    let (scheme, rest) = value.split_once("://").ok_or_else(|| {
+        invalid(format!(
+            "origin `{value}` must start with http:// or https://"
+        ))
+    })?;
+    let scheme = scheme.to_ascii_lowercase();
+    if scheme != "http" && scheme != "https" {
+        return Err(invalid(format!("origin `{value}` must use http or https")));
+    }
+    if rest.is_empty() {
+        return Err(invalid(format!("origin `{value}` has no host")));
+    }
+    if rest.contains(['/', '?', '#']) {
+        return Err(invalid(format!(
+            "origin `{value}` must not carry a path, query or fragment"
+        )));
+    }
+    if rest.contains('@') {
+        return Err(invalid(format!("origin `{value}` must not carry userinfo")));
+    }
+    let (host, port) = match rest.rsplit_once(':') {
+        Some((host, port)) if !host.starts_with('[') || host.ends_with(']') => (host, Some(port)),
+        _ => (rest, None),
+    };
+    if host.is_empty() {
+        return Err(invalid(format!("origin `{value}` has no host")));
+    }
+    if let Some(port) = port {
+        let parsed = port
+            .parse::<u16>()
+            .map_err(|_| invalid(format!("origin `{value}` has an invalid port")))?;
+        if parsed == 0 {
+            return Err(invalid(format!("origin `{value}` has an invalid port")));
+        }
+    }
+    let host = host.to_ascii_lowercase();
+    Ok(match port {
+        Some(port) => format!("{scheme}://{host}:{port}"),
+        None => format!("{scheme}://{host}"),
+    })
+}
+
+fn normalize_allowed_origins(origins: &[String]) -> Result<Vec<String>, String> {
+    let mut normalized = Vec::new();
+    for origin in origins {
+        let origin = normalize_origin(origin)?;
+        if !normalized.contains(&origin) {
+            normalized.push(origin);
+        }
+    }
+    if normalized.len() > MAX_ALLOWED_ORIGINS {
+        return Err(invalid(format!(
+            "allowedOrigins must contain at most {MAX_ALLOWED_ORIGINS} entries"
+        )));
+    }
+    Ok(normalized)
+}
+
+/// Replaces the client policy of one environment credential.
+///
+/// When the installation's relying-party document names the same client id, the
+/// document is updated in the same transaction: the authorization server reads
+/// that document first, so a policy change that only touched the credential row
+/// would leave the runtime on the old allow-list. A document that names a
+/// *different* client is left alone — it belongs to another registration.
+pub async fn update_installation_credential_policy(
+    pg: &PgPool,
+    tenant_id: &str,
+    installation_id: &str,
+    credential_id: &str,
+    command: &InstallationCredentialPolicyCommand,
+) -> Result<InstallationCredential, String> {
+    let redirect_uris = match command.redirect_uris.as_deref() {
+        Some(values) => Some(validate_redirect_uris(values)?),
+        None => None,
+    };
+    let granted_scopes = command
+        .granted_scopes
+        .as_ref()
+        .map(|values| normalize_scopes(values));
+    let allowed_origins = match command.allowed_origins.as_deref() {
+        Some(values) => Some(normalize_allowed_origins(values)?),
+        None => None,
+    };
+    let client_status = command
+        .client_status
+        .as_deref()
+        .map(|value| value.trim().to_ascii_lowercase());
+
+    let now = chrono::Utc::now();
+    let mut transaction = pg
+        .begin()
+        .await
+        .map_err(|error| format!("begin installation credential policy update failed: {error}"))?;
+
+    let row = sqlx::query(
+        "SELECT c.id, c.client_id, c.redirect_uris_json, c.granted_scopes_json, \
+                c.allowed_origins_json \
+         FROM iam_application_installation_credential c \
+         JOIN iam_application_installation_environment e \
+           ON e.id = c.installation_environment_id \
+         WHERE c.tenant_id = $1 AND e.installation_id = $2 AND c.id = $3 \
+         FOR UPDATE",
+    )
+    .bind(tenant_id)
+    .bind(installation_id)
+    .bind(credential_id)
+    .fetch_optional(&mut *transaction)
+    .await
+    .map_err(|error| format!("load installation credential for policy update failed: {error}"))?;
+    let Some(row) = row else {
+        return Err(not_found("credential was not found"));
+    };
+    let client_id: String = row.get(1);
+    let current_redirect_uris: Vec<String> = row
+        .try_get::<SqlJson<Vec<String>>, _>(2)
+        .map(|value| value.0)
+        .unwrap_or_default();
+    let current_scopes: Vec<String> = row
+        .try_get::<SqlJson<Vec<String>>, _>(3)
+        .map(|value| value.0)
+        .unwrap_or_default();
+    let current_origins: Vec<String> = row
+        .try_get::<SqlJson<Vec<String>>, _>(4)
+        .map(|value| value.0)
+        .unwrap_or_default();
+
+    let next_redirect_uris = redirect_uris.unwrap_or(current_redirect_uris);
+    let next_scopes = granted_scopes.unwrap_or(current_scopes);
+    let next_origins = allowed_origins.unwrap_or(current_origins);
+
+    sqlx::query(
+        "UPDATE iam_application_installation_credential \
+         SET redirect_uris_json = $2, granted_scopes_json = $3, allowed_origins_json = $4, \
+             client_status = COALESCE($5, client_status), \
+             review_note = CASE WHEN $6 THEN $7 ELSE review_note END, \
+             reviewed_at = CASE WHEN $6 THEN $8 ELSE reviewed_at END, \
+             updated_at = $8, version = version + 1 \
+         WHERE tenant_id = $1 AND id = $9",
+    )
+    .bind(tenant_id)
+    .bind(SqlJson(&next_redirect_uris))
+    .bind(SqlJson(&next_scopes))
+    .bind(SqlJson(&next_origins))
+    .bind(client_status.as_deref())
+    .bind(command.review_note.is_some())
+    .bind(command.review_note.clone().flatten())
+    .bind(now)
+    .bind(credential_id)
+    .execute(&mut *transaction)
+    .await
+    .map_err(|error| format!("update installation credential policy failed: {error}"))?;
+
+    // Keep the runtime registration in step when it names this client.
+    let runtime_config: Option<SqlJson<Value>> = sqlx::query_scalar(
+        "SELECT runtime_config_json FROM iam_application_installation \
+         WHERE tenant_id = $1 AND id = $2 LIMIT 1",
+    )
+    .bind(tenant_id)
+    .bind(installation_id)
+    .fetch_optional(&mut *transaction)
+    .await
+    .map_err(|error| format!("load installation runtime config failed: {error}"))?;
+    if let Some(SqlJson(mut document)) = runtime_config {
+        let document_client = document
+            .pointer("/oauth/relyingParty/clientId")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_owned);
+        if document_client.as_deref() == Some(client_id.as_str()) {
+            if let Some(party) = document.pointer_mut("/oauth/relyingParty") {
+                if let Some(object) = party.as_object_mut() {
+                    object.insert("redirectUris".to_owned(), json!(next_redirect_uris));
+                    object.insert("allowedScopes".to_owned(), json!(next_scopes));
+                    object.insert("allowedOrigins".to_owned(), json!(next_origins));
+                    let enabled = !client_status
+                        .as_deref()
+                        .is_some_and(|status| status != CLIENT_STATUS_ENABLED);
+                    object.insert("enabled".to_owned(), json!(enabled));
+                    sqlx::query(
+                        "UPDATE iam_application_installation \
+                         SET runtime_config_json = $3, updated_at = $4, version = version + 1 \
+                         WHERE tenant_id = $1 AND id = $2",
+                    )
+                    .bind(tenant_id)
+                    .bind(installation_id)
+                    .bind(SqlJson(document))
+                    .bind(now)
+                    .execute(&mut *transaction)
+                    .await
+                    .map_err(|error| format!("sync relying party policy failed: {error}"))?;
+                }
+            }
+        }
+    }
+
+    let updated = load_credential_row(&mut transaction, credential_id).await?;
+    transaction
+        .commit()
+        .await
+        .map_err(|error| format!("commit installation credential policy update failed: {error}"))?;
+    Ok(credential_from_row(&updated))
+}
+
 async fn load_credential_row(
     transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     credential_id: &str,
@@ -1331,6 +1639,10 @@ mod tests {
             retired_at: None,
             created_at: "2026-01-01 00:00:00+00".to_owned(),
             updated_at: "2026-01-01 00:00:00+00".to_owned(),
+            allowed_origins: Vec::new(),
+            client_status: CLIENT_STATUS_ENABLED.to_owned(),
+            review_note: None,
+            reviewed_at: None,
         };
         let created = installation_credential_to_json(&credential, Some("iacs_once"));
         assert_eq!(created["clientSecret"], json!("iacs_once"));
@@ -1879,5 +2191,74 @@ mod postgres_tests {
 
         cleanup_installation(&pg, &tenant_id, &gated_installation_id).await;
         cleanup_installation(&pg, &tenant_id, &legacy_installation_id).await;
+    }
+}
+
+#[cfg(test)]
+mod credential_policy_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn origins_are_canonicalized() {
+        assert_eq!(
+            normalize_origin("HTTPS://Example.COM:443").expect("valid"),
+            "https://example.com:443"
+        );
+        assert_eq!(
+            normalize_origin("https://example.com").expect("valid"),
+            "https://example.com"
+        );
+    }
+
+    #[test]
+    fn an_origin_must_not_carry_a_path_query_or_userinfo() {
+        assert!(normalize_origin("https://example.com/app").is_err());
+        assert!(normalize_origin("https://example.com/?a=1").is_err());
+        assert!(normalize_origin("https://user@example.com").is_err());
+        assert!(normalize_origin("ftp://example.com").is_err());
+        assert!(normalize_origin("example.com").is_err());
+    }
+
+    #[test]
+    fn duplicate_origins_collapse_and_the_cap_is_enforced() {
+        let values = vec![
+            "https://a.example.com".to_owned(),
+            "https://a.example.com".to_owned(),
+            "HTTPS://A.EXAMPLE.COM".to_owned(),
+        ];
+        let normalized = normalize_allowed_origins(&values).expect("valid");
+        assert_eq!(normalized, vec!["https://a.example.com".to_owned()]);
+
+        let too_many: Vec<String> = (0..33)
+            .map(|index| format!("https://origin{index}.example.com"))
+            .collect();
+        assert!(normalize_allowed_origins(&too_many).is_err());
+    }
+
+    #[test]
+    fn a_policy_command_distinguishes_omitted_from_cleared_note() {
+        let omitted =
+            parse_installation_credential_policy_command(&json!({ "clientStatus": "enabled" }))
+                .expect("valid");
+        assert!(omitted.review_note.is_none());
+
+        let cleared = parse_installation_credential_policy_command(&json!({ "reviewNote": null }))
+            .expect("valid");
+        assert_eq!(cleared.review_note, Some(None));
+
+        let set = parse_installation_credential_policy_command(
+            &json!({ "reviewNote": " 请补充隐私政策 " }),
+        )
+        .expect("valid");
+        assert_eq!(set.review_note, Some(Some("请补充隐私政策".to_owned())));
+    }
+
+    #[test]
+    fn an_unknown_client_status_is_refused() {
+        let error =
+            parse_installation_credential_policy_command(&json!({ "clientStatus": "live" }))
+                .expect_err("invalid status");
+        assert!(error.starts_with(INVALID_PREFIX));
     }
 }

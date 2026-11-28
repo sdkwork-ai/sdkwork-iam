@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 use sdkwork_iam_context_service::{
     has_permission_in_scope, permission_matches, IAM_STANDARD_ROLE_CODES,
 };
-use sqlx::{PgPool, Row};
+use sqlx::{PgPool, Postgres, Row, Transaction};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BindingPermissionRow {
@@ -297,6 +297,81 @@ pub async fn ensure_role_assignment_allowed(
     Ok(())
 }
 
+pub async fn ensure_role_assignment_allowed_tx(
+    tx: &mut Transaction<'_, Postgres>,
+    tenant_id: &str,
+    principal_kind: &str,
+    principal_id: &str,
+    scope_kind: &str,
+    scope_id: &str,
+    new_role_code: &str,
+) -> Result<(), String> {
+    if new_role_code.trim().is_empty() {
+        return Err("role code is required for assignment validation".to_string());
+    }
+    let rows = sqlx::query(
+        "SELECT DISTINCT r.code \
+         FROM iam_role_binding b \
+         JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id AND r.status = 'active' \
+         WHERE b.tenant_id = $1 AND b.status = 'active' AND b.effect = 'allow' \
+           AND b.principal_kind = $2 AND b.principal_id = $3 \
+           AND b.scope_kind = $4 AND b.scope_id = $5 \
+         ORDER BY r.code \
+         LIMIT $6",
+    )
+    .bind(tenant_id)
+    .bind(principal_kind)
+    .bind(principal_id)
+    .bind(scope_kind)
+    .bind(scope_id)
+    .bind(crate::limits::IAM_RBAC_ROLE_CODE_ROW_LIMIT + 1)
+    .fetch_all(&mut **tx)
+    .await
+    .map_err(|error| format!("load active role codes failed: {error}"))?;
+    let active_role_count = rows.len();
+    if active_role_count > crate::limits::IAM_RBAC_ROLE_CODE_ROW_LIMIT as usize {
+        return Err(format!(
+            "active role codes exceed limit of {}",
+            crate::limits::IAM_RBAC_ROLE_CODE_ROW_LIMIT
+        ));
+    }
+    let active_set = rows
+        .into_iter()
+        .map(|row| row.get::<String, _>(0))
+        .collect::<BTreeSet<_>>();
+    let exclusions = sqlx::query(
+        "SELECT r.code, er.code \
+         FROM iam_role_exclusion e \
+         JOIN iam_role r ON r.id = e.role_id AND r.tenant_id = e.tenant_id \
+         JOIN iam_role er ON er.id = e.excludes_role_id AND er.tenant_id = e.tenant_id \
+         WHERE e.tenant_id = $1 AND e.status = 'active' \
+           AND r.status = 'active' AND er.status = 'active' \
+         LIMIT $2",
+    )
+    .bind(tenant_id)
+    .bind(crate::limits::IAM_RBAC_EXCLUSION_ROW_LIMIT + 1)
+    .fetch_all(&mut **tx)
+    .await
+    .map_err(|error| format!("load role exclusion rules failed: {error}"))?;
+    if exclusions.len() > crate::limits::IAM_RBAC_EXCLUSION_ROW_LIMIT as usize {
+        return Err(format!(
+            "role exclusion rules exceed limit of {}",
+            crate::limits::IAM_RBAC_EXCLUSION_ROW_LIMIT
+        ));
+    }
+    let exclusions = exclusions
+        .into_iter()
+        .map(|row| RoleExclusionRule {
+            role_code: row.get(0),
+            excludes_role_code: row.get(1),
+        })
+        .collect::<Vec<_>>();
+    if let Some(message) = violates_role_exclusion(&active_set, new_role_code, &exclusions) {
+        return Err(message);
+    }
+    Ok(())
+}
+
 /// Resolve effective permission codes from binding rows, applying deny precedence and SoD exclusions.
 pub fn resolve_effective_permission_codes(
     rows: &[BindingPermissionRow],
@@ -412,6 +487,43 @@ pub async fn ensure_role_grant_within_assigner_scope(
         return Ok(());
     }
     let role_permissions = load_role_permission_codes(pg, tenant_id, role_id).await?;
+    ensure_assigner_covers_role_permissions(assigner_scope, &role_permissions)
+}
+
+pub async fn ensure_role_grant_within_assigner_scope_tx(
+    tx: &mut Transaction<'_, Postgres>,
+    tenant_id: &str,
+    role_id: &str,
+    assigner_scope: &[String],
+) -> Result<(), String> {
+    if has_permission_in_scope(assigner_scope, "*") {
+        return Ok(());
+    }
+    let rows = sqlx::query(
+        "SELECT DISTINCT p.code \
+         FROM iam_role_permission rp \
+         JOIN iam_permission p ON p.id = rp.permission_id \
+         WHERE rp.tenant_id = $1 AND rp.role_id = $2 \
+           AND COALESCE(p.status, 'active') <> 'retired' \
+         ORDER BY p.code \
+         LIMIT $3",
+    )
+    .bind(tenant_id)
+    .bind(role_id)
+    .bind(crate::limits::IAM_RBAC_ROLE_PERMISSION_ROW_LIMIT + 1)
+    .fetch_all(&mut **tx)
+    .await
+    .map_err(|error| format!("load role permission codes failed: {error}"))?;
+    if rows.len() > crate::limits::IAM_RBAC_ROLE_PERMISSION_ROW_LIMIT as usize {
+        return Err(format!(
+            "role permission codes exceed limit of {}",
+            crate::limits::IAM_RBAC_ROLE_PERMISSION_ROW_LIMIT
+        ));
+    }
+    let role_permissions = rows
+        .into_iter()
+        .map(|row| row.get::<String, _>(0))
+        .collect::<Vec<_>>();
     ensure_assigner_covers_role_permissions(assigner_scope, &role_permissions)
 }
 

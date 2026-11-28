@@ -2659,6 +2659,7 @@ dependencies = [
  "sdkwork-utils-rust",
  "sdkwork-web-contract",
  "sdkwork-web-core",
+ "serde",
  "serde_json",
  "sqlx",
  "tokio",

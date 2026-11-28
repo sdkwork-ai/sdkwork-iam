@@ -79,6 +79,16 @@ impl IamTables {
     pub const PROVIDER_ACCOUNT: &'static str = "iam_provider_account";
     pub const PROVIDER_CREDENTIAL: &'static str = "iam_provider_credential";
     pub const ROLE_EXCLUSION: &'static str = "iam_role_exclusion";
+    pub const APPLICATION_ENTERPRISE_ORDER: &'static str = "iam_application_enterprise_order";
+    pub const APPLICATION_ENTERPRISE_ORDER_LINK: &'static str =
+        "iam_application_enterprise_order_link";
+    pub const APPLICATION_ENTERPRISE_SEAT: &'static str = "iam_application_enterprise_seat";
+    pub const APPLICATION_ENTERPRISE_ORDER_EVENT: &'static str =
+        "iam_application_enterprise_order_event";
+    pub const APPLICATION_ENTERPRISE_SEAT_POLICY: &'static str =
+        "iam_application_enterprise_seat_policy";
+    pub const APPLICATION_ENTERPRISE_SEAT_BLACKLIST: &'static str =
+        "iam_application_enterprise_seat_blacklist";
 }
 
 pub fn iam_database_tables() -> Vec<&'static str> {
@@ -145,6 +155,12 @@ pub fn iam_database_tables() -> Vec<&'static str> {
         IamTables::PROVIDER_ACCOUNT,
         IamTables::PROVIDER_CREDENTIAL,
         IamTables::ROLE_EXCLUSION,
+        IamTables::APPLICATION_ENTERPRISE_ORDER,
+        IamTables::APPLICATION_ENTERPRISE_ORDER_LINK,
+        IamTables::APPLICATION_ENTERPRISE_SEAT,
+        IamTables::APPLICATION_ENTERPRISE_ORDER_EVENT,
+        IamTables::APPLICATION_ENTERPRISE_SEAT_POLICY,
+        IamTables::APPLICATION_ENTERPRISE_SEAT_BLACKLIST,
         IamTables::USER_PERSONA,
         IamTables::PERSONA_ROLE,
         IamTables::PERSONA_INTEREST,

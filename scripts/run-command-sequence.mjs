@@ -10,7 +10,10 @@ export function runCommandSequence({
     const result = spawnSync(command.command, command.args ?? [], {
       cwd: command.cwd ?? cwd,
       env,
-      shell: process.platform === "win32",
+      // Every command in these plans is an executable plus an argument array.
+      // shell: true re-parses Windows paths such as "C:\\Program Files\\node.exe"
+      // without quoting them and launches the wrong program.
+      shell: false,
       stdio: "inherit",
     });
 

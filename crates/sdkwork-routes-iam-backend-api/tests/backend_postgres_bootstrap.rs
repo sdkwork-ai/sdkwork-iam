@@ -7,19 +7,21 @@ use sdkwork_iam_bootstrap::{
     DEFAULT_IAM_TENANT_ID,
 };
 use sdkwork_iam_web_adapter::{
-    ensure_platform_tenant_application_with_deploy_application, tenant_application_row_id,
-    PLATFORM_INSTALLATION_ANCHOR, SDKWORK_IAM_BOOTSTRAP_PASSWORD_ENV,
+    enable_tenant_application, ensure_platform_tenant_application_with_deploy_application,
+    provision_tenant_application, TenantApplicationProvisionCommand,
+    SDKWORK_IAM_BOOTSTRAP_PASSWORD_ENV,
 };
 use sqlx::PgPool;
 use uuid::Uuid;
 
 pub const INTEGRATION_BOOTSTRAP_PASSWORD: &str = "BackendIntegration#2026";
 pub const INTEGRATION_BOOTSTRAP_EMAIL: &str = "backend-integration-owner@sdkwork-iam.test";
-pub const INTEGRATION_ORGANIZATION_ID: &str = "iamorg_backend_integration";
+pub const INTEGRATION_ORGANIZATION_ID: &str = "910001";
 const INTEGRATION_ORGANIZATION_CODE: &str = "backend-integration";
 /// Deploy application the integration installation serves; the delegated access
 /// credential's `app_id`/`aud` is this value.
 pub const INTEGRATION_DEPLOY_APPLICATION_ID: &str = "deploy_backend_integration";
+const INTEGRATION_PLATFORM_DEPLOY_APPLICATION_ID: &str = "deploy_backend_integration_platform";
 
 pub fn configure_backend_integration_runtime_env() {
     // SAFETY: backend integration tests run single-threaded under the IAM env mutex.
@@ -46,27 +48,16 @@ pub async fn seed_backend_integration_bootstrap_owner(pg: &PgPool) -> String {
         .await
         .expect("seed standard IAM roles for integration tests");
 
-    let runtime_app_id = ensure_platform_tenant_application_with_deploy_application(
+    ensure_platform_tenant_application_with_deploy_application(
         pg,
         DEFAULT_IAM_TENANT_ID,
-        INTEGRATION_DEPLOY_APPLICATION_ID,
+        INTEGRATION_PLATFORM_DEPLOY_APPLICATION_ID,
     )
     .await
     .expect("ensure platform tenant application for backend integration tests");
-    ensure_integration_organization_and_tenant_application(pg, &runtime_app_id)
+    ensure_integration_organization_and_tenant_application(pg)
         .await
         .expect("ensure integration organization tenant application");
-
-    sqlx::query(
-        "UPDATE iam_application_installation \
-         SET access_permissions_json = '[\"iam:self\", \"iam.users.read\", \"iam.oauth.read\"]'::jsonb, updated_at = CURRENT_TIMESTAMP \
-         WHERE tenant_id = $1 AND organization_id = $2",
-    )
-    .bind(DEFAULT_IAM_TENANT_ID)
-    .bind(INTEGRATION_ORGANIZATION_ID)
-    .execute(pg)
-    .await
-    .expect("align integration tenant application access permissions for integration tests");
 
     let password_hash = Argon2::default()
         .hash_password(
@@ -217,10 +208,7 @@ pub async fn seed_backend_integration_bootstrap_owner(pg: &PgPool) -> String {
     user_id
 }
 
-async fn ensure_integration_organization_and_tenant_application(
-    pg: &PgPool,
-    runtime_app_id: &str,
-) -> Result<(), String> {
+async fn ensure_integration_organization_and_tenant_application(pg: &PgPool) -> Result<(), String> {
     let now = chrono::Utc::now();
     sqlx::query("DELETE FROM iam_organization WHERE tenant_id = $1 AND code = $2 AND id <> $3")
         .bind(DEFAULT_IAM_TENANT_ID)
@@ -253,28 +241,34 @@ async fn ensure_integration_organization_and_tenant_application(
     .await
     .map_err(|error| format!("ensure integration organization failed: {error}"))?;
 
-    let tenant_application_id =
-        tenant_application_row_id(DEFAULT_IAM_TENANT_ID, "0", PLATFORM_INSTALLATION_ANCHOR);
-    // The deployment access credential is signed with the installation's deploy
-    // application (migration 0040); without the link issuance fails closed, so
-    // the fixture links the row the same way the install command does.
-    sqlx::query(
-        "UPDATE iam_application_installation \
-         SET organization_id = $1, status = 'enabled', deploy_application_id = $5, updated_at = $2 \
-         WHERE tenant_id = $3 AND id = $4",
+    let installation = provision_tenant_application(
+        pg,
+        &TenantApplicationProvisionCommand {
+            tenant_id: DEFAULT_IAM_TENANT_ID.to_owned(),
+            organization_id: INTEGRATION_ORGANIZATION_ID.to_owned(),
+            app_id: Some("app_backend_integration".to_owned()),
+            instance_key: "backend_integration_prod".to_owned(),
+            display_name: "Backend Integration".to_owned(),
+            environment: "production".to_owned(),
+            application_type: Some("api".to_owned()),
+            primary_domain: Some("backend-integration.localhost".to_owned()),
+            access_permissions: vec![
+                "iam:self".to_owned(),
+                "iam.users.read".to_owned(),
+                "iam.oauth.read".to_owned(),
+            ],
+            runtime_config: serde_json::json!({}),
+            deploy_application_id: Some(INTEGRATION_DEPLOY_APPLICATION_ID.to_owned()),
+            ownership_scope: Some("ORGANIZATION".to_owned()),
+            owner_user_id: None,
+            provisioning_idempotency_key: Some("backend-integration-910001".to_owned()),
+        },
     )
-    .bind(INTEGRATION_ORGANIZATION_ID)
-    .bind(&now)
-    .bind(DEFAULT_IAM_TENANT_ID)
-    .bind(&tenant_application_id)
-    .bind(INTEGRATION_DEPLOY_APPLICATION_ID)
-    .execute(pg)
     .await
-    .map_err(|error| {
-        format!("align integration tenant application organization failed: {error}")
-    })?;
-
-    let _ = runtime_app_id;
+    .map_err(|error| format!("provision integration organization application failed: {error}"))?;
+    enable_tenant_application(pg, DEFAULT_IAM_TENANT_ID, &installation.id)
+        .await
+        .map_err(|error| format!("enable integration organization application failed: {error}"))?;
     Ok(())
 }
 

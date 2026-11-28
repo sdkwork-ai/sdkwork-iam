@@ -154,6 +154,25 @@ impl IamDatabaseWebRequestContextResolver {
         let Some(pool) = self.iam_pool.as_deref() else {
             return Ok(principal);
         };
+        if principal.subject.subject_type == sdkwork_web_core::WebSubjectType::User {
+            crate::application_enterprise_order::ensure_user_enterprise_authorization(
+                pool,
+                principal.tenant_id(),
+                principal.organization_id().unwrap_or("0"),
+                principal.user_id(),
+                principal.app_id(),
+            )
+            .await
+            .map_err(|error| {
+                tracing::warn!(
+                    tenant_id = %principal.tenant_id(),
+                    app_id = %principal.app_id(),
+                    error = %error,
+                    "IAM enterprise authorization rejected the credential",
+                );
+                WebFrameworkError::forbidden(error)
+            })?;
+        }
         let tenant_id = principal.tenant_id().to_owned();
         let app_id = principal.app_id().to_owned();
         match crate::application_registry::resolve_installation_ownership_scope(

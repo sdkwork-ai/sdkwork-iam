@@ -9,29 +9,31 @@ use axum::{
     routing::{delete, get, patch, post, put},
     Json, Router,
 };
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use sdkwork_utils_rust::sdkwork_resource_json;
 use sdkwork_web_core::WebRequestContext;
 use serde_json::{json, Value};
-use sqlx::{PgPool, Row};
+use sqlx::{Executor, PgPool, Postgres, Row, Transaction};
 use uuid::Uuid;
 
 use crate::backend_audit::{
     directory_create_with_audit, execute_conditional_mutation_with_audit,
-    execute_mutation_with_audit, record_backend_mutation_audit_tx,
+    execute_conditional_mutation_with_audit_typed, execute_mutation_with_audit,
+    record_backend_mutation_audit_tx,
 };
 use crate::backend_sql::{
     cursor_page_json, encode_timeline_keyset_cursor, internal_handler_error,
-    list_page_params_or_error, list_search_pattern, list_tenant_rows, optional_query_value,
-    page_json_from_rows, patch_tenant_row_tx, read_i32_field, read_patch_text, read_string_field,
-    retrieve_tenant_row, role_binding_list_filter_sql, role_binding_list_filter_values,
-    timeline_cursor_page_from_rows, timeline_list_params_or_error, tree_resource_json, PatchValue,
-    TimelineListParams, LIST_TOTAL_COLUMN,
+    list_page_invalid_parameter_error, list_page_params_or_error, list_search_pattern,
+    list_tenant_rows, optional_query_value, page_json_from_rows, patch_tenant_row_tx,
+    read_i32_field, read_patch_text, read_string_field, retrieve_tenant_row,
+    role_binding_list_filter_sql, role_binding_list_filter_values, timeline_cursor_page_from_rows,
+    timeline_list_params_or_error, tree_resource_json, PatchValue, TimelineListParams,
+    LIST_TOTAL_COLUMN,
 };
 use crate::handlers::{
-    actor_user_id_from_context, appbase_error, appbase_ok, assigner_permission_scope,
-    ensure_platform_catalog_access, ensure_target_tenant_access, organization_id_from_context,
-    postgres_pool_or_error, tenant_id_from_context, BackendIamState,
+    actor_user_id_from_context, appbase_created, appbase_error, appbase_ok,
+    assigner_permission_scope, ensure_platform_catalog_access, ensure_target_tenant_access,
+    organization_id_from_context, postgres_pool_or_error, tenant_id_from_context, BackendIamState,
 };
 
 pub fn apply_management_routes(router: Router<BackendIamState>) -> Router<BackendIamState> {
@@ -65,6 +67,10 @@ pub fn apply_management_routes(router: Router<BackendIamState>) -> Router<Backen
         .route(
             "/backend/v3/api/iam/permissions",
             get(list_permissions).post(create_permission),
+        )
+        .route(
+            "/backend/v3/api/iam/permissions/resources",
+            get(list_permission_resources),
         )
         .route(
             "/backend/v3/api/iam/permissions/{permissionId}",
@@ -200,7 +206,7 @@ pub fn apply_management_routes(router: Router<BackendIamState>) -> Router<Backen
         )
         .route(
             "/backend/v3/api/iam/role_bindings/{roleBindingId}",
-            delete(delete_role_binding),
+            patch(update_role_binding).delete(delete_role_binding),
         )
         .route(
             "/backend/v3/api/iam/api_keys",
@@ -539,6 +545,7 @@ async fn list_role_permissions(
             .expect("error response");
     };
     let search_pattern = list_search_pattern(&query);
+    let resource = optional_query_value(&query, "resource");
     let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
         "SELECT p.id, p.code, p.name, p.resource, p.action, \
                 COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
@@ -548,6 +555,7 @@ async fn list_role_permissions(
          WHERE rp.tenant_id = $1 AND rp.role_id = $2 AND r.status = 'active' \
            AND ($5::text IS NULL OR LOWER(p.code) LIKE $5 OR LOWER(p.name) LIKE $5 \
                 OR LOWER(p.resource) LIKE $5 OR LOWER(p.action) LIKE $5) \
+           AND ($6::text IS NULL OR p.resource = $6) \
          ORDER BY p.code \
          LIMIT $3 OFFSET $4"
     )))
@@ -556,6 +564,7 @@ async fn list_role_permissions(
     .bind(params.page_size)
     .bind(params.offset)
     .bind(&search_pattern)
+    .bind(&resource)
     .fetch_all(pg)
     .await;
 
@@ -567,6 +576,7 @@ async fn list_role_permissions(
 
 async fn list_permissions(
     State(state): State<BackendIamState>,
+    ctx: WebRequestContext,
     Query(query): Query<HashMap<String, String>>,
 ) -> Response {
     let Ok(pg) = postgres_pool_or_error(&state) else {
@@ -581,13 +591,75 @@ async fn list_permissions(
             .expect("error response");
     };
     let search_pattern = list_search_pattern(&query);
+    let resource = optional_query_value(&query, "resource");
+    let role_id = optional_query_value(&query, "role_id");
+    let assigned = match optional_query_value(&query, "assigned") {
+        None => None,
+        Some(value) if value == "true" => Some(true),
+        Some(value) if value == "false" => Some(false),
+        Some(_) => {
+            return list_page_invalid_parameter_error();
+        }
+    };
+    if assigned.is_some() && role_id.is_none() {
+        return list_page_invalid_parameter_error();
+    }
+    let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
+        return tenant_id_from_context(&ctx).err().expect("error response");
+    };
     let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
-        "SELECT id, code, name, resource, action, \
+        "SELECT p.id, p.code, p.name, p.resource, p.action, \
+                COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
+         FROM iam_permission p \
+         LEFT JOIN iam_role r ON r.id = $5 AND r.tenant_id = $7 \
+         LEFT JOIN iam_role_permission rp ON rp.permission_id = p.id \
+           AND rp.role_id = r.id AND rp.tenant_id = r.tenant_id \
+         WHERE ($3::text IS NULL OR LOWER(p.code) LIKE $3 OR LOWER(p.name) LIKE $3 \
+                OR LOWER(p.resource) LIKE $3 OR LOWER(p.action) LIKE $3) \
+           AND ($4::text IS NULL OR p.resource = $4) \
+           AND ($5::text IS NULL OR r.id IS NOT NULL) \
+           AND ($6::boolean IS NULL OR (rp.id IS NOT NULL) = $6) \
+         ORDER BY p.code \
+         LIMIT $1 OFFSET $2"
+    )))
+    .bind(params.page_size)
+    .bind(params.offset)
+    .bind(&search_pattern)
+    .bind(&resource)
+    .bind(&role_id)
+    .bind(assigned)
+    .bind(&tenant_id)
+    .fetch_all(pg)
+    .await;
+
+    match rows {
+        Ok(rows) => appbase_ok(page_json_from_rows(rows, &params, permission_row_to_json)),
+        Err(error) => internal_handler_error("iam_permissions_list_failed", error),
+    }
+}
+
+async fn list_permission_resources(
+    State(state): State<BackendIamState>,
+    Query(query): Query<HashMap<String, String>>,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+    let Ok(params) = list_page_params_or_error(&query) else {
+        return list_page_params_or_error(&query)
+            .err()
+            .expect("error response");
+    };
+    let search_pattern = list_search_pattern(&query);
+    let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
+        "SELECT resource, COUNT(*)::BIGINT AS permission_count, \
                 COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
          FROM iam_permission \
-         WHERE ($3::text IS NULL OR LOWER(code) LIKE $3 OR LOWER(name) LIKE $3 \
-                OR LOWER(resource) LIKE $3 OR LOWER(action) LIKE $3) \
-         ORDER BY code \
+         WHERE ($3::text IS NULL OR LOWER(resource) LIKE $3) \
+         GROUP BY resource \
+         ORDER BY resource \
          LIMIT $1 OFFSET $2"
     )))
     .bind(params.page_size)
@@ -597,8 +669,12 @@ async fn list_permissions(
     .await;
 
     match rows {
-        Ok(rows) => appbase_ok(page_json_from_rows(rows, &params, permission_row_to_json)),
-        Err(error) => internal_handler_error("iam_permissions_list_failed", error),
+        Ok(rows) => appbase_ok(page_json_from_rows(
+            rows,
+            &params,
+            permission_resource_row_to_json,
+        )),
+        Err(error) => internal_handler_error("iam_permission_resources_list_failed", error),
     }
 }
 
@@ -654,16 +730,24 @@ async fn list_role_bindings(
             .expect("error response");
     };
     let search_pattern = list_search_pattern(&query);
-    let filter_sql = role_binding_list_filter_sql(&query, 6);
     let filter_values = role_binding_list_filter_values(&query);
     let rows = if let Some(organization_id) = organization_id.as_deref() {
+        let filter_sql = role_binding_list_filter_sql(&query, 6);
         let mut statement = sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
                     b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
                     b.data_scope_kind, b.effective_from, b.effective_to, \
+                    COALESCE(u.display_name, u.username) AS principal_display_name, \
+                    u.username AS principal_username, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_role_binding b \
              JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id \
+             LEFT JOIN iam_organization_membership om \
+               ON b.principal_kind = 'organization_membership' AND om.tenant_id = b.tenant_id \
+              AND om.id = b.principal_id \
+             LEFT JOIN iam_user u ON u.tenant_id = b.tenant_id \
+              AND ((b.principal_kind = 'organization_membership' AND u.id = om.user_id) \
+                OR (b.principal_kind = 'user' AND u.id = b.principal_id)) \
              WHERE b.tenant_id = $1 AND b.status = 'active' \
                AND (b.scope_kind = 'tenant' OR (b.scope_kind = 'organization' AND b.scope_id = $2)) \
                AND ($5::text IS NULL OR LOWER(r.code) LIKE $5 OR LOWER(b.principal_id) LIKE $5) \
@@ -685,9 +769,17 @@ async fn list_role_bindings(
             "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
                     b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
                     b.data_scope_kind, b.effective_from, b.effective_to, \
+                    COALESCE(u.display_name, u.username) AS principal_display_name, \
+                    u.username AS principal_username, \
                     COUNT(*) OVER() AS {LIST_TOTAL_COLUMN} \
              FROM iam_role_binding b \
              JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id \
+             LEFT JOIN iam_organization_membership om \
+               ON b.principal_kind = 'organization_membership' AND om.tenant_id = b.tenant_id \
+              AND om.id = b.principal_id \
+             LEFT JOIN iam_user u ON u.tenant_id = b.tenant_id \
+              AND ((b.principal_kind = 'organization_membership' AND u.id = om.user_id) \
+                OR (b.principal_kind = 'user' AND u.id = b.principal_id)) \
              WHERE b.tenant_id = $1 AND b.status = 'active' \
                AND ($4::text IS NULL OR LOWER(r.code) LIKE $4 OR LOWER(b.principal_id) LIKE $4) \
                {filter_sql} \
@@ -748,6 +840,17 @@ async fn create_role_binding(
         );
     }
 
+    if !matches!(
+        principal_kind.as_str(),
+        "user" | "organization_membership" | "group" | "service_account"
+    ) {
+        return appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_role_binding_invalid",
+            "principalKind must be user, organization_membership, group, or service_account",
+        );
+    }
+
     if effect != "allow" && effect != "deny" {
         return appbase_error(
             StatusCode::BAD_REQUEST,
@@ -773,35 +876,22 @@ async fn create_role_binding(
     }
     let effective_from = read_string_field(&body, &["effectiveFrom", "effective_from"]);
     let effective_to = read_string_field(&body, &["effectiveTo", "effective_to"]);
-    if let (Some(from), Some(to)) = (&effective_from, &effective_to) {
-        if to < from {
-            return appbase_error(
-                StatusCode::BAD_REQUEST,
-                "iam_role_binding_invalid_effective_window",
-                "effectiveTo must not precede effectiveFrom",
-            );
-        }
-    }
-    if scope_kind == "department" {
-        let exists: Option<i32> = match sqlx::query_scalar(
-            "SELECT 1 FROM iam_department \
-             WHERE tenant_id = $1 AND id = $2 AND status = 'active'",
-        )
-        .bind(&tenant_id)
-        .bind(&scope_id)
-        .fetch_optional(pg)
-        .await
-        {
-            Ok(value) => value,
-            Err(error) => return internal_handler_error("iam_role_binding_create_failed", error),
+    let (effective_from, effective_to) =
+        match validate_role_binding_effective_window(effective_from, effective_to) {
+            Ok(window) => window,
+            Err(error) => return role_binding_error_response("create", error),
         };
-        if exists.is_none() {
-            return appbase_error(
-                StatusCode::BAD_REQUEST,
-                "iam_role_binding_department_scope_not_found",
-                "scopeId must reference an active department in this tenant",
-            );
-        }
+    let organization_id = organization_id_from_context(&ctx);
+    if let Err(error) = validate_role_binding_target_scope(
+        pg,
+        &tenant_id,
+        organization_id.as_deref(),
+        &scope_kind,
+        &scope_id,
+    )
+    .await
+    {
+        return role_binding_error_response("create", error);
     }
 
     let role_row = match fetch_role_row(pg, &tenant_id, &role_ref).await {
@@ -820,117 +910,763 @@ async fn create_role_binding(
     let role_id: String = role_row.get(0);
     let role_code: String = role_row.get(2);
 
-    if effect == "allow" {
-        if let Err(error) = sdkwork_iam_bootstrap::ensure_role_assignment_allowed(
-            pg,
+    let organization_id = organization_id.unwrap_or_else(|| "0".to_owned());
+    let now = Utc::now().to_rfc3339();
+    let result: Result<Option<RoleBindingRecord>, RoleBindingMutationError> = async {
+        let mut tx = pg.begin().await.map_err(RoleBindingMutationError::internal)?;
+        lock_role_binding_assignment(
+            &mut tx,
             &tenant_id,
             &principal_kind,
             &principal_id,
             &scope_kind,
             &scope_id,
-            &role_code,
         )
-        .await
-        {
-            return appbase_error(
-                StatusCode::CONFLICT,
-                "iam_role_binding_sod_violation",
-                &error,
-            );
-        }
-
-        let assigner_scope = match assigner_permission_scope(&ctx) {
-            Ok(scope) => scope,
-            Err(response) => return response,
-        };
-        if let Err(error) = sdkwork_iam_bootstrap::ensure_role_grant_within_assigner_scope(
-            pg,
-            &tenant_id,
-            &role_id,
-            &assigner_scope,
-        )
-        .await
-        {
-            return appbase_error(
-                StatusCode::FORBIDDEN,
-                "iam_role_binding_assigner_scope_exceeded",
-                &error,
-            );
-        }
-    }
-
-    let organization_id = organization_id_from_context(&ctx).unwrap_or_else(|| "0".to_owned());
-    let binding_id = format!("iamrb-{}", Uuid::new_v4());
-    let now = Utc::now().to_rfc3339();
-
-    let binding_id_insert = binding_id.clone();
-    let tenant_id_insert = tenant_id.clone();
-    let role_id_insert = role_id.clone();
-    let principal_kind_insert = principal_kind.clone();
-    let principal_id_insert = principal_id.clone();
-    let scope_kind_insert = scope_kind.clone();
-    let scope_id_insert = scope_id.clone();
-    let effect_insert = effect.clone();
-    let data_scope_insert = data_scope_kind.clone();
-    let effective_from_insert = effective_from.clone();
-    let effective_to_insert = effective_to.clone();
-    let result = directory_create_with_audit(
-        pg,
-        &ctx,
-        "iam_role_binding",
-        binding_id.clone(),
-        json!({ "roleId": role_id, "principalKind": principal_kind, "principalId": principal_id }),
-        |tx| Box::pin(async move {
-            sqlx::query(
-                "INSERT INTO iam_role_binding \
-                    (id, tenant_id, organization_id, role_id, principal_kind, principal_id, scope_kind, scope_id, \
-                     effect, data_scope_kind, effective_from, effective_to, status, created_at, updated_at) \
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $11, $12, $13, 'active', $10, $10)",
+        .await?;
+        if effect == "allow" {
+            sdkwork_iam_bootstrap::ensure_role_assignment_allowed_tx(
+                &mut tx,
+                &tenant_id,
+                &principal_kind,
+                &principal_id,
+                &scope_kind,
+                &scope_id,
+                &role_code,
             )
-            .bind(binding_id_insert)
-            .bind(tenant_id_insert)
-            .bind(organization_id)
-            .bind(role_id_insert)
-            .bind(principal_kind_insert)
-            .bind(principal_id_insert)
-            .bind(scope_kind_insert)
-            .bind(scope_id_insert)
-            .bind(effect_insert)
-            .bind(now)
-            .bind(data_scope_insert)
-            .bind(effective_from_insert)
-            .bind(effective_to_insert)
-            .execute(&mut **tx)
             .await
-            .map(|_| ())
-        }),
-    )
+            .map_err(|error| RoleBindingMutationError::new(RoleBindingErrorKind::SodConflict, error))?;
+            let assigner_scope = assigner_permission_scope(&ctx).map_err(|_| {
+                RoleBindingMutationError::new(
+                    RoleBindingErrorKind::AssignerForbidden,
+                    "assigner permission scope is unavailable",
+                )
+            })?;
+            sdkwork_iam_bootstrap::ensure_role_grant_within_assigner_scope_tx(
+                &mut tx,
+                &tenant_id,
+                &role_id,
+                &assigner_scope,
+            )
+            .await
+            .map_err(|error| RoleBindingMutationError::new(RoleBindingErrorKind::AssignerForbidden, error))?;
+        }
+
+        let existing_revoked_id = sqlx::query_scalar::<_, String>(
+            "SELECT id FROM iam_role_binding \
+             WHERE tenant_id = $1 AND organization_id = $2 AND role_id = $3 \
+               AND principal_kind = $4 AND principal_id = $5 AND scope_kind = $6 AND scope_id = $7 \
+               AND status = 'revoked'",
+        )
+        .bind(&tenant_id)
+        .bind(&organization_id)
+        .bind(&role_id)
+        .bind(&principal_kind)
+        .bind(&principal_id)
+        .bind(&scope_kind)
+        .bind(&scope_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(RoleBindingMutationError::internal)?;
+        let binding_id = existing_revoked_id.unwrap_or_else(|| format!("iamrb-{}", Uuid::new_v4()));
+        let rows_affected = sqlx::query(
+            "INSERT INTO iam_role_binding \
+                (id, tenant_id, organization_id, role_id, principal_kind, principal_id, scope_kind, scope_id, \
+                 effect, data_scope_kind, effective_from, effective_to, status, created_at, updated_at) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $11, $12, $13, 'active', $10, $10) \
+             ON CONFLICT (tenant_id, role_id, principal_kind, principal_id, scope_kind, scope_id) \
+             DO UPDATE SET organization_id = EXCLUDED.organization_id, effect = EXCLUDED.effect, \
+                 data_scope_kind = EXCLUDED.data_scope_kind, effective_from = EXCLUDED.effective_from, \
+                 effective_to = EXCLUDED.effective_to, status = 'active', updated_at = EXCLUDED.updated_at \
+             WHERE iam_role_binding.status = 'revoked' \
+               AND iam_role_binding.organization_id = EXCLUDED.organization_id",
+        )
+        .bind(&binding_id)
+        .bind(&tenant_id)
+        .bind(&organization_id)
+        .bind(&role_id)
+        .bind(&principal_kind)
+        .bind(&principal_id)
+        .bind(&scope_kind)
+        .bind(&scope_id)
+        .bind(&effect)
+        .bind(&now)
+        .bind(&data_scope_kind)
+        .bind(&effective_from)
+        .bind(&effective_to)
+        .execute(&mut *tx)
+        .await
+        .map_err(RoleBindingMutationError::internal)?
+        .rows_affected();
+        if rows_affected == 0 {
+            return Ok(None);
+        }
+
+        let row = sqlx::query(
+            "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
+                    b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
+                    b.data_scope_kind, b.effective_from, b.effective_to \
+             FROM iam_role_binding b \
+             JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id \
+             WHERE b.id = $1",
+        )
+        .bind(&binding_id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(RoleBindingMutationError::internal)?;
+        let binding = RoleBindingRecord::from_row(&row);
+        record_backend_mutation_audit_tx(
+            &mut *tx,
+            &ctx,
+            "iam_role_binding.create",
+            "iam_role_binding",
+            &binding_id,
+            json!({ "roleId": role_id, "principalKind": principal_kind, "principalId": principal_id }),
+        )
+        .await
+        .map_err(|error| RoleBindingMutationError::internal(sqlx::Error::Protocol(error.to_string())))?;
+        tx.commit().await.map_err(RoleBindingMutationError::internal)?;
+        Ok(Some(binding))
+    }
     .await;
 
     match result {
-        Ok(_) => {
-            let row = sqlx::query(
-                "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
-                        b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
-                        b.data_scope_kind, b.effective_from, b.effective_to \
-                 FROM iam_role_binding b \
-                 JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id \
-                 WHERE b.id = $1",
-            )
-            .bind(&binding_id)
-            .fetch_one(pg)
-            .await;
-
-            match row {
-                Ok(row) => appbase_ok(role_binding_row_to_json(&row)),
-                Err(error) => internal_handler_error("iam_role_binding_create_failed", error),
-            }
-        }
-        Err(error) => appbase_error(
+        Ok(Some(binding)) => appbase_created(sdkwork_resource_json(binding.to_json())),
+        Ok(None) => appbase_error(
             StatusCode::CONFLICT,
-            "iam_role_binding_create_failed",
-            &error,
+            "iam_role_binding_conflict",
+            "role binding conflicts with an existing binding",
         ),
+        Err(error) => role_binding_error_response("create", error),
+    }
+}
+
+async fn update_role_binding(
+    State(state): State<BackendIamState>,
+    ctx: WebRequestContext,
+    Path(role_binding_id): Path<String>,
+    Json(body): Json<Value>,
+) -> Response {
+    let Ok(pg) = postgres_pool_or_error(&state) else {
+        return postgres_pool_or_error(&state)
+            .err()
+            .expect("error response");
+    };
+    let Ok(tenant_id) = tenant_id_from_context(&ctx) else {
+        return tenant_id_from_context(&ctx).err().expect("error response");
+    };
+    let organization_id = organization_id_from_context(&ctx);
+    let patch = match parse_role_binding_patch(&body) {
+        Ok(patch) => patch,
+        Err(error) => return role_binding_error_response("update", error),
+    };
+
+    match update_role_binding_record(
+        pg,
+        &ctx,
+        &tenant_id,
+        organization_id.as_deref(),
+        &role_binding_id,
+        patch,
+    )
+    .await
+    {
+        Ok(binding) => appbase_ok(sdkwork_resource_json(binding.to_json())),
+        Err(error) => role_binding_error_response("update", error),
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+struct RoleBindingPatch {
+    effect: Option<PatchValue>,
+    principal_kind: Option<PatchValue>,
+    principal_id: Option<PatchValue>,
+    scope_kind: Option<PatchValue>,
+    scope_id: Option<PatchValue>,
+    data_scope_kind: Option<PatchValue>,
+    effective_from: Option<PatchValue>,
+    effective_to: Option<PatchValue>,
+}
+
+#[derive(Clone, Debug)]
+struct RoleBindingRecord {
+    id: String,
+    tenant_id: String,
+    organization_id: String,
+    role_id: String,
+    role_code: String,
+    principal_kind: String,
+    principal_id: String,
+    scope_kind: String,
+    scope_id: String,
+    effect: String,
+    status: String,
+    data_scope_kind: String,
+    effective_from: Option<String>,
+    effective_to: Option<String>,
+}
+
+impl RoleBindingRecord {
+    fn from_row(row: &sqlx::postgres::PgRow) -> Self {
+        Self {
+            id: row.get(0),
+            tenant_id: row.get(1),
+            organization_id: row.get(2),
+            role_id: row.get(3),
+            role_code: row.get(4),
+            principal_kind: row.get(5),
+            principal_id: row.get(6),
+            scope_kind: row.get(7),
+            scope_id: row.get(8),
+            effect: row.get(9),
+            status: row.get(10),
+            data_scope_kind: row.get(11),
+            effective_from: row.get(12),
+            effective_to: row.get(13),
+        }
+    }
+
+    fn to_json(&self) -> Value {
+        json!({
+            "id": self.id,
+            "tenantId": self.tenant_id,
+            "organizationId": self.organization_id,
+            "dataScopeKind": self.data_scope_kind,
+            "effect": self.effect,
+            "effectiveFrom": self.effective_from,
+            "effectiveTo": self.effective_to,
+            "principalId": self.principal_id,
+            "principalKind": self.principal_kind,
+            "roleCode": self.role_code,
+            "roleId": self.role_id,
+            "scopeId": self.scope_id,
+            "scopeKind": self.scope_kind,
+            "status": self.status,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+enum RoleBindingErrorKind {
+    Invalid,
+    InvalidDataScope,
+    InvalidEffectiveWindow,
+    InvalidScope,
+    NotFound,
+    SodConflict,
+    AssignerForbidden,
+    Conflict,
+    Internal,
+}
+
+#[derive(Debug)]
+struct RoleBindingMutationError {
+    kind: RoleBindingErrorKind,
+    message: String,
+}
+
+impl RoleBindingMutationError {
+    fn new(kind: RoleBindingErrorKind, message: impl Into<String>) -> Self {
+        Self {
+            kind,
+            message: message.into(),
+        }
+    }
+
+    fn internal(error: impl std::fmt::Display) -> Self {
+        Self::new(RoleBindingErrorKind::Internal, error.to_string())
+    }
+}
+
+fn parse_role_binding_patch(body: &Value) -> Result<RoleBindingPatch, RoleBindingMutationError> {
+    let Some(fields) = body.as_object() else {
+        return Err(RoleBindingMutationError::new(
+            RoleBindingErrorKind::Invalid,
+            "request body must be an object",
+        ));
+    };
+    const WRITABLE_KEYS: [&str; 15] = [
+        "effect",
+        "principalKind",
+        "principal_kind",
+        "principalId",
+        "principal_id",
+        "scopeKind",
+        "scope_kind",
+        "scopeId",
+        "scope_id",
+        "dataScopeKind",
+        "data_scope_kind",
+        "effectiveFrom",
+        "effective_from",
+        "effectiveTo",
+        "effective_to",
+    ];
+    if fields.is_empty() {
+        return Err(RoleBindingMutationError::new(
+            RoleBindingErrorKind::Invalid,
+            "at least one writable field is required",
+        ));
+    }
+    if let Some(key) = fields
+        .keys()
+        .find(|key| !WRITABLE_KEYS.contains(&key.as_str()))
+    {
+        return Err(RoleBindingMutationError::new(
+            RoleBindingErrorKind::Invalid,
+            format!("field {key} is not writable"),
+        ));
+    }
+
+    Ok(RoleBindingPatch {
+        effect: role_binding_patch_text(body, "effect", "effect", false)?,
+        principal_kind: role_binding_patch_text(body, "principalKind", "principal_kind", false)?,
+        principal_id: role_binding_patch_text(body, "principalId", "principal_id", false)?,
+        scope_kind: role_binding_patch_text(body, "scopeKind", "scope_kind", false)?,
+        scope_id: role_binding_patch_text(body, "scopeId", "scope_id", false)?,
+        data_scope_kind: role_binding_patch_text(body, "dataScopeKind", "data_scope_kind", false)?,
+        effective_from: role_binding_patch_text(body, "effectiveFrom", "effective_from", true)?,
+        effective_to: role_binding_patch_text(body, "effectiveTo", "effective_to", true)?,
+    })
+}
+
+fn role_binding_patch_text(
+    body: &Value,
+    camel_key: &str,
+    snake_key: &str,
+    nullable: bool,
+) -> Result<Option<PatchValue>, RoleBindingMutationError> {
+    let Some(value) = body.get(camel_key).or_else(|| body.get(snake_key)) else {
+        return Ok(None);
+    };
+    if nullable && value.is_null() {
+        return Ok(Some(PatchValue::NullText));
+    }
+    let Some(text) = value
+        .as_str()
+        .map(str::trim)
+        .filter(|text| !text.is_empty())
+    else {
+        return Err(RoleBindingMutationError::new(
+            RoleBindingErrorKind::Invalid,
+            format!(
+                "{camel_key} must be a non-empty string{}",
+                if nullable { " or null" } else { "" }
+            ),
+        ));
+    };
+    Ok(Some(PatchValue::Text(text.to_owned())))
+}
+
+fn role_binding_patch_ref<'a>(value: &'a Option<PatchValue>) -> Option<&'a str> {
+    match value {
+        Some(PatchValue::Text(text)) => Some(text.as_str()),
+        Some(PatchValue::NullText) | None => None,
+        Some(PatchValue::Int(_)) => None,
+    }
+}
+
+fn role_binding_patch_nullable(
+    patch: &Option<PatchValue>,
+    current: &Option<String>,
+) -> Option<String> {
+    match patch {
+        Some(PatchValue::Text(text)) => Some(text.clone()),
+        Some(PatchValue::NullText) => None,
+        None => current.clone(),
+        Some(PatchValue::Int(_)) => current.clone(),
+    }
+}
+
+fn validate_role_binding_effective_window(
+    effective_from: Option<String>,
+    effective_to: Option<String>,
+) -> Result<(Option<String>, Option<String>), RoleBindingMutationError> {
+    let from = effective_from
+        .as_deref()
+        .map(DateTime::parse_from_rfc3339)
+        .transpose()
+        .map_err(|_| {
+            RoleBindingMutationError::new(
+                RoleBindingErrorKind::InvalidEffectiveWindow,
+                "effectiveFrom must be an RFC3339 date-time or null",
+            )
+        })?;
+    let to = effective_to
+        .as_deref()
+        .map(DateTime::parse_from_rfc3339)
+        .transpose()
+        .map_err(|_| {
+            RoleBindingMutationError::new(
+                RoleBindingErrorKind::InvalidEffectiveWindow,
+                "effectiveTo must be an RFC3339 date-time or null",
+            )
+        })?;
+    if matches!((from, to), (Some(from), Some(to)) if to < from) {
+        return Err(RoleBindingMutationError::new(
+            RoleBindingErrorKind::InvalidEffectiveWindow,
+            "effectiveTo must not precede effectiveFrom",
+        ));
+    }
+    Ok((effective_from, effective_to))
+}
+
+fn role_binding_visibility_sql() -> &'static str {
+    "AND (($2::text IS NULL AND b.scope_kind = 'tenant') \
+          OR ($2::text IS NOT NULL AND (b.scope_kind = 'tenant' \
+              OR (b.scope_kind = 'organization' AND b.scope_id = $2) \
+              OR (b.scope_kind = 'department' AND EXISTS ( \
+                  SELECT 1 FROM iam_department d \
+                  WHERE d.tenant_id = b.tenant_id AND d.id = b.scope_id \
+                    AND d.status = 'active' AND d.organization_id = $2)))))"
+}
+
+async fn validate_role_binding_target_scope<'e, E>(
+    executor: E,
+    tenant_id: &str,
+    organization_id: Option<&str>,
+    scope_kind: &str,
+    scope_id: &str,
+) -> Result<(), RoleBindingMutationError>
+where
+    E: Executor<'e, Database = Postgres>,
+{
+    match scope_kind {
+        "tenant" => {
+            validate_tenant_role_binding_scope(organization_id, scope_id)?;
+            Ok(())
+        }
+        "organization" => {
+            if organization_id != Some(scope_id) {
+                return Err(invalid_role_binding_scope());
+            }
+            let exists: Option<i32> = sqlx::query_scalar(
+                "SELECT 1 FROM iam_organization \
+                 WHERE tenant_id = $1 AND id = $2 AND status = 'active'",
+            )
+            .bind(tenant_id)
+            .bind(scope_id)
+            .fetch_optional(executor)
+            .await
+            .map_err(RoleBindingMutationError::internal)?;
+            if exists.is_none() {
+                return Err(invalid_role_binding_scope());
+            }
+            Ok(())
+        }
+        "department" => {
+            let exists: Option<i32> = sqlx::query_scalar(
+                "SELECT 1 FROM iam_department \
+                 WHERE tenant_id = $1 AND id = $2 AND status = 'active' \
+                   AND ($3::text IS NOT NULL AND organization_id = $3)",
+            )
+            .bind(tenant_id)
+            .bind(scope_id)
+            .bind(organization_id)
+            .fetch_optional(executor)
+            .await
+            .map_err(RoleBindingMutationError::internal)?;
+            if exists.is_none() {
+                return Err(invalid_role_binding_scope());
+            }
+            Ok(())
+        }
+        _ => Err(invalid_role_binding_scope()),
+    }
+}
+
+async fn lock_role_binding_assignment(
+    tx: &mut Transaction<'_, Postgres>,
+    tenant_id: &str,
+    principal_kind: &str,
+    principal_id: &str,
+    scope_kind: &str,
+    scope_id: &str,
+) -> Result<(), RoleBindingMutationError> {
+    let lock_key = format!(
+        "iam-role-assignment:{tenant_id}:{principal_kind}:{principal_id}:{scope_kind}:{scope_id}"
+    );
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+        .bind(lock_key)
+        .execute(&mut **tx)
+        .await
+        .map_err(RoleBindingMutationError::internal)?;
+    Ok(())
+}
+
+fn validate_tenant_role_binding_scope(
+    organization_id: Option<&str>,
+    scope_id: &str,
+) -> Result<(), RoleBindingMutationError> {
+    if scope_id != "0" || organization_id.is_some() {
+        return Err(invalid_role_binding_scope());
+    }
+    Ok(())
+}
+
+fn invalid_role_binding_scope() -> RoleBindingMutationError {
+    RoleBindingMutationError::new(
+        RoleBindingErrorKind::InvalidScope,
+        "scopeKind and scopeId must identify a scope accessible in this organization",
+    )
+}
+
+async fn update_role_binding_record(
+    pg: &PgPool,
+    ctx: &WebRequestContext,
+    tenant_id: &str,
+    organization_id: Option<&str>,
+    role_binding_id: &str,
+    patch: RoleBindingPatch,
+) -> Result<RoleBindingRecord, RoleBindingMutationError> {
+    let mut tx = pg
+        .begin()
+        .await
+        .map_err(RoleBindingMutationError::internal)?;
+    let row = sqlx::query(sqlx::AssertSqlSafe(format!(
+        "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
+                b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
+                b.data_scope_kind, b.effective_from, b.effective_to \
+         FROM iam_role_binding b \
+         JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id \
+         WHERE b.tenant_id = $1 AND b.id = $3 AND b.status = 'active' {} \
+         FOR UPDATE OF b",
+        role_binding_visibility_sql()
+    )))
+    .bind(tenant_id)
+    .bind(organization_id)
+    .bind(role_binding_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(RoleBindingMutationError::internal)?
+    .ok_or_else(|| {
+        RoleBindingMutationError::new(RoleBindingErrorKind::NotFound, "role binding not found")
+    })?;
+
+    let current = RoleBindingRecord::from_row(&row);
+    let effect = role_binding_patch_ref(&patch.effect)
+        .unwrap_or(&current.effect)
+        .to_owned();
+    let principal_kind = role_binding_patch_ref(&patch.principal_kind)
+        .unwrap_or(&current.principal_kind)
+        .to_owned();
+    let principal_id = role_binding_patch_ref(&patch.principal_id)
+        .unwrap_or(&current.principal_id)
+        .to_owned();
+    let scope_kind = role_binding_patch_ref(&patch.scope_kind)
+        .unwrap_or(&current.scope_kind)
+        .to_owned();
+    let scope_id = role_binding_patch_ref(&patch.scope_id)
+        .unwrap_or(&current.scope_id)
+        .to_owned();
+    let data_scope_kind = role_binding_patch_ref(&patch.data_scope_kind)
+        .unwrap_or(&current.data_scope_kind)
+        .to_owned();
+
+    if !matches!(effect.as_str(), "allow" | "deny") {
+        return Err(RoleBindingMutationError::new(
+            RoleBindingErrorKind::Invalid,
+            "effect must be allow or deny",
+        ));
+    }
+    if !matches!(
+        principal_kind.as_str(),
+        "user" | "organization_membership" | "group" | "service_account"
+    ) {
+        return Err(RoleBindingMutationError::new(
+            RoleBindingErrorKind::Invalid,
+            "principalKind must be user, organization_membership, group, or service_account",
+        ));
+    }
+    if !matches!(
+        data_scope_kind.as_str(),
+        "scope" | "self" | "department" | "department_and_children" | "organization" | "tenant"
+    ) {
+        return Err(RoleBindingMutationError::new(
+            RoleBindingErrorKind::InvalidDataScope,
+            "dataScopeKind must be scope, self, department, department_and_children, organization, or tenant",
+        ));
+    }
+    let (effective_from, effective_to) = validate_role_binding_effective_window(
+        role_binding_patch_nullable(&patch.effective_from, &current.effective_from),
+        role_binding_patch_nullable(&patch.effective_to, &current.effective_to),
+    )?;
+    validate_role_binding_target_scope(
+        &mut *tx,
+        tenant_id,
+        organization_id,
+        &scope_kind,
+        &scope_id,
+    )
+    .await?;
+
+    lock_role_binding_assignment(
+        &mut tx,
+        tenant_id,
+        &principal_kind,
+        &principal_id,
+        &scope_kind,
+        &scope_id,
+    )
+    .await?;
+    if effect == "allow" {
+        sdkwork_iam_bootstrap::ensure_role_assignment_allowed_tx(
+            &mut tx,
+            tenant_id,
+            &principal_kind,
+            &principal_id,
+            &scope_kind,
+            &scope_id,
+            &current.role_code,
+        )
+        .await
+        .map_err(|error| RoleBindingMutationError::new(RoleBindingErrorKind::SodConflict, error))?;
+        let assigner_scope = assigner_permission_scope(ctx).map_err(|_| {
+            RoleBindingMutationError::new(
+                RoleBindingErrorKind::AssignerForbidden,
+                "assigner permission scope is unavailable",
+            )
+        })?;
+        sdkwork_iam_bootstrap::ensure_role_grant_within_assigner_scope_tx(
+            &mut tx,
+            tenant_id,
+            &current.role_id,
+            &assigner_scope,
+        )
+        .await
+        .map_err(|error| {
+            RoleBindingMutationError::new(RoleBindingErrorKind::AssignerForbidden, error)
+        })?;
+    }
+
+    let updated = RoleBindingRecord {
+        id: current.id.clone(),
+        tenant_id: current.tenant_id.clone(),
+        organization_id: current.organization_id.clone(),
+        role_id: current.role_id.clone(),
+        role_code: current.role_code.clone(),
+        principal_kind,
+        principal_id,
+        scope_kind,
+        scope_id,
+        effect,
+        status: current.status.clone(),
+        data_scope_kind,
+        effective_from,
+        effective_to,
+    };
+    let now = Utc::now().to_rfc3339();
+    let rows_affected = sqlx::query(sqlx::AssertSqlSafe(format!(
+        "UPDATE iam_role_binding \
+         SET effect = $4, principal_kind = $5, principal_id = $6, \
+             scope_kind = $7, scope_id = $8, data_scope_kind = $9, \
+             effective_from = $10, effective_to = $11, updated_at = $12 \
+         WHERE tenant_id = $1 AND id = $3 AND status = 'active' {}",
+        role_binding_visibility_sql()
+    )))
+    .bind(tenant_id)
+    .bind(organization_id)
+    .bind(role_binding_id)
+    .bind(&updated.effect)
+    .bind(&updated.principal_kind)
+    .bind(&updated.principal_id)
+    .bind(&updated.scope_kind)
+    .bind(&updated.scope_id)
+    .bind(&updated.data_scope_kind)
+    .bind(&updated.effective_from)
+    .bind(&updated.effective_to)
+    .bind(now)
+    .execute(&mut *tx)
+    .await
+    .map_err(|error| {
+        if is_role_binding_unique_violation(&error) {
+            RoleBindingMutationError::new(
+                RoleBindingErrorKind::Conflict,
+                "role binding conflicts with an existing binding",
+            )
+        } else {
+            RoleBindingMutationError::internal(error)
+        }
+    })?
+    .rows_affected();
+    if rows_affected == 0 {
+        return Err(RoleBindingMutationError::new(
+            RoleBindingErrorKind::NotFound,
+            "role binding not found",
+        ));
+    }
+    record_backend_mutation_audit_tx(
+        &mut *tx,
+        ctx,
+        "iam_role_binding.update",
+        "iam_role_binding",
+        role_binding_id,
+        json!({ "before": current.to_json(), "after": updated.to_json() }),
+    )
+    .await
+    .map_err(|error| {
+        RoleBindingMutationError::internal(sqlx::Error::Protocol(error.to_string()))
+    })?;
+    tx.commit()
+        .await
+        .map_err(RoleBindingMutationError::internal)?;
+    Ok(updated)
+}
+
+fn is_role_binding_unique_violation(error: &sqlx::Error) -> bool {
+    let sqlx::Error::Database(database_error) = error else {
+        return false;
+    };
+    database_error.code().as_deref() == Some("23505")
+        && (database_error.table().as_deref() == Some("iam_role_binding")
+            || database_error
+                .constraint()
+                .is_some_and(|name| name.starts_with("iam_role_binding_")))
+}
+
+fn role_binding_error_response(action: &str, error: RoleBindingMutationError) -> Response {
+    let RoleBindingMutationError { kind, message } = error;
+    match kind {
+        RoleBindingErrorKind::Invalid => appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_role_binding_invalid",
+            &message,
+        ),
+        RoleBindingErrorKind::InvalidDataScope => appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_role_binding_invalid_data_scope",
+            &message,
+        ),
+        RoleBindingErrorKind::InvalidEffectiveWindow => appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_role_binding_invalid_effective_window",
+            &message,
+        ),
+        RoleBindingErrorKind::InvalidScope => appbase_error(
+            StatusCode::BAD_REQUEST,
+            "iam_role_binding_invalid_scope",
+            &message,
+        ),
+        RoleBindingErrorKind::NotFound => appbase_error(
+            StatusCode::NOT_FOUND,
+            "iam_role_binding_not_found",
+            &message,
+        ),
+        RoleBindingErrorKind::SodConflict => appbase_error(
+            StatusCode::CONFLICT,
+            "iam_role_binding_sod_violation",
+            &message,
+        ),
+        RoleBindingErrorKind::AssignerForbidden => appbase_error(
+            StatusCode::FORBIDDEN,
+            "iam_role_binding_assigner_scope_exceeded",
+            &message,
+        ),
+        RoleBindingErrorKind::Conflict => {
+            appbase_error(StatusCode::CONFLICT, "iam_role_binding_conflict", &message)
+        }
+        RoleBindingErrorKind::Internal => {
+            internal_handler_error(&format!("iam_role_binding_{action}_failed"), message)
+        }
     }
 }
 
@@ -950,6 +1686,7 @@ async fn delete_role_binding(
 
     let now = Utc::now().to_rfc3339();
     let tenant_id_update = tenant_id.clone();
+    let organization_id_update = organization_id_from_context(&ctx);
     let role_binding_id_update = role_binding_id.clone();
     let result = execute_conditional_mutation_with_audit(
         pg,
@@ -960,14 +1697,16 @@ async fn delete_role_binding(
         json!({}),
         |tx| {
             Box::pin(async move {
-                sqlx::query(
+                sqlx::query(sqlx::AssertSqlSafe(format!(
                     "UPDATE iam_role_binding \
-                 SET status = 'revoked', updated_at = $3 \
-                 WHERE tenant_id = $1 AND id = $2 AND status = 'active'",
-                )
+                     SET status = 'revoked', updated_at = $3 \
+                     WHERE tenant_id = $1 AND id = $4 AND status = 'active' {}",
+                    role_binding_visibility_sql()
+                )))
                 .bind(tenant_id_update)
-                .bind(role_binding_id_update)
+                .bind(organization_id_update)
                 .bind(now)
+                .bind(role_binding_id_update)
                 .execute(&mut **tx)
                 .await
                 .map(|result| result.rows_affected())
@@ -978,7 +1717,7 @@ async fn delete_role_binding(
     .await;
 
     match result {
-        Ok(done) if done > 0 => appbase_ok(json!({ "roleBindingId": role_binding_id })),
+        Ok(done) if done > 0 => StatusCode::NO_CONTENT.into_response(),
         Ok(_) => appbase_error(
             StatusCode::NOT_FOUND,
             "iam_role_binding_not_found",
@@ -1613,6 +2352,13 @@ fn permission_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
     })
 }
 
+fn permission_resource_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
+    json!({
+        "permissionCount": row.get::<i64, _>(1).to_string(),
+        "resource": row.get::<String, _>(0),
+    })
+}
+
 fn role_binding_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
     json!({
         "dataScopeKind": row.get::<String, _>(11),
@@ -1623,6 +2369,8 @@ fn role_binding_row_to_json(row: &sqlx::postgres::PgRow) -> Value {
         "organizationId": row.get::<String, _>(2),
         "principalId": row.get::<String, _>(6),
         "principalKind": row.get::<String, _>(5),
+        "principalDisplayName": row.get::<Option<String>, _>(15),
+        "principalUsername": row.get::<Option<String>, _>(16),
         "roleCode": row.get::<String, _>(4),
         "roleId": row.get::<String, _>(3),
         "scopeId": row.get::<String, _>(8),
@@ -1851,7 +2599,9 @@ include!("directory_crud.impl.rs");
 #[cfg(test)]
 mod tests {
     use super::{
-        media_delivery_url, nest_tree, organization_patch_fields, tenant_patch_fields, PatchValue,
+        media_delivery_url, nest_tree, organization_patch_fields, parse_role_binding_patch,
+        role_binding_visibility_sql, tenant_patch_fields, validate_role_binding_effective_window,
+        validate_tenant_role_binding_scope, PatchValue, RoleBindingErrorKind,
     };
     use serde_json::json;
 
@@ -1936,6 +2686,99 @@ mod tests {
             media_delivery_url(&json!({ "uri": "https://cdn.example.com/logo.png" })),
             Some("https://cdn.example.com/logo.png".to_owned())
         );
+    }
+
+    #[test]
+    fn role_binding_patch_distinguishes_omitted_dates_from_explicit_null() {
+        let omitted =
+            parse_role_binding_patch(&json!({ "effect": "deny" })).expect("valid partial patch");
+        assert_eq!(omitted.effective_from, None);
+        assert_eq!(omitted.effective_to, None);
+
+        let cleared = parse_role_binding_patch(&json!({
+            "effectiveFrom": null,
+            "effectiveTo": null,
+            "dataScopeKind": "self"
+        }))
+        .expect("valid nullable patch");
+        assert_eq!(cleared.effective_from, Some(PatchValue::NullText));
+        assert_eq!(cleared.effective_to, Some(PatchValue::NullText));
+        assert!(matches!(
+            cleared.data_scope_kind,
+            Some(PatchValue::Text(value)) if value == "self"
+        ));
+    }
+
+    #[test]
+    fn role_binding_patch_accepts_legacy_snake_case_but_rejects_server_owned_fields() {
+        let patch = parse_role_binding_patch(&json!({
+            "principal_kind": "group",
+            "scope_id": "dept-1"
+        }))
+        .expect("legacy aliases remain accepted at runtime");
+        assert!(matches!(
+            patch.principal_kind,
+            Some(PatchValue::Text(value)) if value == "group"
+        ));
+
+        for body in [
+            json!({}),
+            json!({ "roleId": "role-2" }),
+            json!({ "tenantId": "tenant-2" }),
+            json!({ "id": "binding-2" }),
+            json!({ "updatedAt": "2026-01-01T00:00:00Z" }),
+            json!({ "effect": null }),
+            json!({ "scopeId": "" }),
+        ] {
+            assert!(
+                parse_role_binding_patch(&body).is_err(),
+                "must reject {body}"
+            );
+        }
+    }
+
+    #[test]
+    fn tenant_role_binding_scope_requires_a_tenant_context() {
+        assert!(validate_tenant_role_binding_scope(None, "0").is_ok());
+        for (organization_id, scope_id) in [(Some("iamorg-1"), "0"), (None, "iamorg-1")] {
+            let error = validate_tenant_role_binding_scope(organization_id, scope_id)
+                .expect_err("tenant scope must not be organization-scoped");
+            assert!(matches!(error.kind, RoleBindingErrorKind::InvalidScope));
+        }
+    }
+
+    #[test]
+    fn role_binding_effective_window_requires_rfc3339_and_ordered_instants() {
+        let valid = validate_role_binding_effective_window(
+            Some("2026-01-01T00:00:00Z".to_owned()),
+            Some("2026-01-02T00:00:00+00:00".to_owned()),
+        )
+        .expect("ordered RFC3339 window");
+        assert!(valid.0.is_some() && valid.1.is_some());
+
+        for (from, to) in [
+            (Some("2026-01-02".to_owned()), Some("2026-01-03".to_owned())),
+            (
+                Some("2026-01-02T00:00:00Z".to_owned()),
+                Some("2026-01-01T00:00:00Z".to_owned()),
+            ),
+        ] {
+            let error = validate_role_binding_effective_window(from, to)
+                .expect_err("invalid effective window");
+            assert!(matches!(
+                error.kind,
+                RoleBindingErrorKind::InvalidEffectiveWindow
+            ));
+        }
+    }
+
+    #[test]
+    fn role_binding_visibility_scopes_organization_and_department_targets() {
+        let sql = role_binding_visibility_sql();
+        assert!(sql.contains("b.scope_kind = 'tenant'"));
+        assert!(sql.contains("b.scope_kind = 'organization' AND b.scope_id = $2"));
+        assert!(sql.contains("d.tenant_id = b.tenant_id"));
+        assert!(sql.contains("d.organization_id = $2"));
     }
 
     #[test]

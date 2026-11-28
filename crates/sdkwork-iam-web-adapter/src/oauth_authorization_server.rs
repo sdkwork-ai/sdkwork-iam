@@ -39,6 +39,15 @@ pub struct RelyingPartyConfig {
     pub confidential: bool,
     #[serde(default)]
     pub client_secret_hash: Option<String>,
+    /// Trusted browser origins for this client.
+    ///
+    /// Empty means "no per-client origin restriction", which is the behaviour
+    /// every registration written before this field existed must keep. When
+    /// non-empty, `/iam/v3/oauth/authorize` refuses a redirect URI whose origin
+    /// is not listed, so a leaked client id cannot be pointed at an origin the
+    /// application never registered.
+    #[serde(default)]
+    pub allowed_origins: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -214,6 +223,16 @@ pub async fn resolve_relying_party_client(
     .map_err(|error| format!("load relying party client failed: {error}"))?;
 
     if rows.is_empty() {
+        // Fallback: a client registered only on the installation credential table.
+        // The credential row was historically write-only — the management surface
+        // created it and nothing read it — so a client created there could never
+        // complete an authorization. The credential is now a real registration:
+        // redirect URIs, granted scopes, secret hash and trusted origins all live
+        // on it. The runtime-config document stays the first authority so every
+        // pre-existing installation keeps its exact behaviour.
+        if let Some(resolved) = resolve_client_from_credential(pg, client_id, tenant_hint).await? {
+            return Ok(resolved);
+        }
         return Err("OAuth client_id is not registered or enabled".to_string());
     }
     if rows.len() > 1 && tenant_hint.is_none() {
@@ -256,6 +275,161 @@ pub async fn resolve_relying_party_client(
     })
 }
 
+/// Splits an absolute URL into `(scheme, host, port)` with the host lowercased.
+///
+/// Returns `None` for anything that is not `scheme://authority...`, which keeps a
+/// malformed redirect URI from being treated as an origin that matches nothing by
+/// accident.
+fn split_origin(url: &str) -> Option<(String, String, Option<u16>)> {
+    let (scheme, rest) = url.trim().split_once("://")?;
+    let scheme = scheme.to_ascii_lowercase();
+    if scheme.is_empty() {
+        return None;
+    }
+    let authority = rest.split(['/', '?', '#']).next()?;
+    let authority = authority.rsplit('@').next()?;
+    if authority.is_empty() {
+        return None;
+    }
+    let (host, port) = if let Some(rest) = authority.strip_prefix('[') {
+        // Bracketed IPv6 literal: `[::1]` or `[::1]:8080`.
+        let (host, after) = rest.split_once(']')?;
+        let port = match after.strip_prefix(':') {
+            Some(port) if !port.is_empty() => Some(port.parse::<u16>().ok()?),
+            Some(_) => return None,
+            None if after.is_empty() => None,
+            None => return None,
+        };
+        (format!("[{host}]"), port)
+    } else {
+        match authority.rsplit_once(':') {
+            Some((host, port)) if !host.contains(':') => {
+                let port = if port.is_empty() {
+                    None
+                } else {
+                    Some(port.parse::<u16>().ok()?)
+                };
+                (host.to_owned(), port)
+            }
+            _ => (authority.to_owned(), None),
+        }
+    };
+    if host.is_empty() {
+        return None;
+    }
+    Some((scheme, host.to_ascii_lowercase(), port))
+}
+
+fn is_loopback_host(host: &str) -> bool {
+    matches!(host, "127.0.0.1" | "[::1]" | "localhost")
+}
+
+/// Whether a registered redirect URI's origin is on the client's trusted list.
+///
+/// An empty list means "not restricted" (the behaviour of every registration
+/// written before the allow-list existed). Loopback origins match without their
+/// port, mirroring the RFC 8252 rule already applied to the redirect URI itself:
+/// a desktop client picks a fresh port on every launch.
+fn origin_allowed(allowed: &[String], redirect_uri: &str) -> bool {
+    if allowed.is_empty() {
+        return true;
+    }
+    let Some((scheme, host, port)) = split_origin(redirect_uri) else {
+        return false;
+    };
+    allowed.iter().any(|entry| {
+        let Some((entry_scheme, entry_host, entry_port)) = split_origin(entry) else {
+            return false;
+        };
+        if entry_scheme != scheme || entry_host != host {
+            return false;
+        }
+        if entry_port == port {
+            return true;
+        }
+        scheme == "http" && is_loopback_host(&host) && is_loopback_host(&entry_host)
+    })
+}
+
+/// Resolves a client that exists only on the installation credential table.
+///
+/// The credential row carries everything the authorization server needs, so no
+/// second document has to be synthesized: client id, Argon2id secret hash,
+/// redirect URIs, granted scopes and trusted origins. Only `active` credentials
+/// whose `client_status` is `enabled` resolve, and the owning installation must
+/// itself be `enabled` and anchored to a deploy application.
+async fn resolve_client_from_credential(
+    pg: &PgPool,
+    client_id: &str,
+    tenant_hint: Option<&str>,
+) -> Result<Option<ResolvedRelyingParty>, String> {
+    let tenant_filter = tenant_hint
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or("");
+    let row = sqlx::query(
+        "SELECT i.id, i.tenant_id, i.app_id, i.deploy_application_id, \
+                c.secret_hash, c.redirect_uris_json, c.granted_scopes_json, c.allowed_origins_json \
+         FROM iam_application_installation_credential c \
+         JOIN iam_application_installation_environment e \
+           ON e.id = c.installation_environment_id \
+         JOIN iam_application_installation i ON i.id = e.installation_id \
+         WHERE c.client_id = $1 AND c.credential_status = 'active' \
+           AND c.client_status = 'enabled' AND e.deleted_at IS NULL \
+           AND i.status = 'enabled' AND ($2 = '' OR i.tenant_id = $2) \
+         LIMIT 1",
+    )
+    .bind(client_id)
+    .bind(tenant_filter)
+    .fetch_optional(pg)
+    .await
+    .map_err(|error| format!("load OAuth client from installation credential failed: {error}"))?;
+    let Some(row) = row else {
+        return Ok(None);
+    };
+    let installation_id: String = row.get(0);
+    let tenant_id: String = row.get(1);
+    let app_id: String = row.get(2);
+    let deploy_application_id: Option<String> = row.get(3);
+    let deploy_application_id = deploy_application_id
+        .map(|value| value.trim().to_owned())
+        .filter(|value| !value.is_empty());
+    ensure_relying_party_installation_anchored(
+        &installation_id,
+        client_id,
+        deploy_application_id.as_deref(),
+    )?;
+    let secret_hash: String = row.get(4);
+    let redirect_uris: Vec<String> = row
+        .try_get::<sqlx::types::Json<Vec<String>>, _>(5)
+        .map(|value| value.0)
+        .unwrap_or_default();
+    let allowed_scopes: Vec<String> = row
+        .try_get::<sqlx::types::Json<Vec<String>>, _>(6)
+        .map(|value| value.0)
+        .unwrap_or_default();
+    let allowed_origins: Vec<String> = row
+        .try_get::<sqlx::types::Json<Vec<String>>, _>(7)
+        .map(|value| value.0)
+        .unwrap_or_default();
+    let client_id = client_id.trim().to_owned();
+    Ok(Some(ResolvedRelyingParty {
+        tenant_id,
+        app_id,
+        deploy_application_id,
+        client_id: client_id.clone(),
+        config: RelyingPartyConfig {
+            enabled: true,
+            client_id: Some(client_id),
+            redirect_uris,
+            allowed_scopes,
+            confidential: true,
+            client_secret_hash: Some(secret_hash),
+            allowed_origins,
+        },
+    }))
+}
+
 /// Refuses to resolve a relying party whose installation has no deploy anchor.
 ///
 /// The session exchange mints a credential whose `app_id` is the installation's
@@ -295,6 +469,15 @@ pub fn validate_authorize_request(
     }
     if !redirect_uri_allowed(&client.config.redirect_uris, &request.redirect_uri) {
         return Err("OAuth redirect_uri is not registered for this client".to_string());
+    }
+    // Trusted-origin allow-list. Empty means "no per-client restriction", so every
+    // registration that predates the field keeps working; a non-empty list narrows
+    // where a registered redirect URI may point.
+    if !origin_allowed(&client.config.allowed_origins, &request.redirect_uri) {
+        return Err(
+            "OAuth redirect_uri origin is not trusted for this client (可信 Origin 不在白名单)"
+                .to_string(),
+        );
     }
 
     let scopes = normalize_scopes(&request.scope);
@@ -1593,6 +1776,7 @@ mod tests {
                 allowed_scopes: vec!["openid".to_string(), "profile".to_string()],
                 confidential: false,
                 client_secret_hash: None,
+                allowed_origins: Vec::new(),
             },
         };
         let err = validate_authorize_request(
@@ -1690,6 +1874,7 @@ mod tests {
                 allowed_scopes: vec!["openid".to_string(), "profile".to_string()],
                 confidential: true,
                 client_secret_hash: Some("hash".to_string()),
+                allowed_origins: Vec::new(),
             },
         };
         validate_authorize_request(&sample_authorize_request(None, None), &client)
@@ -1709,6 +1894,7 @@ mod tests {
                 allowed_scopes: vec!["openid".to_string(), "profile".to_string()],
                 confidential: false,
                 client_secret_hash: None,
+                allowed_origins: Vec::new(),
             },
         }
     }
@@ -1745,6 +1931,7 @@ mod tests {
                 allowed_scopes: vec!["openid".to_string(), "profile".to_string()],
                 confidential: false,
                 client_secret_hash: None,
+                allowed_origins: Vec::new(),
             },
         }
     }
@@ -2023,5 +2210,45 @@ mod anchoring_tests {
             assert!(error.contains("birdcoder"), "{error}");
             assert!(error.contains("deployApplicationId"), "{error}");
         }
+    }
+}
+
+#[cfg(test)]
+mod trusted_origin_tests {
+    use super::*;
+
+    #[test]
+    fn an_empty_allow_list_restricts_nothing() {
+        assert!(origin_allowed(&[], "https://app.example.com/callback"));
+    }
+
+    #[test]
+    fn only_a_listed_origin_is_allowed() {
+        let allowed = vec!["https://app.example.com".to_owned()];
+        assert!(origin_allowed(&allowed, "https://app.example.com/callback"));
+        assert!(!origin_allowed(
+            &allowed,
+            "https://evil.example.com/callback"
+        ));
+        assert!(!origin_allowed(&allowed, "http://app.example.com/callback"));
+    }
+
+    #[test]
+    fn a_loopback_origin_ignores_its_ephemeral_port() {
+        let allowed = vec!["http://127.0.0.1".to_owned()];
+        assert!(origin_allowed(
+            &allowed,
+            "http://127.0.0.1:51820/auth/callback"
+        ));
+        assert!(!origin_allowed(
+            &allowed,
+            "http://10.0.0.9:51820/auth/callback"
+        ));
+    }
+
+    #[test]
+    fn a_non_http_redirect_uri_never_matches_a_listed_origin() {
+        let allowed = vec!["https://app.example.com".to_owned()];
+        assert!(!origin_allowed(&allowed, "not-a-url"));
     }
 }

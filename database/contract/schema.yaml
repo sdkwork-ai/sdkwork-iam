@@ -210,3 +210,21 @@ tables:
   - name: iam_oauth_authorizer_inbox
     lifecycle_status: active
     owner: sdkwork-iam
+  - name: iam_application_enterprise_order
+    lifecycle_status: active
+    owner: sdkwork-iam
+  - name: iam_application_enterprise_order_link
+    lifecycle_status: active
+    owner: sdkwork-iam
+  - name: iam_application_enterprise_seat
+    lifecycle_status: active
+    owner: sdkwork-iam
+  - name: iam_application_enterprise_order_event
+    lifecycle_status: active
+    owner: sdkwork-iam
+  - name: iam_application_enterprise_seat_policy
+    lifecycle_status: active
+    owner: sdkwork-iam
+  - name: iam_application_enterprise_seat_blacklist
+    lifecycle_status: active
+    owner: sdkwork-iam

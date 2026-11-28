@@ -3639,7 +3639,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SdkWorkListResponse"
+                  "$ref": "#/components/schemas/IamOrganizationMembershipListResponse"
                 }
               }
             }
@@ -4832,7 +4832,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SdkWorkListResponse"
+                  "$ref": "#/components/schemas/IamRoleBindingListResponse"
                 }
               }
             }
@@ -11227,6 +11227,251 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/components/schemas/IamOrganizationMember"
+                    }
+                  },
+                  "pageInfo": {
+                    "$ref": "#/components/schemas/PageInfo"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "IamOrganizationMembership": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "userId",
+          "membershipId",
+          "organizationId",
+          "membershipKind",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "membershipId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "membershipKind": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "IamOrganizationMembershipListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "required": [
+              "data"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "items",
+                  "pageInfo"
+                ],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/IamOrganizationMembership"
+                    }
+                  },
+                  "pageInfo": {
+                    "$ref": "#/components/schemas/PageInfo"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "IamRoleBinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "tenantId",
+          "organizationId",
+          "roleId",
+          "roleCode",
+          "principalKind",
+          "principalId",
+          "scopeKind",
+          "scopeId",
+          "effect",
+          "status",
+          "dataScopeKind",
+          "effectiveFrom",
+          "effectiveTo"
+        ],
+        "description": "One role binding. Tenant and organization identity come from the authenticated context; roleId is immutable after creation and delete revokes rather than removes the row.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string",
+            "readOnly": true
+          },
+          "organizationId": {
+            "type": "string",
+            "readOnly": true
+          },
+          "roleId": {
+            "type": "string",
+            "readOnly": true
+          },
+          "roleCode": {
+            "type": "string",
+            "readOnly": true
+          },
+          "principalKind": {
+            "type": "string",
+            "enum": [
+              "user",
+              "organization_membership",
+              "group",
+              "service_account"
+            ]
+          },
+          "principalId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "principalDisplayName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "readOnly": true,
+            "description": "Resolved user display name for this binding page, or null when unavailable."
+          },
+          "principalUsername": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "readOnly": true,
+            "description": "Resolved user login name for this binding page, or null when unavailable."
+          },
+          "scopeKind": {
+            "type": "string",
+            "enum": [
+              "tenant",
+              "organization",
+              "department"
+            ]
+          },
+          "scopeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "effect": {
+            "type": "string",
+            "enum": [
+              "allow",
+              "deny"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "revoked"
+            ],
+            "readOnly": true
+          },
+          "dataScopeKind": {
+            "type": "string",
+            "enum": [
+              "scope",
+              "self",
+              "department",
+              "department_and_children",
+              "organization",
+              "tenant"
+            ]
+          },
+          "effectiveFrom": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Inclusive RFC3339 start instant, or null for no lower bound."
+          },
+          "effectiveTo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Exclusive RFC3339 end instant, or null for no upper bound."
+          }
+        }
+      },
+      "IamRoleBindingListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "required": [
+              "data"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "items",
+                  "pageInfo"
+                ],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/IamRoleBinding"
                     }
                   },
                   "pageInfo": {

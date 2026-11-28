@@ -369,6 +369,7 @@ async fn soft_delete(
     let id = id.to_owned();
     let table = table.to_owned();
     let action = format!("{table}.delete");
+    let role_delete = table == "iam_role";
     match execute_conditional_mutation_with_audit(
         pg,
         ctx,
@@ -382,13 +383,33 @@ async fn soft_delete(
             let row_id = id.clone();
             let now = now.clone();
 
-                sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
+                if role_delete {
+                    sqlx::query(
+                        "SELECT id FROM iam_role WHERE tenant_id = $1 AND id = $2 FOR UPDATE",
+                    )
+                    .bind(&tenant_id)
+                    .bind(&row_id)
+                    .fetch_optional(&mut **tx)
+                    .await?;
+                }
+                let result = sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
                     .bind(&tenant_id)
                     .bind(&row_id)
                     .bind(&now)
                     .execute(&mut **tx)
-                    .await
-                    .map(|result| result.rows_affected())
+                    .await?;
+                if role_delete {
+                    sqlx::query(
+                        "UPDATE iam_role_binding SET status = 'revoked', updated_at = $3 \
+                         WHERE tenant_id = $1 AND role_id = $2 AND status <> 'revoked'",
+                    )
+                    .bind(&tenant_id)
+                    .bind(&row_id)
+                    .bind(&now)
+                    .execute(&mut **tx)
+                    .await?;
+                }
+                Ok::<u64, sqlx::Error>(result.rows_affected())
             }),
         |rows_affected| *rows_affected > 0,
     )
@@ -979,7 +1000,7 @@ async fn delete_permission(
     }
     let permission_id_owned = permission_id.clone();
     let insert_id = permission_id.clone();
-    match execute_conditional_mutation_with_audit(
+    match execute_conditional_mutation_with_audit_typed(
         pg,
         &ctx,
         "iam_permission.delete",
@@ -987,13 +1008,29 @@ async fn delete_permission(
         permission_id_owned.clone(),
         json!({ "deleted": true }),
         |tx| Box::pin(async move {
-            
-                sqlx::query("DELETE FROM iam_permission WHERE id = $1 OR code = $1")
-                    .bind(&insert_id)
-                    .execute(&mut **tx)
-                    .await
-                    .map(|result| result.rows_affected())
-            }),
+            let resolved_id = sqlx::query_scalar::<_, String>(
+                "SELECT id FROM iam_permission WHERE id = $1 OR code = $1 FOR UPDATE",
+            )
+            .bind(&insert_id)
+            .fetch_optional(&mut **tx)
+            .await?;
+            let Some(resolved_id) = resolved_id else {
+                return Ok::<u64, sqlx::Error>(0);
+            };
+            sqlx::query(
+                "DELETE FROM iam_role_permission rp USING iam_role r \
+                 WHERE rp.role_id = r.id AND rp.tenant_id = r.tenant_id \
+                 AND rp.permission_id = $1",
+            )
+                .bind(&resolved_id)
+                .execute(&mut **tx)
+                .await?;
+            let result = sqlx::query("DELETE FROM iam_permission WHERE id = $1")
+                .bind(&resolved_id)
+                .execute(&mut **tx)
+                .await?;
+            Ok::<u64, sqlx::Error>(result.rows_affected())
+        }),
         |rows_affected| *rows_affected > 0,
     )
     .await
@@ -1004,10 +1041,17 @@ async fn delete_permission(
             "iam_permission_not_found",
             "permission not found",
         ),
+        Err(error) if error.as_database_error().is_some_and(|error| error.code().as_deref() == Some("23503")) => {
+            appbase_error(
+                StatusCode::CONFLICT,
+                "iam_permission_in_use",
+                "permission is still referenced",
+            )
+        }
         Err(error) => appbase_error(
             StatusCode::INTERNAL_SERVER_ERROR,
             "iam_permission_delete_failed",
-            &error,
+            &error.to_string(),
         ),
     }
 }

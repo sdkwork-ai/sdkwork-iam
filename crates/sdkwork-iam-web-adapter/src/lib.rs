@@ -4,6 +4,8 @@ mod api_key_lookup;
 mod app_manifest;
 mod app_token_exchange;
 mod application_access_token;
+mod application_enterprise_order;
+mod application_enterprise_seat_admin;
 mod application_registry;
 mod application_scope;
 mod authorization_policy;
@@ -95,6 +97,30 @@ pub use application_access_token::{
     try_resolve_application_access_token_context, validate_public_application_access_token,
     PublicApplicationAccessTokenClaims, APPLICATION_ACCESS_TOKEN_NO_EXPIRY,
 };
+pub use application_enterprise_order::{
+    assign_enterprise_seat, authorize_enterprise_order, cancel_enterprise_order,
+    classify_enterprise_order_error, confirm_enterprise_order_termination, create_enterprise_order,
+    ensure_enterprise_order_scope, ensure_user_enterprise_authorization,
+    enterprise_order_error_detail, enterprise_order_to_json, enterprise_order_with_link_to_json,
+    expire_due_enterprise_orders, list_enterprise_order_events, list_enterprise_orders,
+    list_enterprise_orders_for_enterprise, list_enterprise_seats, load_enterprise_order_for_scope,
+    parse_enterprise_order_create_command, parse_enterprise_order_terminate_command,
+    parse_enterprise_seat_assign_command, release_enterprise_seat,
+    request_enterprise_order_termination, resolve_enterprise_management_scope,
+    retrieve_enterprise_order, EnterpriseManagementScope, EnterpriseOrder,
+    EnterpriseOrderErrorKind, EnterpriseOrderUpdateCommand,
+};
+pub use application_enterprise_seat_admin::{
+    bulk_release_enterprise_seats, create_enterprise_seat_blacklist, create_enterprise_seat_policy,
+    delete_enterprise_seat_blacklist, delete_enterprise_seat_policy, export_enterprise_seats,
+    list_enterprise_seat_blacklist, list_enterprise_seat_policies,
+    reconcile_enterprise_authorization_seats, retrieve_enterprise_seat_policy,
+    update_enterprise_order, update_enterprise_seat_policy, EnterpriseSeatBlacklistCommand,
+    EnterpriseSeatBlacklistEntry, EnterpriseSeatBulkReleaseCommand,
+    EnterpriseSeatBulkReleaseResult, EnterpriseSeatExportCommand, EnterpriseSeatExportResult,
+    EnterpriseSeatPolicy, EnterpriseSeatPolicyCommand, EnterpriseSeatPolicyDisposition,
+    EnterpriseSeatPolicyUpdateCommand,
+};
 pub use application_registry::{
     bind_tenant_application_deploy_application_id, configured_deploy_application_id,
     derive_tenant_application_primary_domain_candidate, disable_tenant_application,
@@ -159,15 +185,18 @@ pub use installation_lifecycle::{
     ensure_installation_environment_active, installation_credential_to_json,
     installation_environment_to_json, installation_lifecycle_error_detail,
     list_installation_credentials, list_installation_environments, normalize_environment_key,
-    parse_installation_credential_create_command, parse_installation_credential_rotate_command,
-    parse_installation_environment_upsert_command, revoke_installation_credential,
-    rotate_installation_credential, upsert_installation_environment, InstallationCredential,
+    parse_installation_credential_create_command, parse_installation_credential_policy_command,
+    parse_installation_credential_rotate_command, parse_installation_environment_upsert_command,
+    revoke_installation_credential, rotate_installation_credential,
+    update_installation_credential_policy, upsert_installation_environment, InstallationCredential,
     InstallationCredentialCreateCommand, InstallationCredentialPage,
-    InstallationCredentialRotateCommand, InstallationEnvironment, InstallationEnvironmentPage,
-    InstallationEnvironmentUpsertCommand, InstallationLifecycleErrorKind,
-    INSTALLATION_CREDENTIAL_STATUS_ACTIVE, INSTALLATION_CREDENTIAL_STATUS_RETIRED,
-    INSTALLATION_CREDENTIAL_STATUS_ROTATED, INSTALLATION_ENVIRONMENT_STATUS_ACTIVE,
-    INSTALLATION_ENVIRONMENT_STATUS_DISABLED, INSTALLATION_ENVIRONMENT_STATUS_PENDING,
+    InstallationCredentialPolicyCommand, InstallationCredentialRotateCommand,
+    InstallationEnvironment, InstallationEnvironmentPage, InstallationEnvironmentUpsertCommand,
+    InstallationLifecycleErrorKind, CLIENT_STATUS_DISABLED, CLIENT_STATUS_ENABLED,
+    CLIENT_STATUS_PENDING_REVIEW, CLIENT_STATUS_REJECTED, INSTALLATION_CREDENTIAL_STATUS_ACTIVE,
+    INSTALLATION_CREDENTIAL_STATUS_RETIRED, INSTALLATION_CREDENTIAL_STATUS_ROTATED,
+    INSTALLATION_ENVIRONMENT_STATUS_ACTIVE, INSTALLATION_ENVIRONMENT_STATUS_DISABLED,
+    INSTALLATION_ENVIRONMENT_STATUS_PENDING,
 };
 pub use installation_readiness::{
     assess_installation, installation_readiness_to_json, installation_reconcile_outcome_to_json,

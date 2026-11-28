@@ -85,7 +85,43 @@ function explicitBootstrapPermission(operationId) {
     case 'installations.credentials.create':
     case 'installations.credentials.rotate':
     case 'installations.credentials.revoke':
+    // The client policy (redirect URIs, scopes, trusted origins, publication
+    // state) is an attribute of the installation credential, so it rides on the
+    // same mutation boundary rather than seeding a new code.
+    case 'installations.credentials.policy.update':
       return 'iam.installations.update';
+    // Enterprise authorization orders and their seat pool are their own
+    // boundary: a publisher that may update an installation must not thereby be
+    // able to license it to a third-party enterprise. Reads and writes are
+    // separated like every other resource family.
+    case 'enterpriseOrders.list':
+    case 'enterpriseOrders.retrieve':
+    case 'publisherEnterpriseOrders.retrieve':
+    case 'enterpriseOrders.events.list':
+    case 'enterpriseGrants.list':
+    case 'enterpriseSeats.list':
+      return 'iam.enterprise_orders.read';
+    case 'enterpriseOrders.create':
+    case 'enterpriseOrders.cancel':
+    case 'enterpriseOrders.terminate':
+    case 'enterpriseOrderAuthorizations.create':
+    case 'enterpriseOrderTerminations.create':
+    case 'enterpriseSeats.create':
+    case 'enterpriseSeats.delete':
+    case 'enterpriseSeats.bulkRelease':
+    case 'enterpriseOrders.update':
+    case 'enterpriseGrants.update':
+    case 'enterpriseSeatPolicies.list':
+    case 'enterpriseSeatPolicies.retrieve':
+    case 'enterpriseSeatPolicies.create':
+    case 'enterpriseSeatPolicies.update':
+    case 'enterpriseSeatPolicies.delete':
+    case 'enterpriseSeatBlacklist.list':
+    case 'enterpriseSeatBlacklist.create':
+    case 'enterpriseSeatBlacklist.delete':
+      return 'iam.enterprise_orders.manage';
+    case 'enterpriseSeats.export':
+      return 'iam.enterprise_seats.export';
     case 'accessCredentials.create':
       return 'iam.access_credentials.create';
     case 'serviceAccounts.credentials.create':
@@ -231,7 +267,7 @@ function permissionCode(resource, action) {
     case 'positions':
       return `iam.positions.${action === 'read' ? 'read' : action}`;
     case 'roleBindings':
-      return `iam.role_bindings.${action === 'read' ? 'read' : action === 'delete' ? 'delete' : 'create'}`;
+      return `iam.role_bindings.${action}`;
     case 'users':
       return `iam.users.${action === 'read' ? 'read' : action}`;
     case 'roles':
