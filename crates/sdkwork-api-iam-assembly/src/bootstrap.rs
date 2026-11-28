@@ -50,6 +50,16 @@ impl ReadinessCheck for IamDatabaseReadinessCheck {
     }
 }
 
+/// Assembles the complete IAM owner contribution from the process environment.
+///
+/// # Errors
+///
+/// Returns an error when database bootstrap, module materialization, or route
+/// assembly fails.
+pub async fn assemble_api_router() -> Result<ApiAssembly, String> {
+    assemble_owner_api_surfaces().await
+}
+
 /// Assembles all IAM-owned HTTP surfaces as one raw standalone contribution.
 ///
 /// No Web Framework layer, CORS middleware, or infrastructure route is mounted.
@@ -283,9 +293,7 @@ fn default_iam_application_root() -> std::path::PathBuf {
 /// (API_ASSEMBLY_SPEC §4.1.1): the complete HTTP surface — every route,
 /// manifest, and OpenAPI document of this owner — as one installable module.
 pub async fn web_module() -> Result<WebModule, String> {
-    Ok(WebModule::from_contribution(
-        assemble_owner_api_surfaces().await?,
-    ))
+    Ok(WebModule::from_contribution(assemble_api_router().await?))
 }
 
 /// Same as [`web_module`] but composed on a process-shared database pool and
@@ -305,6 +313,19 @@ pub async fn web_module_with_pool(pool: DatabasePool) -> Result<WebModule, Strin
 mod tests {
     use super::*;
     use sdkwork_web_contract::{route_inventory_from_openapi, route_inventory_from_routes};
+
+    fn assert_router_factory<Factory, Future>(factory: Factory)
+    where
+        Factory: FnOnce() -> Future,
+        Future: std::future::Future<Output = Result<ApiAssembly, String>>,
+    {
+        let _ = factory;
+    }
+
+    #[test]
+    fn exports_canonical_complete_router_factory() {
+        assert_router_factory(crate::assemble_api_router);
+    }
 
     #[test]
     fn default_application_root_resolves_the_iam_manifest() {

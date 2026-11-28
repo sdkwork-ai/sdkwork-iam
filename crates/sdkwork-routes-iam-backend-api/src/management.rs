@@ -1,6 +1,7 @@
 //! Tenant-scoped IAM directory and RBAC management handlers for backend-api.
 
 use std::collections::HashMap;
+use std::future::Future;
 
 use axum::{
     extract::{Path, Query, State},
@@ -897,9 +898,19 @@ async fn create_role_binding(
 
     let organization_id = organization_id.unwrap_or_else(|| "0".to_owned());
     let now = Utc::now().to_rfc3339();
-    let result: Result<Option<RoleBindingRecord>, RoleBindingMutationError> = async {
-        let mut tx = pg.begin().await.map_err(RoleBindingMutationError::internal)?;
-        let role_row = sqlx::query(
+    let result: Result<Option<RoleBindingRecord>, RoleBindingMutationError> =
+        retry_role_binding_transaction(|| async {
+            let mut tx = begin_role_binding_transaction(pg).await?;
+            lock_role_binding_assignment(
+                &mut tx,
+                &tenant_id,
+                &principal_kind,
+                &principal_id,
+                &scope_kind,
+                &scope_id,
+            )
+            .await?;
+            let role_row = sqlx::query(
             "SELECT id, code, status FROM iam_role \
              WHERE tenant_id = $1 AND (id = $2 OR code = $2) LIMIT 1 FOR UPDATE",
         )
@@ -907,7 +918,7 @@ async fn create_role_binding(
         .bind(&role_ref)
         .fetch_optional(&mut *tx)
         .await
-        .map_err(RoleBindingMutationError::internal)?;
+        .map_err(RoleBindingMutationError::database)?;
         let Some(role_row) = role_row else {
             return Err(RoleBindingMutationError::new(
                 RoleBindingErrorKind::NotFound,
@@ -922,15 +933,6 @@ async fn create_role_binding(
                 "role must be active before assigning bindings",
             ));
         }
-        lock_role_binding_assignment(
-            &mut tx,
-            &tenant_id,
-            &principal_kind,
-            &principal_id,
-            &scope_kind,
-            &scope_id,
-        )
-        .await?;
         if effect == "allow" {
             sdkwork_iam_bootstrap::ensure_role_assignment_allowed_tx(
                 &mut tx,
@@ -942,7 +944,9 @@ async fn create_role_binding(
                 &role_code,
             )
             .await
-            .map_err(|error| RoleBindingMutationError::new(RoleBindingErrorKind::SodConflict, error))?;
+            .map_err(|error| {
+            role_assignment_validation_error(RoleBindingErrorKind::SodConflict, error)
+        })?;
             let assigner_scope = assigner_permission_scope(&ctx).map_err(|_| {
                 RoleBindingMutationError::new(
                     RoleBindingErrorKind::AssignerForbidden,
@@ -956,7 +960,9 @@ async fn create_role_binding(
                 &assigner_scope,
             )
             .await
-            .map_err(|error| RoleBindingMutationError::new(RoleBindingErrorKind::AssignerForbidden, error))?;
+            .map_err(|error| {
+                role_assignment_validation_error(RoleBindingErrorKind::AssignerForbidden, error)
+            })?;
         }
 
         let existing_revoked_id = sqlx::query_scalar::<_, String>(
@@ -974,7 +980,7 @@ async fn create_role_binding(
         .bind(&scope_id)
         .fetch_optional(&mut *tx)
         .await
-        .map_err(RoleBindingMutationError::internal)?;
+        .map_err(RoleBindingMutationError::database)?;
         let binding_id = existing_revoked_id.unwrap_or_else(|| format!("iamrb-{}", Uuid::new_v4()));
         let rows_affected = sqlx::query(
             "INSERT INTO iam_role_binding \
@@ -1003,7 +1009,7 @@ async fn create_role_binding(
         .bind(&effective_to)
         .execute(&mut *tx)
         .await
-        .map_err(RoleBindingMutationError::internal)?
+        .map_err(RoleBindingMutationError::database)?
         .rows_affected();
         if rows_affected == 0 {
             return Ok(None);
@@ -1020,7 +1026,7 @@ async fn create_role_binding(
         .bind(&binding_id)
         .fetch_one(&mut *tx)
         .await
-        .map_err(RoleBindingMutationError::internal)?;
+        .map_err(RoleBindingMutationError::database)?;
         let binding = RoleBindingRecord::from_row(&row);
         record_backend_mutation_audit_tx(
             &mut *tx,
@@ -1031,10 +1037,10 @@ async fn create_role_binding(
             json!({ "roleId": role_id, "principalKind": principal_kind, "principalId": principal_id }),
         )
         .await
-        .map_err(|error| RoleBindingMutationError::internal(sqlx::Error::Protocol(error.to_string())))?;
-        tx.commit().await.map_err(RoleBindingMutationError::internal)?;
+        .map_err(|error| RoleBindingMutationError::database(sqlx::Error::Protocol(error.to_string())))?;
+        tx.commit().await.map_err(RoleBindingMutationError::database)?;
         Ok(Some(binding))
-    }
+    })
     .await;
 
     match result {
@@ -1170,6 +1176,7 @@ enum RoleBindingErrorKind {
 struct RoleBindingMutationError {
     kind: RoleBindingErrorKind,
     message: String,
+    retryable: bool,
 }
 
 impl RoleBindingMutationError {
@@ -1177,12 +1184,93 @@ impl RoleBindingMutationError {
         Self {
             kind,
             message: message.into(),
+            retryable: false,
         }
     }
 
-    fn internal(error: impl std::fmt::Display) -> Self {
-        Self::new(RoleBindingErrorKind::Internal, error.to_string())
+    fn database(error: sqlx::Error) -> Self {
+        let retryable = matches!(
+            &error,
+            sqlx::Error::Database(database_error)
+                if matches!(database_error.code().as_deref(), Some("40001" | "40P01"))
+        );
+        Self {
+            kind: RoleBindingErrorKind::Internal,
+            message: error.to_string(),
+            retryable,
+        }
     }
+
+    fn retryable(message: impl Into<String>) -> Self {
+        Self {
+            kind: RoleBindingErrorKind::Internal,
+            message: message.into(),
+            retryable: true,
+        }
+    }
+}
+
+const ROLE_BINDING_MAX_RETRIES: usize = 3;
+const ROLE_BINDING_LOCK_TIMEOUT: &str = "5s";
+
+fn role_assignment_validation_error(
+    kind: RoleBindingErrorKind,
+    error: sdkwork_iam_bootstrap::RoleAssignmentValidationError,
+) -> RoleBindingMutationError {
+    let (message, source) = error.into_parts();
+    match source {
+        Some(source) => RoleBindingMutationError::database(source),
+        None => RoleBindingMutationError::new(kind, message),
+    }
+}
+
+async fn retry_role_binding_transaction<T, F, Fut>(
+    mut operation: F,
+) -> Result<T, RoleBindingMutationError>
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<T, RoleBindingMutationError>>,
+{
+    let mut backoff_ms = 10_u64;
+    for attempt in 0..=ROLE_BINDING_MAX_RETRIES {
+        match operation().await {
+            Ok(value) => return Ok(value),
+            Err(error) if error.retryable && attempt < ROLE_BINDING_MAX_RETRIES => {
+                let jitter_bound = (backoff_ms / 2).max(1);
+                let jitter_ms = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map_or(0, |duration| {
+                        u64::from(duration.subsec_nanos()) % jitter_bound
+                    });
+                tracing::warn!(
+                    target: "sdkwork.iam.role_binding.transaction_retry",
+                    attempt,
+                    max_retries = ROLE_BINDING_MAX_RETRIES,
+                    "retryable role binding transaction failure"
+                );
+                tokio::time::sleep(std::time::Duration::from_millis(backoff_ms + jitter_ms)).await;
+                backoff_ms = backoff_ms.saturating_mul(2);
+            }
+            Err(error) => return Err(error),
+        }
+    }
+    unreachable!("role binding retry loop returns on success or the final error")
+}
+
+async fn begin_role_binding_transaction(
+    pg: &PgPool,
+) -> Result<Transaction<'_, Postgres>, RoleBindingMutationError> {
+    let mut tx = pg
+        .begin()
+        .await
+        .map_err(RoleBindingMutationError::database)?;
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "SET LOCAL lock_timeout = '{ROLE_BINDING_LOCK_TIMEOUT}'"
+    )))
+    .execute(&mut *tx)
+    .await
+    .map_err(RoleBindingMutationError::database)?;
+    Ok(tx)
 }
 
 fn parse_role_binding_patch(body: &Value) -> Result<RoleBindingPatch, RoleBindingMutationError> {
@@ -1355,7 +1443,7 @@ where
             .bind(scope_id)
             .fetch_optional(executor)
             .await
-            .map_err(RoleBindingMutationError::internal)?;
+            .map_err(RoleBindingMutationError::database)?;
             if exists.is_none() {
                 return Err(invalid_role_binding_scope());
             }
@@ -1372,7 +1460,7 @@ where
             .bind(organization_id)
             .fetch_optional(executor)
             .await
-            .map_err(RoleBindingMutationError::internal)?;
+            .map_err(RoleBindingMutationError::database)?;
             if exists.is_none() {
                 return Err(invalid_role_binding_scope());
             }
@@ -1380,6 +1468,30 @@ where
         }
         _ => Err(invalid_role_binding_scope()),
     }
+}
+
+fn role_binding_assignment_key(
+    tenant_id: &str,
+    principal_kind: &str,
+    principal_id: &str,
+    scope_kind: &str,
+    scope_id: &str,
+) -> String {
+    format!(
+        "iam-role-assignment:{tenant_id}:{principal_kind}:{principal_id}:{scope_kind}:{scope_id}"
+    )
+}
+
+async fn lock_role_binding_assignment_key(
+    tx: &mut Transaction<'_, Postgres>,
+    lock_key: String,
+) -> Result<(), RoleBindingMutationError> {
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+        .bind(lock_key)
+        .execute(&mut **tx)
+        .await
+        .map_err(RoleBindingMutationError::database)?;
+    Ok(())
 }
 
 async fn lock_role_binding_assignment(
@@ -1390,15 +1502,17 @@ async fn lock_role_binding_assignment(
     scope_kind: &str,
     scope_id: &str,
 ) -> Result<(), RoleBindingMutationError> {
-    let lock_key = format!(
-        "iam-role-assignment:{tenant_id}:{principal_kind}:{principal_id}:{scope_kind}:{scope_id}"
-    );
-    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
-        .bind(lock_key)
-        .execute(&mut **tx)
-        .await
-        .map_err(RoleBindingMutationError::internal)?;
-    Ok(())
+    lock_role_binding_assignment_key(
+        tx,
+        role_binding_assignment_key(
+            tenant_id,
+            principal_kind,
+            principal_id,
+            scope_kind,
+            scope_id,
+        ),
+    )
+    .await
 }
 
 fn validate_tenant_role_binding_scope(
@@ -1418,39 +1532,10 @@ fn invalid_role_binding_scope() -> RoleBindingMutationError {
     )
 }
 
-async fn update_role_binding_record(
-    pg: &PgPool,
-    ctx: &WebRequestContext,
-    tenant_id: &str,
-    organization_id: Option<&str>,
-    role_binding_id: &str,
-    patch: RoleBindingPatch,
+fn apply_role_binding_patch(
+    current: &RoleBindingRecord,
+    patch: &RoleBindingPatch,
 ) -> Result<RoleBindingRecord, RoleBindingMutationError> {
-    let mut tx = pg
-        .begin()
-        .await
-        .map_err(RoleBindingMutationError::internal)?;
-    let row = sqlx::query(sqlx::AssertSqlSafe(format!(
-        "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
-                b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
-                b.data_scope_kind, b.effective_from, b.effective_to \
-         FROM iam_role_binding b \
-         JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id \
-         WHERE b.tenant_id = $1 AND b.id = $3 AND b.status = 'active' {} \
-         FOR UPDATE OF b",
-        role_binding_visibility_sql()
-    )))
-    .bind(tenant_id)
-    .bind(organization_id)
-    .bind(role_binding_id)
-    .fetch_optional(&mut *tx)
-    .await
-    .map_err(RoleBindingMutationError::internal)?
-    .ok_or_else(|| {
-        RoleBindingMutationError::new(RoleBindingErrorKind::NotFound, "role binding not found")
-    })?;
-
-    let current = RoleBindingRecord::from_row(&row);
     let effect = role_binding_patch_ref(&patch.effect)
         .unwrap_or(&current.effect)
         .to_owned();
@@ -1498,55 +1583,7 @@ async fn update_role_binding_record(
         role_binding_patch_nullable(&patch.effective_from, &current.effective_from),
         role_binding_patch_nullable(&patch.effective_to, &current.effective_to),
     )?;
-    validate_role_binding_target_scope(
-        &mut *tx,
-        tenant_id,
-        organization_id,
-        &scope_kind,
-        &scope_id,
-    )
-    .await?;
-
-    lock_role_binding_assignment(
-        &mut tx,
-        tenant_id,
-        &principal_kind,
-        &principal_id,
-        &scope_kind,
-        &scope_id,
-    )
-    .await?;
-    if effect == "allow" {
-        sdkwork_iam_bootstrap::ensure_role_assignment_allowed_tx(
-            &mut tx,
-            tenant_id,
-            &principal_kind,
-            &principal_id,
-            &scope_kind,
-            &scope_id,
-            &current.role_code,
-        )
-        .await
-        .map_err(|error| RoleBindingMutationError::new(RoleBindingErrorKind::SodConflict, error))?;
-        let assigner_scope = assigner_permission_scope(ctx).map_err(|_| {
-            RoleBindingMutationError::new(
-                RoleBindingErrorKind::AssignerForbidden,
-                "assigner permission scope is unavailable",
-            )
-        })?;
-        sdkwork_iam_bootstrap::ensure_role_grant_within_assigner_scope_tx(
-            &mut tx,
-            tenant_id,
-            &current.role_id,
-            &assigner_scope,
-        )
-        .await
-        .map_err(|error| {
-            RoleBindingMutationError::new(RoleBindingErrorKind::AssignerForbidden, error)
-        })?;
-    }
-
-    let updated = RoleBindingRecord {
+    Ok(RoleBindingRecord {
         id: current.id.clone(),
         tenant_id: current.tenant_id.clone(),
         organization_id: current.organization_id.clone(),
@@ -1561,63 +1598,197 @@ async fn update_role_binding_record(
         data_scope_kind,
         effective_from,
         effective_to,
-    };
-    let now = Utc::now().to_rfc3339();
-    let rows_affected = sqlx::query(sqlx::AssertSqlSafe(format!(
-        "UPDATE iam_role_binding \
-         SET effect = $4, principal_kind = $5, principal_id = $6, \
-             scope_kind = $7, scope_id = $8, data_scope_kind = $9, \
-             effective_from = $10, effective_to = $11, updated_at = $12 \
-         WHERE tenant_id = $1 AND id = $3 AND status = 'active' {}",
-        role_binding_visibility_sql()
-    )))
-    .bind(tenant_id)
-    .bind(organization_id)
-    .bind(role_binding_id)
-    .bind(&updated.effect)
-    .bind(&updated.principal_kind)
-    .bind(&updated.principal_id)
-    .bind(&updated.scope_kind)
-    .bind(&updated.scope_id)
-    .bind(&updated.data_scope_kind)
-    .bind(&updated.effective_from)
-    .bind(&updated.effective_to)
-    .bind(now)
-    .execute(&mut *tx)
-    .await
-    .map_err(|error| {
-        if is_role_binding_unique_violation(&error) {
-            RoleBindingMutationError::new(
-                RoleBindingErrorKind::Conflict,
-                "role binding conflicts with an existing binding",
-            )
-        } else {
-            RoleBindingMutationError::internal(error)
-        }
-    })?
-    .rows_affected();
-    if rows_affected == 0 {
-        return Err(RoleBindingMutationError::new(
-            RoleBindingErrorKind::NotFound,
-            "role binding not found",
-        ));
-    }
-    record_backend_mutation_audit_tx(
-        &mut *tx,
-        ctx,
-        "iam_role_binding.update",
-        "iam_role_binding",
-        role_binding_id,
-        json!({ "before": current.to_json(), "after": updated.to_json() }),
-    )
-    .await
-    .map_err(|error| {
-        RoleBindingMutationError::internal(sqlx::Error::Protocol(error.to_string()))
-    })?;
-    tx.commit()
+    })
+}
+
+fn role_binding_assignment_keys(
+    current: &RoleBindingRecord,
+    target: &RoleBindingRecord,
+) -> Vec<String> {
+    let mut keys = vec![
+        role_binding_assignment_key(
+            &current.tenant_id,
+            &current.principal_kind,
+            &current.principal_id,
+            &current.scope_kind,
+            &current.scope_id,
+        ),
+        role_binding_assignment_key(
+            &target.tenant_id,
+            &target.principal_kind,
+            &target.principal_id,
+            &target.scope_kind,
+            &target.scope_id,
+        ),
+    ];
+    keys.sort();
+    keys.dedup();
+    keys
+}
+
+async fn update_role_binding_record(
+    pg: &PgPool,
+    ctx: &WebRequestContext,
+    tenant_id: &str,
+    organization_id: Option<&str>,
+    role_binding_id: &str,
+    patch: RoleBindingPatch,
+) -> Result<RoleBindingRecord, RoleBindingMutationError> {
+    retry_role_binding_transaction(|| async {
+        let mut tx = begin_role_binding_transaction(pg).await?;
+        let snapshot = sqlx::query(sqlx::AssertSqlSafe(format!(
+            "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
+                    b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
+                    b.data_scope_kind, b.effective_from, b.effective_to \
+             FROM iam_role_binding b \
+             JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id \
+             WHERE b.tenant_id = $1 AND b.id = $3 AND b.status = 'active' {}",
+            role_binding_visibility_sql()
+        )))
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(role_binding_id)
+        .fetch_optional(&mut *tx)
         .await
-        .map_err(RoleBindingMutationError::internal)?;
-    Ok(updated)
+        .map_err(RoleBindingMutationError::database)?
+        .ok_or_else(|| {
+            RoleBindingMutationError::new(RoleBindingErrorKind::NotFound, "role binding not found")
+        })?;
+        let snapshot = RoleBindingRecord::from_row(&snapshot);
+        let target = apply_role_binding_patch(&snapshot, &patch)?;
+        for key in role_binding_assignment_keys(&snapshot, &target) {
+            lock_role_binding_assignment_key(&mut tx, key).await?;
+        }
+
+        let row = sqlx::query(sqlx::AssertSqlSafe(format!(
+            "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
+                    b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
+                    b.data_scope_kind, b.effective_from, b.effective_to \
+             FROM iam_role_binding b \
+             JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id \
+             WHERE b.tenant_id = $1 AND b.id = $3 AND b.status = 'active' {} \
+             FOR UPDATE OF b",
+            role_binding_visibility_sql()
+        )))
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(role_binding_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(RoleBindingMutationError::database)?
+        .ok_or_else(|| {
+            RoleBindingMutationError::new(RoleBindingErrorKind::NotFound, "role binding not found")
+        })?;
+        let current = RoleBindingRecord::from_row(&row);
+        if current.principal_kind != snapshot.principal_kind
+            || current.principal_id != snapshot.principal_id
+            || current.scope_kind != snapshot.scope_kind
+            || current.scope_id != snapshot.scope_id
+        {
+            return Err(RoleBindingMutationError::retryable(
+                "role binding assignment changed before the row lock was acquired",
+            ));
+        }
+        let updated = apply_role_binding_patch(&current, &patch)?;
+        validate_role_binding_target_scope(
+            &mut *tx,
+            tenant_id,
+            organization_id,
+            &updated.scope_kind,
+            &updated.scope_id,
+        )
+        .await?;
+
+        if updated.effect == "allow" {
+            sdkwork_iam_bootstrap::ensure_role_assignment_allowed_tx(
+                &mut tx,
+                tenant_id,
+                &updated.principal_kind,
+                &updated.principal_id,
+                &updated.scope_kind,
+                &updated.scope_id,
+                &current.role_code,
+            )
+            .await
+            .map_err(|error| {
+            role_assignment_validation_error(RoleBindingErrorKind::SodConflict, error)
+        })?;
+            let assigner_scope = assigner_permission_scope(ctx).map_err(|_| {
+                RoleBindingMutationError::new(
+                    RoleBindingErrorKind::AssignerForbidden,
+                    "assigner permission scope is unavailable",
+                )
+            })?;
+            sdkwork_iam_bootstrap::ensure_role_grant_within_assigner_scope_tx(
+                &mut tx,
+                tenant_id,
+                &current.role_id,
+                &assigner_scope,
+            )
+            .await
+            .map_err(|error| {
+                role_assignment_validation_error(RoleBindingErrorKind::AssignerForbidden, error)
+            })?;
+        }
+
+        let now = Utc::now().to_rfc3339();
+        let rows_affected = sqlx::query(sqlx::AssertSqlSafe(format!(
+            "UPDATE iam_role_binding \
+             SET effect = $4, principal_kind = $5, principal_id = $6, \
+                 scope_kind = $7, scope_id = $8, data_scope_kind = $9, \
+                 effective_from = $10, effective_to = $11, updated_at = $12 \
+             WHERE tenant_id = $1 AND id = $3 AND status = 'active' {}",
+            role_binding_visibility_sql()
+        )))
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(role_binding_id)
+        .bind(&updated.effect)
+        .bind(&updated.principal_kind)
+        .bind(&updated.principal_id)
+        .bind(&updated.scope_kind)
+        .bind(&updated.scope_id)
+        .bind(&updated.data_scope_kind)
+        .bind(&updated.effective_from)
+        .bind(&updated.effective_to)
+        .bind(now)
+        .execute(&mut *tx)
+        .await
+        .map_err(|error| {
+            if is_role_binding_unique_violation(&error) {
+                RoleBindingMutationError::new(
+                    RoleBindingErrorKind::Conflict,
+                    "role binding conflicts with an existing binding",
+                )
+            } else {
+                RoleBindingMutationError::database(error)
+            }
+        })?
+        .rows_affected();
+        if rows_affected == 0 {
+            return Err(RoleBindingMutationError::new(
+                RoleBindingErrorKind::NotFound,
+                "role binding not found",
+            ));
+        }
+        record_backend_mutation_audit_tx(
+            &mut *tx,
+            ctx,
+            "iam_role_binding.update",
+            "iam_role_binding",
+            role_binding_id,
+            json!({ "before": current.to_json(), "after": updated.to_json() }),
+        )
+        .await
+        .map_err(|error| {
+            RoleBindingMutationError::database(sqlx::Error::Protocol(error.to_string()))
+        })?;
+        tx.commit()
+            .await
+            .map_err(RoleBindingMutationError::database)?;
+        Ok(updated)
+    })
+    .await
 }
 
 fn is_role_binding_unique_violation(error: &sqlx::Error) -> bool {
@@ -1632,7 +1803,7 @@ fn is_role_binding_unique_violation(error: &sqlx::Error) -> bool {
 }
 
 fn role_binding_error_response(action: &str, error: RoleBindingMutationError) -> Response {
-    let RoleBindingMutationError { kind, message } = error;
+    let RoleBindingMutationError { kind, message, .. } = error;
     match kind {
         RoleBindingErrorKind::Invalid => appbase_error(
             StatusCode::BAD_REQUEST,
@@ -1692,36 +1863,70 @@ async fn delete_role_binding(
         return tenant_id_from_context(&ctx).err().expect("error response");
     };
 
-    let now = Utc::now().to_rfc3339();
-    let tenant_id_update = tenant_id.clone();
-    let organization_id_update = organization_id_from_context(&ctx);
-    let role_binding_id_update = role_binding_id.clone();
-    let result = execute_conditional_mutation_with_audit(
-        pg,
-        &ctx,
-        "iam_role_binding.delete",
-        "iam_role_binding",
-        role_binding_id.clone(),
-        json!({}),
-        |tx| {
-            Box::pin(async move {
-                sqlx::query(sqlx::AssertSqlSafe(format!(
-                    "UPDATE iam_role_binding \
-                     SET status = 'revoked', updated_at = $3 \
-                     WHERE tenant_id = $1 AND id = $4 AND status = 'active' {}",
-                    role_binding_visibility_sql()
-                )))
-                .bind(tenant_id_update)
-                .bind(organization_id_update)
-                .bind(now)
-                .bind(role_binding_id_update)
-                .execute(&mut **tx)
-                .await
-                .map(|result| result.rows_affected())
-            })
-        },
-        |rows_affected| *rows_affected > 0,
-    )
+    let organization_id = organization_id_from_context(&ctx);
+    let result: Result<u64, RoleBindingMutationError> = retry_role_binding_transaction(|| async {
+        let mut tx = begin_role_binding_transaction(pg).await?;
+        let snapshot = sqlx::query(sqlx::AssertSqlSafe(format!(
+            "SELECT b.id, b.tenant_id, b.organization_id, b.role_id, r.code AS role_code, \
+                    b.principal_kind, b.principal_id, b.scope_kind, b.scope_id, b.effect, b.status, \
+                    b.data_scope_kind, b.effective_from, b.effective_to \
+             FROM iam_role_binding b \
+             JOIN iam_role r ON r.id = b.role_id AND r.tenant_id = b.tenant_id \
+             WHERE b.tenant_id = $1 AND b.id = $3 AND b.status = 'active' {}",
+            role_binding_visibility_sql()
+        )))
+        .bind(&tenant_id)
+        .bind(organization_id.as_deref())
+        .bind(&role_binding_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(RoleBindingMutationError::database)?;
+        let Some(snapshot) = snapshot else {
+            return Ok(0);
+        };
+        let current = RoleBindingRecord::from_row(&snapshot);
+        lock_role_binding_assignment(
+            &mut tx,
+            &current.tenant_id,
+            &current.principal_kind,
+            &current.principal_id,
+            &current.scope_kind,
+            &current.scope_id,
+        )
+        .await?;
+        let rows_affected = sqlx::query(sqlx::AssertSqlSafe(format!(
+            "UPDATE iam_role_binding \
+             SET status = 'revoked', updated_at = $3 \
+             WHERE tenant_id = $1 AND id = $4 AND status = 'active' {}",
+            role_binding_visibility_sql()
+        )))
+        .bind(&tenant_id)
+        .bind(organization_id.as_deref())
+        .bind(Utc::now().to_rfc3339())
+        .bind(&role_binding_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(RoleBindingMutationError::database)?
+        .rows_affected();
+        if rows_affected > 0 {
+            record_backend_mutation_audit_tx(
+                &mut *tx,
+                &ctx,
+                "iam_role_binding.delete",
+                "iam_role_binding",
+                &role_binding_id,
+                json!({ "before": current.to_json() }),
+            )
+            .await
+            .map_err(|error| {
+                RoleBindingMutationError::database(sqlx::Error::Protocol(error.to_string()))
+            })?;
+        }
+        tx.commit()
+            .await
+            .map_err(RoleBindingMutationError::database)?;
+        Ok(rows_affected)
+    })
     .await;
 
     match result {
@@ -1731,11 +1936,7 @@ async fn delete_role_binding(
             "iam_role_binding_not_found",
             "role binding not found",
         ),
-        Err(error) => appbase_error(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "iam_role_binding_delete_failed",
-            &error,
-        ),
+        Err(error) => role_binding_error_response("delete", error),
     }
 }
 
@@ -2608,9 +2809,11 @@ include!("directory_crud.impl.rs");
 mod tests {
     use super::{
         media_delivery_url, nest_tree, organization_patch_fields, parse_role_binding_patch,
+        retry_role_binding_transaction, role_binding_assignment_key, role_binding_assignment_keys,
         role_binding_list_filter_sql, role_binding_visibility_sql, tenant_patch_fields,
         validate_role_binding_effective_window, validate_tenant_role_binding_scope, PatchValue,
-        RoleBindingErrorKind,
+        RoleBindingErrorKind, RoleBindingMutationError, RoleBindingRecord,
+        ROLE_BINDING_MAX_RETRIES,
     };
     use serde_json::json;
 
@@ -2804,6 +3007,102 @@ mod tests {
             role_binding_list_filter_sql(&query, 6),
             " AND b.role_id = $6 AND b.principal_kind = $7"
         );
+    }
+
+    #[test]
+    fn role_binding_assignment_keys_are_sorted_and_deduplicated() {
+        let current = test_role_binding();
+        let mut target = current.clone();
+        target.principal_id = "user-a".to_owned();
+        target.scope_id = "organization-a".to_owned();
+        assert_eq!(
+            role_binding_assignment_keys(&current, &target),
+            vec![
+                role_binding_assignment_key(
+                    "tenant-1",
+                    "user",
+                    "user-a",
+                    "organization",
+                    "organization-a"
+                ),
+                role_binding_assignment_key(
+                    "tenant-1",
+                    "user",
+                    "user-b",
+                    "organization",
+                    "organization-b"
+                ),
+            ]
+        );
+        assert_eq!(role_binding_assignment_keys(&current, &current).len(), 1);
+    }
+
+    #[tokio::test]
+    async fn role_binding_transaction_retries_retryable_failures() {
+        let mut attempts = 0;
+        let result = retry_role_binding_transaction(|| {
+            attempts += 1;
+            async move {
+                if attempts < 3 {
+                    Err(RoleBindingMutationError::retryable("serialization failure"))
+                } else {
+                    Ok("committed")
+                }
+            }
+        })
+        .await;
+        assert!(matches!(result, Ok(value) if value == "committed"));
+        assert_eq!(attempts, 3);
+    }
+
+    #[tokio::test]
+    async fn role_binding_transaction_does_not_retry_business_conflicts() {
+        let mut attempts = 0;
+        let result = retry_role_binding_transaction(|| {
+            attempts += 1;
+            async move {
+                Err::<(), _>(RoleBindingMutationError::new(
+                    RoleBindingErrorKind::Conflict,
+                    "conflict",
+                ))
+            }
+        })
+        .await;
+        assert!(
+            matches!(result, Err(error) if matches!(error.kind, RoleBindingErrorKind::Conflict))
+        );
+        assert_eq!(attempts, 1);
+    }
+
+    #[tokio::test]
+    async fn role_binding_transaction_stops_after_the_retry_budget() {
+        let mut attempts = 0;
+        let result = retry_role_binding_transaction(|| {
+            attempts += 1;
+            async move { Err::<(), _>(RoleBindingMutationError::retryable("deadlock")) }
+        })
+        .await;
+        assert!(result.is_err());
+        assert_eq!(attempts, ROLE_BINDING_MAX_RETRIES + 1);
+    }
+
+    fn test_role_binding() -> RoleBindingRecord {
+        RoleBindingRecord {
+            id: "binding-1".to_owned(),
+            tenant_id: "tenant-1".to_owned(),
+            organization_id: "organization-b".to_owned(),
+            role_id: "role-1".to_owned(),
+            role_code: "auditor".to_owned(),
+            principal_kind: "user".to_owned(),
+            principal_id: "user-b".to_owned(),
+            scope_kind: "organization".to_owned(),
+            scope_id: "organization-b".to_owned(),
+            effect: "allow".to_owned(),
+            status: "active".to_owned(),
+            data_scope_kind: "scope".to_owned(),
+            effective_from: None,
+            effective_to: None,
+        }
     }
 
     #[test]

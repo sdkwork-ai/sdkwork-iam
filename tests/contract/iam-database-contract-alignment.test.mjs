@@ -254,9 +254,9 @@ assert.match(
   'department changes must preserve manual seats while blacklist reconciliation reclaims them',
 );
 assert.equal(
-  (reconcileBody.match(/ORDER BY CASE WHEN p\.allocation_type = 'auto' THEN 0 ELSE 1 END,\s*c\.depth, p\.id/g) ?? []).length,
+  (reconcileBody.match(/ORDER BY c\.depth, p\.id/g) ?? []).length,
   2,
-  'allocation and release must share deterministic auto/nearest/policy-id priority',
+  'allocation and release must share deterministic nearest-department/policy-id priority',
 );
 assert.equal(
   (reconcileBody.match(/da\.status = 'active' AND da\.is_primary = 1/g) ?? []).length,

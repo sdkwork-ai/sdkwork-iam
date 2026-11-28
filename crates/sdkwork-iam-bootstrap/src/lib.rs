@@ -64,7 +64,8 @@ pub use rbac_scope::{
     ensure_role_grant_within_assigner_scope, ensure_role_grant_within_assigner_scope_tx,
     load_binding_permission_rows, load_role_permission_codes, resolve_effective_permission_codes,
     resolve_session_scopes, resolve_standard_role_codes, resolve_user_permission_scope,
-    user_has_permission_code, violates_role_exclusion, BindingPermissionRow, RoleExclusionRule,
+    user_has_permission_code, violates_role_exclusion, BindingPermissionRow,
+    RoleAssignmentValidationError, RoleExclusionRule,
 };
 pub use role_catalog::{
     expanded_role_permission_codes, standard_role_id, standard_role_permission_id,

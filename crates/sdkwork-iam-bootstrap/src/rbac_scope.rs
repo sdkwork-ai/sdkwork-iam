@@ -8,6 +8,38 @@ use sdkwork_iam_context_service::{
 };
 use sqlx::{PgPool, Postgres, Row, Transaction};
 
+#[derive(Debug)]
+pub struct RoleAssignmentValidationError {
+    message: String,
+    source: Option<sqlx::Error>,
+}
+
+impl RoleAssignmentValidationError {
+    fn validation(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+            source: None,
+        }
+    }
+
+    fn database(error: sqlx::Error) -> Self {
+        Self {
+            message: error.to_string(),
+            source: Some(error),
+        }
+    }
+
+    pub fn into_parts(self) -> (String, Option<sqlx::Error>) {
+        (self.message, self.source)
+    }
+}
+
+impl From<String> for RoleAssignmentValidationError {
+    fn from(message: String) -> Self {
+        Self::validation(message)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BindingPermissionRow {
     pub role_code: String,
@@ -305,9 +337,11 @@ pub async fn ensure_role_assignment_allowed_tx(
     scope_kind: &str,
     scope_id: &str,
     new_role_code: &str,
-) -> Result<(), String> {
+) -> Result<(), RoleAssignmentValidationError> {
     if new_role_code.trim().is_empty() {
-        return Err("role code is required for assignment validation".to_string());
+        return Err(RoleAssignmentValidationError::validation(
+            "role code is required for assignment validation",
+        ));
     }
     let rows = sqlx::query(
         "SELECT DISTINCT r.code \
@@ -327,13 +361,13 @@ pub async fn ensure_role_assignment_allowed_tx(
     .bind(crate::limits::IAM_RBAC_ROLE_CODE_ROW_LIMIT + 1)
     .fetch_all(&mut **tx)
     .await
-    .map_err(|error| format!("load active role codes failed: {error}"))?;
+    .map_err(RoleAssignmentValidationError::database)?;
     let active_role_count = rows.len();
     if active_role_count > crate::limits::IAM_RBAC_ROLE_CODE_ROW_LIMIT as usize {
-        return Err(format!(
+        return Err(RoleAssignmentValidationError::validation(format!(
             "active role codes exceed limit of {}",
             crate::limits::IAM_RBAC_ROLE_CODE_ROW_LIMIT
-        ));
+        )));
     }
     let active_set = rows
         .into_iter()
@@ -352,12 +386,12 @@ pub async fn ensure_role_assignment_allowed_tx(
     .bind(crate::limits::IAM_RBAC_EXCLUSION_ROW_LIMIT + 1)
     .fetch_all(&mut **tx)
     .await
-    .map_err(|error| format!("load role exclusion rules failed: {error}"))?;
+    .map_err(RoleAssignmentValidationError::database)?;
     if exclusions.len() > crate::limits::IAM_RBAC_EXCLUSION_ROW_LIMIT as usize {
-        return Err(format!(
+        return Err(RoleAssignmentValidationError::validation(format!(
             "role exclusion rules exceed limit of {}",
             crate::limits::IAM_RBAC_EXCLUSION_ROW_LIMIT
-        ));
+        )));
     }
     let exclusions = exclusions
         .into_iter()
@@ -367,7 +401,7 @@ pub async fn ensure_role_assignment_allowed_tx(
         })
         .collect::<Vec<_>>();
     if let Some(message) = violates_role_exclusion(&active_set, new_role_code, &exclusions) {
-        return Err(message);
+        return Err(RoleAssignmentValidationError::validation(message));
     }
     Ok(())
 }
@@ -495,7 +529,7 @@ pub async fn ensure_role_grant_within_assigner_scope_tx(
     tenant_id: &str,
     role_id: &str,
     assigner_scope: &[String],
-) -> Result<(), String> {
+) -> Result<(), RoleAssignmentValidationError> {
     if has_permission_in_scope(assigner_scope, "*") {
         return Ok(());
     }
@@ -513,18 +547,19 @@ pub async fn ensure_role_grant_within_assigner_scope_tx(
     .bind(crate::limits::IAM_RBAC_ROLE_PERMISSION_ROW_LIMIT + 1)
     .fetch_all(&mut **tx)
     .await
-    .map_err(|error| format!("load role permission codes failed: {error}"))?;
+    .map_err(RoleAssignmentValidationError::database)?;
     if rows.len() > crate::limits::IAM_RBAC_ROLE_PERMISSION_ROW_LIMIT as usize {
-        return Err(format!(
+        return Err(RoleAssignmentValidationError::validation(format!(
             "role permission codes exceed limit of {}",
             crate::limits::IAM_RBAC_ROLE_PERMISSION_ROW_LIMIT
-        ));
+        )));
     }
     let role_permissions = rows
         .into_iter()
         .map(|row| row.get::<String, _>(0))
         .collect::<Vec<_>>();
     ensure_assigner_covers_role_permissions(assigner_scope, &role_permissions)
+        .map_err(RoleAssignmentValidationError::validation)
 }
 
 pub fn ensure_permission_grant_within_assigner_scope(

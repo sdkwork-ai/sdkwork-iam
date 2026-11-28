@@ -50,6 +50,7 @@
   ],
   "contracts": {
     "publicExports": [
+      "sdkwork_api_iam_assembly::assemble_api_router",
       "sdkwork_api_iam_assembly::assemble_owner_api_surfaces",
       "sdkwork_api_iam_assembly::assemble_owner_api_surfaces_with_pool",
       "sdkwork_api_iam_assembly::assemble_owner_api_surfaces_with_pool_and_module_manifests",
@@ -93,6 +94,7 @@
       }
     ],
     "runtimeEntrypoints": [
+      "sdkwork_api_iam_assembly::assemble_api_router",
       "sdkwork_api_iam_assembly::assemble_owner_api_surfaces",
       "sdkwork_api_iam_assembly::assemble_owner_api_surfaces_with_pool_and_module_manifests",
       "sdkwork_api_iam_assembly::assemble_app_api_contribution_with_module_manifests",
